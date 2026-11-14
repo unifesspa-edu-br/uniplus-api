@@ -24,16 +24,16 @@ internal sealed class DiaNaoUtilConfiguration : IEntityTypeConfiguration<DiaNaoU
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "dia_nao_util",
+            "dias_nao_uteis",
             t =>
             {
                 t.HasCheckConstraint(
-                    "ck_dia_nao_util_municipio_coerente",
+                    "ck_dias_nao_uteis_municipio_coerente",
                     "(abrangencia = 'MUNICIPAL') = (municipio_ibge IS NOT NULL) "
                     + "AND (abrangencia = 'MUNICIPAL') = (municipio_nome IS NOT NULL) "
                     + "AND (abrangencia = 'MUNICIPAL') = (municipio_uf IS NOT NULL)");
                 t.HasCheckConstraint(
-                    "ck_dia_nao_util_uf_coerente",
+                    "ck_dias_nao_uteis_uf_coerente",
                     "(abrangencia = 'ESTADUAL') = (uf IS NOT NULL)");
             });
 
@@ -54,6 +54,6 @@ internal sealed class DiaNaoUtilConfiguration : IEntityTypeConfiguration<DiaNaoU
         builder.Property(d => d.Descricao).HasMaxLength(DescricaoMaxLength).IsRequired();
 
         builder.HasIndex(d => new { d.CalendarioDiasUteisId, d.Data })
-            .HasDatabaseName("ix_dia_nao_util_calendario_data");
+            .HasDatabaseName("ix_dias_nao_uteis_calendario_data");
     }
 }

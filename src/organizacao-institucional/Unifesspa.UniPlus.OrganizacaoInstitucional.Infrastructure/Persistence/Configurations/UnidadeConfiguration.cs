@@ -24,8 +24,8 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
         // Trio de cidade all-or-nothing (issue #1114): espelha no banco a invariante
         // de domínio já provada por Unidade.ValidarReferenciaCidade — mesmo padrão de
         // InstituicaoConfiguration.
-        builder.ToTable("unidade", t => t.HasCheckConstraint(
-            "ck_unidade_cidade_completa",
+        builder.ToTable("unidades", t => t.HasCheckConstraint(
+            "ck_unidades_cidade_completa",
             "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) "
             + "OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)"));
         builder.HasKey(u => u.Id);
@@ -93,24 +93,24 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
         builder.HasIndex(u => u.Slug)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_unidade_slug_vivo");
+            .HasDatabaseName("ix_unidades_slug_vivo");
 
         builder.HasIndex(u => u.Sigla)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_unidade_sigla_vivo");
+            .HasDatabaseName("ix_unidades_sigla_vivo");
 
         builder.HasIndex(u => u.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_unidade_codigo_vivo");
+            .HasDatabaseName("ix_unidades_codigo_vivo");
 
         // Alias: índice não-único (para agrupamento/busca)
         builder.HasIndex(u => u.Alias)
-            .HasDatabaseName("ix_unidade_alias");
+            .HasDatabaseName("ix_unidades_alias");
 
         // Hierarquia: índice para busca de subordinadas
         builder.HasIndex(u => u.UnidadeSuperiorId)
-            .HasDatabaseName("ix_unidade_superior_id");
+            .HasDatabaseName("ix_unidades_superior_id");
     }
 }

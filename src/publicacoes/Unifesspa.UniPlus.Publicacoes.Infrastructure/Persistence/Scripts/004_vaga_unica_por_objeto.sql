@@ -10,7 +10,7 @@ DECLARE
     v_tipo_codigo varchar(60);
 BEGIN
     SELECT unico_por_objeto, tipo_codigo INTO v_unico, v_tipo_codigo
-    FROM publicacoes.ato_normativo WHERE id = NEW.ato_id;
+    FROM publicacoes.atos_normativos WHERE id = NEW.ato_id;
 
     IF NOT v_unico THEN
         RAISE EXCEPTION
@@ -31,7 +31,7 @@ BEGIN
     END IF;
 
     IF NOT EXISTS (
-        SELECT 1 FROM publicacoes.vinculo_ato_entidade v
+        SELECT 1 FROM publicacoes.vinculos_do_ato_com_entidade v
         WHERE v.ato_id = NEW.ato_id
           AND v.entidade_tipo = NEW.entidade_tipo
           AND v.entidade_id = NEW.entidade_id
@@ -58,7 +58,7 @@ DECLARE
     v_raiz uuid;
 BEGIN
     SELECT unico_por_objeto, tipo_codigo INTO v_unico, v_tipo_codigo
-    FROM publicacoes.ato_normativo WHERE id = NEW.ato_id;
+    FROM publicacoes.atos_normativos WHERE id = NEW.ato_id;
 
     IF NOT v_unico THEN
         RETURN NEW;
@@ -92,9 +92,9 @@ CREATE CONSTRAINT TRIGGER trg_vagas_de_linhagem_coerente_com_ato
     FOR EACH ROW
     EXECUTE FUNCTION publicacoes.fn_vagas_de_linhagem_coerente_com_ato();
 
-DROP TRIGGER IF EXISTS trg_vinculo_exige_vaga_da_linhagem ON publicacoes.vinculo_ato_entidade;
+DROP TRIGGER IF EXISTS trg_vinculo_exige_vaga_da_linhagem ON publicacoes.vinculos_do_ato_com_entidade;
 CREATE CONSTRAINT TRIGGER trg_vinculo_exige_vaga_da_linhagem
-    AFTER INSERT ON publicacoes.vinculo_ato_entidade
+    AFTER INSERT ON publicacoes.vinculos_do_ato_com_entidade
     DEFERRABLE INITIALLY DEFERRED
     FOR EACH ROW
     EXECUTE FUNCTION publicacoes.fn_vinculo_exige_vaga_da_linhagem();

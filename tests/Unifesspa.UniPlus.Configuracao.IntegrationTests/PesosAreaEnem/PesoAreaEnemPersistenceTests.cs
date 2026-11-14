@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -144,7 +145,7 @@ public sealed class PesoAreaEnemPersistenceTests
             ctx.PesosAreaEnem.Add(peso);
             await ctx.SaveChangesAsync();
             await ctx.Database.ExecuteSqlAsync(
-                $"UPDATE configuracao.peso_area_enem_area SET rotulo = {"Rótulo antigo"} WHERE peso_area_enem_id = {peso.Id} AND codigo = {PesoAreaEnem.CodigoLinguagens}");
+                $"UPDATE configuracao.areas_dos_pesos_do_enem SET rotulo = {"Rótulo antigo"} WHERE peso_area_enem_id = {peso.Id} AND codigo = {PesoAreaEnem.CodigoLinguagens}");
         }
 
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
@@ -169,7 +170,7 @@ public sealed class PesoAreaEnemPersistenceTests
             ctx.PesosAreaEnem.Add(peso);
             await ctx.SaveChangesAsync();
             await ctx.Database.ExecuteSqlAsync(
-                $"UPDATE configuracao.peso_area_enem SET grupo_curso_rotulo = {"Rótulo antigo"} WHERE id = {peso.Id}");
+                $"UPDATE configuracao.pesos_por_area_do_enem SET grupo_curso_rotulo = {"Rótulo antigo"} WHERE id = {peso.Id}");
         }
 
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
@@ -261,7 +262,7 @@ public sealed class PesoAreaEnemPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_peso_area_enem_resolucao_grupo_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.PesoPorAreaDoEnemResolucaoGrupoVivo);
     }
 
     [Fact(DisplayName = "Mesma resolução em grupo distinto é aceita (par distinto)")]
@@ -319,17 +320,17 @@ public sealed class PesoAreaEnemPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, grupo_curso_rotulo, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {grupo}, {"Rótulo"}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.pesos_por_area_do_enem (id, resolucao, grupo_curso, grupo_curso_rotulo, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {ResolucaoUnica()}, {grupo}, {"Rótulo"}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
 
         Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
-        pg.ConstraintName.Should().Be("ck_peso_area_enem_grupo_curso");
+        pg.ConstraintName.Should().Be("ck_pesos_por_area_do_enem_grupo_curso");
     }
 
     [Theory(DisplayName = "CHECKs da tabela de áreas rejeitam código fora das cinco, peso negativo e corte fora da faixa via SQL cru")]
-    [InlineData("FISICA", 1.0, null, "ck_peso_area_enem_area_codigo")]
-    [InlineData("REDACAO", -1.0, null, "ck_peso_area_enem_area_peso")]
-    [InlineData("REDACAO", 1.0, 1000.001, "ck_peso_area_enem_area_corte")]
-    [InlineData("REDACAO", 1.0, -0.5, "ck_peso_area_enem_area_corte")]
+    [InlineData("FISICA", 1.0, null, "ck_areas_dos_pesos_do_enem_codigo")]
+    [InlineData("REDACAO", -1.0, null, "ck_areas_dos_pesos_do_enem_peso")]
+    [InlineData("REDACAO", 1.0, 1000.001, "ck_areas_dos_pesos_do_enem_corte")]
+    [InlineData("REDACAO", 1.0, -0.5, "ck_areas_dos_pesos_do_enem_corte")]
     public async Task Check_TabelaDeAreas_RejeitaForaDaFaixa(string codigo, double peso, double? corte, string constraint)
     {
         Guid paiId = await CriarPaiSemAreasAsync();
@@ -337,7 +338,7 @@ public sealed class PesoAreaEnemPersistenceTests
         decimal? corteDecimal = corte is null ? null : (decimal)corte.Value;
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.peso_area_enem_area (peso_area_enem_id, codigo, rotulo, peso, corte) VALUES ({paiId}, {codigo}, {"Rótulo"}, {(decimal)peso}, {corteDecimal})");
+            $"INSERT INTO configuracao.areas_dos_pesos_do_enem (peso_area_enem_id, codigo, rotulo, peso, corte) VALUES ({paiId}, {codigo}, {"Rótulo"}, {(decimal)peso}, {corteDecimal})");
 
         Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
         pg.ConstraintName.Should().Be(constraint);
@@ -349,10 +350,10 @@ public sealed class PesoAreaEnemPersistenceTests
         Guid paiId = await CriarPaiSemAreasAsync();
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.peso_area_enem_area (peso_area_enem_id, codigo, rotulo, peso) VALUES ({paiId}, {"REDACAO"}, {"Redação"}, {1.0m})");
+            $"INSERT INTO configuracao.areas_dos_pesos_do_enem (peso_area_enem_id, codigo, rotulo, peso) VALUES ({paiId}, {"REDACAO"}, {"Redação"}, {1.0m})");
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.peso_area_enem_area (peso_area_enem_id, codigo, rotulo, peso) VALUES ({paiId}, {"REDACAO"}, {"Redação"}, {2.0m})");
+            $"INSERT INTO configuracao.areas_dos_pesos_do_enem (peso_area_enem_id, codigo, rotulo, peso) VALUES ({paiId}, {"REDACAO"}, {"Redação"}, {2.0m})");
 
         Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
         pg.SqlState.Should().Be("23505");
@@ -545,7 +546,7 @@ public sealed class PesoAreaEnemPersistenceTests
 
     private static Task<int> ContarAreasAsync(UniPlusDbContext ctx, Guid pesoId) =>
         ctx.Database
-            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM configuracao.peso_area_enem_area WHERE peso_area_enem_id = {pesoId}")
+            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM configuracao.areas_dos_pesos_do_enem WHERE peso_area_enem_id = {pesoId}")
             .SingleAsync();
 
     // Linha de pesos sem áreas, direto no banco: base para exercitar os CHECKs da tabela
@@ -558,14 +559,14 @@ public sealed class PesoAreaEnemPersistenceTests
         DateTimeOffset agora = DateTimeOffset.UtcNow;
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.peso_area_enem (id, resolucao, grupo_curso, grupo_curso_rotulo, base_legal, created_at, is_deleted, deleted_at) VALUES ({id}, {ResolucaoUnica()}, {GrupoCurso.Tecnologica}, {"Tecnológica"}, {BaseLegal}, {agora}, {true}, {agora})");
+            $"INSERT INTO configuracao.pesos_por_area_do_enem (id, resolucao, grupo_curso, grupo_curso_rotulo, base_legal, created_at, is_deleted, deleted_at) VALUES ({id}, {ResolucaoUnica()}, {GrupoCurso.Tecnologica}, {"Tecnológica"}, {BaseLegal}, {agora}, {true}, {agora})");
         return id;
     }
 
     private static async Task<(string Codigo, string Rotulo)> GrupoPersistidoAsync(UniPlusDbContext ctx, Guid pesoId)
     {
         GrupoGravado grupo = await ctx.Database
-            .SqlQuery<GrupoGravado>($"SELECT grupo_curso AS codigo, grupo_curso_rotulo AS rotulo FROM configuracao.peso_area_enem WHERE id = {pesoId}")
+            .SqlQuery<GrupoGravado>($"SELECT grupo_curso AS codigo, grupo_curso_rotulo AS rotulo FROM configuracao.pesos_por_area_do_enem WHERE id = {pesoId}")
             .SingleAsync();
         return (grupo.Codigo, grupo.Rotulo);
     }

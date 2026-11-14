@@ -9,7 +9,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// só os dois tokens canônicos são aceitos — sem <c>Enum.TryParse</c>, que
 /// aceitaria tokens numéricos e nomes PascalCase fora do contrato.</para>
 /// <para>É o vocabulário fonte do CHECK de domínio em
-/// <c>oferta_curso.regime_de_turno</c> (<see cref="TokensCanonicos"/>) e do value
+/// <c>ofertas_de_curso.regime_de_turno</c> (<see cref="TokensCanonicos"/>) e do value
 /// converter de persistência. <see cref="TurnosExigidos"/> é a fonte única da
 /// cardinalidade que cada regime impõe à coleção de turnos.</para>
 /// </remarks>

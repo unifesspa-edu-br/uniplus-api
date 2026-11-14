@@ -65,7 +65,7 @@ internal static class ErrosDoProcessoSeletivo
         // Configuração do Processo Seletivo (UNI-REQ-0014/0015).
         // Invariantes do agregado-raiz nesta fatia: etapas e atendimento
         // especializado (ADR-0067). Vagas/bônus/desempate/classificação entram
-        // nas fatias F2–F4 sobre o rol_de_regras, com seus próprios códigos.
+        // nas fatias F2–F4 sobre o catálogo de regras, com seus próprios códigos.
         new("ProcessoSeletivo.NaoEncontrado", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.processo_seletivo.nao_encontrado", "Processo Seletivo não encontrado")),
         new("ProcessoSeletivo.OcorrenciaSimuladaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ocorrencia_simulada_invalida", "Ocorrência simulada sem identidade própria no grupo")),
         new("ProcessoSeletivo.LocalidadeAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.localidade_ausente", "Localidade que rege a contagem dos prazos não declarada")),
@@ -101,7 +101,7 @@ internal static class ErrosDoProcessoSeletivo
         new("OfertaCursoSnapshot.Invalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.oferta_curso_snapshot.invalida", "A oferta de curso não tem curso, grau, unidade ofertante e turno válidos")),
         new("GrupoAreaEnemSnapshot.TamanhoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.grupo_area_enem_snapshot.tamanho_invalido", "Grupo de área do ENEM excede o tamanho permitido")),
         new("CalendarioVigente.FormaTerritorialInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.calendario_vigente.forma_territorial_invalida", "O calendário vigente traz dia com recorte territorial incoerente com a abrangência")),
-        new("ProcessoSeletivo.AlgoritmoContagemPrazoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.algoritmo_contagem_prazo_nao_encontrado", "Algoritmo de contagem não encontrado no rol_de_regras")),
+        new("ProcessoSeletivo.AlgoritmoContagemPrazoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.algoritmo_contagem_prazo_nao_encontrado", "Algoritmo de contagem não encontrado no catálogo de regras")),
         new("ProcessoSeletivo.EtapasVazias", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapas_vazias", "O processo deve ter ao menos uma etapa pontuada")),
         new("ProcessoSeletivo.OrdemEtapaDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_etapa_duplicada", "Ordem de etapa duplicada no processo")),
         new("ProcessoSeletivo.IdEtapaDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.id_etapa_duplicado", "O mesmo Id de etapa foi informado mais de uma vez no payload")),

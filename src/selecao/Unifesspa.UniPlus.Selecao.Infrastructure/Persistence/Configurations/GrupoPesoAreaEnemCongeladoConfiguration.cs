@@ -26,7 +26,7 @@ internal sealed class GrupoPesoAreaEnemCongeladoConfiguration : IEntityTypeConfi
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("grupos_peso_area_enem_congelados", t => t.HasComment(
+        builder.ToTable("grupos_do_quadro_de_pesos", t => t.HasComment(
             "Quadro de pesos por área do ENEM congelado na classificação do processo seletivo: uma linha " +
             "por grupo de área, copiada por valor da resolução de Pesos por Área declarada. Substituída " +
             "por inteiro quando a classificação é redefinida."));

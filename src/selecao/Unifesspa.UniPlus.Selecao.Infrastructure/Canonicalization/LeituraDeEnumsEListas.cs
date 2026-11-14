@@ -146,7 +146,7 @@ internal static class LeituraDeEnumsEListas
     }
 
     /// <summary>
-    /// A tripla <c>{codigo, versao, hash}</c> de uma referência ao <c>rol_de_regras</c>,
+    /// A tripla <c>{codigo, versao, hash}</c> de uma referência ao <c>regras_do_catalogo</c>,
     /// com o <paramref name="rol"/> <b>fechado</b>: o vocabulário não é validado pelas
     /// factories do domínio — um código desconhecido cairia no ramo default delas
     /// (institucional, cálculo local) e reconstruiria configuração diferente da
@@ -156,7 +156,7 @@ internal static class LeituraDeEnumsEListas
     /// <para>
     /// <b>O que esta leitura deliberadamente NÃO faz: resolver a tripla contra o catálogo
     /// vivo.</b> O caminho de comando resolve — ele lê <c>(codigo, versao)</c> no
-    /// <c>rol_de_regras</c> e copia de lá o <c>hash</c> real. A reidratação <b>não pode</b>
+    /// <c>regras_do_catalogo</c> e copia de lá o <c>hash</c> real. A reidratação <b>não pode</b>
     /// fazer o mesmo, e a razão é o próprio congelamento: a referência é <b>snapshot-copy
     /// por valor</b> (ADR-0061), e a regra que ela cita <b>pode ter sido retirada ou
     /// versionada</b> depois da publicação. Exigir que ela ainda exista tornaria

@@ -106,7 +106,7 @@ internal sealed class PerfilConfiguration : IEntityTypeConfiguration<Perfil>
         builder.OwnsMany(p => p.Permissoes, permissao =>
         {
             permissao.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            permissao.ToTable("perfil_permissoes");
+            permissao.ToTable("permissoes_do_perfil");
             permissao.WithOwner().HasForeignKey("PerfilId");
             permissao.Property<Guid>("PerfilId");
             permissao.Property(x => x.Codigo).HasMaxLength(CodigoPermissaoMaxLength).IsRequired();

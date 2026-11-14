@@ -23,13 +23,13 @@ internal sealed class LocalOfertaConfiguration : IEntityTypeConfiguration<LocalO
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         // CHECK de coerência cidade↔CEP (CA-04, ADR-0096): NULL-safe.
-        builder.ToTable("local_oferta", t =>
+        builder.ToTable("locais_de_oferta", t =>
         {
             t.HasCheckConstraint(
-                EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckName("local_oferta"),
+                EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckName("locais_de_oferta"),
                 EnderecoGeoOwnedConfiguration.CoerenciaCidadeCheckSql);
             t.HasCheckConstraint(
-                EnderecoGeoOwnedConfiguration.CompletudeCheckName("local_oferta"),
+                EnderecoGeoOwnedConfiguration.CompletudeCheckName("locais_de_oferta"),
                 EnderecoGeoOwnedConfiguration.CompletudeCheckSql);
         });
         builder.HasKey(l => l.Id);
@@ -71,10 +71,10 @@ internal sealed class LocalOfertaConfiguration : IEntityTypeConfiguration<LocalO
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(l => l.CampusResponsavelId)
-            .HasDatabaseName("ix_local_oferta_campus_responsavel_id");
+            .HasDatabaseName("ix_locais_de_oferta_campus_responsavel_id");
 
         // Índice de relatório/filtro pela cidade (ADR-0090).
         builder.HasIndex(l => l.CidadeCodigoIbge)
-            .HasDatabaseName("ix_local_oferta_cidade_codigo_ibge");
+            .HasDatabaseName("ix_locais_de_oferta_cidade_codigo_ibge");
     }
 }

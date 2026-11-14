@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -32,7 +33,7 @@ public sealed class TipoDocumentoConfiguration
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "tipo_documento",
+            "tipos_de_documento",
             t =>
             {
                 // Forma do código da categoria (UPPER_SNAKE iniciando por letra) — defesa
@@ -40,7 +41,7 @@ public sealed class TipoDocumentoConfiguration
                 // qualquer categoria que o cadastro aceite passa aqui, inclusive as que
                 // ele venha a ganhar, e a que ele perder continua válida na linha antiga.
                 t.HasCheckConstraint(
-                    "ck_tipo_documento_categoria_formato",
+                    "ck_tipos_de_documento_categoria_formato",
                     "categoria ~ '^[A-Z][A-Z0-9_]{1,49}$'");
 
                 // Forma do próprio código — defesa em profundidade do invariante de
@@ -48,24 +49,24 @@ public sealed class TipoDocumentoConfiguration
                 // gravado por fora só apareceria como falha de reidratação, e aí toda
                 // leitura da tabela estouraria por causa de uma única linha.
                 t.HasCheckConstraint(
-                    "ck_tipo_documento_codigo_formato",
+                    "ck_tipos_de_documento_codigo_formato",
                     "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
 
                 // Tipo equivalente é rótulo classificatório: nunca aponta para o próprio
                 // código. Null-safe (a coluna é opcional). Case-sensitive, alinhado ao
                 // guard de domínio (StringComparison.Ordinal).
                 t.HasCheckConstraint(
-                    "ck_tipo_documento_equivalente_diferente_codigo",
+                    "ck_tipos_de_documento_equivalente_diferente_codigo",
                     "tipo_equivalente IS NULL OR tipo_equivalente <> codigo");
 
                 // Tamanho máximo (quando informado) é positivo — defesa em profundidade
                 // do invariante de domínio contra inserts crus (espelha a proteção
-                // numérica de peso_area_enem). Null-safe (a coluna é opcional).
+                // numérica de pesos_por_area_do_enem). Null-safe (a coluna é opcional).
                 t.HasCheckConstraint(
-                    "ck_tipo_documento_tamanho_maximo_mb_positivo",
+                    "ck_tipos_de_documento_tamanho_maximo_mb_positivo",
                     "tamanho_maximo_mb IS NULL OR tamanho_maximo_mb > 0");
 
-                AprovacaoDaProtecaoOwnedConfiguration.ConfigurarChecks(t, "tipo_documento");
+                AprovacaoDaProtecaoOwnedConfiguration.ConfigurarChecks(t, "tipos_de_documento");
             });
 
         builder.HasKey(t => t.Id);
@@ -126,11 +127,11 @@ public sealed class TipoDocumentoConfiguration
         builder.HasIndex(t => t.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_tipo_documento_codigo_vivo");
+            .HasDatabaseName(RestricoesDoBanco.TipoDeDocumentoCodigoVivo);
 
         // Índice de filtro por categoria na interface administrativa.
         builder.HasIndex(t => t.Categoria)
-            .HasDatabaseName("ix_tipo_documento_categoria");
+            .HasDatabaseName("ix_tipos_de_documento_categoria");
 
         builder.HasData(MaterializarSeed());
     }

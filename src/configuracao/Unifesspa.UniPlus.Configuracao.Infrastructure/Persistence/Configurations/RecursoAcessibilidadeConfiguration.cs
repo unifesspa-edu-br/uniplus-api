@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
@@ -26,14 +27,14 @@ internal sealed class RecursoAcessibilidadeConfiguration
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "recurso_acessibilidade",
+            "recursos_de_acessibilidade",
             t =>
             {
                 // Formato fechado do código (UPPER_SNAKE iniciando por letra) — defesa
                 // em profundidade do invariante de domínio (CodigoRecursoAcessibilidade)
                 // contra inserts crus. Case-sensitive, alinhado ao value object.
                 t.HasCheckConstraint(
-                    "ck_recurso_acessibilidade_codigo_formato",
+                    "ck_recursos_de_acessibilidade_codigo_formato",
                     "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
             });
 
@@ -59,13 +60,13 @@ internal sealed class RecursoAcessibilidadeConfiguration
         builder.HasIndex(r => r.Codigo)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_recurso_acessibilidade_codigo_vivo");
+            .HasDatabaseName(RestricoesDoBanco.RecursoDeAcessibilidadeCodigoVivo);
 
         // Unicidade do nome entre recursos vivos (índice parcial) — um recurso vivo
         // por nome; soft-delete libera o slot para recriação.
         builder.HasIndex(r => r.Nome)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_recurso_acessibilidade_nome_vivo");
+            .HasDatabaseName(RestricoesDoBanco.RecursoDeAcessibilidadeNomeVivo);
     }
 }

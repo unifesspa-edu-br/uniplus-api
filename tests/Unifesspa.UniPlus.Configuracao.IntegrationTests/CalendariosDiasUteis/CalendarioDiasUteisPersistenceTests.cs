@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -97,7 +98,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
 
         Func<Task> act = async () => await ctx2.SaveChangesAsync();
 
-        // ex_calendario_dias_uteis_vigente_unico é DEFERRABLE INITIALLY DEFERRED
+        // ex_calendarios_de_dias_uteis_vigente_unico é DEFERRABLE INITIALLY DEFERRED
         // (issue #1016 — SaveChangesAsync desmarca o vigente anterior e marca o novo
         // na mesma transação; um índice não-deferível colidiria por-statement mesmo
         // quando a transação termina num estado final válido). A checagem só roda no
@@ -106,7 +107,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
         // só produz para falhas durante a execução do batch de comandos.
         Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
         pg.SqlState.Should().Be("23P01");
-        pg.ConstraintName.Should().Be("ex_calendario_dias_uteis_vigente_unico");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.CalendarioDeDiasUteisVigenteUnico);
 
         // "segundo" nunca commitou (transação abortada pela exclusion constraint), mas
         // "primeiro" ficou vigente=true na base compartilhada da fixture — desmarca para
@@ -150,7 +151,7 @@ public sealed class CalendarioDiasUteisPersistenceTests
 
         Npgsql.PostgresException pg = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
         pg.SqlState.Should().Be("23P01");
-        pg.ConstraintName.Should().Be("ex_calendario_dias_uteis_vigente_unico");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.CalendarioDeDiasUteisVigenteUnico);
 
         // "segundo" nunca commitou (a transação nunca chegou a Commit), mas "primeiro"
         // segue vigente=true na base compartilhada da fixture.
@@ -174,14 +175,14 @@ public sealed class CalendarioDiasUteisPersistenceTests
 
         Func<Task> act = async () => await ctx2.Database.ExecuteSqlAsync(
             $"""
-             INSERT INTO configuracao.dia_nao_util
+             INSERT INTO configuracao.dias_nao_uteis
                  (id, calendario_dias_uteis_id, abrangencia, municipio_ibge, data, descricao, created_at)
              VALUES
                  ({Guid.CreateVersion7()}, {pai.Id}, {"MUNICIPAL"}, {"1504208"}, {new DateOnly(2027, 1, 1)}, {"Snapshot parcial"}, {DateTimeOffset.UtcNow})
              """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_dia_nao_util_municipio_coerente exige a tripla municipal completa");
+            "o CHECK ck_dias_nao_uteis_municipio_coerente exige a tripla municipal completa");
     }
 
     [Fact(DisplayName = "CHECK de banco rejeita campo municipal fora de MUNICIPAL via SQL cru")]
@@ -198,14 +199,14 @@ public sealed class CalendarioDiasUteisPersistenceTests
 
         Func<Task> act = async () => await ctx2.Database.ExecuteSqlAsync(
             $"""
-             INSERT INTO configuracao.dia_nao_util
+             INSERT INTO configuracao.dias_nao_uteis
                  (id, calendario_dias_uteis_id, abrangencia, municipio_nome, data, descricao, created_at)
              VALUES
                  ({Guid.CreateVersion7()}, {pai.Id}, {"NACIONAL"}, {"Marabá"}, {new DateOnly(2027, 1, 1)}, {"Campo indevido"}, {DateTimeOffset.UtcNow})
              """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_dia_nao_util_municipio_coerente proíbe cada campo municipal nas demais abrangências");
+            "o CHECK ck_dias_nao_uteis_municipio_coerente proíbe cada campo municipal nas demais abrangências");
     }
 
     [Fact(DisplayName = "Soft-delete de dataset não vigente preserva os dias não úteis filhos (ClientNoAction)")]

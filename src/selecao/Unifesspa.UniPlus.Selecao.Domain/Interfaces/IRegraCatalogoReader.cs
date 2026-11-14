@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Leitura da biblioteca <c>rol_de_regras</c> (Story #772): resolve regras
+/// Leitura da biblioteca <c>regras_do_catalogo</c> (Story #772): resolve regras
 /// tipadas e versionadas para que as dimensões da configuração do Processo
 /// Seletivo montem sua <see cref="Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra"/>
 /// (<c>codigo</c>+<c>versao</c>+<c>hash</c>). Somente leitura — o catálogo é

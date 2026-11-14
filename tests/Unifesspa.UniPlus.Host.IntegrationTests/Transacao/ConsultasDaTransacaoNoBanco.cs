@@ -14,11 +14,11 @@ internal static class ConsultasDaTransacaoNoBanco
 
     internal static Task<int> TiposAsync(IServiceProvider servicos, string codigo) =>
         ConsultarAsync(servicos, contexto => contexto.Database
-            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM publicacoes.tipo_ato_publicado WHERE codigo = {codigo}").SingleAsync());
+            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM publicacoes.tipos_de_ato_publicado WHERE codigo = {codigo}").SingleAsync());
 
     internal static Task<int> AtosAsync(IServiceProvider servicos, Guid atoId) =>
         ConsultarAsync(servicos, contexto => contexto.Database
-            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM publicacoes.ato_normativo WHERE id = {atoId}").SingleAsync());
+            .SqlQuery<int>($"SELECT count(*)::int AS \"Value\" FROM publicacoes.atos_normativos WHERE id = {atoId}").SingleAsync());
 
     internal static Task<int> VagasDoObjetoAsync(IServiceProvider servicos, Guid objetoId) =>
         ConsultarAsync(servicos, contexto => contexto.Database
@@ -31,11 +31,11 @@ internal static class ConsultasDaTransacaoNoBanco
 
     internal static Task<long> TransacaoDoAtoAsync(IServiceProvider servicos, Guid atoId) =>
         ConsultarAsync(servicos, contexto => contexto.Database
-            .SqlQuery<long>($"SELECT xmin::text::bigint AS \"Value\" FROM publicacoes.ato_normativo WHERE id = {atoId}").SingleAsync());
+            .SqlQuery<long>($"SELECT xmin::text::bigint AS \"Value\" FROM publicacoes.atos_normativos WHERE id = {atoId}").SingleAsync());
 
     internal static Task<long> TransacaoDoTipoAsync(IServiceProvider servicos, string codigo) =>
         ConsultarAsync(servicos, contexto => contexto.Database
-            .SqlQuery<long>($"SELECT xmin::text::bigint AS \"Value\" FROM publicacoes.tipo_ato_publicado WHERE codigo = {codigo}").SingleAsync());
+            .SqlQuery<long>($"SELECT xmin::text::bigint AS \"Value\" FROM publicacoes.tipos_de_ato_publicado WHERE codigo = {codigo}").SingleAsync());
 
     /// <summary>Os envelopes do evento ainda no outbox e os já entregues à fila durável do evento.</summary>
     internal static async Task<int> EnvelopesDoEventoAsync(IServiceProvider servicos, string codigo) =>

@@ -508,7 +508,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         relido.Cascata.Should().BeNull("DefinirCascataRemanejamento(null) remove a cascata — o toggle 'sem cascata' é a própria ausência da entidade");
 
         // O cascade delete (ON DELETE CASCADE de destinos_remanejamento para
-        // configuracoes_cascata_remanejamento) tem de ter levado os destinos junto — a FK
+        // configuracoes_de_remanejamento) tem de ter levado os destinos junto — a FK
         // cuida disso, mas é exatamente o que se está provando aqui, não presumindo. Filtrado
         // pelo id conhecido: este fixture (IClassFixture) compartilha o mesmo Postgres entre
         // TODOS os métodos de teste da classe, então uma contagem cega da tabela inteira
@@ -520,7 +520,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
 
         bool cascataAindaExiste = await readContext.Set<ConfiguracaoCascataRemanejamento>()
             .AnyAsync(c => c.Id == idCascata, CancellationToken.None);
-        cascataAindaExiste.Should().BeFalse("a linha da cascata também não pode sobrar em configuracoes_cascata_remanejamento");
+        cascataAindaExiste.Should().BeFalse("a linha da cascata também não pode sobrar em configuracoes_de_remanejamento");
     }
 
     // ── Constraints do banco — o caminho que o agregado NUNCA toma (defesa em profundidade) ──

@@ -182,7 +182,7 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
 
     /// <summary>
     /// Desativa (soft-delete) a regra. FK <c>RESTRICT</c> de
-    /// <c>obrigatoriedade_legal_historico</c> protege contra hard-delete
+    /// <c>historicos_da_obrigatoriedade</c> protege contra hard-delete
     /// acidental; soft-delete (Modified+IsDeleted=true) não dispara RESTRICT
     /// e libera o slot do <c>UNIQUE</c> parcial sobre <c>Hash</c> (ADR-0063).
     /// </summary>

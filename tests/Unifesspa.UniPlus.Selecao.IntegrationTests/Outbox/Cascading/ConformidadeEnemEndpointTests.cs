@@ -75,7 +75,7 @@ public sealed class ConformidadeEnemEndpointTests
             // Correção de dados sobre o processo publicado: o grupo perde o código, e o EF
             // devolve a oferta sem grupo.
             await db.Database.ExecuteSqlAsync(
-                $"UPDATE selecao.configuracoes_distribuicao_vagas SET grupo_area_enem_codigo = NULL WHERE processo_seletivo_id = {processo.Id}");
+                $"UPDATE selecao.configuracoes_de_vagas SET grupo_area_enem_codigo = NULL WHERE processo_seletivo_id = {processo.Id}");
             DocumentoAPublicar retificacao = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
             retificacao.Confirmar(2048, string.Concat(Enumerable.Repeat("cd45670189", 7))[..64], TimeProvider.System)
                 .IsSuccess.Should().BeTrue();

@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// <summary>
 /// Handler do <see cref="DefinirBonusRegionalCommand"/> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015, Story #774):
 /// <c>Aplica</c> falso declara que o processo não aplica o bônus; verdadeiro resolve a regra <c>BONUS-MULTIPLICATIVO</c> no
-/// <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>, Story #772) e a Base Legal
+/// <c>regras_do_catalogo</c> (<see cref="IRegraCatalogoReader"/>, Story #772) e a Base Legal
 /// referenciada (<see cref="IBaseLegalBonusRegionalReader"/>, Configuração, Story #1465),
 /// cujo snapshot é congelado em <see cref="ConfiguracaoBonusRegional"/> (Story #1466).
 /// </summary>
@@ -110,7 +110,7 @@ public static class DefinirBonusRegionalCommandHandler
         {
             return Result<MutacaoAceita>.Failure(new DomainError(
                 "ConfiguracaoBonusRegional.RegraNaoEncontrada",
-                $"Regra de bônus {command.RegraCodigo}/{command.RegraVersao} não encontrada no rol_de_regras."));
+                $"Regra de bônus {command.RegraCodigo}/{command.RegraVersao} não encontrada no catálogo de regras."));
         }
 
         if (regra.Tipo != TipoRegra.RegraBonus)

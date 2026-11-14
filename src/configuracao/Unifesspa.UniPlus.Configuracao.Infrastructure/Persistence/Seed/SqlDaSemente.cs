@@ -42,12 +42,12 @@ internal static class SqlDaSemente
         Exigir(termo.MarcarRevisado(autor, instante), semente, $"revisão do termo {nome}");
         TermoConsentimentoVersao versao = Exigir(termo.Promover(autor, instante), semente, $"promoção do termo {nome}");
 
-        yield return Inserir("termo_consentimento", "id",
+        yield return Inserir("termos_de_consentimento", "id",
             ("id", Uuid(termoId)), ("nome", Texto(termo.Nome)), ("texto_rascunho", Texto(termo.TextoRascunho)),
             ("base_legal_rascunho", Texto(termo.BaseLegalRascunho)),
             ("forma_aceite_rascunho", Texto(FormasAceite.ParaTokenCanonico(termo.FormaAceiteRascunho))),
             ("revisado", Logico(termo.Revisado)), ("is_deleted", Logico(false)), ("created_at", Momento(instante)));
-        yield return Inserir("termo_consentimento_versao", "id",
+        yield return Inserir("versoes_do_termo_consentimento", "id",
             ("id", Uuid(versaoId)), ("termo_consentimento_id", Uuid(termoId)),
             ("texto", Texto(versao.Texto)), ("base_legal", Texto(versao.BaseLegal)),
             ("forma_aceite", Texto(FormasAceite.ParaTokenCanonico(versao.FormaAceite))), ("hash", Texto(versao.Hash)),

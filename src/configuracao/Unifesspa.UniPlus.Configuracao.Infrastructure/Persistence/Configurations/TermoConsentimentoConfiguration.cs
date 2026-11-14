@@ -29,9 +29,9 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "termo_consentimento",
+            "termos_de_consentimento",
             t => t.HasCheckConstraint(
-                "ck_termo_consentimento_forma_aceite_rascunho",
+                "ck_termos_de_consentimento_forma_aceite_rascunho",
                 $"forma_aceite_rascunho IN ({TokensSql(FormasAceite.TokensCanonicos)})"));
         builder.HasKey(t => t.Id);
 
@@ -80,7 +80,7 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
 
         builder.HasIndex(t => t.Nome)
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_termo_consentimento_nome");
+            .HasDatabaseName("ix_termos_de_consentimento_nome");
     }
 
     private static string TokensSql(IReadOnlyList<string> tokens) =>

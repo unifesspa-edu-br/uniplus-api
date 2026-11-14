@@ -58,7 +58,7 @@ public sealed class TermoConsentimentoRepository : ITermoConsentimentoRepository
     }
 
     // Busca indexada via pg_trgm (issue #1105): ILIKE '%termo%' acelerado
-    // pelo índice GIN de expressão ix_termo_consentimento_nome_trgm sobre
+    // pelo índice GIN de expressão ix_termos_de_consentimento_nome_trgm sobre
     // lower(nome) (script 003_busca_por_proximidade_do_termo.sql) — o
     // opclass gin_trgm_ops também acelera LIKE/ILIKE, não só os operadores
     // de similaridade. Preferido a word_similarity/<%: abaixo do threshold

@@ -50,7 +50,44 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.CreateTable(
-                name: "ato_normativo",
+                name: "atos_da_protecao_do_catalogo",
+                schema: "configuracao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    cadastro = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    item_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    item_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    item_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    ato = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
+                    ciclo = table.Column<int>(type: "integer", nullable: false),
+                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    classificacao_recomendada = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    justificativa = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    diante_de_manifestacao_desfavoravel = table.Column<bool>(type: "boolean", nullable: false),
+                    ator_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    ator_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    ator_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    ordem_de_registro = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityAlwaysColumn)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_atos_da_protecao_do_catalogo", x => x.id);
+                    table.CheckConstraint("ck_atos_da_protecao_do_catalogo_ajuste_com_recomendacao", "ato <> 'AJUSTE_RECOMENDADO' OR classificacao_recomendada IS NOT NULL");
+                    table.CheckConstraint("ck_atos_da_protecao_do_catalogo_ato", "ato IN ('SOLICITACAO', 'APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO', 'ACEITE')");
+                    table.CheckConstraint("ck_atos_da_protecao_do_catalogo_cadastro", "cadastro IN ('TIPO_DOCUMENTO', 'FATO')");
+                    table.CheckConstraint("ck_atos_da_protecao_do_catalogo_ciclo_positivo", "ciclo >= 1");
+                    table.CheckConstraint("ck_atos_da_protecao_do_catalogo_diante_so_na_decisao", "ato IN ('APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO') OR NOT diante_de_manifestacao_desfavoravel");
+                    table.CheckConstraint("ck_atos_da_protecao_do_catalogo_justificativa_ante_desfavoravel", "ato NOT IN ('APROVACAO', 'AJUSTE_RECOMENDADO') OR NOT diante_de_manifestacao_desfavoravel OR justificativa IS NOT NULL");
+                    table.CheckConstraint("ck_atos_da_protecao_do_catalogo_reprovacao_com_justificativa", "ato <> 'REPROVACAO' OR justificativa IS NOT NULL");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "atos_normativos",
                 schema: "publicacoes",
                 columns: table => new
                 {
@@ -75,19 +112,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_ato_normativo", x => x.id);
-                    table.CheckConstraint("ck_ato_normativo_ano_positivo", "ano > 0");
-                    table.CheckConstraint("ck_ato_normativo_documento_hash", "documento_hash ~ '^[0-9a-f]{64}$'");
-                    table.CheckConstraint("ck_ato_normativo_nao_autorretifica", "ato_retificado_id IS NULL OR ato_retificado_id <> id");
-                    table.CheckConstraint("ck_ato_normativo_retificacao_completa", "(ato_retificado_id IS NULL AND motivo_retificacao IS NULL) OR (ato_retificado_id IS NOT NULL AND motivo_retificacao IS NOT NULL AND btrim(motivo_retificacao) <> '')");
-                    table.CheckConstraint("ck_ato_normativo_versao_do_objeto_completa", "(versao_do_objeto_id IS NULL AND versao_do_objeto_hash IS NULL) OR (versao_do_objeto_id IS NOT NULL AND versao_do_objeto_hash IS NOT NULL)");
-                    table.CheckConstraint("ck_ato_normativo_versao_do_objeto_hash", "versao_do_objeto_hash IS NULL OR versao_do_objeto_hash ~ '^[0-9a-f]{64}$'");
-                    table.CheckConstraint("ck_ato_normativo_versao_do_objeto_id_nao_zero", "versao_do_objeto_id IS NULL OR versao_do_objeto_id <> '00000000-0000-0000-0000-000000000000'");
+                    table.PrimaryKey("pk_atos_normativos", x => x.id);
+                    table.CheckConstraint("ck_atos_normativos_ano_positivo", "ano > 0");
+                    table.CheckConstraint("ck_atos_normativos_documento_hash", "documento_hash ~ '^[0-9a-f]{64}$'");
+                    table.CheckConstraint("ck_atos_normativos_nao_autorretifica", "ato_retificado_id IS NULL OR ato_retificado_id <> id");
+                    table.CheckConstraint("ck_atos_normativos_retificacao_completa", "(ato_retificado_id IS NULL AND motivo_retificacao IS NULL) OR (ato_retificado_id IS NOT NULL AND motivo_retificacao IS NOT NULL AND btrim(motivo_retificacao) <> '')");
+                    table.CheckConstraint("ck_atos_normativos_versao_do_objeto_completa", "(versao_do_objeto_id IS NULL AND versao_do_objeto_hash IS NULL) OR (versao_do_objeto_id IS NOT NULL AND versao_do_objeto_hash IS NOT NULL)");
+                    table.CheckConstraint("ck_atos_normativos_versao_do_objeto_hash", "versao_do_objeto_hash IS NULL OR versao_do_objeto_hash ~ '^[0-9a-f]{64}$'");
+                    table.CheckConstraint("ck_atos_normativos_versao_do_objeto_id_nao_zero", "versao_do_objeto_id IS NULL OR versao_do_objeto_id <> '00000000-0000-0000-0000-000000000000'");
                     table.ForeignKey(
-                        name: "fk_ato_normativo_ato_retificado",
+                        name: "fk_atos_normativos_ato_retificado",
                         column: x => x.ato_retificado_id,
                         principalSchema: "publicacoes",
-                        principalTable: "ato_normativo",
+                        principalTable: "atos_normativos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -123,7 +160,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "base_legal_bonus_regional",
+                name: "bases_legais_do_bonus_regional",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -141,12 +178,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_base_legal_bonus_regional", x => x.id);
-                    table.CheckConstraint("CK_base_legal_bonus_regional_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')");
+                    table.PrimaryKey("pk_bases_legais_do_bonus_regional", x => x.id);
+                    table.CheckConstraint("ck_bases_legais_do_bonus_regional_tipo_instrumento", "tipo_instrumento IN ('LEI','DECRETO','PORTARIA','RESOLUCAO','INSTRUCAO_NORMATIVA','PARECER','EDITAL')");
                 });
 
             migrationBuilder.CreateTable(
-                name: "calendario_dias_uteis",
+                name: "calendarios_de_dias_uteis",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -164,7 +201,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_calendario_dias_uteis", x => x.id);
+                    table.PrimaryKey("pk_calendarios_de_dias_uteis", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -211,7 +248,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "categoria_documento",
+                name: "categorias_de_documento",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -230,9 +267,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_categoria_documento", x => x.id);
-                    table.CheckConstraint("ck_categoria_documento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
-                    table.CheckConstraint("ck_categoria_documento_ordem_nao_negativa", "ordem >= 0");
+                    table.PrimaryKey("pk_categorias_de_documento", x => x.id);
+                    table.CheckConstraint("ck_categorias_de_documento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                    table.CheckConstraint("ck_categorias_de_documento_ordem_nao_negativa", "ordem >= 0");
                 });
 
             migrationBuilder.CreateTable(
@@ -302,7 +339,29 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 comment: "Chaves do armazenamento a apagar depois de uma hora: a URL de envio recria o objeto em claro até vencer.");
 
             migrationBuilder.CreateTable(
-                name: "condicao_atendimento_especializado",
+                name: "chaves_de_idempotencia",
+                schema: "plataforma",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    scope = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    endpoint = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    idempotency_key = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    body_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
+                    status = table.Column<short>(type: "smallint", nullable: false),
+                    response_status = table.Column<int>(type: "integer", nullable: true),
+                    response_headers_json = table.Column<string>(type: "jsonb", nullable: true),
+                    encrypted_response_body = table.Column<byte[]>(type: "bytea", nullable: true),
+                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_chaves_de_idempotencia", x => x.id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "condicoes_de_atendimento",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -320,12 +379,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_condicao_atendimento_especializado", x => x.id);
-                    table.CheckConstraint("ck_condicao_atendimento_especializado_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                    table.PrimaryKey("pk_condicoes_de_atendimento", x => x.id);
+                    table.CheckConstraint("ck_condicoes_de_atendimento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
                 });
 
             migrationBuilder.CreateTable(
-                name: "curso",
+                name: "cursos",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -334,7 +393,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     grau = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     nivel_ensino = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    grupo_area_enem = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Código do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), sem abreviação e sem acento, restrito aos quatro grupos pelo CHECK ck_curso_grupo_area_enem. O rótulo fica em grupo_area_enem_rotulo. Nulo quando o curso não declara grupo."),
+                    grupo_area_enem = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Código do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), sem abreviação e sem acento, restrito aos quatro grupos pelo CHECK ck_cursos_grupo_area_enem. O rótulo fica em grupo_area_enem_rotulo. Nulo quando o curso não declara grupo."),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     nome_ordenacao = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, computedColumnSql: "plataforma.normalizar_para_comparacao(nome)", stored: true, collation: "C"),
@@ -347,12 +406,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_curso", x => x.id);
-                    table.CheckConstraint("ck_curso_grupo_area_enem", "grupo_area_enem IS NULL OR grupo_area_enem IN ('TECNOLOGICA', 'HUMANISTICA_I', 'HUMANISTICA_II', 'SAUDE_E_BIOLOGICAS')");
+                    table.PrimaryKey("pk_cursos", x => x.id);
+                    table.CheckConstraint("ck_cursos_grupo_area_enem", "grupo_area_enem IS NULL OR grupo_area_enem IN ('TECNOLOGICA', 'HUMANISTICA_I', 'HUMANISTICA_II', 'SAUDE_E_BIOLOGICAS')");
                 });
 
             migrationBuilder.CreateTable(
-                name: "fase_canonica",
+                name: "fases_canonicas",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -379,34 +438,77 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_fase_canonica", x => x.id);
-                    table.CheckConstraint("ck_fase_canonica_agrupa_etapas", "agrupa_etapas = false OR codigo = 'AVALIACAO'");
-                    table.CheckConstraint("ck_fase_canonica_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
-                    table.CheckConstraint("ck_fase_canonica_codigo_formato", "codigo ~ '^[A-Z_]+$'");
-                    table.CheckConstraint("ck_fase_canonica_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO', 'RECURSOS')");
-                    table.CheckConstraint("ck_fase_canonica_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')");
+                    table.PrimaryKey("pk_fases_canonicas", x => x.id);
+                    table.CheckConstraint("ck_fases_canonicas_agrupa_etapas", "agrupa_etapas = false OR codigo = 'AVALIACAO'");
+                    table.CheckConstraint("ck_fases_canonicas_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                    table.CheckConstraint("ck_fases_canonicas_codigo_formato", "codigo ~ '^[A-Z_]+$'");
+                    table.CheckConstraint("ck_fases_canonicas_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO', 'RECURSOS')");
+                    table.CheckConstraint("ck_fases_canonicas_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')");
                 });
 
             migrationBuilder.CreateTable(
-                name: "idempotency_cache",
-                schema: "plataforma",
+                name: "fatos_do_candidato",
+                schema: "configuracao",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    scope = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    endpoint = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    idempotency_key = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    body_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    status = table.Column<short>(type: "smallint", nullable: false),
-                    response_status = table.Column<int>(type: "integer", nullable: true),
-                    response_headers_json = table.Column<string>(type: "jsonb", nullable: true),
-                    encrypted_response_body = table.Column<byte[]>(type: "bytea", nullable: true),
-                    expires_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                    codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
+                    componente_exibicao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    dominio = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    origem = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    cardinalidade = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    fonte_valores = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    ponto_resolucao = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    binding = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    formato = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    escopo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
+                    sistema = table.Column<bool>(type: "boolean", nullable: false),
+                    protecao_situacao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    protecao_ciclo = table.Column<int>(type: "integer", nullable: false),
+                    protecao_solicitada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    protecao_solicitada_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    protecao_decidida_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    protecao_decidida_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    protecao_recomendada = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
+                    protecao_justificativa = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    protecao_aceita_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    protecao_aceita_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    protecao_manifestada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    protecao_manifestacao_desfavoravel = table.Column<bool>(type: "boolean", nullable: false),
+                    protecao_manifestacoes_no_ciclo = table.Column<int>(type: "integer", nullable: false),
+                    ativo = table.Column<bool>(type: "boolean", nullable: false),
+                    regras_padrao = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb"),
+                    dependencias = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]"),
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_idempotency_cache", x => x.id);
+                    table.PrimaryKey("pk_fatos_do_candidato", x => x.id);
+                    table.CheckConstraint("ck_fatos_do_candidato_cardinalidade", "cardinalidade IN ('ESCALAR', 'MULTIVALORADO')");
+                    table.CheckConstraint("ck_fatos_do_candidato_classificacao_minima_do_dominio", "(dominio NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') OR (dominio = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) OR (dominio IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
+                    table.CheckConstraint("ck_fatos_do_candidato_classificacao_protecao", "classificacao_protecao IN ('PUBLICO', 'INTERNO', 'PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')");
+                    table.CheckConstraint("ck_fatos_do_candidato_componente_exibicao", "componente_exibicao IS NULL OR componente_exibicao IN ('MOEDA', 'SITUACAO')");
+                    table.CheckConstraint("ck_fatos_do_candidato_dominio", "dominio IN ('CATEGORICO', 'BOOLEANO', 'NUMERICO', 'TEXTO', 'DATA', 'ENDERECO')");
+                    table.CheckConstraint("ck_fatos_do_candidato_escopo", "escopo IN ('CANDIDATO', 'MEMBRO_GRUPO')");
+                    table.CheckConstraint("ck_fatos_do_candidato_fonte_valores_coerente", "(dominio = 'CATEGORICO' AND fonte_valores IS NOT NULL AND fonte_valores IN ('GLOBAL', 'PROCESSO', 'MODALIDADE', 'MUNICIPIOS_BONUS', 'GEO_UF', 'GEO_MUNICIPIO', 'TIPOS_DEFICIENCIA')) OR (dominio <> 'CATEGORICO' AND fonte_valores IS NULL)");
+                    table.CheckConstraint("ck_fatos_do_candidato_formato_coerente", "(dominio = 'TEXTO' AND formato IS NOT NULL AND formato IN ('LIVRE', 'CPF', 'EMAIL', 'TELEFONE', 'CEP', 'NOME_PESSOA')) OR (dominio <> 'TEXTO' AND formato IS NULL)");
+                    table.CheckConstraint("ck_fatos_do_candidato_hipotese_legal", "hipotese_legal IN ('CONSENTIMENTO', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'EXECUCAO_POLITICAS_PUBLICAS', 'ESTUDOS_POR_ORGAO_DE_PESQUISA', 'EXECUCAO_CONTRATO', 'EXERCICIO_REGULAR_DE_DIREITOS', 'PROTECAO_DA_VIDA', 'TUTELA_DA_SAUDE', 'INTERESSE_LEGITIMO', 'PROTECAO_DO_CREDITO', 'PREVENCAO_A_FRAUDE')");
+                    table.CheckConstraint("ck_fatos_do_candidato_origem", "origem IN ('DERIVADO', 'DECLARADO', 'INTEGRACAO')");
+                    table.CheckConstraint("ck_fatos_do_candidato_protecao_ajuste_com_recomendacao", "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
+                    table.CheckConstraint("ck_fatos_do_candidato_protecao_ciclo_positivo", "protecao_ciclo >= 1");
+                    table.CheckConstraint("ck_fatos_do_candidato_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
+                    table.CheckConstraint("ck_fatos_do_candidato_protecao_manifestacoes_contadas", "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
+                    table.CheckConstraint("ck_fatos_do_candidato_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
+                    table.CheckConstraint("ck_fatos_do_candidato_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
                 });
 
             migrationBuilder.CreateTable(
@@ -489,6 +591,42 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "manifestacoes_da_protecao",
+                schema: "configuracao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ciclo = table.Column<int>(type: "integer", nullable: false),
+                    parecer = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    texto = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
+                    substitui_id = table.Column<Guid>(type: "uuid", nullable: true),
+                    instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    ordem_de_registro = table.Column<long>(type: "bigint", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityAlwaysColumn),
+                    autor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    autor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    autor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    cadastro = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    item_id = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_manifestacoes_da_protecao", x => x.id);
+                    table.CheckConstraint("ck_manifestacoes_da_protecao_cadastro", "cadastro IN ('TIPO_DOCUMENTO', 'FATO')");
+                    table.CheckConstraint("ck_manifestacoes_da_protecao_ciclo_positivo", "ciclo >= 1");
+                    table.CheckConstraint("ck_manifestacoes_da_protecao_parecer", "parecer IN ('ADEQUADA', 'RECOMENDA_AJUSTE', 'INADEQUADA')");
+                    table.CheckConstraint("ck_manifestacoes_da_protecao_substitui_outra", "substitui_id IS NULL OR substitui_id <> id");
+                    table.CheckConstraint("ck_manifestacoes_da_protecao_texto_no_desfavoravel", "parecer = 'ADEQUADA' OR texto IS NOT NULL");
+                    table.ForeignKey(
+                        name: "fk_manifestacoes_da_protecao_substitui",
+                        column: x => x.substitui_id,
+                        principalSchema: "configuracao",
+                        principalTable: "manifestacoes_da_protecao",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "matriculas",
                 schema: "ingresso",
                 columns: table => new
@@ -511,7 +649,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "modalidade",
+                name: "modalidades",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -536,13 +674,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_modalidade", x => x.id);
-                    table.CheckConstraint("ck_modalidade_acao_quando_indeferido", "acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ('RECLASSIFICAR_AC', 'RECLASSIFICAR_REGRA_EDITAL')");
-                    table.CheckConstraint("ck_modalidade_codigo_formato", "codigo ~ '^[A-Z0-9_]+$'");
-                    table.CheckConstraint("ck_modalidade_composicao_vagas", "composicao_vagas IN ('RESIDUAL_DO_VO', 'DENTRO_DO_VR', 'RETIRA_DE', 'SUPLEMENTAR_AO_TOTAL')");
-                    table.CheckConstraint("ck_modalidade_natureza_legal", "natureza_legal IN ('COTA_RESERVADA', 'AMPLA', 'ACAO_AFIRMATIVA')");
-                    table.CheckConstraint("ck_modalidade_regra_remanejamento", "regra_remanejamento IS NULL OR regra_remanejamento IN ('SEGUE_CASCATA', 'DESTINO_UNICO', 'CRUZADO')");
-                    table.CheckConstraint("ck_modalidade_retira_de_origem", "(composicao_vagas = 'RETIRA_DE') = (composicao_origem IS NOT NULL)");
+                    table.PrimaryKey("pk_modalidades", x => x.id);
+                    table.CheckConstraint("ck_modalidades_acao_quando_indeferido", "acao_quando_indeferido IS NULL OR acao_quando_indeferido IN ('RECLASSIFICAR_AC', 'RECLASSIFICAR_REGRA_EDITAL')");
+                    table.CheckConstraint("ck_modalidades_codigo_formato", "codigo ~ '^[A-Z0-9_]+$'");
+                    table.CheckConstraint("ck_modalidades_composicao_vagas", "composicao_vagas IN ('RESIDUAL_DO_VO', 'DENTRO_DO_VR', 'RETIRA_DE', 'SUPLEMENTAR_AO_TOTAL')");
+                    table.CheckConstraint("ck_modalidades_natureza_legal", "natureza_legal IN ('COTA_RESERVADA', 'AMPLA', 'ACAO_AFIRMATIVA')");
+                    table.CheckConstraint("ck_modalidades_regra_remanejamento", "regra_remanejamento IS NULL OR regra_remanejamento IN ('SEGUE_CASCATA', 'DESTINO_UNICO', 'CRUZADO')");
+                    table.CheckConstraint("ck_modalidades_retira_de_origem", "(composicao_vagas = 'RETIRA_DE') = (composicao_origem IS NOT NULL)");
                 });
 
             migrationBuilder.CreateTable(
@@ -670,13 +808,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "peso_area_enem",
+                name: "pesos_por_area_do_enem",
                 schema: "configuracao",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     resolucao = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
-                    grupo_curso = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Código do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), sem abreviação e sem acento, restrito aos quatro grupos pelo CHECK ck_peso_area_enem_grupo_curso; com a resolução, forma a chave de negócio da linha. O rótulo fica em grupo_curso_rotulo."),
+                    grupo_curso = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false, comment: "Código do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), sem abreviação e sem acento, restrito aos quatro grupos pelo CHECK ck_pesos_por_area_do_enem_grupo_curso; com a resolução, forma a chave de negócio da linha. O rótulo fica em grupo_curso_rotulo."),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
@@ -689,12 +827,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_peso_area_enem", x => x.id);
-                    table.CheckConstraint("ck_peso_area_enem_grupo_curso", "grupo_curso IN ('TECNOLOGICA', 'HUMANISTICA_I', 'HUMANISTICA_II', 'SAUDE_E_BIOLOGICAS')");
+                    table.PrimaryKey("pk_pesos_por_area_do_enem", x => x.id);
+                    table.CheckConstraint("ck_pesos_por_area_do_enem_grupo_curso", "grupo_curso IN ('TECNOLOGICA', 'HUMANISTICA_I', 'HUMANISTICA_II', 'SAUDE_E_BIOLOGICAS')");
                 });
 
             migrationBuilder.CreateTable(
-                name: "precedencia_fase",
+                name: "precedencias_entre_fases",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -712,12 +850,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_precedencia_fase", x => x.id);
-                    table.CheckConstraint("ck_precedencia_fase_antecessora_canonica", "antecessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
-                    table.CheckConstraint("ck_precedencia_fase_antecessora_formato", "antecessora_codigo ~ '^[A-Z_]+$'");
-                    table.CheckConstraint("ck_precedencia_fase_sem_self_loop", "antecessora_codigo <> sucessora_codigo");
-                    table.CheckConstraint("ck_precedencia_fase_sucessora_canonica", "sucessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
-                    table.CheckConstraint("ck_precedencia_fase_sucessora_formato", "sucessora_codigo ~ '^[A-Z_]+$'");
+                    table.PrimaryKey("pk_precedencias_entre_fases", x => x.id);
+                    table.CheckConstraint("ck_precedencias_entre_fases_antecessora_canonica", "antecessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                    table.CheckConstraint("ck_precedencias_entre_fases_antecessora_formato", "antecessora_codigo ~ '^[A-Z_]+$'");
+                    table.CheckConstraint("ck_precedencias_entre_fases_sem_self_loop", "antecessora_codigo <> sucessora_codigo");
+                    table.CheckConstraint("ck_precedencias_entre_fases_sucessora_canonica", "sucessora_codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
+                    table.CheckConstraint("ck_precedencias_entre_fases_sucessora_formato", "sucessora_codigo ~ '^[A-Z_]+$'");
                 });
 
             migrationBuilder.CreateTable(
@@ -744,9 +882,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     localidade_codigo_ibge = table.Column<string>(type: "character(7)", fixedLength: true, maxLength: 7, nullable: false, comment: "Código IBGE do município cujo calendário rege a contagem dos prazos — o único valor normativo da localidade."),
                     localidade_nome = table.Column<string>(type: "character varying(150)", maxLength: 150, nullable: false, comment: "Nome do município da localidade regente — cache de exibição, não entra em cálculo de prazo."),
                     localidade_uf = table.Column<string>(type: "character(2)", fixedLength: true, maxLength: 2, nullable: false, comment: "UF da localidade regente — cache de exibição; a UF que vale é a derivada do prefixo do código."),
-                    algoritmo_contagem_prazo_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true, comment: "Código da entrada de algoritmo de contagem do rol_de_regras que o certame declarou."),
+                    algoritmo_contagem_prazo_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true, comment: "Código da entrada de algoritmo de contagem do catálogo de regras que o certame declarou."),
                     algoritmo_contagem_prazo_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true, comment: "Versão da entrada declarada — evolução da convenção é versão nova, nunca alteração da vigente."),
-                    algoritmo_contagem_prazo_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true, comment: "Hash da definição resolvida no rol_de_regras — é o que prova que a convenção aplicada não mudou depois."),
+                    algoritmo_contagem_prazo_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true, comment: "Hash da definição resolvida no catálogo de regras — é o que prova que a convenção aplicada não mudou depois."),
                     referencia_temporal_fatos_tipo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     referencia_temporal_fatos_data = table.Column<DateOnly>(type: "date", nullable: true),
                     referencia_temporal_fatos_fase_id = table.Column<Guid>(type: "uuid", nullable: true),
@@ -766,80 +904,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "protecao_do_catalogo_atos",
-                schema: "configuracao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    cadastro = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    item_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    item_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    item_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    ato = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
-                    ciclo = table.Column<int>(type: "integer", nullable: false),
-                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    classificacao_recomendada = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    justificativa = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
-                    diante_de_manifestacao_desfavoravel = table.Column<bool>(type: "boolean", nullable: false),
-                    ator_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    ator_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    ator_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    ordem_de_registro = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityAlwaysColumn)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_protecao_do_catalogo_atos", x => x.id);
-                    table.CheckConstraint("ck_protecao_do_catalogo_atos_ajuste_com_recomendacao", "ato <> 'AJUSTE_RECOMENDADO' OR classificacao_recomendada IS NOT NULL");
-                    table.CheckConstraint("ck_protecao_do_catalogo_atos_ato", "ato IN ('SOLICITACAO', 'APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO', 'ACEITE')");
-                    table.CheckConstraint("ck_protecao_do_catalogo_atos_cadastro", "cadastro IN ('TIPO_DOCUMENTO', 'FATO')");
-                    table.CheckConstraint("ck_protecao_do_catalogo_atos_ciclo_positivo", "ciclo >= 1");
-                    table.CheckConstraint("ck_protecao_do_catalogo_atos_diante_so_na_decisao", "ato IN ('APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO') OR NOT diante_de_manifestacao_desfavoravel");
-                    table.CheckConstraint("ck_protecao_do_catalogo_atos_justificativa_diante_desfavoravel", "ato NOT IN ('APROVACAO', 'AJUSTE_RECOMENDADO') OR NOT diante_de_manifestacao_desfavoravel OR justificativa IS NOT NULL");
-                    table.CheckConstraint("ck_protecao_do_catalogo_atos_reprovacao_com_justificativa", "ato <> 'REPROVACAO' OR justificativa IS NOT NULL");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "protecao_do_catalogo_manifestacoes",
-                schema: "configuracao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ciclo = table.Column<int>(type: "integer", nullable: false),
-                    parecer = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    texto = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
-                    substitui_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    ordem_de_registro = table.Column<long>(type: "bigint", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityAlwaysColumn),
-                    autor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    autor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    autor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    cadastro = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    item_id = table.Column<Guid>(type: "uuid", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_protecao_do_catalogo_manifestacoes", x => x.id);
-                    table.CheckConstraint("ck_protecao_do_catalogo_manifestacoes_cadastro", "cadastro IN ('TIPO_DOCUMENTO', 'FATO')");
-                    table.CheckConstraint("ck_protecao_do_catalogo_manifestacoes_ciclo_positivo", "ciclo >= 1");
-                    table.CheckConstraint("ck_protecao_do_catalogo_manifestacoes_parecer", "parecer IN ('ADEQUADA', 'RECOMENDA_AJUSTE', 'INADEQUADA')");
-                    table.CheckConstraint("ck_protecao_do_catalogo_manifestacoes_substitui_outra", "substitui_id IS NULL OR substitui_id <> id");
-                    table.CheckConstraint("ck_protecao_do_catalogo_manifestacoes_texto_no_desfavoravel", "parecer = 'ADEQUADA' OR texto IS NOT NULL");
-                    table.ForeignKey(
-                        name: "fk_protecao_do_catalogo_manifestacoes_substitui",
-                        column: x => x.substitui_id,
-                        principalSchema: "configuracao",
-                        principalTable: "protecao_do_catalogo_manifestacoes",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "recurso_acessibilidade",
+                name: "recursos_de_acessibilidade",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -857,12 +922,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_recurso_acessibilidade", x => x.id);
-                    table.CheckConstraint("ck_recurso_acessibilidade_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                    table.PrimaryKey("pk_recursos_de_acessibilidade", x => x.id);
+                    table.CheckConstraint("ck_recursos_de_acessibilidade_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
                 });
 
             migrationBuilder.CreateTable(
-                name: "referencia_reserva_demografica",
+                name: "referencias_demograficas",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -882,10 +947,31 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_referencia_reserva_demografica", x => x.id);
-                    table.CheckConstraint("ck_referencia_reserva_demografica_pcd_percentual", "pcd_percentual >= 0 AND pcd_percentual <= 100");
-                    table.CheckConstraint("ck_referencia_reserva_demografica_ppi_percentual", "ppi_percentual >= 0 AND ppi_percentual <= 100");
-                    table.CheckConstraint("ck_referencia_reserva_demografica_quilombola_percentual", "quilombola_percentual >= 0 AND quilombola_percentual <= 100");
+                    table.PrimaryKey("pk_referencias_demograficas", x => x.id);
+                    table.CheckConstraint("ck_referencias_demograficas_pcd_percentual", "pcd_percentual >= 0 AND pcd_percentual <= 100");
+                    table.CheckConstraint("ck_referencias_demograficas_ppi_percentual", "ppi_percentual >= 0 AND ppi_percentual <= 100");
+                    table.CheckConstraint("ck_referencias_demograficas_quilombola_percentual", "quilombola_percentual >= 0 AND quilombola_percentual <= 100");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "regras_do_catalogo",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    tipo = table.Column<string>(type: "character varying(48)", maxLength: 48, nullable: false),
+                    esquema_args = table.Column<string>(type: "jsonb", nullable: false),
+                    invariantes = table.Column<string>(type: "jsonb", nullable: false),
+                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
+                    hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_regras_do_catalogo", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
@@ -908,93 +994,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "rol_de_fatos_candidato",
-                schema: "configuracao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
-                    componente_exibicao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    dominio = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    origem = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    cardinalidade = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    fonte_valores = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    ponto_resolucao = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    binding = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    formato = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    escopo = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
-                    sistema = table.Column<bool>(type: "boolean", nullable: false),
-                    protecao_situacao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    protecao_ciclo = table.Column<int>(type: "integer", nullable: false),
-                    protecao_solicitada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    protecao_solicitada_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    protecao_decidida_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    protecao_decidida_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    protecao_recomendada = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
-                    protecao_justificativa = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
-                    protecao_aceita_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    protecao_aceita_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    protecao_manifestada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    protecao_manifestacao_desfavoravel = table.Column<bool>(type: "boolean", nullable: false),
-                    protecao_manifestacoes_no_ciclo = table.Column<int>(type: "integer", nullable: false),
-                    ativo = table.Column<bool>(type: "boolean", nullable: false),
-                    regras_padrao = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb"),
-                    dependencias = table.Column<string[]>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]"),
-                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_rol_de_fatos_candidato", x => x.id);
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_cardinalidade", "cardinalidade IN ('ESCALAR', 'MULTIVALORADO')");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_classificacao_minima_do_dominio", "(dominio NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') OR (dominio = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) OR (dominio IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_classificacao_protecao", "classificacao_protecao IN ('PUBLICO', 'INTERNO', 'PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_componente_exibicao", "componente_exibicao IS NULL OR componente_exibicao IN ('MOEDA', 'SITUACAO')");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_dominio", "dominio IN ('CATEGORICO', 'BOOLEANO', 'NUMERICO', 'TEXTO', 'DATA', 'ENDERECO')");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_escopo", "escopo IN ('CANDIDATO', 'MEMBRO_GRUPO')");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_fonte_valores_coerente", "(dominio = 'CATEGORICO' AND fonte_valores IS NOT NULL AND fonte_valores IN ('GLOBAL', 'PROCESSO', 'MODALIDADE', 'MUNICIPIOS_BONUS', 'GEO_UF', 'GEO_MUNICIPIO', 'TIPOS_DEFICIENCIA')) OR (dominio <> 'CATEGORICO' AND fonte_valores IS NULL)");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_formato_coerente", "(dominio = 'TEXTO' AND formato IS NOT NULL AND formato IN ('LIVRE', 'CPF', 'EMAIL', 'TELEFONE', 'CEP', 'NOME_PESSOA')) OR (dominio <> 'TEXTO' AND formato IS NULL)");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_hipotese_legal", "hipotese_legal IN ('CONSENTIMENTO', 'CUMPRIMENTO_OBRIGACAO_LEGAL', 'EXECUCAO_POLITICAS_PUBLICAS', 'ESTUDOS_POR_ORGAO_DE_PESQUISA', 'EXECUCAO_CONTRATO', 'EXERCICIO_REGULAR_DE_DIREITOS', 'PROTECAO_DA_VIDA', 'TUTELA_DA_SAUDE', 'INTERESSE_LEGITIMO', 'PROTECAO_DO_CREDITO', 'PREVENCAO_A_FRAUDE')");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_origem", "origem IN ('DERIVADO', 'DECLARADO', 'INTEGRACAO')");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_protecao_ajuste_com_recomendacao", "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_protecao_ciclo_positivo", "protecao_ciclo >= 1");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_protecao_manifestacoes_contadas", "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
-                    table.CheckConstraint("ck_rol_de_fatos_candidato_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "rol_de_regras",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
-                    tipo = table.Column<string>(type: "character varying(48)", maxLength: 48, nullable: false),
-                    esquema_args = table.Column<string>(type: "jsonb", nullable: false),
-                    invariantes = table.Column<string>(type: "jsonb", nullable: false),
-                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_rol_de_regras", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "sync_run",
+                name: "sincronizacoes_com_o_sigaa",
                 schema: "discentes",
                 columns: table => new
                 {
@@ -1012,12 +1012,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_sync_run", x => x.id);
+                    table.PrimaryKey("pk_sincronizacoes_com_o_sigaa", x => x.id);
                 },
                 comment: "Controle de execução das rotinas de sincronização de dados discentes com o SIGAA — uma linha por execução.");
 
             migrationBuilder.CreateTable(
-                name: "termo_consentimento",
+                name: "termos_de_consentimento",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -1040,12 +1040,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_termo_consentimento", x => x.id);
-                    table.CheckConstraint("ck_termo_consentimento_forma_aceite_rascunho", "forma_aceite_rascunho IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
+                    table.PrimaryKey("pk_termos_de_consentimento", x => x.id);
+                    table.CheckConstraint("ck_termos_de_consentimento_forma_aceite_rascunho", "forma_aceite_rascunho IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
                 });
 
             migrationBuilder.CreateTable(
-                name: "tipo_ato_publicado",
+                name: "tipos_de_ato_publicado",
                 schema: "publicacoes",
                 columns: table => new
                 {
@@ -1071,13 +1071,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_tipo_ato_publicado", x => x.id);
-                    table.CheckConstraint("ck_tipo_ato_publicado_codigo_formato", "codigo ~ '^[A-Z]+(_[A-Z]+)*$'");
-                    table.CheckConstraint("ck_tipo_ato_publicado_vigencia", "vigencia_fim IS NULL OR vigencia_fim > vigencia_inicio");
+                    table.PrimaryKey("pk_tipos_de_ato_publicado", x => x.id);
+                    table.CheckConstraint("ck_tipos_de_ato_publicado_codigo_formato", "codigo ~ '^[A-Z]+(_[A-Z]+)*$'");
+                    table.CheckConstraint("ck_tipos_de_ato_publicado_vigencia", "vigencia_fim IS NULL OR vigencia_fim > vigencia_inicio");
                 });
 
             migrationBuilder.CreateTable(
-                name: "tipo_banca",
+                name: "tipos_de_banca",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -1096,13 +1096,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_tipo_banca", x => x.id);
-                    table.CheckConstraint("ck_tipo_banca_codigo_canonico", "codigo IN ('BANCA_ANALISE_DOCUMENTAL', 'BANCA_ENTREVISTA', 'BANCA_CORRECAO_REDACOES', 'BANCA_ANALISE_RECURSOS', 'BANCA_HETEROIDENTIFICACAO', 'BANCA_BIOPSICOSSOCIAL')");
-                    table.CheckConstraint("ck_tipo_banca_codigo_formato", "codigo ~ '^[A-Z_]+$'");
+                    table.PrimaryKey("pk_tipos_de_banca", x => x.id);
+                    table.CheckConstraint("ck_tipos_de_banca_codigo_canonico", "codigo IN ('BANCA_ANALISE_DOCUMENTAL', 'BANCA_ENTREVISTA', 'BANCA_CORRECAO_REDACOES', 'BANCA_ANALISE_RECURSOS', 'BANCA_HETEROIDENTIFICACAO', 'BANCA_BIOPSICOSSOCIAL')");
+                    table.CheckConstraint("ck_tipos_de_banca_codigo_formato", "codigo ~ '^[A-Z_]+$'");
                 });
 
             migrationBuilder.CreateTable(
-                name: "tipo_deficiencia",
+                name: "tipos_de_deficiencia",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -1121,12 +1121,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_tipo_deficiencia", x => x.id);
-                    table.CheckConstraint("ck_tipo_deficiencia_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                    table.PrimaryKey("pk_tipos_de_deficiencia", x => x.id);
+                    table.CheckConstraint("ck_tipos_de_deficiencia_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
                 });
 
             migrationBuilder.CreateTable(
-                name: "tipo_documento",
+                name: "tipos_de_documento",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -1165,17 +1165,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_tipo_documento", x => x.id);
-                    table.CheckConstraint("ck_tipo_documento_categoria_formato", "categoria ~ '^[A-Z][A-Z0-9_]{1,49}$'");
-                    table.CheckConstraint("ck_tipo_documento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
-                    table.CheckConstraint("ck_tipo_documento_equivalente_diferente_codigo", "tipo_equivalente IS NULL OR tipo_equivalente <> codigo");
-                    table.CheckConstraint("ck_tipo_documento_protecao_ajuste_com_recomendacao", "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
-                    table.CheckConstraint("ck_tipo_documento_protecao_ciclo_positivo", "protecao_ciclo >= 1");
-                    table.CheckConstraint("ck_tipo_documento_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
-                    table.CheckConstraint("ck_tipo_documento_protecao_manifestacoes_contadas", "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
-                    table.CheckConstraint("ck_tipo_documento_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
-                    table.CheckConstraint("ck_tipo_documento_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
-                    table.CheckConstraint("ck_tipo_documento_tamanho_maximo_mb_positivo", "tamanho_maximo_mb IS NULL OR tamanho_maximo_mb > 0");
+                    table.PrimaryKey("pk_tipos_de_documento", x => x.id);
+                    table.CheckConstraint("ck_tipos_de_documento_categoria_formato", "categoria ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                    table.CheckConstraint("ck_tipos_de_documento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
+                    table.CheckConstraint("ck_tipos_de_documento_equivalente_diferente_codigo", "tipo_equivalente IS NULL OR tipo_equivalente <> codigo");
+                    table.CheckConstraint("ck_tipos_de_documento_protecao_ajuste_com_recomendacao", "protecao_situacao <> 'AJUSTE_RECOMENDADO' OR protecao_recomendada IS NOT NULL");
+                    table.CheckConstraint("ck_tipos_de_documento_protecao_ciclo_positivo", "protecao_ciclo >= 1");
+                    table.CheckConstraint("ck_tipos_de_documento_protecao_desfavoravel_manifestada", "NOT protecao_manifestacao_desfavoravel OR protecao_manifestada_em IS NOT NULL");
+                    table.CheckConstraint("ck_tipos_de_documento_protecao_manifestacoes_contadas", "protecao_manifestacoes_no_ciclo >= 0 AND (protecao_manifestacoes_no_ciclo = 0) = (protecao_manifestada_em IS NULL)");
+                    table.CheckConstraint("ck_tipos_de_documento_protecao_reprovada_com_justificativa", "protecao_situacao <> 'REPROVADA' OR protecao_justificativa IS NOT NULL");
+                    table.CheckConstraint("ck_tipos_de_documento_protecao_situacao", "protecao_situacao IN ('PENDENTE', 'SOLICITADA', 'APROVADA', 'AJUSTE_RECOMENDADO', 'REPROVADA')");
+                    table.CheckConstraint("ck_tipos_de_documento_tamanho_maximo_mb_positivo", "tamanho_maximo_mb IS NULL OR tamanho_maximo_mb > 0");
                 });
 
             migrationBuilder.CreateTable(
@@ -1225,7 +1225,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "unidade",
+                name: "unidades",
                 schema: "organizacao",
                 columns: table => new
                 {
@@ -1253,19 +1253,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_unidade", x => x.id);
-                    table.CheckConstraint("ck_unidade_cidade_completa", "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)");
+                    table.PrimaryKey("pk_unidades", x => x.id);
+                    table.CheckConstraint("ck_unidades_cidade_completa", "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)");
                     table.ForeignKey(
-                        name: "fk_unidade_unidade_unidade_superior_id",
+                        name: "fk_unidades_unidades_unidade_superior_id",
                         column: x => x.unidade_superior_id,
                         principalSchema: "organizacao",
-                        principalTable: "unidade",
+                        principalTable: "unidades",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "vinculo_discente",
+                name: "vinculos_de_discentes",
                 schema: "discentes",
                 columns: table => new
                 {
@@ -1289,12 +1289,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_vinculo_discente", x => x.id);
+                    table.PrimaryKey("pk_vinculos_de_discentes", x => x.id);
                 },
                 comment: "Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0121) — snapshot desnormalizado, sem referência viva a outras tabelas.");
 
             migrationBuilder.CreateTable(
-                name: "anexo_do_ato",
+                name: "anexos_do_ato",
                 schema: "publicacoes",
                 columns: table => new
                 {
@@ -1307,16 +1307,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_anexo_do_ato", x => x.id);
-                    table.CheckConstraint("ck_anexo_do_ato_hash", "hash ~ '^[0-9a-f]{64}$'");
-                    table.CheckConstraint("ck_anexo_do_ato_nome", "btrim(nome) <> ''");
-                    table.CheckConstraint("ck_anexo_do_ato_ordem", "ordem >= 0");
-                    table.CheckConstraint("ck_anexo_do_ato_tipo_midia", "tipo_midia ~ '^[a-z0-9][a-z0-9.+_-]*/[a-z0-9][a-z0-9.+_-]*$'");
+                    table.PrimaryKey("pk_anexos_do_ato", x => x.id);
+                    table.CheckConstraint("ck_anexos_do_ato_hash", "hash ~ '^[0-9a-f]{64}$'");
+                    table.CheckConstraint("ck_anexos_do_ato_nome", "btrim(nome) <> ''");
+                    table.CheckConstraint("ck_anexos_do_ato_ordem", "ordem >= 0");
+                    table.CheckConstraint("ck_anexos_do_ato_tipo_midia", "tipo_midia ~ '^[a-z0-9][a-z0-9.+_-]*/[a-z0-9][a-z0-9.+_-]*$'");
                     table.ForeignKey(
-                        name: "fk_anexo_do_ato_ato",
+                        name: "fk_anexos_do_ato_ato",
                         column: x => x.ato_id,
                         principalSchema: "publicacoes",
-                        principalTable: "ato_normativo",
+                        principalTable: "atos_normativos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1343,20 +1343,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         name: "fk_vagas_de_linhagem_ato",
                         column: x => x.ato_id,
                         principalSchema: "publicacoes",
-                        principalTable: "ato_normativo",
+                        principalTable: "atos_normativos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "fk_vagas_de_linhagem_raiz",
                         column: x => x.raiz_id,
                         principalSchema: "publicacoes",
-                        principalTable: "ato_normativo",
+                        principalTable: "atos_normativos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "vinculo_ato_entidade",
+                name: "vinculos_do_ato_com_entidade",
                 schema: "publicacoes",
                 columns: table => new
                 {
@@ -1367,20 +1367,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_vinculo_ato_entidade", x => x.id);
-                    table.CheckConstraint("ck_vinculo_ato_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
-                    table.CheckConstraint("ck_vinculo_ato_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
+                    table.PrimaryKey("pk_vinculos_do_ato_com_entidade", x => x.id);
+                    table.CheckConstraint("ck_vinculos_do_ato_com_entidade_id_nao_zero", "entidade_id <> '00000000-0000-0000-0000-000000000000'");
+                    table.CheckConstraint("ck_vinculos_do_ato_com_entidade_tipo_formato", "entidade_tipo ~ '^[A-Z0-9]+(_[A-Z0-9]+)*$'");
                     table.ForeignKey(
-                        name: "fk_vinculo_ato_entidade_ato",
+                        name: "fk_vinculos_do_ato_com_entidade_ato",
                         column: x => x.ato_id,
                         principalSchema: "publicacoes",
-                        principalTable: "ato_normativo",
+                        principalTable: "atos_normativos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "base_legal_bonus_regional_municipio",
+                name: "municipios_da_base_legal_bonus",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -1393,19 +1393,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_base_legal_bonus_regional_municipio", x => new { x.base_legal_bonus_regional_id, x.id });
-                    table.CheckConstraint("CK_base_legal_bonus_regional_municipio_codigo_ibge", "codigo_ibge ~ '^[0-9]{7}$'");
+                    table.PrimaryKey("pk_municipios_da_base_legal_bonus", x => new { x.base_legal_bonus_regional_id, x.id });
+                    table.CheckConstraint("ck_municipios_da_base_legal_bonus_codigo_ibge", "codigo_ibge ~ '^[0-9]{7}$'");
                     table.ForeignKey(
-                        name: "fk_base_legal_bonus_regional_municipio_base_legal_bonus_region",
+                        name: "fk_municipios_da_base_legal_bonus_bases_legais_do_bonus_region",
                         column: x => x.base_legal_bonus_regional_id,
                         principalSchema: "configuracao",
-                        principalTable: "base_legal_bonus_regional",
+                        principalTable: "bases_legais_do_bonus_regional",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "dia_nao_util",
+                name: "dias_nao_uteis",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -1423,19 +1423,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_dia_nao_util", x => x.id);
-                    table.CheckConstraint("ck_dia_nao_util_municipio_coerente", "(abrangencia = 'MUNICIPAL') = (municipio_ibge IS NOT NULL) AND (abrangencia = 'MUNICIPAL') = (municipio_nome IS NOT NULL) AND (abrangencia = 'MUNICIPAL') = (municipio_uf IS NOT NULL)");
-                    table.CheckConstraint("ck_dia_nao_util_uf_coerente", "(abrangencia = 'ESTADUAL') = (uf IS NOT NULL)");
+                    table.PrimaryKey("pk_dias_nao_uteis", x => x.id);
+                    table.CheckConstraint("ck_dias_nao_uteis_municipio_coerente", "(abrangencia = 'MUNICIPAL') = (municipio_ibge IS NOT NULL) AND (abrangencia = 'MUNICIPAL') = (municipio_nome IS NOT NULL) AND (abrangencia = 'MUNICIPAL') = (municipio_uf IS NOT NULL)");
+                    table.CheckConstraint("ck_dias_nao_uteis_uf_coerente", "(abrangencia = 'ESTADUAL') = (uf IS NOT NULL)");
                     table.ForeignKey(
-                        name: "fk_dia_nao_util_calendario_dias_uteis_calendario_dias_uteis_id",
+                        name: "fk_dias_nao_uteis_calendarios_de_dias_uteis_calendario_dias_ut",
                         column: x => x.calendario_dias_uteis_id,
                         principalSchema: "configuracao",
-                        principalTable: "calendario_dias_uteis",
+                        principalTable: "calendarios_de_dias_uteis",
                         principalColumn: "id");
                 });
 
             migrationBuilder.CreateTable(
-                name: "local_oferta",
+                name: "locais_de_oferta",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -1472,11 +1472,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_local_oferta", x => x.id);
-                    table.CheckConstraint("ck_local_oferta_endereco_cidade_coerente", "endereco_cidade_codigo_ibge IS NULL OR cidade_codigo_ibge IS NULL OR (endereco_cidade_codigo_ibge = cidade_codigo_ibge AND endereco_cidade_uf IS NOT NULL AND cidade_uf IS NOT NULL AND endereco_cidade_uf = cidade_uf)");
-                    table.CheckConstraint("ck_local_oferta_endereco_completo", "(endereco_cep IS NULL AND endereco_cidade_codigo_ibge IS NULL AND endereco_cidade_nome IS NULL AND endereco_cidade_uf IS NULL AND endereco_nivel_resolucao IS NULL AND endereco_origem IS NULL AND endereco_logradouro IS NULL AND endereco_numero IS NULL AND endereco_complemento IS NULL AND endereco_bairro IS NULL AND endereco_distrito IS NULL AND endereco_latitude IS NULL AND endereco_longitude IS NULL) OR (endereco_cep IS NOT NULL AND endereco_cidade_codigo_ibge IS NOT NULL AND endereco_cidade_nome IS NOT NULL AND endereco_cidade_uf IS NOT NULL AND endereco_nivel_resolucao IS NOT NULL AND endereco_origem IS NOT NULL)");
+                    table.PrimaryKey("pk_locais_de_oferta", x => x.id);
+                    table.CheckConstraint("ck_locais_de_oferta_endereco_cidade_coerente", "endereco_cidade_codigo_ibge IS NULL OR cidade_codigo_ibge IS NULL OR (endereco_cidade_codigo_ibge = cidade_codigo_ibge AND endereco_cidade_uf IS NOT NULL AND cidade_uf IS NOT NULL AND endereco_cidade_uf = cidade_uf)");
+                    table.CheckConstraint("ck_locais_de_oferta_endereco_completo", "(endereco_cep IS NULL AND endereco_cidade_codigo_ibge IS NULL AND endereco_cidade_nome IS NULL AND endereco_cidade_uf IS NULL AND endereco_nivel_resolucao IS NULL AND endereco_origem IS NULL AND endereco_logradouro IS NULL AND endereco_numero IS NULL AND endereco_complemento IS NULL AND endereco_bairro IS NULL AND endereco_distrito IS NULL AND endereco_latitude IS NULL AND endereco_longitude IS NULL) OR (endereco_cep IS NOT NULL AND endereco_cidade_codigo_ibge IS NOT NULL AND endereco_cidade_nome IS NOT NULL AND endereco_cidade_uf IS NOT NULL AND endereco_nivel_resolucao IS NOT NULL AND endereco_origem IS NOT NULL)");
                     table.ForeignKey(
-                        name: "fk_local_oferta_campus_campus_responsavel_id",
+                        name: "fk_locais_de_oferta_campus_campus_responsavel_id",
                         column: x => x.campus_responsavel_id,
                         principalSchema: "configuracao",
                         principalTable: "campus",
@@ -1512,6 +1512,33 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         column: x => x.chamada_id,
                         principalSchema: "ingresso",
                         principalTable: "chamadas",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "valores_de_dominio_do_fato",
+                schema: "configuracao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    fato_candidato_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    descricao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    orientacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    ordem = table.Column<int>(type: "integer", nullable: false),
+                    ativo = table.Column<bool>(type: "boolean", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_valores_de_dominio_do_fato", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_valores_de_dominio_do_fato_fatos_do_candidato_fato_candidat",
+                        column: x => x.fato_candidato_id,
+                        principalSchema: "configuracao",
+                        principalTable: "fatos_do_candidato",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1628,7 +1655,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 comment: "Comprovante de uma submissão da inscrição (issue #1858) — append-only, sem nenhum número de documento; uma correção soma uma linha nova, nunca muda a anterior.");
 
             migrationBuilder.CreateTable(
-                name: "ocorrencias_de_grupo_da_inscricao",
+                name: "grupos_da_inscricao",
                 schema: "selecao",
                 columns: table => new
                 {
@@ -1640,9 +1667,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_ocorrencias_de_grupo_da_inscricao", x => x.id);
+                    table.PrimaryKey("pk_grupos_da_inscricao", x => x.id);
                     table.ForeignKey(
-                        name: "fk_ocorrencias_de_grupo_da_inscricao_inscricoes_inscricao_id",
+                        name: "fk_grupos_da_inscricao_inscricoes_inscricao_id",
                         column: x => x.inscricao_id,
                         principalSchema: "selecao",
                         principalTable: "inscricoes",
@@ -1652,7 +1679,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 comment: "Uma ocorrência de grupo repetível da inscrição, como cada dependente de um grupo de dependentes.");
 
             migrationBuilder.CreateTable(
-                name: "instalacao_gestores",
+                name: "gestores_da_instalacao",
                 schema: "autorizacao",
                 columns: table => new
                 {
@@ -1664,9 +1691,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_instalacao_gestores", x => new { x.instalacao_id, x.emissor, x.sub });
+                    table.PrimaryKey("pk_gestores_da_instalacao", x => new { x.instalacao_id, x.emissor, x.sub });
                     table.ForeignKey(
-                        name: "fk_instalacao_gestores_instalacoes_instalacao_id",
+                        name: "fk_gestores_da_instalacao_instalacoes_instalacao_id",
                         column: x => x.instalacao_id,
                         principalSchema: "autorizacao",
                         principalTable: "instalacoes",
@@ -1675,7 +1702,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "instalacao_tentativas",
+                name: "tentativas_de_instalacao",
                 schema: "autorizacao",
                 columns: table => new
                 {
@@ -1688,9 +1715,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_instalacao_tentativas", x => x.id);
+                    table.PrimaryKey("pk_tentativas_de_instalacao", x => x.id);
                     table.ForeignKey(
-                        name: "fk_instalacao_tentativas_instalacoes_instalacao_id",
+                        name: "fk_tentativas_de_instalacao_instalacoes_instalacao_id",
                         column: x => x.instalacao_id,
                         principalSchema: "autorizacao",
                         principalTable: "instalacoes",
@@ -1730,7 +1757,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "obrigatoriedade_legal_historico",
+                name: "historicos_da_obrigatoriedade",
                 schema: "selecao",
                 columns: table => new
                 {
@@ -1743,9 +1770,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_obrigatoriedade_legal_historico", x => x.id);
+                    table.PrimaryKey("pk_historicos_da_obrigatoriedade", x => x.id);
                     table.ForeignKey(
-                        name: "fk_obrigatoriedade_legal_historico_regra_id",
+                        name: "fk_historicos_da_obrigatoriedade_regra_id",
                         column: x => x.regra_id,
                         principalSchema: "selecao",
                         principalTable: "obrigatoriedades_legais",
@@ -1823,7 +1850,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "perfil_permissoes",
+                name: "permissoes_do_perfil",
                 schema: "autorizacao",
                 columns: table => new
                 {
@@ -1832,9 +1859,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_perfil_permissoes", x => new { x.perfil_id, x.codigo });
+                    table.PrimaryKey("pk_permissoes_do_perfil", x => new { x.perfil_id, x.codigo });
                     table.ForeignKey(
-                        name: "fk_perfil_permissoes_perfis_perfil_id",
+                        name: "fk_permissoes_do_perfil_perfis_perfil_id",
                         column: x => x.perfil_id,
                         principalSchema: "autorizacao",
                         principalTable: "perfis",
@@ -1972,7 +1999,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "peso_area_enem_area",
+                name: "areas_dos_pesos_do_enem",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -1984,19 +2011,41 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_peso_area_enem_area", x => new { x.peso_area_enem_id, x.codigo });
-                    table.CheckConstraint("ck_peso_area_enem_area_codigo", "codigo IN ('REDACAO', 'CIENCIAS_DA_NATUREZA', 'CIENCIAS_HUMANAS', 'LINGUAGENS', 'MATEMATICA')");
-                    table.CheckConstraint("ck_peso_area_enem_area_corte", "corte IS NULL OR (corte >= 0 AND corte <= 1000)");
-                    table.CheckConstraint("ck_peso_area_enem_area_peso", "peso >= 0");
+                    table.PrimaryKey("pk_areas_dos_pesos_do_enem", x => new { x.peso_area_enem_id, x.codigo });
+                    table.CheckConstraint("ck_areas_dos_pesos_do_enem_codigo", "codigo IN ('REDACAO', 'CIENCIAS_DA_NATUREZA', 'CIENCIAS_HUMANAS', 'LINGUAGENS', 'MATEMATICA')");
+                    table.CheckConstraint("ck_areas_dos_pesos_do_enem_corte", "corte IS NULL OR (corte >= 0 AND corte <= 1000)");
+                    table.CheckConstraint("ck_areas_dos_pesos_do_enem_peso", "peso >= 0");
                     table.ForeignKey(
-                        name: "fk_peso_area_enem_area_peso_area_enem_peso_area_enem_id",
+                        name: "fk_areas_dos_pesos_do_enem_pesos_por_area_do_enem_peso_area_en",
                         column: x => x.peso_area_enem_id,
                         principalSchema: "configuracao",
-                        principalTable: "peso_area_enem",
+                        principalTable: "pesos_por_area_do_enem",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 },
                 comment: "Peso e corte de cada uma das cinco áreas do ENEM numa linha de Pesos por Área. Código e rótulo são postos pelo sistema; o operador edita só peso e corte.");
+
+            migrationBuilder.CreateTable(
+                name: "atendimentos_especializados",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_atendimentos_especializados", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_atendimentos_especializados_processo_seletivo_processo_sele",
+                        column: x => x.processo_seletivo_id,
+                        principalSchema: "selecao",
+                        principalTable: "processos_seletivos",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
 
             migrationBuilder.CreateTable(
                 name: "configuracoes_bonus_regional",
@@ -2031,32 +2080,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "configuracoes_cascata_remanejamento",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
-                    regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
-                    regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    fallback_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_configuracoes_cascata_remanejamento", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_configuracoes_cascata_remanejamento_processo_seletivo_proce",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "configuracoes_classificacao",
                 schema: "selecao",
                 columns: table => new
@@ -2075,7 +2098,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_ordem_alocacao_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     regra_ordem_alocacao_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     baseado_em_enem = table.Column<bool>(type: "boolean", nullable: false, comment: "A classificação usa a estrutura de pontuação por área do ENEM — sinal explícito (Story #850) do qual as regras de eliminação do ENEM dependem, substituindo a ramificação por TipoProcesso."),
-                    resolucao_peso_area_enem = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true, comment: "Resolução de Pesos por Área declarada pela classificação baseada em ENEM com cálculo local; o vínculo com o cadastro é pelo valor, e o quadro fica congelado em grupos_peso_area_enem_congelados. Nulo nas demais classificações."),
+                    resolucao_peso_area_enem = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true, comment: "Resolução de Pesos por Área declarada pela classificação baseada em ENEM com cálculo local; o vínculo com o cadastro é pelo valor, e o quadro fica congelado em grupos_do_quadro_de_pesos. Nulo nas demais classificações."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
@@ -2092,21 +2115,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "configuracoes_derivacao_fato",
+                name: "configuracoes_de_remanejamento",
                 schema: "selecao",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo_fato = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
+                    regra_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    regra_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
+                    regra_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
+                    fallback_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_configuracoes_derivacao_fato", x => x.id);
+                    table.PrimaryKey("pk_configuracoes_de_remanejamento", x => x.id);
                     table.ForeignKey(
-                        name: "fk_configuracoes_derivacao_fato_processo_seletivo_processo_sel",
+                        name: "fk_configuracoes_de_remanejamento_processo_seletivo_processo_s",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2115,7 +2141,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "configuracoes_distribuicao_vagas",
+                name: "configuracoes_de_vagas",
                 schema: "selecao",
                 columns: table => new
                 {
@@ -2152,9 +2178,32 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_configuracoes_distribuicao_vagas", x => x.id);
+                    table.PrimaryKey("pk_configuracoes_de_vagas", x => x.id);
                     table.ForeignKey(
-                        name: "fk_configuracoes_distribuicao_vagas_processo_seletivo_processo",
+                        name: "fk_configuracoes_de_vagas_processo_seletivo_processo_seletivo_",
+                        column: x => x.processo_seletivo_id,
+                        principalSchema: "selecao",
+                        principalTable: "processos_seletivos",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "configuracoes_derivacao_fato",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    codigo_fato = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_configuracoes_derivacao_fato", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_configuracoes_derivacao_fato_processo_seletivo_processo_sel",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2478,28 +2527,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ofertas_atendimento_especializado",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_ofertas_atendimento_especializado", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_ofertas_atendimento_especializado_processo_seletivo_process",
-                        column: x => x.processo_seletivo_id,
-                        principalSchema: "selecao",
-                        principalTable: "processos_seletivos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "opcoes_declaradas_fato",
                 schema: "selecao",
                 columns: table => new
@@ -2653,34 +2680,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "fato_valor_dominio",
-                schema: "configuracao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    fato_candidato_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    descricao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    orientacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    ordem = table.Column<int>(type: "integer", nullable: false),
-                    ativo = table.Column<bool>(type: "boolean", nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_fato_valor_dominio", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_fato_valor_dominio_fato_candidato_fato_candidato_id",
-                        column: x => x.fato_candidato_id,
-                        principalSchema: "configuracao",
-                        principalTable: "rol_de_fatos_candidato",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "termo_consentimento_versao",
+                name: "versoes_do_termo_consentimento",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -2695,18 +2695,44 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_termo_consentimento_versao", x => x.id);
-                    table.CheckConstraint("ck_termo_consentimento_versao_forma_aceite", "forma_aceite IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
+                    table.PrimaryKey("pk_versoes_do_termo_consentimento", x => x.id);
+                    table.CheckConstraint("ck_versoes_do_termo_consentimento_forma_aceite", "forma_aceite IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
                     table.ForeignKey(
-                        name: "fk_termo_consentimento_versao_termo_consentimento_termo_consen",
+                        name: "fk_versoes_do_termo_consentimento_termos_de_consentimento_term",
                         column: x => x.termo_consentimento_id,
                         principalSchema: "configuracao",
-                        principalTable: "termo_consentimento",
+                        principalTable: "termos_de_consentimento",
                         principalColumn: "id");
                 });
 
             migrationBuilder.CreateTable(
-                name: "instituicao",
+                name: "identificadores_da_unidade",
+                schema: "organizacao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    unidade_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tipo_identificador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    valor = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    vigencia_inicio = table.Column<DateOnly>(type: "date", nullable: false),
+                    vigencia_fim = table.Column<DateOnly>(type: "date", nullable: true),
+                    motivo_mudanca = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_identificadores_da_unidade", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_identificadores_da_unidade_unidades_unidade_id",
+                        column: x => x.unidade_id,
+                        principalSchema: "organizacao",
+                        principalTable: "unidades",
+                        principalColumn: "id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "instituicoes",
                 schema: "organizacao",
                 columns: table => new
                 {
@@ -2756,49 +2782,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_instituicao", x => x.id);
-                    table.CheckConstraint("ck_instituicao_cidade_completa", "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)");
-                    table.CheckConstraint("ck_instituicao_cidade_obrigatoria_com_endereco", "endereco_cep IS NULL OR cidade_codigo_ibge IS NOT NULL");
-                    table.CheckConstraint("ck_instituicao_endereco_cidade_coerente", "endereco_cidade_codigo_ibge IS NULL OR cidade_codigo_ibge IS NULL OR (endereco_cidade_codigo_ibge = cidade_codigo_ibge AND endereco_cidade_uf IS NOT NULL AND cidade_uf IS NOT NULL AND endereco_cidade_uf = cidade_uf)");
-                    table.CheckConstraint("ck_instituicao_endereco_completo", "(endereco_cep IS NULL AND endereco_cidade_codigo_ibge IS NULL AND endereco_cidade_nome IS NULL AND endereco_cidade_uf IS NULL AND endereco_nivel_resolucao IS NULL AND endereco_origem IS NULL AND endereco_logradouro IS NULL AND endereco_numero IS NULL AND endereco_complemento IS NULL AND endereco_bairro IS NULL AND endereco_distrito IS NULL AND endereco_latitude IS NULL AND endereco_longitude IS NULL) OR (endereco_cep IS NOT NULL AND endereco_cidade_codigo_ibge IS NOT NULL AND endereco_cidade_nome IS NOT NULL AND endereco_cidade_uf IS NOT NULL AND endereco_nivel_resolucao IS NOT NULL AND endereco_origem IS NOT NULL)");
-                    table.CheckConstraint("ck_instituicao_singleton_sentinela", "registro_vivo_sentinela = true");
+                    table.PrimaryKey("pk_instituicoes", x => x.id);
+                    table.CheckConstraint("ck_instituicoes_cidade_completa", "(cidade_codigo_ibge IS NULL AND cidade_nome IS NULL AND cidade_uf IS NULL) OR (cidade_codigo_ibge IS NOT NULL AND cidade_nome IS NOT NULL AND cidade_uf IS NOT NULL)");
+                    table.CheckConstraint("ck_instituicoes_cidade_obrigatoria_com_endereco", "endereco_cep IS NULL OR cidade_codigo_ibge IS NOT NULL");
+                    table.CheckConstraint("ck_instituicoes_endereco_cidade_coerente", "endereco_cidade_codigo_ibge IS NULL OR cidade_codigo_ibge IS NULL OR (endereco_cidade_codigo_ibge = cidade_codigo_ibge AND endereco_cidade_uf IS NOT NULL AND cidade_uf IS NOT NULL AND endereco_cidade_uf = cidade_uf)");
+                    table.CheckConstraint("ck_instituicoes_endereco_completo", "(endereco_cep IS NULL AND endereco_cidade_codigo_ibge IS NULL AND endereco_cidade_nome IS NULL AND endereco_cidade_uf IS NULL AND endereco_nivel_resolucao IS NULL AND endereco_origem IS NULL AND endereco_logradouro IS NULL AND endereco_numero IS NULL AND endereco_complemento IS NULL AND endereco_bairro IS NULL AND endereco_distrito IS NULL AND endereco_latitude IS NULL AND endereco_longitude IS NULL) OR (endereco_cep IS NOT NULL AND endereco_cidade_codigo_ibge IS NOT NULL AND endereco_cidade_nome IS NOT NULL AND endereco_cidade_uf IS NOT NULL AND endereco_nivel_resolucao IS NOT NULL AND endereco_origem IS NOT NULL)");
+                    table.CheckConstraint("ck_instituicoes_singleton_sentinela", "registro_vivo_sentinela = true");
                     table.ForeignKey(
-                        name: "fk_instituicao_unidade_unidade_raiz_id",
+                        name: "fk_instituicoes_unidade_unidade_raiz_id",
                         column: x => x.unidade_raiz_id,
                         principalSchema: "organizacao",
-                        principalTable: "unidade",
+                        principalTable: "unidades",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "unidade_identificador_historico",
-                schema: "organizacao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    unidade_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tipo_identificador = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    valor = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    vigencia_inicio = table.Column<DateOnly>(type: "date", nullable: false),
-                    vigencia_fim = table.Column<DateOnly>(type: "date", nullable: true),
-                    motivo_mudanca = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_unidade_identificador_historico", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_unidade_identificador_historico_unidade_unidade_id",
-                        column: x => x.unidade_id,
-                        principalSchema: "organizacao",
-                        principalTable: "unidade",
-                        principalColumn: "id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "oferta_curso",
+                name: "ofertas_de_curso",
                 schema: "configuracao",
                 columns: table => new
                 {
@@ -2829,28 +2829,28 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_oferta_curso", x => x.id);
-                    table.CheckConstraint("ck_oferta_curso_base_legal_programa", "programa_de_oferta = 'REGULAR' OR base_legal IS NOT NULL");
-                    table.CheckConstraint("ck_oferta_curso_formato_pedagogico", "formato_pedagogico IN ('PRESENCIAL', 'SEMIPRESENCIAL', 'EAD')");
-                    table.CheckConstraint("ck_oferta_curso_funcionamento_regime_de_turno", "(regime_de_funcionamento <> 'INTENSIVO' OR regime_de_turno = 'INTEGRAL')");
-                    table.CheckConstraint("ck_oferta_curso_programa_de_oferta", "programa_de_oferta IN ('REGULAR', 'FORMA_PARA', 'PARFOR', 'PRONERA', 'PEPETI', 'CONVENIO_OUTRO', 'OUTRO')");
-                    table.CheckConstraint("ck_oferta_curso_regime_de_funcionamento", "regime_de_funcionamento IN ('INTENSIVO', 'EXTENSIVO', 'ALTERNANCIA_PEDAGOGICA')");
-                    table.CheckConstraint("ck_oferta_curso_regime_de_turno", "regime_de_turno IN ('REGULAR', 'INTEGRAL')");
-                    table.CheckConstraint("ck_oferta_curso_turnos_dominio", "turnos::text[] <@ ARRAY['MATUTINO', 'VESPERTINO', 'NOTURNO']::text[]");
-                    table.CheckConstraint("ck_oferta_curso_turnos_regime", "coalesce(array_ndims(turnos), 0) = 1 AND coalesce(array_lower(turnos, 1), 1) = 1 AND ((regime_de_turno = 'REGULAR' AND cardinality(turnos) = 1) OR (regime_de_turno = 'INTEGRAL' AND cardinality(turnos) = 2 AND turnos[1] <> turnos[2]))");
-                    table.CheckConstraint("ck_oferta_curso_vagas_anuais_autorizadas", "vagas_anuais_autorizadas IS NULL OR vagas_anuais_autorizadas >= 0");
+                    table.PrimaryKey("pk_ofertas_de_curso", x => x.id);
+                    table.CheckConstraint("ck_ofertas_de_curso_base_legal_programa", "programa_de_oferta = 'REGULAR' OR base_legal IS NOT NULL");
+                    table.CheckConstraint("ck_ofertas_de_curso_formato_pedagogico", "formato_pedagogico IN ('PRESENCIAL', 'SEMIPRESENCIAL', 'EAD')");
+                    table.CheckConstraint("ck_ofertas_de_curso_funcionamento_regime_de_turno", "(regime_de_funcionamento <> 'INTENSIVO' OR regime_de_turno = 'INTEGRAL')");
+                    table.CheckConstraint("ck_ofertas_de_curso_programa_de_oferta", "programa_de_oferta IN ('REGULAR', 'FORMA_PARA', 'PARFOR', 'PRONERA', 'PEPETI', 'CONVENIO_OUTRO', 'OUTRO')");
+                    table.CheckConstraint("ck_ofertas_de_curso_regime_de_funcionamento", "regime_de_funcionamento IN ('INTENSIVO', 'EXTENSIVO', 'ALTERNANCIA_PEDAGOGICA')");
+                    table.CheckConstraint("ck_ofertas_de_curso_regime_de_turno", "regime_de_turno IN ('REGULAR', 'INTEGRAL')");
+                    table.CheckConstraint("ck_ofertas_de_curso_turnos_dominio", "turnos::text[] <@ ARRAY['MATUTINO', 'VESPERTINO', 'NOTURNO']::text[]");
+                    table.CheckConstraint("ck_ofertas_de_curso_turnos_regime", "coalesce(array_ndims(turnos), 0) = 1 AND coalesce(array_lower(turnos, 1), 1) = 1 AND ((regime_de_turno = 'REGULAR' AND cardinality(turnos) = 1) OR (regime_de_turno = 'INTEGRAL' AND cardinality(turnos) = 2 AND turnos[1] <> turnos[2]))");
+                    table.CheckConstraint("ck_ofertas_de_curso_vagas_anuais_autorizadas", "vagas_anuais_autorizadas IS NULL OR vagas_anuais_autorizadas >= 0");
                     table.ForeignKey(
-                        name: "fk_oferta_curso_curso_curso_id",
+                        name: "fk_ofertas_de_curso_cursos_curso_id",
                         column: x => x.curso_id,
                         principalSchema: "configuracao",
-                        principalTable: "curso",
+                        principalTable: "cursos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_oferta_curso_local_oferta_local_oferta_id",
+                        name: "fk_ofertas_de_curso_locais_de_oferta_local_oferta_id",
                         column: x => x.local_oferta_id,
                         principalSchema: "configuracao",
-                        principalTable: "local_oferta",
+                        principalTable: "locais_de_oferta",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
@@ -2940,7 +2940,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         name: "fk_enderecos_da_inscricao_ocorrencia_de_grupo_da_inscricao_rec",
                         column: x => x.ocorrencia_id,
                         principalSchema: "selecao",
-                        principalTable: "ocorrencias_de_grupo_da_inscricao",
+                        principalTable: "grupos_da_inscricao",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 },
@@ -2972,17 +2972,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_respostas_da_inscricao_origem", "origem IN (1, 2)");
                     table.CheckConstraint("ck_respostas_da_inscricao_valor_do_tipo", "num_nonnulls(valor_booleano, valor_numero, valor_codigo, valor_texto, valor_data, valor_cifrado) = 1 AND tipo IN (1, 2, 3, 4, 5, 7) AND (valor_cifrado IS NOT NULL OR (tipo = 1 AND valor_booleano IS NOT NULL) OR (tipo = 2 AND valor_numero IS NOT NULL) OR (tipo = 3 AND valor_codigo IS NOT NULL) OR (tipo = 4 AND valor_texto IS NOT NULL) OR (tipo = 5 AND valor_data IS NOT NULL) OR (tipo = 7 AND valor_codigo IS NOT NULL)) AND (valor_rotulo IS NULL OR (tipo = 7 AND valor_codigo IS NOT NULL))");
                     table.ForeignKey(
+                        name: "fk_respostas_da_inscricao_grupos_da_inscricao_ocorrencia_id",
+                        column: x => x.ocorrencia_id,
+                        principalSchema: "selecao",
+                        principalTable: "grupos_da_inscricao",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
                         name: "fk_respostas_da_inscricao_inscricoes_inscricao_id",
                         column: x => x.inscricao_id,
                         principalSchema: "selecao",
                         principalTable: "inscricoes",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "fk_respostas_da_inscricao_ocorrencias_de_grupo_da_inscricao_oc",
-                        column: x => x.ocorrencia_id,
-                        principalSchema: "selecao",
-                        principalTable: "ocorrencias_de_grupo_da_inscricao",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 },
@@ -3142,6 +3142,28 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "permissoes_da_versao_do_perfil",
+                schema: "autorizacao",
+                columns: table => new
+                {
+                    codigo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
+                    versao_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    classificacao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
+                    de_unidade = table.Column<bool>(type: "boolean", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_permissoes_da_versao_do_perfil", x => new { x.versao_id, x.codigo });
+                    table.ForeignKey(
+                        name: "fk_permissoes_da_versao_do_perfil_versoes_do_perfil_versao_id",
+                        column: x => x.versao_id,
+                        principalSchema: "autorizacao",
+                        principalTable: "versoes_do_perfil",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "recalculos_da_aprovacao",
                 schema: "autorizacao",
                 columns: table => new
@@ -3163,28 +3185,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "versoes_do_perfil",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "versao_do_perfil_permissoes",
-                schema: "autorizacao",
-                columns: table => new
-                {
-                    codigo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    versao_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    classificacao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
-                    de_unidade = table.Column<bool>(type: "boolean", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_versao_do_perfil_permissoes", x => new { x.versao_id, x.codigo });
-                    table.ForeignKey(
-                        name: "fk_versao_do_perfil_permissoes_versoes_do_perfil_versao_id",
-                        column: x => x.versao_id,
-                        principalSchema: "autorizacao",
-                        principalTable: "versoes_do_perfil",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -3221,7 +3221,82 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "configuracoes_bonus_regional_municipio",
+                name: "condicoes_ofertadas",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    oferta_atendimento_especializado_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    condicao_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    condicao_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    condicao_nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_condicoes_ofertadas", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_condicoes_ofertadas_atendimentos_especializados_oferta_aten",
+                        column: x => x.oferta_atendimento_especializado_id,
+                        principalSchema: "selecao",
+                        principalTable: "atendimentos_especializados",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "deficiencias_atendidas",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    oferta_atendimento_especializado_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tipo_deficiencia_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    tipo_deficiencia_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    tipo_deficiencia_nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_deficiencias_atendidas", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_deficiencias_atendidas_atendimentos_especializados_oferta_a",
+                        column: x => x.oferta_atendimento_especializado_id,
+                        principalSchema: "selecao",
+                        principalTable: "atendimentos_especializados",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "recursos_ofertados",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    oferta_atendimento_especializado_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    recurso_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    recurso_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    recurso_nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_recursos_ofertados", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_recursos_ofertados_atendimentos_especializados_oferta_atend",
+                        column: x => x.oferta_atendimento_especializado_id,
+                        principalSchema: "selecao",
+                        principalTable: "atendimentos_especializados",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "municipios_do_bonus_regional",
                 schema: "selecao",
                 columns: table => new
                 {
@@ -3235,9 +3310,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_configuracoes_bonus_regional_municipio", x => x.id);
+                    table.PrimaryKey("pk_municipios_do_bonus_regional", x => x.id);
                     table.ForeignKey(
-                        name: "fk_configuracoes_bonus_regional_municipio_configuracoes_bonus_",
+                        name: "fk_municipios_do_bonus_regional_configuracoes_bonus_regional_c",
                         column: x => x.configuracao_bonus_regional_id,
                         principalSchema: "selecao",
                         principalTable: "configuracoes_bonus_regional",
@@ -3246,34 +3321,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "destinos_remanejamento",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    configuracao_cascata_remanejamento_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    modalidade_origem_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    ordem = table.Column<int>(type: "integer", nullable: false),
-                    modalidade_destino_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_destinos_remanejamento", x => x.id);
-                    table.CheckConstraint("ck_destinos_remanejamento_ordem_positiva", "ordem >= 1");
-                    table.CheckConstraint("ck_destinos_remanejamento_origem_diferente_destino", "modalidade_origem_codigo <> modalidade_destino_codigo");
-                    table.ForeignKey(
-                        name: "fk_destinos_remanejamento_configuracoes_cascata_remanejamento_",
-                        column: x => x.configuracao_cascata_remanejamento_id,
-                        principalSchema: "selecao",
-                        principalTable: "configuracoes_cascata_remanejamento",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "grupos_peso_area_enem_congelados",
+                name: "grupos_do_quadro_de_pesos",
                 schema: "selecao",
                 columns: table => new
                 {
@@ -3287,9 +3335,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_grupos_peso_area_enem_congelados", x => x.id);
+                    table.PrimaryKey("pk_grupos_do_quadro_de_pesos", x => x.id);
                     table.ForeignKey(
-                        name: "fk_grupos_peso_area_enem_congelados_configuracoes_classificaca",
+                        name: "fk_grupos_do_quadro_de_pesos_configuracoes_classificacao_confi",
                         column: x => x.configuracao_classificacao_id,
                         principalSchema: "selecao",
                         principalTable: "configuracoes_classificacao",
@@ -3325,25 +3373,28 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "regras_derivacao_configuradas",
+                name: "destinos_remanejamento",
                 schema: "selecao",
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    configuracao_derivacao_fato_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    configuracao_cascata_remanejamento_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    modalidade_origem_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     ordem = table.Column<int>(type: "integer", nullable: false),
-                    contribui = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
+                    modalidade_destino_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_regras_derivacao_configuradas", x => x.id);
+                    table.PrimaryKey("pk_destinos_remanejamento", x => x.id);
+                    table.CheckConstraint("ck_destinos_remanejamento_ordem_positiva", "ordem >= 1");
+                    table.CheckConstraint("ck_destinos_remanejamento_origem_diferente_destino", "modalidade_origem_codigo <> modalidade_destino_codigo");
                     table.ForeignKey(
-                        name: "fk_regras_derivacao_configuradas_configuracoes_derivacao_fato_",
-                        column: x => x.configuracao_derivacao_fato_id,
+                        name: "fk_destinos_remanejamento_configuracoes_de_remanejamento_confi",
+                        column: x => x.configuracao_cascata_remanejamento_id,
                         principalSchema: "selecao",
-                        principalTable: "configuracoes_derivacao_fato",
+                        principalTable: "configuracoes_de_remanejamento",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -3376,10 +3427,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_modalidades_selecionadas", x => x.id);
                     table.ForeignKey(
-                        name: "fk_modalidades_selecionadas_configuracoes_distribuicao_vagas_c",
+                        name: "fk_modalidades_selecionadas_configuracoes_de_vagas_configuraca",
                         column: x => x.configuracao_distribuicao_vagas_id,
                         principalSchema: "selecao",
-                        principalTable: "configuracoes_distribuicao_vagas",
+                        principalTable: "configuracoes_de_vagas",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -3401,10 +3452,34 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_vagas_ofertadas", x => x.id);
                     table.ForeignKey(
-                        name: "fk_vagas_ofertadas_configuracoes_distribuicao_vagas_configurac",
+                        name: "fk_vagas_ofertadas_configuracoes_de_vagas_configuracao_distrib",
                         column: x => x.configuracao_distribuicao_vagas_id,
                         principalSchema: "selecao",
-                        principalTable: "configuracoes_distribuicao_vagas",
+                        principalTable: "configuracoes_de_vagas",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "regras_derivacao_configuradas",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    configuracao_derivacao_fato_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ordem = table.Column<int>(type: "integer", nullable: false),
+                    contribui = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_regras_derivacao_configuradas", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_regras_derivacao_configuradas_configuracoes_derivacao_fato_",
+                        column: x => x.configuracao_derivacao_fato_id,
+                        principalSchema: "selecao",
+                        principalTable: "configuracoes_derivacao_fato",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -3803,81 +3878,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ofertas_condicao",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    oferta_atendimento_especializado_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    condicao_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    condicao_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    condicao_nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_ofertas_condicao", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_ofertas_condicao_ofertas_atendimento_especializado_oferta_a",
-                        column: x => x.oferta_atendimento_especializado_id,
-                        principalSchema: "selecao",
-                        principalTable: "ofertas_atendimento_especializado",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ofertas_recurso",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    oferta_atendimento_especializado_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    recurso_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    recurso_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    recurso_nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_ofertas_recurso", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_ofertas_recurso_ofertas_atendimento_especializado_oferta_at",
-                        column: x => x.oferta_atendimento_especializado_id,
-                        principalSchema: "selecao",
-                        principalTable: "ofertas_atendimento_especializado",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ofertas_tipo_deficiencia",
-                schema: "selecao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    oferta_atendimento_especializado_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tipo_deficiencia_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    tipo_deficiencia_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    tipo_deficiencia_nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_ofertas_tipo_deficiencia", x => x.id);
-                    table.ForeignKey(
-                        name: "fk_ofertas_tipo_deficiencia_ofertas_atendimento_especializado_",
-                        column: x => x.oferta_atendimento_especializado_id,
-                        principalSchema: "selecao",
-                        principalTable: "ofertas_atendimento_especializado",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "lotes_de_notas_do_enem",
                 schema: "selecao",
                 columns: table => new
@@ -4005,7 +4005,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "leituras_do_documento_da_versao",
+                name: "acessos_ao_documento_da_versao",
                 schema: "autorizacao",
                 columns: table => new
                 {
@@ -4018,9 +4018,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_leituras_do_documento_da_versao", x => x.id);
+                    table.PrimaryKey("pk_acessos_ao_documento_da_versao", x => x.id);
                     table.ForeignKey(
-                        name: "fk_leituras_do_documento_da_versao_documentos_da_versao_docume",
+                        name: "fk_acessos_ao_documento_da_versao_documentos_da_versao_documen",
                         column: x => x.documento_id,
                         principalSchema: "autorizacao",
                         principalTable: "documentos_da_versao",
@@ -4121,7 +4121,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "areas_peso_area_enem_congeladas",
+                name: "areas_do_quadro_de_pesos",
                 schema: "selecao",
                 columns: table => new
                 {
@@ -4136,14 +4136,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_areas_peso_area_enem_congeladas", x => x.id);
-                    table.CheckConstraint("ck_areas_peso_area_enem_congeladas_corte", "corte IS NULL OR (corte >= 0 AND corte <= 1000)");
-                    table.CheckConstraint("ck_areas_peso_area_enem_congeladas_peso", "peso >= 0");
+                    table.PrimaryKey("pk_areas_do_quadro_de_pesos", x => x.id);
+                    table.CheckConstraint("ck_areas_do_quadro_de_pesos_corte", "corte IS NULL OR (corte >= 0 AND corte <= 1000)");
+                    table.CheckConstraint("ck_areas_do_quadro_de_pesos_peso", "peso >= 0");
                     table.ForeignKey(
-                        name: "fk_areas_peso_area_enem_congeladas_grupo_peso_area_enem_congel",
+                        name: "fk_areas_do_quadro_de_pesos_grupo_peso_area_enem_congelado_gru",
                         column: x => x.grupo_peso_area_enem_congelado_id,
                         principalSchema: "selecao",
-                        principalTable: "grupos_peso_area_enem_congelados",
+                        principalTable: "grupos_do_quadro_de_pesos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 },
@@ -4284,7 +4284,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "nos_exigencia",
+                name: "nos_da_arvore_de_exigencias",
                 schema: "selecao",
                 columns: table => new
                 {
@@ -4305,28 +4305,28 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_nos_exigencia", x => x.id);
-                    table.CheckConstraint("ck_nos_exigencia_chave_distincao_coerente", "(chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (chave_distincao IS NOT NULL AND chave_distincao IN (1, 2) AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR (chave_distincao IS NOT NULL AND chave_distincao = 3 AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
-                    table.CheckConstraint("ck_nos_exigencia_id_diferente_de_no_pai_id", "id <> no_pai_id");
-                    table.CheckConstraint("ck_nos_exigencia_ordem_nao_negativa", "ordem >= 0");
-                    table.CheckConstraint("ck_nos_exigencia_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
-                    table.CheckConstraint("ck_nos_exigencia_tipo_campos_coerentes", "(tipo = 1 AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR (tipo = 2 AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (tipo = 3 AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
+                    table.PrimaryKey("pk_nos_da_arvore_de_exigencias", x => x.id);
+                    table.CheckConstraint("ck_nos_da_arvore_de_exigencias_chave_distincao_coerente", "(chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (chave_distincao IS NOT NULL AND chave_distincao IN (1, 2) AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR (chave_distincao IS NOT NULL AND chave_distincao = 3 AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
+                    table.CheckConstraint("ck_nos_da_arvore_de_exigencias_id_diferente_de_no_pai_id", "id <> no_pai_id");
+                    table.CheckConstraint("ck_nos_da_arvore_de_exigencias_ordem_nao_negativa", "ordem >= 0");
+                    table.CheckConstraint("ck_nos_da_arvore_de_exigencias_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
+                    table.CheckConstraint("ck_nos_da_arvore_de_exigencias_tipo_campos_coerentes", "(tipo = 1 AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR (tipo = 2 AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (tipo = 3 AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
                     table.ForeignKey(
-                        name: "fk_nos_exigencia_documentos_exigidos_documento_exigido_id",
+                        name: "fk_nos_da_arvore_de_exigencias_documentos_exigidos_documento_e",
                         column: x => x.documento_exigido_id,
                         principalSchema: "selecao",
                         principalTable: "documentos_exigidos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_nos_exigencia_nos_exigencia_no_pai_id",
+                        name: "fk_nos_da_arvore_de_exigencias_nos_da_arvore_de_exigencias_no_",
                         column: x => x.no_pai_id,
                         principalSchema: "selecao",
-                        principalTable: "nos_exigencia",
+                        principalTable: "nos_da_arvore_de_exigencias",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_nos_exigencia_processo_seletivo_processo_seletivo_id",
+                        name: "fk_nos_da_arvore_de_exigencias_processo_seletivo_processo_sele",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -4457,7 +4457,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 comment: "O que não virou nota ao importar um lote: inscrito sem linha, linha de CPF sem inscrito e inscrito em conflito. Nunca guarda o CPF.");
 
             migrationBuilder.CreateTable(
-                name: "bases_da_permissao_na_concessao",
+                name: "bases_da_permissao_concedida",
                 schema: "autorizacao",
                 columns: table => new
                 {
@@ -4473,15 +4473,53 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_bases_da_permissao_na_concessao", x => x.id);
+                    table.PrimaryKey("pk_bases_da_permissao_concedida", x => x.id);
                     table.CheckConstraint("ck_bases_da_permissao_origem", "origem IN ('migracao', 'saida', 'liberacao', 'conciliacao')");
                     table.CheckConstraint("ck_bases_da_permissao_saida", "(origem = 'saida') = (classificacao IS NULL AND de_unidade IS NULL)");
                     table.ForeignKey(
-                        name: "fk_bases_da_permissao_na_concessao_concessao_perfil_id_concess",
+                        name: "fk_bases_da_permissao_concedida_concessao_perfil_id_concessao_",
                         columns: x => new { x.perfil_id, x.concessao_id },
                         principalSchema: "autorizacao",
                         principalTable: "concessoes",
                         principalColumns: new[] { "perfil_id", "id" },
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "itens_da_revisao",
+                schema: "autorizacao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    revisao_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    concessao_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    decidido_como = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
+                    resultado = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
+                    decidido_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    decidido_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    decidido_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    decidido_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_itens_da_revisao", x => x.id);
+                    table.CheckConstraint("ck_itens_da_revisao_decisao_completa", "(resultado IS NULL AND decidido_como IS NULL AND decidido_por_emissor IS NULL AND decidido_por_sub IS NULL AND decidido_em IS NULL) OR (resultado IS NOT NULL AND decidido_como IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_sub IS NOT NULL AND decidido_em IS NOT NULL)");
+                    table.ForeignKey(
+                        name: "fk_itens_da_revisao_concessoes_concessao_id",
+                        column: x => x.concessao_id,
+                        principalSchema: "autorizacao",
+                        principalTable: "concessoes",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_itens_da_revisao_revisoes_de_acessos_revisao_id",
+                        column: x => x.revisao_id,
+                        principalSchema: "autorizacao",
+                        principalTable: "revisoes_de_acessos",
+                        principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -4603,44 +4641,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "revisao_itens",
-                schema: "autorizacao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    revisao_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    concessao_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    decidido_como = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
-                    resultado = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
-                    decidido_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    decidido_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    decidido_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    decidido_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
-                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_revisao_itens", x => x.id);
-                    table.CheckConstraint("ck_revisao_itens_decisao_completa", "(resultado IS NULL AND decidido_como IS NULL AND decidido_por_emissor IS NULL AND decidido_por_sub IS NULL AND decidido_em IS NULL) OR (resultado IS NOT NULL AND decidido_como IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_sub IS NOT NULL AND decidido_em IS NOT NULL)");
-                    table.ForeignKey(
-                        name: "fk_revisao_itens_concessoes_concessao_id",
-                        column: x => x.concessao_id,
-                        principalSchema: "autorizacao",
-                        principalTable: "concessoes",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "fk_revisao_itens_revisoes_de_acessos_revisao_id",
-                        column: x => x.revisao_id,
-                        principalSchema: "autorizacao",
-                        principalTable: "revisoes_de_acessos",
-                        principalColumn: "id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "decisoes_da_migracao",
                 schema: "autorizacao",
                 columns: table => new
@@ -4712,7 +4712,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "nos_exigencia_base_legal",
+                name: "bases_legais_dos_nos",
                 schema: "selecao",
                 columns: table => new
                 {
@@ -4727,12 +4727,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_nos_exigencia_base_legal", x => x.id);
+                    table.PrimaryKey("pk_bases_legais_dos_nos", x => x.id);
                     table.ForeignKey(
-                        name: "fk_nos_exigencia_base_legal_no_exigencia_no_exigencia_id",
+                        name: "fk_bases_legais_dos_nos_no_exigencia_no_exigencia_id",
                         column: x => x.no_exigencia_id,
                         principalSchema: "selecao",
-                        principalTable: "nos_exigencia",
+                        principalTable: "nos_da_arvore_de_exigencias",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -4793,25 +4793,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "pedido_anexo_leituras",
-                schema: "autorizacao",
-                columns: table => new
-                {
-                    id = table.Column<Guid>(type: "uuid", nullable: false),
-                    pedido_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    anexo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    leitor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    leitor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    leitor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("pk_pedido_anexo_leituras", x => x.id);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "pedido_anexos",
+                name: "anexos_do_pedido",
                 schema: "autorizacao",
                 columns: table => new
                 {
@@ -4830,11 +4812,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_pedido_anexos", x => x.id);
+                    table.PrimaryKey("pk_anexos_do_pedido", x => x.id);
                 });
 
             migrationBuilder.CreateTable(
-                name: "pedido_decisoes",
+                name: "decisoes_do_pedido",
                 schema: "autorizacao",
                 columns: table => new
                 {
@@ -4855,8 +4837,33 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_pedido_decisoes", x => x.id);
-                    table.CheckConstraint("ck_pedido_decisoes_motivo_na_recusa", "resultado <> 'recusado' OR motivo IS NOT NULL");
+                    table.PrimaryKey("pk_decisoes_do_pedido", x => x.id);
+                    table.CheckConstraint("ck_decisoes_do_pedido_motivo_na_recusa", "resultado <> 'recusado' OR motivo IS NOT NULL");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "leituras_do_anexo_do_pedido",
+                schema: "autorizacao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    pedido_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    anexo_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    leitor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    leitor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    leitor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_leituras_do_anexo_do_pedido", x => x.id);
+                    table.ForeignKey(
+                        name: "fk_leituras_do_anexo_do_pedido_anexos_do_pedido_anexo_id",
+                        column: x => x.anexo_id,
+                        principalSchema: "autorizacao",
+                        principalTable: "anexos_do_pedido",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -5023,7 +5030,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "categoria_documento",
+                table: "categorias_de_documento",
                 columns: new[] { "id", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "ordem", "updated_at", "updated_by" },
                 values: new object[,]
                 {
@@ -5041,37 +5048,37 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "fase_canonica",
+                table: "fases_canonicas",
                 columns: new[] { "id", "base_legal", "codigo", "coleta_inscricao", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
                 values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000001"), null, "INSCRICAO", true, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Período em que o candidato se inscreve no processo seletivo.", false, "Inscrição", "NO_EDITAL", null, null, null, null, null });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "fase_canonica",
+                table: "fases_canonicas",
                 columns: new[] { "id", "base_legal", "codigo", "coleta_solicitacao_isencao", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
                 values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000002"), "Lei nº 12.799/2013", "SOLICITACAO_ISENCAO", true, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Janela em que o candidato pede isenção da taxa de inscrição. Abre junto com as inscrições e termina antes delas.", false, "Solicitação de isenção", "NO_EDITAL", null, null, null, null, null });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "fase_canonica",
+                table: "fases_canonicas",
                 columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "permite_complementacao", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
                 values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000003"), null, "HOMOLOGACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Conferência das inscrições recebidas e publicação de quais foram homologadas.", false, "Homologação das inscrições", "NO_EDITAL", true, null, null, null, null, null });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "fase_canonica",
+                table: "fases_canonicas",
                 columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
                 values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000004"), null, "ENSALAMENTO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Distribuição dos candidatos pelos locais de prova.", false, "Ensalamento", "NO_EDITAL", null, null, null, null, null });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "fase_canonica",
+                table: "fases_canonicas",
                 columns: new[] { "id", "agrupa_etapas", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
                 values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000005"), true, null, "AVALIACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Fase que agrupa as etapas pontuadas do certame.", false, "Avaliação", "NO_EDITAL", null, null, null, null, null });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "fase_canonica",
+                table: "fases_canonicas",
                 columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
                 values: new object[,]
                 {
@@ -5081,13 +5088,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "fase_canonica",
+                table: "fases_canonicas",
                 columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "permite_complementacao", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
                 values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000008"), null, "RECURSOS", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Interposição e análise dos recursos contra o resultado preliminar.", false, "Recursos", "NO_EDITAL", true, null, null, null, null, null });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "fase_canonica",
+                table: "fases_canonicas",
                 columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
                 values: new object[,]
                 {
@@ -5103,52 +5110,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "modalidade",
-                columns: new[] { "id", "acao_quando_indeferido", "base_legal", "codigo", "composicao_origem", "composicao_vagas", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "natureza_legal", "regra_de_aplicabilidade", "regra_remanejamento", "remanejamento_args", "updated_at", "updated_by" },
-                values: new object[,]
-                {
-                    { new Guid("70da1000-0000-7000-8000-000000000001"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "AC", null, "RESIDUAL_DO_VO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ampla concorrência", false, "AMPLA", "[]", null, "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000002"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_PPI", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, preto/pardo/indígena", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000003"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_Q", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, quilombola", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000004"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_PCD", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, pessoa com deficiência", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000005"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_EP", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, egresso de escola pública", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000006"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_PPI", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, preto/pardo/indígena", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000007"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_Q", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, quilombola", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000008"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_PCD", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, pessoa com deficiência", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000009"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_EP", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, egresso de escola pública", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000010"), null, "Res. Unifesspa 532/2021, art. 1º (reserva de vaga para pessoa com deficiência)", "AC_PCD", "AC", "RETIRA_DE", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ampla Concorrência – Pessoa com Deficiência (V)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]", "DESTINO_UNICO", "{\"destino\":\"AC\",\"par\":null,\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000012"), null, "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)", "AC_I", null, "SUPLEMENTAR_AO_TOTAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Vaga por acréscimo — candidato indígena (PSIQ)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]", "CRUZADO", "{\"destino\":null,\"par\":\"AC_Q\",\"fallback\":null}", null, null },
-                    { new Guid("70da1000-0000-7000-8000-000000000013"), null, "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)", "AC_Q", null, "SUPLEMENTAR_AO_TOTAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Vaga por acréscimo — candidato quilombola (PSIQ)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]", "CRUZADO", "{\"destino\":null,\"par\":\"AC_I\",\"fallback\":null}", null, null }
-                });
-
-            migrationBuilder.InsertData(
-                schema: "autorizacao",
-                table: "perfis",
-                columns: new[] { "id", "ativo", "created_at", "descricao", "governanca", "nome", "updated_at" },
-                values: new object[,]
-                {
-                    { new Guid("019a0000-0000-7000-8000-000000000001"), true, new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Opera as concessões de acesso, mantém os perfis de acesso e publica o termo de responsabilidade.", "gestor-de-acessos", "Gestor de acessos", null },
-                    { new Guid("019a0000-0000-7000-8000-000000000002"), true, new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Decide, em nome da Unifesspa, a segunda etapa dos pedidos com dado pessoal, as versões protegidas de perfil, a janela de migração e a proteção do catálogo, e conduz a revisão periódica dos acessos.", "representante-do-controlador", "Representante do controlador", null },
-                    { new Guid("019a0000-0000-7000-8000-000000000003"), true, new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Acompanha o tratamento de dados pessoais na gestão de acessos: consulta pedidos, concessões, revisões, versões de perfil, janela de migração e catálogo, registra manifestação técnica na proteção do catálogo e solicita providências sobre concessões, sem aprovar, recusar nem revogar.", "encarregado-de-dados", "Encarregado de dados", null }
-                });
-
-            migrationBuilder.InsertData(
-                schema: "configuracao",
-                table: "precedencia_fase",
-                columns: new[] { "id", "antecessora_codigo", "created_at", "created_by", "deleted_at", "deleted_by", "is_deleted", "sucessora_codigo", "updated_at", "updated_by" },
-                values: new object[,]
-                {
-                    { new Guid("93ec0000-0000-7000-8000-000000000001"), "INSCRICAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "HOMOLOGACAO", null, null },
-                    { new Guid("93ec0000-0000-7000-8000-000000000002"), "RESULTADO_PRELIMINAR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "RECURSOS", null, null },
-                    { new Guid("93ec0000-0000-7000-8000-000000000003"), "RECURSOS", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "RESULTADO_FINAL", null, null },
-                    { new Guid("93ec0000-0000-7000-8000-000000000004"), "RESULTADO_FINAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "HABILITACAO", null, null },
-                    { new Guid("93ec0000-0000-7000-8000-000000000005"), "HABILITACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "MATRICULA", null, null },
-                    { new Guid("93ec0000-0000-7000-8000-000000000006"), "HETEROIDENTIFICACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "HOMOLOGACAO_RESULTADO_FINAL", null, null }
-                });
-
-            migrationBuilder.InsertData(
-                schema: "configuracao",
-                table: "rol_de_fatos_candidato",
+                table: "fatos_do_candidato",
                 columns: new[] { "id", "ativo", "binding", "cardinalidade", "classificacao_protecao", "codigo", "componente_exibicao", "created_at", "created_by", "dependencias", "descricao", "dominio", "escopo", "finalidade_tratamento", "fonte_valores", "formato", "hipotese_legal", "nome", "origem", "ponto_resolucao", "regras_padrao", "sistema", "updated_at", "updated_by", "protecao_aceita_em", "protecao_aceita_por", "protecao_ciclo", "protecao_recomendada", "protecao_decidida_em", "protecao_decidida_por", "protecao_justificativa", "protecao_manifestacao_desfavoravel", "protecao_manifestacoes_no_ciclo", "protecao_manifestada_em", "protecao_situacao", "protecao_solicitada_em", "protecao_solicitada_por" },
                 values: new object[,]
                 {
@@ -5213,8 +5175,53 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.InsertData(
+                schema: "configuracao",
+                table: "modalidades",
+                columns: new[] { "id", "acao_quando_indeferido", "base_legal", "codigo", "composicao_origem", "composicao_vagas", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "natureza_legal", "regra_de_aplicabilidade", "regra_remanejamento", "remanejamento_args", "updated_at", "updated_by" },
+                values: new object[,]
+                {
+                    { new Guid("70da1000-0000-7000-8000-000000000001"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "AC", null, "RESIDUAL_DO_VO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ampla concorrência", false, "AMPLA", "[]", null, "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000002"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_PPI", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, preto/pardo/indígena", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000003"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_Q", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, quilombola", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000004"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_PCD", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, pessoa com deficiência", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000005"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LB_EP", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — baixa renda, egresso de escola pública", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"BAIXA_RENDA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_RENDA\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000006"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_PPI", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, preto/pardo/indígena", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"EM\",\"valor\":[\"PRETA\",\"PARDA\"]},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}],[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"COR_RACA\",\"operador\":\"IGUAL\",\"valor\":\"INDIGENA\"},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PPI\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000007"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_Q", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, quilombola", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_Q\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000008"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_PCD", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, pessoa com deficiência", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000009"), null, "Lei 12.711/2012 (red. Lei 14.723/2023)", "LI_EP", null, "DENTRO_DO_VR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Cota — independente de renda, egresso de escola pública", false, "COTA_RESERVADA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":true}]]", "SEGUE_CASCATA", "{\"destino\":null,\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000010"), null, "Res. Unifesspa 532/2021, art. 1º (reserva de vaga para pessoa com deficiência)", "AC_PCD", "AC", "RETIRA_DE", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Ampla Concorrência – Pessoa com Deficiência (V)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"PCD\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_PCD\",\"operador\":\"IGUAL\",\"valor\":true}]]", "DESTINO_UNICO", "{\"destino\":\"AC\",\"par\":null,\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000012"), null, "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)", "AC_I", null, "SUPLEMENTAR_AO_TOTAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Vaga por acréscimo — candidato indígena (PSIQ)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"INDIGENA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]", "CRUZADO", "{\"destino\":null,\"par\":\"AC_Q\",\"fallback\":null}", null, null },
+                    { new Guid("70da1000-0000-7000-8000-000000000013"), null, "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)", "AC_Q", null, "SUPLEMENTAR_AO_TOTAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Vaga por acréscimo — candidato quilombola (PSIQ)", false, "ACAO_AFIRMATIVA", "[[{\"fato\":\"OPTOU_PELAS_COTAS_DA_LEI\",\"operador\":\"IGUAL\",\"valor\":false},{\"fato\":\"QUILOMBOLA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_VAGA_POR_ACRESCIMO\",\"operador\":\"IGUAL\",\"valor\":true}]]", "CRUZADO", "{\"destino\":null,\"par\":\"AC_I\",\"fallback\":null}", null, null }
+                });
+
+            migrationBuilder.InsertData(
+                schema: "autorizacao",
+                table: "perfis",
+                columns: new[] { "id", "ativo", "created_at", "descricao", "governanca", "nome", "updated_at" },
+                values: new object[,]
+                {
+                    { new Guid("019a0000-0000-7000-8000-000000000001"), true, new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Opera as concessões de acesso, mantém os perfis de acesso e publica o termo de responsabilidade.", "gestor-de-acessos", "Gestor de acessos", null },
+                    { new Guid("019a0000-0000-7000-8000-000000000002"), true, new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Decide, em nome da Unifesspa, a segunda etapa dos pedidos com dado pessoal, as versões protegidas de perfil, a janela de migração e a proteção do catálogo, e conduz a revisão periódica dos acessos.", "representante-do-controlador", "Representante do controlador", null },
+                    { new Guid("019a0000-0000-7000-8000-000000000003"), true, new DateTimeOffset(new DateTime(2026, 10, 28, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Acompanha o tratamento de dados pessoais na gestão de acessos: consulta pedidos, concessões, revisões, versões de perfil, janela de migração e catálogo, registra manifestação técnica na proteção do catálogo e solicita providências sobre concessões, sem aprovar, recusar nem revogar.", "encarregado-de-dados", "Encarregado de dados", null }
+                });
+
+            migrationBuilder.InsertData(
+                schema: "configuracao",
+                table: "precedencias_entre_fases",
+                columns: new[] { "id", "antecessora_codigo", "created_at", "created_by", "deleted_at", "deleted_by", "is_deleted", "sucessora_codigo", "updated_at", "updated_by" },
+                values: new object[,]
+                {
+                    { new Guid("93ec0000-0000-7000-8000-000000000001"), "INSCRICAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "HOMOLOGACAO", null, null },
+                    { new Guid("93ec0000-0000-7000-8000-000000000002"), "RESULTADO_PRELIMINAR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "RECURSOS", null, null },
+                    { new Guid("93ec0000-0000-7000-8000-000000000003"), "RECURSOS", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "RESULTADO_FINAL", null, null },
+                    { new Guid("93ec0000-0000-7000-8000-000000000004"), "RESULTADO_FINAL", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "HABILITACAO", null, null },
+                    { new Guid("93ec0000-0000-7000-8000-000000000005"), "HABILITACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "MATRICULA", null, null },
+                    { new Guid("93ec0000-0000-7000-8000-000000000006"), "HETEROIDENTIFICACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, false, "HOMOLOGACAO_RESULTADO_FINAL", null, null }
+                });
+
+            migrationBuilder.InsertData(
                 schema: "selecao",
-                table: "rol_de_regras",
+                table: "regras_do_catalogo",
                 columns: new[] { "id", "base_legal", "codigo", "created_at", "esquema_args", "hash", "invariantes", "tipo", "updated_at", "versao" },
                 values: new object[,]
                 {
@@ -5258,7 +5265,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "tipo_documento",
+                table: "tipos_de_documento",
                 columns: new[] { "id", "categoria", "classificacao_protecao", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "finalidade_tratamento", "formatos_aceitos", "hipotese_legal", "is_deleted", "nome", "tamanho_maximo_mb", "tipo_equivalente", "updated_at", "updated_by", "protecao_aceita_em", "protecao_aceita_por", "protecao_ciclo", "protecao_recomendada", "protecao_decidida_em", "protecao_decidida_por", "protecao_justificativa", "protecao_manifestacao_desfavoravel", "protecao_manifestacoes_no_ciclo", "protecao_manifestada_em", "protecao_situacao", "protecao_solicitada_em", "protecao_solicitada_por" },
                 values: new object[,]
                 {
@@ -5357,8 +5364,37 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.InsertData(
+                schema: "autorizacao",
+                table: "permissoes_do_perfil",
+                columns: new[] { "codigo", "perfil_id" },
+                values: new object[,]
+                {
+                    { "autorizacao:concessoes:administrar", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:pedidos:aprovar-funcional", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:perfis:aprovar-funcional", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:perfis:manter", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:permissoes:consultar-catalogo", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:revisoes:rever-protecao-de-dados", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:termos:publicar", new Guid("019a0000-0000-7000-8000-000000000001") },
+                    { "autorizacao:concessoes:administrar", new Guid("019a0000-0000-7000-8000-000000000002") },
+                    { "autorizacao:pedidos:aprovar-protecao-de-dados", new Guid("019a0000-0000-7000-8000-000000000002") },
+                    { "autorizacao:perfis:aprovar-protecao-de-dados", new Guid("019a0000-0000-7000-8000-000000000002") },
+                    { "autorizacao:permissoes:consultar-catalogo", new Guid("019a0000-0000-7000-8000-000000000002") },
+                    { "autorizacao:revisoes:conduzir", new Guid("019a0000-0000-7000-8000-000000000002") },
+                    { "configuracao:protecao-do-catalogo:aprovar", new Guid("019a0000-0000-7000-8000-000000000002") },
+                    { "autorizacao:concessoes:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "autorizacao:pedidos:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "autorizacao:perfis:consultar-versoes", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "autorizacao:permissoes:consultar-catalogo", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "autorizacao:providencias:solicitar", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "autorizacao:revisoes:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "configuracao:protecao-do-catalogo:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
+                    { "configuracao:protecao-do-catalogo:manifestar", new Guid("019a0000-0000-7000-8000-000000000003") }
+                });
+
+            migrationBuilder.InsertData(
                 schema: "configuracao",
-                table: "fato_valor_dominio",
+                table: "valores_de_dominio_do_fato",
                 columns: new[] { "id", "ativo", "codigo", "created_at", "descricao", "fato_candidato_id", "ordem", "orientacao", "updated_at" },
                 values: new object[,]
                 {
@@ -5444,35 +5480,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     { new Guid("fa70d000-0000-7000-8000-000000000082"), true, "PREFIRO_NAO_INFORMAR", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), "Prefiro não informar", new Guid("fa700000-0000-7000-8000-000000000059"), 5, null, null }
                 });
 
-            migrationBuilder.InsertData(
-                schema: "autorizacao",
-                table: "perfil_permissoes",
-                columns: new[] { "codigo", "perfil_id" },
-                values: new object[,]
-                {
-                    { "autorizacao:concessoes:administrar", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:pedidos:aprovar-funcional", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:perfis:aprovar-funcional", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:perfis:manter", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:permissoes:consultar-catalogo", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:revisoes:rever-protecao-de-dados", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:termos:publicar", new Guid("019a0000-0000-7000-8000-000000000001") },
-                    { "autorizacao:concessoes:administrar", new Guid("019a0000-0000-7000-8000-000000000002") },
-                    { "autorizacao:pedidos:aprovar-protecao-de-dados", new Guid("019a0000-0000-7000-8000-000000000002") },
-                    { "autorizacao:perfis:aprovar-protecao-de-dados", new Guid("019a0000-0000-7000-8000-000000000002") },
-                    { "autorizacao:permissoes:consultar-catalogo", new Guid("019a0000-0000-7000-8000-000000000002") },
-                    { "autorizacao:revisoes:conduzir", new Guid("019a0000-0000-7000-8000-000000000002") },
-                    { "configuracao:protecao-do-catalogo:aprovar", new Guid("019a0000-0000-7000-8000-000000000002") },
-                    { "autorizacao:concessoes:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "autorizacao:pedidos:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "autorizacao:perfis:consultar-versoes", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "autorizacao:permissoes:consultar-catalogo", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "autorizacao:providencias:solicitar", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "autorizacao:revisoes:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "configuracao:protecao-do-catalogo:consultar", new Guid("019a0000-0000-7000-8000-000000000003") },
-                    { "configuracao:protecao-do-catalogo:manifestar", new Guid("019a0000-0000-7000-8000-000000000003") }
-                });
-
             migrationBuilder.CreateIndex(
                 name: "ux_aceites_da_inscricao_ordem",
                 schema: "selecao",
@@ -5494,16 +5501,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ux_anexo_do_ato_nome",
+                name: "ix_acessos_ao_documento_da_versao_documento",
+                schema: "autorizacao",
+                table: "acessos_ao_documento_da_versao",
+                column: "documento_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_anexos_do_ato_nome",
                 schema: "publicacoes",
-                table: "anexo_do_ato",
+                table: "anexos_do_ato",
                 columns: new[] { "ato_id", "nome" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ux_anexo_do_ato_ordem",
+                name: "ux_anexos_do_ato_ordem",
                 schema: "publicacoes",
-                table: "anexo_do_ato",
+                table: "anexos_do_ato",
                 columns: new[] { "ato_id", "ordem" },
                 unique: true);
 
@@ -5528,15 +5541,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_anexos_do_pedido_pedido",
+                schema: "autorizacao",
+                table: "anexos_do_pedido",
+                column: "pedido_id");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_apresentacoes_de_documento_inscricao_exigencia",
                 schema: "selecao",
                 table: "apresentacoes_de_documento",
                 columns: new[] { "inscricao_id", "exigencia_id" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_areas_peso_area_enem_congeladas_grupo_peso_area_enem_congel",
+                name: "ix_areas_do_quadro_de_pesos_grupo_peso_area_enem_congelado_id_",
                 schema: "selecao",
-                table: "areas_peso_area_enem_congeladas",
+                table: "areas_do_quadro_de_pesos",
                 columns: new[] { "grupo_peso_area_enem_congelado_id", "codigo" },
                 unique: true);
 
@@ -5560,24 +5579,36 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "inscricao_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_ato_normativo_numeracao",
-                schema: "publicacoes",
-                table: "ato_normativo",
-                columns: new[] { "orgao", "serie", "ano", "numero" });
+                name: "ix_atendimentos_especializados_processo_seletivo_id",
+                schema: "selecao",
+                table: "atendimentos_especializados",
+                column: "processo_seletivo_id",
+                unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_ato_normativo_publicado_em",
-                schema: "publicacoes",
-                table: "ato_normativo",
-                columns: new[] { "publicado_em", "id" });
+                name: "ix_atos_da_protecao_do_catalogo_ato",
+                schema: "configuracao",
+                table: "atos_da_protecao_do_catalogo",
+                columns: new[] { "ato", "instante" });
 
             migrationBuilder.CreateIndex(
-                name: "ux_ato_normativo_retificado",
-                schema: "publicacoes",
-                table: "ato_normativo",
-                column: "ato_retificado_id",
-                unique: true,
-                filter: "ato_retificado_id IS NOT NULL");
+                name: "ix_atos_da_protecao_do_catalogo_item",
+                schema: "configuracao",
+                table: "atos_da_protecao_do_catalogo",
+                columns: new[] { "cadastro", "item_id", "instante" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_atos_da_protecao_do_catalogo_item_ciclo",
+                schema: "configuracao",
+                table: "atos_da_protecao_do_catalogo",
+                columns: new[] { "cadastro", "item_id", "ciclo", "instante" });
+
+            migrationBuilder.CreateIndex(
+                name: "ux_atos_da_protecao_do_catalogo_ordem_de_registro",
+                schema: "configuracao",
+                table: "atos_da_protecao_do_catalogo",
+                column: "ordem_de_registro",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_atos_do_processo_documento_principal_id",
@@ -5614,6 +5645,26 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 table: "atos_do_processo",
                 column: "ordem_de_registro",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_atos_normativos_numeracao",
+                schema: "publicacoes",
+                table: "atos_normativos",
+                columns: new[] { "orgao", "serie", "ano", "numero" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_atos_normativos_publicado_em",
+                schema: "publicacoes",
+                table: "atos_normativos",
+                columns: new[] { "publicado_em", "id" });
+
+            migrationBuilder.CreateIndex(
+                name: "ux_atos_normativos_retificado",
+                schema: "publicacoes",
+                table: "atos_normativos",
+                column: "ato_retificado_id",
+                unique: true,
+                filter: "ato_retificado_id IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "ix_avaliacoes_da_etapa_inscricao_etapa",
@@ -5661,35 +5712,41 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "fase_cronograma_id");
 
             migrationBuilder.CreateIndex(
-                name: "IX_base_legal_bonus_regional_tipo_instrumento",
-                schema: "configuracao",
-                table: "base_legal_bonus_regional",
-                column: "tipo_instrumento");
+                name: "ix_bases_da_permissao_concedida_perfil_id_concessao_id",
+                schema: "autorizacao",
+                table: "bases_da_permissao_concedida",
+                columns: new[] { "perfil_id", "concessao_id" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_bases_da_permissao_concessao_codigo",
                 schema: "autorizacao",
-                table: "bases_da_permissao_na_concessao",
+                table: "bases_da_permissao_concedida",
                 columns: new[] { "concessao_id", "codigo", "ordem_na_trilha" },
                 descending: new[] { false, false, true });
 
             migrationBuilder.CreateIndex(
-                name: "ix_bases_da_permissao_na_concessao_perfil_id_concessao_id",
-                schema: "autorizacao",
-                table: "bases_da_permissao_na_concessao",
-                columns: new[] { "perfil_id", "concessao_id" });
-
-            migrationBuilder.CreateIndex(
                 name: "ux_bases_da_permissao_ordem",
                 schema: "autorizacao",
-                table: "bases_da_permissao_na_concessao",
+                table: "bases_da_permissao_concedida",
                 column: "ordem_na_trilha",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_calendario_dias_uteis_versao_dataset",
+                name: "ix_bases_legais_do_bonus_regional_tipo_instrumento",
                 schema: "configuracao",
-                table: "calendario_dias_uteis",
+                table: "bases_legais_do_bonus_regional",
+                column: "tipo_instrumento");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_bases_legais_dos_nos_no_exigencia_id",
+                schema: "selecao",
+                table: "bases_legais_dos_nos",
+                column: "no_exigencia_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_calendarios_de_dias_uteis_versao_dataset",
+                schema: "configuracao",
+                table: "calendarios_de_dias_uteis",
                 column: "versao_dataset",
                 filter: "is_deleted = false");
 
@@ -5708,17 +5765,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_categoria_documento_codigo_vivo",
+                name: "ix_categorias_de_documento_codigo_vivo",
                 schema: "configuracao",
-                table: "categoria_documento",
+                table: "categorias_de_documento",
                 column: "codigo",
                 unique: true,
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_categoria_documento_ordem_codigo",
+                name: "ix_categorias_de_documento_ordem_codigo",
                 schema: "configuracao",
-                table: "categoria_documento",
+                table: "categorias_de_documento",
                 columns: new[] { "ordem", "codigo" });
 
             migrationBuilder.CreateIndex(
@@ -5781,6 +5838,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "limpar_apos");
 
             migrationBuilder.CreateIndex(
+                name: "ix_chaves_de_idempotencia_expires_at",
+                schema: "plataforma",
+                table: "chaves_de_idempotencia",
+                column: "expires_at");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_chaves_de_idempotencia_scope_endpoint_key",
+                schema: "plataforma",
+                table: "chaves_de_idempotencia",
+                columns: new[] { "scope", "endpoint", "idempotency_key" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ix_comprovantes_inscricao_inscricao_numero",
                 schema: "selecao",
                 table: "comprovantes_inscricao",
@@ -5823,9 +5893,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_condicao_atendimento_especializado_codigo_vivo",
+                name: "ix_condicoes_de_atendimento_codigo_vivo",
                 schema: "configuracao",
-                table: "condicao_atendimento_especializado",
+                table: "condicoes_de_atendimento",
                 column: "codigo",
                 unique: true,
                 filter: "is_deleted = false");
@@ -5835,6 +5905,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 table: "condicoes_gatilho",
                 column: "documento_exigido_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_condicoes_ofertadas_oferta_atendimento_especializado_id_con",
+                schema: "selecao",
+                table: "condicoes_ofertadas",
+                columns: new[] { "oferta_atendimento_especializado_id", "condicao_origem_id" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_condicoes_precondicao_fato_fato_coletado_id",
@@ -5856,19 +5933,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_configuracoes_bonus_regional_municipio_configuracao_bonus_r",
-                schema: "selecao",
-                table: "configuracoes_bonus_regional_municipio",
-                column: "configuracao_bonus_regional_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_configuracoes_cascata_remanejamento_processo",
-                schema: "selecao",
-                table: "configuracoes_cascata_remanejamento",
-                column: "processo_seletivo_id",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "ix_configuracoes_classificacao_processo_seletivo_id",
                 schema: "selecao",
                 table: "configuracoes_classificacao",
@@ -5876,17 +5940,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ux_configuracoes_de_remanejamento_processo",
+                schema: "selecao",
+                table: "configuracoes_de_remanejamento",
+                column: "processo_seletivo_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ux_configuracoes_de_vagas_processo_oferta",
+                schema: "selecao",
+                table: "configuracoes_de_vagas",
+                columns: new[] { "processo_seletivo_id", "oferta_curso_origem_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ux_configuracoes_derivacao_fato_processo_fato",
                 schema: "selecao",
                 table: "configuracoes_derivacao_fato",
                 columns: new[] { "processo_seletivo_id", "codigo_fato" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ux_configuracoes_distribuicao_vagas_processo_oferta",
-                schema: "selecao",
-                table: "configuracoes_distribuicao_vagas",
-                columns: new[] { "processo_seletivo_id", "oferta_curso_origem_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -5924,17 +5995,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_curso_codigo_vivo",
+                name: "ix_cursos_codigo_vivo",
                 schema: "configuracao",
-                table: "curso",
+                table: "cursos",
                 column: "codigo",
                 unique: true,
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_curso_ordenacao_alfabetica",
+                name: "ix_cursos_ordenacao_alfabetica",
                 schema: "configuracao",
-                table: "curso",
+                table: "cursos",
                 columns: new[] { "nome_ordenacao", "codigo", "id" },
                 filter: "is_deleted = false");
 
@@ -5997,6 +6068,26 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_decisoes_do_pedido_pedido",
+                schema: "autorizacao",
+                table: "decisoes_do_pedido",
+                column: "pedido_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_decisoes_do_pedido_ordem_de_registro",
+                schema: "autorizacao",
+                table: "decisoes_do_pedido",
+                column: "ordem_de_registro",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_deficiencias_atendidas_oferta_atendimento_especializado_id_",
+                schema: "selecao",
+                table: "deficiencias_atendidas",
+                columns: new[] { "oferta_atendimento_especializado_id", "tipo_deficiencia_origem_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ux_desativacoes_do_perfil_aberta",
                 schema: "autorizacao",
                 table: "desativacoes_do_perfil",
@@ -6026,9 +6117,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_dia_nao_util_calendario_data",
+                name: "ix_dias_nao_uteis_calendario_data",
                 schema: "configuracao",
-                table: "dia_nao_util",
+                table: "dias_nao_uteis",
                 columns: new[] { "calendario_dias_uteis_id", "data" });
 
             migrationBuilder.CreateIndex(
@@ -6180,9 +6271,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_fase_canonica_codigo_vivo",
+                name: "ix_fases_canonicas_codigo_vivo",
                 schema: "configuracao",
-                table: "fase_canonica",
+                table: "fases_canonicas",
                 column: "codigo",
                 unique: true,
                 filter: "is_deleted = false");
@@ -6199,13 +6290,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 table: "fases_cronograma",
                 columns: new[] { "processo_seletivo_id", "ordem" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ux_fato_valor_dominio_fato_codigo",
-                schema: "configuracao",
-                table: "fato_valor_dominio",
-                columns: new[] { "fato_candidato_id", "codigo" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6231,6 +6315,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "grupo_coletado_id IS NULL");
 
             migrationBuilder.CreateIndex(
+                name: "ux_fatos_do_candidato_codigo",
+                schema: "configuracao",
+                table: "fatos_do_candidato",
+                column: "codigo",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ux_formularios_processo_processo_finalidade",
                 schema: "selecao",
                 table: "formularios_processo",
@@ -6252,23 +6343,30 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_grupos_peso_area_enem_congelados_configuracao_classificacao",
+                name: "ux_grupos_da_inscricao_membro",
                 schema: "selecao",
-                table: "grupos_peso_area_enem_congelados",
+                table: "grupos_da_inscricao",
+                columns: new[] { "inscricao_id", "grupo_codigo", "membro_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_grupos_do_quadro_de_pesos_configuracao_classificacao_id",
+                schema: "selecao",
+                table: "grupos_do_quadro_de_pesos",
                 column: "configuracao_classificacao_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_idempotency_cache_expires_at",
-                schema: "plataforma",
-                table: "idempotency_cache",
-                column: "expires_at");
+                name: "ix_historicos_da_obrigatoriedade_regra_snapshot_at",
+                schema: "selecao",
+                table: "historicos_da_obrigatoriedade",
+                columns: new[] { "regra_id", "snapshot_at" },
+                descending: new[] { false, true });
 
             migrationBuilder.CreateIndex(
-                name: "ux_idempotency_cache_scope_endpoint_key",
-                schema: "plataforma",
-                table: "idempotency_cache",
-                columns: new[] { "scope", "endpoint", "idempotency_key" },
-                unique: true);
+                name: "ix_identificadores_da_unidade_unidade_tipo_inicio",
+                schema: "organizacao",
+                table: "identificadores_da_unidade",
+                columns: new[] { "unidade_id", "tipo_identificador", "vigencia_inicio" });
 
             migrationBuilder.CreateIndex(
                 name: "ux_implantacoes_das_permissoes_sequencia",
@@ -6304,12 +6402,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "inscricao_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_instalacao_tentativas_instalacao",
-                schema: "autorizacao",
-                table: "instalacao_tentativas",
-                column: "instalacao_id");
-
-            migrationBuilder.CreateIndex(
                 name: "ux_instalacoes_executor_pendente",
                 schema: "autorizacao",
                 table: "instalacoes",
@@ -6318,24 +6410,37 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "situacao IN ('aguardando_documento', 'documento_em_verificacao', 'documento_verificado', 'aguardando_codigo')");
 
             migrationBuilder.CreateIndex(
-                name: "ix_instituicao_cidade_codigo_ibge",
+                name: "ix_instituicoes_cidade_codigo_ibge",
                 schema: "organizacao",
-                table: "instituicao",
+                table: "instituicoes",
                 column: "cidade_codigo_ibge");
 
             migrationBuilder.CreateIndex(
-                name: "ix_instituicao_singleton_vivo",
+                name: "ix_instituicoes_singleton_vivo",
                 schema: "organizacao",
-                table: "instituicao",
+                table: "instituicoes",
                 column: "registro_vivo_sentinela",
                 unique: true,
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_instituicao_unidade_raiz_id",
+                name: "ix_instituicoes_unidade_raiz_id",
                 schema: "organizacao",
-                table: "instituicao",
+                table: "instituicoes",
                 column: "unidade_raiz_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_itens_da_revisao_concessao",
+                schema: "autorizacao",
+                table: "itens_da_revisao",
+                column: "concessao_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_itens_da_revisao_revisao_concessao",
+                schema: "autorizacao",
+                table: "itens_da_revisao",
+                columns: new[] { "revisao_id", "concessao_id" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_itens_de_avaliacao_da_etapa_etapa_processo_id",
@@ -6390,10 +6495,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_leituras_do_documento_da_versao_documento",
+                name: "ix_leituras_do_anexo_do_pedido_anexo_id",
                 schema: "autorizacao",
-                table: "leituras_do_documento_da_versao",
-                column: "documento_id");
+                table: "leituras_do_anexo_do_pedido",
+                column: "anexo_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_leituras_do_anexo_do_pedido_pedido",
+                schema: "autorizacao",
+                table: "leituras_do_anexo_do_pedido",
+                column: "pedido_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_liberacoes_da_reclassificacao_perfil_id_concessao_id",
@@ -6416,15 +6527,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_local_oferta_campus_responsavel_id",
+                name: "ix_locais_de_oferta_campus_responsavel_id",
                 schema: "configuracao",
-                table: "local_oferta",
+                table: "locais_de_oferta",
                 column: "campus_responsavel_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_local_oferta_cidade_codigo_ibge",
+                name: "ix_locais_de_oferta_cidade_codigo_ibge",
                 schema: "configuracao",
-                table: "local_oferta",
+                table: "locais_de_oferta",
                 column: "cidade_codigo_ibge");
 
             migrationBuilder.CreateIndex(
@@ -6462,6 +6573,34 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_manifestacoes_da_protecao_item_ciclo",
+                schema: "configuracao",
+                table: "manifestacoes_da_protecao",
+                columns: new[] { "cadastro", "item_id", "ciclo", "instante" });
+
+            migrationBuilder.CreateIndex(
+                name: "ux_manifestacoes_da_protecao_inicial_do_autor",
+                schema: "configuracao",
+                table: "manifestacoes_da_protecao",
+                columns: new[] { "cadastro", "item_id", "ciclo", "autor_emissor", "autor_sub" },
+                unique: true,
+                filter: "substitui_id IS NULL");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_manifestacoes_da_protecao_ordem_de_registro",
+                schema: "configuracao",
+                table: "manifestacoes_da_protecao",
+                column: "ordem_de_registro",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ux_manifestacoes_da_protecao_substitui",
+                schema: "configuracao",
+                table: "manifestacoes_da_protecao",
+                column: "substitui_id",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ix_migracoes_da_concessao_janela_id_perfil_id",
                 schema: "autorizacao",
                 table: "migracoes_da_concessao",
@@ -6481,9 +6620,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_modalidade_codigo_vivo",
+                name: "ix_modalidades_codigo_vivo",
                 schema: "configuracao",
-                table: "modalidade",
+                table: "modalidades",
                 column: "codigo",
                 unique: true,
                 filter: "is_deleted = false");
@@ -6534,37 +6673,30 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_nos_exigencia_no_pai_id",
+                name: "ix_municipios_do_bonus_regional_configuracao_bonus_regional_id",
                 schema: "selecao",
-                table: "nos_exigencia",
+                table: "municipios_do_bonus_regional",
+                column: "configuracao_bonus_regional_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_nos_da_arvore_de_exigencias_no_pai_id",
+                schema: "selecao",
+                table: "nos_da_arvore_de_exigencias",
                 column: "no_pai_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_nos_exigencia_processo_seletivo_id",
+                name: "ix_nos_da_arvore_de_exigencias_processo_seletivo_id",
                 schema: "selecao",
-                table: "nos_exigencia",
+                table: "nos_da_arvore_de_exigencias",
                 column: "processo_seletivo_id");
 
             migrationBuilder.CreateIndex(
-                name: "ux_nos_exigencia_documento_exigido_id",
+                name: "ux_nos_da_arvore_de_exigencias_documento_exigido_id",
                 schema: "selecao",
-                table: "nos_exigencia",
+                table: "nos_da_arvore_de_exigencias",
                 column: "documento_exigido_id",
                 unique: true,
                 filter: "documento_exigido_id IS NOT NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_nos_exigencia_base_legal_no_exigencia_id",
-                schema: "selecao",
-                table: "nos_exigencia_base_legal",
-                column: "no_exigencia_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_obrigatoriedade_legal_historico_regra_snapshot_at",
-                schema: "selecao",
-                table: "obrigatoriedade_legal_historico",
-                columns: new[] { "regra_id", "snapshot_at" },
-                descending: new[] { false, true });
 
             migrationBuilder.CreateIndex(
                 name: "ux_obrigatoriedades_legais_hash_ativos",
@@ -6583,13 +6715,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ux_ocorrencias_de_grupo_da_inscricao_membro",
-                schema: "selecao",
-                table: "ocorrencias_de_grupo_da_inscricao",
-                columns: new[] { "inscricao_id", "grupo_codigo", "membro_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "ix_ocorrencias_do_lote_de_notas_inscricao_id",
                 schema: "selecao",
                 table: "ocorrencias_do_lote_de_notas",
@@ -6602,81 +6727,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "lote_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_oferta_curso_curso_id",
+                name: "ix_ofertas_de_curso_curso_id",
                 schema: "configuracao",
-                table: "oferta_curso",
+                table: "ofertas_de_curso",
                 columns: new[] { "curso_id", "id" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_oferta_curso_local_oferta_id",
+                name: "ix_ofertas_de_curso_local_oferta_id",
                 schema: "configuracao",
-                table: "oferta_curso",
+                table: "ofertas_de_curso",
                 column: "local_oferta_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_ofertas_atendimento_especializado_processo_seletivo_id",
-                schema: "selecao",
-                table: "ofertas_atendimento_especializado",
-                column: "processo_seletivo_id",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_ofertas_condicao_oferta_atendimento_especializado_id_condic",
-                schema: "selecao",
-                table: "ofertas_condicao",
-                columns: new[] { "oferta_atendimento_especializado_id", "condicao_origem_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_ofertas_recurso_oferta_atendimento_especializado_id_recurso",
-                schema: "selecao",
-                table: "ofertas_recurso",
-                columns: new[] { "oferta_atendimento_especializado_id", "recurso_origem_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_ofertas_tipo_deficiencia_oferta_atendimento_especializado_i",
-                schema: "selecao",
-                table: "ofertas_tipo_deficiencia",
-                columns: new[] { "oferta_atendimento_especializado_id", "tipo_deficiencia_origem_id" },
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ux_opcoes_declaradas_fato_processo_fato_codigo",
                 schema: "selecao",
                 table: "opcoes_declaradas_fato",
                 columns: new[] { "processo_seletivo_id", "fato_codigo", "codigo" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_pedido_anexo_leituras_anexo_id",
-                schema: "autorizacao",
-                table: "pedido_anexo_leituras",
-                column: "anexo_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_pedido_anexo_leituras_pedido",
-                schema: "autorizacao",
-                table: "pedido_anexo_leituras",
-                column: "pedido_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_pedido_anexos_pedido",
-                schema: "autorizacao",
-                table: "pedido_anexos",
-                column: "pedido_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_pedido_decisoes_pedido",
-                schema: "autorizacao",
-                table: "pedido_decisoes",
-                column: "pedido_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_pedido_decisoes_ordem_de_registro",
-                schema: "autorizacao",
-                table: "pedido_decisoes",
-                column: "ordem_de_registro",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6727,17 +6793,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_peso_area_enem_resolucao_grupo_vivo",
+                name: "ix_pesos_por_area_do_enem_resolucao_grupo_vivo",
                 schema: "configuracao",
-                table: "peso_area_enem",
+                table: "pesos_por_area_do_enem",
                 columns: new[] { "resolucao", "grupo_curso" },
                 unique: true,
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_precedencia_fase_par_vivo",
+                name: "ix_precedencias_entre_fases_par_vivo",
                 schema: "configuracao",
-                table: "precedencia_fase",
+                table: "precedencias_entre_fases",
                 columns: new[] { "antecessora_codigo", "sucessora_codigo" },
                 unique: true,
                 filter: "is_deleted = false");
@@ -6765,59 +6831,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: new[] { "fase_cronograma_id", "ato_codigo", "papel" },
                 unique: true)
                 .Annotation("Npgsql:NullsDistinct", false);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_protecao_do_catalogo_atos_ato",
-                schema: "configuracao",
-                table: "protecao_do_catalogo_atos",
-                columns: new[] { "ato", "instante" });
-
-            migrationBuilder.CreateIndex(
-                name: "ix_protecao_do_catalogo_atos_item",
-                schema: "configuracao",
-                table: "protecao_do_catalogo_atos",
-                columns: new[] { "cadastro", "item_id", "instante" });
-
-            migrationBuilder.CreateIndex(
-                name: "ix_protecao_do_catalogo_atos_item_ciclo",
-                schema: "configuracao",
-                table: "protecao_do_catalogo_atos",
-                columns: new[] { "cadastro", "item_id", "ciclo", "instante" });
-
-            migrationBuilder.CreateIndex(
-                name: "ux_protecao_do_catalogo_atos_ordem_de_registro",
-                schema: "configuracao",
-                table: "protecao_do_catalogo_atos",
-                column: "ordem_de_registro",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_protecao_do_catalogo_manifestacoes_item_ciclo",
-                schema: "configuracao",
-                table: "protecao_do_catalogo_manifestacoes",
-                columns: new[] { "cadastro", "item_id", "ciclo", "instante" });
-
-            migrationBuilder.CreateIndex(
-                name: "ux_protecao_do_catalogo_manifestacoes_inicial_do_autor",
-                schema: "configuracao",
-                table: "protecao_do_catalogo_manifestacoes",
-                columns: new[] { "cadastro", "item_id", "ciclo", "autor_emissor", "autor_sub" },
-                unique: true,
-                filter: "substitui_id IS NULL");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_protecao_do_catalogo_manifestacoes_ordem_de_registro",
-                schema: "configuracao",
-                table: "protecao_do_catalogo_manifestacoes",
-                column: "ordem_de_registro",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ux_protecao_do_catalogo_manifestacoes_substitui",
-                schema: "configuracao",
-                table: "protecao_do_catalogo_manifestacoes",
-                column: "substitui_id",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_providencias_concessao",
@@ -6887,31 +6900,38 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_recurso_acessibilidade_codigo_vivo",
-                schema: "configuracao",
-                table: "recurso_acessibilidade",
-                column: "codigo",
-                unique: true,
-                filter: "is_deleted = false");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_recurso_acessibilidade_nome_vivo",
-                schema: "configuracao",
-                table: "recurso_acessibilidade",
-                column: "nome",
-                unique: true,
-                filter: "is_deleted = false");
-
-            migrationBuilder.CreateIndex(
                 name: "ix_recursos_da_etapa_etapa_processo_id",
                 schema: "selecao",
                 table: "recursos_da_etapa",
                 column: "etapa_processo_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_referencia_reserva_demografica_censo_vivo",
+                name: "ix_recursos_de_acessibilidade_codigo_vivo",
                 schema: "configuracao",
-                table: "referencia_reserva_demografica",
+                table: "recursos_de_acessibilidade",
+                column: "codigo",
+                unique: true,
+                filter: "is_deleted = false");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_recursos_de_acessibilidade_nome_vivo",
+                schema: "configuracao",
+                table: "recursos_de_acessibilidade",
+                column: "nome",
+                unique: true,
+                filter: "is_deleted = false");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_recursos_ofertados_oferta_atendimento_especializado_id_recu",
+                schema: "selecao",
+                table: "recursos_ofertados",
+                columns: new[] { "oferta_atendimento_especializado_id", "recurso_origem_id" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_referencias_demograficas_censo_vivo",
+                schema: "configuracao",
+                table: "referencias_demograficas",
                 column: "censo_referencia",
                 unique: true,
                 filter: "is_deleted = false");
@@ -6921,6 +6941,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 table: "regras_derivacao_configuradas",
                 columns: new[] { "configuracao_derivacao_fato_id", "ordem" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_regras_do_catalogo_hash",
+                schema: "selecao",
+                table: "regras_do_catalogo",
+                column: "hash");
+
+            migrationBuilder.CreateIndex(
+                name: "ux_regras_do_catalogo_codigo_versao",
+                schema: "selecao",
+                table: "regras_do_catalogo",
+                columns: new[] { "codigo", "versao" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6979,37 +7012,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 .Annotation("Npgsql:NullsDistinct", false);
 
             migrationBuilder.CreateIndex(
-                name: "ix_revisao_itens_concessao",
-                schema: "autorizacao",
-                table: "revisao_itens",
-                column: "concessao_id");
+                name: "ix_sincronizacoes_com_o_sigaa_data_de_referencia",
+                schema: "discentes",
+                table: "sincronizacoes_com_o_sigaa",
+                column: "data_de_referencia");
 
             migrationBuilder.CreateIndex(
-                name: "ux_revisao_itens_revisao_concessao",
-                schema: "autorizacao",
-                table: "revisao_itens",
-                columns: new[] { "revisao_id", "concessao_id" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ux_rol_de_fatos_candidato_codigo",
-                schema: "configuracao",
-                table: "rol_de_fatos_candidato",
-                column: "codigo",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "ix_rol_de_regras_hash",
-                schema: "selecao",
-                table: "rol_de_regras",
-                column: "hash");
-
-            migrationBuilder.CreateIndex(
-                name: "ux_rol_de_regras_codigo_versao",
-                schema: "selecao",
-                table: "rol_de_regras",
-                columns: new[] { "codigo", "versao" },
-                unique: true);
+                name: "ix_sincronizacoes_com_o_sigaa_started_at",
+                schema: "discentes",
+                table: "sincronizacoes_com_o_sigaa",
+                column: "started_at");
 
             migrationBuilder.CreateIndex(
                 name: "ux_suspensoes_do_perfil_aberta",
@@ -7027,29 +7039,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_sync_run_data_de_referencia",
-                schema: "discentes",
-                table: "sync_run",
-                column: "data_de_referencia");
+                name: "ix_tentativas_de_instalacao_instalacao",
+                schema: "autorizacao",
+                table: "tentativas_de_instalacao",
+                column: "instalacao_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_sync_run_started_at",
-                schema: "discentes",
-                table: "sync_run",
-                column: "started_at");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_termo_consentimento_nome",
+                name: "ix_termos_de_consentimento_nome",
                 schema: "configuracao",
-                table: "termo_consentimento",
+                table: "termos_de_consentimento",
                 column: "nome",
                 filter: "is_deleted = false");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_termo_consentimento_versao_termo_promovida_em",
-                schema: "configuracao",
-                table: "termo_consentimento_versao",
-                columns: new[] { "termo_consentimento_id", "promovida_em" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_termos_de_responsabilidade_versao_vigente_id",
@@ -7085,46 +7085,46 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_tipo_ato_publicado_codigo_vivo",
+                name: "ix_tipos_de_ato_publicado_codigo_vivo",
                 schema: "publicacoes",
-                table: "tipo_ato_publicado",
+                table: "tipos_de_ato_publicado",
                 column: "codigo",
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_tipo_banca_codigo_vivo",
+                name: "ix_tipos_de_banca_codigo_vivo",
                 schema: "configuracao",
-                table: "tipo_banca",
-                column: "codigo",
-                unique: true,
-                filter: "is_deleted = false");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_tipo_deficiencia_codigo_vivo",
-                schema: "configuracao",
-                table: "tipo_deficiencia",
+                table: "tipos_de_banca",
                 column: "codigo",
                 unique: true,
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_tipo_deficiencia_nome_vivo",
+                name: "ix_tipos_de_deficiencia_codigo_vivo",
                 schema: "configuracao",
-                table: "tipo_deficiencia",
+                table: "tipos_de_deficiencia",
+                column: "codigo",
+                unique: true,
+                filter: "is_deleted = false");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_tipos_de_deficiencia_nome_vivo",
+                schema: "configuracao",
+                table: "tipos_de_deficiencia",
                 column: "nome",
                 unique: true,
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_tipo_documento_categoria",
+                name: "ix_tipos_de_documento_categoria",
                 schema: "configuracao",
-                table: "tipo_documento",
+                table: "tipos_de_documento",
                 column: "categoria");
 
             migrationBuilder.CreateIndex(
-                name: "ix_tipo_documento_codigo_vivo",
+                name: "ix_tipos_de_documento_codigo_vivo",
                 schema: "configuracao",
-                table: "tipo_documento",
+                table: "tipos_de_documento",
                 column: "codigo",
                 unique: true,
                 filter: "is_deleted = false");
@@ -7162,46 +7162,40 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "pedido_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_unidade_alias",
+                name: "ix_unidades_alias",
                 schema: "organizacao",
-                table: "unidade",
+                table: "unidades",
                 column: "alias");
 
             migrationBuilder.CreateIndex(
-                name: "ix_unidade_codigo_vivo",
+                name: "ix_unidades_codigo_vivo",
                 schema: "organizacao",
-                table: "unidade",
+                table: "unidades",
                 column: "codigo",
                 unique: true,
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_unidade_sigla_vivo",
+                name: "ix_unidades_sigla_vivo",
                 schema: "organizacao",
-                table: "unidade",
+                table: "unidades",
                 column: "sigla",
                 unique: true,
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_unidade_slug_vivo",
+                name: "ix_unidades_slug_vivo",
                 schema: "organizacao",
-                table: "unidade",
+                table: "unidades",
                 column: "slug",
                 unique: true,
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_unidade_superior_id",
+                name: "ix_unidades_superior_id",
                 schema: "organizacao",
-                table: "unidade",
+                table: "unidades",
                 column: "unidade_superior_id");
-
-            migrationBuilder.CreateIndex(
-                name: "ix_uid_hist_unidade_tipo_inicio",
-                schema: "organizacao",
-                table: "unidade_identificador_historico",
-                columns: new[] { "unidade_id", "tipo_identificador", "vigencia_inicio" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_vagas_de_linhagem_ato_id",
@@ -7227,6 +7221,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 table: "vagas_ofertadas",
                 columns: new[] { "configuracao_distribuicao_vagas_id", "modalidade_codigo" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ux_valores_de_dominio_do_fato_fato_codigo",
+                schema: "configuracao",
+                table: "valores_de_dominio_do_fato",
+                columns: new[] { "fato_candidato_id", "codigo" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -7291,6 +7292,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_versoes_do_termo_consentimento_termo_promovida_em",
+                schema: "configuracao",
+                table: "versoes_do_termo_consentimento",
+                columns: new[] { "termo_consentimento_id", "promovida_em" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_vigencias_do_perfil_perfil_id_versao_id",
                 schema: "autorizacao",
                 table: "vigencias_do_perfil",
@@ -7305,23 +7312,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "ate IS NULL");
 
             migrationBuilder.CreateIndex(
-                name: "ix_vinculo_ato_entidade_objeto",
-                schema: "publicacoes",
-                table: "vinculo_ato_entidade",
-                columns: new[] { "entidade_tipo", "entidade_id", "ato_id" });
-
-            migrationBuilder.CreateIndex(
-                name: "ux_vinculo_ato_entidade_trio",
-                schema: "publicacoes",
-                table: "vinculo_ato_entidade",
-                columns: new[] { "ato_id", "entidade_tipo", "entidade_id" },
+                name: "ix_vinculos_de_discentes_id_discente_sigaa",
+                schema: "discentes",
+                table: "vinculos_de_discentes",
+                column: "id_discente_sigaa",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_vinculo_discente_id_discente_sigaa",
-                schema: "discentes",
-                table: "vinculo_discente",
-                column: "id_discente_sigaa",
+                name: "ix_vinculos_do_ato_com_entidade_objeto",
+                schema: "publicacoes",
+                table: "vinculos_do_ato_com_entidade",
+                columns: new[] { "entidade_tipo", "entidade_id", "ato_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "ux_vinculos_do_ato_com_entidade_trio",
+                schema: "publicacoes",
+                table: "vinculos_do_ato_com_entidade",
+                columns: new[] { "ato_id", "entidade_tipo", "entidade_id" },
                 unique: true);
 
             migrationBuilder.AddForeignKey(
@@ -7345,19 +7352,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
-                name: "fk_pedido_anexo_leituras_pedido_anexos_anexo_id",
+                name: "fk_anexos_do_pedido_pedidos_de_concessao_pedido_id",
                 schema: "autorizacao",
-                table: "pedido_anexo_leituras",
-                column: "anexo_id",
-                principalSchema: "autorizacao",
-                principalTable: "pedido_anexos",
-                principalColumn: "id",
-                onDelete: ReferentialAction.Restrict);
-
-            migrationBuilder.AddForeignKey(
-                name: "fk_pedido_anexo_leituras_pedido_de_concessao_pedido_id",
-                schema: "autorizacao",
-                table: "pedido_anexo_leituras",
+                table: "anexos_do_pedido",
                 column: "pedido_id",
                 principalSchema: "autorizacao",
                 principalTable: "pedidos_de_concessao",
@@ -7365,9 +7362,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
-                name: "fk_pedido_anexos_pedidos_de_concessao_pedido_id",
+                name: "fk_decisoes_do_pedido_pedidos_de_concessao_pedido_id",
                 schema: "autorizacao",
-                table: "pedido_anexos",
+                table: "decisoes_do_pedido",
                 column: "pedido_id",
                 principalSchema: "autorizacao",
                 principalTable: "pedidos_de_concessao",
@@ -7375,9 +7372,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
-                name: "fk_pedido_decisoes_pedidos_de_concessao_pedido_id",
+                name: "fk_leituras_do_anexo_do_pedido_pedido_de_concessao_pedido_id",
                 schema: "autorizacao",
-                table: "pedido_decisoes",
+                table: "leituras_do_anexo_do_pedido",
                 column: "pedido_id",
                 principalSchema: "autorizacao",
                 principalTable: "pedidos_de_concessao",
@@ -7422,7 +7419,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "anexo_do_ato",
+                name: "acessos_ao_documento_da_versao",
+                schema: "autorizacao");
+
+            migrationBuilder.DropTable(
+                name: "anexos_do_ato",
                 schema: "publicacoes");
 
             migrationBuilder.DropTable(
@@ -7430,12 +7431,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "areas_peso_area_enem_congeladas",
+                name: "areas_do_quadro_de_pesos",
                 schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "areas_dos_pesos_do_enem",
+                schema: "configuracao");
 
             migrationBuilder.DropTable(
                 name: "arquivos_da_apresentacao",
                 schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "atos_da_protecao_do_catalogo",
+                schema: "configuracao");
 
             migrationBuilder.DropTable(
                 name: "avaliacoes_da_etapa",
@@ -7454,15 +7463,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "base_legal_bonus_regional_municipio",
-                schema: "configuracao");
-
-            migrationBuilder.DropTable(
-                name: "bases_da_permissao_na_concessao",
+                name: "bases_da_permissao_concedida",
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "categoria_documento",
+                name: "bases_legais_dos_nos",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "categorias_de_documento",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
@@ -7478,15 +7487,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
+                name: "chaves_de_idempotencia",
+                schema: "plataforma");
+
+            migrationBuilder.DropTable(
                 name: "comprovantes_inscricao",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "condicao_atendimento_especializado",
+                name: "condicoes_de_atendimento",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
                 name: "condicoes_gatilho",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "condicoes_ofertadas",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -7495,10 +7512,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.DropTable(
                 name: "condicoes_regra_derivacao",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "configuracoes_bonus_regional_municipio",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -7526,11 +7539,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
+                name: "decisoes_do_pedido",
+                schema: "autorizacao");
+
+            migrationBuilder.DropTable(
+                name: "deficiencias_atendidas",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
                 name: "destinos_remanejamento",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "dia_nao_util",
+                name: "dias_nao_uteis",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
@@ -7558,11 +7579,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "fase_canonica",
-                schema: "configuracao");
-
-            migrationBuilder.DropTable(
-                name: "fato_valor_dominio",
+                name: "fases_canonicas",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
@@ -7570,20 +7587,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "idempotency_cache",
-                schema: "plataforma");
-
-            migrationBuilder.DropTable(
-                name: "instalacao_gestores",
+                name: "gestores_da_instalacao",
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "instalacao_tentativas",
-                schema: "autorizacao");
+                name: "historicos_da_obrigatoriedade",
+                schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "instituicao",
+                name: "identificadores_da_unidade",
                 schema: "organizacao");
+
+            migrationBuilder.DropTable(
+                name: "instituicoes",
+                schema: "organizacao");
+
+            migrationBuilder.DropTable(
+                name: "itens_da_revisao",
+                schema: "autorizacao");
 
             migrationBuilder.DropTable(
                 name: "itens_de_avaliacao_da_etapa",
@@ -7594,7 +7615,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "leituras_do_documento_da_versao",
+                name: "leituras_do_anexo_do_pedido",
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
@@ -7602,11 +7623,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
+                name: "manifestacoes_da_protecao",
+                schema: "configuracao");
+
+            migrationBuilder.DropTable(
                 name: "migracoes_da_concessao",
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "modalidade",
+                name: "modalidades",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
@@ -7630,11 +7655,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "nos_exigencia_base_legal",
-                schema: "selecao");
+                name: "municipios_da_base_legal_bonus",
+                schema: "configuracao");
 
             migrationBuilder.DropTable(
-                name: "obrigatoriedade_legal_historico",
+                name: "municipios_do_bonus_regional",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -7642,35 +7667,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "oferta_curso",
+                name: "ofertas_de_curso",
                 schema: "configuracao");
-
-            migrationBuilder.DropTable(
-                name: "ofertas_condicao",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "ofertas_recurso",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "ofertas_tipo_deficiencia",
-                schema: "selecao");
 
             migrationBuilder.DropTable(
                 name: "opcoes_declaradas_fato",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "pedido_anexo_leituras",
+                name: "permissoes_da_versao_do_perfil",
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "pedido_decisoes",
-                schema: "autorizacao");
-
-            migrationBuilder.DropTable(
-                name: "perfil_permissoes",
+                name: "permissoes_do_perfil",
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
@@ -7678,11 +7687,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "peso_area_enem_area",
-                schema: "configuracao");
-
-            migrationBuilder.DropTable(
-                name: "precedencia_fase",
+                name: "precedencias_entre_fases",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
@@ -7692,14 +7697,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.DropTable(
                 name: "produtos_da_fase",
                 schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "protecao_do_catalogo_atos",
-                schema: "configuracao");
-
-            migrationBuilder.DropTable(
-                name: "protecao_do_catalogo_manifestacoes",
-                schema: "configuracao");
 
             migrationBuilder.DropTable(
                 name: "providencias",
@@ -7718,16 +7715,24 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "recurso_acessibilidade",
-                schema: "configuracao");
-
-            migrationBuilder.DropTable(
                 name: "recursos_da_etapa",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "referencia_reserva_demografica",
+                name: "recursos_de_acessibilidade",
                 schema: "configuracao");
+
+            migrationBuilder.DropTable(
+                name: "recursos_ofertados",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "referencias_demograficas",
+                schema: "configuracao");
+
+            migrationBuilder.DropTable(
+                name: "regras_do_catalogo",
+                schema: "selecao");
 
             migrationBuilder.DropTable(
                 name: "regras_eliminacao",
@@ -7742,20 +7747,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "revisao_itens",
-                schema: "autorizacao");
-
-            migrationBuilder.DropTable(
-                name: "rol_de_regras",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "sync_run",
+                name: "sincronizacoes_com_o_sigaa",
                 schema: "discentes");
 
             migrationBuilder.DropTable(
-                name: "termo_consentimento_versao",
-                schema: "configuracao");
+                name: "tentativas_de_instalacao",
+                schema: "autorizacao");
 
             migrationBuilder.DropTable(
                 name: "termos_exigidos_formulario",
@@ -7766,19 +7763,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "tipo_ato_publicado",
+                name: "tipos_de_ato_publicado",
                 schema: "publicacoes");
 
             migrationBuilder.DropTable(
-                name: "tipo_banca",
+                name: "tipos_de_banca",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
-                name: "tipo_deficiencia",
+                name: "tipos_de_deficiencia",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
-                name: "tipo_documento",
+                name: "tipos_de_documento",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
@@ -7794,10 +7791,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "unidade_identificador_historico",
-                schema: "organizacao");
-
-            migrationBuilder.DropTable(
                 name: "vagas_de_linhagem",
                 schema: "publicacoes");
 
@@ -7806,36 +7799,48 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "versao_do_perfil_permissoes",
-                schema: "autorizacao");
+                name: "valores_de_dominio_do_fato",
+                schema: "configuracao");
+
+            migrationBuilder.DropTable(
+                name: "versoes_do_termo_consentimento",
+                schema: "configuracao");
 
             migrationBuilder.DropTable(
                 name: "vigencias_do_perfil",
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "vinculo_ato_entidade",
+                name: "vinculos_de_discentes",
+                schema: "discentes");
+
+            migrationBuilder.DropTable(
+                name: "vinculos_do_ato_com_entidade",
                 schema: "publicacoes");
 
             migrationBuilder.DropTable(
-                name: "vinculo_discente",
-                schema: "discentes");
+                name: "documentos_da_versao",
+                schema: "autorizacao");
 
             migrationBuilder.DropTable(
                 name: "atos_do_processo",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "grupos_peso_area_enem_congelados",
+                name: "grupos_do_quadro_de_pesos",
                 schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "pesos_por_area_do_enem",
+                schema: "configuracao");
 
             migrationBuilder.DropTable(
                 name: "apresentacoes_de_documento",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "base_legal_bonus_regional",
-                schema: "configuracao");
+                name: "nos_da_arvore_de_exigencias",
+                schema: "selecao");
 
             migrationBuilder.DropTable(
                 name: "bancas_requeridas",
@@ -7850,10 +7855,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "configuracoes_bonus_regional",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
                 name: "chamadas",
                 schema: "ingresso");
 
@@ -7862,11 +7863,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "configuracoes_cascata_remanejamento",
+                name: "configuracoes_de_remanejamento",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "calendario_dias_uteis",
+                name: "calendarios_de_dias_uteis",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
@@ -7886,15 +7887,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "rol_de_fatos_candidato",
-                schema: "configuracao");
+                name: "obrigatoriedades_legais",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "unidades",
+                schema: "organizacao");
+
+            migrationBuilder.DropTable(
+                name: "revisoes_de_acessos",
+                schema: "autorizacao");
 
             migrationBuilder.DropTable(
                 name: "inscritos_do_lote_de_notas",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "documentos_da_versao",
+                name: "anexos_do_pedido",
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
@@ -7902,63 +7911,51 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "nos_exigencia",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "obrigatoriedades_legais",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
-                name: "curso",
+                name: "bases_legais_do_bonus_regional",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
-                name: "local_oferta",
-                schema: "configuracao");
-
-            migrationBuilder.DropTable(
-                name: "ofertas_atendimento_especializado",
+                name: "configuracoes_bonus_regional",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "pedido_anexos",
-                schema: "autorizacao");
-
-            migrationBuilder.DropTable(
-                name: "peso_area_enem",
+                name: "cursos",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
-                name: "ocorrencias_de_grupo_da_inscricao",
-                schema: "selecao");
+                name: "locais_de_oferta",
+                schema: "configuracao");
 
             migrationBuilder.DropTable(
                 name: "concessoes",
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "revisoes_de_acessos",
-                schema: "autorizacao");
+                name: "atendimentos_especializados",
+                schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "termo_consentimento",
-                schema: "configuracao");
+                name: "grupos_da_inscricao",
+                schema: "selecao");
 
             migrationBuilder.DropTable(
                 name: "instalacoes",
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "unidade",
-                schema: "organizacao");
-
-            migrationBuilder.DropTable(
-                name: "configuracoes_distribuicao_vagas",
+                name: "configuracoes_de_vagas",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "ato_normativo",
+                name: "fatos_do_candidato",
+                schema: "configuracao");
+
+            migrationBuilder.DropTable(
+                name: "termos_de_consentimento",
+                schema: "configuracao");
+
+            migrationBuilder.DropTable(
+                name: "atos_normativos",
                 schema: "publicacoes");
 
             migrationBuilder.DropTable(
@@ -7967,6 +7964,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.DropTable(
                 name: "configuracoes_classificacao",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "documentos_exigidos",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -7986,31 +7987,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao");
 
             migrationBuilder.DropTable(
-                name: "implantacoes_das_permissoes",
+                name: "pedidos_de_concessao",
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "documentos_exigidos",
-                schema: "selecao");
+                name: "implantacoes_das_permissoes",
+                schema: "autorizacao");
 
             migrationBuilder.DropTable(
                 name: "campus",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
-                name: "pedidos_de_concessao",
-                schema: "autorizacao");
-
-            migrationBuilder.DropTable(
-                name: "inscricoes",
-                schema: "selecao");
-
-            migrationBuilder.DropTable(
                 name: "janelas_de_migracao",
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
-                name: "versoes_configuracao",
+                name: "inscricoes",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
@@ -8019,6 +8012,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.DropTable(
                 name: "fases_cronograma",
+                schema: "selecao");
+
+            migrationBuilder.DropTable(
+                name: "versoes_configuracao",
                 schema: "selecao");
 
             migrationBuilder.DropTable(

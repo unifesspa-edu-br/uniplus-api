@@ -139,7 +139,7 @@ public abstract class ConcessaoEndpointTestBase
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await db.Database.ExecuteSqlRawAsync("DELETE FROM autorizacao.liberacoes_da_reclassificacao WHERE perfil_id = {0}", perfilId);
-        await db.Database.ExecuteSqlRawAsync("DELETE FROM autorizacao.bases_da_permissao_na_concessao WHERE perfil_id = {0}", perfilId);
+        await db.Database.ExecuteSqlRawAsync("DELETE FROM autorizacao.bases_da_permissao_concedida WHERE perfil_id = {0}", perfilId);
         await db.Database.ExecuteSqlRawAsync("DELETE FROM autorizacao.concessoes WHERE perfil_id = {0}", perfilId);
     }
 

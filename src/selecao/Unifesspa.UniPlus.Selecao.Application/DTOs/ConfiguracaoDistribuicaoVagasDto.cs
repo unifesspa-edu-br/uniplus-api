@@ -24,7 +24,7 @@ public sealed record ModalidadeSelecionadaDto(
     string BaseLegal,
     int? QuantidadeDeclarada);
 
-/// <summary>Projeção de leitura de uma referência a regra do rol_de_regras (Story #772).</summary>
+/// <summary>Projeção de leitura de uma referência a regra do catálogo de regras (Story #772).</summary>
 public sealed record ReferenciaRegraDto(string Codigo, string Versao, string Hash);
 
 /// <summary>Projeção de leitura do snapshot de referência de reserva demográfica (Story #773).</summary>

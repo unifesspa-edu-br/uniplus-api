@@ -15,7 +15,7 @@ internal static class CatalogoAprovadoDeTeste
     {
         ArgumentNullException.ThrowIfNull(db);
 
-        await db.Database.ExecuteSqlRawAsync("UPDATE configuracao.rol_de_fatos_candidato SET protecao_situacao = 'APROVADA'");
-        await db.Database.ExecuteSqlRawAsync("UPDATE configuracao.tipo_documento SET protecao_situacao = 'APROVADA'");
+        await db.Database.ExecuteSqlRawAsync("UPDATE configuracao.fatos_do_candidato SET protecao_situacao = 'APROVADA'");
+        await db.Database.ExecuteSqlRawAsync("UPDATE configuracao.tipos_de_documento SET protecao_situacao = 'APROVADA'");
     }
 }

@@ -12,7 +12,7 @@ using FluentValidation;
 /// Três checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
 /// identificador de rota; a lista de critérios e cada item não podem ser nulos — o handler
 /// desreferencia sem checagem defensiva. <c>RegraCodigo</c>/<c>RegraVersao</c> nunca chegam
-/// crus a <c>CriterioDesempate.Criar</c> — só alimentam a leitura do <c>rol_de_regras</c>
+/// crus a <c>CriterioDesempate.Criar</c> — só alimentam a leitura do <c>regras_do_catalogo</c>
 /// (<c>IRegraCatalogoReader</c>). <c>Ordem</c> já tem equivalente completo em
 /// <c>CriterioDesempate.ValidarOrdem</c>/<c>Criar</c> e ficou fora daqui.
 /// </summary>

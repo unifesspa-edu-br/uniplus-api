@@ -29,7 +29,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("oferta_curso", ConfigurarChecks);
+        builder.ToTable("ofertas_de_curso", ConfigurarChecks);
 
         builder.HasKey(o => o.Id);
 
@@ -112,7 +112,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
         // FKs intra-schema com RESTRICT: a remoção lógica de Curso/LocalOferta é
         // barrada pelos handlers (RemocaoBloqueadaPorOfertaCurso, via
         // ReferenciadoPorOfertaCursoVivaAsync); o RESTRICT cobre o DELETE físico
-        // residual — mesmo expediente do local_oferta → campus.
+        // residual — mesmo expediente do locais_de_oferta → campus.
         builder.HasOne<Curso>()
             .WithMany()
             .HasForeignKey(o => o.CursoId)
@@ -127,34 +127,34 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
         // ordena pelo nome do curso — constante dentro do recorte —, deixando o
         // Id como única coluna que move o seek de página em página.
         builder.HasIndex(o => new { o.CursoId, o.Id })
-            .HasDatabaseName("ix_oferta_curso_curso_id");
+            .HasDatabaseName("ix_ofertas_de_curso_curso_id");
 
         builder.HasIndex(o => o.LocalOfertaId)
-            .HasDatabaseName("ix_oferta_curso_local_oferta_id");
+            .HasDatabaseName("ix_ofertas_de_curso_local_oferta_id");
     }
 
     private static void ConfigurarChecks(TableBuilder<OfertaCurso> table)
     {
         // Domínios fechados dos enums (defesa em profundidade contra inserts crus).
         table.HasCheckConstraint(
-            "ck_oferta_curso_programa_de_oferta",
+            "ck_ofertas_de_curso_programa_de_oferta",
             $"programa_de_oferta IN ({TokensSql(ProgramasDeOferta.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_oferta_curso_formato_pedagogico",
+            "ck_ofertas_de_curso_formato_pedagogico",
             $"formato_pedagogico IN ({TokensSql(FormatosPedagogicos.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_oferta_curso_regime_de_turno",
+            "ck_ofertas_de_curso_regime_de_turno",
             $"regime_de_turno IN ({TokensSql(RegimesDeTurno.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_oferta_curso_regime_de_funcionamento",
+            "ck_ofertas_de_curso_regime_de_funcionamento",
             $"regime_de_funcionamento IN ({TokensSql(RegimesDeFuncionamento.TokensCanonicos)})");
 
         // Domínio fechado de cada elemento do array (o `<@` compara conjuntos).
         table.HasCheckConstraint(
-            "ck_oferta_curso_turnos_dominio",
+            "ck_ofertas_de_curso_turnos_dominio",
             $"turnos::text[] <@ ARRAY[{TokensSql(TurnosOferta.TokensCanonicos)}]::text[]");
 
         // Cardinalidade e distinção conforme o regime declarado (UNI-REQ-0137):
@@ -168,7 +168,7 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
         // guardas de forma antes da regra. O `coalesce` cobre o array vazio, cujos
         // array_ndims/array_lower são NULL.
         table.HasCheckConstraint(
-            "ck_oferta_curso_turnos_regime",
+            "ck_ofertas_de_curso_turnos_regime",
             "coalesce(array_ndims(turnos), 0) = 1 "
             + "AND coalesce(array_lower(turnos, 1), 1) = 1 "
             + "AND ((regime_de_turno = 'REGULAR' AND cardinality(turnos) = 1) "
@@ -180,18 +180,18 @@ internal sealed class OfertaCursoConfiguration : IEntityTypeConfiguration<Oferta
         // do mesmo roster que o agregado consulta (RegimeDeTurnoExigido), para o
         // CHECK não divergir da regra caso o vocabulário cresça.
         table.HasCheckConstraint(
-            "ck_oferta_curso_funcionamento_regime_de_turno",
+            "ck_ofertas_de_curso_funcionamento_regime_de_turno",
             CompatibilidadeFuncionamentoRegimeSql());
 
         // Teto e-MEC: nulo aceito; zero aceito; negativo nunca.
         table.HasCheckConstraint(
-            "ck_oferta_curso_vagas_anuais_autorizadas",
+            "ck_ofertas_de_curso_vagas_anuais_autorizadas",
             "vagas_anuais_autorizadas IS NULL OR vagas_anuais_autorizadas >= 0");
 
         // Guard condicional da base legal (ADR-0066): programa fora do Regular
         // exige base legal — espelha no banco o guard de Criar/Atualizar.
         table.HasCheckConstraint(
-            "ck_oferta_curso_base_legal_programa",
+            "ck_ofertas_de_curso_base_legal_programa",
             "programa_de_oferta = 'REGULAR' OR base_legal IS NOT NULL");
     }
 

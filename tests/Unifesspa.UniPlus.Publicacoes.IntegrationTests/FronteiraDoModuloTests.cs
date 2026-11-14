@@ -155,7 +155,7 @@ public sealed class FronteiraDoModuloTests
             JOIN pg_class alvo ON alvo.oid = con.confrelid
             WHERE con.contype = 'f'
               AND ns.nspname = 'publicacoes'
-              AND rel.relname = 'vinculo_ato_entidade'
+              AND rel.relname = 'vinculos_do_ato_com_entidade'
             """;
 
         List<string> alvos = [];
@@ -168,7 +168,7 @@ public sealed class FronteiraDoModuloTests
         }
 
         alvos.Should().ContainSingle().Which.Should().Be(
-            "ato_normativo",
+            "atos_normativos",
             "o vínculo aponta para o ato e para mais nada: o objeto do outro lado é opaco, "
             + "e uma chave estrangeira para ele reintroduziria o acoplamento que a ADR-0105 recusa");
     }

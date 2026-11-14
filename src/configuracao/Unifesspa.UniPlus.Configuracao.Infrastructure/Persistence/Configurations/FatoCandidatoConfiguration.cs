@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
@@ -17,12 +18,12 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Configuração EF Core do catálogo de fatos do candidato (<see cref="FatoCandidato"/>) — a tabela
-/// <c>rol_de_fatos_candidato</c> (UNI-REQ-0077, ADR-0111).
+/// <c>fatos_do_candidato</c> (UNI-REQ-0077, ADR-0111).
 /// </summary>
 /// <remarks>
 /// <para>
 /// O fato é desativado, nunca apagado, e a entidade deriva de <c>EntityBase</c> puro (sem
-/// soft-delete). Por isso o índice único <c>ux_rol_de_fatos_candidato_codigo</c> é
+/// soft-delete). Por isso o índice único <c>ux_fatos_do_candidato_codigo</c> é
 /// <strong>total</strong>: o código é chave natural imutável de uma linha que nunca é removida.
 /// </para>
 /// <para>
@@ -46,7 +47,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("rol_de_fatos_candidato", ConfigurarChecks);
+        builder.ToTable("fatos_do_candidato", ConfigurarChecks);
 
         builder.HasKey(f => f.Id);
 
@@ -159,7 +160,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         // então não há slot a liberar — a unicidade é absoluta.
         builder.HasIndex(f => f.Codigo)
             .IsUnique()
-            .HasDatabaseName("ux_rol_de_fatos_candidato_codigo");
+            .HasDatabaseName(RestricoesDoBanco.FatoDoCandidatoCodigoUnico);
 
         builder.HasData(MaterializarSeed());
     }
@@ -168,26 +169,26 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
     {
         // Domínios fechados dos enums (defesa em profundidade contra inserts crus).
         table.HasCheckConstraint(
-            "ck_rol_de_fatos_candidato_dominio",
+            "ck_fatos_do_candidato_dominio",
             $"dominio IN ({TokensSql(DominiosFato.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_rol_de_fatos_candidato_origem",
+            "ck_fatos_do_candidato_origem",
             $"origem IN ({TokensSql(OrigensFato.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_rol_de_fatos_candidato_cardinalidade",
+            "ck_fatos_do_candidato_cardinalidade",
             $"cardinalidade IN ({TokensSql(CardinalidadesFato.TokensCanonicos)})");
 
         // Coerência fonte_valores × domínio (invariante da factory, replicada no banco): o
         // categórico declara uma das fontes; os demais domínios não têm fonte.
         table.HasCheckConstraint(
-            "ck_rol_de_fatos_candidato_fonte_valores_coerente",
+            "ck_fatos_do_candidato_fonte_valores_coerente",
             $"(dominio = 'CATEGORICO' AND fonte_valores IS NOT NULL AND fonte_valores IN ({TokensSql(FontesValoresFato.TokensCanonicos)})) "
             + "OR (dominio <> 'CATEGORICO' AND fonte_valores IS NULL)");
 
         table.HasCheckConstraint(
-            "ck_rol_de_fatos_candidato_formato_coerente",
+            "ck_fatos_do_candidato_formato_coerente",
             $"(dominio = 'TEXTO' AND formato IS NOT NULL AND formato IN ({TokensSql(FormatosTexto.TokensCanonicos)})) "
             + "OR (dominio <> 'TEXTO' AND formato IS NULL)");
 
@@ -196,28 +197,28 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         // aceita `IDENTIFICADOR` — número de documento é sempre texto, nunca data, endereço nem os
         // demais domínios (ADR-0136, emenda de #1857).
         table.HasCheckConstraint(
-            "ck_rol_de_fatos_candidato_classificacao_minima_do_dominio",
+            "ck_fatos_do_candidato_classificacao_minima_do_dominio",
             "(dominio NOT IN ('TEXTO', 'DATA', 'ENDERECO') AND classificacao_protecao <> 'IDENTIFICADOR') "
             + "OR (dominio = 'TEXTO' AND classificacao_protecao IN ('PESSOAL', 'IDENTIFICADOR', 'SENSIVEL')) "
             + "OR (dominio IN ('DATA', 'ENDERECO') AND classificacao_protecao IN ('PESSOAL', 'SENSIVEL'))");
 
         table.HasCheckConstraint(
-            "ck_rol_de_fatos_candidato_componente_exibicao",
+            "ck_fatos_do_candidato_componente_exibicao",
             $"componente_exibicao IS NULL OR componente_exibicao IN ({TokensSql(ComponentesDeExibicao.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_rol_de_fatos_candidato_escopo",
+            "ck_fatos_do_candidato_escopo",
             $"escopo IN ({TokensSql(EscoposFato.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_rol_de_fatos_candidato_classificacao_protecao",
+            "ck_fatos_do_candidato_classificacao_protecao",
             $"classificacao_protecao IN ({TokensSql(ClassificacoesDeProtecao.TokensCanonicos)})");
 
         table.HasCheckConstraint(
-            "ck_rol_de_fatos_candidato_hipotese_legal",
+            "ck_fatos_do_candidato_hipotese_legal",
             $"hipotese_legal IN ({TokensSql(HipotesesLegaisTratamento.TokensCanonicos)})");
 
-        AprovacaoDaProtecaoOwnedConfiguration.ConfigurarChecks(table, "rol_de_fatos_candidato");
+        AprovacaoDaProtecaoOwnedConfiguration.ConfigurarChecks(table, "fatos_do_candidato");
     }
 
     private static string TokensSql(IReadOnlyList<string> tokens) =>

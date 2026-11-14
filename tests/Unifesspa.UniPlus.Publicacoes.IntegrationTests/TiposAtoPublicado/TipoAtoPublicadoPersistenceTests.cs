@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Persistence.Repositories;
@@ -31,7 +32,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
     private const string Admin = "admin-publicacoes";
     private const string ExclusionViolation = "23P01";
     private const string CheckViolation = "23514";
-    private const string NomeDaExclusionConstraint = "ex_tipo_ato_publicado_codigo_vigencia";
+    private const string NomeDaExclusionConstraint = RestricoesDoBanco.TipoDeAtoPublicadoCodigoVigencia;
 
     private static readonly DateOnly Inicio = new(2026, 1, 1);
     private static readonly DateOnly Meio = new(2026, 6, 1);
@@ -74,14 +75,14 @@ public sealed class TipoAtoPublicadoPersistenceTests
         await ctx.Database.OpenConnectionAsync();
 
         await using var command = new NpgsqlCommand(
-            """
+            $"""
             SELECT contype::text
             FROM pg_constraint c
             JOIN pg_class t ON t.oid = c.conrelid
             JOIN pg_namespace n ON n.oid = t.relnamespace
             WHERE n.nspname = 'publicacoes'
-              AND t.relname = 'tipo_ato_publicado'
-              AND c.conname = 'ex_tipo_ato_publicado_codigo_vigencia'
+              AND t.relname = 'tipos_de_ato_publicado'
+              AND c.conname = '{NomeDaExclusionConstraint}'
             """,
             (NpgsqlConnection)ctx.Database.GetDbConnection());
 
@@ -290,7 +291,7 @@ public sealed class TipoAtoPublicadoPersistenceTests
 
         await using var command = new NpgsqlCommand(
             """
-            INSERT INTO publicacoes.tipo_ato_publicado
+            INSERT INTO publicacoes.tipos_de_ato_publicado
                 (id, codigo, nome, congela_configuracao, unico_por_objeto, efeito_irreversivel,
                  eh_resultado, exige_ato_corrigido, publicavel_como_avulso,
                  vigencia_inicio, vigencia_fim, created_at, is_deleted)

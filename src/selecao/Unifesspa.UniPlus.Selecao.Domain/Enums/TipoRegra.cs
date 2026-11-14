@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Tipo de uma regra do <c>rol_de_regras</c> — a biblioteca de regras tipadas
+/// Tipo de uma regra do <c>regras_do_catalogo</c> — a biblioteca de regras tipadas
 /// e versionadas que a configuração do Processo Seletivo referencia
 /// (<c>codigo</c>+<c>versao</c>+<c>hash</c>), congelando-a no snapshot de
 /// publicação (congelamento dos parâmetros na publicação, UNI-REQ-0019). "Configurável, não programável": o comportamento

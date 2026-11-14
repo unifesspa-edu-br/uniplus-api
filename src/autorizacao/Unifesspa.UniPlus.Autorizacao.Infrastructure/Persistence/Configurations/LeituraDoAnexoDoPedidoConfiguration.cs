@@ -25,7 +25,7 @@ internal sealed class LeituraDoAnexoDoPedidoConfiguration : IEntityTypeConfigura
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
-        builder.ToTable("pedido_anexo_leituras");
+        builder.ToTable("leituras_do_anexo_do_pedido");
         builder.HasKey(l => l.Id);
         builder.Property(l => l.Id).ValueGeneratedNever();
 
@@ -44,6 +44,6 @@ internal sealed class LeituraDoAnexoDoPedidoConfiguration : IEntityTypeConfigura
             .HasForeignKey(l => l.AnexoId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(l => l.PedidoId).HasDatabaseName("ix_pedido_anexo_leituras_pedido");
+        builder.HasIndex(l => l.PedidoId).HasDatabaseName("ix_leituras_do_anexo_do_pedido_pedido");
     }
 }

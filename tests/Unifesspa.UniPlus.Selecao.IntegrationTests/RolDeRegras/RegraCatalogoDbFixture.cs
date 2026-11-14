@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o
 /// schema do <see cref="UniPlusDbContext"/> subido por <c>PrepararOBancoAsync</c> —
-/// inclui as migrations do <c>rol_de_regras</c> (da <c>AddRolDeRegras</c>,
+/// inclui as migrations do <c>regras_do_catalogo</c> (da <c>AddRolDeRegras</c>,
 /// Story #772, em diante) e o seed das regras <c>v1</c> do
 /// <c>RegraCatalogoSeed</c>, validando ponta-a-ponta contra Postgres real.
 /// </summary>

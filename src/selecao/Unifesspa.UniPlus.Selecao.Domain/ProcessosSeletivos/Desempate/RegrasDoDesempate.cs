@@ -27,7 +27,7 @@ public static class RegrasDoDesempate
 
     /// <summary>
     /// A quantidade de critérios não depende do catálogo de regras: existe separada para quem
-    /// recebe a lista recusá-la acima do teto antes de consultar o <c>rol_de_regras</c> e
+    /// recebe a lista recusá-la acima do teto antes de consultar o <c>regras_do_catalogo</c> e
     /// antes de conferir item a item.
     /// </summary>
     public static List<FieldError> ConferirQuantidadeDeCriteriosDesempate(int quantidade)

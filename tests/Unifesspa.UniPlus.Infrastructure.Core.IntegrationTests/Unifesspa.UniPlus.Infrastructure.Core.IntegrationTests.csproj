@@ -32,6 +32,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/RegraDeNomeDeTabela.cs" Link="RegraDeNomeDeTabela.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 

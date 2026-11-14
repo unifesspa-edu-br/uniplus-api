@@ -98,7 +98,7 @@ public sealed class GovernancaDesignadaAposAInstalacaoTests : InstalacaoTestBase
     private async Task LimparDesignacoesAsync()
     {
         await TermoNoHostDeTeste.ReiniciarAsync(Fixture.Factory.Services);
-        foreach (string tabela in new[] { "pedido_anexo_leituras", "pedido_decisoes", "pedido_anexos", "pedidos_de_concessao" })
+        foreach (string tabela in new[] { "leituras_do_anexo_do_pedido", "decisoes_do_pedido", "anexos_do_pedido", "pedidos_de_concessao" })
         {
             await ExecutarSqlAsync($"DELETE FROM autorizacao.{tabela}");
         }

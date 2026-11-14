@@ -62,7 +62,7 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
         IQueryable<OfertaCurso> ofertas = _dbContext.OfertasCurso.AsNoTracking();
 
         // Filtro opcional por curso (issue #755): aplicado ANTES do keyset para que
-        // os EXISTS de prev/next herdem o recorte. Index-backed por ix_oferta_curso_curso_id.
+        // os EXISTS de prev/next herdem o recorte. Index-backed por ix_ofertas_de_curso_curso_id.
         if (cursoId is { } curso)
         {
             ofertas = ofertas.Where(o => o.CursoId == curso);

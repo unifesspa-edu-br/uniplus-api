@@ -227,7 +227,7 @@ public sealed class ProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalogoTestBase
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext concorrente = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         await using IDbContextTransaction transacao = await concorrente.Database.BeginTransactionAsync();
-        await concorrente.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.tipo_documento SET updated_at = now() WHERE id = {id}");
+        await concorrente.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.tipos_de_documento SET updated_at = now() WHERE id = {id}");
         int pid = await ConcorrenciaTestHelpers.GetConnectionPidAsync(concorrente);
 
         Task<HttpResponseMessage> decisao = DecidirAsync(client, "TIPO_DOCUMENTO", id, "APROVAR");

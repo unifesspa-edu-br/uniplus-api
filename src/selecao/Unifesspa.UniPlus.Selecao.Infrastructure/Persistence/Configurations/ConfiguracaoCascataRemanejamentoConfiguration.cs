@@ -26,7 +26,7 @@ internal sealed class ConfiguracaoCascataRemanejamentoConfiguration : IEntityTyp
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("configuracoes_cascata_remanejamento");
+        builder.ToTable("configuracoes_de_remanejamento");
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
 
@@ -48,6 +48,6 @@ internal sealed class ConfiguracaoCascataRemanejamentoConfiguration : IEntityTyp
         // Uma cascata por processo (§2.2 da story — a cascata NÃO é por oferta).
         builder.HasIndex(c => c.ProcessoSeletivoId)
             .IsUnique()
-            .HasDatabaseName("ux_configuracoes_cascata_remanejamento_processo");
+            .HasDatabaseName("ux_configuracoes_de_remanejamento_processo");
     }
 }

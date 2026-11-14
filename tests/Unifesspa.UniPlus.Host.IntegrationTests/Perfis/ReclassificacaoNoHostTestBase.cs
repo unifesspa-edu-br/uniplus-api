@@ -124,7 +124,7 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
         ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.liberacoes_da_reclassificacao WHERE reclassificacao_id = {0}""", reclassificacao);
 
     private protected Task<long> BasesDaOrigemAsync(Guid perfil, string origem) =>
-        ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.bases_da_permissao_na_concessao WHERE perfil_id = {0} AND origem = {1}""", perfil, origem);
+        ContarAsync("""SELECT count(*) AS "Value" FROM autorizacao.bases_da_permissao_concedida WHERE perfil_id = {0} AND origem = {1}""", perfil, origem);
 
     /// <summary>A origem da última linha de base da concessão para o código, ou nada se ela não tem base.</summary>
     private protected async Task<string?> OrigemDaBaseAsync(Guid concessao, string codigo)
@@ -132,7 +132,7 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
         return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.SqlQuery<string>(
-            $"""SELECT origem AS "Value" FROM autorizacao.bases_da_permissao_na_concessao WHERE concessao_id = {concessao} AND codigo = {codigo} ORDER BY ordem_na_trilha DESC LIMIT 1""")
+            $"""SELECT origem AS "Value" FROM autorizacao.bases_da_permissao_concedida WHERE concessao_id = {concessao} AND codigo = {codigo} ORDER BY ordem_na_trilha DESC LIMIT 1""")
             .FirstOrDefaultAsync();
     }
 
@@ -149,7 +149,7 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
     private protected Task RebaixarRetratoAsync(Guid perfil, int numero, string codigo, string classificacao) =>
         ExecutarSqlAsync(
             """
-            UPDATE autorizacao.versao_do_perfil_permissoes SET classificacao = {0}
+            UPDATE autorizacao.permissoes_da_versao_do_perfil SET classificacao = {0}
             WHERE codigo = {1} AND versao_id IN (SELECT id FROM autorizacao.versoes_do_perfil WHERE perfil_id = {2} AND numero = {3})
             """,
             classificacao, codigo, perfil, numero);
@@ -164,7 +164,7 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
     {
         await ExecutarSqlAsync(
             """
-            INSERT INTO autorizacao.leituras_do_documento_da_versao (id, documento_id, leitor_emissor, leitor_sub, instante)
+            INSERT INTO autorizacao.acessos_ao_documento_da_versao (id, documento_id, leitor_emissor, leitor_sub, instante)
             SELECT {0}, d.id, {1}, {2}, now() FROM autorizacao.documentos_da_versao d WHERE d.perfil_id = {3}
             """,
             Guid.CreateVersion7(), TestAuthHandler.DefaultIssuer, leitor.Sub.ToString(), perfil);

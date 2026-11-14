@@ -41,8 +41,8 @@ public sealed class PersistenciaDoPerfilTests : PerfilEndpointTestBase
         int tabelas = await db.Database.SqlQuery<int>($"""
             SELECT count(*)::int AS "Value" FROM information_schema.tables
             WHERE table_schema = 'autorizacao'
-              AND table_name IN ('perfis', 'perfil_permissoes', 'versoes_do_perfil', 'vigencias_do_perfil',
-                                 'documentos_da_versao', 'leituras_do_documento_da_versao', 'versao_do_perfil_permissoes',
+              AND table_name IN ('perfis', 'permissoes_do_perfil', 'versoes_do_perfil', 'vigencias_do_perfil',
+                                 'documentos_da_versao', 'acessos_ao_documento_da_versao', 'permissoes_da_versao_do_perfil',
                                  'decisoes_da_versao', 'recalculos_da_aprovacao', 'avisos_emitidos')
             """).SingleAsync();
 

@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 
 /// <summary>
-/// A leitura paginada do <c>rol_de_regras</c> contra Postgres real. O que se prova aqui não
+/// A leitura paginada do <c>regras_do_catalogo</c> contra Postgres real. O que se prova aqui não
 /// tem como ser provado com mock: a ordem e a comparação do cursor são traduzidas para SQL, e
 /// é a concordância entre as duas que decide se um item de fronteira some ou se repete ao
 /// virar a página.

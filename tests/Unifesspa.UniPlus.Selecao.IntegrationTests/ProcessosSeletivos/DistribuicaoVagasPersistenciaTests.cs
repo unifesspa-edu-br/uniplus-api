@@ -180,8 +180,8 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
             // só uma delas.
             string anular = coluna switch
             {
-                "grupo_area_enem_codigo" => "UPDATE selecao.configuracoes_distribuicao_vagas SET grupo_area_enem_codigo = NULL WHERE processo_seletivo_id = {0}",
-                _ => "UPDATE selecao.configuracoes_distribuicao_vagas SET grupo_area_enem_rotulo = NULL WHERE processo_seletivo_id = {0}",
+                "grupo_area_enem_codigo" => "UPDATE selecao.configuracoes_de_vagas SET grupo_area_enem_codigo = NULL WHERE processo_seletivo_id = {0}",
+                _ => "UPDATE selecao.configuracoes_de_vagas SET grupo_area_enem_rotulo = NULL WHERE processo_seletivo_id = {0}",
             };
             await writeContext.Database.ExecuteSqlRawAsync(anular, processo.Id);
         }

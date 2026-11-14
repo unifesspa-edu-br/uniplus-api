@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -106,7 +107,7 @@ public sealed class PrecedenciaFasePersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_precedencia_fase_par_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.PrecedenciaEntreFasesParVivo);
     }
 
     [Fact(DisplayName = "Soft-delete preserva a trilha e libera o slot da UNIQUE parcial do par")]
@@ -147,7 +148,7 @@ public sealed class PrecedenciaFasePersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.precedencia_fase (id, antecessora_codigo, sucessora_codigo, permite_sobreposicao, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"INSCRICAO"}, {"INSCRICAO"}, {false}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.precedencias_entre_fases (id, antecessora_codigo, sucessora_codigo, permite_sobreposicao, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"INSCRICAO"}, {"INSCRICAO"}, {false}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK antecessora_codigo <> sucessora_codigo impede o INSERT direto");
@@ -159,7 +160,7 @@ public sealed class PrecedenciaFasePersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.precedencia_fase (id, antecessora_codigo, sucessora_codigo, permite_sobreposicao, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"FASE_INVALIDA"}, {"HOMOLOGACAO"}, {false}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.precedencias_entre_fases (id, antecessora_codigo, sucessora_codigo, permite_sobreposicao, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"FASE_INVALIDA"}, {"HOMOLOGACAO"}, {false}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de conjunto canônico impede o INSERT direto");
@@ -168,17 +169,17 @@ public sealed class PrecedenciaFasePersistenceTests
     [Fact(DisplayName = "CHECK de banco aceita a solicitação de isenção como antecessora e como sucessora")]
     public async Task Check_AceitaSolicitacaoIsencaoNosDoisSentidos()
     {
-        // As duas CHECKs de precedencia_fase repetem o rol separadamente. Exercitar os
+        // As duas CHECKs de precedencias_entre_fases repetem o rol separadamente. Exercitar os
         // dois sentidos é o que distingue "acrescentei o código nas três" de "acrescentei
-        // só na de fase_canonica" — neste último caso a fase existiria no cadastro e
+        // só na de fases_canonicas" — neste último caso a fase existiria no cadastro e
         // nenhuma aresta poderia referenciá-la.
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> comoSucessora = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.precedencia_fase (id, antecessora_codigo, sucessora_codigo, permite_sobreposicao, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"INSCRICAO"}, {FaseCanonicaCatalogo.CodigoSolicitacaoIsencao}, {true}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.precedencias_entre_fases (id, antecessora_codigo, sucessora_codigo, permite_sobreposicao, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"INSCRICAO"}, {FaseCanonicaCatalogo.CodigoSolicitacaoIsencao}, {true}, {DateTimeOffset.UtcNow}, {false})");
 
         Func<Task> comoAntecessora = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.precedencia_fase (id, antecessora_codigo, sucessora_codigo, permite_sobreposicao, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {FaseCanonicaCatalogo.CodigoSolicitacaoIsencao}, {"HOMOLOGACAO"}, {false}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.precedencias_entre_fases (id, antecessora_codigo, sucessora_codigo, permite_sobreposicao, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {FaseCanonicaCatalogo.CodigoSolicitacaoIsencao}, {"HOMOLOGACAO"}, {false}, {DateTimeOffset.UtcNow}, {false})");
 
         await comoSucessora.Should().NotThrowAsync(
             "a migration acrescentou o código ao CHECK da sucessora");

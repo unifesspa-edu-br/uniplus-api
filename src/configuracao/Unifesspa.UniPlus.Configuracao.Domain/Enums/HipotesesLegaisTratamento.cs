@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// Mapeamento entre <see cref="HipoteseLegalTratamento"/> (PascalCase) e o token textual de contrato/banco
 /// (UPPER_SNAKE), com parsing de domínio fechado por allowlist explícita (molde de
 /// <see cref="CardinalidadesFato"/>). Fonte do CHECK de domínio em
-/// <c>rol_de_fatos_candidato.hipotese_legal</c> e do value converter de persistência.
+/// <c>fatos_do_candidato.hipotese_legal</c> e do value converter de persistência.
 /// </summary>
 public static class HipotesesLegaisTratamento
 {

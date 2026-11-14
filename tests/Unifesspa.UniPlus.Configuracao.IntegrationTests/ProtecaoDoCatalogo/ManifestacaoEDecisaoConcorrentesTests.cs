@@ -183,7 +183,7 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
     private static Task<int> InserirManifestacaoInadequadaAsync(TravaDaLinhaDoItem trava, string cadastro, Guid id) =>
         trava.Contexto.Database.ExecuteSqlInterpolatedAsync(
             $"""
-            INSERT INTO configuracao.protecao_do_catalogo_manifestacoes
+            INSERT INTO configuracao.manifestacoes_da_protecao
                 (id, cadastro, item_id, ciclo, parecer, texto, substitui_id, autor_emissor, autor_sub, autor_nome, instante)
             VALUES ({Guid.CreateVersion7()}, {cadastro}, {id}, 1, 'INADEQUADA', 'O dado é sensível.', NULL,
                     {TestAuthHandler.DefaultIssuer}, {Kevin.Sub}, {Kevin.Nome}, now())

@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Código canônico da regra de <c>tipo=regra_ordem_alocacao</c> do <c>rol_de_regras</c>.
+/// Código canônico da regra de <c>tipo=regra_ordem_alocacao</c> do <c>regras_do_catalogo</c>.
 /// </summary>
 public static class RegraOrdemAlocacaoCodigo
 {

@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
@@ -86,7 +87,7 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
         DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
         Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
         pg.SqlState.Should().Be("23505");
-        pg.ConstraintName.Should().Be("ix_referencia_reserva_demografica_censo_vivo");
+        pg.ConstraintName.Should().Be(RestricoesDoBanco.ReferenciaDemograficaCensoVivo);
     }
 
     [Fact(DisplayName = "Soft-delete preserva a trilha e liberta o slot da UNIQUE parcial de Censo")]
@@ -128,7 +129,7 @@ public sealed class ReferenciaReservaDemograficaPersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.referencia_reserva_demografica (id, censo_referencia, ppi_percentual, quilombola_percentual, pcd_percentual, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"9999"}, {120.0m}, {1.0m}, {5.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.referencias_demograficas (id, censo_referencia, ppi_percentual, quilombola_percentual, pcd_percentual, base_legal, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"9999"}, {120.0m}, {1.0m}, {5.0m}, {BaseLegal}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK ppi_percentual <= 100 impede o INSERT direto");

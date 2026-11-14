@@ -32,7 +32,7 @@ internal sealed class AnexoDoPedidoConfiguration : IEntityTypeConfiguration<Anex
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("pedido_anexos");
+        builder.ToTable("anexos_do_pedido");
         builder.HasKey(a => a.Id);
         builder.Property(a => a.Id).ValueGeneratedNever();
 
@@ -44,7 +44,7 @@ internal sealed class AnexoDoPedidoConfiguration : IEntityTypeConfiguration<Anex
         builder.Ignore(a => a.ChaveDeEnvio);
         builder.Ignore(a => a.ChaveDefinitiva);
 
-        builder.HasIndex(a => a.PedidoId).HasDatabaseName("ix_pedido_anexos_pedido");
+        builder.HasIndex(a => a.PedidoId).HasDatabaseName("ix_anexos_do_pedido_pedido");
 
         // Concorrência otimista pela coluna de sistema xmin (ADR-0119): o resultado do verificador e a confirmação
         // do envio não se misturam.

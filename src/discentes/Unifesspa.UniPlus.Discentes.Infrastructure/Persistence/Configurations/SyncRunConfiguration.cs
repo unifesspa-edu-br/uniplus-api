@@ -20,7 +20,7 @@ internal sealed class SyncRunConfiguration : IEntityTypeConfiguration<SyncRun>
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("sync_run", t => t.HasComment(
+        builder.ToTable("sincronizacoes_com_o_sigaa", t => t.HasComment(
             "Controle de execução das rotinas de sincronização de dados discentes com o SIGAA — uma linha por execução."));
 
         builder.HasKey(s => s.Id);
@@ -61,9 +61,9 @@ internal sealed class SyncRunConfiguration : IEntityTypeConfiguration<SyncRun>
             .HasComment("Instante da última atualização do registro (auditoria, carimbado pelo AuditableInterceptor).");
 
         builder.HasIndex(s => s.StartedAt)
-            .HasDatabaseName("ix_sync_run_started_at");
+            .HasDatabaseName("ix_sincronizacoes_com_o_sigaa_started_at");
 
         builder.HasIndex(s => s.DataDeReferencia)
-            .HasDatabaseName("ix_sync_run_data_de_referencia");
+            .HasDatabaseName("ix_sincronizacoes_com_o_sigaa_data_de_referencia");
     }
 }

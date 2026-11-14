@@ -24,7 +24,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
 
     private const int ReferenciaTemporalFatosTipoMaxLength = 20;
 
-    // Mesmas larguras das demais referências ao rol_de_regras no módulo — a identidade
+    // Mesmas larguras das demais referências ao catálogo de regras no módulo — a identidade
     // (codigo, versao, hash) tem a mesma forma onde quer que uma dimensão aplique regra.
 
     public void Configure(EntityTypeBuilder<ProcessoSeletivo> builder)
@@ -170,11 +170,11 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             // A forma das colunas é a mesma de toda referência de regra; o que é desta aqui é o
             // que cada uma significa para o certame.
             algoritmo.Property(x => x.Codigo)
-                .HasComment("Código da entrada de algoritmo de contagem do rol_de_regras que o certame declarou.");
+                .HasComment("Código da entrada de algoritmo de contagem do catálogo de regras que o certame declarou.");
             algoritmo.Property(x => x.Versao)
                 .HasComment("Versão da entrada declarada — evolução da convenção é versão nova, nunca alteração da vigente.");
             algoritmo.Property(x => x.Hash)
-                .HasComment("Hash da definição resolvida no rol_de_regras — é o que prova que a convenção aplicada não mudou depois.");
+                .HasComment("Hash da definição resolvida no catálogo de regras — é o que prova que a convenção aplicada não mudou depois.");
         });
 
         // Coleções filhas do agregado: entidades próprias com FK para a raiz

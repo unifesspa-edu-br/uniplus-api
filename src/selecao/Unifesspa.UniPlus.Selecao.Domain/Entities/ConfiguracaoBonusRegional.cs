@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Bônus regional do <see cref="ProcessoSeletivo"/> (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015, Story #774):
 /// referencia a regra tipada <c>BONUS-MULTIPLICATIVO</c>
-/// do <c>rol_de_regras</c> e seus args (<see cref="Fator"/>, <see cref="Teto"/>).
+/// do <c>regras_do_catalogo</c> e seus args (<see cref="Fator"/>, <see cref="Teto"/>).
 /// </summary>
 /// <remarks>
 /// <strong>Declaração e configuração (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015):</strong> não existe "BONUS-NENHUM". O processo

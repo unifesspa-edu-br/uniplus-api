@@ -6,6 +6,7 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -21,10 +22,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
-/// Integração ponta-a-ponta do catálogo <c>rol_de_fatos_candidato</c> contra Postgres real
+/// Integração ponta-a-ponta do catálogo <c>fatos_do_candidato</c> contra Postgres real
 /// (UNI-REQ-0077, ADR-0111, refinada pela ADR-0116; ampliada pela UNI-REQ-0078): seed dos fatos de sistema, leitor
 /// cross-módulo, ordenação, resolução por chave natural, CHECKs de domínio/coerência, índice
-/// único total do código e o seed de <c>fato_valor_dominio</c>.
+/// único total do código e o seed de <c>valores_de_dominio_do_fato</c>.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
 [SuppressMessage(
@@ -338,7 +339,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.rol_de_fatos_candidato
+            INSERT INTO configuracao.fatos_do_candidato
                 (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {dominio}, {"DECLARADO"}, {"ESCALAR"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
@@ -357,7 +358,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.rol_de_fatos_candidato
+            INSERT INTO configuracao.fatos_do_candidato
                 (id, codigo, nome, dominio, origem, cardinalidade, formato, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"TEXTO"}, {"DECLARADO"}, {"ESCALAR"}, {"LIVRE"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PUBLICO"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, {sistema}, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
@@ -374,14 +375,14 @@ public sealed class FatoCandidatoPersistenceTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.rol_de_fatos_candidato
+            INSERT INTO configuracao.fatos_do_candidato
                 (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"BOOLEANO"}, {"DECLARADO"}, {"ESCALAR"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"NAO_PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_rol_de_fatos_candidato_classificacao_protecao só admite a escala da ADR-0081");
+            "o CHECK ck_fatos_do_candidato_classificacao_protecao só admite a escala da ADR-0081");
     }
 
     [Fact(DisplayName = "Duas edições concorrentes do mesmo fato: a segunda é recusada pela concorrência otimista")]
@@ -711,7 +712,7 @@ public sealed class FatoCandidatoPersistenceTests
             "MODALIDADE é escopo-processo — não tem FatoValorDominio filhos");
     }
 
-    [Fact(DisplayName = "Índice único (FatoCandidatoId, Codigo) de fato_valor_dominio recusa código duplicado no mesmo fato")]
+    [Fact(DisplayName = "Índice único (FatoCandidatoId, Codigo) de valores_de_dominio_do_fato recusa código duplicado no mesmo fato")]
     public async Task FatoValorDominio_IndiceUnico_RecusaDuplicataNoMesmoFato()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
@@ -719,13 +720,13 @@ public sealed class FatoCandidatoPersistenceTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.fato_valor_dominio (id, fato_candidato_id, codigo, descricao, ordem, ativo, created_at)
+            INSERT INTO configuracao.valores_de_dominio_do_fato (id, fato_candidato_id, codigo, descricao, ordem, ativo, created_at)
             VALUES ({Guid.CreateVersion7()}, {corRaca.Id}, {"PRETA"}, {"Duplicata"}, 99, true, {DateTimeOffset.UtcNow})
             """);
 
         Npgsql.PostgresException ex = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
         ex.SqlState.Should().Be("23505");
-        ex.ConstraintName.Should().Be("ux_fato_valor_dominio_fato_codigo");
+        ex.ConstraintName.Should().Be(RestricoesDoBanco.ValorDeDominioDoFatoCodigoUnico);
     }
 
     [Fact(DisplayName = "Reader (resolvível de fora do assembly) lista ordenado por código e projeta a view com PontoResolucao/Binding")]
@@ -786,7 +787,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.rol_de_fatos_candidato
+            INSERT INTO configuracao.fatos_do_candidato
                 (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {"COR_RACA"}, {"Duplicata"}, {"BOOLEANO"}, {"DECLARADO"}, {"ESCALAR"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:DUPLICATA"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
@@ -794,7 +795,7 @@ public sealed class FatoCandidatoPersistenceTests
 
         Npgsql.PostgresException ex = (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
         ex.SqlState.Should().Be("23505");
-        ex.ConstraintName.Should().Be("ux_rol_de_fatos_candidato_codigo");
+        ex.ConstraintName.Should().Be(RestricoesDoBanco.FatoDoCandidatoCodigoUnico);
     }
 
     [Fact(DisplayName = "CHECK de domínio recusa token fora do vocabulário via SQL cru")]
@@ -804,13 +805,13 @@ public sealed class FatoCandidatoPersistenceTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.rol_de_fatos_candidato
+            INSERT INTO configuracao.fatos_do_candidato
                 (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"OUTRO"}, {"DECLARADO"}, {"ESCALAR"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
-        await act.Should().ThrowAsync<Npgsql.PostgresException>("o CHECK ck_rol_de_fatos_candidato_dominio bloqueia 'TEXTO'");
+        await act.Should().ThrowAsync<Npgsql.PostgresException>("o CHECK ck_fatos_do_candidato_dominio bloqueia 'TEXTO'");
     }
 
     [Fact(DisplayName = "CHECK de origem recusa token fora do vocabulário via SQL cru")]
@@ -820,14 +821,14 @@ public sealed class FatoCandidatoPersistenceTests
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
             $"""
-            INSERT INTO configuracao.rol_de_fatos_candidato
+            INSERT INTO configuracao.fatos_do_candidato
                 (id, codigo, nome, dominio, origem, cardinalidade, ponto_resolucao, binding, escopo, classificacao_protecao, finalidade_tratamento, hipotese_legal, sistema, ativo, created_at, descricao, protecao_situacao, protecao_ciclo, protecao_manifestacao_desfavoravel, protecao_manifestacoes_no_ciclo)
             VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"X"}, {"BOOLEANO"}, {"BRUTO_INFORMADO"}, {"ESCALAR"},
                 {"INSCRICAO"}, {"CAMPO_FORMULARIO:X"}, {"CANDIDATO"}, {"PESSOAL"}, {"Teste"}, {"CUMPRIMENTO_OBRIGACAO_LEGAL"}, false, true, {DateTimeOffset.UtcNow}, '', 'PENDENTE', 1, false, 0)
             """);
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_rol_de_fatos_candidato_origem bloqueia o token legado 'BRUTO_INFORMADO' (ADR-0116 renomeou para DECLARADO)");
+            "o CHECK ck_fatos_do_candidato_origem bloqueia o token legado 'BRUTO_INFORMADO' (ADR-0116 renomeou para DECLARADO)");
     }
 
     [Fact(DisplayName = "Seed bate com o roster literal independente da ADR-0111/ADR-0116 (autoridade), não só com a própria fonte")]

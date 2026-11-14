@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <remarks>
 /// Não há vocabulário separado nem seed: a lista vive em <see cref="Todos"/>, fonte do
 /// CHECK de banco, do vocabulário exposto pela API e da validação. O pareamento
-/// <c>curso.grupo_area_enem ↔ peso_area_enem.grupo_curso</c> é pelo código, sem FK.
+/// <c>cursos.grupo_area_enem ↔ pesos_por_area_do_enem.grupo_curso</c> é pelo código, sem FK.
 /// </remarks>
 public sealed record GrupoCurso
 {

@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
 /// Handler do <see cref="DefinirCriteriosDesempateCommand"/>. Lê o catálogo de
-/// critérios do <c>rol_de_regras</c> (<see cref="IRegraCatalogoReader"/>) e, quando
+/// critérios do <c>regras_do_catalogo</c> (<see cref="IRegraCatalogoReader"/>) e, quando
 /// preciso, o vocabulário de fatos antes de travar o processo; depois do 404, do If-Match e do
 /// teto, resolve cada critério no catálogo já lido, monta os args tipados conforme o código da
 /// regra e congela a referência — a
@@ -231,7 +231,7 @@ public static class DefinirCriteriosDesempateCommandHandler
             {
                 return (Recusado([new("regraCodigo", new DomainError(
                     "CriterioDesempate.RegraNaoEncontrada",
-                    $"Regra de desempate {input.RegraCodigo}/{input.RegraVersao} não encontrada no rol_de_regras."))]), null);
+                    $"Regra de desempate {input.RegraCodigo}/{input.RegraVersao} não encontrada no catálogo de regras."))]), null);
             }
 
             if (regra.Tipo != TipoRegra.CriterioDesempate)

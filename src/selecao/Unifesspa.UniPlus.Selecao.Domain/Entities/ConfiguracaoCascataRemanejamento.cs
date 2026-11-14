@@ -87,7 +87,7 @@ public sealed partial class ConfiguracaoCascataRemanejamento : EntityBase, IPart
     /// A validação de forma não depende da regra resolvida no catálogo — só de
     /// <paramref name="fallbackCodigo"/> e dos itens já parseados. Existe separada de
     /// <see cref="Criar"/> (que a chama internamente) para o handler poder confirmá-la
-    /// **antes** de consultar o <c>rol_de_regras</c> (achado de revisão, ADR-0125 ponto 5:
+    /// **antes** de consultar o <c>regras_do_catalogo</c> (achado de revisão, ADR-0125 ponto 5:
     /// validação sempre precede I/O) — mesmo padrão já usado em <c>Campus.ValidarAtualizacao</c>/
     /// <c>Campus.Atualizar</c>.
     /// </summary>

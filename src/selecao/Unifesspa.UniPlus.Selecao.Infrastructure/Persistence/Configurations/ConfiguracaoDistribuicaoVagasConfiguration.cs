@@ -36,14 +36,14 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("configuracoes_distribuicao_vagas");
+        builder.ToTable("configuracoes_de_vagas");
         builder.HasKey(c => c.Id);
         builder.Property(c => c.Id).ValueGeneratedNever();
 
         builder.Property(c => c.VoBase).IsRequired();
         builder.Property(c => c.Pr).HasPrecision(5, 4).IsRequired();
 
-        // ReferenciaRegra (VO do rol_de_regras, Story #772) embutida por valor —
+        // ReferenciaRegra (VO do catálogo de regras, Story #772) embutida por valor —
         // a regra de distribuição aplicada (codigo+versao+hash), congelada no
         // momento em que o admin configurou. EF materializa via o construtor
         // privado (constructor binding), já que o VO não expõe setters.
@@ -133,6 +133,6 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
         // dentro do mesmo processo (INV do agregado, ProcessoSeletivo.OfertaCursoDuplicada).
         builder.HasIndex(c => new { c.ProcessoSeletivoId, c.OfertaCursoOrigemId })
             .IsUnique()
-            .HasDatabaseName("ux_configuracoes_distribuicao_vagas_processo_oferta");
+            .HasDatabaseName("ux_configuracoes_de_vagas_processo_oferta");
     }
 }

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
 /// <summary>
@@ -79,6 +80,6 @@ internal sealed class VagaDeLinhagemConfiguration : IEntityTypeConfiguration<Vag
         // check-then-act entre duas transações que reservem a mesma vaga.
         builder.HasIndex(l => new { l.EntidadeTipo, l.EntidadeId, l.TipoCodigo })
             .IsUnique()
-            .HasDatabaseName("ux_vagas_de_linhagem_objeto_tipo");
+            .HasDatabaseName(RestricoesDoBanco.VagaDeLinhagemObjetoTipoUnica);
     }
 }

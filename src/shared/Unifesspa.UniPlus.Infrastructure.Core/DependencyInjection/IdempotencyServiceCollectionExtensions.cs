@@ -12,7 +12,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 /// convention que aplica o <see cref="IdempotencyFilter"/> aos controllers.
 /// </summary>
 /// <remarks>
-/// O processo tem um só store e um só filtro: a tabela <c>idempotency_cache</c> é uma, no esquema da plataforma. O registro de
+/// O processo tem um só store e um só filtro: a tabela <c>chaves_de_idempotencia</c> é uma, no esquema da plataforma. O registro de
 /// erros de domínio usa <c>TryAddEnumerable</c>, e o <see cref="TimeProvider"/> é o registrado pelo host: esta extensão não
 /// registra relógio.
 /// </remarks>

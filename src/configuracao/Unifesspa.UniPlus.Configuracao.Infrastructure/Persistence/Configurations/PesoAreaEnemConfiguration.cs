@@ -5,6 +5,7 @@ using System.Globalization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
@@ -31,13 +32,13 @@ internal sealed class PesoAreaEnemConfiguration
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "peso_area_enem",
+            "pesos_por_area_do_enem",
             t =>
             {
                 // Domínio fechado do código do grupo de área (Resolução nº
                 // 805/2024/Consepe, Anexo I), montado da lista do domínio.
                 t.HasCheckConstraint(
-                    "ck_peso_area_enem_grupo_curso",
+                    "ck_pesos_por_area_do_enem_grupo_curso",
                     $"grupo_curso IN ({GrupoCursoValueConverter.CodigosEmSql()})");
             });
 
@@ -55,7 +56,7 @@ internal sealed class PesoAreaEnemConfiguration
             .HasConversion<GrupoCursoValueConverter>()
             .HasMaxLength(GrupoCursoMaxLength)
             .IsRequired()
-            .HasComment("Código do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), sem abreviação e sem acento, restrito aos quatro grupos pelo CHECK ck_peso_area_enem_grupo_curso; com a resolução, forma a chave de negócio da linha. O rótulo fica em grupo_curso_rotulo.");
+            .HasComment("Código do grupo de área do ENEM (Anexo I da Resolução nº 805/2024/Consepe), sem abreviação e sem acento, restrito aos quatro grupos pelo CHECK ck_pesos_por_area_do_enem_grupo_curso; com a resolução, forma a chave de negócio da linha. O rótulo fica em grupo_curso_rotulo.");
 
         // Rótulo do grupo, gravado pelo sistema ao lado do código (campo privado do
         // agregado).
@@ -73,7 +74,7 @@ internal sealed class PesoAreaEnemConfiguration
         {
             area.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             area.ToTable(
-                "peso_area_enem_area",
+                "areas_dos_pesos_do_enem",
                 t =>
                 {
                     t.HasComment(
@@ -81,14 +82,14 @@ internal sealed class PesoAreaEnemConfiguration
                         + "Código e rótulo são postos pelo sistema; o operador edita só peso e corte.");
 
                     t.HasCheckConstraint(
-                        "ck_peso_area_enem_area_codigo",
+                        "ck_areas_dos_pesos_do_enem_codigo",
                         $"codigo IN ({string.Join(", ", PesoAreaEnem.Areas.Select(static a => $"'{a.Codigo}'"))})");
-                    t.HasCheckConstraint("ck_peso_area_enem_area_peso", "peso >= 0");
+                    t.HasCheckConstraint("ck_areas_dos_pesos_do_enem_peso", "peso >= 0");
 
                     // Corte opcional na faixa da nota do ENEM (0–1000). O teto também
                     // impede o overflow da coluna numeric(7,3) por insert fora do app.
                     t.HasCheckConstraint(
-                        "ck_peso_area_enem_area_corte",
+                        "ck_areas_dos_pesos_do_enem_corte",
                         $"corte IS NULL OR (corte >= 0 AND corte <= {PesoAreaEnem.CorteMaximo.ToString(CultureInfo.InvariantCulture)})");
                 });
 
@@ -133,6 +134,6 @@ internal sealed class PesoAreaEnemConfiguration
         builder.HasIndex(p => new { p.Resolucao, p.GrupoCurso })
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_peso_area_enem_resolucao_grupo_vivo");
+            .HasDatabaseName(RestricoesDoBanco.PesoPorAreaDoEnemResolucaoGrupoVivo);
     }
 }

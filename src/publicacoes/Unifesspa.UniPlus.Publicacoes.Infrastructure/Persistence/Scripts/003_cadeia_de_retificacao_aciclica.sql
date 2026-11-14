@@ -26,7 +26,7 @@ BEGIN
         visitados := visitados || atual;
 
         SELECT ato_retificado_id INTO pai
-        FROM publicacoes.ato_normativo WHERE id = atual;
+        FROM publicacoes.atos_normativos WHERE id = atual;
 
         IF NOT FOUND THEN
             RAISE EXCEPTION 'ato % não existe.', atual
@@ -44,7 +44,7 @@ $$;
 
 -- A cadeia de todo ato registrado termina numa raiz, verificado no fim da transação, quando as linhas do comando
 -- inteiro já existem. É este trigger, e não a chave estrangeira, que barra o INSERT multi-linha cíclico.
-CREATE OR REPLACE FUNCTION publicacoes.fn_ato_normativo_cadeia_aciclica()
+CREATE OR REPLACE FUNCTION publicacoes.fn_atos_normativos_cadeia_aciclica()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
@@ -54,9 +54,9 @@ BEGIN
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_ato_normativo_cadeia_aciclica ON publicacoes.ato_normativo;
-CREATE CONSTRAINT TRIGGER trg_ato_normativo_cadeia_aciclica
-    AFTER INSERT ON publicacoes.ato_normativo
+DROP TRIGGER IF EXISTS trg_atos_normativos_cadeia_aciclica ON publicacoes.atos_normativos;
+CREATE CONSTRAINT TRIGGER trg_atos_normativos_cadeia_aciclica
+    AFTER INSERT ON publicacoes.atos_normativos
     DEFERRABLE INITIALLY DEFERRED
     FOR EACH ROW
-    EXECUTE FUNCTION publicacoes.fn_ato_normativo_cadeia_aciclica();
+    EXECUTE FUNCTION publicacoes.fn_atos_normativos_cadeia_aciclica();

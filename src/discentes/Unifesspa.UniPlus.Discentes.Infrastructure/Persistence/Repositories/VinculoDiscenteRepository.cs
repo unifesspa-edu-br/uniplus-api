@@ -241,6 +241,6 @@ public sealed class VinculoDiscenteRepository : IVinculoDiscenteRepository
         return Cpf.Criar(valor).Match(
             cpf => cpf,
             erro => throw new InvalidOperationException(
-                $"CPF decifrado da tabela vinculo_discente falhou a revalidação de domínio ({erro.Code})."));
+                $"CPF decifrado da tabela vinculos_de_discentes falhou a revalidação de domínio ({erro.Code})."));
     }
 }

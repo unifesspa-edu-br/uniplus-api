@@ -1288,7 +1288,7 @@
           }
         }
       ],
-      "description": "Árvore mínima Campus→LocalOferta→Curso→OfertaCurso + Modalidade + TipoDocumento + FaseCanonica exigida pelas dimensões de ProcessoSeletivo. Nenhum destes recursos é pré-seedado (exceto o catálogo interno rol_de_regras, referenciado só por código)."
+      "description": "Árvore mínima Campus→LocalOferta→Curso→OfertaCurso + Modalidade + TipoDocumento + FaseCanonica exigida pelas dimensões de ProcessoSeletivo. Nenhum destes recursos é pré-seedado (exceto o catálogo interno regras_do_catalogo, referenciado só por código)."
     },
     {
       "name": "ProcessoSeletivo — Configuração",

@@ -118,7 +118,7 @@ public sealed partial class EnvelopeFechadoE2ETests
             ofertaResult.IsSuccess.Should().BeTrue(ofertaResult.Error?.Message);
             OfertaCurso oferta = ofertaResult.Value!;
 
-            // Sufixado (não é mais "Censo IBGE 2022" fixo): ix_referencia_reserva_demografica_censo_vivo
+            // Sufixado (não é mais "Censo IBGE 2022" fixo): ix_referencias_demograficas_censo_vivo
             // é único por censo — LimpezaRegrasDistribuicaoMigrationTests chama este mesmo
             // semeador na mesma coleção sequencial (CascadingCollection), e um literal fixo
             // colidiria na segunda chamada. "Censo " + sufixo (8 hex) cabe no limite de 20
@@ -149,7 +149,7 @@ public sealed partial class EnvelopeFechadoE2ETests
 
             const string CodigoBancaAnaliseDocumental = "BANCA_ANALISE_DOCUMENTAL";
 
-            // TipoBanca.Codigo também é vocabulário fechado (ck_tipo_banca_codigo_canonico
+            // TipoBanca.Codigo também é vocabulário fechado (ck_tipos_de_banca_codigo_canonico
             // admite só 6 valores) com índice único sobre o vivo — mesmo motivo de
             // FasesCanonicas acima: uma segunda chamada deste semeador na mesma coleção
             // colidiria se criasse de novo. Idempotente: reaproveita a linha se já existir.

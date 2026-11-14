@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposProcesso;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -20,8 +21,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 internal static class GravacaoDoCircuitoDaProtecao
 {
-    private const string IndiceDaManifestacaoInicial = "ux_protecao_do_catalogo_manifestacoes_inicial_do_autor";
-    private const string IndiceDaSubstituicao = "ux_protecao_do_catalogo_manifestacoes_substitui";
+    private const string IndiceDaManifestacaoInicial = RestricoesDoBanco.ManifestacaoDaProtecaoInicialDoAutorUnica;
+    private const string IndiceDaSubstituicao = RestricoesDoBanco.ManifestacaoDaProtecaoSubstituicaoUnica;
 
     public static DomainError Conflito { get; } = new(
         ProtecaoDoCatalogoErrorCodes.ConflitoDeConcorrencia,

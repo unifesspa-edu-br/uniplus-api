@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.Modalidades;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+
 /// <summary>
 /// Helper para mapear violações 23505 do índice único parcial do código vivo da
-/// modalidade — <c>ix_modalidade_codigo_vivo</c> — para o <c>DomainError</c>
+/// modalidade — <c>ix_modalidades_codigo_vivo</c> — para o <c>DomainError</c>
 /// apropriado. Acessa <c>SqlState</c> e <c>ConstraintName</c> por reflection no
 /// inner exception — o shape é estável na API pública do
 /// <c>Npgsql.PostgresException</c>. A inspeção do tipo da exceção por
@@ -20,7 +22,7 @@ internal static class UniqueConstraintViolation
 {
     private const string UniqueViolationSqlState = "23505";
 
-    private const string CodigoConstraint = "ix_modalidade_codigo_vivo";
+    private const string CodigoConstraint = RestricoesDoBanco.ModalidadeCodigoVivo;
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 

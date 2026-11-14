@@ -19,7 +19,7 @@ internal sealed class VinculoDiscenteRecordConfiguration : IEntityTypeConfigurat
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
-        builder.ToTable("vinculo_discente", t => t.HasComment(
+        builder.ToTable("vinculos_de_discentes", t => t.HasComment(
             "Réplica local dos vínculos de discentes sincronizados do SIGAA (ADR-0121) — " +
             "snapshot desnormalizado, sem referência viva a outras tabelas."));
 
@@ -107,6 +107,6 @@ internal sealed class VinculoDiscenteRecordConfiguration : IEntityTypeConfigurat
         // igualdade sobre o campo cifrado, pois o módulo não precisa buscar por CPF).
         builder.HasIndex(v => v.IdDiscenteSigaa)
             .IsUnique()
-            .HasDatabaseName("ix_vinculo_discente_id_discente_sigaa");
+            .HasDatabaseName("ix_vinculos_de_discentes_id_discente_sigaa");
     }
 }

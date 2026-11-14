@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Código canônico da regra de <c>tipo=criterio_remanejamento</c> do
-/// <c>rol_de_regras</c> reconhecida pela cascata de remanejamento (Story #575,
+/// <c>regras_do_catalogo</c> reconhecida pela cascata de remanejamento (Story #575,
 /// cascata de remanejamento de cotas, UNI-REQ-0056).
 /// </summary>
 public static class RegraRemanejamentoCodigo

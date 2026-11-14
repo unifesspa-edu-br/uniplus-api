@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Códigos canônicos das regras de <c>tipo=regra_eliminacao</c> do
-/// <c>rol_de_regras</c> (Story #772) — eliminação por cálculo, cardinalidade
+/// <c>regras_do_catalogo</c> (Story #772) — eliminação por cálculo, cardinalidade
 /// múltipla.
 /// </summary>
 public static class RegraEliminacaoCodigo

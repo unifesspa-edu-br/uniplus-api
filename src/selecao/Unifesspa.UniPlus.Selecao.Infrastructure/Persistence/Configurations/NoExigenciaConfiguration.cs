@@ -35,22 +35,22 @@ public sealed class NoExigenciaConfiguration : IEntityTypeConfiguration<NoExigen
         // Defesa em profundidade (a validação real é de domínio, NoExigencia.CriarGrupo):
         // campos de folha/grupo coerentes com o tipo, e as duas semânticas de quantidadeMinima
         // (NULL em folha/E, >=1 em OU/N-de) e consequência (só OU/N-de).
-        builder.ToTable("nos_exigencia", t =>
+        builder.ToTable("nos_da_arvore_de_exigencias", t =>
         {
             // Story #921: quantidade_minima passa a ser NOT NULL também em folha (cardinalidade
             // de apresentações) — só grupo E permanece sem cardinalidade própria. chave_distincao/
             // data_referencia/ocorrencias_esperadas são exclusivas de folha (Story #921).
             t.HasCheckConstraint(
-                "ck_nos_exigencia_tipo_campos_coerentes",
+                "ck_nos_da_arvore_de_exigencias_tipo_campos_coerentes",
                 "(tipo = 1 AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR " +
                 "(tipo = 2 AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL " +
                 "AND chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR " +
                 "(tipo = 3 AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL " +
                 "AND chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
-            t.HasCheckConstraint("ck_nos_exigencia_id_diferente_de_no_pai_id", "id <> no_pai_id");
-            t.HasCheckConstraint("ck_nos_exigencia_ordem_nao_negativa", "ordem >= 0");
+            t.HasCheckConstraint("ck_nos_da_arvore_de_exigencias_id_diferente_de_no_pai_id", "id <> no_pai_id");
+            t.HasCheckConstraint("ck_nos_da_arvore_de_exigencias_ordem_nao_negativa", "ordem >= 0");
             t.HasCheckConstraint(
-                "ck_nos_exigencia_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
+                "ck_nos_da_arvore_de_exigencias_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
             // Defesa em profundidade de NoExigencia.CriarFolha — coerência chave×data×ocorrências
             // (replica em SQL a mesma tabela de decisão de ValidarSemChave/ValidarChaveDeCalendario/
             // ValidarChaveDeOcorrencia). CompetenciaMensal=1, ExercicioAnual=2, Ocorrencia=3.
@@ -59,7 +59,7 @@ public sealed class NoExigenciaConfiguration : IEntityTypeConfiguration<NoExigen
             // rejeita quando a expressão inteira é FALSE — UNKNOWN passa, deixando
             // chave_distincao NULL com data_referencia preenchida escapar da constraint.
             t.HasCheckConstraint(
-                "ck_nos_exigencia_chave_distincao_coerente",
+                "ck_nos_da_arvore_de_exigencias_chave_distincao_coerente",
                 "(chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR " +
                 "(chave_distincao IS NOT NULL AND chave_distincao IN (1, 2) AND data_referencia IS NOT NULL AND ocorrencias_esperadas IS NULL) OR " +
                 "(chave_distincao IS NOT NULL AND chave_distincao = 3 AND data_referencia IS NULL AND (ocorrencias_esperadas IS NULL OR jsonb_array_length(ocorrencias_esperadas) > 0))");
@@ -118,15 +118,15 @@ public sealed class NoExigenciaConfiguration : IEntityTypeConfiguration<NoExigen
         builder.HasIndex(n => n.DocumentoExigidoId)
             .IsUnique()
             .HasFilter("documento_exigido_id IS NOT NULL")
-            .HasDatabaseName("ux_nos_exigencia_documento_exigido_id");
+            .HasDatabaseName("ux_nos_da_arvore_de_exigencias_documento_exigido_id");
 
         // Sem colisão de posição entre irmãos (NoPaiId IS NOT NULL) nem entre raízes do
         // mesmo processo (NoPaiId IS NULL) — de propósito AUSENTES daqui como
         // HasIndex().IsUnique(): são EXCLUDE constraints GiST DEFERRABLE INITIALLY DEFERRED
-        // (ex_nos_exigencia_irmaos_ordem/ex_nos_exigencia_raiz_ordem), criadas pelo script
-        // 001_ordem_unica_dos_nos_da_exigencia.sql — mesmo padrão de ex_tipo_ato_publicado_codigo_vigencia
+        // (ex_nos_da_arvore_de_exigencias_irmaos_ordem/ex_nos_da_arvore_de_exigencias_raiz_ordem), criadas pelo script
+        // 001_ordem_unica_dos_nos_da_exigencia.sql — mesmo padrão de ex_tipos_de_ato_publicado_codigo_vigencia
         // (TipoAtoPublicadoConfiguration.cs), que o Fluent API do EF Core não modela. Um
-        // índice único comum é verificado por-statement; como nos_exigencia é
+        // índice único comum é verificado por-statement; como nos_da_arvore_de_exigencias é
         // auto-referenciada (NoPaiId → Id, Restrict), substituir uma árvore com grupo E/OU
         // faz o EF Core apagar bottom-up (netos → raiz) mas inserir a raiz NOVA antes da
         // antiga sair do banco — a ordem Added-antes-Deleted do SaveChangesAsync não conhece

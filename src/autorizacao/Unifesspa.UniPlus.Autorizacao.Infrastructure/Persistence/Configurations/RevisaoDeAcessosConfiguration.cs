@@ -64,8 +64,8 @@ internal sealed class RevisaoDeAcessosConfiguration : IEntityTypeConfiguration<R
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
 
         // O banco confere o que o agregado já garante: a decisão, com a governança que a tomou, é gravada inteira ou não é.
-        builder.ToTable("revisao_itens", tabela => tabela.HasCheckConstraint(
-            "ck_revisao_itens_decisao_completa",
+        builder.ToTable("itens_da_revisao", tabela => tabela.HasCheckConstraint(
+            "ck_itens_da_revisao_decisao_completa",
             "(resultado IS NULL AND decidido_como IS NULL AND decidido_por_emissor IS NULL AND decidido_por_sub IS NULL AND decidido_em IS NULL)"
             + " OR (resultado IS NOT NULL AND decidido_como IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_sub IS NOT NULL AND decidido_em IS NOT NULL)"));
         builder.HasKey(i => i.Id);
@@ -89,10 +89,10 @@ internal sealed class RevisaoDeAcessosConfiguration : IEntityTypeConfiguration<R
         // Cada concessão aparece uma vez por revisão.
         builder.HasIndex(i => new { i.RevisaoId, i.ConcessaoId })
             .IsUnique()
-            .HasDatabaseName("ux_revisao_itens_revisao_concessao");
+            .HasDatabaseName("ux_itens_da_revisao_revisao_concessao");
 
         // Trilha da concessão e fila de pendentes.
-        builder.HasIndex(i => i.ConcessaoId).HasDatabaseName("ix_revisao_itens_concessao");
+        builder.HasIndex(i => i.ConcessaoId).HasDatabaseName("ix_itens_da_revisao_concessao");
 
         // Concorrência otimista pela coluna de sistema xmin (ADR-0119): duas decisões do mesmo item não se misturam.
         builder.Property<uint>("Version").IsRowVersion();

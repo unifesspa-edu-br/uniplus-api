@@ -25,24 +25,24 @@ EXCEPTION
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION publicacoes.fn_anexo_do_ato_na_transacao_do_ato()
+CREATE OR REPLACE FUNCTION publicacoes.fn_anexos_do_ato_na_transacao_do_ato()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
     IF NOT EXISTS (
-        SELECT 1 FROM publicacoes.ato_normativo
+        SELECT 1 FROM publicacoes.atos_normativos
         WHERE id = NEW.ato_id AND publicacoes.fn_xid_em_andamento(xmin)) THEN
         RAISE EXCEPTION
-            'anexo_do_ato: o anexo só entra na transação que registrou o ato % (ADR-0063); o ato publicado não ganha anexo depois.', NEW.ato_id
+            'anexos_do_ato: o anexo só entra na transação que registrou o ato % (ADR-0063); o ato publicado não ganha anexo depois.', NEW.ato_id
             USING ERRCODE = 'restrict_violation';
     END IF;
     RETURN NEW;
 END;
 $$;
 
-DROP TRIGGER IF EXISTS trg_anexo_do_ato_na_transacao_do_ato ON publicacoes.anexo_do_ato;
-CREATE TRIGGER trg_anexo_do_ato_na_transacao_do_ato
-    BEFORE INSERT ON publicacoes.anexo_do_ato
+DROP TRIGGER IF EXISTS trg_anexos_do_ato_na_transacao_do_ato ON publicacoes.anexos_do_ato;
+CREATE TRIGGER trg_anexos_do_ato_na_transacao_do_ato
+    BEFORE INSERT ON publicacoes.anexos_do_ato
     FOR EACH ROW
-    EXECUTE FUNCTION publicacoes.fn_anexo_do_ato_na_transacao_do_ato();
+    EXECUTE FUNCTION publicacoes.fn_anexos_do_ato_na_transacao_do_ato();

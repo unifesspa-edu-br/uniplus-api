@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Configuratio
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Converters;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
@@ -25,17 +26,17 @@ internal sealed class ReferenciaReservaDemograficaConfiguration
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
         builder.ToTable(
-            "referencia_reserva_demografica",
+            "referencias_demograficas",
             t =>
             {
                 t.HasCheckConstraint(
-                    "ck_referencia_reserva_demografica_ppi_percentual",
+                    "ck_referencias_demograficas_ppi_percentual",
                     "ppi_percentual >= 0 AND ppi_percentual <= 100");
                 t.HasCheckConstraint(
-                    "ck_referencia_reserva_demografica_quilombola_percentual",
+                    "ck_referencias_demograficas_quilombola_percentual",
                     "quilombola_percentual >= 0 AND quilombola_percentual <= 100");
                 t.HasCheckConstraint(
-                    "ck_referencia_reserva_demografica_pcd_percentual",
+                    "ck_referencias_demograficas_pcd_percentual",
                     "pcd_percentual >= 0 AND pcd_percentual <= 100");
             });
 
@@ -72,6 +73,6 @@ internal sealed class ReferenciaReservaDemograficaConfiguration
         builder.HasIndex(r => r.CensoReferencia)
             .IsUnique()
             .HasFilter("is_deleted = false")
-            .HasDatabaseName("ix_referencia_reserva_demografica_censo_vivo");
+            .HasDatabaseName(RestricoesDoBanco.ReferenciaDemograficaCensoVivo);
     }
 }

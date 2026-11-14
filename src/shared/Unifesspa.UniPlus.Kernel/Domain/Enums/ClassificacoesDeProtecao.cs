@@ -4,7 +4,7 @@ namespace Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// Mapeamento entre <see cref="ClassificacaoDeProtecao"/> (PascalCase) e o token textual de contrato/banco
 /// (UPPER_SNAKE), com parsing de domínio fechado por allowlist explícita. Fonte única do token para
 /// todo módulo que guarda ou congela a classificação: o CHECK de domínio em
-/// <c>rol_de_fatos_candidato.classificacao_protecao</c>, os conversores de persistência e o envelope
+/// <c>fatos_do_candidato.classificacao_protecao</c>, os conversores de persistência e o envelope
 /// congelado da publicação.
 /// </summary>
 public static class ClassificacoesDeProtecao

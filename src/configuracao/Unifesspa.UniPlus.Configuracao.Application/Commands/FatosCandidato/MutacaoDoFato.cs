@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FatosCandidato;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposProcesso;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -14,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 internal static class MutacaoDoFato
 {
-    private const string IndiceUnicoDoValor = "ux_fato_valor_dominio_fato_codigo";
+    private const string IndiceUnicoDoValor = RestricoesDoBanco.ValorDeDominioDoFatoCodigoUnico;
 
     public static Task<Result> AplicarAsync(
         Guid id,

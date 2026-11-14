@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Códigos canônicos das regras de <c>tipo=regra_arredondamento</c> do
-/// <c>rol_de_regras</c> (Story #772) — precisão da nota.
+/// <c>regras_do_catalogo</c> (Story #772) — precisão da nota.
 /// </summary>
 public static class RegraArredondamentoCodigo
 {

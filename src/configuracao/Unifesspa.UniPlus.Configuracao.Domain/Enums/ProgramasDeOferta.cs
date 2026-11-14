@@ -10,7 +10,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// <c>Enum.TryParse</c>, que aceitaria tokens numéricos (<c>"1"</c> → primeiro
 /// valor) e nomes PascalCase do enum — ambos fora do contrato textual da #749.</para>
 /// <para>É o vocabulário fonte do CHECK de domínio em
-/// <c>oferta_curso.programa_de_oferta</c> (<see cref="TokensCanonicos"/>) e do
+/// <c>ofertas_de_curso.programa_de_oferta</c> (<see cref="TokensCanonicos"/>) e do
 /// value converter de persistência.</para>
 /// </remarks>
 public static class ProgramasDeOferta

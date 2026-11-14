@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>
 /// Handler do <see cref="RemoverCursoCommand"/>. Soft-delete via
 /// <c>SoftDeleteInterceptor</c> — bloqueia quando o curso é referenciado por
-/// oferta de curso viva. A entidade <c>oferta_curso</c> ainda não existe (#749);
+/// oferta de curso viva. A entidade <c>ofertas_de_curso</c> ainda não existe (#749);
 /// a checagem é ponto de extensão (retorna <see langword="false"/>).
 /// </summary>
 public static class RemoverCursoCommandHandler
@@ -32,7 +32,7 @@ public static class RemoverCursoCommandHandler
                 "Curso não encontrado."));
         }
 
-        // Ponto de extensão #749: oferta_curso ainda não existe no módulo, então a
+        // Ponto de extensão #749: ofertas_de_curso ainda não existe no módulo, então a
         // checagem retorna false hoje. Quando a oferta de curso chegar, o bloqueio
         // passa a valer sem mudar este handler.
         if (await repository.ReferenciadoPorOfertaCursoVivaAsync(command.Id, cancellationToken).ConfigureAwait(false))

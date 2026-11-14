@@ -20,7 +20,7 @@ internal sealed class OcorrenciaDeGrupoDaInscricaoRecordConfiguration : IEntityT
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("ocorrencias_de_grupo_da_inscricao", t => t.HasComment(
+        builder.ToTable("grupos_da_inscricao", t => t.HasComment(
             "Uma ocorrência de grupo repetível da inscrição, como cada dependente de um grupo de dependentes."));
 
         builder.HasKey(o => o.Id);
@@ -38,6 +38,6 @@ internal sealed class OcorrenciaDeGrupoDaInscricaoRecordConfiguration : IEntityT
 
         builder.HasIndex(o => new { o.InscricaoId, o.GrupoCodigo, o.MembroId })
             .IsUnique()
-            .HasDatabaseName("ux_ocorrencias_de_grupo_da_inscricao_membro");
+            .HasDatabaseName("ux_grupos_da_inscricao_membro");
     }
 }

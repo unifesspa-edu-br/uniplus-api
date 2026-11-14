@@ -247,7 +247,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
     public async Task ConflitoDaGravacaoReconhecidoPelaPorta_DevolveARecusaDaPorta()
     {
         DomainError atoJaRetificado = new("AtoNormativo.AtoJaRetificado", "O ato AVISO nº 1/2026 já foi retificado.");
-        Exception violacao = ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade("ux_ato_normativo_retificado");
+        Exception violacao = ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade("ux_atos_normativos_retificado");
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>()).Returns<Task>(_ => throw violacao);
         _registro.TraduzirConflitoDaGravacao(violacao).Returns(atoJaRetificado);
 

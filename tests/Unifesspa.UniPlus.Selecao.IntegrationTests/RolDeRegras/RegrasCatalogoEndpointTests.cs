@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Contrato HTTP da leitura do <c>rol_de_regras</c>: as rotas existem, exigem autenticação,
+/// Contrato HTTP da leitura do <c>regras_do_catalogo</c>: as rotas existem, exigem autenticação,
 /// filtram pelo código canônico de tipo, resolvem a identidade <c>(codigo, versao)</c> e não
 /// têm par de escrita.
 /// </summary>

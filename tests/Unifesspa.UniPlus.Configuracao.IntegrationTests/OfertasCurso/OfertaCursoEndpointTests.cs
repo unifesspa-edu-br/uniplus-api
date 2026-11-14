@@ -337,7 +337,7 @@ public sealed class OfertaCursoEndpointTests
             $"/api/configuracao/admin/cursos/{cursoId}");
         HttpResponseMessage bloqueado = await client.SendAsync(removerCursoBloqueado);
         bloqueado.StatusCode.Should().Be(HttpStatusCode.Conflict,
-            "ReferenciadoPorOfertaCursoVivaAsync agora consulta oferta_curso de verdade (CA-05)");
+            "ReferenciadoPorOfertaCursoVivaAsync agora consulta ofertas_de_curso de verdade (CA-05)");
 
         // Remover a oferta (204) libera o curso.
         HttpResponseMessage removerOferta = await EnviarDeleteAdmin(client, ofertaId);

@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// <summary>
 /// Resolve um <see cref="ConfiguracaoDistribuicaoVagasInput"/> cru (Ids e
 /// códigos do payload do cliente) contra os cadastros vivos do módulo
-/// Configuração e o catálogo <c>rol_de_regras</c>, montando uma
+/// Configuração e o catálogo <c>regras_do_catalogo</c>, montando uma
 /// <see cref="ConfiguracaoDistribuicaoVagas"/> congelada por valor
 /// (snapshot-copy, ADR-0061).
 /// </summary>
@@ -74,7 +74,7 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
         {
             return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
                 "ConfiguracaoDistribuicaoVagas.RegraDistribuicaoNaoEncontrada",
-                $"Regra de distribuição {input.RegraDistribuicaoCodigo}/{input.RegraDistribuicaoVersao} não encontrada no rol_de_regras."));
+                $"Regra de distribuição {input.RegraDistribuicaoCodigo}/{input.RegraDistribuicaoVersao} não encontrada no catálogo de regras."));
         }
 
         if (regra.Tipo != TipoRegra.RegraDistribuicaoVagas)
@@ -211,7 +211,7 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
         {
             return Result<ReferenciaRegra?>.Failure(new DomainError(
                 "ConfiguracaoDistribuicaoVagas.RegraAjusteNaoEncontrada",
-                $"Regra de ajuste {input.RegraAjusteCodigo}/{input.RegraAjusteVersao} não encontrada no rol_de_regras."));
+                $"Regra de ajuste {input.RegraAjusteCodigo}/{input.RegraAjusteVersao} não encontrada no catálogo de regras."));
         }
 
         if (regraAjuste.Tipo != TipoRegra.RegraAjusteDistribuicaoVagas)

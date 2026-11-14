@@ -61,7 +61,7 @@ public static class DefinirAlgoritmoContagemPrazoCommandHandler
         {
             return Result<MutacaoAceita>.Failure(new DomainError(
                 "ProcessoSeletivo.AlgoritmoContagemPrazoNaoEncontrado",
-                $"A regra {command.Codigo}/{command.Versao} não é uma entrada de algoritmo de contagem do rol_de_regras."));
+                $"A regra {command.Codigo}/{command.Versao} não é uma entrada de algoritmo de contagem do catálogo de regras."));
         }
 
         Result<ReferenciaRegra> referenciaResult = ReferenciaRegra.Criar(

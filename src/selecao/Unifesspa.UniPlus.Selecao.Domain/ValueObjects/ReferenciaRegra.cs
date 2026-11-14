@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Referência imutável a uma regra do <c>rol_de_regras</c> pela sua identidade
+/// Referência imutável a uma regra do <c>regras_do_catalogo</c> pela sua identidade
 /// content-addressable — <c>(codigo, versao, hash)</c>. É o que cada dimensão
 /// da configuração do Processo Seletivo embute ao aplicar uma regra e o que o
 /// snapshot de publicação congela (congelamento dos parâmetros na publicação, UNI-REQ-0019): o par <c>(codigo, versao)</c> aponta

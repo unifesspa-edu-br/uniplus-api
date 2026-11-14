@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.PesosAreaEnem;
 
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+
 /// <summary>
 /// Helper para mapear violações 23505 do índice único parcial do par
-/// (resolução, grupo de curso) — <c>ix_peso_area_enem_resolucao_grupo_vivo</c> —
+/// (resolução, grupo de curso) — <c>ix_pesos_por_area_do_enem_resolucao_grupo_vivo</c> —
 /// para o <c>DomainError</c> apropriado. Acessa <c>SqlState</c> e
 /// <c>ConstraintName</c> por reflection no inner exception — o shape é estável na
 /// API pública do <c>Npgsql.PostgresException</c>. A inspeção do tipo da exceção
@@ -20,7 +22,7 @@ internal static class UniqueConstraintViolation
 {
     private const string UniqueViolationSqlState = "23505";
 
-    private const string ParConstraint = "ix_peso_area_enem_resolucao_grupo_vivo";
+    private const string ParConstraint = RestricoesDoBanco.PesoPorAreaDoEnemResolucaoGrupoVivo;
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 

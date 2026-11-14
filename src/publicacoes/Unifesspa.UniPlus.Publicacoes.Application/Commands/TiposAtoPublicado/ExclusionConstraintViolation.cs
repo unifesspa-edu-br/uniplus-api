@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.TiposAtoPublicado;
 
+using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
+
 /// <summary>
 /// Mapeia a violação <c>23P01</c> da exclusion constraint
-/// <c>ex_tipo_ato_publicado_codigo_vigencia</c> para o <c>DomainError</c>
+/// <c>ex_tipos_de_ato_publicado_codigo_vigencia</c> para o <c>DomainError</c>
 /// apropriado. Acessa <c>SqlState</c> e <c>ConstraintName</c> por reflection no
 /// inner exception — o shape é estável na API pública do
 /// <c>Npgsql.PostgresException</c>. A inspeção do tipo da exceção por
@@ -22,7 +24,7 @@ internal static class ExclusionConstraintViolation
 {
     private const string ExclusionViolationSqlState = "23P01";
 
-    private const string VigenciaConstraint = "ex_tipo_ato_publicado_codigo_vigencia";
+    private const string VigenciaConstraint = RestricoesDoBanco.TipoDeAtoPublicadoCodigoVigencia;
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 

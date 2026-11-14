@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.Application.Queries.RolDeRegras;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
-/// Leitura do <c>rol_de_regras</c> — a biblioteca de regras tipadas e versionadas que as
+/// Leitura do <c>regras_do_catalogo</c> — a biblioteca de regras tipadas e versionadas que as
 /// dimensões da configuração de um Processo Seletivo referenciam por
 /// <c>(codigo, versao, hash)</c>.
 /// </summary>

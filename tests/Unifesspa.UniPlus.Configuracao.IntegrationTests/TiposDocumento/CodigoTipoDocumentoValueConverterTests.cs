@@ -16,7 +16,7 @@ using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Converters;
 /// </summary>
 /// <remarks>
 /// O estado que este teste exercita não se cria pelo fluxo normal — o CHECK
-/// <c>ck_tipo_documento_codigo_formato</c> recusa o insert cru e o agregado recusa
+/// <c>ck_tipos_de_documento_codigo_formato</c> recusa o insert cru e o agregado recusa
 /// a escrita. Ele existe para o caso que sobra: alteração manual da coluna.
 /// </remarks>
 [SuppressMessage(

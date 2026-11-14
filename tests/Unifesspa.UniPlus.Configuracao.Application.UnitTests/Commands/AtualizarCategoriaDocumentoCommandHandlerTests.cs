@@ -9,6 +9,7 @@ using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CategoriasDocumento;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -17,7 +18,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class AtualizarCategoriaDocumentoCommandHandlerTests
 {
-    private const string CodigoVivoConstraint = "ix_categoria_documento_codigo_vivo";
+    private const string CodigoVivoConstraint = RestricoesDoBanco.CategoriaDeDocumentoCodigoVivo;
 
     private readonly ICategoriaDocumentoRepository _repository = Substitute.For<ICategoriaDocumentoRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();

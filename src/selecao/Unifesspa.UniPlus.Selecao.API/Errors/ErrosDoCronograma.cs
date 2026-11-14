@@ -134,6 +134,6 @@ internal static class ErrosDoCronograma
         new("RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_unidade_nao_declaravel", "A unidade da suspensividade não é declarável")),
         new("RegraRecursoFase.SuspensividadeNaoPositiva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_nao_positiva", "O valor da suspensividade deve ser estritamente positivo")),
         new("RegraRecursoFase.SuspensividadeSuperiorSemInstanciaSuperior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_superior_sem_instancia_superior", "A janela que não admite instância superior não declara tempo de bloqueio superior")),
-        new("RegraRecursoFase.RegraCatalogoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.regra_catalogo_invalida", "A regra referenciada não é RECURSO-PRAZO-ANCORADO-EM-ATO, ou diverge do rol_de_regras")),
+        new("RegraRecursoFase.RegraCatalogoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.regra_catalogo_invalida", "A regra referenciada não é RECURSO-PRAZO-ANCORADO-EM-ATO, ou diverge do catálogo de regras")),
     ];
 }

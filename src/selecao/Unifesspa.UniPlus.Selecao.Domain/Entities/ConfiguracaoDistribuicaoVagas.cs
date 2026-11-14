@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Configuração de distribuição de vagas de uma oferta de curso dentro do
 /// <see cref="ProcessoSeletivo"/> (Story #773): os inputs que o
 /// admin declara — <see cref="VoBase"/>, <see cref="Pr"/>, a referência à
-/// regra de distribuição tipada (<c>rol_de_regras</c>) e, quando aplicável, o
+/// regra de distribuição tipada (<c>regras_do_catalogo</c>) e, quando aplicável, o
 /// snapshot da referência demográfica — mais o subconjunto de
 /// <see cref="ModalidadeSelecionada"/> que participa desta oferta.
 /// </summary>

@@ -36,7 +36,7 @@ internal sealed class BaseDaPermissaoNaConcessaoConfiguration : IEntityTypeConfi
 
         builder.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
 
-        builder.ToTable("bases_da_permissao_na_concessao", ConfigurarRestricoes);
+        builder.ToTable("bases_da_permissao_concedida", ConfigurarRestricoes);
         builder.HasKey(b => b.Id);
         builder.Property(b => b.Id).ValueGeneratedNever();
 

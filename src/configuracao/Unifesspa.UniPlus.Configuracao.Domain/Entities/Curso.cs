@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <para>O <c>GrupoAreaEnem</c> é opcional: nem todo curso classifica por área do
 /// ENEM. Quando informado, é um dos quatro grupos da Resolução nº 805/2024/Consepe
 /// (<see cref="GrupoCurso"/>), gravado com código e rótulo — o pareamento
-/// <c>curso.grupo_area_enem ↔ peso_area_enem.grupo_curso</c> é pelo código, sem FK.</para>
+/// <c>cursos.grupo_area_enem ↔ pesos_por_area_do_enem.grupo_curso</c> é pelo código, sem FK.</para>
 /// <para>Dado institucional sem PII (LGPD inaplicável). A remoção é soft-delete e
 /// só é bloqueada quando o curso é referenciado por oferta de curso viva (#749).</para>
 /// </remarks>

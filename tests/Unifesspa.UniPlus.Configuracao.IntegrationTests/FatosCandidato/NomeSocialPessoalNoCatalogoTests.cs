@@ -26,7 +26,7 @@ public sealed class NomeSocialPessoalNoCatalogoTests
         await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
         await conexao.OpenAsync();
         await using NpgsqlCommand tornarPublico = new(
-            "UPDATE configuracao.rol_de_fatos_candidato SET classificacao_protecao = 'PUBLICO' WHERE codigo = @codigo",
+            "UPDATE configuracao.fatos_do_candidato SET classificacao_protecao = 'PUBLICO' WHERE codigo = @codigo",
             conexao);
         tornarPublico.Parameters.AddWithValue("codigo", FatoCandidato.CodigoDoNomeSocial);
 

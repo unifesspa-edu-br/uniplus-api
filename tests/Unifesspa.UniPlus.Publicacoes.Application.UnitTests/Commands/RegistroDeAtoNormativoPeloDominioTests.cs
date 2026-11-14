@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
+using Unifesspa.UniPlus.Publicacoes.Application.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
@@ -137,8 +138,8 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
     }
 
     [Theory(DisplayName = "Traduz a violação de unicidade do registro de atos na recusa que a nomeia")]
-    [InlineData("ux_vagas_de_linhagem_objeto_tipo", AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo)]
-    [InlineData("ux_ato_normativo_retificado", AtoNormativoErrorCodes.AtoJaRetificado)]
+    [InlineData(RestricoesDoBanco.VagaDeLinhagemObjetoTipoUnica, AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo)]
+    [InlineData(RestricoesDoBanco.AtoNormativoRetificadoUnico, AtoNormativoErrorCodes.AtoJaRetificado)]
     public void TraduzirConflitoDaGravacao_ConstraintDoRegistro_NomeiaARecusa(string constraint, string codigo)
     {
         DbUpdateException violacao = new("falha", PostgresExceptionFactory.Create("23505", constraint));

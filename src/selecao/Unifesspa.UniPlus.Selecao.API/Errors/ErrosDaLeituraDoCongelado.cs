@@ -38,7 +38,7 @@ internal static class ErrosDaLeituraDoCongelado
         new("ProcessoSeletivo.IdEtapaAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.id_etapa_ausente", "Toda etapa restaurada declara o Id congelado no envelope")),
         // Árvore de satisfação restaurada (ADR-0110 D2) — checagens
         // estruturais equivalentes ao que o banco garante na escrita normal
-        // (ux_nos_exigencia_raiz_ordem/ux_nos_exigencia_irmaos_ordem) mais o que só a raiz
+        // (ux_nos_da_arvore_de_exigencias_raiz_ordem/ux_nos_da_arvore_de_exigencias_irmaos_ordem) mais o que só a raiz
         // consegue provar (folha referencia um DocumentoExigido que existe no grafo).
         new("ProcessoSeletivo.IdNoExigenciaDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.id_no_exigencia_duplicado", "O mesmo Id de nó da árvore de satisfação não pode aparecer mais de uma vez na configuração restaurada")),
         new("ProcessoSeletivo.OrdemRaizNoExigenciaDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_raiz_no_exigencia_duplicada", "Cada raiz da árvore de satisfação deve ter uma ordem única dentro do processo")),

@@ -19,7 +19,7 @@ namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
 public static class PrecedenciaFaseSeed
 {
     // Prefixo determinístico próprio do catálogo de precedências (distinto do
-    // rol_de_regras e do rol_de_fatos_candidato, para não confundir identidades
+    // regras_do_catalogo e do fatos_do_candidato, para não confundir identidades
     // entre tabelas).
     private static Guid SeedId(int n) =>
         Guid.Parse($"93ec0000-0000-7000-8000-{n:D12}");

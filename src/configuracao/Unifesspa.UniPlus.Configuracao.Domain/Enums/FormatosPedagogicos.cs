@@ -9,7 +9,7 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// só os três tokens canônicos são aceitos — sem <c>Enum.TryParse</c> (que
 /// aceitaria tokens numéricos e nomes PascalCase, fora do contrato da #749).</para>
 /// <para>É o vocabulário fonte do CHECK de domínio em
-/// <c>oferta_curso.formato_pedagogico</c> (<see cref="TokensCanonicos"/>) e do
+/// <c>ofertas_de_curso.formato_pedagogico</c> (<see cref="TokensCanonicos"/>) e do
 /// value converter de persistência. O default quando o token está ausente
 /// (PRESENCIAL) é aplicado pela entidade, não aqui.</para>
 /// </remarks>

@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// Código canônico da(s) regra(s) de <c>tipo=regra_prazo_recurso</c> do
-/// <c>rol_de_regras</c> (Story #854) reconhecidas por
+/// <c>regras_do_catalogo</c> (Story #854) reconhecidas por
 /// <see cref="Entities.RegraRecursoFase"/> (Story #851 §3.0/CA-01).
 /// </summary>
 /// <remarks>
