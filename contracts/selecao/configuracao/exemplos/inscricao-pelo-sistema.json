@@ -4,9 +4,14 @@
   "identificacao": {
     "nome": "Processo Seletivo de Exemplo 2027",
     "tipoProcessoCodigo": "PSR",
+    "tipoProcessoNome": "Processo Seletivo Regular",
     "unidadeAdministradoraCodigo": "CEPS",
+    "unidadeAdministradoraNome": "Centro de Processos Seletivos",
+    "unidadeAdministradoraSigla": "CEPS",
     "origemCandidatos": "inscricaoPropria",
-    "localidadeCodigoIbge": "1505304",
+    "localidadeCodigoIbge": "1504208",
+    "localidadeNome": "Marabá",
+    "localidadeUf": "PA",
     "identificadorLegivel": "processo-exemplo-2027",
     "algoritmoContagemPrazo": {
       "codigo": "CONTAGEM-PRAZO-AVANCA-DATA-UTIL",
@@ -26,7 +31,9 @@
         "ordem": 1,
         "inicio": "2027-01-10T03:00:00Z",
         "fim": "2027-01-20T02:59:59Z",
-        "unidadeResponsavelCodigo": "CEPS"
+        "unidadeResponsavelCodigo": "CEPS",
+        "unidadeResponsavelNome": "Centro de Processos Seletivos",
+        "unidadeResponsavelSigla": "CEPS"
       },
       {
         "chave": "avaliacao",
@@ -34,7 +41,9 @@
         "ordem": 2,
         "inicio": "2027-01-25T11:00:00Z",
         "fim": "2027-01-25T16:00:00Z",
-        "unidadeResponsavelCodigo": "CEPS"
+        "unidadeResponsavelCodigo": "CEPS",
+        "unidadeResponsavelNome": "Centro de Processos Seletivos",
+        "unidadeResponsavelSigla": "CEPS"
       },
       {
         "chave": "resultado-preliminar",
@@ -43,6 +52,8 @@
         "inicio": "2027-02-01T03:00:00Z",
         "fim": "2027-02-01T14:00:00Z",
         "unidadeResponsavelCodigo": "CEPS",
+        "unidadeResponsavelNome": "Centro de Processos Seletivos",
+        "unidadeResponsavelSigla": "CEPS",
         "produtos": [
           {
             "atoCodigo": "RESULTADO_PRELIMINAR",
@@ -82,6 +93,8 @@
         "inicio": "2027-02-15T03:00:00Z",
         "fim": "2027-02-15T14:00:00Z",
         "unidadeResponsavelCodigo": "CEPS",
+        "unidadeResponsavelNome": "Centro de Processos Seletivos",
+        "unidadeResponsavelSigla": "CEPS",
         "produtos": [
           {
             "atoCodigo": "RESULTADO_FINAL",
@@ -178,5 +191,7 @@
       "numero_inscricao",
       "nome_abreviado"
     ]
-  }
+  },
+  "criadoEm": "2026-11-02T12:00:00Z",
+  "atualizadoEm": "2026-11-10T15:30:00Z"
 }

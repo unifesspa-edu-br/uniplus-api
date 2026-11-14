@@ -42,6 +42,51 @@
     },
     "divulgacao": {
       "$ref": "#/$defs/divulgacao"
+    },
+    "criadoEm": {
+      "title": "Criado em",
+      "description": "Instante em que o processo foi criado, em UTC. Campo só de leitura: ignorado na importação e preenchido pelo servidor.",
+      "$ref": "#/$defs/instante",
+      "readOnly": true
+    },
+    "atualizadoEm": {
+      "title": "Atualizado em",
+      "description": "Instante da última alteração do processo, em UTC. Campo só de leitura: ignorado na importação e preenchido pelo servidor.",
+      "$ref": "#/$defs/instante",
+      "readOnly": true
+    },
+    "tiposDeAtoCongelados": {
+      "title": "Tipos de ato congelados",
+      "description": "Cópia, congelada na publicação, dos tipos de ato do catálogo de Publicações que o processo usa, com o que cada um significa. Existe só no processo publicado. Campo só de leitura: ignorado na importação; a referência é o código do tipo de ato em cada produto de fase e de etapa.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "codigo": {
+            "title": "Código do tipo de ato",
+            "description": "Código do tipo de ato no catálogo de Publicações.",
+            "type": "string",
+            "maxLength": 128
+          },
+          "unicoPorObjeto": {
+            "title": "Único por objeto",
+            "description": "Verdadeiro quando o tipo só pode ser publicado uma vez para o mesmo objeto.",
+            "type": "boolean"
+          },
+          "ehResultado": {
+            "title": "É resultado",
+            "description": "Verdadeiro quando o tipo publica um resultado.",
+            "type": "boolean"
+          },
+          "congelaConfiguracao": {
+            "title": "Congela a configuração",
+            "description": "Verdadeiro quando publicar o ato congela a configuração do processo.",
+            "type": "boolean"
+          }
+        }
+      },
+      "readOnly": true
     }
   },
   "$defs": {
@@ -89,10 +134,31 @@
           "description": "Código do tipo de processo no catálogo de tipos de processo.",
           "$ref": "#/$defs/codigoDeCatalogo"
         },
+        "tipoProcessoNome": {
+          "title": "Nome do tipo de processo",
+          "description": "Nome do tipo de processo guardado no processo. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é tipoProcessoCodigo.",
+          "type": "string",
+          "maxLength": 200,
+          "readOnly": true
+        },
         "unidadeAdministradoraCodigo": {
           "title": "Unidade administradora",
           "description": "Código estável da unidade que administra o processo.",
           "$ref": "#/$defs/codigoDeCatalogo"
+        },
+        "unidadeAdministradoraNome": {
+          "title": "Nome da unidade administradora",
+          "description": "Nome da unidade administradora guardado no processo. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é unidadeAdministradoraCodigo.",
+          "type": "string",
+          "maxLength": 250,
+          "readOnly": true
+        },
+        "unidadeAdministradoraSigla": {
+          "title": "Sigla da unidade administradora",
+          "description": "Sigla da unidade administradora guardada no processo. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é unidadeAdministradoraCodigo.",
+          "type": "string",
+          "maxLength": 50,
+          "readOnly": true
         },
         "origemCandidatos": {
           "title": "Origem dos candidatos",
@@ -107,6 +173,20 @@
           "description": "Código IBGE do município (7 dígitos) que rege a contagem de prazos. O nome e a UF vêm do cadastro de localidades.",
           "type": "string",
           "pattern": "^[0-9]{7}$"
+        },
+        "localidadeNome": {
+          "title": "Nome da localidade",
+          "description": "Nome do município, guardado no processo como texto de exibição. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é localidadeCodigoIbge.",
+          "type": "string",
+          "maxLength": 150,
+          "readOnly": true
+        },
+        "localidadeUf": {
+          "title": "UF da localidade",
+          "description": "Sigla da unidade federativa do município, guardada como texto de exibição. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é localidadeCodigoIbge.",
+          "type": "string",
+          "pattern": "^[A-Z]{2}$",
+          "readOnly": true
         },
         "identificadorLegivel": {
           "title": "Identificador legível",
@@ -195,6 +275,20 @@
           "title": "Unidade responsável pela fase",
           "description": "Código estável da unidade responsável por conduzir a fase.",
           "$ref": "#/$defs/codigoDeCatalogo"
+        },
+        "unidadeResponsavelNome": {
+          "title": "Nome da unidade responsável",
+          "description": "Nome da unidade responsável pela fase, guardado no processo. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é unidadeResponsavelCodigo.",
+          "type": "string",
+          "maxLength": 250,
+          "readOnly": true
+        },
+        "unidadeResponsavelSigla": {
+          "title": "Sigla da unidade responsável",
+          "description": "Sigla da unidade responsável pela fase, guardada no processo. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é unidadeResponsavelCodigo.",
+          "type": "string",
+          "maxLength": 50,
+          "readOnly": true
         },
         "produtos": {
           "title": "Atos que a fase publica",
@@ -431,6 +525,13 @@
           "description": "Motivo de divulgar o nome completo, texto livre de até 1000 caracteres.",
           "type": "string",
           "maxLength": 1000
+        },
+        "regraNomeAbreviado": {
+          "title": "Regra do nome abreviado",
+          "description": "Identificador da regra vigente que abrevia o nome do candidato, presente quando nome_abreviado é divulgado. Definido pelo servidor na publicação. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é camposPublicos.",
+          "type": "string",
+          "maxLength": 100,
+          "readOnly": true
         }
       }
     },
