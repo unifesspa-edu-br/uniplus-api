@@ -61,6 +61,8 @@ internal static class ErrosDosDocumentosEAtos
         new(AnexoDoEditalErrorCodes.FinalidadeIncompativel, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.finalidade_incompativel", "Somente um documento enviado como anexo do edital pode ser anexado ao edital")),
         new(AnexoDoEditalErrorCodes.NomeInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.nome_invalido", "Nome do anexo inválido")),
         new(AnexoDoEditalErrorCodes.QuantidadeExcedida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.anexo_do_edital.quantidade_excedida", "O edital aceita no máximo 20 anexos")),
+        // Consulta de um ato: NaoEncontrado é 404 (inexistente ou de outro processo).
+        new(AtoDoProcessoErrorCodes.NaoEncontrado, new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.ato_do_processo.nao_encontrado", "Ato do processo não encontrado")),
         // Ato avulso do processo e correção de ato publicado (ADR-0103; UNI-REQ-0155 e UNI-REQ-0156).
         new(AtoDoProcessoErrorCodes.CertameNaoDivulgado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.ato_do_processo.certame_nao_divulgado", "O processo ainda não tem página pública para receber o ato")),
         new(AtoDoProcessoErrorCodes.TipoCongelaConfiguracao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.ato_do_processo.tipo_congela_configuracao", "O tipo congela configuração e não é documento avulso")),

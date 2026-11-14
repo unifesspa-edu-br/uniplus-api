@@ -116,4 +116,23 @@ public sealed class AtosDoProcessoController : ControllerBase
 
         return resultado.IsSuccess ? Ok(resultado.Value!.Items) : resultado.ToActionResult(_mapper);
     }
+
+    /// <summary>
+    /// Consulta um ato do processo, com os documentos, na mesma forma que a lista dos atos o traz.
+    /// </summary>
+    [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
+    [HttpGet("{atoId:guid}")]
+    [VendorMediaType(Resource = "ato-do-processo", Versions = [1])]
+    [ProducesResponseType(typeof(AtoDoProcessoDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound,
+            Description = "O processo não existe ou o ato não existe nele (uniplus.selecao.ato_do_processo.nao_encontrado); o ato de outro processo responde igual ao inexistente.")]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
+    public async Task<IActionResult> Obter(Guid processoSeletivoId, Guid atoId, CancellationToken cancellationToken)
+    {
+        Result<AtoDoProcessoDto> resultado = await _queryBus
+            .Send(new ObterAtoDoProcessoQuery(processoSeletivoId, atoId), cancellationToken)
+            .ConfigureAwait(false);
+
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
+    }
 }

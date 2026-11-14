@@ -6,6 +6,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </summary>
 public static class AtoDoProcessoErrorCodes
 {
+    public const string NaoEncontrado = "AtoDoProcesso.NaoEncontrado";
     public const string CertameNaoDivulgado = "AtoDoProcesso.CertameNaoDivulgado";
     public const string TipoCongelaConfiguracao = "AtoDoProcesso.TipoCongelaConfiguracao";
     public const string TipoNaoPublicavelComoAvulso = "AtoDoProcesso.TipoNaoPublicavelComoAvulso";

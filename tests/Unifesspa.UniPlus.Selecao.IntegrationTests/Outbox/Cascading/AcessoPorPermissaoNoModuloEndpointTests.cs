@@ -42,6 +42,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         { "modelos de documento", "POST", "/api/selecao/processos-seletivos/{p}/modelos-de-documento", PermissaoSelecao.ProcessosConfigurar },
         { "produtos previstos", "GET", "/api/selecao/processos-seletivos/{p}/produtos-previstos", PermissaoSelecao.ProcessosAcompanhar },
         { "atos (consulta)", "GET", "/api/selecao/processos-seletivos/{p}/atos", PermissaoSelecao.ProcessosAcompanhar },
+        { "ato (consulta)", "GET", "/api/selecao/processos-seletivos/{p}/atos/0199a000-0000-7000-8000-0000000000a1", PermissaoSelecao.ProcessosAcompanhar },
         { "atos (publicação)", "POST", "/api/selecao/processos-seletivos/{p}/atos", PermissaoSelecao.ProcessosPublicar },
         { "documentos a publicar", "GET", "/api/selecao/processos-seletivos/{p}/documentos-a-publicar", PermissaoSelecao.ProcessosPublicar },
         { "envios ao INEP", "GET", "/api/selecao/processos-seletivos/{p}/etapas/" + Etapa + "/edicoes-do-enem/2024/envios-ao-inep", PermissaoSelecao.EnviosInepGerar },
