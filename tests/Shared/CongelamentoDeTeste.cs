@@ -85,7 +85,7 @@ internal static class CongelamentoDeTeste
             Dados = dados,
             Documento = new DocumentoCongelado(canonico, schemaVersion, algoritmoHash, hashDocumento),
             AtorUsuarioSub = atorUsuarioSub,
-            Clock = clock,
+            Instante = clock.GetUtcNow(),
             Contexto = contexto,
             FatosDeModalidade = fatosDeModalidade,
             TiposDeAtoUnicos = tiposDeAtoUnicos,

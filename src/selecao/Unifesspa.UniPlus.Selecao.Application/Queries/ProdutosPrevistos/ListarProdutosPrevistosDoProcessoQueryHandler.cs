@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProdutosPrevistos;
 
 using Microsoft.Extensions.Options;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;

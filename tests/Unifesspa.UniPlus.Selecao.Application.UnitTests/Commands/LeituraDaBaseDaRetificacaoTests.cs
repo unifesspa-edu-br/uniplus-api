@@ -132,13 +132,13 @@ public sealed class LeituraDaBaseDaRetificacaoTests
         resposta.Value!.Motivo.Should().Be(emSessao.Processo.Rascunho!.Motivo);
     }
 
-    [Fact(DisplayName = "A fase iniciada é lida no instante do relógio, depois da trava, e sem recusa devolve nulo")]
-    public async Task FaseIniciada_ELidaNoInstanteDoRelogio()
+    [Fact(DisplayName = "A fase iniciada é lida no instante em que o fechamento publica, e sem recusa devolve nulo")]
+    public async Task FaseIniciada_ELidaNoInstanteRecebido()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         ServicosDoCongelamentoDeTeste servicos = ServicosDoCongelamentoDeTeste.Para(processo);
 
-        DomainError? recusa = await servicos.LeituraDaBase().RecusaPorFaseIniciadaAsync(processo, CancellationToken.None);
+        DomainError? recusa = await servicos.LeituraDaBase().RecusaPorFaseIniciadaAsync(processo, Agora, CancellationToken.None);
 
         recusa.Should().BeNull();
         await servicos.FasesIniciadas.Received(1).ObterAsync(processo.Id, Agora, Arg.Any<CancellationToken>());

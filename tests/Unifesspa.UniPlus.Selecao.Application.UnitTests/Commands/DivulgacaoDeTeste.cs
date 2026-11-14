@@ -4,7 +4,9 @@ using System.Text;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;

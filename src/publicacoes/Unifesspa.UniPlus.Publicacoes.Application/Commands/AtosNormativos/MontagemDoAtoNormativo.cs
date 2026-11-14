@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
@@ -14,6 +15,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// </summary>
 public sealed class MontagemDoAtoNormativo(
     ITipoAtoPublicadoRepository tipos,
+    IResolvedorFusoInstitucional fuso,
     CadeiaDeRetificacaoDoAto cadeia,
     ReservaDasVagasDoObjeto reservaDasVagas)
 {
@@ -22,7 +24,7 @@ public sealed class MontagemDoAtoNormativo(
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        Result<DadosConferidos> conferidos = await ConferirAsync(command, cancellationToken).ConfigureAwait(false);
+        Result<DadosConferidos> conferidos = await ConferirAsync(command, publicadoEm, cancellationToken).ConfigureAwait(false);
         if (conferidos.IsFailure)
         {
             return Result<AtoMontado>.Failure(conferidos.Error!);
@@ -83,24 +85,34 @@ public sealed class MontagemDoAtoNormativo(
     /// endpoint, em que quem publica está aqui, neste instante). Quando vêm conferidos o catálogo
     /// NÃO é relido: o cadastro é editável, e reler faria um edital publicado como congelante ser
     /// registrado com um tipo que já não congela. O nome do tipo segue o mesmo caminho, porque é
-    /// ele que compõe o título público do ato.
+    /// ele que compõe o título público do ato. A versão vigente é a do dia civil da publicação no fuso
+    /// institucional: a data que o documento declara não escolhe o tipo.
     /// </summary>
     private async Task<Result<TipoResolvido>> ResolverTipoAsync(
-        RegistrarAtoNormativoCommand command, CancellationToken cancellationToken)
+        RegistrarAtoNormativoCommand command, DateTimeOffset publicadoEm, CancellationToken cancellationToken)
     {
         if (command.AtributosDoTipo is { } conferidos)
         {
             return Result<TipoResolvido>.Success(new TipoResolvido(command.TipoCodigo.Trim(), conferidos));
         }
 
+        Result<DateOnly> diaDaPublicacao = fuso.DiaCivilDe(publicadoEm);
+        return diaDaPublicacao.IsFailure
+            ? Result<TipoResolvido>.Failure(diaDaPublicacao.Error!)
+            : await ResolverNoCatalogoAsync(command.TipoCodigo, diaDaPublicacao.Value, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<Result<TipoResolvido>> ResolverNoCatalogoAsync(
+        string tipoCodigo, DateOnly diaDaPublicacao, CancellationToken cancellationToken)
+    {
         TipoAtoPublicado? tipo = await tipos
-            .ObterVigenteAsync(command.TipoCodigo, command.DataDoAto, cancellationToken)
+            .ObterVigenteAsync(tipoCodigo, diaDaPublicacao, cancellationToken)
             .ConfigureAwait(false);
 
         return tipo is null
             ? Result<TipoResolvido>.Failure(new DomainError(
                 AtoNormativoErrorCodes.TipoSemVersaoVigente,
-                $"Não há versão vigente do tipo de ato '{command.TipoCodigo}' na data do ato {command.DataDoAto:yyyy-MM-dd}."))
+                $"Não há versão vigente do tipo de ato '{tipoCodigo}' na data da publicação ({diaDaPublicacao:yyyy-MM-dd})."))
             : Result<TipoResolvido>.Success(new TipoResolvido(tipo.Codigo, AtributosDe(tipo)));
     }
 
@@ -140,14 +152,14 @@ public sealed class MontagemDoAtoNormativo(
     }
 
     private async Task<Result<DadosConferidos>> ConferirAsync(
-        RegistrarAtoNormativoCommand command, CancellationToken cancellationToken)
+        RegistrarAtoNormativoCommand command, DateTimeOffset publicadoEm, CancellationToken cancellationToken)
     {
         if (RecusaDaEntrada(command) is { } recusa)
         {
             return Result<DadosConferidos>.Failure(recusa);
         }
 
-        Result<TipoResolvido> tipo = await ResolverTipoAsync(command, cancellationToken).ConfigureAwait(false);
+        Result<TipoResolvido> tipo = await ResolverTipoAsync(command, publicadoEm, cancellationToken).ConfigureAwait(false);
         return tipo.IsFailure
             ? Result<DadosConferidos>.Failure(tipo.Error!)
             : await ConferirVersaoAsync(command, tipo.Value!, cancellationToken).ConfigureAwait(false);

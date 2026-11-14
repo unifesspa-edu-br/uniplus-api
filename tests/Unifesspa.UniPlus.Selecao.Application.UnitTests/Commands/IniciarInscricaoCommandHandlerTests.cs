@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;

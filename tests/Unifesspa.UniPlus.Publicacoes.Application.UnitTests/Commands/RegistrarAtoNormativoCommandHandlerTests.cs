@@ -23,7 +23,8 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private const string OutroHash = "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210";
-    private static readonly DateOnly Publicacao = new(2026, 3, 13);
+    private static readonly DateOnly DataDoAto = new(2026, 3, 10);
+    private static readonly DateOnly DiaDaPublicacao = new(2026, 3, 13);
     private static readonly DateTimeOffset Agora = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
 
     private readonly ITipoAtoPublicadoRepository _tipos = Substitute.For<ITipoAtoPublicadoRepository>();
@@ -31,10 +32,10 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly TimeProvider _relogio = new RelogioFixo(Agora);
 
-    [Fact(DisplayName = "Recusa quando não há tipo vigente na data do ato")]
+    [Fact(DisplayName = "Recusa quando não há tipo vigente na data da publicação")]
     public async Task Handle_SemTipoVigente_Falha()
     {
-        _tipos.ObterVigenteAsync("EDITAL_ABERTURA", Publicacao, Arg.Any<CancellationToken>())
+        _tipos.ObterVigenteAsync("EDITAL_ABERTURA", DiaDaPublicacao, Arg.Any<CancellationToken>())
             .Returns((TipoAtoPublicado?)null);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando());
@@ -370,7 +371,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
         TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
             "EDITAL_ABERTURA", "Edital de abertura", congela, unicoPorObjeto: unico,
             efeito, ehResultado: false, new DateOnly(2026, 1, 1), null, null).Value!;
-        _tipos.ObterVigenteAsync("EDITAL_ABERTURA", Publicacao, Arg.Any<CancellationToken>())
+        _tipos.ObterVigenteAsync("EDITAL_ABERTURA", DiaDaPublicacao, Arg.Any<CancellationToken>())
             .Returns(tipo);
     }
 
@@ -379,7 +380,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
             Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "13", tipoCodigo,
             congelaConfiguracao: congela, efeitoIrreversivel: false, unicoPorObjeto: false,
-            dataDoAto: Publicacao,
+            dataDoAto: DataDoAto,
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
             publicadoEm: Agora,
@@ -398,7 +399,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
             Ano: 2026,
             Numero: "13",
             TipoCodigo: "EDITAL_ABERTURA",
-            DataDoAto: Publicacao,
+            DataDoAto: DataDoAto,
             DocumentoHash: HashValido,
             Assinante: "Jairo Belchior");
 }

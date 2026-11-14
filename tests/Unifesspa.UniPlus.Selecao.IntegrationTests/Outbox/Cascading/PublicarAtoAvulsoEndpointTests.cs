@@ -287,7 +287,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
                 orgao = "CEPS",
                 serie = "EDITAL",
                 ano = 2026,
-                dataPublicacao = HojeEmTexto(),
+                dataDoAto = HojeEmTexto(),
                 assinante = "Diretor do CEPS",
                 tipoAtoCodigo = DadosDoAtoDeTeste.TipoAbertura,
             },
@@ -335,7 +335,7 @@ public sealed class PublicarAtoAvulsoEndpointTests
         {
             tipoAtoCodigo = tipo,
             numero = "5/2026",
-            dataPublicacao = HojeEmTexto(),
+            dataDoAto = HojeEmTexto(),
             assinante = "Diretor do CEPS",
             documentoPrincipalId = documentoPrincipal,
             anexos,

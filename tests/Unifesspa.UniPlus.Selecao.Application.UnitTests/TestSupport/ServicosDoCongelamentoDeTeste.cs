@@ -213,9 +213,11 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return this;
     }
 
-    public ConferenciaDoAtoEDoDocumento AtoEDocumento() => new(Documentos, Repositorio, TiposDeAto, Vagas);
+    public LeituraDoInstanteDaPublicacao LeituraDoInstante() => new(Relogio, Fuso);
 
-    public LeituraDaBaseDaRetificacao LeituraDaBase() => new(Repositorio, Vagas, Atos, Codecs, FasesIniciadas, Relogio);
+    public ConferenciaDoAtoEDoDocumento AtoEDocumento() => new(Documentos, Repositorio, TiposDeAto, Vagas, LeituraDoInstante());
+
+    public LeituraDaBaseDaRetificacao LeituraDaBase() => new(Repositorio, Vagas, Atos, Codecs, FasesIniciadas);
 
     public LeituraDasVersoesPublicadas VersoesPublicadas() => new(Repositorio, Codecs);
 
@@ -237,9 +239,9 @@ internal sealed class ServicosDoCongelamentoDeTeste
     public ConferenciaDaConfiguracaoAoCongelar Conferencia() =>
         new(Catalogos(), Recopia(), Fuso, TiposDeAtoUnicos(), Anexos(), ConformidadeLegal(), Motivos());
 
-    public MontagemDoCongelamento Montagem() => new(Contextos(), Canonicalizer, Relogio, Usuario);
+    public MontagemDoCongelamento Montagem() => new(Contextos(), Canonicalizer, Usuario);
 
-    public GravacaoDaVersaoCongelada Gravacao() => new(Repositorio, Atos, Rascunhos, UnitOfWork, Relogio);
+    public GravacaoDaVersaoCongelada Gravacao() => new(Repositorio, Atos, Rascunhos, UnitOfWork);
 
     public CongelamentoDaVersao Congelamento() => new(Conferencia(), Montagem(), Gravacao(), UnitOfWork);
 

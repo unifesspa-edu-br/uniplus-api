@@ -76,7 +76,7 @@ public sealed class AtosDoProcessoController : ControllerBase
                     processoSeletivoId,
                     request.TipoAtoCodigo,
                     request.Numero,
-                    request.DataPublicacao,
+                    request.DataDoAto,
                     request.Assinante,
                     request.DocumentoPrincipalId,
                     AnexoDoAtoRequest.ParaComando(request.Anexos),

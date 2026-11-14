@@ -31,6 +31,7 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
         builder.Property(a => a.MotivoDaCorrecao).HasMaxLength(AtoDoProcesso.MotivoDaCorrecaoMaxLength);
         builder.Property(a => a.PoliticaDeDivulgacaoConfirmadaPorSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(AtoDoProcesso.SubMaxLength);
         builder.Property(a => a.ItemDoEdital).HasMaxLength(IdentidadeDoItemDoEdital.ChaveMaxLength);
+        builder.Property(a => a.PublicadoEm).IsRequired();
         builder.Property(a => a.Situacao).HasConversion<int>().IsRequired();
 
         // A ordem de registro é do banco, e o registro sob a trava do processo a torna a ordem real entre os atos dele.
@@ -74,7 +75,7 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
 
         // A consulta administrativa filtra por processo e entrega do mais recente para o mais
         // antigo; as colunas descendentes evitam o passo de ordenação.
-        builder.HasIndex(a => new { a.ProcessoSeletivoId, a.CreatedAt, a.OrdemDeRegistro })
+        builder.HasIndex(a => new { a.ProcessoSeletivoId, a.PublicadoEm, a.OrdemDeRegistro })
             .IsDescending(false, true, true)
             .HasDatabaseName("ix_atos_do_processo_processo_recentes");
 

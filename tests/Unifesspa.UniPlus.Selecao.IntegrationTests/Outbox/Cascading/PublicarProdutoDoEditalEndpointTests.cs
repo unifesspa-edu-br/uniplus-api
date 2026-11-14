@@ -235,7 +235,7 @@ public sealed class PublicarProdutoDoEditalEndpointTests
         pedido.Content = JsonContent.Create(new
         {
             numero = "7/2026",
-            dataPublicacao = PublicarAtoAvulsoEndpointTests.HojeEmTexto(),
+            dataDoAto = PublicarAtoAvulsoEndpointTests.HojeEmTexto(),
             assinante = "Diretor do CEPS",
             documentoPrincipalId = documentoPrincipal,
             politicaDeDivulgacaoConfirmada = confirma,

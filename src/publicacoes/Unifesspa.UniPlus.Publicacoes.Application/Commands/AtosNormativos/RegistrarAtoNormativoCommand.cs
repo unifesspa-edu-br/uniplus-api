@@ -7,10 +7,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
-/// Registra um ato publicado. <paramref name="DataDoAto"/> é a data que o documento declara.
-/// O tipo é resolvido no catálogo vigente nessa data e seus atributos de consequência
-/// (<c>congela_configuracao</c>, <c>efeito_irreversivel</c>) são copiados por
-/// valor server-side — o cliente não os informa, então não há como divergirem
+/// Registra um ato publicado. <paramref name="DataDoAto"/> é a data que o documento declara e não
+/// escolhe o tipo: ele é resolvido no catálogo vigente no dia civil da publicação, no fuso institucional,
+/// e seus atributos de consequência (<c>congela_configuracao</c>, <c>efeito_irreversivel</c>) são
+/// copiados por valor server-side — o cliente não os informa, então não há como divergirem
 /// do catálogo (AC5).
 /// </summary>
 /// <remarks>

@@ -17,10 +17,10 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 public sealed class MontagemDoCongelamento(
     LeituraDoContextoDeContagemDePrazos contextos,
     ISnapshotPublicacaoCanonicalizer canonicalizer,
-    TimeProvider timeProvider,
     IUserContext userContext)
 {
-    internal async Task<PedidoDeCongelamento> MontarAsync(ConfiguracaoConferida conferida, CancellationToken cancellationToken)
+    internal async Task<PedidoDeCongelamento> MontarAsync(
+        ConfiguracaoConferida conferida, DateTimeOffset instante, CancellationToken cancellationToken)
     {
         ContextoDeContagemDePrazos contexto = await contextos.LerAsync(cancellationToken).ConfigureAwait(false);
         EntradaCanonicalizacao entrada = conferida.Entrada;
@@ -31,7 +31,7 @@ public sealed class MontagemDoCongelamento(
             Dados = entrada.Dados,
             Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, entrada.HashDocumento),
             AtorUsuarioSub = userContext.UserId ?? "system",
-            Clock = timeProvider,
+            Instante = instante,
             Contexto = contexto,
             FatosDeModalidade = conferida.FatosDeModalidade,
             TiposDeAtoUnicos = conferida.TiposDeAtoUnicos,

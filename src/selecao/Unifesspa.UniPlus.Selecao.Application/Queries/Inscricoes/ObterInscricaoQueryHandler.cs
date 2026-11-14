@@ -13,6 +13,7 @@ using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Devolve a inscrição do dono do token — nunca de outro CPF, mesmo que o <c>sub</c> coincida por

@@ -91,7 +91,7 @@ public sealed partial class EnvelopeFechadoE2ETests
             orgao = "CEPS",
             serie = "EDITAL",
             ano = 2026,
-            dataPublicacao = "2026-03-01",
+            dataDoAto = "2026-03-01",
             assinante = "Diretor do CEPS",
             tipoAtoCodigo,
         };

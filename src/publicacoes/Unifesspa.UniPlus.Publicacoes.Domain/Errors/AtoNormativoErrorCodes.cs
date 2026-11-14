@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 public static class AtoNormativoErrorCodes
 {
     /// <summary>
-    /// O tipo informado não tem versão do catálogo vigente na data do ato. Sem versão vigente não há de onde copiar <c>congela_configuracao</c>
+    /// O tipo informado não tem versão do catálogo vigente na data da publicação. Sem versão vigente não há de onde copiar <c>congela_configuracao</c>
     /// e <c>efeito_irreversivel</c>, então o registro é recusado.
     /// </summary>
     public const string TipoSemVersaoVigente = "AtoNormativo.TipoSemVersaoVigente";

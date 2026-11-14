@@ -25,9 +25,9 @@ public abstract class DadosDoAtoPublicadoValidator<TComando> : AbstractValidator
             .WithMessage($"Número do ato deve ter no máximo {AtoDoProcesso.NumeroMaxLength} caracteres.");
 
         // DateOnly omitido binda para 0001-01-01.
-        RuleFor(x => x.DataPublicacao)
+        RuleFor(x => x.DataDoAto)
             .NotEqual(default(DateOnly))
-            .WithMessage("Data de publicação declarada pelo ato é obrigatória.");
+            .WithMessage("Data do ato declarada pelo documento é obrigatória.");
 
         RuleFor(x => x.Assinante)
             .NotEmpty()

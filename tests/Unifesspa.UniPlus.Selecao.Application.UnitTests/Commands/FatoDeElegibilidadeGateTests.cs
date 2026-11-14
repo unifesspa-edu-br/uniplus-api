@@ -194,7 +194,7 @@ public sealed class FatoDeElegibilidadeGateTests
     }
 
     private static DadosDoAto NovoAto() => new(
-        Orgao: "CEPS", Serie: "EDITAL", Ano: 2026, DataPublicacao: new DateOnly(2026, 1, 1),
+        Orgao: "CEPS", Serie: "EDITAL", Ano: 2026, DataDoAto: new DateOnly(2026, 1, 1),
         Assinante: "Diretor do CEPS", TipoAtoCodigo: "EDITAL_ABERTURA");
 
     private sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider

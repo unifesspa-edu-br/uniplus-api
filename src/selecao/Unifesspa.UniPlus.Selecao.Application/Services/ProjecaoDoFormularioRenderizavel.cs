@@ -6,6 +6,7 @@ using Domain.Entities;
 using Domain.Services;
 using Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 

@@ -68,7 +68,15 @@ public sealed class AtoDoProcesso : EntityBase
     public string TipoCodigo { get; private set; } = string.Empty;
     public string TipoNome { get; private set; } = string.Empty;
     public string? Numero { get; private set; }
+    /// <summary>A data que o documento declara; não conta para prazo, vigência nem escolha do tipo de ato.</summary>
     public DateOnly DataDoAto { get; private set; }
+
+    /// <summary>
+    /// O instante da divulgação, lido uma só vez do relógio pelo comando que publica: o mesmo que a versão
+    /// de configuração grava como vigente a partir dele e que a requisição de registro leva ao Publicações.
+    /// </summary>
+    public DateTimeOffset PublicadoEm { get; private set; }
+
     public string Assinante { get; private set; } = string.Empty;
     public string UnidadeAdministradora { get; private set; } = string.Empty;
     public string IdentificadorLegivelDoProcesso { get; private set; } = string.Empty;
@@ -120,13 +128,13 @@ public sealed class AtoDoProcesso : EntityBase
     }
 
     /// <summary>
-    /// Cria o registro pendente que acompanha o envio da requisição de registro do ato. Devolve falha
-    /// nomeada quando o par ato corrigido e motivo é incoerente.
+    /// Cria o registro pendente que acompanha o envio da requisição de registro do ato, publicado em
+    /// <paramref name="publicadoEm"/>. Devolve falha nomeada quando o par ato corrigido e motivo é incoerente.
     /// </summary>
-    public static Result<AtoDoProcesso> Registrar(NovoAtoDoProcesso novo, TimeProvider clock)
+    public static Result<AtoDoProcesso> Registrar(NovoAtoDoProcesso novo, DateTimeOffset publicadoEm)
     {
         ArgumentNullException.ThrowIfNull(novo);
-        ArgumentNullException.ThrowIfNull(clock);
+        ArgumentOutOfRangeException.ThrowIfEqual(publicadoEm, default);
 
         Result correcao = ValidarCorrecao(novo.AtoCorrigidoId, novo.MotivoDaCorrecao);
         if (correcao.IsFailure)
@@ -134,7 +142,7 @@ public sealed class AtoDoProcesso : EntityBase
             return Result<AtoDoProcesso>.ValidationFailure(correcao.Errors);
         }
 
-        return Result<AtoDoProcesso>.Success(AtoPendenteDe(ConferirDeclaracao(novo), clock));
+        return Result<AtoDoProcesso>.Success(AtoPendenteDe(ConferirDeclaracao(novo), publicadoEm));
     }
 
     /// <summary>
@@ -199,17 +207,17 @@ public sealed class AtoDoProcesso : EntityBase
         MotivoDaCorrecao = novo.MotivoDaCorrecao.EmBrancoViraNulo(),
     };
 
-    private static AtoDoProcesso AtoPendenteDe(NovoAtoDoProcesso declarado, TimeProvider clock)
+    private static AtoDoProcesso AtoPendenteDe(NovoAtoDoProcesso declarado, DateTimeOffset publicadoEm)
     {
-        AtoDoProcesso ato = Declarar(declarado);
+        AtoDoProcesso ato = Declarar(declarado, publicadoEm);
         ato.VincularDocumentos(declarado);
         ato.VincularCorrecao(declarado);
-        ato.ConfirmarPoliticaDeDivulgacao(declarado.PoliticaDeDivulgacaoConfirmadaPorSub, clock);
+        ato.ConfirmarPoliticaDeDivulgacao(declarado.PoliticaDeDivulgacaoConfirmadaPorSub, publicadoEm);
 
         return ato;
     }
 
-    private static AtoDoProcesso Declarar(NovoAtoDoProcesso declarado) => new()
+    private static AtoDoProcesso Declarar(NovoAtoDoProcesso declarado, DateTimeOffset publicadoEm) => new()
     {
         Id = declarado.AtoId,
         ProcessoSeletivoId = declarado.ProcessoSeletivoId,
@@ -217,6 +225,7 @@ public sealed class AtoDoProcesso : EntityBase
         TipoNome = declarado.TipoNome,
         Numero = declarado.Numero,
         DataDoAto = declarado.DataDoAto,
+        PublicadoEm = publicadoEm,
         Assinante = declarado.Assinante,
         UnidadeAdministradora = declarado.UnidadeAdministradora,
         IdentificadorLegivelDoProcesso = declarado.IdentificadorLegivelDoProcesso,
@@ -239,10 +248,10 @@ public sealed class AtoDoProcesso : EntityBase
         MotivoDaCorrecao = declarado.MotivoDaCorrecao;
     }
 
-    private void ConfirmarPoliticaDeDivulgacao(string? confirmadaPorSub, TimeProvider clock)
+    private void ConfirmarPoliticaDeDivulgacao(string? confirmadaPorSub, DateTimeOffset publicadoEm)
     {
         PoliticaDeDivulgacaoConfirmadaPorSub = confirmadaPorSub;
-        PoliticaDeDivulgacaoConfirmadaEm = confirmadaPorSub is null ? null : clock.GetUtcNow();
+        PoliticaDeDivulgacaoConfirmadaEm = confirmadaPorSub is null ? null : publicadoEm;
     }
 
     private static void GuardarTextosObrigatorios(NovoAtoDoProcesso novo)

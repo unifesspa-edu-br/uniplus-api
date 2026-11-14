@@ -46,21 +46,21 @@ internal static class ConferenciaDoProdutoDoEdital
                 $"O item {produtoId} não consta na versão vigente do edital. Só se publica o que o edital declara; se for preciso publicar outro, retifique o edital."));
 
     /// <summary>
-    /// O tipo do item na data do documento: vigora no catálogo e não congela configuração. O catálogo diz se o
+    /// O tipo do item no dia da publicação: vigora no catálogo e não congela configuração. O catálogo diz se o
     /// tipo existe e o seu nome; se ele congela, se é resultado e se é único, diz a versão publicada do edital.
     /// </summary>
     public static async Task<Result<TipoAtoPublicadoView>> TipoAsync(
         ITipoAtoPublicadoReader reader,
         ProjecaoDosProdutosPrevistos.Declarado produto,
         IReadOnlyDictionary<string, TipoDeAtoCongelado> tiposCongelados,
-        DateOnly dataPublicacao,
+        DateOnly diaDaPublicacao,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(produto);
         ArgumentNullException.ThrowIfNull(tiposCongelados);
 
         Result<TipoAtoPublicadoView> vigente = await ConferenciaDoTipoDeAto
-            .VigenteAsync(reader, produto.AtoCodigo, dataPublicacao, cancellationToken)
+            .VigenteAsync(reader, produto.AtoCodigo, diaDaPublicacao, cancellationToken)
             .ConfigureAwait(false);
         if (vigente.IsFailure)
         {

@@ -6,6 +6,7 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>

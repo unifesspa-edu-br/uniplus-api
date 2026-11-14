@@ -14935,7 +14935,7 @@
           "orgao",
           "serie",
           "ano",
-          "dataPublicacao",
+          "dataDoAto",
           "assinante",
           "tipoAtoCodigo"
         ],
@@ -14951,7 +14951,7 @@
             "type": "integer",
             "format": "int32"
           },
-          "dataPublicacao": {
+          "dataDoAto": {
             "type": "string",
             "format": "date"
           },
@@ -21483,7 +21483,7 @@
         "required": [
           "tipoAtoCodigo",
           "numero",
-          "dataPublicacao",
+          "dataDoAto",
           "assinante",
           "documentoPrincipalId"
         ],
@@ -21498,7 +21498,7 @@
               "string"
             ]
           },
-          "dataPublicacao": {
+          "dataDoAto": {
             "type": "string",
             "format": "date"
           },
@@ -21582,7 +21582,7 @@
       "PublicarProdutoDoEditalRequest": {
         "required": [
           "numero",
-          "dataPublicacao",
+          "dataDoAto",
           "assinante",
           "documentoPrincipalId"
         ],
@@ -21594,7 +21594,7 @@
               "string"
             ]
           },
-          "dataPublicacao": {
+          "dataDoAto": {
             "type": "string",
             "format": "date"
           },

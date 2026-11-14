@@ -48,9 +48,9 @@ public sealed class DadosDoAtoValidator : AbstractValidator<DadosDoAto>
             .WithMessage("Ano do ato é obrigatório.");
 
         // Mesma armadilha: DateOnly omitido binda para 0001-01-01.
-        RuleFor(x => x.DataPublicacao)
+        RuleFor(x => x.DataDoAto)
             .NotEqual(default(DateOnly))
-            .WithMessage("Data de publicação declarada pelo ato é obrigatória.");
+            .WithMessage("Data do ato declarada pelo documento é obrigatória.");
 
         RuleFor(x => x.Assinante)
             .NotEmpty()

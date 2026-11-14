@@ -8,6 +8,7 @@ using Npgsql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;

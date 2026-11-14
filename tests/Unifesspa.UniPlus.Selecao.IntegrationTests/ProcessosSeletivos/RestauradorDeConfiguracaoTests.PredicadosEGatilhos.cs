@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;

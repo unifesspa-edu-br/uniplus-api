@@ -1179,6 +1179,7 @@ selecao.atos_do_processo.ordem_de_registro: Interno
 selecao.atos_do_processo.politica_de_divulgacao_confirmada_em: Interno
 selecao.atos_do_processo.politica_de_divulgacao_confirmada_por_sub: Pessoal
 selecao.atos_do_processo.processo_seletivo_id: Interno
+selecao.atos_do_processo.publicado_em: Interno
 selecao.atos_do_processo.registrado_em: Interno
 selecao.atos_do_processo.situacao: Interno
 selecao.atos_do_processo.tipo_codigo: Interno

@@ -9,6 +9,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -234,7 +235,7 @@ public sealed class PublicarProcessoSeletivoGateTests
                     Orgao: "CEPS",
                     Serie: "EDITAL",
                     Ano: 2026,
-                    DataPublicacao: new DateOnly(2026, 1, 1),
+                    DataDoAto: new DateOnly(2026, 1, 1),
                     Assinante: "Diretor do CEPS",
                     TipoAtoCodigo: tipoAtoCodigo)));
 

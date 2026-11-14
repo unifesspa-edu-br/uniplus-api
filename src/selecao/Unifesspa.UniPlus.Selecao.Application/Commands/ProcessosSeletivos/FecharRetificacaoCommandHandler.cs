@@ -118,7 +118,7 @@ public static class FecharRetificacaoCommandHandler
         PrecondicaoIfMatch precondicao,
         LeituraDaBaseDaRetificacao leituraDaBase,
         CancellationToken cancellationToken) =>
-        await leituraDaBase.RecusaPorFaseIniciadaAsync(processo, cancellationToken).ConfigureAwait(false) is { } recusa
+        await leituraDaBase.RecusaPorFaseIniciadaAsync(processo, pedido.Instante, cancellationToken).ConfigureAwait(false) is { } recusa
             ? Result<VersaoConfiguracao>.Failure(recusa)
             : processo.FecharRetificacao(pedido, versaoAtual, precondicao);
 }

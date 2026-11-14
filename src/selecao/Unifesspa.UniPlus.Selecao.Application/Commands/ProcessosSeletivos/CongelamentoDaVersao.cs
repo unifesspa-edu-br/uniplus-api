@@ -56,7 +56,7 @@ public sealed class CongelamentoDaVersao(
             return (Result.ValidationFailure(conferida.Errors), []);
         }
 
-        PedidoDeCongelamento pedido = await montagem.MontarAsync(conferida.Value!, cancellationToken).ConfigureAwait(false);
+        PedidoDeCongelamento pedido = await montagem.MontarAsync(conferida.Value!, ato.Publicacao.Instante, cancellationToken).ConfigureAwait(false);
         Result<VersaoConfiguracao> versao = await transicao(pedido).ConfigureAwait(false);
         return versao.IsFailure
             ? (Result.Failure(versao.Error!), [])

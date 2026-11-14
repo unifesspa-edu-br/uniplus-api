@@ -29,7 +29,8 @@ public sealed class RegistrarAtoNormativoVinculosTests
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private const string Tipo = "EDITAL_ABERTURA";
     private const string Objeto = "OBJETO_A";
-    private static readonly DateOnly Publicacao = new(2026, 3, 13);
+    private static readonly DateOnly DataDoAto = new(2026, 3, 10);
+    private static readonly DateOnly DiaDaPublicacao = new(2026, 3, 13);
     private static readonly DateTimeOffset Agora = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
     private static readonly Guid Processo = Guid.CreateVersion7();
 
@@ -270,7 +271,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
         TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
             Tipo, "Edital de abertura", congelaConfiguracao: true, unicoPorObjeto: unico,
             efeitoIrreversivel: false, ehResultado: false, new DateOnly(2026, 1, 1), null, null).Value!;
-        _tipos.ObterVigenteAsync(Tipo, Publicacao, Arg.Any<CancellationToken>()).Returns(tipo);
+        _tipos.ObterVigenteAsync(Tipo, DiaDaPublicacao, Arg.Any<CancellationToken>()).Returns(tipo);
     }
 
     private void SemConflitoDeNumero() =>
@@ -295,7 +296,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "99", Tipo,
             congelaConfiguracao: true, efeitoIrreversivel: false, unicoPorObjeto: true,
-            dataDoAto: Publicacao, documentoHash: HashValido, assinante: "Jairo Belchior",
+            dataDoAto: DataDoAto, documentoHash: HashValido, assinante: "Jairo Belchior",
             publicadoEm: Agora, versaoInvocada: null,
             vinculos: [(Objeto, Processo)]);
 
@@ -304,7 +305,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "13", Tipo,
             congelaConfiguracao: true, efeitoIrreversivel: false, unicoPorObjeto: true,
-            dataDoAto: Publicacao, documentoHash: HashValido, assinante: "Jairo Belchior",
+            dataDoAto: DataDoAto, documentoHash: HashValido, assinante: "Jairo Belchior",
             publicadoEm: Agora, versaoInvocada: null,
             vinculos: [(Objeto, Processo)]);
 
@@ -318,7 +319,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             Ano: 2026,
             Numero: "13",
             TipoCodigo: Tipo,
-            DataDoAto: Publicacao,
+            DataDoAto: DataDoAto,
             DocumentoHash: HashValido,
             Assinante: "Jairo Belchior",
             AtoRetificadoId: atoRetificadoId,

@@ -26,6 +26,7 @@ public sealed class MontagemDoAtoNormativoTests
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private const string Tipo = "EDITAL_ABERTURA";
     private static readonly DateOnly DataDoAto = new(2026, 3, 10);
+    private static readonly DateOnly DiaDaPublicacao = new(2026, 3, 13);
     private static readonly DateTimeOffset PublicadoEm = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
 
     private readonly ITipoAtoPublicadoRepository _tipos = Substitute.For<ITipoAtoPublicadoRepository>();
@@ -44,7 +45,7 @@ public sealed class MontagemDoAtoNormativoTests
         await _atos.DidNotReceive().AdicionarAsync(Arg.Any<AtoNormativo>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Recusa o tipo sem versão vigente na data do ato")]
+    [Fact(DisplayName = "Recusa o tipo sem versão vigente na data da publicação")]
     public async Task Montar_SemTipoVigente_Recusa()
     {
         Result<AtoMontado> montado = await Montar(Comando());
@@ -99,7 +100,7 @@ public sealed class MontagemDoAtoNormativoTests
         TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
             Tipo, "Edital de abertura", congelaConfiguracao: false, unicoPorObjeto,
             efeitoIrreversivel: false, ehResultado: false, new DateOnly(2026, 1, 1), null, null).Value!;
-        _tipos.ObterVigenteAsync(Tipo, DataDoAto, Arg.Any<CancellationToken>()).Returns(tipo);
+        _tipos.ObterVigenteAsync(Tipo, DiaDaPublicacao, Arg.Any<CancellationToken>()).Returns(tipo);
     }
 
     private static AtoNormativo AtoExistente(bool unicoPorObjeto) =>

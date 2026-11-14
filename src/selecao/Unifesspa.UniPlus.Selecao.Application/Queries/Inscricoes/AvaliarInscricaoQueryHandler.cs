@@ -15,6 +15,7 @@ using Kernel.Results;
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
 

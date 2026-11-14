@@ -7,6 +7,8 @@ using DTOs;
 
 using ProcessosSeletivos;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
@@ -32,7 +34,7 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
         ITipoAtoPublicadoReader tipoDeAtoReader,
         IVagaDeLinhagemReader vagaDeLinhagemReader,
         IUnitOfWork unitOfWork,
-        TimeProvider timeProvider,
+        LeituraDoInstanteDaPublicacao leituraDoInstante,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -43,7 +45,7 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
         ArgumentNullException.ThrowIfNull(tipoDeAtoReader);
         ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(leituraDoInstante);
 
         // A forma da correção é do agregado e sai antes de qualquer leitura ou trava (ADR-0125).
         Result correcaoBemFormada = AtoDoProcesso.ValidarCorrecao(command.AtoCorrigidoId, command.MotivoDaCorrecao);
@@ -67,8 +69,14 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
             return Recusa(conferenciaDoProcesso.Error!);
         }
 
+        Result<InstanteDaPublicacao> publicacao = leituraDoInstante.Ler();
+        if (publicacao.IsFailure)
+        {
+            return Recusa(publicacao.Error!);
+        }
+
         Result<TipoAtoPublicadoView> conferenciaDoTipo = await ConferenciaDoTipoDoAtoAvulso
-            .ConferirAsync(tipoDeAtoReader, command.TipoAtoCodigo, command.DataPublicacao, cancellationToken)
+            .ConferirAsync(tipoDeAtoReader, command.TipoAtoCodigo, publicacao.Value.Dia, cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDoTipo.IsFailure)
         {
@@ -131,14 +139,14 @@ public static class PublicarAtoAvulsoDoProcessoCommandHandler
                     conferenciaDoProcesso.Value!,
                     tipo,
                     command.Numero,
-                    command.DataPublicacao,
+                    command.DataDoAto,
+                    publicacao.Value.Instante,
                     command.Assinante,
                     conferenciaDosDocumentos.Value!,
                     command.AtoCorrigidoId,
                     command.MotivoDaCorrecao),
                 atoDoProcessoRepository,
                 unitOfWork,
-                timeProvider,
                 cancellationToken)
             .ConfigureAwait(false);
     }

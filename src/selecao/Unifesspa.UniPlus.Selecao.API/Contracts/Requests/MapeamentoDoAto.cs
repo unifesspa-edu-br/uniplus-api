@@ -11,7 +11,7 @@ internal static class MapeamentoDoAto
     internal static DadosDoAto ParaDados(DadosDoAtoRequest ato)
     {
         ArgumentNullException.ThrowIfNull(ato);
-        return new DadosDoAto(ato.Orgao, ato.Serie, ato.Ano, ato.DataPublicacao, ato.Assinante, ato.TipoAtoCodigo);
+        return new DadosDoAto(ato.Orgao, ato.Serie, ato.Ano, ato.DataDoAto, ato.Assinante, ato.TipoAtoCodigo);
     }
 
     // O item nulo segue para o validator, que o recusa com 4xx — desreferenciar aqui responderia

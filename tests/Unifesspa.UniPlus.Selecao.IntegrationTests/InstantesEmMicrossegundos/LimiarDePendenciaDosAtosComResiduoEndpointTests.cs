@@ -111,7 +111,7 @@ public sealed class LimiarDePendenciaDosAtosComResiduoEndpointTests : IDisposabl
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
             db, $"Limiar de pendência {Guid.CreateVersion7()}");
         AtoDoProcesso ato = AtoDoProcesso.Registrar(
-            AvisoPendente(processo.Id, documento.Id), escopo.ServiceProvider.GetRequiredService<TimeProvider>()).Value!;
+            AvisoPendente(processo.Id, documento.Id), escopo.ServiceProvider.GetRequiredService<TimeProvider>().GetUtcNow()).Value!;
         db.AtosDoProcesso.Add(ato);
         await db.SaveChangesAsync();
         return (processo.Id, ato);

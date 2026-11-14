@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -543,7 +544,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             new NovoAtoDoProcesso(
                 Guid.CreateVersion7(), processoId, "RESULTADO_CLASSIFICACAO", "Resultado da classificação", "1/2026", new DateOnly(2026, 1, 20),
                 "Diretor do CEPS", "ceps", "ps-item-publicado", documentoId, [], ItemDoEdital: item),
-            TimeProvider.System).Value!;
+            TimeProvider.System.GetUtcNow()).Value!;
 
     private static ProdutoDaFase ProdutoDe(ProcessoSeletivo processo, string atoCodigo, PapelProdutoFase papel) =>
         processo.CronogramaFases.SelectMany(f => f.Produtos).Single(p => p.AtoCodigo == atoCodigo && p.Papel == papel);

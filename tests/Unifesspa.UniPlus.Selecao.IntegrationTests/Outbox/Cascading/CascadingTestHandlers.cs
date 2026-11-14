@@ -12,6 +12,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
@@ -121,7 +122,7 @@ public sealed class RegistrarAtoDoProcessoDeTesteHandler
             new NovoAtoDoProcesso(
                 command.AtoId, command.ProcessoSeletivoId, DadosDoAtoDeTeste.TipoAviso, "Aviso", "3/2026", data,
                 "Diretor do CEPS", "ceps", "psm-medicina-2027", command.DocumentoPrincipalId, []),
-            timeProvider).Value!;
+            timeProvider.GetUtcNow()).Value!;
 
         await atoDoProcessoRepository.AdicionarAsync(ato, cancellationToken).ConfigureAwait(false);
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);

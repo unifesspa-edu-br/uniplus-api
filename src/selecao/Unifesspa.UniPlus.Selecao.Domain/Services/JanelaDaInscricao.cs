@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 using System.Globalization;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;

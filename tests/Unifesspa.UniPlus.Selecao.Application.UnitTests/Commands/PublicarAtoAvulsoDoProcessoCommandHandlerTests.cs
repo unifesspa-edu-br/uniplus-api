@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -93,6 +94,33 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         requisicao.Vinculos.Should().ContainSingle().Which.EntidadeId.Should().Be(_processoId);
         requisicao.Anexos.Should().ContainSingle().Which.Should().Be(
             new AnexoDoAtoRequisicao("Quadro de vagas.docx", TiposDeMidiaDeDocumento.Docx, _anexo.HashSha256!));
+    }
+
+    [Fact(DisplayName = "O ato avulso lê o relógio uma vez e usa o instante no registro gravado e na mensagem de registro")]
+    public async Task Avulso_LeORelogioUmaVez_EOInstanteVaiParaORegistroEAMensagem()
+    {
+        RelogioDeLeituraContada relogio = new(Agora);
+        AtoDoProcesso? gravado = null;
+        await _atos.AdicionarAsync(Arg.Do<AtoDoProcesso>(a => gravado = a), Arg.Any<CancellationToken>());
+
+        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(), relogio);
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        relogio.Leituras.Should().Be(1);
+        gravado!.PublicadoEm.Should().Be(Agora);
+        mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle().Which.PublicadoEm.Should().Be(Agora);
+    }
+
+    [Fact(DisplayName = "O tipo do ato avulso é consultado no dia do instante, e a data que o documento declara não entra na consulta")]
+    public async Task Avulso_ConsultaOTipoNoDiaDoInstante_NaoNoDaDataDoAto()
+    {
+        DateOnly declarada = DataDoAto.AddDays(-3);
+
+        (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando() with { DataDoAto = declarada });
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        await _tipos.Received().ObterVigenteAsync("AVISO", DataDoAto, Arg.Any<CancellationToken>());
+        await _tipos.DidNotReceive().ObterVigenteAsync("AVISO", declarada, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A errata que aponta um aviso publicado é aceita com o motivo, e a requisição leva o ato corrigido")]
@@ -370,9 +398,10 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    private Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Publicar(PublicarAtoAvulsoDoProcessoCommand comando) =>
+    private Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Publicar(PublicarAtoAvulsoDoProcessoCommand comando, TimeProvider? relogio = null) =>
         PublicarAtoAvulsoDoProcessoCommandHandler.Handle(
-            comando, _processos, _divulgados, _atos, _documentos, _tipos, _vagas, _unitOfWork, new RelogioFixo(Agora), CancellationToken.None);
+            comando, _processos, _divulgados, _atos, _documentos, _tipos, _vagas, _unitOfWork,
+            new LeituraDoInstanteDaPublicacao(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()), CancellationToken.None);
 
     private PublicarAtoAvulsoDoProcessoCommand Comando(
         Guid? principalId = null,
@@ -403,7 +432,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         new NovoAtoDoProcesso(
             atoId, processoId ?? _processoId, tipo, tipo, "1/2026", DataDoAto, "Diretor do CEPS", "ceps", "psm-medicina-2027",
             Guid.CreateVersion7(), []),
-        new RelogioFixo(Agora)).Value!;
+        Agora).Value!;
 
     private static DocumentoAPublicar Documento(FinalidadeDoDocumento finalidade, string tipoDeMidia, string nome, char hash)
     {

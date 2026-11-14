@@ -85,7 +85,7 @@ public sealed class ObterSnapshotVigenteQueryHandlerTests
         IEnumerable<string> propriedades = typeof(SnapshotVigenteDto).GetProperties().Select(p => p.Name);
 
         propriedades.Should().NotContain(
-            ["Natureza", "TipoAtoCodigo", "DataPublicacao", "Numero", "Assinante", "Orgao", "Serie"],
+            ["Natureza", "TipoAtoCodigo", "DataDoAto", "Numero", "Assinante", "Orgao", "Serie"],
             "o contrato publica a REFERÊNCIA ao ato, não os atributos dele");
     }
 

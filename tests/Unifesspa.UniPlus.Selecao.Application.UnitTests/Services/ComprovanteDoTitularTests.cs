@@ -5,6 +5,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;

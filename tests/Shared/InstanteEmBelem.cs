@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Tempo;
 
 /// <summary>
 /// Constrói instantes a partir da zona institucional resolvida, para os testes cujo resultado

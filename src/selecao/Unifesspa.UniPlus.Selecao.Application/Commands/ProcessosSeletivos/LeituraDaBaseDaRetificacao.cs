@@ -23,8 +23,7 @@ public sealed class LeituraDaBaseDaRetificacao(
     IVagaDeLinhagemReader vagasDeLinhagem,
     IAtoDoProcessoRepository atos,
     IRegistroCodecsEnvelope registroCodecs,
-    IFasesIniciadasDoProcesso fasesIniciadas,
-    TimeProvider relogio)
+    IFasesIniciadasDoProcesso fasesIniciadas)
 {
     // Sem sessão, a ausência de versão corrente é uma transição inválida, e o motivo é o do pedido, normalizado
     // uma vez só (Trim e NFC): o bloco 'retificacao' do envelope e o motivo do ato têm de guardar o mesmo valor, e o
@@ -64,12 +63,13 @@ public sealed class LeituraDaBaseDaRetificacao(
 
     /// <summary>
     /// A recusa da fase que começou depois da edição do cronograma: a unidade trocada ou a etapa removida de uma fase
-    /// iniciada. O instante é lido aqui, depois da trava do processo.
+    /// iniciada, no <paramref name="instante"/> em que o fechamento publica.
     /// </summary>
-    internal async Task<DomainError?> RecusaPorFaseIniciadaAsync(ProcessoSeletivo processo, CancellationToken cancellationToken)
+    internal async Task<DomainError?> RecusaPorFaseIniciadaAsync(
+        ProcessoSeletivo processo, DateTimeOffset instante, CancellationToken cancellationToken)
     {
         FasesIniciadas iniciadas = await fasesIniciadas
-            .ObterAsync(processo.Id, relogio.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+            .ObterAsync(processo.Id, instante, cancellationToken).ConfigureAwait(false);
 
         return iniciadas.RecusaDaAlteracao(processo.CronogramaFases) ?? iniciadas.RecusaDaRemocaoDaEtapa(processo.Etapas);
     }

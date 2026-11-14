@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;

@@ -62,7 +62,7 @@ public sealed record ContextoDeContagemDePrazos(
     {
         try
         {
-            return TimeZoneInfo.FindSystemTimeZoneById(ValueObjects.FusoInstitucional.ZoneId);
+            return TimeZoneInfo.FindSystemTimeZoneById(Kernel.Tempo.FusoInstitucional.ZoneId);
         }
         catch (Exception excecao) when (excecao is TimeZoneNotFoundException or InvalidTimeZoneException)
         {

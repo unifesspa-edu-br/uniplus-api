@@ -26,7 +26,7 @@ public sealed record DocumentoDoAtoDto(
 /// <param name="TipoCodigo">Código do tipo do ato.</param>
 /// <param name="TipoNome">Nome do tipo do ato.</param>
 /// <param name="Numero">Número do ato.</param>
-/// <param name="DataDoAto">Data que o documento declara.</param>
+/// <param name="DataDoAto">Data que o documento declara; não conta para prazo, vigência nem escolha do tipo de ato.</param>
 /// <param name="PublicadoEm">Instante em que o ato foi publicado, pelo relógio do sistema — o que ordena a lista.</param>
 /// <param name="Assinante">Quem assina o ato.</param>
 /// <param name="Situacao">Pendente até o registro central confirmar o ato.</param>

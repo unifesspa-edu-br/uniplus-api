@@ -6,6 +6,7 @@ using System.Text.Json;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Errors;
 using Unifesspa.UniPlus.Regras.Formularios;

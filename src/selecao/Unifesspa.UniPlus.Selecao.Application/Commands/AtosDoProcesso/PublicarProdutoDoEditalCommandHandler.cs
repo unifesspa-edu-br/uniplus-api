@@ -47,7 +47,7 @@ public static class PublicarProdutoDoEditalCommandHandler
         IVagaDeLinhagemReader vagaDeLinhagemReader,
         IUserContext userContext,
         IUnitOfWork unitOfWork,
-        TimeProvider timeProvider,
+        LeituraDoInstanteDaPublicacao leituraDoInstante,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
@@ -60,7 +60,7 @@ public static class PublicarProdutoDoEditalCommandHandler
         ArgumentNullException.ThrowIfNull(vagaDeLinhagemReader);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(leituraDoInstante);
 
         // A forma da correção é do agregado e sai antes de qualquer leitura ou trava (ADR-0125).
         Result correcaoBemFormada = AtoDoProcesso.ValidarCorrecao(command.AtoCorrigidoId, command.MotivoDaCorrecao);
@@ -84,8 +84,14 @@ public static class PublicarProdutoDoEditalCommandHandler
             return Recusa(conferenciaDoProcesso.Error!);
         }
 
+        Result<InstanteDaPublicacao> publicacao = leituraDoInstante.Ler();
+        if (publicacao.IsFailure)
+        {
+            return Recusa(publicacao.Error!);
+        }
+
         Result<GrafoVigente> vigente = await GrafoVigenteDoProcesso
-            .LerAsync(processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, timeProvider.GetUtcNow(), cancellationToken)
+            .LerAsync(processoSeletivoRepository, registroCodecs, command.ProcessoSeletivoId, publicacao.Value.Instante, cancellationToken)
             .ConfigureAwait(false);
         if (vigente.IsFailure)
         {
@@ -103,7 +109,7 @@ public static class PublicarProdutoDoEditalCommandHandler
         ProjecaoDosProdutosPrevistos.Declarado produto = conferenciaDoProduto.Value!;
 
         Result<TipoAtoPublicadoView> conferenciaDoTipo = await ConferenciaDoProdutoDoEdital
-            .TipoAsync(tipoDeAtoReader, produto, vigente.Value!.TiposDeAto, command.DataPublicacao, cancellationToken)
+            .TipoAsync(tipoDeAtoReader, produto, vigente.Value!.TiposDeAto, publicacao.Value.Dia, cancellationToken)
             .ConfigureAwait(false);
         if (conferenciaDoTipo.IsFailure)
         {
@@ -164,7 +170,8 @@ public static class PublicarProdutoDoEditalCommandHandler
                     conferenciaDoProcesso.Value!,
                     tipo,
                     command.Numero,
-                    command.DataPublicacao,
+                    command.DataDoAto,
+                    publicacao.Value.Instante,
                     command.Assinante,
                     conferenciaDosDocumentos.Value!,
                     command.AtoCorrigidoId,
@@ -173,7 +180,6 @@ public static class PublicarProdutoDoEditalCommandHandler
                     PoliticaConfirmadaPorSub: conferenciaDaPolitica.Value),
                 atoDoProcessoRepository,
                 unitOfWork,
-                timeProvider,
                 cancellationToken)
             .ConfigureAwait(false);
     }

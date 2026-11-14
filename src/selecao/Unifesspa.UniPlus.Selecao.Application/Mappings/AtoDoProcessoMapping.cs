@@ -33,7 +33,7 @@ public static class AtoDoProcessoMapping
             TipoNome: ato.TipoNome,
             Numero: ato.Numero,
             DataDoAto: ato.DataDoAto,
-            PublicadoEm: ato.CreatedAt,
+            PublicadoEm: ato.PublicadoEm,
             Assinante: ato.Assinante,
             Situacao: ato.Situacao,
             RegistradoEm: ato.RegistradoEm,

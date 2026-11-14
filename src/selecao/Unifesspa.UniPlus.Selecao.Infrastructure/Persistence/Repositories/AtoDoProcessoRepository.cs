@@ -47,7 +47,7 @@ public sealed class AtoDoProcessoRepository : IAtoDoProcessoRepository
             .AsNoTracking()
             .Include(a => a.Anexos)
             .Where(a => a.ProcessoSeletivoId == processoSeletivoId)
-            .OrderByDescending(a => a.CreatedAt)
+            .OrderByDescending(a => a.PublicadoEm)
             .ThenByDescending(a => a.OrdemDeRegistro)
             .AsSplitQuery()
             .ToListAsync(cancellationToken)

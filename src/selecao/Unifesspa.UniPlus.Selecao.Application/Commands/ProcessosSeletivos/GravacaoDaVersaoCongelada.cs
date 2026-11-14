@@ -14,8 +14,7 @@ public sealed class GravacaoDaVersaoCongelada(
     IProcessoSeletivoRepository processos,
     IAtoDoProcessoRepository atos,
     IRascunhoDePublicacaoRepository rascunhos,
-    IUnitOfWork unitOfWork,
-    TimeProvider timeProvider)
+    IUnitOfWork unitOfWork)
 {
     /// <summary>
     /// Grava a versão, o registro do ato e o rascunho de publicação na mesma transação e devolve a
@@ -33,7 +32,7 @@ public sealed class GravacaoDaVersaoCongelada(
         CancellationToken cancellationToken)
     {
         Result<AtoDoProcesso> registroDoAto = RegistroDoAtoDaVersao.Montar(
-            processo, versao, ato.Ato, ato.TipoDoAto, dados, ato.Documento.Id, retificacao?.EditalRetificadoId, retificacao?.Motivo, timeProvider);
+            processo, versao, ato.Ato, ato.TipoDoAto, dados, ato.Documento.Id, retificacao?.EditalRetificadoId, retificacao?.Motivo);
         if (registroDoAto.IsFailure)
         {
             return (Result.ValidationFailure(registroDoAto.Errors), []);

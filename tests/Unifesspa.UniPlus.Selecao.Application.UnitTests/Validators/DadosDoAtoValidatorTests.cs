@@ -41,10 +41,10 @@ public sealed class DadosDoAtoValidatorTests
     [Fact(DisplayName = "Data de publicação omitida binda para 0001-01-01 e é recusada")]
     public void DataAusente_Recusa()
     {
-        ValidationResult resultado = _validator.Validate(Valido() with { DataPublicacao = default });
+        ValidationResult resultado = _validator.Validate(Valido() with { DataDoAto = default });
 
         resultado.IsValid.Should().BeFalse();
-        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(DadosDoAto.DataPublicacao));
+        resultado.Errors.Should().Contain(e => e.PropertyName == nameof(DadosDoAto.DataDoAto));
     }
 
     [Theory(DisplayName = "Órgão e assinante em branco são recusados")]

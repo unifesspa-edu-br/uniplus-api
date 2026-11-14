@@ -4,8 +4,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
 
 /// <summary>
-/// Cria a versão congelada e o evento que a anuncia. O instante é lido uma única vez do relógio e
-/// serve ao id do ato e à vigência da versão: o evento publica o instante do sistema, de modo que
+/// Cria a versão congelada e o evento que a anuncia. O instante do pedido, lido uma única vez do relógio pelo
+/// comando, serve ao id do ato e à vigência da versão: o evento publica o instante do sistema, de modo que
 /// resolver a configuração nele (ADR-0075) cai dentro da vigência da versão que o próprio ato criou.
 /// </summary>
 internal static class EmissaoDeVersao
@@ -13,7 +13,7 @@ internal static class EmissaoDeVersao
     /// <summary>Abre a versão 1 do processo.</summary>
     internal static (VersaoConfiguracao Versao, ProcessoPublicadoEvent Evento) Abrir(Guid processoId, PedidoDeCongelamento pedido)
     {
-        DateTimeOffset instante = pedido.Clock.GetUtcNow();
+        DateTimeOffset instante = pedido.Instante;
         DocumentoCongelado documento = pedido.Documento;
 
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
@@ -37,8 +37,7 @@ internal static class EmissaoDeVersao
     internal static (VersaoConfiguracao Versao, ProcessoPublicadoEvent Evento) Suceder(
         Guid processoId, VersaoConfiguracao versaoAtual, PedidoDeCongelamento pedido)
     {
-        DateTimeOffset agora = pedido.Clock.GetUtcNow();
-        DateTimeOffset instante = agora < versaoAtual.VigenteAPartirDe ? versaoAtual.VigenteAPartirDe : agora;
+        DateTimeOffset instante = pedido.Instante < versaoAtual.VigenteAPartirDe ? versaoAtual.VigenteAPartirDe : pedido.Instante;
         DocumentoCongelado documento = pedido.Documento;
 
         VersaoConfiguracao versao = VersaoConfiguracao.Suceder(

@@ -6,6 +6,7 @@ using Domain.Entities;
 using Domain.Interfaces;
 using Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
@@ -28,7 +29,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 /// é o congelamento da classificação (<see cref="CongelamentoDosTiposDeAto"/>), não esta.
 /// </para>
 /// <para>
-/// <b>O ato da operação não é relido.</b> O tipo dele já foi conferido na data de publicação do
+/// <b>O ato da operação não é relido.</b> O tipo dele já foi conferido no dia da publicação do
 /// ato (<see cref="ConferenciaDoTipoDeAto"/>) e é com essa leitura que o registro decide; reler
 /// o catálogo em outra data abriria um cenário em que o gate enxerga uma unicidade e o registro,
 /// outra.
@@ -48,8 +49,8 @@ public sealed class ResolucaoDosTiposDeAtoUnicos(
 {
     /// <summary>
     /// Resolve os tipos únicos da operação e recusa a pendência, tudo num ponto só: o congelamento da versão chama
-    /// isto logo depois do cronograma, antes de canonicalizar, na ordem da raiz. O catálogo é consultado no dia civil
-    /// de hoje no <paramref name="fusoInstitucional"/>.
+    /// isto logo depois do cronograma, antes de canonicalizar, na ordem da raiz. O catálogo é consultado no
+    /// <paramref name="diaDaPublicacao"/>, o dia civil do instante em que a operação publica.
     /// </summary>
     /// <param name="jaCongelados">
     /// A classificação que a versão vigente já congelou: o tipo que consta nela mantém a classificação
@@ -66,14 +67,13 @@ public sealed class ResolucaoDosTiposDeAtoUnicos(
         ProcessoSeletivo processo,
         TipoAtoPublicadoView tipoDoAtoDaOperacao,
         IReadOnlyList<Guid> atosDaLinhagem,
-        TimeZoneInfo fusoInstitucional,
+        DateOnly diaDaPublicacao,
         IReadOnlyDictionary<string, TipoDeAtoCongelado> jaCongelados,
         CancellationToken cancellationToken)
     {
-        DateOnly hoje = Hoje(relogio, fusoInstitucional);
         IReadOnlyList<string> ocupados = await TiposOcupadosAsync(atosDaLinhagem, cancellationToken).ConfigureAwait(false);
         LeituraDoCatalogo leitura = await LerDoCatalogoAsync(
-            processo, ocupados, tipoDoAtoDaOperacao.Codigo, hoje, jaCongelados, cancellationToken)
+            processo, ocupados, tipoDoAtoDaOperacao.Codigo, diaDaPublicacao, jaCongelados, cancellationToken)
             .ConfigureAwait(false);
         AcrescentarOTipoDoAto(leitura, tipoDoAtoDaOperacao, jaCongelados);
 
@@ -114,7 +114,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicos(
     {
         ArgumentNullException.ThrowIfNull(relogio);
 
-        return DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(relogio.GetUtcNow(), fusoInstitucional ?? TimeZoneInfo.Utc).DateTime);
+        return (fusoInstitucional ?? TimeZoneInfo.Utc).DiaCivilDe(relogio.GetUtcNow());
     }
 
     // O tipo do ato da operação serve só à vaga e ao registro do próprio ato. Se o mesmo código é de um

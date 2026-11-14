@@ -24,7 +24,8 @@ internal sealed record ProcessoDivulgadoConferido(string Orgao, CertameDivulgado
 /// <param name="Processo">O órgão e a divulgação do certame.</param>
 /// <param name="Tipo">O tipo do ato como o catálogo o declarava na conferência.</param>
 /// <param name="Numero">Número que o documento declara, quando o tipo o tem.</param>
-/// <param name="DataPublicacao">Data que o documento declara.</param>
+/// <param name="DataDoAto">Data que o documento declara; não conta para prazo, vigência nem escolha do tipo de ato.</param>
+/// <param name="PublicadoEm">O instante da divulgação, lido uma só vez pelo comando que publica.</param>
 /// <param name="Assinante">Quem assina o ato.</param>
 /// <param name="Documentos">O documento principal e os anexos já conferidos.</param>
 /// <param name="AtoCorrigidoId">O ato que este corrige, quando é errata ou retificação.</param>
@@ -36,7 +37,8 @@ internal sealed record AtoAEnviar(
     ProcessoDivulgadoConferido Processo,
     TipoAtoPublicadoView Tipo,
     string? Numero,
-    DateOnly DataPublicacao,
+    DateOnly DataDoAto,
+    DateTimeOffset PublicadoEm,
     string Assinante,
     DocumentosDoAtoConferidos Documentos,
     Guid? AtoCorrigidoId,
@@ -98,13 +100,11 @@ internal static class EnvioDoAtoDoProcesso
         AtoAEnviar ato,
         IAtoDoProcessoRepository atoDoProcessoRepository,
         IUnitOfWork unitOfWork,
-        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ato);
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(timeProvider);
 
         Guid atoCriadorId = ato.Processo.Divulgado.AtoCriadorId;
         AtoDoProcesso versaoDivulgada = await atoDoProcessoRepository
@@ -116,12 +116,12 @@ internal static class EnvioDoAtoDoProcesso
         DocumentosDoAtoConferidos documentos = ato.Documentos;
         Result<AtoDoProcesso> registrado = AtoDoProcesso.Registrar(
             new NovoAtoDoProcesso(
-                AtoId: Guid.CreateVersion7(),
+                AtoId: Guid.CreateVersion7(ato.PublicadoEm),
                 ProcessoSeletivoId: ato.ProcessoSeletivoId,
                 TipoCodigo: ato.Tipo.Codigo,
                 TipoNome: ato.Tipo.Nome,
                 Numero: ato.Numero,
-                DataDoAto: ato.DataPublicacao,
+                DataDoAto: ato.DataDoAto,
                 Assinante: ato.Assinante,
                 UnidadeAdministradora: versaoDivulgada.UnidadeAdministradora,
                 IdentificadorLegivelDoProcesso: versaoDivulgada.IdentificadorLegivelDoProcesso,
@@ -131,7 +131,7 @@ internal static class EnvioDoAtoDoProcesso
                 AtoCorrigidoId: ato.AtoCorrigidoId,
                 MotivoDaCorrecao: ato.MotivoDaCorrecao,
                 PoliticaDeDivulgacaoConfirmadaPorSub: ato.PoliticaConfirmadaPorSub),
-            timeProvider);
+            ato.PublicadoEm);
         if (registrado.IsFailure)
         {
             return (Result<AtoPublicadoDto>.ValidationFailure(registrado.Errors), []);
@@ -158,11 +158,11 @@ internal static class EnvioDoAtoDoProcesso
             Orgao: ato.Processo.Orgao,
             // A série de numeração do órgão é o próprio tipo: aviso numera com aviso.
             Serie: ato.Tipo.Codigo,
-            Ano: ato.DataPublicacao.Year,
+            Ano: ato.DataDoAto.Year,
             Numero: registro.Numero,
             TipoCodigo: ato.Tipo.Codigo,
-            DataDoAto: ato.DataPublicacao,
-            PublicadoEm: timeProvider.GetUtcNow(),
+            DataDoAto: ato.DataDoAto,
+            PublicadoEm: registro.PublicadoEm,
             DocumentoHash: documentos.Principal.HashSha256!,
             Assinante: registro.Assinante,
             // Nenhuma versão de configuração: o ato do processo não congela.

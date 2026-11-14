@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
@@ -113,7 +114,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
                 Guid.CreateVersion7(), _processoId, tipo, $"Nome de {tipo}", "5/2027", new DateOnly(2027, 1, 20),
                 "Diretor do CEPS", "ceps", "psm-medicina-2027", Documento().Id, [],
                 ItemDoEdital: produtoId is { } id ? _itensDoCronograma[id] : null, AtoCorrigidoId: corrige, MotivoDaCorrecao: corrige is null ? null : "Erro de digitação"),
-            new RelogioFixo(Agora.AddMinutes(-10))).Value!;
+            Agora.AddMinutes(-10)).Value!;
         typeof(AtoDoProcesso).GetProperty(nameof(AtoDoProcesso.CreatedAt))!.SetValue(ato, Agora.AddMinutes(-10 + _atosDoProcesso.Count));
         if (registrado)
         {
