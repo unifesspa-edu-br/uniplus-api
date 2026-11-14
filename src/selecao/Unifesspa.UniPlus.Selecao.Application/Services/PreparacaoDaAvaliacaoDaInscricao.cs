@@ -12,6 +12,8 @@ using DTOs;
 
 using Kernel.Results;
 
+using Queries.ProcessosSeletivos;
+
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -38,13 +40,14 @@ public static class PreparacaoDaAvaliacaoDaInscricao
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
+        EnderecosDosDocumentosDoAto enderecos,
         DateTimeOffset instante,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(inscricao);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(documentoRepository);
+        ArgumentNullException.ThrowIfNull(enderecos);
 
         Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
         if (fuso.IsFailure)
@@ -84,9 +87,11 @@ public static class PreparacaoDaAvaliacaoDaInscricao
             return Result<InscricaoDto>.Failure(avaliacao.Error!);
         }
 
+        DocumentosDoAtoNoAcervo acervo = await enderecos
+            .DoAtoAsync(inscricao.ProcessoSeletivoId, contexto.Value!.AtoCriadorId, cancellationToken)
+            .ConfigureAwait(false);
         Result<AvaliacaoDaInscricaoDto> projetada = ProjecaoDaAvaliacaoDaInscricao.Projetar(
-            avaliacao.Value!, contexto.Value!, inscricao.ProcessoSeletivoId, enderecoNoAcervo,
-            arquivos.ParaOCandidato());
+            avaliacao.Value!, contexto.Value!, acervo, arquivos.ParaOCandidato());
         return projetada.IsFailure
             ? Result<InscricaoDto>.Failure(projetada.Error!)
             : Result<InscricaoDto>.Success(InscricaoDto.De(inscricao, projetada.Value!, contexto.Value!.Admitidas.NumeroDeOpcoesDeCurso, contexto.Value!.OfertasDeCurso));

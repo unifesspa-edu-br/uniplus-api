@@ -41,7 +41,7 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
 
     public Task DisposeAsync() => Task.CompletedTask;
 
-    [Fact(DisplayName = "O registro do ato copia o edital para o acervo, na chave da ADR-0132, com nome legível, e o certame divulga o endereço")]
+    [Fact(DisplayName = "A cópia do ato copia o edital para o acervo, na chave da ADR-0132, com nome legível, e o certame divulga o endereço")]
     public async Task RegistroDoAto_CopiaOEditalParaOAcervo()
     {
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await _semeador.ProcessoComModeloAsync();
@@ -51,13 +51,13 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
         Guid ato = Guid.CreateVersion7();
         await _semeador.VersaoAsync(processo, modelo, ato, identificador, edital);
 
-        await _acervo.DivulgarAsync(ato);
+        await _acervo.CopiarAoAcervoAsync(ato);
 
         await ConferirEditalLidoAnonimamenteAsync(identificador, ato, edital, pdf);
         await ConferirEditalRegistradoNoCertameAsync(processo.Id, identificador, ato, edital, pdf.LongLength);
     }
 
-    [Fact(DisplayName = "O registro do ato copia os anexos congelados para o acervo, byte a byte, com o nome de cada um")]
+    [Fact(DisplayName = "A cópia do ato copia os anexos congelados para o acervo, byte a byte, com o nome de cada um")]
     public async Task RegistroDoAto_CopiaOsAnexosParaOAcervo()
     {
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await _semeador.ProcessoComModeloAsync();
@@ -69,14 +69,14 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
         Guid ato = Guid.CreateVersion7();
         await _semeador.VersaoAsync(processo, modelo, ato, identificador, edital, anexos: [quadro.Anexo, formulario.Anexo]);
 
-        await _acervo.DivulgarAsync(ato);
+        await _acervo.CopiarAoAcervoAsync(ato);
 
         await ConferirAnexoLidoAnonimamenteAsync(processo.Id, ato, quadro);
         await ConferirAnexoLidoAnonimamenteAsync(processo.Id, ato, formulario);
         await ConferirDocumentosDivulgadosAsync(processo.Id, ato, identificador, edital, [quadro, formulario]);
     }
 
-    [Fact(DisplayName = "Anexo congelado sem cópia selada com o conteúdo congelado não é publicado, e a divulgação não avança")]
+    [Fact(DisplayName = "Anexo congelado sem cópia selada com o conteúdo congelado não é publicado, e a entrada do ato continua sem endereço")]
     public async Task AnexoComOutroConteudo_NaoEPublicado()
     {
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await _semeador.ProcessoComModeloAsync();
@@ -84,11 +84,11 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
         Guid ato = Guid.CreateVersion7();
         await _semeador.VersaoAsync(processo, modelo, ato, anexos: [quadro.Anexo with { HashSha256 = new string('e', 64) }]);
 
-        Func<Task> divulgar = () => _acervo.DivulgarAsync(ato);
+        Func<Task> divulgar = () => _acervo.CopiarAoAcervoAsync(ato);
 
         await divulgar.Should().ThrowAsync<InvalidOperationException>(
             "o endereço do anexo apontaria para um arquivo que não é o que o edital atestou");
-        (await _acervo.CertameFoiDivulgadoAsync(processo.Id)).Should().BeFalse();
+        await ConferirEntradaSemEnderecoAsync(processo.Id, ato);
     }
 
     [Fact(DisplayName = "Retificação que troca um anexo publica o novo em endereço próprio, e os anexos do ato anterior continuam acessíveis")]
@@ -107,8 +107,8 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
         await ConferirAnexosDeCadaAtoAsync(processo.Id, (abertura, retificacao), mantido, trocado, novo);
     }
 
-    [Fact(DisplayName = "Edital confirmado de processo ainda sem ato não tem objeto no acervo")]
-    public async Task EditalConfirmadoSemAto_NaoTemObjetoNoAcervo()
+    [Fact(DisplayName = "Edital de ato publicado cuja cópia ainda não aconteceu não tem objeto no acervo")]
+    public async Task EditalSemCopia_NaoTemObjetoNoAcervo()
     {
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await _semeador.ProcessoComModeloAsync();
         DocumentoAPublicar edital = await _semeador.EditalAsync(processo.Id);
@@ -117,7 +117,7 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
 
         string prefixo = $"editais/{AcervoPublicoDeTeste.AnoDoAto:D4}/{AcervoPublicoDeTeste.UnidadeDoEnvelope}/edital-abertura/{identificador}/";
         (await _acervo.ObjetosNoAcervoAsync(prefixo)).Should().BeEmpty(
-            "publicar sem o ato registrado ainda não é divulgar: o edital continua só no bucket privado");
+            "a cópia é posterior à publicação: até ela acontecer, o edital continua só no bucket privado");
     }
 
     [Fact(DisplayName = "Reentrega com o edital já no acervo conclui a divulgação sem regravar o objeto")]
@@ -131,10 +131,10 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
         byte[] jaCopiado = Encoding.UTF8.GetBytes("cópia de uma entrega anterior");
         await _acervo.GravarNoAcervoAsync(AcervoPublicoDeTeste.ChaveDoEdital(identificador, ato, edital), jaCopiado);
 
-        await _acervo.DivulgarAsync(ato);
+        await _acervo.CopiarAoAcervoAsync(ato);
 
         (await AcervoPublicoDeTeste.BaixarAnonimamenteAsync(_acervo.EnderecoDoEdital(identificador, ato, edital))).Should().Equal(jaCopiado);
-        (await _acervo.CertameFoiDivulgadoAsync(processo.Id)).Should().BeTrue();
+        (await _acervo.EditaisDivulgadosAsync(processo.Id)).Single().UrlDownload.Should().NotBeNull();
     }
 
     /// <summary>
@@ -157,9 +157,20 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
         await ConferirUmEnderecoPorAtoAsync(processo.Id, identificador, edital, [abertura, primeira, segunda]);
     }
 
-    /// <summary>A retificação é entregue antes do ato que ela retifica: a linha nasce já na versão 2.</summary>
-    [Fact(DisplayName = "Ato atrasado de uma versão anterior registra o próprio edital sem recuar a divulgação")]
+    /// <summary>A cópia da retificação termina antes da do ato que ela retifica.</summary>
+    [Fact(DisplayName = "A cópia de uma versão anterior, depois da seguinte, preenche só a entrada dela sem recuar a divulgação")]
     public async Task AtoAtrasado_RegistraOEdital_SemRecuarAVersao()
+    {
+        (Guid processoId, Guid abertura, Guid retificacao) = await SemearAberturaERetificacaoAsync();
+
+        await _acervo.CopiarAoAcervoAsync(retificacao);
+        (await _acervo.CertameDivulgadoAsync(processoId)).CopiouOsDocumentosDoAto(abertura).Should().BeFalse();
+        await _acervo.CopiarAoAcervoAsync(abertura);
+
+        await ConferirRetificacaoPreservadaAsync(processoId, abertura, retificacao);
+    }
+
+    private async Task<(Guid ProcessoId, Guid Abertura, Guid Retificacao)> SemearAberturaERetificacaoAsync()
     {
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await _semeador.ProcessoComModeloAsync();
         DocumentoAPublicar edital = await _semeador.EditalAsync(processo.Id);
@@ -168,13 +179,18 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
         VersaoConfiguracao v1 = await _semeador.VersaoAsync(processo, modelo, abertura, identificador, edital);
         await _semeador.RetificacaoAsync(v1, modelo, retificacao, identificador, edital);
 
-        await _acervo.DivulgarAsync(retificacao, AcervoPublicoDeTeste.Retificacao);
-        await _acervo.DivulgarAsync(abertura);
+        return (processo.Id, abertura, retificacao);
+    }
 
-        CertameDivulgado divulgado = await _acervo.CertameDivulgadoAsync(processo.Id);
-        divulgado.NumeroVersao.Should().Be(2, "o ato atrasado não desfaz a retificação já divulgada");
+    private async Task ConferirRetificacaoPreservadaAsync(Guid processoId, Guid abertura, Guid retificacao)
+    {
+        CertameDivulgado divulgado = await _acervo.CertameDivulgadoAsync(processoId);
+
+        divulgado.NumeroVersao.Should().Be(2, "a cópia atrasada não desfaz a retificação já divulgada");
         divulgado.AtoCriadorId.Should().Be(retificacao);
         divulgado.EditaisDivulgados.Select(static e => e.AtoId).Should().BeEquivalentTo([abertura, retificacao]);
+        divulgado.CopiouOsDocumentosDoAto(abertura).Should().BeTrue();
+        JsonNode.Parse(divulgado.Certame)!["atoCriadorId"]!.GetValue<Guid>().Should().Be(retificacao, "o documento do certame continua o da versão 2");
     }
 
     [Fact(DisplayName = "Reentrega do mesmo ato não duplica o edital registrado")]
@@ -184,14 +200,14 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
         DocumentoAPublicar edital = await _semeador.EditalAsync(processo.Id);
         Guid ato = Guid.CreateVersion7();
         await _semeador.VersaoAsync(processo, modelo, ato, edital: edital);
-        await _acervo.DivulgarAsync(ato);
+        await _acervo.CopiarAoAcervoAsync(ato);
 
-        await _acervo.DivulgarAsync(ato);
+        await _acervo.CopiarAoAcervoAsync(ato);
 
         (await _acervo.EditaisDivulgadosAsync(processo.Id)).Should().ContainSingle();
     }
 
-    [Fact(DisplayName = "Falha na cópia do edital de uma retificação não registra o edital dela")]
+    [Fact(DisplayName = "Falha na cópia do edital de uma retificação mantém a entrada dela sem endereço")]
     public async Task FalhaNaCopiaDoEdital_NaoRegistraOEdital()
     {
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await _semeador.ProcessoComModeloAsync();
@@ -201,15 +217,16 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
         VersaoConfiguracao v1 = await _semeador.AberturaDivulgadaAsync(processo, modelo, abertura, identificador, edital);
         await _semeador.RetificacaoAsync(v1, modelo, retificacao, identificador, edital);
 
-        Func<Task> divulgar = () => _acervo.DivulgarAsync(retificacao, AcervoPublicoDeTeste.Retificacao, AcervoPublicoDeTeste.BucketInexistente());
+        Func<Task> divulgar = () => _acervo.CopiarAoAcervoAsync(retificacao, AcervoPublicoDeTeste.BucketInexistente());
 
         await divulgar.Should().ThrowAsync<AcervoPublicoIndisponivelException>();
-        (await _acervo.EditaisDivulgadosAsync(processo.Id)).Select(static e => e.AtoId).Should().Equal(
+        (await _acervo.EditaisDivulgadosAsync(processo.Id)).Where(static e => e.UrlDownload is not null).Select(static e => e.AtoId).Should().Equal(
             [abertura], "o link só aparece depois de o arquivo estar no acervo");
+        await ConferirEntradaSemEnderecoAsync(processo.Id, retificacao);
     }
 
     /// <summary>O envelope aponta o documento cadastrado, mas com um hash que não é o dele.</summary>
-    [Fact(DisplayName = "Edital sem cópia selada com o conteúdo congelado não é publicado, e a divulgação não avança")]
+    [Fact(DisplayName = "Edital sem cópia selada com o conteúdo congelado não é publicado, e a entrada do ato continua sem endereço")]
     public async Task EditalComOutroConteudo_NaoEPublicado()
     {
         (ProcessoSeletivo processo, ModeloDeDocumento modelo) = await _semeador.ProcessoComModeloAsync();
@@ -217,11 +234,17 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
         Guid ato = Guid.CreateVersion7();
         await _semeador.VersaoAsync(processo, modelo, ato, edital: edital, hashDoEditalCongelado: new string('e', 64));
 
-        Func<Task> divulgar = () => _acervo.DivulgarAsync(ato);
+        Func<Task> divulgar = () => _acervo.CopiarAoAcervoAsync(ato);
 
         await divulgar.Should().ThrowAsync<InvalidOperationException>(
             "o endereço divulgado apontaria para um arquivo que não é o que o ato oficializou");
-        (await _acervo.CertameFoiDivulgadoAsync(processo.Id)).Should().BeFalse();
+        await ConferirEntradaSemEnderecoAsync(processo.Id, ato);
+    }
+
+    private async Task ConferirEntradaSemEnderecoAsync(Guid processoId, Guid ato)
+    {
+        (await _acervo.CertameDivulgadoAsync(processoId)).CopiouOsDocumentosDoAto(ato).Should().BeFalse(
+            "o endereço só é registrado depois de a cópia ao acervo terminar");
     }
 
     private async Task ConferirEditalLidoAnonimamenteAsync(string identificador, Guid ato, DocumentoAPublicar edital, byte[] pdf)

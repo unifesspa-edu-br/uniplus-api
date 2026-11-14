@@ -11,7 +11,6 @@ using Minio.DataModel.Args;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Storage;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
-using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -25,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
 /// <summary>
-/// O acervo público sobre Postgres e MinIO reais: a divulgação do ato que copia os arquivos congelados para o
+/// O acervo público sobre Postgres e MinIO reais: a cópia dos arquivos do ato para o
 /// acervo, o que ficou registrado no certame divulgado e a leitura anônima dos objetos, como o cidadão a faz.
 /// </summary>
 internal sealed class AcervoPublicoDeTeste
@@ -72,40 +71,39 @@ internal sealed class AcervoPublicoDeTeste
     public static void ConferirProcedencia(HttpResponseMessage resposta, Guid ato, string motivo) =>
         resposta.Headers.NonValidated["x-amz-meta-ato-normativo-id"].ToString().Should().Be(ato.ToString("D"), motivo);
 
-    public Task DivulgarAtoAsync(Guid ato) => DivulgarAsync(ato, TipoAvulso);
+    public Task CopiarAtoAvulsoAsync(Guid ato) => CopiarAoAcervoAsync(ato);
 
     public Task ProvisionarAsync() => _minio.ProvisionarAcervoPublicoAsync();
 
     public ArquivoArmazenadoStorageService Storage() => _armazenamento.ArquivosArmazenados();
 
-    public async Task DivulgarAsync(Guid ato, string tipoDoAto = TipoDoAto, string bucket = MinioContainerFixture.BucketDoAcervoPublico)
+    /// <summary>A cópia ao acervo do ato, como a mensagem posterior à publicação a faz.</summary>
+    public async Task CopiarAoAcervoAsync(Guid ato, string bucket = MinioContainerFixture.BucketDoAcervoPublico)
     {
         await using UniPlusDbContext context = Db.CreateDbContext();
-        await DivulgarCertameAoRegistrarAtoHandler.Handle(
-            new AtoNormativoRegistrado(ato, AnoDoAto, tipoDoAto),
-            new ProcessoSeletivoRepository(context, TimeProvider.System),
-            new CertameDivulgadoRepository(context),
-            new RegistroCodecsEnvelope(),
-            new DocumentoAPublicarRepository(context),
-            new ModeloDeDocumentoRepository(context),
-            new AtoDoProcessoRepository(context),
-            AcervoNoBucket(bucket),
-            AcervoDeTeste.Endereco,
-            context,
-            TimeProvider.System,
-            CancellationToken.None);
+        Guid processoId = await context.AtosDoProcesso.AsNoTracking()
+            .Where(a => a.Id == ato)
+            .Select(static a => a.ProcessoSeletivoId)
+            .SingleOrDefaultAsync();
+
+        await CopiarDocumentosDoAtoAoAcervoHandler.Handle(
+            new CopiarDocumentosDoAtoAoAcervo(processoId, ato), CopiaDosDocumentos(context, bucket), CancellationToken.None);
     }
+
+    private CopiaDosDocumentosDoAto CopiaDosDocumentos(UniPlusDbContext context, string bucket) =>
+        new(
+            new AtoDoProcessoRepository(context),
+            new ProcessoSeletivoRepository(context, TimeProvider.System),
+            new RegistroCodecsEnvelope(),
+            new AcervoDaDivulgacao(
+                new DocumentoAPublicarRepository(context), new ModeloDeDocumentoRepository(context), AcervoNoBucket(bucket), AcervoDeTeste.Endereco),
+            new CertameDivulgadoRepository(context),
+            context);
 
     public async Task<CertameDivulgado> CertameDivulgadoAsync(Guid processoId)
     {
         await using UniPlusDbContext leitura = Db.CreateDbContext();
         return await leitura.CertamesDivulgados.AsNoTracking().SingleAsync(c => c.Id == processoId);
-    }
-
-    public async Task<bool> CertameFoiDivulgadoAsync(Guid processoId)
-    {
-        await using UniPlusDbContext leitura = Db.CreateDbContext();
-        return await leitura.CertamesDivulgados.AsNoTracking().AnyAsync(c => c.Id == processoId);
     }
 
     public async Task<IReadOnlyList<EditalDivulgado>> EditaisDivulgadosAsync(Guid processoId) =>

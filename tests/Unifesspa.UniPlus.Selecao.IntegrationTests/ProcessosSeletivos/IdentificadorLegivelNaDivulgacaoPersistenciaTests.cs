@@ -38,35 +38,23 @@ public sealed class IdentificadorLegivelNaDivulgacaoPersistenciaTests : IClassFi
             .Should().BeNull();
     }
 
-    [Fact(DisplayName = "Duas divulgações com o mesmo identificador: o índice recusa, e a recusa vira o conflito nomeado")]
-    public async Task MesmoIdentificador_IndiceRecusa_EViraConflitoNomeado()
+    [Fact(DisplayName = "Duas divulgações com o mesmo identificador: o índice recusa, e é o índice do identificador legível")]
+    public async Task MesmoIdentificador_IndiceRecusa()
     {
         string identificador = IdentificadoresDeTeste.Novo().Valor;
         await PersistirAsync(Divulgado(identificador));
 
-        CertameDivulgado disputante = Divulgado(identificador);
         await using UniPlusDbContext ctx = _fixture.CreateDbContext();
-        await ctx.CertamesDivulgados.AddAsync(disputante);
+        await ctx.CertamesDivulgados.AddAsync(Divulgado(identificador));
 
         Func<Task> gravar = () => ctx.SaveChangesAsync();
         DbUpdateException falha = (await gravar.Should().ThrowAsync<DbUpdateException>()).Which;
 
-        IdentificadorLegivelJaDivulgadoException.EhViolacaoDoIndice(falha).Should().BeTrue();
-
-        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
-        CertameDivulgadoRepository repositorio = new(leitura);
-        CertameDivulgado? dono = await repositorio.ObterParaLeituraPorIdentificadorAsync(identificador);
-
-        IdentificadorLegivelJaDivulgadoException? conflito = IdentificadorLegivelJaDivulgadoException.Classificar(
-            falha, disputante.Id, dono?.Id, identificador);
-
-        conflito.Should().NotBeNull("o identificador já é o endereço de OUTRO processo, e nenhuma reentrega corrige isso");
-        conflito!.Message.Should().Contain(identificador).And.Contain(disputante.Id.ToString());
-        conflito.InnerException.Should().BeSameAs(falha);
+        UniqueConstraintViolation.GetViolatedConstraint(falha).Should().Be("ux_certames_divulgados_identificador_legivel");
     }
 
-    [Fact(DisplayName = "Outra violação na gravação da divulgação não é tomada pelo conflito de identificador")]
-    public async Task OutraViolacao_NaoEhConflitoDeIdentificador()
+    [Fact(DisplayName = "Outra violação na gravação da divulgação não é tomada pelo índice do identificador legível")]
+    public async Task OutraViolacao_NaoEhOIndiceDoIdentificador()
     {
         CertameDivulgado primeiro = Divulgado(IdentificadoresDeTeste.Novo().Valor);
         await PersistirAsync(primeiro);
@@ -82,29 +70,7 @@ public sealed class IdentificadorLegivelNaDivulgacaoPersistenciaTests : IClassFi
         Func<Task> gravar = () => ctx.SaveChangesAsync();
         DbUpdateException falha = (await gravar.Should().ThrowAsync<DbUpdateException>()).Which;
 
-        IdentificadorLegivelJaDivulgadoException.EhViolacaoDoIndice(falha).Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "Identificador já na linha do MESMO processo é corrida entre entregas, não conflito terminal")]
-    public async Task MesmoProcesso_NaoEhConflitoTerminal()
-    {
-        string identificador = IdentificadoresDeTeste.Novo().Valor;
-        CertameDivulgado existente = Divulgado(identificador);
-        await PersistirAsync(existente);
-
-        await using UniPlusDbContext leitura = _fixture.CreateDbContext();
-        CertameDivulgadoRepository repositorio = new(leitura);
-        CertameDivulgado? dono = await repositorio.ObterParaLeituraPorIdentificadorAsync(identificador);
-
-        // Duas versões do mesmo processo divulgadas em paralelo: a segunda pode esbarrar no índice
-        // antes da chave primária. A linha é dela mesma — a reentrega avança a divulgação.
-        IdentificadorLegivelJaDivulgadoException.Classificar(
-                new InvalidOperationException("violação simulada"), existente.Id, dono?.Id, identificador)
-            .Should().BeNull();
-
-        IdentificadorLegivelJaDivulgadoException.Classificar(
-                new InvalidOperationException("violação simulada"), existente.Id, processoDonoDoIdentificador: null, identificador)
-            .Should().BeNull("a linha que causou a violação já não existe: reentregar resolve");
+        UniqueConstraintViolation.GetViolatedConstraint(falha).Should().NotBe("ux_certames_divulgados_identificador_legivel");
     }
 
     private static CertameDivulgado Divulgado(string identificador) => CertameDivulgado.Criar(

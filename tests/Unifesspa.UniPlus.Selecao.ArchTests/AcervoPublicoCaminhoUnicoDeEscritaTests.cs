@@ -13,19 +13,21 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 /// <summary>
-/// O caminho único de escrita no acervo público (ADR-0132): só a materialização da divulgação, que
-/// roda depois de o ato ser registrado, grava lá. Publicar é irreversível na prática — um endereço
-/// divulgado pode ter sido citado —, e o controle tem de estar na entrada, verificável por teste.
+/// O caminho único de escrita no acervo público (ADR-0132): só a cópia dos documentos do ato ao acervo, efeito posterior à
+/// publicação do ato, grava lá. Publicar é irreversível na prática — um endereço divulgado pode ter sido citado —, e o
+/// controle tem de estar na entrada, verificável por teste.
 /// </summary>
 public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
 {
+    private const string Caminho = "Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos.";
+
     /// <summary>
-    /// As partes da mesma materialização: a do edital que cria versão e a do ato que não cria, mais os
-    /// tipos que carregam o port para elas. O nome vale também para os tipos gerados dentro de cada uma.
+    /// As partes da mesma cópia: a que escolhe o que copiar de um ato, com versão ou sem ela, e o tipo que carrega o
+    /// port. O nome vale também para os tipos gerados dentro de cada uma. O registro de serviços só os instancia.
     /// </summary>
     private const string CaminhoPrevisto =
-        @"^Unifesspa\.UniPlus\.Selecao\.Application\.Commands\.ProcessosSeletivos\."
-        + @"(DivulgarCertameAoRegistrarAtoHandler|DivulgarAtoDoProcessoNoAcervo|AcervoDaDivulgacao)(\+|$)";
+        @"^Unifesspa\.UniPlus\.Selecao\.Application\.(Commands\.ProcessosSeletivos\.(CopiaDosDocumentosDoAto|AcervoDaDivulgacao)"
+        + @"|Mappings\.SelecaoApplicationServiceRegistration)(\+|$)";
 
     private static readonly Architecture Arquitetura = new ArchLoader()
         .LoadAssemblies([typeof(IAcervoPublico).Assembly])
@@ -41,7 +43,7 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
             ])
         .Build();
 
-    [Fact(DisplayName = "Só a materialização da divulgação depende do port de escrita no acervo público")]
+    [Fact(DisplayName = "Só a cópia dos documentos do ato depende do port de escrita no acervo público")]
     public void SoADivulgacaoEscreveNoAcervo()
     {
         IArchRule regra = Types()
@@ -54,7 +56,7 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
         regra.Check(Arquitetura);
     }
 
-    [Fact(DisplayName = "Só a materialização da divulgação depende do tipo que carrega o port do acervo público")]
+    [Fact(DisplayName = "Só a cópia dos documentos do ato depende do tipo que carrega o port do acervo público")]
     public void SoADivulgacaoUsaOTipoQueCarregaOAcervo()
     {
         IArchRule regra = Types()
@@ -72,31 +74,28 @@ public sealed class AcervoPublicoCaminhoUnicoDeEscritaTests
     public void OCaminhoPrevistoDependeDoPort()
     {
         string[] doPort = DependentesDe(typeof(IAcervoPublico).FullName!);
-        string[] doCarregador = DependentesDe("Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos.AcervoDaDivulgacao");
+        string[] doCarregador = DependentesDe(Caminho + "AcervoDaDivulgacao");
 
         doPort.Should().Contain(
             ["AcervoDaDivulgacao"],
             "sem dependente nenhum o teste aprovaria um acervo que nunca recebe o modelo publicado");
         doCarregador.Should().Contain(
-            ["DivulgarCertameAoRegistrarAtoHandler", "DivulgarAtoDoProcessoNoAcervo"],
-            "o acervo chega às etapas da divulgação por intermédio do tipo que o carrega");
+            ["CopiaDosDocumentosDoAto"],
+            "o acervo chega à cópia dos documentos do ato por intermédio do tipo que o carrega");
     }
 
     private static string[] DependentesDe(string nomeCompleto) =>
     [
         .. Arquitetura.Types
-            .Where(static t => EhCaminhoPrevisto(t.FullName))
+            .Where(static t => EhTipoDaCopia(t.FullName))
             .Where(t => t.Dependencies.Any(d => d.Target.FullName == nomeCompleto))
             .Select(static t => t.Name.Split('+')[0])
             .Distinct(),
     ];
 
-    private static bool EhCaminhoPrevisto(string nome)
-    {
-        const string caminho = "Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos.";
-        return new[] { "DivulgarCertameAoRegistrarAtoHandler", "DivulgarAtoDoProcessoNoAcervo", "AcervoDaDivulgacao" }
-            .Any(tipo => nome == caminho + tipo || nome.StartsWith(caminho + tipo + "+", StringComparison.Ordinal));
-    }
+    private static bool EhTipoDaCopia(string nome) =>
+        new[] { "CopiaDosDocumentosDoAto", "AcervoDaDivulgacao" }
+            .Any(tipo => nome == Caminho + tipo || nome.StartsWith(Caminho + tipo + "+", StringComparison.Ordinal));
 
     [Fact(DisplayName = "Só o serviço do acervo público copia para o bucket público")]
     public void SoOAcervoDeSelecaoUsaACopiaPublica()

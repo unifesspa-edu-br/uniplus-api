@@ -12,12 +12,10 @@ using Domain.ValueObjects;
 
 using Queries.ProcessosSeletivos;
 
-using Unifesspa.UniPlus.Publicacoes.Contracts;
-
 /// <summary>
 /// Copia para o acervo público o que a divulgação publica — o documento do edital, os anexos e os
-/// modelos que a versão congelou, e os documentos de um ato do processo — e monta o edital divulgado
-/// que a linha do certame registra.
+/// modelos que a versão congelou, e os documentos de um ato do processo — e monta o edital divulgado,
+/// com os endereços, que a linha do certame registra depois da cópia.
 /// </summary>
 /// <remarks>
 /// O que se publica vem do envelope ou do registro do ato — nome, formato, tamanho e hash —, e do
@@ -25,7 +23,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// conteúdo, é dado inconsistente: divulgar o endereço de um arquivo que não é o congelado seria pior
 /// que não divulgar.
 /// </remarks>
-internal sealed class AcervoDaDivulgacao
+public sealed class AcervoDaDivulgacao
 {
     private readonly IDocumentoAPublicarRepository _documentos;
     private readonly IModeloDeDocumentoRepository _modelos;
@@ -44,20 +42,18 @@ internal sealed class AcervoDaDivulgacao
         _endereco = endereco;
     }
 
-    /// <summary>O endereço público de uma chave do acervo.</summary>
-    internal Uri EnderecoDe(string chave) => _endereco.De(chave);
+    private Uri EnderecoDe(string chave) => _endereco.De(chave);
 
     /// <summary>
     /// Copia o edital, os anexos e os modelos para o acervo e devolve o edital divulgado.
     /// </summary>
     internal async Task<EditalDivulgado> PublicarVersaoAsync(
         VersaoConfiguracao versao,
-        AtoDaDivulgacao ato,
+        AtoDoProcesso ato,
         JsonObject envelope,
-        Uri enderecoDoEdital,
         CancellationToken cancellationToken)
     {
-        DocumentoDivulgado principal = await PublicarEditalAsync(versao, ato, envelope, enderecoDoEdital, cancellationToken)
+        DocumentoDivulgado principal = await PublicarEditalAsync(versao, AtoDaDivulgacao.De(ato), envelope, cancellationToken)
             .ConfigureAwait(false);
         IReadOnlyList<DocumentoDivulgado> anexos = await PublicarAnexosAsync(versao, envelope, cancellationToken)
             .ConfigureAwait(false);
@@ -70,7 +66,6 @@ internal sealed class AcervoDaDivulgacao
         VersaoConfiguracao versao,
         AtoDaDivulgacao ato,
         JsonObject envelope,
-        Uri enderecoDoEdital,
         CancellationToken cancellationToken)
     {
         if (!LeituraDoCertameEdital.TentarEditalNoAcervo(envelope, ato, out EditalNoAcervo? edital))
@@ -80,7 +75,7 @@ internal sealed class AcervoDaDivulgacao
         }
 
         DocumentoAPublicar documento = await ObterCopiaSeladaDoEditalAsync(versao, edital, cancellationToken).ConfigureAwait(false);
-        DocumentoDivulgado divulgado = DivulgarEdital(edital, documento, enderecoDoEdital);
+        DocumentoDivulgado divulgado = DivulgarEdital(edital, documento);
 
         await _acervo
             .CopiarAsync(
@@ -93,14 +88,14 @@ internal sealed class AcervoDaDivulgacao
         return divulgado;
     }
 
-    private static DocumentoDivulgado DivulgarEdital(EditalNoAcervo edital, DocumentoAPublicar documento, Uri enderecoDoEdital) => new(
+    private DocumentoDivulgado DivulgarEdital(EditalNoAcervo edital, DocumentoAPublicar documento) => new(
         PapelDoDocumentoDivulgado.Principal,
         edital.NomeDeApresentacao,
         documento.TipoDeMidia,
         documento.TamanhoBytes ?? throw new InvalidOperationException(
             $"O documento do edital {edital.DocumentoEditalId} está confirmado e sem tamanho gravado."),
         edital.HashSha256,
-        enderecoDoEdital.OriginalString);
+        EnderecoDe(edital.Chave).OriginalString);
 
     private async Task<DocumentoAPublicar> ObterCopiaSeladaDoEditalAsync(
         VersaoConfiguracao versao, EditalNoAcervo edital, CancellationToken cancellationToken)
@@ -232,7 +227,7 @@ internal sealed class AcervoDaDivulgacao
     /// <summary>
     /// Copia o principal e os anexos do ato do processo para o acervo e devolve o edital divulgado.
     /// </summary>
-    internal async Task<EditalDivulgado> PublicarAtoAsync(AtoNormativoRegistrado mensagem, AtoDoProcesso ato, CancellationToken cancellationToken)
+    internal async Task<EditalDivulgado> PublicarAtoAsync(AtoDoProcesso ato, CancellationToken cancellationToken)
     {
         IReadOnlyList<AnexoDoAtoDoProcesso> anexos = [.. ato.Anexos.OrderBy(static a => a.Ordem)];
         IReadOnlyList<DocumentoAPublicar> cadastrados = await _documentos
@@ -243,7 +238,7 @@ internal sealed class AcervoDaDivulgacao
             .ConfigureAwait(false);
 
         DocumentoDivulgado principal = await PublicarPrincipalDoAtoAsync(
-            mensagem, ato, SeladoDoAto(ato, cadastrados, ato.DocumentoPrincipalId), cancellationToken)
+            ato, SeladoDoAto(ato, cadastrados, ato.DocumentoPrincipalId), cancellationToken)
             .ConfigureAwait(false);
 
         List<DocumentoDivulgado> documentos = [principal];
@@ -258,20 +253,19 @@ internal sealed class AcervoDaDivulgacao
     }
 
     private async Task<DocumentoDivulgado> PublicarPrincipalDoAtoAsync(
-        AtoNormativoRegistrado mensagem,
         AtoDoProcesso ato,
         DocumentoSelado documento,
         CancellationToken cancellationToken)
     {
         string chave = ChaveNoAcervoPublico.DoEdital(
-            mensagem.Ano,
+            ato.DataDoAto.Year,
             ato.UnidadeAdministradora,
-            mensagem.TipoCodigo,
+            ato.TipoCodigo,
             ato.IdentificadorLegivelDoProcesso,
             ato.Id,
             documento.Hash,
             documento.Formato);
-        string nome = $"{ato.IdentificadorLegivelDoProcesso}-{ChaveNoAcervoPublico.SegmentoDoTipo(mensagem.TipoCodigo)}.{FormatosDeDocumento.Extensao(documento.Formato)}";
+        string nome = $"{ato.IdentificadorLegivelDoProcesso}-{ChaveNoAcervoPublico.SegmentoDoTipo(ato.TipoCodigo)}.{FormatosDeDocumento.Extensao(documento.Formato)}";
 
         return await CopiarDocumentoDoAtoAsync(
             PapelDoDocumentoDivulgado.Principal, nome, nome, chave, ato, documento, cancellationToken)

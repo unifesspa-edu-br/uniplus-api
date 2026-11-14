@@ -25,9 +25,7 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
 
     /// <summary>
     /// Espelha o limite do título na origem. Uma cópia mais curta que ela recusa um processo de
-    /// nome legítimo — e recusa no PIOR lugar: aqui a escrita é assíncrona, disparada pelo registro
-    /// do ato, e a falha não volta a ninguém. A mensagem morre na fila, a linha nunca nasce, e como
-    /// a existência da linha é a publicidade, o certame fica invisível com o ato já registrado.
+    /// nome legítimo, e a recusa derruba a gravação da publicação inteira.
     /// </summary>
     private const int NomeMaxLength = ProcessoSeletivoConfiguration.NomeMaxLength;
 
@@ -88,9 +86,9 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
         // jsonb, e não texto: buscar dentro do documento é necessidade previsível da vitrine.
         builder.Property(c => c.Certame).HasColumnType("jsonb").IsRequired();
 
-        // Fora do documento abaixo: ele descreve só a versão vigente e é substituído a cada avanço,
-        // e o endereço dos editais anteriores não se recalcula depois — a chave no acervo depende
-        // do ano e do tipo do ato, que só existem na entrega do registro do ato.
+        // Fora do documento acima: ele descreve só a versão vigente e é substituído a cada avanço,
+        // e o endereço dos editais anteriores não se recalcula depois — fica registrado pela cópia
+        // ao acervo de cada ato.
         builder.Property(c => c.EditaisDivulgados)
             .HasConversion(EditaisConverter, EditaisComparer)
             .HasColumnType("jsonb")
@@ -99,8 +97,8 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
             .HasComment("Os documentos de cada ato divulgado do processo — o edital de cada versão e o ato que não cria versão —, com o ato e o endereço no acervo público.");
 
         // Concorrência otimista pela coluna de sistema `xmin` (ADR-0119): avançar a divulgação é
-        // check-then-act, e a guarda de monotonia é de memória, não do banco. Duas entregas
-        // paralelas do mesmo processo passariam ambas, e a mais lenta venceria por último.
+        // check-then-act, e a guarda de monotonia é de memória, não do banco. A trava do processo
+        // serializa quem escreve; o token é a defesa de quem chegar sem ela.
         builder.Property<uint>("Version").IsRowVersion();
 
         // Serve a faixa sobre o prazo e o desempate por identificador. Não serve a ordenação

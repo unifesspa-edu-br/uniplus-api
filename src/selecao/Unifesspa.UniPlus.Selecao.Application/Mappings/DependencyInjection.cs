@@ -64,12 +64,24 @@ public static class SelecaoApplicationServiceRegistration
     private static void AddPublicacao(IServiceCollection services)
     {
         services.AddScoped<LeituraDoInstanteDaPublicacao>();
+        services.AddScoped<EnderecosDosDocumentosDoAto>();
         AddCongelamentoDaVersao(services);
+        AddCopiaAoAcervo(services);
     }
 
     // Os serviços que congelam uma versão (publicação, retificação de ato único e fechamento da sessão) guardam só as
     // portas por construtor, e cada handler os recebe prontos, sem service location.
     private static void AddCongelamentoDaVersao(IServiceCollection services)
+    {
+        AddConferenciasDoCongelamento(services);
+        services.AddScoped<LeituraDoContextoDeContagemDePrazos>();
+        services.AddScoped<MontagemDoCongelamento>();
+        services.AddScoped<GravacaoDaDivulgacao>();
+        services.AddScoped<GravacaoDaVersaoCongelada>();
+        services.AddScoped<CongelamentoDaVersao>();
+    }
+
+    private static void AddConferenciasDoCongelamento(IServiceCollection services)
     {
         services.AddScoped<ConferenciaDoAtoEDoDocumento>();
         services.AddScoped<LeituraDaBaseDaRetificacao>();
@@ -81,9 +93,12 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<ConferenciaDeConformidadeLegal>();
         services.AddScoped<ConferenciaDosMotivosAoCongelar>();
         services.AddScoped<ConferenciaDaConfiguracaoAoCongelar>();
-        services.AddScoped<LeituraDoContextoDeContagemDePrazos>();
-        services.AddScoped<MontagemDoCongelamento>();
-        services.AddScoped<GravacaoDaVersaoCongelada>();
-        services.AddScoped<CongelamentoDaVersao>();
+    }
+
+    // A cópia dos documentos do ato ao acervo é o efeito posterior da publicação: o handler a recebe pronta, sem service location.
+    private static void AddCopiaAoAcervo(IServiceCollection services)
+    {
+        services.AddScoped<AcervoDaDivulgacao>();
+        services.AddScoped<CopiaDosDocumentosDoAto>();
     }
 }

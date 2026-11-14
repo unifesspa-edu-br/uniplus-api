@@ -5,22 +5,28 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// certame, pelo ato que a criou, ou o documento de um ato que não cria versão.
 /// </summary>
 /// <remarks>
-/// O endereço fica registrado no instante da divulgação porque a chave no acervo depende do ano e
-/// do tipo do ato, que só chegam com o registro do ato e que Seleção não guarda: depois, não há
-/// como recalculá-la.
+/// A entrada nasce com a divulgação, sem endereço: a cópia ao acervo é o efeito posterior que o registra, e o
+/// endereço do ato é imutável depois de registrado.
 /// </remarks>
 /// <param name="AtoId">O ato normativo que divulgou os documentos.</param>
 /// <param name="NumeroVersao">A versão de configuração que o ato criou; nulo no ato que não cria versão.</param>
-/// <param name="UrlDownload">Endereço do documento principal no acervo público, o mesmo que o documento divulgado informa.</param>
+/// <param name="UrlDownload">
+/// Endereço do documento principal no acervo público, o mesmo que o documento divulgado informa; nulo enquanto a
+/// cópia ao acervo não terminou.
+/// </param>
 /// <param name="Documentos">
-/// Os documentos do ato no acervo — o edital como principal e os anexos em seguida. Nulo no registro
-/// gravado antes de existirem anexos, e lido como lista vazia.
+/// Os documentos do ato no acervo — o edital como principal e os anexos em seguida. Nulo enquanto a cópia não
+/// terminou, e lido como lista vazia.
 /// </param>
 public sealed record EditalDivulgado(
     Guid AtoId,
     int? NumeroVersao,
-    string UrlDownload,
-    IReadOnlyList<DocumentoDivulgado>? Documentos = null);
+    string? UrlDownload,
+    IReadOnlyList<DocumentoDivulgado>? Documentos = null)
+{
+    /// <summary>A entrada do ato recém-divulgado, ainda sem cópia no acervo.</summary>
+    public static EditalDivulgado Pendente(Guid atoId, int? numeroVersao) => new(atoId, numeroVersao, null);
+}
 
 /// <summary>
 /// Um documento de um ato, como o acervo público o serve: o papel que ele tem no ato, o nome com que

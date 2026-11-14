@@ -14,9 +14,9 @@ using DTOs;
 /// A versão da projeção e o hash da configuração cobrem o documento divulgado; a situação e os
 /// editais cobrem o que a leitura acrescenta. A situação muda com o relógio sem mudar o documento, e
 /// sem ela no selo uma revalidação responderia 304 com a situação de quando o cliente leu pela última
-/// vez. Os editais mudam quando um ato atrasado registra o seu sem avançar a versão — nem o hash nem a
-/// versão da projeção se movem —, e sem um resumo deles uma revalidação serviria a lista antiga. O
-/// resumo cobre também os documentos de cada edital, os anexos entre eles.
+/// vez. Os editais mudam quando a cópia ao acervo registra o endereço de um ato — nem o hash nem a versão da projeção
+/// se movem —, e sem um resumo deles uma revalidação serviria a lista antiga, sem o endereço. O resumo cobre também os
+/// documentos de cada edital, os anexos entre eles.
 /// </remarks>
 public static class SeloDoCertamePublicado
 {
@@ -38,7 +38,7 @@ public static class SeloDoCertamePublicado
             ';',
             (certame.EditaisPublicados ?? []).Select(static e => string.Create(
                 CultureInfo.InvariantCulture,
-                $"{e.AtoId:N}={e.UrlDownload.OriginalString}[{string.Join(',', e.Documentos.Select(static d => $"{d.Papel}:{d.Nome}:{d.TamanhoBytes}:{d.HashSha256}:{d.UrlDownload.OriginalString}"))}]")));
+                $"{e.AtoId:N}={e.UrlDownload?.OriginalString}[{string.Join(',', e.Documentos.Select(static d => $"{d.Papel}:{d.Nome}:{d.TamanhoBytes}:{d.HashSha256}:{d.UrlDownload.OriginalString}"))}]")));
 
         return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(pares)), 0, 4).ToLowerInvariant();
     }

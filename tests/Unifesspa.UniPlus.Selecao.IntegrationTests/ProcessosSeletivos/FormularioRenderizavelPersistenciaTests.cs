@@ -192,7 +192,8 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             ProcessoSeletivoRepository repository = new(readContext, TimeProvider.System);
             Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelQueryHandler.Handle(
                 new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao), repository,
-                new CertameDivulgadoRepository(readContext), RegistroCodecs, AcervoDeTeste.Endereco, CancellationToken.None);
+                new CertameDivulgadoRepository(readContext), RegistroCodecs,
+                new EnderecosDosDocumentosDoAto(new CertameDivulgadoRepository(readContext), AcervoDeTeste.Endereco), CancellationToken.None);
             resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
             return resultado.Value!;
         }
@@ -232,7 +233,8 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<FormularioRenderizavelDto> lido = await ObterFormularioRenderizavelQueryHandler.Handle(
             new ObterFormularioRenderizavelQuery(processo.Id, FinalidadeFormulario.Inscricao), new ProcessoSeletivoRepository(readContext, TimeProvider.System),
-            new CertameDivulgadoRepository(readContext), RegistroCodecs, AcervoDeTeste.Endereco, CancellationToken.None);
+            new CertameDivulgadoRepository(readContext), RegistroCodecs,
+                new EnderecosDosDocumentosDoAto(new CertameDivulgadoRepository(readContext), AcervoDeTeste.Endereco), CancellationToken.None);
         lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
 
         // A mesma montagem sobre a configuração viva, antes de passar pelo envelope: o que o front
@@ -439,7 +441,8 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<FormularioRenderizavelDto> lido = await ObterFormularioRenderizavelQueryHandler.Handle(
             new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao), new ProcessoSeletivoRepository(readContext, TimeProvider.System),
-            new CertameDivulgadoRepository(readContext), RegistroCodecs, AcervoDeTeste.Endereco, CancellationToken.None);
+            new CertameDivulgadoRepository(readContext), RegistroCodecs,
+                new EnderecosDosDocumentosDoAto(new CertameDivulgadoRepository(readContext), AcervoDeTeste.Endereco), CancellationToken.None);
         lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
         return lido.Value!;
     }
@@ -494,7 +497,8 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<FormularioRenderizavelDto> lido = await ObterFormularioRenderizavelQueryHandler.Handle(
             new ObterFormularioRenderizavelQuery(processo.Id, FinalidadeFormulario.Habilitacao), new ProcessoSeletivoRepository(readContext, TimeProvider.System),
-            new CertameDivulgadoRepository(readContext), RegistroCodecs, AcervoDeTeste.Endereco, CancellationToken.None);
+            new CertameDivulgadoRepository(readContext), RegistroCodecs,
+                new EnderecosDosDocumentosDoAto(new CertameDivulgadoRepository(readContext), AcervoDeTeste.Endereco), CancellationToken.None);
 
         lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
         lido.Value!.Pressupostos.Select(static p => p.FatoCodigo).Should().Equal("COR_RACA", "FAIXA_ETARIA");

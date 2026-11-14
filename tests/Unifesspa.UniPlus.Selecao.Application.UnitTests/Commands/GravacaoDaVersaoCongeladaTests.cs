@@ -36,9 +36,39 @@ public sealed class GravacaoDaVersaoCongeladaTests
         {
             _ = preparo.Servicos.Repositorio.AdicionarVersaoConfiguracaoAsync(preparo.Versao, Arg.Any<CancellationToken>());
             _ = preparo.Servicos.Atos.AdicionarAsync(Arg.Any<AtoDoProcesso>(), Arg.Any<CancellationToken>());
+            _ = preparo.Servicos.Certames.AdicionarAsync(Arg.Any<CertameDivulgado>(), Arg.Any<CancellationToken>());
             _ = preparo.Servicos.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
             _ = preparo.Servicos.Rascunhos.ApagarDoProcessoAsync(preparo.Processo.Id, Arg.Any<CancellationToken>());
         });
+    }
+
+    [Fact(DisplayName = "A divulgação grava com o instante da versão e do ato, e a entrada do ato nasce sem endereço")]
+    public async Task Sucesso_ADivulgacaoVaiNaMesmaGravacaoComOMesmoInstante()
+    {
+        Preparo preparo = await Preparo.NovoAsync();
+        CertameDivulgado? divulgado = null;
+        await preparo.Servicos.Certames.AdicionarAsync(Arg.Do<CertameDivulgado>(c => divulgado = c), Arg.Any<CancellationToken>());
+
+        await preparo.GravarAsync();
+
+        divulgado.Should().NotBeNull();
+        divulgado!.DivulgadoEm.Should().Be(preparo.Versao.VigenteAPartirDe).And.Be(preparo.AtoGravado().PublicadoEm);
+        divulgado.EditaisDivulgados.Should().ContainSingle()
+            .Which.Should().Be(EditalDivulgado.Pendente(preparo.Versao.AtoCriadorId, preparo.Versao.NumeroVersao));
+        await preparo.Servicos.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "O identificador legível já divulgado recusa a publicação sem apagar o rascunho, e devolve só a recusa")]
+    public async Task IdentificadorLegivelEmUso_RecusaSemApagarORascunho()
+    {
+        Preparo preparo = await Preparo.NovoAsync();
+        preparo.FalharNoFlushCom(ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade("ux_certames_divulgados_identificador_legivel"));
+
+        (Result resposta, IEnumerable<object> eventos) = await preparo.GravarAsync();
+
+        resposta.Error!.Code.Should().Be("ProcessoSeletivo.IdentificadorLegivelEmUso");
+        eventos.Should().BeEmpty();
+        await preparo.Servicos.Rascunhos.DidNotReceive().ApagarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "O ato gravado tem a identidade da versão, o processo e o documento do edital")]

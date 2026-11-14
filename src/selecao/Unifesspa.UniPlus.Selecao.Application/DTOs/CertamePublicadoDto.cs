@@ -36,10 +36,10 @@ public sealed record TaxaInscricaoCertameDto(bool Cobra, string? Valor, IReadOnl
 /// <param name="UrlDownload">
 /// Endereço do arquivo no acervo público (ADR-0132): permanente, de leitura anônima e nunca
 /// pré-assinado. É do ato que publicou a versão, e continua servindo o mesmo arquivo depois de uma
-/// retificação. O certame só é divulgado depois de a cópia para o acervo concluir, então o endereço
-/// nunca aponta para arquivo ausente.
+/// retificação. Nulo enquanto a cópia para o acervo não terminou, então o endereço nunca aponta para arquivo
+/// ausente; a resposta muda de <c>ETag</c> quando o endereço chega.
 /// </param>
-public sealed record DocumentoEditalCertameDto(Guid DocumentoEditalId, string HashSha256, Uri UrlDownload);
+public sealed record DocumentoEditalCertameDto(Guid DocumentoEditalId, string HashSha256, Uri? UrlDownload);
 
 /// <summary>
 /// Um documento de um ato no acervo público: o edital ou um anexo dele. É a forma que o contrato
@@ -64,12 +64,15 @@ public sealed record DocumentoDoAtoCertameDto(
 /// acervo público e os documentos dele.
 /// </summary>
 /// <param name="AtoId">O ato normativo que criou a versão — a chave que a linha do tempo de publicações já tem.</param>
-/// <param name="UrlDownload">Endereço permanente e de leitura anônima, como o de <see cref="DocumentoEditalCertameDto"/>.</param>
+/// <param name="UrlDownload">
+/// Endereço permanente e de leitura anônima, como o de <see cref="DocumentoEditalCertameDto"/>; nulo enquanto a cópia
+/// ao acervo não terminou.
+/// </param>
 /// <param name="Documentos">
 /// O edital como documento principal e os anexos em seguida, na ordem em que o edital os apresenta.
-/// Vazia quando o registro da divulgação não traz os documentos.
+/// Vazia enquanto a cópia ao acervo não terminou.
 /// </param>
-public sealed record EditalPublicadoCertameDto(Guid AtoId, Uri UrlDownload, IReadOnlyList<DocumentoDoAtoCertameDto> Documentos);
+public sealed record EditalPublicadoCertameDto(Guid AtoId, Uri? UrlDownload, IReadOnlyList<DocumentoDoAtoCertameDto> Documentos);
 
 /// <summary>
 /// Presente só quando o edital foi emendado: informa ao candidato que houve retificação e por quê.
@@ -183,9 +186,9 @@ public sealed record ExigenciaDocumentalCertameDto(
 /// <param name="UrlDownload">
 /// Endereço do arquivo no acervo público (ADR-0132): permanente, de leitura anônima e nunca
 /// pré-assinado. É do ato que publicou o modelo, e continua servindo o mesmo arquivo depois de uma
-/// retificação.
+/// retificação. Nulo enquanto a cópia ao acervo desse ato não terminou.
 /// </param>
-public sealed record ModeloDocumentalCertameDto(string NomeArquivo, string Formato, string HashSha256, Uri UrlDownload);
+public sealed record ModeloDocumentalCertameDto(string NomeArquivo, string Formato, string HashSha256, Uri? UrlDownload);
 
 /// <summary>Uma condição de atendimento especializado ofertada no certame.</summary>
 public sealed record CondicaoAtendimentoCertameDto(string Codigo, string Nome);

@@ -59,7 +59,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
     {
         _processos.ObterSiglaDaUnidadeAdministradoraAsync(_processoId, Arg.Any<CancellationToken>()).Returns("CEPS");
         _processos.ObterAtosCriadoresAsync(_processoId, Arg.Any<CancellationToken>()).Returns([_versaoDivulgadaAtoId]);
-        _divulgados.ObterParaLeituraAsync(_processoId, Arg.Any<CancellationToken>()).Returns(
+        _divulgados.ObterParaMutacaoAsync(_processoId, Arg.Any<CancellationToken>()).Returns(
             CertameDivulgado.Criar(
                 _processoId, 1, _versaoDivulgadaAtoId, new string('a', 64), "1",
                 new FacetasDoCertameDivulgado("psm-medicina-2027", "PSM Medicina 2027", "001/2027", [], Agora.AddDays(-1), Agora.AddDays(20)),
@@ -92,7 +92,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         gravado.PoliticaDeDivulgacaoConfirmadaPorSub.Should().Be(Sub);
         gravado.PoliticaDeDivulgacaoConfirmadaEm.Should().Be(Agora);
         gravado.Situacao.Should().Be(SituacaoDoRegistroDoAto.Pendente);
-        RegistrarAtoNormativoRequisicao requisicao = mensagens.Should().ContainSingle().Which.Should().BeOfType<RegistrarAtoNormativoRequisicao>().Subject;
+        RegistrarAtoNormativoRequisicao requisicao = mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle().Subject;
         requisicao.AtoId.Should().Be(gravado.Id);
         requisicao.TipoCodigo.Should().Be(Materia);
         requisicao.DocumentoHash.Should().Be(_principal.HashSha256);
@@ -221,7 +221,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         gravado!.ItemDoEdital.Should().Be(_itensDoCronograma[preliminar.Id].Chave);
         gravado.AtoCorrigidoId.Should().Be(original.Id);
         gravado.PoliticaDeDivulgacaoConfirmadaPorSub.Should().Be(Sub);
-        mensagens.Should().ContainSingle().Which.Should().BeOfType<RegistrarAtoNormativoRequisicao>()
+        mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle()
             .Which.AtoRetificadoId.Should().Be(original.Id);
     }
 
@@ -325,7 +325,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(definitivo.Id));
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        mensagens.Should().ContainSingle().Which.Should().BeOfType<RegistrarAtoNormativoRequisicao>()
+        mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle()
             .Which.AtributosDoTipo.UnicoPorObjeto.Should().BeFalse("o registro no Publicações leva a marcação congelada, e não a do catálogo de hoje");
     }
 
@@ -340,7 +340,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(preliminar.Id, corrige: original.Id));
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        mensagens.Should().ContainSingle().Which.Should().BeOfType<RegistrarAtoNormativoRequisicao>()
+        mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle()
             .Which.AtributosDoTipo.CongelaConfiguracao.Should().BeFalse("a correção tem a classe do ato corrigido, que o edital congelou");
     }
 

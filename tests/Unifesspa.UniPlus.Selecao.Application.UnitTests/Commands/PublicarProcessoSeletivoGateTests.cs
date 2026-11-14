@@ -51,7 +51,7 @@ public sealed class PublicarProcessoSeletivoGateTests
         public SnapshotCanonico Canonicalizar(EntradaCanonicalizacao entrada)
         {
             FoiInvocado = true;
-            return new SnapshotCanonico("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1");
+            return new SnapshotCanonico(EnvelopeProjetavelDeTeste.Bytes, "1.1", "canonical-json/sha256@v1");
         }
     }
 
@@ -90,7 +90,7 @@ public sealed class PublicarProcessoSeletivoGateTests
         {
             FoiInvocado = true;
             ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(EstadoDaConfiguracao.De(entrada.Processo), TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
-            return new SnapshotCanonico("{}"u8.ToArray(), "1.2", "canonical-json/sha256@v1");
+            return new SnapshotCanonico(EnvelopeProjetavelDeTeste.Bytes, "1.2", "canonical-json/sha256@v1");
         }
     }
 

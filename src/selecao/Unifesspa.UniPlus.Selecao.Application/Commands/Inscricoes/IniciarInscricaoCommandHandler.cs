@@ -42,7 +42,7 @@ public static class IniciarInscricaoCommandHandler
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
+        Services.EnderecosDosDocumentosDoAto enderecos,
         TimeProvider timeProvider,
         IUnitOfWork unitOfWork,
         IUserContext userContext,
@@ -159,7 +159,7 @@ public static class IniciarInscricaoCommandHandler
 
             return await Services.PreparacaoDaAvaliacaoDaInscricao
                 .ProjetarInscricaoGravadaAsync(
-                    lida, certameDivulgadoRepository, processoSeletivoRepository, documentoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecoNoAcervo,
+                    lida, certameDivulgadoRepository, processoSeletivoRepository, documentoRepository, registroCodecs, resolvedorFuso, conferenciaEnderecoGeo, enderecos,
                     timeProvider.GetUtcNow(), cancellationToken)
                 .ConfigureAwait(false);
         }

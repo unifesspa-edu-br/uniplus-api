@@ -23,14 +23,13 @@ public static class ProjecaoDaAvaliacaoDaInscricao
     public static Result<AvaliacaoDaInscricaoDto> Projetar(
         ResultadoDaAvaliacaoDaInscricao resultado,
         ContextoDaVersaoFixada contexto,
-        Guid processoSeletivoId,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
+        DocumentosDoAtoNoAcervo acervo,
         IReadOnlyList<ArquivoDaApresentacaoDto> arquivos,
         Guid? faseId = null)
     {
         ArgumentNullException.ThrowIfNull(resultado);
         ArgumentNullException.ThrowIfNull(contexto);
-        ArgumentNullException.ThrowIfNull(enderecoNoAcervo);
+        ArgumentNullException.ThrowIfNull(acervo);
 
         FaseCronograma[] fases = [.. contexto.Configuracao.Fases.Where(f => faseId is not { } pedida || f.Id == pedida)];
         if (faseId is not null && fases.Length == 0)
@@ -40,7 +39,6 @@ public static class ProjecaoDaAvaliacaoDaInscricao
                 $"A fase {faseId} não está no cronograma da versão do formulário que a inscrição fixou."));
         }
 
-        DocumentosDoAtoNoAcervo acervo = new(processoSeletivoId, contexto.AtoCriadorId, enderecoNoAcervo.De);
         return Result<AvaliacaoDaInscricaoDto>.Success(AvaliacaoDaInscricaoDto.De(resultado, fases, acervo.DoModelo, arquivos));
     }
 }

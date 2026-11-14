@@ -49,7 +49,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         _processos.ObterSiglaDaUnidadeAdministradoraAsync(_processoId, Arg.Any<CancellationToken>()).Returns("CEPS");
         _processos.ObterAtosCriadoresAsync(_processoId, Arg.Any<CancellationToken>()).Returns([_versaoDivulgadaAtoId]);
 
-        _divulgados.ObterParaLeituraAsync(_processoId, Arg.Any<CancellationToken>()).Returns(
+        _divulgados.ObterParaMutacaoAsync(_processoId, Arg.Any<CancellationToken>()).Returns(
             CertameDivulgado.Criar(
                 _processoId, 1, _versaoDivulgadaAtoId, new string('a', 64), "1",
                 new FacetasDoCertameDivulgado("psm-medicina-2027", "PSM Medicina 2027", "001/2026", [], Agora.AddDays(-1), Agora.AddDays(20)),
@@ -83,7 +83,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         gravado.Anexos.Should().ContainSingle().Which.NomeDeExibicao.Should().Be("Quadro de vagas.docx");
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
 
-        RegistrarAtoNormativoRequisicao requisicao = mensagens.Should().ContainSingle().Which.Should().BeOfType<RegistrarAtoNormativoRequisicao>().Subject;
+        RegistrarAtoNormativoRequisicao requisicao = mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle().Subject;
         requisicao.AtoId.Should().Be(gravado.Id);
         requisicao.Orgao.Should().Be("CEPS");
         requisicao.Serie.Should().Be("AVISO");
@@ -132,7 +132,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(atoCorrigidoId: avisoId, motivo: "Data errada no cronograma"));
 
         resposta.IsSuccess.Should().BeTrue();
-        RegistrarAtoNormativoRequisicao requisicao = mensagens.Should().ContainSingle().Which.Should().BeOfType<RegistrarAtoNormativoRequisicao>().Subject;
+        RegistrarAtoNormativoRequisicao requisicao = mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle().Subject;
         requisicao.AtoRetificadoId.Should().Be(avisoId);
         requisicao.MotivoRetificacao.Should().Be("Data errada no cronograma");
     }
@@ -170,7 +170,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
     [Fact(DisplayName = "Processo sem página pública é recusado")]
     public async Task ProcessoSemPaginaPublica_Recusa()
     {
-        _divulgados.ObterParaLeituraAsync(_processoId, Arg.Any<CancellationToken>()).Returns((CertameDivulgado?)null);
+        _divulgados.ObterParaMutacaoAsync(_processoId, Arg.Any<CancellationToken>()).Returns((CertameDivulgado?)null);
 
         await ExigirRecusa(Comando(), AtoDoProcessoErrorCodes.CertameNaoDivulgado);
     }

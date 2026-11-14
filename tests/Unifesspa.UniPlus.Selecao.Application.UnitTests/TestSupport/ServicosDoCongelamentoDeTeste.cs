@@ -29,6 +29,13 @@ internal sealed class ServicosDoCongelamentoDeTeste
 {
     private static readonly DateTimeOffset Agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
 
+    private static IEnderecoNoAcervoPublico EnderecoNoAcervo()
+    {
+        IEnderecoNoAcervoPublico endereco = Substitute.For<IEnderecoNoAcervoPublico>();
+        endereco.De(Arg.Any<string>()).Returns(static chamada => new Uri($"https://acervo.teste/{chamada.Arg<string>()}"));
+        return endereco;
+    }
+
     public IProcessoSeletivoRepository Repositorio { get; private set; } = Substitute.For<IProcessoSeletivoRepository>();
 
     public IDocumentoAPublicarRepository Documentos { get; private set; } = Substitute.For<IDocumentoAPublicarRepository>();
@@ -36,6 +43,8 @@ internal sealed class ServicosDoCongelamentoDeTeste
     public IRascunhoDePublicacaoRepository Rascunhos { get; } = Substitute.For<IRascunhoDePublicacaoRepository>();
 
     public IAtoDoProcessoRepository Atos { get; private set; } = Substitute.For<IAtoDoProcessoRepository>();
+
+    public ICertameDivulgadoRepository Certames { get; } = Substitute.For<ICertameDivulgadoRepository>();
 
     public ISnapshotPublicacaoCanonicalizer Canonicalizer { get; private set; } = CanonicalizerSubstituto();
 
@@ -241,7 +250,9 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public MontagemDoCongelamento Montagem() => new(Contextos(), Canonicalizer, Usuario);
 
-    public GravacaoDaVersaoCongelada Gravacao() => new(Repositorio, Atos, Rascunhos, UnitOfWork);
+    public GravacaoDaDivulgacao Divulgacao() => new(Certames, EnderecoNoAcervo());
+
+    public GravacaoDaVersaoCongelada Gravacao() => new(Repositorio, Atos, Rascunhos, Divulgacao(), UnitOfWork);
 
     public CongelamentoDaVersao Congelamento() => new(Conferencia(), Montagem(), Gravacao(), UnitOfWork);
 

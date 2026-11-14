@@ -16,7 +16,10 @@ using Unifesspa.UniPlus.Selecao.Application.Queries.ProdutosPrevistos;
 
 /// <summary>O órgão que numera o ato e a divulgação do certame, conferidos antes de qualquer escrita.</summary>
 /// <param name="Orgao">Sigla da unidade administradora do processo.</param>
-/// <param name="Divulgado">A divulgação do certame, de onde vêm a unidade e o identificador da chave no acervo.</param>
+/// <param name="Divulgado">
+/// A divulgação do certame, rastreada: de onde vêm a unidade e o identificador da chave no acervo, e onde o ato
+/// publicado registra a entrada que a cópia ao acervo preencherá.
+/// </param>
 internal sealed record ProcessoDivulgadoConferido(string Orgao, CertameDivulgado Divulgado);
 
 /// <summary>Tudo o que a conferência decidiu sobre o ato e que o envio grava e manda ao Publicações.</summary>
@@ -48,8 +51,8 @@ internal sealed record AtoAEnviar(
 
 /// <summary>
 /// O que o documento avulso e a publicação de um item do edital têm em comum: confere que o processo
-/// tem página pública e, no fim, grava o registro do ato do processo e enfileira a requisição de
-/// registro na mesma transação (ADR-0108).
+/// tem página pública e, no fim, grava o registro do ato do processo e a entrada do ato na divulgação do certame, e
+/// enfileira a requisição de registro e a cópia dos documentos ao acervo na mesma transação (ADR-0108).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -86,7 +89,7 @@ internal static class EnvioDoAtoDoProcesso
         }
 
         CertameDivulgado? divulgado = await certameDivulgadoRepository
-            .ObterParaLeituraAsync(processoSeletivoId, cancellationToken)
+            .ObterParaMutacaoAsync(processoSeletivoId, cancellationToken)
             .ConfigureAwait(false);
 
         return divulgado is null
@@ -139,6 +142,7 @@ internal static class EnvioDoAtoDoProcesso
 
         AtoDoProcesso registro = registrado.Value!;
         await atoDoProcessoRepository.AdicionarAsync(registro, cancellationToken).ConfigureAwait(false);
+        ato.Processo.Divulgado.RegistrarEditalPendente(registro.Id, numeroVersao: null);
 
         try
         {
@@ -174,7 +178,9 @@ internal static class EnvioDoAtoDoProcesso
             AtributosDoTipo: RequisicaoDeRegistroDoAto.AtributosDoTipo(ato.Tipo),
             Anexos: [.. documentos.Anexos.Select(static a => new AnexoDoAtoRequisicao(a.Nome, a.Documento.TipoDeMidia, a.Documento.HashSha256!))]);
 
-        return (Result<AtoPublicadoDto>.Success(new AtoPublicadoDto(registro.Id)), [requisicao]);
+        return (
+            Result<AtoPublicadoDto>.Success(new AtoPublicadoDto(registro.Id)),
+            [requisicao, new CopiarDocumentosDoAtoAoAcervo(ato.ProcessoSeletivoId, registro.Id)]);
     }
 
     private static DomainError? RecusaDaUnicidade(Exception ex, AtoAEnviar ato) =>

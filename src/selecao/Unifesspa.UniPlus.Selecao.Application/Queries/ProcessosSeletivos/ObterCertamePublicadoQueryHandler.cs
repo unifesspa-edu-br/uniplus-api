@@ -15,14 +15,14 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Uma consulta, por chave primária ou pelo índice único do identificador. A projeção acontece uma vez, quando o ato normativo se
-/// confirma; a leitura só entrega o que já está pronto. Não há linhagem a resolver, nem pergunta a
+/// Uma consulta, por chave primária ou pelo índice único do identificador. A projeção acontece uma vez, na
+/// transação que publica o ato; a leitura só entrega o que já está pronto, e só mostra o endereço dos documentos de um
+/// ato depois de a cópia ao acervo registrá-lo. Não há linhagem a resolver, nem pergunta a
 /// outro módulo no caminho da requisição, nem documento congelado a interpretar por leitura.
 /// </para>
 /// <para>
 /// <b>A ausência da linha é a única recusa de visibilidade.</b> Processo inexistente, processo em
-/// rascunho, processo sem versão vigente e processo cujo ato não se confirmou devolvem a mesma
-/// resposta — não por uma regra que os colapse, mas porque nenhum deles tem linha. Distinguir
+/// rascunho e processo sem versão vigente devolvem a mesma resposta — não por uma regra que os colapse, mas porque nenhum deles tem linha. Distinguir
 /// deixou de ser possível, em vez de ser possível e proibido. A outra recusa possível não é de
 /// visibilidade: é a projeção guardada que não se deixa ler, e essa aflora como falha de leitura.
 /// </para>
@@ -78,21 +78,40 @@ public static class ObterCertamePublicadoQueryHandler
         SituacaoDoCertame situacao = SituacaoDaVitrine.Classificar(
             divulgado.InscricoesDe, divulgado.InscricoesAte, instante, SituacaoDaVitrine.LimiarDosUltimosDias);
 
-        // Entrada com endereço ilegível fica de fora em vez de derrubar a página inteira: o evento
-        // correspondente só perde o link, e o resto do certame continua servido.
-        List<EditalPublicadoCertameDto> editais = [];
-        foreach (EditalDivulgado edital in divulgado.EditaisDivulgados
+        // O documento guardado já traz o endereço dos documentos da versão; o público só os vê quando a cópia do ato
+        // da versão ao acervo registrou o endereço, para o link nunca apontar para arquivo ausente.
+        CertamePublicadoDto servido = divulgado.CopiouOsDocumentosDoAto(certame.AtoCriadorId) ? certame : SemEnderecos(certame);
+
+        return Result<CertamePublicadoDto>.Success(servido with { Situacao = situacao, EditaisPublicados = EditaisServidos(divulgado) });
+    }
+
+    private static List<EditalPublicadoCertameDto> EditaisServidos(CertameDivulgado divulgado) =>
+        [.. divulgado.EditaisDivulgados
             .OrderBy(static e => e.NumeroVersao ?? int.MaxValue)
-            .ThenBy(static e => e.AtoId))
+            .ThenBy(static e => e.AtoId)
+            .Select(ServirEdital)
+            .OfType<EditalPublicadoCertameDto>()];
+
+    // Entrada com endereço ilegível fica de fora em vez de derrubar a página inteira: o evento correspondente só perde
+    // o link, e o resto do certame continua servido. A entrada sem endereço ainda é servida: o ato existe, e o documento
+    // está em preparação.
+    private static EditalPublicadoCertameDto? ServirEdital(EditalDivulgado edital)
+    {
+        if (edital.UrlDownload is null)
         {
-            if (Uri.TryCreate(edital.UrlDownload, UriKind.Absolute, out Uri? url))
-            {
-                editais.Add(new EditalPublicadoCertameDto(edital.AtoId, url, DocumentosLegiveis(edital)));
-            }
+            return new EditalPublicadoCertameDto(edital.AtoId, null, []);
         }
 
-        return Result<CertamePublicadoDto>.Success(certame with { Situacao = situacao, EditaisPublicados = editais });
+        return Uri.TryCreate(edital.UrlDownload, UriKind.Absolute, out Uri? url)
+            ? new EditalPublicadoCertameDto(edital.AtoId, url, DocumentosLegiveis(edital))
+            : null;
     }
+
+    private static CertamePublicadoDto SemEnderecos(CertamePublicadoDto certame) => certame with
+    {
+        DocumentoEdital = certame.DocumentoEdital with { UrlDownload = null },
+        DocumentosExigidos = [.. certame.DocumentosExigidos.Select(static e => e.Modelo is null ? e : e with { Modelo = e.Modelo with { UrlDownload = null } })],
+    };
 
     /// <summary>
     /// Os documentos do edital com endereço legível; o que não tem fica de fora, como o edital sem

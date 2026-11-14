@@ -27,22 +27,19 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// </summary>
 public static class ProjecaoDoFormularioDaVersao
 {
-    /// <param name="comComprovacaoDocumental">
-    /// Se a projeção traz a lista do bloco de comprovação documental. O certame público a traz; o
-    /// formulário da inscrição do candidato não, porque os documentos que se aplicam a ele vêm da
-    /// avaliação da inscrição, sobre as respostas dele (ADR-0143).
+    /// <param name="acervoDaComprovacao">
+    /// Onde estão os modelos dos documentos que o ato da versão publicou, para a lista do bloco de comprovação
+    /// documental. O certame público a traz; o formulário da inscrição do candidato não (nulo), porque os documentos
+    /// que se aplicam a ele vêm da avaliação da inscrição, sobre as respostas dele (ADR-0143).
     /// </param>
     public static Result<FormularioRenderizavelDto> Projetar(
         VersaoConfiguracao versao,
         FinalidadeFormulario finalidade,
-        Guid atoCriadorId,
         IRegistroCodecsEnvelope registroCodecs,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
-        bool comComprovacaoDocumental = true)
+        DocumentosDoAtoNoAcervo? acervoDaComprovacao)
     {
         ArgumentNullException.ThrowIfNull(versao);
         ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(enderecoNoAcervo);
 
         if (!registroCodecs.SabeLer(versao.SchemaVersion))
         {
@@ -53,7 +50,7 @@ public static class ProjecaoDoFormularioDaVersao
                 "aposentada não é reidratada."));
         }
 
-        if (!TentarLerEnvelope(versao.ConfiguracaoCongelada, out JsonObject? envelope))
+        if (!EnvelopeCongelado.TentarLer(versao.ConfiguracaoCongelada, out JsonObject? envelope))
         {
             // Texto que não fecha como JSON faz JsonNode.Parse LANÇAR, e um documento que fecha
             // sem ser objeto não sobrevive ao cast. São alcançáveis só por linha escrita fora do
@@ -92,11 +89,10 @@ public static class ProjecaoDoFormularioDaVersao
                 $"O processo seletivo {versao.ProcessoSeletivoId} não tem formulário para a finalidade '{finalidade}' nesta versão."));
         }
 
-        DocumentosDoAtoNoAcervo acervo = new(versao.ProcessoSeletivoId, atoCriadorId, enderecoNoAcervo.De);
         FormularioProcesso doFormulario = grafo.Formularios.First(f => f.Finalidade == finalidade);
         List<ExigenciaDocumentalCertameDto>? comprovacao = null;
-        if (comComprovacaoDocumental
-            && !TentarComprovacaoDocumental(envelope, doFormulario, formulario.Finalidade, acervo, out comprovacao))
+        if (acervoDaComprovacao is not null
+            && !TentarComprovacaoDocumental(envelope, doFormulario, formulario.Finalidade, acervoDaComprovacao, out comprovacao))
         {
             return VersaoSemApresentacao();
         }
@@ -126,7 +122,7 @@ public static class ProjecaoDoFormularioDaVersao
     {
         ArgumentNullException.ThrowIfNull(versao);
 
-        if (!TentarLerEnvelope(versao.ConfiguracaoCongelada, out JsonObject? envelope)
+        if (!EnvelopeCongelado.TentarLer(versao.ConfiguracaoCongelada, out JsonObject? envelope)
             || !TentarDataReferenciaFatos(envelope, out DateOnly? data))
         {
             return Result<DateOnly?>.Failure(new DomainError(
@@ -140,20 +136,6 @@ public static class ProjecaoDoFormularioDaVersao
     /// <summary>
     /// Lê o documento congelado como objeto JSON, sem deixar passar exceção de análise.
     /// </summary>
-    private static bool TentarLerEnvelope(string congelado, [NotNullWhen(true)] out JsonObject? envelope)
-    {
-        try
-        {
-            envelope = JsonNode.Parse(congelado) as JsonObject;
-        }
-        catch (JsonException)
-        {
-            envelope = null;
-        }
-
-        return envelope is not null;
-    }
-
     /// <summary>
     /// A data de referência dos fatos, já resolvida na publicação, do bloco de documentos exigidos.
     /// Nula quando o processo não declara referência temporal; fora da forma de data, a versão não

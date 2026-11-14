@@ -14,6 +14,8 @@ using DTOs;
 using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
+using Queries.ProcessosSeletivos;
+
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -35,7 +37,7 @@ public static class SalvarInscricaoCommandHandler
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
+        Services.EnderecosDosDocumentosDoAto enderecos,
         IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -49,6 +51,7 @@ public static class SalvarInscricaoCommandHandler
         ArgumentNullException.ThrowIfNull(registroCodecs);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
         ArgumentNullException.ThrowIfNull(conferenciaEnderecoGeo);
+        ArgumentNullException.ThrowIfNull(enderecos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -199,9 +202,11 @@ public static class SalvarInscricaoCommandHandler
             return Result<InscricaoDto>.Failure(avaliada.Error!);
         }
 
+        DocumentosDoAtoNoAcervo acervo = await enderecos
+            .DoAtoAsync(inscricao.ProcessoSeletivoId, contexto.Value!.AtoCriadorId, cancellationToken)
+            .ConfigureAwait(false);
         Result<AvaliacaoDaInscricaoDto> projetada = Services.ProjecaoDaAvaliacaoDaInscricao.Projetar(
-            avaliada.Value!, contexto.Value!, inscricao.ProcessoSeletivoId, enderecoNoAcervo,
-            arquivos.ParaOCandidato());
+            avaliada.Value!, contexto.Value!, acervo, arquivos.ParaOCandidato());
         return projetada.IsFailure
             ? Result<InscricaoDto>.Failure(projetada.Error!)
             : Result<InscricaoDto>.Success(InscricaoDto.De(

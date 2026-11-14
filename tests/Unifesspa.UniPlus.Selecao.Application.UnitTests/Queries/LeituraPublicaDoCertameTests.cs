@@ -16,6 +16,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.CertameDivulgadoDeTeste;
+
 /// <summary>
 /// Leitura pública do certame, detalhe e vitrine, sobre a tabela de divulgações.
 /// </summary>
@@ -25,8 +27,6 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </remarks>
 public sealed class LeituraPublicaDoCertameTests
 {
-    private static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
-
     [Fact(DisplayName = "Certame sem divulgação responde não encontrado")]
     public async Task Detalhe_SemDivulgacao_NaoEncontrado()
     {
@@ -110,15 +110,15 @@ public sealed class LeituraPublicaDoCertameTests
         CertameDivulgado divulgado = Divulgado(processoId, Projecao(processoId));
         EditalDivulgado retificacao = new(Guid.CreateVersion7(), 2, "https://acervo.teste/retificacao.pdf");
         EditalDivulgado abertura = new(Guid.CreateVersion7(), 1, "https://acervo.teste/abertura.pdf");
-        divulgado.RegistrarEdital(retificacao);
-        divulgado.RegistrarEdital(abertura);
+        Registrar(divulgado, retificacao);
+        Registrar(divulgado, abertura);
         ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
         repository.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>()).Returns(divulgado);
 
         Result<CertamePublicadoDto> resultado = await ObterCertamePublicadoQueryHandler.Handle(
             new ObterCertamePublicadoQuery(processoId, Agora), repository, CancellationToken.None);
 
-        resultado.Value!.EditaisPublicados!.Select(static e => (e.AtoId, e.UrlDownload.OriginalString)).Should().Equal(
+        resultado.Value!.EditaisPublicados!.Select(static e => (e.AtoId, e.UrlDownload?.OriginalString)).Should().Equal(
             (abertura.AtoId, abertura.UrlDownload),
             (retificacao.AtoId, retificacao.UrlDownload));
     }
@@ -130,8 +130,8 @@ public sealed class LeituraPublicaDoCertameTests
         CertameDivulgado divulgado = Divulgado(processoId, Projecao(processoId));
         EditalDivulgado aviso = new(Guid.CreateVersion7(), null, "https://acervo.teste/aviso.pdf");
         EditalDivulgado abertura = new(Guid.CreateVersion7(), 1, "https://acervo.teste/abertura.pdf");
-        divulgado.RegistrarEdital(aviso);
-        divulgado.RegistrarEdital(abertura);
+        Registrar(divulgado, aviso);
+        Registrar(divulgado, abertura);
         ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
         repository.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>()).Returns(divulgado);
 
@@ -156,8 +156,8 @@ public sealed class LeituraPublicaDoCertameTests
                 new DocumentoDivulgado(PapelDoDocumentoDivulgado.Anexo, "Quadro de vagas.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", 800, new string('b', 64), "https://acervo.teste/quadro.docx"),
                 new DocumentoDivulgado(PapelDoDocumentoDivulgado.Anexo, "Sem endereço.pdf", "application/pdf", 10, new string('c', 64), "acervo/sem-esquema.pdf"),
             ]);
-        divulgado.RegistrarEdital(antigo);
-        divulgado.RegistrarEdital(comAnexos);
+        Registrar(divulgado, antigo);
+        Registrar(divulgado, comAnexos);
         ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
         repository.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>()).Returns(divulgado);
 
@@ -178,8 +178,8 @@ public sealed class LeituraPublicaDoCertameTests
         CertameDivulgado divulgado = Divulgado(processoId, Projecao(processoId));
         EditalDivulgado abertura = new(Guid.CreateVersion7(), 1, "acervo/sem-esquema.pdf");
         EditalDivulgado retificacao = new(Guid.CreateVersion7(), 2, "https://acervo.teste/retificacao.pdf");
-        divulgado.RegistrarEdital(abertura);
-        divulgado.RegistrarEdital(retificacao);
+        Registrar(divulgado, abertura);
+        Registrar(divulgado, retificacao);
         ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
         repository.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>()).Returns(divulgado);
 
@@ -335,49 +335,4 @@ public sealed class LeituraPublicaDoCertameTests
                 RevisaoDoRecorte));
         return repository;
     }
-
-    private static CertameDivulgado Divulgado(
-        Guid processoId,
-        CertamePublicadoDto projecao,
-        DateTimeOffset? inscricoesDe = null,
-        DateTimeOffset? inscricoesAte = null) =>
-        CertameDivulgado.Criar(
-            processoId,
-            numeroVersao: 1,
-            projecao.AtoCriadorId,
-            new string('a', 64),
-            ProjecaoDoCertamePublicado.Versao,
-            new FacetasDoCertameDivulgado(
-                projecao.IdentificadorLegivel,
-                projecao.Nome,
-                projecao.Periodo.Numero,
-                projecao.ModalidadesOfertadas,
-                inscricoesDe ?? Agora.AddDays(-1),
-                inscricoesAte ?? Agora.AddDays(20)),
-            JsonSerializer.Serialize(projecao, ProjecaoDoCertamePublicado.OpcoesDoDocumento),
-            Agora);
-
-    private static CertamePublicadoDto Projecao(Guid processoId) => new(
-        processoId,
-        IdentificadoresDeTeste.Novo().Valor,
-        Guid.CreateVersion7(),
-        "SISU 2026.1",
-        ProjecaoDoCertamePublicado.Versao,
-        new string('a', 64),
-        new TipoCatalogadoCertameDto("SISU", "Sistema de Seleção Unificada"),
-        new PeriodoInscricaoCertameDto("001/2026", Agora.AddDays(-1), Agora.AddDays(20)),
-        new LocalidadeCertameDto("1504208", "Marabá", "PA", FusoHorarioDto.Institucional),
-        new UnidadeAdministradoraCertameDto("UNIFESSPA", "Universidade", "Autarquia", "Marabá", "PA"),
-        new DocumentoEditalCertameDto(Guid.CreateVersion7(), new string('b', 64), new Uri("https://acervo.teste/edital.pdf")),
-        [],
-        new OpcoesDeCursoCertameDto(1),
-        ["AC"],
-        [new QuadroDeVagasCertameDto(Guid.CreateVersion7(), [], 100)],
-        [],
-        "Externa",
-        [],
-        [],
-        new AtendimentoCertameDto([], [], []),
-        null,
-        null);
 }

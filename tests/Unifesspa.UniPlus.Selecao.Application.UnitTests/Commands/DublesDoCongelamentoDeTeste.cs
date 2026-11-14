@@ -24,7 +24,7 @@ internal static class DublesDoCongelamentoDeTeste
     {
         ISnapshotPublicacaoCanonicalizer canonicalizer = Substitute.For<ISnapshotPublicacaoCanonicalizer>();
         canonicalizer.Canonicalizar(Arg.Do<EntradaCanonicalizacao>(e => captura?.Invoke(e)))
-            .Returns(new SnapshotCanonico("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1"));
+            .Returns(new SnapshotCanonico(EnvelopeProjetavelDeTeste.Bytes, "1.1", "canonical-json/sha256@v1"));
         return canonicalizer;
     }
 

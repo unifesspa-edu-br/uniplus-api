@@ -39,13 +39,6 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         return contexto;
     }
 
-    private static IEnderecoNoAcervoPublico CriarAcervo()
-    {
-        IEnderecoNoAcervoPublico acervo = Substitute.For<IEnderecoNoAcervoPublico>();
-        acervo.De(Arg.Any<string>()).Returns(static chamada => new Uri($"https://acervo.teste/{chamada.Arg<string>()}"));
-        return acervo;
-    }
-
     /// <param name="faseDoBloco">A fase do formulário, que ganha o bloco de comprovação documental; sem ela, o formulário só tem a revisão.</param>
     /// <param name="exigencias">As exigências congeladas, em JSON.</param>
     private static (VersaoConfiguracao Versao, EnvelopeReidratado Envelope) MontarVersaoComFormularioDeInscricao(
@@ -95,7 +88,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
         Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
             new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(),
-            Substitute.For<IRegistroCodecsEnvelope>(), CriarAcervo(), userContext, CancellationToken.None);
+            Substitute.For<IRegistroCodecsEnvelope>(), userContext, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
@@ -111,7 +104,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
         Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
             new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(),
-            Substitute.For<IRegistroCodecsEnvelope>(), CriarAcervo(), UsuarioComCpf(cpf), CancellationToken.None);
+            Substitute.For<IRegistroCodecsEnvelope>(), UsuarioComCpf(cpf), CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
@@ -134,7 +127,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
         Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
             new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, DivulgacaoDeTeste.Certame(ProcessoId), processoRepository,
-            RegistroReidratando(envelope), CriarAcervo(), UsuarioComCpf(cpf), CancellationToken.None);
+            RegistroReidratando(envelope), UsuarioComCpf(cpf), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Finalidade.Should().Be(EstruturaFormulario.ParaToken(FinalidadeFormulario.Inscricao));
@@ -160,7 +153,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
         Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
             new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, DivulgacaoDeTeste.Certame(ProcessoId), processoRepository,
-            RegistroReidratando(envelope), CriarAcervo(), UsuarioComCpf(cpf), CancellationToken.None);
+            RegistroReidratando(envelope), UsuarioComCpf(cpf), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.ComprovacaoDocumental.Should().BeNull("a lista do certame não diz o que se aplica ao candidato");
@@ -181,7 +174,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
         Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
             new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, DivulgacaoDeTeste.Certame(ProcessoId), processoRepository,
-            RegistroReidratando(envelope), CriarAcervo(), UsuarioComCpf(cpf), CancellationToken.None);
+            RegistroReidratando(envelope), UsuarioComCpf(cpf), CancellationToken.None);
 
         resultado.Value!.FaseId.Should().Be(fase);
     }
