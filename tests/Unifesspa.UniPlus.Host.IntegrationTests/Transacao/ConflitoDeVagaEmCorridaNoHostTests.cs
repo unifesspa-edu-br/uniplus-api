@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Transacao;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.Extensions.DependencyInjection;
@@ -22,10 +20,6 @@ using Wolverine.Tracking;
 /// transação fica no banco: nem a Seleção, nem o ato, nem o envelope do evento.
 /// </summary>
 [Collection(MonolitoHostCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class ConflitoDeVagaEmCorridaNoHostTests : IClassFixture<HostComHandlersDeTransacao>
 {
     private readonly IServiceProvider _servicos;

@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// do catálogo.
 /// </summary>
 /// <remarks>
-/// <para>O par <see cref="VersaoDeConfiguracaoId"/>/<see cref="VersaoDeConfiguracaoHash"/> é
+/// <para>O par <see cref="VersaoInvocadaId"/>/<see cref="VersaoInvocadaHash"/> é
 /// recebido por valor, completo ou ausente: Publicações não resolve a
 /// versão de configuração — ela vive noutro módulo e chega já resolvida.</para>
 /// <para>O par <see cref="AtoRetificadoId"/>/<see cref="MotivoRetificacao"/> torna
@@ -57,8 +57,8 @@ public sealed record RegistrarAtoNormativoCommand(
     DateOnly DataDoAto,
     string DocumentoHash,
     string Assinante,
-    Guid? VersaoDeConfiguracaoId = null,
-    string? VersaoDeConfiguracaoHash = null,
+    Guid? VersaoInvocadaId = null,
+    string? VersaoInvocadaHash = null,
     Guid? AtoRetificadoId = null,
     string? MotivoRetificacao = null,
     IReadOnlyList<VinculoEntidadeInput>? Vinculos = null,

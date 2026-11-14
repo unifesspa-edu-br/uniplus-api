@@ -125,7 +125,7 @@ public sealed class AtoNormativo : IForensicEntity
     /// Versão de configuração que governou o ato, por valor <c>{id, hash}</c>
     /// (ADR-0075). Nula quando o ato não invoca configuração (ato autônomo).
     /// </summary>
-    public ReferenciaVersaoConfiguracao? VersaoDeConfiguracao { get; private init; }
+    public ReferenciaVersaoConfiguracao? VersaoInvocada { get; private init; }
 
     /// <summary>
     /// Ato que este retifica, quando é uma retificação (ADR-0103). Nulo num ato que
@@ -197,7 +197,7 @@ public sealed class AtoNormativo : IForensicEntity
         string documentoHash,
         string assinante,
         DateTimeOffset publicadoEm,
-        ReferenciaVersaoConfiguracao? versaoDeConfiguracao,
+        ReferenciaVersaoConfiguracao? versaoInvocada,
         Guid? atoRetificadoId = null,
         string? motivoRetificacao = null,
         IEnumerable<(string EntidadeTipo, Guid EntidadeId)>? vinculos = null,
@@ -260,7 +260,7 @@ public sealed class AtoNormativo : IForensicEntity
             DocumentoHash = documentoHash,
             Assinante = assinanteNorm,
             PublicadoEm = publicadoEm,
-            VersaoDeConfiguracao = versaoDeConfiguracao,
+            VersaoInvocada = versaoInvocada,
             AtoRetificadoId = atoRetificadoId,
             MotivoRetificacao = motivoNorm,
         };

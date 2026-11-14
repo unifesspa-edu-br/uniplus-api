@@ -123,18 +123,18 @@ public sealed class MontagemDoAtoNormativo(
     /// O par {id, hash} é recebido por valor, completo ou ausente. Ausente devolve
     /// <see langword="null"/>: o ato não invoca configuração.
     /// </summary>
-    private static Result<ReferenciaVersaoConfiguracao>? ResolverVersaoDeConfiguracao(RegistrarAtoNormativoCommand command)
+    private static Result<ReferenciaVersaoConfiguracao>? ResolverVersaoInvocada(RegistrarAtoNormativoCommand command)
     {
-        bool temId = command.VersaoDeConfiguracaoId.HasValue;
-        if (!temId && command.VersaoDeConfiguracaoHash is null)
+        bool temId = command.VersaoInvocadaId.HasValue;
+        if (!temId && command.VersaoInvocadaHash is null)
         {
             return null;
         }
 
-        return temId != (command.VersaoDeConfiguracaoHash is not null)
+        return temId != (command.VersaoInvocadaHash is not null)
             ? Result<ReferenciaVersaoConfiguracao>.Failure(new DomainError(
-                AtoNormativoErrorCodes.VersaoDeConfiguracaoIncompleta, AtoNormativoRegras.VersaoDeConfiguracaoIncompleta))
-            : CriarReferenciaDaVersao(command.VersaoDeConfiguracaoId!.Value, command.VersaoDeConfiguracaoHash!);
+                AtoNormativoErrorCodes.VersaoInvocadaIncompleta, AtoNormativoRegras.VersaoInvocadaIncompleta))
+            : CriarReferenciaDaVersao(command.VersaoInvocadaId!.Value, command.VersaoInvocadaHash!);
     }
 
     /// <summary>
@@ -147,7 +147,7 @@ public sealed class MontagemDoAtoNormativo(
         Result<ReferenciaVersaoConfiguracao> versao = ReferenciaVersaoConfiguracao.Criar(id, hash);
         return versao.IsFailure
             ? Result<ReferenciaVersaoConfiguracao>.Failure(new DomainError(
-                AtoNormativoErrorCodes.VersaoDeConfiguracaoIncompleta, versao.Error!.Message))
+                AtoNormativoErrorCodes.VersaoInvocadaIncompleta, versao.Error!.Message))
             : versao;
     }
 
@@ -168,7 +168,7 @@ public sealed class MontagemDoAtoNormativo(
     private async Task<Result<DadosConferidos>> ConferirVersaoAsync(
         RegistrarAtoNormativoCommand command, TipoResolvido tipo, CancellationToken cancellationToken)
     {
-        Result<ReferenciaVersaoConfiguracao>? versao = ResolverVersaoDeConfiguracao(command);
+        Result<ReferenciaVersaoConfiguracao>? versao = ResolverVersaoInvocada(command);
         return versao is { IsFailure: true }
             ? Result<DadosConferidos>.Failure(versao.Error!)
             : await ConferirCadeiaAsync(command, tipo, versao?.Value, cancellationToken).ConfigureAwait(false);

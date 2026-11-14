@@ -60,23 +60,23 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
         resultado.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Guarda a versão de configuração e o ato retificado quando o ato os declara")]
+    [Fact(DisplayName = "Guarda a versão invocada e o ato retificado quando o ato os declara")]
     public async Task Registrar_ComVersaoECorrecao_GuardaOsDois()
     {
         AtoNormativo retificado = AtoExistente(Tipo, congela: true);
         _atos.ObterPorIdParaLeituraAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns(retificado);
         AtoNormativo? adicionado = null;
         await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => adicionado = a), Arg.Any<CancellationToken>());
-        VersaoDeConfiguracaoDoAto versao = new(Guid.CreateVersion7(), Hash);
+        VersaoInvocadaDoAto versao = new(Guid.CreateVersion7(), Hash);
 
         Result resultado = await _porta.RegistrarAsync(
-            Ato() with { VersaoDeConfiguracao = versao, Retificacao = new(retificado.Id, "corrige o anexo II") },
+            Ato() with { VersaoInvocada = versao, Retificacao = new(retificado.Id, "corrige o anexo II") },
             CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         adicionado!.AtoRetificadoId.Should().Be(retificado.Id);
         adicionado.MotivoRetificacao.Should().Be("corrige o anexo II");
-        adicionado.VersaoDeConfiguracao!.Id.Should().Be(versao.Id);
+        adicionado.VersaoInvocada!.Id.Should().Be(versao.Id);
     }
 
     [Fact(DisplayName = "Recusa a vaga ocupada pelo ato do mesmo tipo e o nomeia pela numeração, sem gravar")]
@@ -180,5 +180,5 @@ public sealed class RegistroDeAtoNormativoPeloDominioTests
         AtoNormativo.Registrar(
             Guid.CreateVersion7(), "CEPS", "EDITAL", 2026, numero, tipo,
             congelaConfiguracao: congela, efeitoIrreversivel: false, unicoPorObjeto: true,
-            DataDoAto, Hash, "Jairo Belchior", PublicadoEm, versaoDeConfiguracao: null, vinculos: [(Objeto, ProcessoDoTeste)]);
+            DataDoAto, Hash, "Jairo Belchior", PublicadoEm, versaoInvocada: null, vinculos: [(Objeto, ProcessoDoTeste)]);
 }

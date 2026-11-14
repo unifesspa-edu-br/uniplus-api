@@ -25,8 +25,8 @@ public sealed class GravacaoDaVersaoCongelada(
     private const string IndiceDoIdentificadorLegivelDivulgado = "ux_certames_divulgados_identificador_legivel";
 
     /// <summary>
-    /// Grava a versão, o registro do ato, o ato no registro central, a divulgação do certame e o rascunho de
-    /// publicação na mesma transação e devolve os eventos do agregado e a cópia dos documentos ao acervo como cascading
+    /// Grava a versão, o registro do ato, o ato no registro central, a divulgação do certame e a remoção do rascunho
+    /// de publicação na mesma transação e devolve os eventos do agregado e a cópia dos documentos ao acervo como cascading
     /// messages. O Wolverine os instala no outbox dentro da transação que gravou a versão, e ou tudo existe, ou nada.
     /// A porta de escrita do registro central só rastreia o ato: a recusa dela, ou o conflito que só a gravação
     /// enxerga, devolve a recusa nomeada sem evento, e o orquestrador descarta o rastreamento (ADR-0170).
@@ -48,36 +48,20 @@ public sealed class GravacaoDaVersaoCongelada(
 
         AtoNormativoPublicado publicado = AtoPublicadoPeloProcesso.DaVersao(
             processo, versao, ato.Ato, ato.TipoDoAto, dados.Numero, ato.Documento.HashSha256!, retificacao);
-        Result gravada = await GravarEApagarORascunhoAsync(processo, versao, registroDoAto.Value!, publicado, cancellationToken).ConfigureAwait(false);
+        Result gravada = await GravarVersaoAtoDivulgacaoERascunhoAsync(processo, versao, registroDoAto.Value!, publicado, cancellationToken).ConfigureAwait(false);
 
         return gravada.IsFailure
             ? (gravada, [])
             : (Result.Success(), [.. processo.DequeueDomainEvents().Cast<object>(), new CopiarDocumentosDoAtoAoAcervo(processo.Id, versao.AtoCriadorId)]);
     }
 
-    // Só com a gravação feita o rascunho perde a razão de existir: apagar antes do flush destruiria a transcrição do
-    // operador numa recusa posterior, e o apagamento é um comando direto ao banco que não pode preceder a gravação. Todo
-    // caminho que registra ato apaga, porque a raiz é soft-deletable e o cascade da chave estrangeira jamais dispara.
-    private async Task<Result> GravarEApagarORascunhoAsync(
-        ProcessoSeletivo processo,
-        VersaoConfiguracao versao,
-        AtoDoProcesso registroDoAto,
-        AtoNormativoPublicado publicado,
-        CancellationToken cancellationToken)
-    {
-        Result salva = await GravarVersaoAtoEDivulgacaoAsync(processo, versao, registroDoAto, publicado, cancellationToken).ConfigureAwait(false);
-        if (salva.IsSuccess)
-        {
-            await rascunhos.ApagarDoProcessoAsync(processo.Id, cancellationToken).ConfigureAwait(false);
-        }
-
-        return salva;
-    }
-
-    // A versão, o registro do ato, o ato no registro central e a divulgação vão na mesma gravação, nesta ordem: a
-    // consulta dos atos do processo lê só o registro, e o certame passa a existir para o público no mesmo commit em que o
-    // ato. A porta vem antes da divulgação para que a recusa dela não deixe certame montado no rastreador.
-    private async Task<Result> GravarVersaoAtoEDivulgacaoAsync(
+    // A versão, o registro do ato, o ato no registro central, a divulgação e a remoção do rascunho vão na mesma
+    // gravação, nesta ordem: a consulta dos atos do processo lê só o registro, e o certame passa a existir para o
+    // público no mesmo commit em que o ato. A porta vem antes da divulgação para que a recusa dela não deixe certame
+    // montado no rastreador, e a remoção do rascunho só entra no rastreador depois das duas, para que toda recusa deixe
+    // a transcrição do operador intacta. A raiz é soft-deletable e o cascade da chave estrangeira jamais dispara,
+    // então todo caminho que registra ato remove o rascunho de modo explícito.
+    private async Task<Result> GravarVersaoAtoDivulgacaoERascunhoAsync(
         ProcessoSeletivo processo,
         VersaoConfiguracao versao,
         AtoDoProcesso registroDoAto,
@@ -88,14 +72,17 @@ public sealed class GravacaoDaVersaoCongelada(
         await atos.AdicionarAsync(registroDoAto, cancellationToken).ConfigureAwait(false);
 
         Result aceito = await registroCentralDeAtos.RegistrarAsync(publicado, cancellationToken).ConfigureAwait(false);
-        if (aceito.IsFailure)
+        Result montada = aceito.IsFailure
+            ? aceito
+            : await divulgacao.MontarDaVersaoAsync(processo, versao, registroDoAto, cancellationToken).ConfigureAwait(false);
+        if (montada.IsFailure)
         {
-            return aceito;
+            return montada;
         }
 
-        Result montada = await divulgacao.MontarDaVersaoAsync(processo, versao, registroDoAto, cancellationToken).ConfigureAwait(false);
+        await rascunhos.RemoverDoProcessoAsync(processo.Id, cancellationToken).ConfigureAwait(false);
 
-        return montada.IsFailure ? montada : await SalvarAsync(processo, registroDoAto, cancellationToken).ConfigureAwait(false);
+        return await SalvarAsync(processo, registroDoAto, cancellationToken).ConfigureAwait(false);
     }
 
     // Duas transições concorrentes do mesmo processo derivam o mesmo número de versão, e o índice único e o gatilho de

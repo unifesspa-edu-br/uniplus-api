@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Transacao;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
@@ -20,10 +18,6 @@ using Wolverine.Tracking;
 /// vaga ocupada por outro ato voltam como recusa nomeada da porta, e a Seleção não grava nada.
 /// </remarks>
 [Collection(MonolitoHostCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class AtomicidadeDoRegistroDeAtoNoHostTests : IClassFixture<HostComHandlersDeTransacao>
 {
     private readonly IServiceProvider _servicos;

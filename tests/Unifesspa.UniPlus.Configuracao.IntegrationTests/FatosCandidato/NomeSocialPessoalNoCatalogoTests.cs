@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.IntegrationTests.FatosCandidato;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Npgsql;
@@ -13,10 +11,6 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 /// O nome social é dado pessoal: a restrição de classificação do catálogo de fatos recusa a linha dele como pública.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class NomeSocialPessoalNoCatalogoTests
 {
     private readonly ConfiguracaoDbFixture _fixture;

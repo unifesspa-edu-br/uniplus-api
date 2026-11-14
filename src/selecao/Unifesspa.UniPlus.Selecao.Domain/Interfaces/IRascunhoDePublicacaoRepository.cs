@@ -22,14 +22,14 @@ public interface IRascunhoDePublicacaoRepository : IRepository<RascunhoDePublica
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Apaga todos os rascunhos do processo, de qualquer operador, em um comando só.
+    /// Marca como removidos, no rastreador, todos os rascunhos do processo, de qualquer operador. A linha só sai do
+    /// banco na gravação única do comando que a chamou.
     /// </summary>
     /// <remarks>
     /// <para>
-    /// É o que todo caminho que registra o ato chama. Deleta direto no banco, sem passar pelo
-    /// change tracker: são linhas que ninguém leu nesta transação, e carregá-las só para
-    /// marcá-las como removidas traria o conteúdo — o bloco transcrito do Diário Oficial — para
-    /// dentro da memória do processo sem nenhuma razão para isso.
+    /// É o que todo caminho que registra o ato chama. Não escreve no banco: o comando salva uma vez, no fim, e a
+    /// remoção do rascunho entra nessa mesma gravação (ADR-0170). Se o comando recusar ou o rastreamento for
+    /// descartado, o rascunho sobrevive.
     /// </para>
     /// <para>
     /// Alcançar o rascunho de todo operador, e não só o de quem publicou, é deliberado: o que
@@ -38,7 +38,7 @@ public interface IRascunhoDePublicacaoRepository : IRepository<RascunhoDePublica
     /// dono para efeito de edição concorrente, não de tempo de vida.
     /// </para>
     /// </remarks>
-    Task<int> ApagarDoProcessoAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
+    Task RemoverDoProcessoAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Apaga o rascunho daquele operador naquele processo, se houver.

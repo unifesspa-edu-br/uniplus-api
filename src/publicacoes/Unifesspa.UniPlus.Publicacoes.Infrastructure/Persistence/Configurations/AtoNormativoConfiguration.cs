@@ -38,22 +38,22 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
                     "ck_ato_normativo_documento_hash",
                     "documento_hash ~ '^[0-9a-f]{64}$'");
 
-                // O par {id, hash} da versão de configuração é completo ou ausente: um
+                // O par {id, hash} da versão invocada é completo ou ausente: um
                 // identificador sem hash não prova nada (ADR-0075).
                 t.HasCheckConstraint(
-                    "ck_ato_normativo_versao_de_configuracao_completa",
-                    "(versao_de_configuracao_id IS NULL AND versao_de_configuracao_hash IS NULL) "
-                    + "OR (versao_de_configuracao_id IS NOT NULL AND versao_de_configuracao_hash IS NOT NULL)");
+                    "ck_ato_normativo_versao_completa",
+                    "(versao_invocada_id IS NULL AND versao_invocada_hash IS NULL) "
+                    + "OR (versao_invocada_id IS NOT NULL AND versao_invocada_hash IS NOT NULL)");
 
                 // Formato do hash da versão quando presente.
                 t.HasCheckConstraint(
-                    "ck_ato_normativo_versao_de_configuracao_hash",
-                    "versao_de_configuracao_hash IS NULL OR versao_de_configuracao_hash ~ '^[0-9a-f]{64}$'");
+                    "ck_ato_normativo_versao_hash",
+                    "versao_invocada_hash IS NULL OR versao_invocada_hash ~ '^[0-9a-f]{64}$'");
 
                 // Um Guid.Empty não referencia versão alguma — defesa contra insert cru.
                 t.HasCheckConstraint(
-                    "ck_ato_normativo_versao_de_configuracao_id_nao_zero",
-                    "versao_de_configuracao_id IS NULL OR versao_de_configuracao_id <> '00000000-0000-0000-0000-000000000000'");
+                    "ck_ato_normativo_versao_id_nao_zero",
+                    "versao_invocada_id IS NULL OR versao_invocada_id <> '00000000-0000-0000-0000-000000000000'");
 
                 // Ano é declarado pelo órgão; importação de acervo histórico admite
                 // anos antigos, então não há teto — apenas positividade.
@@ -106,16 +106,16 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
         // Versão de configuração que governou o ato, por valor {id, hash} (ADR-0075),
         // sem chave estrangeira cruzando módulo (ADR-0061). Owned opcional: ambas as
         // colunas são nulas juntas quando o ato não invoca configuração.
-        builder.OwnsOne(a => a.VersaoDeConfiguracao, versao =>
+        builder.OwnsOne(a => a.VersaoInvocada, versao =>
         {
             versao.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
-            versao.Property(v => v.Id).HasColumnName("versao_de_configuracao_id");
+            versao.Property(v => v.Id).HasColumnName("versao_invocada_id");
             versao.Property(v => v.Hash)
-                .HasColumnName("versao_de_configuracao_hash")
+                .HasColumnName("versao_invocada_hash")
                 .HasMaxLength(HashLength)
                 .IsFixedLength();
         });
-        builder.Navigation(a => a.VersaoDeConfiguracao).IsRequired(false);
+        builder.Navigation(a => a.VersaoInvocada).IsRequired(false);
 
         builder.Property(a => a.AtoRetificadoId);
         builder.Property(a => a.MotivoRetificacao).HasMaxLength(MotivoRetificacaoMaxLength);

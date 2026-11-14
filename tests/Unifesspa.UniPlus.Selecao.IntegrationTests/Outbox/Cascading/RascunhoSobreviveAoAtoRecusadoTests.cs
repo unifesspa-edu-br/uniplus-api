@@ -91,9 +91,8 @@ public sealed class RascunhoSobreviveAoAtoRecusadoTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
 
-        // O outro teste prova que a recusa preserva o rascunho. Sem este, mover a exclusão para
-        // depois do flush poderia tê-la deixado num caminho que nunca executa, e a varredura de
-        // arquitetura continuaria verde: ela confere onde a chamada está escrita, não se roda.
+        // O outro teste prova que a recusa preserva o rascunho. Este prova que a remoção
+        // rastreada chega ao banco na mesma gravação do ato, e não fica esquecida no rastreador.
         await using AsyncServiceScope leituraScope = api.Services.CreateAsyncScope();
         UniPlusDbContext leitura = leituraScope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         bool sobrou = await leitura.RascunhosDePublicacao.AsNoTracking()

@@ -28,7 +28,7 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
     public static TheoryData<OperacaoQueCongela> Atos() =>
         [OperacaoQueCongela.Publicar, OperacaoQueCongela.Retificar, OperacaoQueCongela.FecharRetificacao];
 
-    [Theory(DisplayName = "A porta é chamada depois do ato do processo e antes da divulgação, e a gravação única vem depois dela")]
+    [Theory(DisplayName = "A porta é chamada depois do ato do processo e antes da divulgação, e a remoção do rascunho e a gravação única vêm depois dela")]
     [MemberData(nameof(Atos))]
     public async Task Sucesso_ChamaAPortaNaOrdemDaTransacao(OperacaoQueCongela operacao)
     {
@@ -43,12 +43,12 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
             _ = cenario.Servicos.Atos.AdicionarAsync(Arg.Any<AtoDoProcesso>(), Arg.Any<CancellationToken>());
             _ = cenario.Servicos.Registro.RegistrarAsync(Arg.Any<AtoNormativoPublicado>(), Arg.Any<CancellationToken>());
             _ = cenario.Servicos.Certames.ObterParaMutacaoAsync(cenario.Processo.Id, Arg.Any<CancellationToken>());
+            _ = cenario.Servicos.Rascunhos.RemoverDoProcessoAsync(cenario.Processo.Id, Arg.Any<CancellationToken>());
             _ = cenario.Servicos.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-            _ = cenario.Servicos.Rascunhos.ApagarDoProcessoAsync(cenario.Processo.Id, Arg.Any<CancellationToken>());
         });
     }
 
-    [Theory(DisplayName = "A porta recebe o ato da versão gravada, com o instante, a versão de configuração, o vínculo e a retificação")]
+    [Theory(DisplayName = "A porta recebe o ato da versão gravada, com o instante, a versão invocada, o vínculo e a retificação")]
     [MemberData(nameof(Atos))]
     public async Task Sucesso_EntregaAPortaOAtoDaVersao(OperacaoQueCongela operacao)
     {
@@ -58,7 +58,7 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
 
         entregue.AtoId.Should().Be(gravada.AtoCriadorId);
         entregue.PublicadoEm.Should().Be(gravada.VigenteAPartirDe);
-        entregue.VersaoDeConfiguracao.Should().Be(new VersaoDeConfiguracaoDoAto(gravada.Id, gravada.HashConfiguracao));
+        entregue.VersaoInvocada.Should().Be(new VersaoInvocadaDoAto(gravada.Id, gravada.HashConfiguracao));
         entregue.Vinculos.Should().ContainSingle().Which.Should().Be(
             new VinculoDoAtoPublicado(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, cenario.Processo.Id));
         (entregue.Retificacao is null).Should().Be(operacao == OperacaoQueCongela.Publicar);
@@ -78,7 +78,7 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
         return (gravada!, entregue!);
     }
 
-    [Theory(DisplayName = "A recusa da porta devolve a recusa nomeada, descarta o rastreado e não deixa evento nem apaga o rascunho")]
+    [Theory(DisplayName = "A recusa da porta devolve a recusa nomeada, descarta o rastreado e não deixa evento nem remove o rascunho")]
     [MemberData(nameof(Atos))]
     public async Task RecusaDaPorta_DescartaESemEvento(OperacaoQueCongela operacao)
     {
@@ -92,7 +92,7 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
         eventos.Should().BeEmpty();
         cenario.Servicos.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
         await cenario.Servicos.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        await cenario.Servicos.Rascunhos.DidNotReceive().ApagarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await cenario.Servicos.Rascunhos.DidNotReceive().RemoverDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Theory(DisplayName = "A recusa da porta vem antes da divulgação: o certame não é montado")]
@@ -122,7 +122,6 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
         resposta.Error.Should().Be(AtoJaRetificado);
         eventos.Should().BeEmpty();
         cenario.Servicos.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
-        await cenario.Servicos.Rascunhos.DidNotReceive().ApagarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Theory(DisplayName = "A exceção que nem a Seleção nem a porta reconhecem propaga ao Wolverine")]
@@ -136,7 +135,6 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
 
         await executar.Should().ThrowAsync<InvalidOperationException>();
         cenario.Servicos.Registro.Received(1).TraduzirConflitoDaGravacao(Arg.Any<InvalidOperationException>());
-        await cenario.Servicos.Rascunhos.DidNotReceive().ApagarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Theory(DisplayName = "O conflito da versão e o do identificador legível são da Seleção, e a porta nem é consultada")]

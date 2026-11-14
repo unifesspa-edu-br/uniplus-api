@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.UnitTests.Commands;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using NSubstitute;
@@ -17,10 +15,6 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 /// <summary>
 /// A montagem do ato recusa sem gravar nada e devolve o ato pronto para quem chama adicionar e salvar.
 /// </summary>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class MontagemDoAtoNormativoTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
@@ -108,7 +102,7 @@ public sealed class MontagemDoAtoNormativoTests
             Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "13", Tipo,
             congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto,
-            DataDoAto, HashValido, "Jairo Belchior", PublicadoEm, versaoDeConfiguracao: null);
+            DataDoAto, HashValido, "Jairo Belchior", PublicadoEm, versaoInvocada: null);
 
     private static RegistrarAtoNormativoCommand Comando() =>
         new(

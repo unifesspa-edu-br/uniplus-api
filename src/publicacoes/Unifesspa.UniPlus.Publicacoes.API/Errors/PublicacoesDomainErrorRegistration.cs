@@ -114,11 +114,11 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
                 "uniplus.publicacoes.ato_normativo.tipo_sem_versao_vigente",
                 "Não há versão vigente do tipo de ato na data da publicação")),
 
-        new(AtoNormativoErrorCodes.VersaoDeConfiguracaoIncompleta,
+        new(AtoNormativoErrorCodes.VersaoInvocadaIncompleta,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.ato_normativo.versao_de_configuracao_incompleta",
-                "A versão de configuração deve trazer o par (id, hash) completo ou nenhum dos dois")),
+                "uniplus.publicacoes.ato_normativo.versao_invocada_incompleta",
+                "A versão invocada deve trazer o par (id, hash) completo ou nenhum dos dois")),
 
         new(AtoNormativoErrorCodes.NaoEncontrado,
             new DomainErrorMapping(

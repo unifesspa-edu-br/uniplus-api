@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// Invariantes de domínio do ato normativo append-only: normalização, shape do
-/// hash do documento, positividade do ano, o par {id, hash} da versão de configuração e
+/// hash do documento, positividade do ano, o par {id, hash} da versão invocada e
 /// a simetria de shape do par de retificação (ADR-0103).
 /// </summary>
 [SuppressMessage(
@@ -40,7 +40,7 @@ public sealed class AtoNormativoTests
             documentoHash: HashValido,
             assinante: "  Jairo Belchior  ",
             publicadoEm: Registro,
-            versaoDeConfiguracao: null);
+            versaoInvocada: null);
 
         ato.Id.Should().NotBe(Guid.Empty);
         ato.Orgao.Should().Be("CEPS");
@@ -55,7 +55,7 @@ public sealed class AtoNormativoTests
         ato.DocumentoHash.Should().Be(HashValido);
         ato.Assinante.Should().Be("Jairo Belchior");
         ato.PublicadoEm.Should().Be(Registro);
-        ato.VersaoDeConfiguracao.Should().BeNull();
+        ato.VersaoInvocada.Should().BeNull();
         ato.AtoRetificadoId.Should().BeNull();
         ato.MotivoRetificacao.Should().BeNull();
     }
@@ -67,15 +67,15 @@ public sealed class AtoNormativoTests
         ato.Numero.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Guarda a versão de configuração por valor quando informada")]
-    public void Registrar_ComVersaoDeConfiguracao_Guarda()
+    [Fact(DisplayName = "Guarda a versão invocada por valor quando informada")]
+    public void Registrar_ComVersaoInvocada_Guarda()
     {
         ReferenciaVersaoConfiguracao versao = ReferenciaVersaoConfiguracao
             .Criar(Guid.CreateVersion7(), HashValido).Value!;
 
         AtoNormativo ato = Registrar(versao: versao);
 
-        ato.VersaoDeConfiguracao.Should().Be(versao);
+        ato.VersaoInvocada.Should().Be(versao);
     }
 
     [Theory(DisplayName = "Hash do documento fora do formato SHA-256 é recusado")]
@@ -218,7 +218,7 @@ public sealed class AtoNormativoTests
             documentoHash: documentoHash,
             assinante: assinante,
             publicadoEm: Registro,
-            versaoDeConfiguracao: versao,
+            versaoInvocada: versao,
             atoRetificadoId: atoRetificadoId,
             motivoRetificacao: motivoRetificacao,
             tipoNome: tipoNome);

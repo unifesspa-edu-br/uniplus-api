@@ -130,7 +130,7 @@ public sealed class FormaDasRecusasAoCongelarTests
         await cenario.Servicos.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "A unicidade violada no flush chega como erro único, sem eventos, e o rascunho não é apagado")]
+    [Fact(DisplayName = "A unicidade violada no flush chega como erro único, sem eventos, e o rastreamento com a remoção do rascunho é descartado")]
     public async Task UnicidadeNoFlush_ChegaComoErroUnico()
     {
         DependenciasDosHandlersQueCongelam publicacao = DependenciasDosHandlersQueCongelam.Para(NovoProcessoConforme());
@@ -142,7 +142,7 @@ public sealed class FormaDasRecusasAoCongelarTests
         resposta.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
         resposta.Error!.Code.Should().Be("VersaoConfiguracao.NumeroDuplicado");
         eventos.Should().BeEmpty();
-        await publicacao.Servicos.Rascunhos.DidNotReceive().ApagarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        publicacao.Servicos.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
     private static PublicarProcessoSeletivoCommand ComandoDePublicacao(ProcessoSeletivo processo) =>

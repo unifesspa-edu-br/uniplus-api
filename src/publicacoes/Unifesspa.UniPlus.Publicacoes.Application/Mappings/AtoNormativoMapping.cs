@@ -28,8 +28,8 @@ public static class AtoNormativoMapping
             ato.DocumentoHash,
             ato.Assinante,
             ato.PublicadoEm,
-            ato.VersaoDeConfiguracao?.Id,
-            ato.VersaoDeConfiguracao?.Hash,
+            ato.VersaoInvocada?.Id,
+            ato.VersaoInvocada?.Hash,
             ato.AtoRetificadoId,
             ato.MotivoRetificacao,
             [.. ato.Anexos

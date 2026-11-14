@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Host.IntegrationTests.Transacao;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -35,10 +33,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// conferida nos testes de cada uma.</para>
 /// </remarks>
 [Collection(MonolitoHostCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class OrdemDeTravasEntreModulosNoHostTests : IClassFixture<HostComHandlersDeTransacao>
 {
     private const string TravaDoRecursoSemEspera =

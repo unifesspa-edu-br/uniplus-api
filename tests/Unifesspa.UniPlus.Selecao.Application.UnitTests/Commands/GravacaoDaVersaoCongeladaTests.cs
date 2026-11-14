@@ -17,14 +17,14 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.Publicacao
 
 /// <summary>
 /// O que a gravação da versão congelada escreve, em que ordem, e o que faz quando a escrita é recusada: a versão e o
-/// ato nascem juntos, o rascunho só morre depois do flush que os gravou, e a recusa não apaga a transcrição do operador.
+/// ato nascem juntos, a remoção do rascunho entra no rastreador antes do único flush, e a recusa não deixa a transcrição do operador para trás.
 /// </summary>
 public sealed class GravacaoDaVersaoCongeladaTests
 {
     private const string IndiceDoNumeroDaVersao = "ux_versoes_configuracao_processo_numero";
 
-    [Fact(DisplayName = "No sucesso grava a versão e o ato, salva e só então apaga o rascunho, e devolve os eventos")]
-    public async Task Sucesso_GravaSalvaEApagaNessaOrdem()
+    [Fact(DisplayName = "No sucesso grava a versão e o ato, remove o rascunho no rastreador, salva uma vez e devolve os eventos")]
+    public async Task Sucesso_GravaRemoveORascunhoESalvaNessaOrdem()
     {
         Preparo preparo = await Preparo.NovoAsync();
 
@@ -37,8 +37,8 @@ public sealed class GravacaoDaVersaoCongeladaTests
             _ = preparo.Servicos.Repositorio.AdicionarVersaoConfiguracaoAsync(preparo.Versao, Arg.Any<CancellationToken>());
             _ = preparo.Servicos.Atos.AdicionarAsync(Arg.Any<AtoDoProcesso>(), Arg.Any<CancellationToken>());
             _ = preparo.Servicos.Certames.AdicionarAsync(Arg.Any<CertameDivulgado>(), Arg.Any<CancellationToken>());
+            _ = preparo.Servicos.Rascunhos.RemoverDoProcessoAsync(preparo.Processo.Id, Arg.Any<CancellationToken>());
             _ = preparo.Servicos.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-            _ = preparo.Servicos.Rascunhos.ApagarDoProcessoAsync(preparo.Processo.Id, Arg.Any<CancellationToken>());
         });
     }
 
@@ -58,8 +58,8 @@ public sealed class GravacaoDaVersaoCongeladaTests
         await preparo.Servicos.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "O identificador legível já divulgado recusa a publicação sem apagar o rascunho, e devolve só a recusa")]
-    public async Task IdentificadorLegivelEmUso_RecusaSemApagarORascunho()
+    [Fact(DisplayName = "O identificador legível já divulgado recusa a publicação e devolve só a recusa")]
+    public async Task IdentificadorLegivelEmUso_RecusaSemEventos()
     {
         Preparo preparo = await Preparo.NovoAsync();
         preparo.FalharNoFlushCom(ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade("ux_certames_divulgados_identificador_legivel"));
@@ -68,7 +68,6 @@ public sealed class GravacaoDaVersaoCongeladaTests
 
         resposta.Error!.Code.Should().Be("ProcessoSeletivo.IdentificadorLegivelEmUso");
         eventos.Should().BeEmpty();
-        await preparo.Servicos.Rascunhos.DidNotReceive().ApagarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "O ato gravado tem a identidade da versão, o processo e o documento do edital")]
@@ -112,8 +111,8 @@ public sealed class GravacaoDaVersaoCongeladaTests
         await preparo.Servicos.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "O flush que viola a unicidade do número da versão recusa sem apagar o rascunho")]
-    public async Task UnicidadeNoFlush_RecusaSemApagarORascunho()
+    [Fact(DisplayName = "O flush que viola a unicidade do número da versão recusa e devolve só a recusa")]
+    public async Task UnicidadeNoFlush_RecusaSemEventos()
     {
         Preparo preparo = await Preparo.NovoAsync();
         preparo.FalharNoFlushCom(ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade(IndiceDoNumeroDaVersao));
@@ -122,11 +121,10 @@ public sealed class GravacaoDaVersaoCongeladaTests
 
         resposta.Error!.Code.Should().Be("VersaoConfiguracao.NumeroDuplicado");
         eventos.Should().BeEmpty();
-        await preparo.Servicos.Rascunhos.DidNotReceive().ApagarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "A violação de outro índice único propaga e não apaga o rascunho")]
-    public async Task OutroIndiceUnico_PropagaSemApagarORascunho()
+    [Fact(DisplayName = "A violação de outro índice único propaga ao Wolverine")]
+    public async Task OutroIndiceUnico_Propaga()
     {
         Preparo preparo = await Preparo.NovoAsync();
         preparo.FalharNoFlushCom(ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade("ux_outro_indice"));
@@ -134,11 +132,10 @@ public sealed class GravacaoDaVersaoCongeladaTests
         Func<Task> gravar = () => preparo.GravarAsync();
 
         await gravar.Should().ThrowAsync<Exception>();
-        await preparo.Servicos.Rascunhos.DidNotReceive().ApagarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "A falha de banco que não é violação de unicidade propaga e não apaga o rascunho")]
-    public async Task FalhaDeBanco_PropagaSemApagarORascunho()
+    [Fact(DisplayName = "A falha de banco que não é violação de unicidade propaga ao Wolverine")]
+    public async Task FalhaDeBanco_Propaga()
     {
         Preparo preparo = await Preparo.NovoAsync();
         preparo.FalharNoFlushCom(new InvalidOperationException("Conexão perdida."));
@@ -146,7 +143,6 @@ public sealed class GravacaoDaVersaoCongeladaTests
         Func<Task> gravar = () => preparo.GravarAsync();
 
         await gravar.Should().ThrowAsync<InvalidOperationException>();
-        await preparo.Servicos.Rascunhos.DidNotReceive().ApagarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "No sucesso da publicação o rastreamento não é descartado")]
@@ -158,7 +154,7 @@ public sealed class GravacaoDaVersaoCongeladaTests
 
         resposta.IsSuccess.Should().BeTrue();
         publicacao.Servicos.UnitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
-        await publicacao.Servicos.Rascunhos.Received(1).ApagarDoProcessoAsync(publicacao.Processo.Id, Arg.Any<CancellationToken>());
+        await publicacao.Servicos.Rascunhos.Received(1).RemoverDoProcessoAsync(publicacao.Processo.Id, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A recusa de um portão descarta o rastreamento e não escreve nem apaga nada")]
@@ -170,7 +166,7 @@ public sealed class GravacaoDaVersaoCongeladaTests
 
         resposta.IsFailure.Should().BeTrue();
         cenario.Servicos.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
-        await cenario.Servicos.Rascunhos.DidNotReceive().ApagarDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await cenario.Servicos.Rascunhos.DidNotReceive().RemoverDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A falha de gravação depois da transição descarta o rastreamento")]
