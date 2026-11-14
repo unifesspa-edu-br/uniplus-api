@@ -51,7 +51,7 @@ public sealed class PreparacaoDoBancoIntegrationTests : IAsyncLifetime
 
         (await EscalarAsync(conexao, "SELECT count(*) FROM pg_extension WHERE extname = 'btree_gist'")).Should().Be(1);
         (await EscalarAsync(conexao, "SELECT count(*) FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace WHERE n.nspname = 'plataforma' AND p.proname = 'normalizar_para_comparacao'")).Should().Be(1);
-        (await EscalarAsync(conexao, "SELECT count(*) FROM pg_constraint WHERE conname = 'ex_tipo_ato_publicado_codigo_vigencia'")).Should().Be(1);
+        (await EscalarAsync(conexao, "SELECT count(*) FROM pg_constraint WHERE conname = 'ex_tipos_de_ato_publicado_codigo_vigencia'")).Should().Be(1);
         (await EscalarAsync(conexao, "SELECT count(*) FROM plataforma.\"__EFMigrationsHistory\"")).Should().Be(1);
     }
 
@@ -92,7 +92,7 @@ public sealed class PreparacaoDoBancoIntegrationTests : IAsyncLifetime
         doBanco.Should().Be(NormalizacaoTextual.Normalizar(texto));
     }
 
-    private static async Task SubirAsync(string conexao)
+    internal static async Task SubirAsync(string conexao)
     {
         DbContextOptions<MonolitoDbContext> opcoes = new DbContextOptionsBuilder<MonolitoDbContext>()
             .UseNpgsql(conexao, npgsql => npgsql.MigrationsHistoryTable("__EFMigrationsHistory", UniPlusDbContext.EsquemaDaPlataforma))

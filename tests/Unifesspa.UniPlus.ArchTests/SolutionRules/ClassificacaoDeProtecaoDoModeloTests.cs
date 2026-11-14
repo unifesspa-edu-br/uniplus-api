@@ -1,14 +1,10 @@
 namespace Unifesspa.UniPlus.ArchTests.SolutionRules;
 
 using System.IO;
-using System.Reflection;
 
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 
 using Unifesspa.UniPlus.ArchTests.TestSupport;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
@@ -69,7 +65,7 @@ public sealed class ClassificacaoDeProtecaoDoModeloTests
     {
         string[] semAssembly =
         [
-            .. ProjetosDeInfraestrutura()
+            .. ModelosDaSolucao.ProjetosDeInfraestrutura()
                 .Select(Path.GetFileNameWithoutExtension)
                 .Where(nome => !File.Exists(Path.Join(AppContext.BaseDirectory, nome + ".dll")))
                 .Order(StringComparer.Ordinal)!,
@@ -83,11 +79,11 @@ public sealed class ClassificacaoDeProtecaoDoModeloTests
     [Fact(DisplayName = "Todo DbContext concreto da solução tem IDesignTimeDbContextFactory")]
     public void TodoDbContextTemFactory()
     {
-        HashSet<Type> comFactory = [.. FabricasDeContexto().Select(f => f.Contexto)];
+        HashSet<Type> comFactory = [.. ModelosDaSolucao.FabricasDeContexto().Select(f => f.Contexto)];
 
         string[] semFactory =
         [
-            .. AssembliesDeInfraestrutura()
+            .. ModelosDaSolucao.AssembliesDeInfraestrutura()
                 .SelectMany(a => a.GetTypes())
                 .Where(t => t is { IsAbstract: false } && t.IsSubclassOf(typeof(DbContext)) && !comFactory.Contains(t))
                 .Select(t => t.FullName!)
@@ -98,39 +94,11 @@ public sealed class ClassificacaoDeProtecaoDoModeloTests
             "o DbContext sem IDesignTimeDbContextFactory ficaria fora da conferência de classificação: " + string.Join(", ", semFactory));
     }
 
-    // Os DbContexts vivem na infraestrutura de cada módulo e no projeto de persistência que compõe o contexto único.
-    private static readonly string[] PadroesDeProjetoComContexto = ["Unifesspa.UniPlus.*.Infrastructure", "Unifesspa.UniPlus.*.Persistencia"];
-
-    private static string[] ProjetosDeInfraestrutura() =>
-        [.. PadroesDeProjetoComContexto.SelectMany(padrao =>
-            Directory.EnumerateFiles(Path.Join(SolutionRootLocator.Locate(), "src"), padrao + ".csproj", SearchOption.AllDirectories))];
-
-    private static IEnumerable<Assembly> AssembliesDeInfraestrutura() =>
-        PadroesDeProjetoComContexto.SelectMany(padrao => Directory.GetFiles(AppContext.BaseDirectory, padrao + ".dll")).Select(Assembly.LoadFrom);
-
-    private static IEnumerable<(Type Fabrica, Type Contexto, MethodInfo Metodo)> FabricasDeContexto() =>
-        AssembliesDeInfraestrutura()
-            .SelectMany(a => a.GetTypes())
-            .Where(t => t is { IsAbstract: false, IsInterface: false })
-            .SelectMany(t => t.GetInterfaces()
-                .Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IDesignTimeDbContextFactory<>))
-                .Select(i => (Fabrica: t, Contexto: i.GetGenericArguments()[0], Metodo: i.GetMethod(nameof(IDesignTimeDbContextFactory<DbContext>.CreateDbContext))!)));
-
     // Uma única análise por modelo: a conferência e o retrato partem do mesmo resultado.
     private static List<(string Contexto, IReadOnlyList<string> Violacoes, string Retrato)> Analisar() =>
     [
-        .. FabricasDeContexto()
-            .OrderBy(f => f.Contexto.Name, StringComparer.Ordinal)
-            .Select(f => Modelo(f.Fabrica, f.Contexto, f.Metodo))
+        .. ModelosDaSolucao.Modelos()
             .Select(m => (m.Contexto, Conferencia: ConferenciaDaClassificacaoDoModelo.Conferir(m.Modelo)))
             .Select(m => (m.Contexto, m.Conferencia.Violacoes, m.Conferencia.Retrato)),
     ];
-
-    // O modelo de design-time guarda todas as anotações do modelo; o de runtime é otimizado e pode descartá-las.
-    private static (string Contexto, IModel Modelo) Modelo(Type fabrica, Type tipoDoContexto, MethodInfo criar)
-    {
-        object instancia = Activator.CreateInstance(fabrica)!;
-        using DbContext contexto = (DbContext)criar.Invoke(instancia, [Array.Empty<string>()])!;
-        return (tipoDoContexto.Name, contexto.GetService<IDesignTimeModel>().Model);
-    }
 }
