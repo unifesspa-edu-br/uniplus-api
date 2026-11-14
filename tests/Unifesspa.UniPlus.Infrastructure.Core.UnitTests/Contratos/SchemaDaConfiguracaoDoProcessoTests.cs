@@ -110,6 +110,8 @@ public sealed class SchemaDaConfiguracaoDoProcessoTests
     [InlineData("/identificacao/unidadeAdministradoraCodigo")]
     [InlineData("/cronograma/fases/0/faseCanonicaCodigo")]
     [InlineData("/cronograma/fases/0/unidadeResponsavelCodigo")]
+    [InlineData("/etapas/0/tipoEtapaCodigo")]
+    [InlineData("/etapas/0/bancas/0/tipoBancaCodigo")]
     public void IdentificadorInterno_NoLugarDoCodigo_Recusa(string caminho)
     {
         ArgumentNullException.ThrowIfNull(caminho);
@@ -132,11 +134,83 @@ public sealed class SchemaDaConfiguracaoDoProcessoTests
     public void FaseConcluinte_ReferenciaPelaChaveLocal()
     {
         JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
-        JsonNode fase = documento["cronograma"]!["fases"]![1]!;
+        JsonNode fase = documento["cronograma"]!["fases"]![2]!;
 
-        fase["faseConcluinteChave"]!.GetValue<string>().Should().Be(documento["cronograma"]!["fases"]![2]!["chave"]!.GetValue<string>());
+        fase["faseConcluinteChave"]!.GetValue<string>().Should().Be(documento["cronograma"]!["fases"]![3]!["chave"]!.GetValue<string>());
         fase["faseConcluinteChave"] = "Fase Final";
-        CaminhosComErro(documento).Should().Contain("/cronograma/fases/1/faseConcluinteChave");
+        CaminhosComErro(documento).Should().Contain("/cronograma/fases/2/faseConcluinteChave");
+    }
+
+    [Fact(DisplayName = "A referência temporal dos fatos fica na coleta e cita a fase pela chave local")]
+    public void ReferenciaTemporalDosFatos_FicaNaColetaECitaAFasePelaChave()
+    {
+        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
+        JsonNode referencia = documento["coleta"]!["referenciaTemporalFatos"]!;
+        referencia["tipo"] = "FIM_FASE";
+        referencia["faseChave"] = "inscricao";
+        CaminhosComErro(documento).Should().BeEmpty();
+
+        referencia["faseChave"] = "Fase Inscrição";
+        CaminhosComErro(documento).Should().Contain("/coleta/referenciaTemporalFatos/faseChave");
+    }
+
+    [Fact(DisplayName = "A referência temporal dos fatos na identificação é recusada")]
+    public void ReferenciaTemporalDosFatos_NaIdentificacao_Recusa()
+    {
+        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
+        documento["identificacao"]!["referenciaTemporalFatos"] = new JsonObject { ["tipo"] = "FIM_INSCRICAO" };
+
+        CaminhosComErro(documento).Should().Contain("/identificacao/referenciaTemporalFatos");
+    }
+
+    [Fact(DisplayName = "A etapa só com a chave valida, como num rascunho")]
+    public void EtapaSoComAChave_Valida()
+    {
+        JsonNode rascunho = Documento("""{ "formato": "uniplus.selecao.configuracao", "versaoFormato": 1, "etapas": [ { "chave": "prova-objetiva" } ] }""");
+
+        CaminhosComErro(rascunho).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A etapa sem chave é recusada com o caminho da etapa")]
+    public void EtapaSemChave_ApontaOCaminho()
+    {
+        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
+        documento["etapas"]!.AsArray()[0]!.AsObject().Remove("chave");
+
+        CaminhosComErro(documento).Should().Contain("/etapas/0");
+    }
+
+    [Fact(DisplayName = "O item de avaliação sem chave é recusado e a etapa cita a fase pela chave local")]
+    public void ItemSemChave_EFaseDaEtapaPelaChave()
+    {
+        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
+        JsonNode etapa = documento["etapas"]![0]!;
+        etapa["faseChave"]!.GetValue<string>().Should().Be(documento["cronograma"]!["fases"]![1]!["chave"]!.GetValue<string>());
+        etapa["itensDeAvaliacao"]![0]!.AsObject().Remove("chave");
+        etapa["faseChave"] = "Fase Avaliação";
+
+        CaminhosComErro(documento).Should().Contain(["/etapas/0/itensDeAvaliacao/0", "/etapas/0/faseChave"]);
+    }
+
+    [Fact(DisplayName = "A fração do nível da escala de atendimento acima de 1 é recusada")]
+    public void FracaoDoNivelAcimaDeUm_ApontaOCaminho()
+    {
+        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
+        documento["etapas"]![0]!["escalaDeAtendimento"]![0]!["fracao"] = 1.5;
+
+        CaminhosComErro(documento).Should().Contain("/etapas/0/escalaDeAtendimento/0/fracao");
+    }
+
+    [Fact(DisplayName = "O recurso da etapa aceita a âncora de ciência individual e recusa o que não é âncora")]
+    public void RecursoDaEtapa_AncoraDeCienciaIndividual()
+    {
+        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
+        JsonNode recurso = documento["etapas"]![0]!["recursos"]![0]!;
+        recurso["ancora"] = "cienciaIndividual";
+        CaminhosComErro(documento).Should().BeEmpty();
+
+        recurso["ancora"] = "nenhuma";
+        CaminhosComErro(documento).Should().Contain("/etapas/0/recursos/0/ancora");
     }
 
     [Fact(DisplayName = "Toda propriedade e toda definição do esquema tem título e descrição")]

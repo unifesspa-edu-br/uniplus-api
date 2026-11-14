@@ -5,7 +5,10 @@
   "description": "Formato portável da configuração de um processo seletivo, na versão 1. Serve ao rascunho salvo pela tela e à importação e exportação de um processo, inclusive o preparado fora do sistema. O esquema descreve só a forma: tipo, formato, enumerações, limites de tamanho e o que é estruturalmente obrigatório. As regras de negócio (o que torna a configuração publicável) são do domínio e não se repetem aqui; por isso um rascunho incompleto é válido. Campo ainda não preenchido é campo ausente, nunca texto no lugar de número ou de data. Catálogos e unidades são citados pelo código estável, nunca pelo identificador interno do banco. As referências entre partes do documento usam a chave local da parte referenciada, definida no próprio documento e única nele.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["formato", "versaoFormato"],
+  "required": [
+    "formato",
+    "versaoFormato"
+  ],
   "properties": {
     "formato": {
       "title": "Formato do documento",
@@ -17,10 +20,29 @@
       "description": "Versão principal do formato. Neste esquema é sempre 1. Mudança incompatível cria a versão 2 em outro esquema.",
       "const": 1
     },
-    "identificacao": { "$ref": "#/$defs/identificacao" },
-    "cronograma": { "$ref": "#/$defs/cronograma" },
-    "taxaDeInscricao": { "$ref": "#/$defs/taxaDeInscricao" },
-    "divulgacao": { "$ref": "#/$defs/divulgacao" }
+    "identificacao": {
+      "$ref": "#/$defs/identificacao"
+    },
+    "coleta": {
+      "$ref": "#/$defs/coleta"
+    },
+    "cronograma": {
+      "$ref": "#/$defs/cronograma"
+    },
+    "etapas": {
+      "title": "Etapas",
+      "description": "Etapas de avaliação do processo. A chave de cada etapa é única no documento e é a que as outras partes usam para citá-la. Lista vazia ou ausente é válida: há processos sem prova.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/etapa"
+      }
+    },
+    "taxaDeInscricao": {
+      "$ref": "#/$defs/taxaDeInscricao"
+    },
+    "divulgacao": {
+      "$ref": "#/$defs/divulgacao"
+    }
   },
   "$defs": {
     "chave": {
@@ -38,7 +60,9 @@
       "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
       "minLength": 1,
       "maxLength": 128,
-      "not": { "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$" }
+      "not": {
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+      }
     },
     "instante": {
       "title": "Instante",
@@ -73,7 +97,10 @@
         "origemCandidatos": {
           "title": "Origem dos candidatos",
           "description": "Como os candidatos chegam ao processo: inscrevendo-se pelo sistema (inscricaoPropria) ou por importação de uma lista externa (importacaoExterna).",
-          "enum": ["inscricaoPropria", "importacaoExterna"]
+          "enum": [
+            "inscricaoPropria",
+            "importacaoExterna"
+          ]
         },
         "localidadeCodigoIbge": {
           "title": "Localidade do processo",
@@ -110,30 +137,6 @@
               "maxLength": 16
             }
           }
-        },
-        "referenciaTemporalFatos": {
-          "title": "Referência temporal dos fatos",
-          "description": "Instante a partir do qual se avaliam os fatos que dependem de data, como a idade do candidato.",
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "tipo": {
-              "title": "Tipo de referência",
-              "description": "Âncora da referência: fim da inscrição, início ou fim de uma fase, ou uma data específica.",
-              "enum": ["FIM_INSCRICAO", "INICIO_FASE", "FIM_FASE", "DATA_ESPECIFICA"]
-            },
-            "data": {
-              "title": "Data específica",
-              "description": "Data da referência, no formato AAAA-MM-DD. Usada quando o tipo é DATA_ESPECIFICA.",
-              "type": "string",
-              "format": "date"
-            },
-            "faseChave": {
-              "title": "Fase de referência",
-              "description": "Chave local da fase do cronograma que ancora a referência. Usada quando o tipo é INICIO_FASE ou FIM_FASE.",
-              "$ref": "#/$defs/chave"
-            }
-          }
         }
       }
     },
@@ -147,7 +150,9 @@
           "title": "Fases",
           "description": "Fases do cronograma. A chave de cada fase é única no documento.",
           "type": "array",
-          "items": { "$ref": "#/$defs/fase" }
+          "items": {
+            "$ref": "#/$defs/fase"
+          }
         }
       }
     },
@@ -156,7 +161,9 @@
       "description": "Uma fase do processo. Só a chave local é obrigatória: as datas, a unidade e o resto podem faltar num rascunho.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["chave"],
+      "required": [
+        "chave"
+      ],
       "properties": {
         "chave": {
           "title": "Chave da fase",
@@ -193,7 +200,9 @@
           "title": "Atos que a fase publica",
           "description": "Tipos de ato publicados pela fase, como o resultado preliminar. O par tipo de ato e papel não se repete na fase.",
           "type": "array",
-          "items": { "$ref": "#/$defs/produto" }
+          "items": {
+            "$ref": "#/$defs/produto"
+          }
         },
         "faseConcluinteChave": {
           "title": "Fase que conclui o ciclo",
@@ -209,7 +218,9 @@
           "title": "Bancas requeridas",
           "description": "Bancas que a fase exige. Cada uma tem uma chave local, porque o mesmo tipo de banca pode aparecer mais de uma vez com recortes diferentes.",
           "type": "array",
-          "items": { "$ref": "#/$defs/bancaRequerida" }
+          "items": {
+            "$ref": "#/$defs/bancaRequerida"
+          }
         },
         "regraRecurso": {
           "title": "Regra de recurso",
@@ -235,17 +246,24 @@
         "papel": {
           "title": "Papel do ato",
           "description": "PRELIMINAR para o resultado que admite recurso, DEFINITIVO para o resultado final. Ausente quando o ato não é um resultado.",
-          "enum": ["PRELIMINAR", "DEFINITIVO"]
+          "enum": [
+            "PRELIMINAR",
+            "DEFINITIVO"
+          ]
         }
       },
-      "required": ["atoCodigo"]
+      "required": [
+        "atoCodigo"
+      ]
     },
     "bancaRequerida": {
       "title": "Banca requerida",
       "description": "Uma banca que a fase exige: o tipo dela, o recorte de competência e a regra de deliberação.",
       "type": "object",
       "additionalProperties": false,
-      "required": ["chave"],
+      "required": [
+        "chave"
+      ],
       "properties": {
         "chave": {
           "title": "Chave da banca",
@@ -271,7 +289,9 @@
             "maxLength": 50
           }
         },
-        "regraDeDeliberacao": { "$ref": "#/$defs/regraDeDeliberacao" }
+        "regraDeDeliberacao": {
+          "$ref": "#/$defs/regraDeDeliberacao"
+        }
       }
     },
     "regraDeDeliberacao": {
@@ -283,7 +303,10 @@
         "modo": {
           "title": "Modo de deliberação",
           "description": "Votação do colegiado (colegiadaComVotacao) ou ato individual (atoIndividual).",
-          "enum": ["colegiadaComVotacao", "atoIndividual"]
+          "enum": [
+            "colegiadaComVotacao",
+            "atoIndividual"
+          ]
         },
         "integrantes": {
           "title": "Integrantes titulares",
@@ -306,22 +329,36 @@
         "criterio": {
           "title": "Critério de votação",
           "description": "Maioria simples, maioria absoluta ou unanimidade. Só na votação do colegiado.",
-          "enum": ["maioriaSimples", "maioriaAbsoluta", "unanimidade"]
+          "enum": [
+            "maioriaSimples",
+            "maioriaAbsoluta",
+            "unanimidade"
+          ]
         },
         "desempate": {
           "title": "Desempate",
           "description": "Como se desempata nos critérios de maioria: voto da presidência ou nova votação.",
-          "enum": ["votoDaPresidencia", "novaVotacao"]
+          "enum": [
+            "votoDaPresidencia",
+            "novaVotacao"
+          ]
         },
         "encerramento": {
           "title": "Encerramento da votação",
           "description": "Quando a votação termina: com o voto de todos os titulares ou quando a presidência vê o quórum atingido.",
-          "enum": ["todosOsTitulares", "presidenciaNoQuorum"]
+          "enum": [
+            "todosOsTitulares",
+            "presidenciaNoQuorum"
+          ]
         },
         "semUnanimidade": {
           "title": "Resultado sem unanimidade",
           "description": "O que vale quando a unanimidade é o critério e ela não ocorre: favorável, desfavorável ou nova votação.",
-          "enum": ["favoravel", "desfavoravel", "novaVotacao"]
+          "enum": [
+            "favoravel",
+            "desfavoravel",
+            "novaVotacao"
+          ]
         }
       }
     },
@@ -329,69 +366,12 @@
       "title": "Regra de recurso",
       "description": "Regra do catálogo que define o prazo de interposição do recurso, a âncora dele e o efeito suspensivo.",
       "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "regraCodigo": {
-          "title": "Código da regra",
-          "description": "Código da regra de prazo de recurso no catálogo de regras.",
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "regraVersao": {
-          "title": "Versão da regra",
-          "description": "Versão da regra de prazo de recurso.",
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 16
-        },
-        "prazoValor": {
-          "title": "Prazo de interposição",
-          "description": "Quantidade de unidades do prazo para recorrer, com até quatro casas decimais.",
-          "type": "number",
-          "multipleOf": 0.0001
-        },
-        "prazoUnidade": {
-          "title": "Unidade do prazo",
-          "description": "Unidade do prazo de interposição: horas ou dias úteis (diasUteis).",
-          "enum": ["horas", "diasUteis"]
-        },
-        "atoAncoraCodigo": {
-          "title": "Ato âncora do prazo",
-          "description": "Código do tipo de ato, entre os atos preliminares da própria fase, a partir de cujo instante o prazo corre.",
-          "type": "string",
-          "pattern": "^[A-Z]+(_[A-Z]+)*$",
-          "minLength": 1,
-          "maxLength": 60
-        },
-        "suspensividadePrimeiraInstanciaValor": {
-          "title": "Efeito suspensivo na primeira instância, quantidade",
-          "description": "Quantidade de unidades do efeito suspensivo na primeira instância, com até quatro casas decimais.",
-          "type": "number",
-          "multipleOf": 0.0001
-        },
-        "suspensividadePrimeiraInstanciaUnidade": {
-          "title": "Efeito suspensivo na primeira instância, unidade",
-          "description": "Unidade do efeito suspensivo na primeira instância: horas, dias ou dias úteis (diasUteis).",
-          "enum": ["horas", "dias", "diasUteis"]
-        },
-        "admiteInstanciaSuperior": {
-          "title": "Admite instância superior",
-          "description": "Se cabe recurso à instância superior.",
-          "type": "boolean"
-        },
-        "suspensividadeSegundaInstanciaValor": {
-          "title": "Efeito suspensivo na instância superior, quantidade",
-          "description": "Quantidade de unidades do efeito suspensivo na instância superior, com até quatro casas decimais.",
-          "type": "number",
-          "multipleOf": 0.0001
-        },
-        "suspensividadeSegundaInstanciaUnidade": {
-          "title": "Efeito suspensivo na instância superior, unidade",
-          "description": "Unidade do efeito suspensivo na instância superior: horas, dias ou dias úteis (diasUteis).",
-          "enum": ["horas", "dias", "diasUteis"]
+      "allOf": [
+        {
+          "$ref": "#/$defs/propriedadesDoRecurso"
         }
-      }
+      ],
+      "unevaluatedProperties": false
     },
     "taxaDeInscricao": {
       "title": "Taxa de inscrição e isenção",
@@ -417,7 +397,13 @@
           "description": "Fundamentos de isenção da taxa que o processo reconhece. Não se repetem.",
           "type": "array",
           "uniqueItems": true,
-          "items": { "enum": ["CADASTRO_UNICO", "DOACAO_MEDULA_OSSEA", "CARENCIA_SOCIOECONOMICA"] }
+          "items": {
+            "enum": [
+              "CADASTRO_UNICO",
+              "DOACAO_MEDULA_OSSEA",
+              "CARENCIA_SOCIOECONOMICA"
+            ]
+          }
         }
       }
     },
@@ -432,13 +418,364 @@
           "description": "Dados do candidato divulgados nas listas públicas: numero_inscricao, nome_abreviado ou nome. Não se repetem.",
           "type": "array",
           "uniqueItems": true,
-          "items": { "enum": ["numero_inscricao", "nome_abreviado", "nome"] }
+          "items": {
+            "enum": [
+              "numero_inscricao",
+              "nome_abreviado",
+              "nome"
+            ]
+          }
         },
         "justificativa": {
           "title": "Justificativa",
           "description": "Motivo de divulgar o nome completo, texto livre de até 1000 caracteres.",
           "type": "string",
           "maxLength": 1000
+        }
+      }
+    },
+    "coleta": {
+      "title": "Coleta de fatos",
+      "description": "Regras de coleta dos fatos do candidato. Os formulários de coleta entram nesta seção numa versão posterior do formato.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "referenciaTemporalFatos": {
+          "title": "Referência temporal dos fatos",
+          "description": "Instante a partir do qual se avaliam os fatos que dependem de data, como a idade do candidato. A fase citada é a do cronograma deste documento.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "tipo": {
+              "title": "Tipo de referência",
+              "description": "Âncora da referência: fim da inscrição, início ou fim de uma fase, ou uma data específica.",
+              "enum": [
+                "FIM_INSCRICAO",
+                "INICIO_FASE",
+                "FIM_FASE",
+                "DATA_ESPECIFICA"
+              ]
+            },
+            "data": {
+              "title": "Data específica",
+              "description": "Data da referência, no formato AAAA-MM-DD. Usada quando o tipo é DATA_ESPECIFICA.",
+              "type": "string",
+              "format": "date"
+            },
+            "faseChave": {
+              "title": "Fase de referência",
+              "description": "Chave local da fase do cronograma que ancora a referência. Usada quando o tipo é INICIO_FASE ou FIM_FASE.",
+              "$ref": "#/$defs/chave"
+            }
+          }
+        }
+      }
+    },
+    "propriedadesDoRecurso": {
+      "title": "Propriedades do recurso",
+      "description": "Prazo de interposição, âncora e efeito suspensivo do recurso, comuns à fase e à etapa.",
+      "type": "object",
+      "properties": {
+        "regraCodigo": {
+          "title": "Código da regra",
+          "description": "Código da regra de prazo de recurso no catálogo de regras.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "regraVersao": {
+          "title": "Versão da regra",
+          "description": "Versão da regra de prazo de recurso.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "prazoValor": {
+          "title": "Prazo de interposição",
+          "description": "Quantidade de unidades do prazo para recorrer, com até quatro casas decimais.",
+          "type": "number",
+          "multipleOf": 0.0001
+        },
+        "prazoUnidade": {
+          "title": "Unidade do prazo",
+          "description": "Unidade do prazo de interposição: horas ou dias úteis (diasUteis).",
+          "enum": [
+            "horas",
+            "diasUteis"
+          ]
+        },
+        "atoAncoraCodigo": {
+          "title": "Ato âncora do prazo",
+          "description": "Código do tipo de ato, entre os atos preliminares da própria fase, a partir de cujo instante o prazo corre.",
+          "type": "string",
+          "pattern": "^[A-Z]+(_[A-Z]+)*$",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "suspensividadePrimeiraInstanciaValor": {
+          "title": "Efeito suspensivo na primeira instância, quantidade",
+          "description": "Quantidade de unidades do efeito suspensivo na primeira instância, com até quatro casas decimais.",
+          "type": "number",
+          "multipleOf": 0.0001
+        },
+        "suspensividadePrimeiraInstanciaUnidade": {
+          "title": "Efeito suspensivo na primeira instância, unidade",
+          "description": "Unidade do efeito suspensivo na primeira instância: horas, dias ou dias úteis (diasUteis).",
+          "enum": [
+            "horas",
+            "dias",
+            "diasUteis"
+          ]
+        },
+        "admiteInstanciaSuperior": {
+          "title": "Admite instância superior",
+          "description": "Se cabe recurso à instância superior.",
+          "type": "boolean"
+        },
+        "suspensividadeSegundaInstanciaValor": {
+          "title": "Efeito suspensivo na instância superior, quantidade",
+          "description": "Quantidade de unidades do efeito suspensivo na instância superior, com até quatro casas decimais.",
+          "type": "number",
+          "multipleOf": 0.0001
+        },
+        "suspensividadeSegundaInstanciaUnidade": {
+          "title": "Efeito suspensivo na instância superior, unidade",
+          "description": "Unidade do efeito suspensivo na instância superior: horas, dias ou dias úteis (diasUteis).",
+          "enum": [
+            "horas",
+            "dias",
+            "diasUteis"
+          ]
+        }
+      }
+    },
+    "recursoDaEtapa": {
+      "title": "Recurso da etapa",
+      "description": "Recurso que a etapa admite: a âncora do prazo e as mesmas propriedades de prazo e efeito suspensivo do recurso da fase. Com a âncora atoPublicado, o ato âncora é um ato preliminar da própria etapa.",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "#/$defs/propriedadesDoRecurso"
+        }
+      ],
+      "properties": {
+        "ancora": {
+          "title": "Âncora do prazo",
+          "description": "De onde o prazo corre: do ato publicado (atoPublicado) ou da ciência individual do candidato (cienciaIndividual).",
+          "enum": [
+            "atoPublicado",
+            "cienciaIndividual"
+          ]
+        }
+      },
+      "unevaluatedProperties": false
+    },
+    "etapa": {
+      "title": "Etapa de avaliação",
+      "description": "Uma etapa de avaliação do processo. Só a chave local é obrigatória: o resto pode faltar num rascunho.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chave"
+      ],
+      "properties": {
+        "chave": {
+          "title": "Chave da etapa",
+          "description": "Chave local da etapa, única no documento. Desempate, eliminação e exigências a usam para citar esta etapa.",
+          "$ref": "#/$defs/chave"
+        },
+        "nome": {
+          "title": "Nome da etapa",
+          "description": "Nome da etapa como aparece para as pessoas.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "carater": {
+          "title": "Caráter da etapa",
+          "description": "Se a etapa classifica (classificatoria), elimina (eliminatoria) ou faz as duas coisas (ambas).",
+          "enum": [
+            "classificatoria",
+            "eliminatoria",
+            "ambas"
+          ]
+        },
+        "tipoEtapaCodigo": {
+          "title": "Tipo de etapa",
+          "description": "Código do tipo de etapa no catálogo de tipos de etapa.",
+          "$ref": "#/$defs/codigoDeCatalogo"
+        },
+        "peso": {
+          "title": "Peso",
+          "description": "Peso da etapa na nota final, com até quatro casas decimais.",
+          "type": "number",
+          "multipleOf": 0.0001
+        },
+        "notaMinima": {
+          "title": "Nota mínima",
+          "description": "Nota mínima para não ser eliminado, com até quatro casas decimais.",
+          "type": "number",
+          "multipleOf": 0.0001
+        },
+        "notaMaxima": {
+          "title": "Nota máxima",
+          "description": "Nota máxima da etapa, com até quatro casas decimais.",
+          "type": "number",
+          "multipleOf": 0.0001
+        },
+        "passoDoLancamento": {
+          "title": "Passo do lançamento",
+          "description": "Menor variação aceita no lançamento da nota, com até quatro casas decimais.",
+          "type": "number",
+          "multipleOf": 0.0001
+        },
+        "formaDeAvaliacao": {
+          "title": "Forma de avaliação",
+          "description": "OBJETIVA para correção automática ou HUMANA para correção por avaliadores.",
+          "enum": [
+            "OBJETIVA",
+            "HUMANA"
+          ]
+        },
+        "regraConsolidacao": {
+          "title": "Regra de consolidação",
+          "description": "Regra do catálogo que consolida as correções na avaliação humana.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "codigo": {
+              "title": "Código da regra",
+              "description": "Código da regra de consolidação no catálogo de regras.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            },
+            "versao": {
+              "title": "Versão da regra",
+              "description": "Versão da regra de consolidação.",
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16
+            }
+          }
+        },
+        "itensDeAvaliacao": {
+          "title": "Itens de avaliação",
+          "description": "Itens que compõem a nota da etapa. Cada item tem uma chave local, que o preserva quando o rótulo muda.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/itemDeAvaliacao"
+          }
+        },
+        "escalaDeAtendimento": {
+          "title": "Escala de atendimento",
+          "description": "Níveis de atendimento que o avaliador usa para dar a fração da pontuação de cada item.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nivelDeAtendimento"
+          }
+        },
+        "ordem": {
+          "title": "Ordem",
+          "description": "Posição de apresentação da etapa, a partir de 1.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "faseChave": {
+          "title": "Fase da etapa",
+          "description": "Chave local da fase do cronograma que contém a etapa.",
+          "$ref": "#/$defs/chave"
+        },
+        "inicio": {
+          "title": "Início da etapa",
+          "description": "Instante em que a etapa começa, em UTC. Ausente quando ela segue a janela da fase.",
+          "$ref": "#/$defs/instante"
+        },
+        "fim": {
+          "title": "Fim da etapa",
+          "description": "Instante em que a etapa termina, em UTC. Ausente quando ela segue a janela da fase.",
+          "$ref": "#/$defs/instante"
+        },
+        "emiteParecerIndividual": {
+          "title": "Emite parecer individual",
+          "description": "Se a etapa emite parecer individual ao candidato, quando ela publica resultado.",
+          "type": "boolean"
+        },
+        "produtos": {
+          "title": "Atos que a etapa publica",
+          "description": "Tipos de ato publicados pela etapa. O par tipo de ato e papel não se repete na etapa.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/produto"
+          }
+        },
+        "bancas": {
+          "title": "Bancas da etapa",
+          "description": "Bancas que a etapa exige. Cada uma tem uma chave local.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/bancaRequerida"
+          }
+        },
+        "recursos": {
+          "title": "Recursos da etapa",
+          "description": "Recursos que a etapa admite.",
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/recursoDaEtapa"
+          }
+        }
+      }
+    },
+    "itemDeAvaliacao": {
+      "title": "Item de avaliação",
+      "description": "Um item que compõe a nota de uma etapa.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chave"
+      ],
+      "properties": {
+        "chave": {
+          "title": "Chave do item",
+          "description": "Chave local do item, única na etapa.",
+          "$ref": "#/$defs/chave"
+        },
+        "rotulo": {
+          "title": "Rótulo",
+          "description": "Nome do item como aparece para o avaliador.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "pontuacaoMaxima": {
+          "title": "Pontuação máxima",
+          "description": "Pontuação máxima do item, com até quatro casas decimais.",
+          "type": "number",
+          "multipleOf": 0.0001
+        }
+      }
+    },
+    "nivelDeAtendimento": {
+      "title": "Nível de atendimento",
+      "description": "Um nível da escala de atendimento: o rótulo e a fração da pontuação do item que ele vale.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "rotulo": {
+          "title": "Rótulo do nível",
+          "description": "Nome do nível, único na escala.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "fracao": {
+          "title": "Fração",
+          "description": "Fração da pontuação do item que o nível vale, de 0 a 1, com até quatro casas decimais.",
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1,
+          "multipleOf": 0.0001
         }
       }
     }
