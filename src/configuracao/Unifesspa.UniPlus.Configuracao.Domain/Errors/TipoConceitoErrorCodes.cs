@@ -22,4 +22,5 @@ public static class TipoConceitoErrorCodes
     public const string ValorCategoricoDuplicado = "TipoConceito.ValorCategoricoDuplicado";
     public const string ParametrosIncompativeisComANatureza = "TipoConceito.ParametrosIncompativeisComANatureza";
     public const string NaoEncontrado = "TipoConceito.NaoEncontrado";
+    public const string ConflitoDeConcorrencia = "TipoConceito.ConflitoDeConcorrencia";
 }

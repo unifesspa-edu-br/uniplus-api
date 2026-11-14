@@ -2,10 +2,16 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands.TiposCon
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
+using Npgsql;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposConceito;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -75,5 +81,47 @@ public sealed class AtualizarTipoConceitoCommandHandlerTests
         await Atualizar(TiposConceitoDeTeste.AtualizarCategorico(tipo.Id));
 
         (tipo.Natureza, tipo.EscalaMaxima, tipo.Valores.Count).Should().Be((NaturezaConceito.Categorico, (decimal?)null, 3));
+    }
+
+    [Fact(DisplayName = "DbUpdateConcurrencyException (xmin) ao substituir os valores descarta o rastreamento e devolve o conflito")]
+    public async Task Handle_ConflitoDeConcorrencia_DescartaRastreamentoEDevolveConflito()
+    {
+        TipoConceito tipo = TipoExistente(TiposConceitoDeTeste.Numerico());
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateConcurrencyException("conflito sintético de teste"));
+
+        Result resultado = await Atualizar(TiposConceitoDeTeste.AtualizarNumerico(tipo.Id));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoConceitoErrorCodes.ConflitoDeConcorrencia);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "Violação do índice único dos valores por corrida de duas edições descarta o rastreamento e devolve o conflito")]
+    public async Task Handle_ValoresDaVencedoraColidemComOsDaPerdedora_DevolveConflito()
+    {
+        TipoConceito tipo = TipoExistente(TiposConceitoDeTeste.Numerico());
+        PostgresException violacao = new("índice único violado", "ERROR", "ERROR", PostgresErrorCodes.UniqueViolation, constraintName: RestricoesDoBanco.TipoDeConceitoValorPosicaoUnica);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateException("corrida na substituição dos valores", violacao));
+
+        Result resultado = await Atualizar(TiposConceitoDeTeste.AtualizarNumerico(tipo.Id));
+
+        resultado.Error!.Code.Should().Be(TipoConceitoErrorCodes.ConflitoDeConcorrencia);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "Violação única de outro índice não é tratada como corrida: a falha propaga")]
+    public async Task Handle_ViolacaoUnicaDeOutroIndice_Propaga()
+    {
+        TipoConceito tipo = TipoExistente(TiposConceitoDeTeste.Numerico());
+        PostgresException violacao = new("índice único violado", "ERROR", "ERROR", PostgresErrorCodes.UniqueViolation, constraintName: "ix_tipos_conceito_codigo");
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateException("outra violação única", violacao));
+
+        Func<Task> acao = () => Atualizar(TiposConceitoDeTeste.AtualizarNumerico(tipo.Id));
+
+        await acao.Should().ThrowAsync<DbUpdateException>();
+        _unitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
     }
 }
