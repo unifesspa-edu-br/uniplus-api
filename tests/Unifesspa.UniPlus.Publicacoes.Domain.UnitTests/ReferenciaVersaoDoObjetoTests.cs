@@ -8,13 +8,13 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
-/// Invariantes do par por valor {id, hash} da versão de configuração invocada.
+/// Invariantes do par por valor {id, hash} da versão do objeto.
 /// </summary>
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit exige tipo de teste público.")]
-public sealed class ReferenciaVersaoConfiguracaoTests
+public sealed class ReferenciaVersaoDoObjetoTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
@@ -23,7 +23,7 @@ public sealed class ReferenciaVersaoConfiguracaoTests
     {
         Guid id = Guid.CreateVersion7();
 
-        Result<ReferenciaVersaoConfiguracao> resultado = ReferenciaVersaoConfiguracao.Criar(id, HashValido);
+        Result<ReferenciaVersaoDoObjeto> resultado = ReferenciaVersaoDoObjeto.Criar(id, HashValido);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Id.Should().Be(id);
@@ -33,10 +33,10 @@ public sealed class ReferenciaVersaoConfiguracaoTests
     [Fact(DisplayName = "Id vazio é recusado")]
     public void Criar_ComIdVazio_Falha()
     {
-        Result<ReferenciaVersaoConfiguracao> resultado = ReferenciaVersaoConfiguracao.Criar(Guid.Empty, HashValido);
+        Result<ReferenciaVersaoDoObjeto> resultado = ReferenciaVersaoDoObjeto.Criar(Guid.Empty, HashValido);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ReferenciaVersaoConfiguracao.IdObrigatorio");
+        resultado.Error!.Code.Should().Be("ReferenciaVersaoDoObjeto.IdObrigatorio");
     }
 
     [Theory(DisplayName = "Hash fora do formato SHA-256 é recusado")]
@@ -45,9 +45,9 @@ public sealed class ReferenciaVersaoConfiguracaoTests
     [InlineData("0123456789ABCDEF0123456789abcdef0123456789abcdef0123456789abcdef")]
     public void Criar_ComHashInvalido_Falha(string hash)
     {
-        Result<ReferenciaVersaoConfiguracao> resultado = ReferenciaVersaoConfiguracao.Criar(Guid.CreateVersion7(), hash);
+        Result<ReferenciaVersaoDoObjeto> resultado = ReferenciaVersaoDoObjeto.Criar(Guid.CreateVersion7(), hash);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ReferenciaVersaoConfiguracao.HashInvalido");
+        resultado.Error!.Code.Should().Be("ReferenciaVersaoDoObjeto.HashInvalido");
     }
 }

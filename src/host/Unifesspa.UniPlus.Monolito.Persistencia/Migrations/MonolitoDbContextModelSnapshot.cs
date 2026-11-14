@@ -10166,11 +10166,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_ato_normativo_retificacao_completa", "(ato_retificado_id IS NULL AND motivo_retificacao IS NULL) OR (ato_retificado_id IS NOT NULL AND motivo_retificacao IS NOT NULL AND btrim(motivo_retificacao) <> '')");
 
-                            t.HasCheckConstraint("ck_ato_normativo_versao_completa", "(versao_invocada_id IS NULL AND versao_invocada_hash IS NULL) OR (versao_invocada_id IS NOT NULL AND versao_invocada_hash IS NOT NULL)");
+                            t.HasCheckConstraint("ck_ato_normativo_versao_do_objeto_completa", "(versao_do_objeto_id IS NULL AND versao_do_objeto_hash IS NULL) OR (versao_do_objeto_id IS NOT NULL AND versao_do_objeto_hash IS NOT NULL)");
 
-                            t.HasCheckConstraint("ck_ato_normativo_versao_hash", "versao_invocada_hash IS NULL OR versao_invocada_hash ~ '^[0-9a-f]{64}$'");
+                            t.HasCheckConstraint("ck_ato_normativo_versao_do_objeto_hash", "versao_do_objeto_hash IS NULL OR versao_do_objeto_hash ~ '^[0-9a-f]{64}$'");
 
-                            t.HasCheckConstraint("ck_ato_normativo_versao_id_nao_zero", "versao_invocada_id IS NULL OR versao_invocada_id <> '00000000-0000-0000-0000-000000000000'");
+                            t.HasCheckConstraint("ck_ato_normativo_versao_do_objeto_id_nao_zero", "versao_do_objeto_id IS NULL OR versao_do_objeto_id <> '00000000-0000-0000-0000-000000000000'");
                         });
                 });
 
@@ -17985,7 +17985,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_ato_normativo_ato_retificado");
 
-                    b.OwnsOne("Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects.ReferenciaVersaoConfiguracao", "VersaoInvocada", b1 =>
+                    b.OwnsOne("Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects.ReferenciaVersaoDoObjeto", "VersaoDoObjeto", b1 =>
                         {
                             b1.Property<Guid>("AtoNormativoId")
                                 .HasColumnType("uuid")
@@ -17995,12 +17995,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsRequired()
                                 .HasMaxLength(64)
                                 .HasColumnType("character(64)")
-                                .HasColumnName("versao_invocada_hash")
+                                .HasColumnName("versao_do_objeto_hash")
                                 .IsFixedLength();
 
                             b1.Property<Guid>("Id")
                                 .HasColumnType("uuid")
-                                .HasColumnName("versao_invocada_id");
+                                .HasColumnName("versao_do_objeto_id");
 
                             b1.HasKey("AtoNormativoId");
 
@@ -18011,7 +18011,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasConstraintName("fk_ato_normativo_ato_normativo_id");
                         });
 
-                    b.Navigation("VersaoInvocada");
+                    b.Navigation("VersaoDoObjeto");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Publicacoes.Domain.Entities.VagaDeLinhagem", b =>

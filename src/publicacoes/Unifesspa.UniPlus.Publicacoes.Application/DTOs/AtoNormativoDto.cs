@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// DTO de resposta para <c>AtoNormativo</c>. Expõe a essência documental do ato,
 /// os atributos de consequência copiados por valor do catálogo, — quando o ato
-/// invoca configuração — o par <c>{id, hash}</c> da versão que o governou, e — quando
+/// se refere a uma versão do objeto — o par <c>{id, hash}</c> dessa versão, e — quando
 /// o ato emenda outro — a linhagem de retificação (<c>AtoRetificadoId</c> + motivo).
 /// </summary>
 /// <remarks>
@@ -39,8 +39,8 @@ public sealed record AtoNormativoDto(
     string DocumentoHash,
     string Assinante,
     DateTimeOffset PublicadoEm,
-    Guid? VersaoInvocadaId,
-    string? VersaoInvocadaHash,
+    Guid? VersaoDoObjetoId,
+    string? VersaoDoObjetoHash,
     Guid? AtoRetificadoId,
     string? MotivoRetificacao,
     IReadOnlyList<AnexoDoAtoDto> Anexos)

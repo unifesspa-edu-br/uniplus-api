@@ -184,7 +184,7 @@ public sealed class AtoNormativoEndpointTests
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
             publicadoEm: DateTimeOffset.UtcNow,
-            versaoInvocada: null);
+            versaoDoObjeto: null);
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
         {
             UniPlusDbContext ctx = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
@@ -226,7 +226,7 @@ public sealed class AtoNormativoEndpointTests
     }
 
     [Fact(DisplayName = "POST com par de versão incompleto retorna 422")]
-    public async Task Registrar_VersaoInvocadaIncompleta_Retorna422()
+    public async Task Registrar_VersaoDoObjetoIncompleta_Retorna422()
     {
         string tipo = await CriarTipoVigenteAsync();
 
@@ -240,8 +240,8 @@ public sealed class AtoNormativoEndpointTests
             dataDoAto = Publicacao,
             documentoHash = HashValido,
             assinante = "Jairo Belchior",
-            versaoInvocadaId = Guid.CreateVersion7(),
-            versaoInvocadaHash = (string?)null,
+            versaoDoObjetoId = Guid.CreateVersion7(),
+            versaoDoObjetoHash = (string?)null,
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -251,7 +251,7 @@ public sealed class AtoNormativoEndpointTests
     }
 
     [Fact(DisplayName = "POST com id de versão zerado (Guid.Empty) retorna 422, não 500")]
-    public async Task Registrar_VersaoInvocadaIdVazio_Retorna422()
+    public async Task Registrar_VersaoDoObjetoIdVazio_Retorna422()
     {
         string tipo = await CriarTipoVigenteAsync();
 
@@ -265,8 +265,8 @@ public sealed class AtoNormativoEndpointTests
             dataDoAto = Publicacao,
             documentoHash = HashValido,
             assinante = "Jairo Belchior",
-            versaoInvocadaId = Guid.Empty,
-            versaoInvocadaHash = HashValido,
+            versaoDoObjetoId = Guid.Empty,
+            versaoDoObjetoHash = HashValido,
         };
 
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -296,8 +296,8 @@ public sealed class AtoNormativoEndpointTests
             dataDoAto = Publicacao,
             documentoHash = "nao-e-hash",
             assinante = "Jairo Belchior",
-            versaoInvocadaId = Guid.CreateVersion7(),
-            versaoInvocadaHash = (string?)null,
+            versaoDoObjetoId = Guid.CreateVersion7(),
+            versaoDoObjetoHash = (string?)null,
             vinculos = new[] { new { entidadeTipo = "minusculo", entidadeId = Guid.Empty } },
         };
 
@@ -318,7 +318,7 @@ public sealed class AtoNormativoEndpointTests
             ("serie", "uniplus.validacao.tamanho"),
             ("ano", "uniplus.validacao.faixa"),
             ("documentoHash", "uniplus.validacao.formato"),
-            ("versaoInvocadaHash", "uniplus.validacao.regra"),
+            ("versaoDoObjetoHash", "uniplus.validacao.regra"),
             ("vinculos[0].entidadeTipo", "uniplus.validacao.formato"),
             ("vinculos[0].entidadeId", "uniplus.validacao.obrigatorio"),
         });

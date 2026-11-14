@@ -48,7 +48,7 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
         });
     }
 
-    [Theory(DisplayName = "A porta recebe o ato da versão gravada, com o instante, a versão invocada, o vínculo e a retificação")]
+    [Theory(DisplayName = "A porta recebe o ato da versão gravada, com o instante, a versão do objeto, o vínculo e a retificação")]
     [MemberData(nameof(Atos))]
     public async Task Sucesso_EntregaAPortaOAtoDaVersao(OperacaoQueCongela operacao)
     {
@@ -58,7 +58,7 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
 
         entregue.AtoId.Should().Be(gravada.AtoCriadorId);
         entregue.PublicadoEm.Should().Be(gravada.VigenteAPartirDe);
-        entregue.VersaoInvocada.Should().Be(new VersaoInvocadaDoAto(gravada.Id, gravada.HashConfiguracao));
+        entregue.VersaoDoObjeto.Should().Be(new VersaoDoObjetoDoAto(gravada.Id, gravada.HashConfiguracao));
         entregue.Vinculos.Should().ContainSingle().Which.Should().Be(
             new VinculoDoAtoPublicado(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, cenario.Processo.Id));
         (entregue.Retificacao is null).Should().Be(operacao == OperacaoQueCongela.Publicar);

@@ -240,9 +240,9 @@ public sealed partial class EnvelopeFechadoE2ETests
 
         (string hashV1, Guid versaoV1Id) = await LerIdentidadeDaVersaoAsync(c.Api, c.AtoV1Id);
         c.HashV1 = hashV1;
-        ato.VersaoInvocada.Should().NotBeNull("o ato guarda por valor a versão que ele governa (ADR-0075/0061)");
-        ato.VersaoInvocada!.Id.Should().Be(versaoV1Id, "o ato de abertura governa exatamente V1");
-        ato.VersaoInvocada.Hash.Should().Be(hashV1, "o hash guardado em Publicações é o mesmo que Seleção congelou para V1");
+        ato.VersaoDoObjeto.Should().NotBeNull("o ato guarda por valor a versão que ele governa (ADR-0075/0061)");
+        ato.VersaoDoObjeto!.Id.Should().Be(versaoV1Id, "o ato de abertura governa exatamente V1");
+        ato.VersaoDoObjeto.Hash.Should().Be(hashV1, "o hash guardado em Publicações é o mesmo que Seleção congelou para V1");
     }
 
     // Passo 17 — abrir a SESSÃO editorial (não o atalho atômico) e capturar o ETag da abertura.
@@ -300,9 +300,9 @@ public sealed partial class EnvelopeFechadoE2ETests
 
         ato.AtoRetificadoId.Should().Be(c.AtoV1Id, "no ato registrado em Publicações, a relação de retificação espelha a de Seleção");
         ato.TipoCodigo.Should().Be("EDITAL_RETIFICACAO");
-        ato.VersaoInvocada.Should().NotBeNull("o ato guarda por valor a versão que ele governa (ADR-0075/0061)");
-        ato.VersaoInvocada!.Id.Should().Be(c.VersaoV2Id, "o ato retificador governa exatamente V2 — nunca V1 nem uma versão obsoleta");
-        ato.VersaoInvocada.Hash.Should().Be(c.HashV2, "o hash guardado em Publicações é o mesmo que Seleção congelou para V2");
+        ato.VersaoDoObjeto.Should().NotBeNull("o ato guarda por valor a versão que ele governa (ADR-0075/0061)");
+        ato.VersaoDoObjeto!.Id.Should().Be(c.VersaoV2Id, "o ato retificador governa exatamente V2 — nunca V1 nem uma versão obsoleta");
+        ato.VersaoDoObjeto.Hash.Should().Be(c.HashV2, "o hash guardado em Publicações é o mesmo que Seleção congelou para V2");
         c.HashV2.Should().NotBe(c.HashV1, "V2 congela outra configuração — se os hashes coincidissem, a asserção de identidade acima seria vácua");
     }
 

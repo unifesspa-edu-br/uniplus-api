@@ -361,6 +361,6 @@ public sealed class VinculoAtoEntidadePersistenceTests
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
             publicadoEm: Registro,
-            versaoInvocada: null,
+            versaoDoObjeto: null,
             vinculos: vinculos);
 }

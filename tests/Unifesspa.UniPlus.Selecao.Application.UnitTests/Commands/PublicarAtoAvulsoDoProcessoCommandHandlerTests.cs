@@ -97,7 +97,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
         entregue.Serie.Should().Be("AVISO");
         entregue.Ano.Should().Be(2026);
         entregue.DocumentoHash.Should().Be(_principal.HashSha256);
-        entregue.VersaoInvocada.Should().BeNull("o ato avulso não congela configuração");
+        entregue.VersaoDoObjeto.Should().BeNull("o ato avulso não congela configuração");
         entregue.Retificacao.Should().BeNull();
         entregue.Vinculos.Should().ContainSingle().Which.EntidadeId.Should().Be(_processoId);
         entregue.Anexos.Should().ContainSingle().Which.Should().Be(

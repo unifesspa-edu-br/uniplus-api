@@ -85,6 +85,7 @@ O módulo continua, com as tabelas no esquema `publicacoes`, a rota `/api/public
 - **A divulgação do certame é gravada na mesma transação** da versão e do ato, com o instante oficial definido pelo sistema ([ADR-0133](0133-divulgacao-do-certame-materializada-no-registro-do-ato.md), emenda 2; [ADR-0105](0105-modulo-publicacoes-registro-central-dos-atos.md), emenda 1).
 - **A cópia ao acervo continua posterior** ([ADR-0132](0132-armazenamento-publico-separado-para-documento-publicado.md)). A divulgação nasce sem o endereço do edital, e um efeito durável o registra quando a cópia termina, com reentrega.
 - O conflito de identificador legível e a vaga de linhagem ocupada viram **recusa síncrona e nomeada** (409), sem nada gravado.
+- O ato guarda por valor a versão do objeto de que trata, o par opaco `{id, hash}` (colunas `versao_do_objeto_id` e `versao_do_objeto_hash`), sem saber de que domínio ou configuração ela vem.
 
 ### Trechos substituídos
 

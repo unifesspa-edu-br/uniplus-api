@@ -24,17 +24,17 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
 {
     public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
     [
-        new(ReferenciaVersaoConfiguracaoErrorCodes.IdObrigatorio,
+        new(ReferenciaVersaoDoObjetoErrorCodes.IdObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.referencia_versao_configuracao.id_obrigatorio",
-                "Identificador da versão de configuração é obrigatório")),
+                "uniplus.publicacoes.referencia_versao_do_objeto.id_obrigatorio",
+                "Identificador da versão do objeto é obrigatório")),
 
-        new(ReferenciaVersaoConfiguracaoErrorCodes.HashInvalido,
+        new(ReferenciaVersaoDoObjetoErrorCodes.HashInvalido,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.referencia_versao_configuracao.hash_invalido",
-                "Hash da versão de configuração deve ser um SHA-256 em hexadecimal minúsculo")),
+                "uniplus.publicacoes.referencia_versao_do_objeto.hash_invalido",
+                "Hash da versão do objeto deve ser um SHA-256 em hexadecimal minúsculo")),
 
         new(TipoAtoPublicadoErrorCodes.VigenciaSobreposta,
             new DomainErrorMapping(
@@ -114,11 +114,11 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
                 "uniplus.publicacoes.ato_normativo.tipo_sem_versao_vigente",
                 "Não há versão vigente do tipo de ato na data da publicação")),
 
-        new(AtoNormativoErrorCodes.VersaoInvocadaIncompleta,
+        new(AtoNormativoErrorCodes.VersaoDoObjetoIncompleta,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.ato_normativo.versao_invocada_incompleta",
-                "A versão invocada deve trazer o par (id, hash) completo ou nenhum dos dois")),
+                "uniplus.publicacoes.ato_normativo.versao_do_objeto_incompleta",
+                "A versão do objeto deve trazer o par (id, hash) completo ou nenhum dos dois")),
 
         new(AtoNormativoErrorCodes.NaoEncontrado,
             new DomainErrorMapping(
