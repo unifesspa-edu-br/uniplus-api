@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 /// </para>
 /// <para>
 /// Vive no <b>Domain</b> porque a raiz o recebe. O envelope completo — este grafo
-/// mais os <c>DadosEdital</c>, o hash do documento e a <c>RetificacaoInfo</c> — é da
+/// mais os <c>DadosEdital</c>, o hash do documento e a <c>RetificacaoDoEdital</c> — é da
 /// Application, que é quem conhece o codec (ADR-0042).
 /// </para>
 /// </remarks>

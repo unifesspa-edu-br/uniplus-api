@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o
-/// schema do <see cref="UniPlusDbContext"/> subido por <c>SubirOBancoAsync</c>, e expõe uma factory de DbContext com os MESMOS
+/// schema do <see cref="UniPlusDbContext"/> subido por <c>PrepararOBancoAsync</c>, e expõe uma factory de DbContext com os MESMOS
 /// interceptors da produção (SoftDelete + Auditable).
 /// </summary>
 /// <remarks>
@@ -48,7 +48,7 @@ public sealed class UnidadeDbFixture : IAsyncLifetime
         await _postgres.StartAsync().ConfigureAwait(false);
 
         await using UniPlusDbContext context = CreateDbContext(userId: null);
-        await context.SubirOBancoAsync().ConfigureAwait(false);
+        await context.PrepararOBancoAsync().ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()

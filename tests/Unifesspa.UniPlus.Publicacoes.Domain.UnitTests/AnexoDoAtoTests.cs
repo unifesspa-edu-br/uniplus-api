@@ -122,6 +122,6 @@ public sealed class AnexoDoAtoTests
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
             publicadoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
-            versaoInvocada: null,
+            versaoDeConfiguracao: null,
             anexos: anexos);
 }

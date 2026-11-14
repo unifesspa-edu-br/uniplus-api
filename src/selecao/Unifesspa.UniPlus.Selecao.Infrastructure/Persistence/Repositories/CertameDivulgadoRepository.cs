@@ -219,7 +219,7 @@ internal sealed class CertameDivulgadoRepository(UniPlusDbContext context) : ICe
                 EF.Functions.ILike(
                     EF.Property<string>(c, CertameDivulgadoConfiguration.NomeOrdenacaoPropriedade), padrao, EscapeDoLike)
                 || (c.Numero != null
-                    && EF.Functions.ILike(PgFunctions.NormalizeForComparison(c.Numero), padrao, EscapeDoLike)));
+                    && EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(c.Numero), padrao, EscapeDoLike)));
         }
 
         return query;

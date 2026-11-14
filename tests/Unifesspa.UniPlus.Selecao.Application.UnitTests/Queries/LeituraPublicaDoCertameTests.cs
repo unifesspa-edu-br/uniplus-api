@@ -108,8 +108,8 @@ public sealed class LeituraPublicaDoCertameTests
     {
         Guid processoId = Guid.CreateVersion7();
         CertameDivulgado divulgado = Divulgado(processoId, Projecao(processoId));
-        EditalDivulgado retificacao = new(Guid.CreateVersion7(), 2, "https://acervo.teste/retificacao.pdf");
-        EditalDivulgado abertura = new(Guid.CreateVersion7(), 1, "https://acervo.teste/abertura.pdf");
+        AtoDivulgado retificacao = new(Guid.CreateVersion7(), 2, "https://acervo.teste/retificacao.pdf");
+        AtoDivulgado abertura = new(Guid.CreateVersion7(), 1, "https://acervo.teste/abertura.pdf");
         Registrar(divulgado, retificacao);
         Registrar(divulgado, abertura);
         ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
@@ -128,8 +128,8 @@ public sealed class LeituraPublicaDoCertameTests
     {
         Guid processoId = Guid.CreateVersion7();
         CertameDivulgado divulgado = Divulgado(processoId, Projecao(processoId));
-        EditalDivulgado aviso = new(Guid.CreateVersion7(), null, "https://acervo.teste/aviso.pdf");
-        EditalDivulgado abertura = new(Guid.CreateVersion7(), 1, "https://acervo.teste/abertura.pdf");
+        AtoDivulgado aviso = new(Guid.CreateVersion7(), null, "https://acervo.teste/aviso.pdf");
+        AtoDivulgado abertura = new(Guid.CreateVersion7(), 1, "https://acervo.teste/abertura.pdf");
         Registrar(divulgado, aviso);
         Registrar(divulgado, abertura);
         ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();
@@ -146,8 +146,8 @@ public sealed class LeituraPublicaDoCertameTests
     {
         Guid processoId = Guid.CreateVersion7();
         CertameDivulgado divulgado = Divulgado(processoId, Projecao(processoId));
-        EditalDivulgado antigo = new(Guid.CreateVersion7(), 1, "https://acervo.teste/abertura.pdf");
-        EditalDivulgado comAnexos = new(
+        AtoDivulgado antigo = new(Guid.CreateVersion7(), 1, "https://acervo.teste/abertura.pdf");
+        AtoDivulgado comAnexos = new(
             Guid.CreateVersion7(),
             2,
             "https://acervo.teste/retificacao.pdf",
@@ -176,8 +176,8 @@ public sealed class LeituraPublicaDoCertameTests
     {
         Guid processoId = Guid.CreateVersion7();
         CertameDivulgado divulgado = Divulgado(processoId, Projecao(processoId));
-        EditalDivulgado abertura = new(Guid.CreateVersion7(), 1, "acervo/sem-esquema.pdf");
-        EditalDivulgado retificacao = new(Guid.CreateVersion7(), 2, "https://acervo.teste/retificacao.pdf");
+        AtoDivulgado abertura = new(Guid.CreateVersion7(), 1, "acervo/sem-esquema.pdf");
+        AtoDivulgado retificacao = new(Guid.CreateVersion7(), 2, "https://acervo.teste/retificacao.pdf");
         Registrar(divulgado, abertura);
         Registrar(divulgado, retificacao);
         ICertameDivulgadoRepository repository = Substitute.For<ICertameDivulgadoRepository>();

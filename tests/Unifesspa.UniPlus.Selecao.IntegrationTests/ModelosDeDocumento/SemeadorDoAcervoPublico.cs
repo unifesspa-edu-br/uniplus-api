@@ -150,7 +150,7 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         await using UniPlusDbContext context = acervo.Db.CreateDbContext();
         context.AtosDoProcesso.Add(registro);
         CertameDivulgado? divulgado = await context.CertamesDivulgados.SingleOrDefaultAsync(c => c.Id == processoId);
-        divulgado?.RegistrarEditalPendente(ato, numeroVersao: null);
+        divulgado?.AbrirEntradaDoAto(ato, numeroVersao: null);
         await context.SaveChangesAsync();
         return registro;
     }
@@ -178,7 +178,7 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         await using UniPlusDbContext context = acervo.Db.CreateDbContext();
         context.VersoesConfiguracao.Add(versao);
         context.AtosDoProcesso.Add(ato);
-        GravacaoDaDivulgacao divulgacao = new(new CertameDivulgadoRepository(context), AcervoDeTeste.Endereco);
+        MontagemDaDivulgacao divulgacao = new(new CertameDivulgadoRepository(context), AcervoDeTeste.Endereco);
 
         Result montada = await divulgacao.MontarDaVersaoAsync(processo, versao, ato, CancellationToken.None);
 

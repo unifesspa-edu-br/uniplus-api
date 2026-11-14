@@ -13,7 +13,7 @@ namespace Unifesspa.UniPlus.Publicacoes.Contracts;
 /// dois e não define nenhum.
 /// </para>
 /// <para>
-/// <see cref="TipoConferido"/> são os atributos do tipo como o catálogo os declarava quando o domínio os conferiu: a
+/// <see cref="AtributosDoTipo"/> são os atributos do tipo como o catálogo os declarava quando o domínio os conferiu: a
 /// decisão tomada na publicação não é refeita contra o cadastro, que é editável (ADR-0061).
 /// </para>
 /// </remarks>
@@ -38,7 +38,7 @@ public sealed record AtoNormativoPublicado
     public required string TipoCodigo { get; init; }
 
     /// <summary>Os atributos do tipo como o domínio os conferiu.</summary>
-    public required AtributosDoTipoAto TipoConferido { get; init; }
+    public required AtributosDoTipoAto AtributosDoTipo { get; init; }
 
     /// <summary>A data que o documento declara; não conta para prazo, vigência nem escolha do tipo.</summary>
     public required DateOnly DataDoAto { get; init; }
@@ -53,10 +53,10 @@ public sealed record AtoNormativoPublicado
     public required string Assinante { get; init; }
 
     /// <summary>A versão de configuração que o ato invoca; nula quando não invoca nenhuma.</summary>
-    public VersaoInvocadaDoAto? VersaoInvocada { get; init; }
+    public VersaoDeConfiguracaoDoAto? VersaoDeConfiguracao { get; init; }
 
     /// <summary>O ato que este corrige; nulo quando o ato não retifica nenhum.</summary>
-    public CorrecaoDoAto? Correcao { get; init; }
+    public RetificacaoDoAto? Retificacao { get; init; }
 
     /// <summary>As entidades de outros domínios de que o ato trata.</summary>
     public required IReadOnlyList<VinculoDoAtoPublicado> Vinculos { get; init; }
@@ -66,10 +66,10 @@ public sealed record AtoNormativoPublicado
 }
 
 /// <summary>A versão de configuração que o ato invoca: o identificador e o hash dela, recebidos por valor.</summary>
-public sealed record VersaoInvocadaDoAto(Guid Id, string Hash);
+public sealed record VersaoDeConfiguracaoDoAto(Guid Id, string Hash);
 
 /// <summary>O ato que o novo ato retifica e o motivo da retificação (ADR-0103).</summary>
-public sealed record CorrecaoDoAto(Guid AtoRetificadoId, string Motivo);
+public sealed record RetificacaoDoAto(Guid AtoRetificadoId, string Motivo);
 
 /// <summary>
 /// Arquivo anexo ao documento principal do ato: o nome com que foi publicado, o tipo de mídia e o hash SHA-256

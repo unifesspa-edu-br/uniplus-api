@@ -41,9 +41,9 @@ internal static class AtoNormativoRegras
     public const string DocumentoHashFormato = "Hash do documento deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).";
     public const string AssinanteObrigatorio = "Assinante é obrigatório.";
     public const string AssinanteTamanho = "Assinante deve ter no máximo 200 caracteres.";
-    public const string VersaoInvocadaIncompleta = "A versão invocada é o par (id, hash) completo, ou nenhum dos dois — um identificador sem hash não prova nada.";
-    public const string VersaoInvocadaIdObrigatorio = "Identificador da versão invocada não pode ser vazio.";
-    public const string VersaoInvocadaHashFormato = "Hash da versão invocada deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).";
+    public const string VersaoDeConfiguracaoIncompleta = "A versão de configuração é o par (id, hash) completo, ou nenhum dos dois — um identificador sem hash não prova nada.";
+    public const string VersaoDeConfiguracaoIdObrigatorio = "Identificador da versão de configuração não pode ser vazio.";
+    public const string VersaoDeConfiguracaoHashFormato = "Hash da versão de configuração deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).";
     public const string RetificacaoIncompleta = "A retificação é o par (ato retificado, motivo) completo, ou nenhum dos dois — um sem o outro não registra linhagem.";
     public const string AtoRetificadoIdObrigatorio = "Identificador do ato retificado não pode ser vazio.";
     public const string MotivoRetificacaoTamanho = "Motivo da retificação deve ter no máximo 1000 caracteres.";
@@ -55,7 +55,7 @@ internal static class AtoNormativoRegras
     public const string VinculoDuplicado = "A mesma entidade não pode ser vinculada duas vezes ao mesmo ato.";
     public const string VinculoNulo = "A lista de vínculos não admite elemento nulo.";
 
-    /// <summary>Código do aviso de número duplicado (AC4).</summary>
+    /// <summary>Código do aviso de número duplicado.</summary>
     public const string AvisoNumeroDuplicado = "NumeroDuplicado";
 
     public static string? Normalizar(string? valor) =>

@@ -40,15 +40,15 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
     /// </summary>
     private static readonly string NomeOrdenacaoSql = NormalizacaoTextual.ExpressaoSql("nome");
 
-    private static readonly ValueConverter<IReadOnlyList<EditalDivulgado>, string> EditaisConverter =
+    private static readonly ValueConverter<IReadOnlyList<AtoDivulgado>, string> AtosConverter =
         new(valor => JsonSerializer.Serialize(valor, (JsonSerializerOptions?)null),
-            json => JsonSerializer.Deserialize<List<EditalDivulgado>>(json, (JsonSerializerOptions?)null)!);
+            json => JsonSerializer.Deserialize<List<AtoDivulgado>>(json, (JsonSerializerOptions?)null)!);
 
-    private static readonly ValueComparer<IReadOnlyList<EditalDivulgado>> EditaisComparer =
+    private static readonly ValueComparer<IReadOnlyList<AtoDivulgado>> AtosComparer =
         new(
             (a, b) => JsonSerializer.Serialize(a, (JsonSerializerOptions?)null) == JsonSerializer.Serialize(b, (JsonSerializerOptions?)null),
             v => JsonSerializer.Serialize(v, (JsonSerializerOptions?)null).GetHashCode(StringComparison.Ordinal),
-            v => JsonSerializer.Deserialize<List<EditalDivulgado>>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
+            v => JsonSerializer.Deserialize<List<AtoDivulgado>>(JsonSerializer.Serialize(v, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!);
 
     public void Configure(EntityTypeBuilder<CertameDivulgado> builder)
     {
@@ -84,13 +84,13 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
         builder.Property(c => c.DivulgadoEm).IsRequired();
 
         // jsonb, e não texto: buscar dentro do documento é necessidade previsível da vitrine.
-        builder.Property(c => c.Certame).HasColumnType("jsonb").IsRequired();
+        builder.Property(c => c.DocumentoPublico).HasColumnType("jsonb").IsRequired();
 
         // Fora do documento acima: ele descreve só a versão vigente e é substituído a cada avanço,
         // e o endereço dos editais anteriores não se recalcula depois — fica registrado pela cópia
         // ao acervo de cada ato.
-        builder.Property(c => c.EditaisDivulgados)
-            .HasConversion(EditaisConverter, EditaisComparer)
+        builder.Property(c => c.AtosDivulgados)
+            .HasConversion(AtosConverter, AtosComparer)
             .HasColumnType("jsonb")
             .HasDefaultValueSql("'[]'::jsonb")
             .IsRequired()
@@ -119,10 +119,9 @@ internal sealed class CertameDivulgadoConfiguration : IEntityTypeConfiguration<C
             .HasDatabaseName("ux_certames_divulgados_ato_criador");
 
         // Serve à ordenação da vitrine pelo instante de divulgação (campo divulgadoEm do sort):
-        // sem ele, a página ordenada por esse campo varre a tabela numa rota anônima. O nome do
-        // índice é o que está no banco; trocá-lo exigiria migration sem ganho de comportamento.
+        // sem ele, a página ordenada por esse campo varre a tabela numa rota anônima.
         builder.HasIndex(c => c.DivulgadoEm)
-            .HasDatabaseName("ix_certames_divulgados_revisao");
+            .HasDatabaseName("ix_certames_divulgados_divulgado_em");
 
         ConfigurarOrdenacaoAlfabetica(builder);
 

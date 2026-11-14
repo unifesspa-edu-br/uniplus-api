@@ -18,14 +18,14 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Os documentos do ato no acervo — o edital como principal e os anexos em seguida. Nulo enquanto a cópia não
 /// terminou, e lido como lista vazia.
 /// </param>
-public sealed record EditalDivulgado(
+public sealed record AtoDivulgado(
     Guid AtoId,
     int? NumeroVersao,
     string? UrlDownload,
     IReadOnlyList<DocumentoDivulgado>? Documentos = null)
 {
     /// <summary>A entrada do ato recém-divulgado, ainda sem cópia no acervo.</summary>
-    public static EditalDivulgado Pendente(Guid atoId, int? numeroVersao) => new(atoId, numeroVersao, null);
+    public static AtoDivulgado SemEndereco(Guid atoId, int? numeroVersao) => new(atoId, numeroVersao, null);
 }
 
 /// <summary>

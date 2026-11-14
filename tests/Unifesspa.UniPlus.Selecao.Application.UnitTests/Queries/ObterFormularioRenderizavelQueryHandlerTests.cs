@@ -108,7 +108,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             new FacetasDoCertameDivulgado("certame-formulario", "Certame", "001/2026", ["AC"], DataHoraFixa, DataHoraFixa.AddDays(30)),
             """{"nome":"documento"}""",
             DataHoraFixa);
-        divulgado.RegistrarEditalPendente(AtoDaDivulgacao, 1);
+        divulgado.AbrirEntradaDoAto(AtoDaDivulgacao, 1);
         return divulgado;
     }
 

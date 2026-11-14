@@ -12,10 +12,10 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
-/// A subida do banco do contexto único: scripts <c>Pre</c>, migration e scripts pós, sob a trava do banco, aplicados em
+/// A preparaÃ§Ã£o do banco do contexto único: scripts <c>Pre</c>, migration e scripts pós, sob a trava do banco, aplicados em
 /// bancos vazios e descartáveis dentro do mesmo servidor.
 /// </summary>
-public sealed class SubidaDoBancoIntegrationTests : IAsyncLifetime
+public sealed class PreparacaoDoBancoIntegrationTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18-alpine")
         .WithUsername("uniplus_test")
@@ -42,7 +42,7 @@ public sealed class SubidaDoBancoIntegrationTests : IAsyncLifetime
 
     public Task DisposeAsync() => _postgres.DisposeAsync().AsTask();
 
-    [Fact(DisplayName = "A subida do banco vazio cria o que cada fase declara: extensão, função da plataforma, restrição do módulo e um só histórico")]
+    [Fact(DisplayName = "A preparaÃ§Ã£o do banco vazio cria o que cada fase declara: extensão, função da plataforma, restrição do módulo e um só histórico")]
     public async Task SubirOBanco_BancoVazio_AplicaTodasAsFases()
     {
         string conexao = await NovoBancoAsync();
@@ -100,7 +100,7 @@ public sealed class SubidaDoBancoIntegrationTests : IAsyncLifetime
             .Options;
 
         await using MonolitoDbContext contexto = new(opcoes);
-        await contexto.SubirOBancoAsync();
+        await contexto.PrepararOBancoAsync();
     }
 
     private async Task<string> NovoBancoAsync()

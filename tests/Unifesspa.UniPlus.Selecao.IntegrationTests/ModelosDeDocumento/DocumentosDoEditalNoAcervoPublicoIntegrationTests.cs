@@ -134,7 +134,7 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
         await _acervo.CopiarAoAcervoAsync(ato);
 
         (await AcervoPublicoDeTeste.BaixarAnonimamenteAsync(_acervo.EnderecoDoEdital(identificador, ato, edital))).Should().Equal(jaCopiado);
-        (await _acervo.EditaisDivulgadosAsync(processo.Id)).Single().UrlDownload.Should().NotBeNull();
+        (await _acervo.AtosDivulgadosAsync(processo.Id)).Single().UrlDownload.Should().NotBeNull();
     }
 
     /// <summary>
@@ -188,9 +188,9 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
 
         divulgado.NumeroVersao.Should().Be(2, "a cópia atrasada não desfaz a retificação já divulgada");
         divulgado.AtoCriadorId.Should().Be(retificacao);
-        divulgado.EditaisDivulgados.Select(static e => e.AtoId).Should().BeEquivalentTo([abertura, retificacao]);
+        divulgado.AtosDivulgados.Select(static e => e.AtoId).Should().BeEquivalentTo([abertura, retificacao]);
         divulgado.CopiouOsDocumentosDoAto(abertura).Should().BeTrue();
-        JsonNode.Parse(divulgado.Certame)!["atoCriadorId"]!.GetValue<Guid>().Should().Be(retificacao, "o documento do certame continua o da versão 2");
+        JsonNode.Parse(divulgado.DocumentoPublico)!["atoCriadorId"]!.GetValue<Guid>().Should().Be(retificacao, "o documento do certame continua o da versão 2");
     }
 
     [Fact(DisplayName = "Reentrega do mesmo ato não duplica o edital registrado")]
@@ -204,7 +204,7 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
 
         await _acervo.CopiarAoAcervoAsync(ato);
 
-        (await _acervo.EditaisDivulgadosAsync(processo.Id)).Should().ContainSingle();
+        (await _acervo.AtosDivulgadosAsync(processo.Id)).Should().ContainSingle();
     }
 
     [Fact(DisplayName = "Falha na cópia do edital de uma retificação mantém a entrada dela sem endereço")]
@@ -220,7 +220,7 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
         Func<Task> divulgar = () => _acervo.CopiarAoAcervoAsync(retificacao, AcervoPublicoDeTeste.BucketInexistente());
 
         await divulgar.Should().ThrowAsync<AcervoPublicoIndisponivelException>();
-        (await _acervo.EditaisDivulgadosAsync(processo.Id)).Where(static e => e.UrlDownload is not null).Select(static e => e.AtoId).Should().Equal(
+        (await _acervo.AtosDivulgadosAsync(processo.Id)).Where(static e => e.UrlDownload is not null).Select(static e => e.AtoId).Should().Equal(
             [abertura], "o link só aparece depois de o arquivo estar no acervo");
         await ConferirEntradaSemEnderecoAsync(processo.Id, retificacao);
     }
@@ -265,9 +265,9 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
     {
         CertameDivulgado divulgado = await _acervo.CertameDivulgadoAsync(processoId);
         Uri endereco = AcervoDeTeste.Endereco.De(AcervoPublicoDeTeste.ChaveDoEdital(identificador, ato, edital));
-        JsonNode.Parse(divulgado.Certame)!["documentoEdital"]!["urlDownload"]!.GetValue<string>().Should().Be(
+        JsonNode.Parse(divulgado.DocumentoPublico)!["documentoEdital"]!["urlDownload"]!.GetValue<string>().Should().Be(
             endereco.ToString(), "o contrato divulga o endereço da mesma chave para a qual a divulgação copiou");
-        EditalDivulgado registrado = divulgado.EditaisDivulgados.Should().ContainSingle().Subject;
+        AtoDivulgado registrado = divulgado.AtosDivulgados.Should().ContainSingle().Subject;
         registrado.UrlDownload.Should().Be(endereco.OriginalString, "o endereço registrado para o ato é o da chave para a qual a cópia foi feita");
         registrado.Documentos.Should().ContainSingle().Which.Should().Be(new DocumentoDivulgado(
             PapelDoDocumentoDivulgado.Principal, $"{identificador}-edital-abertura.pdf", TiposDeMidiaDeDocumento.Pdf, tamanhoDoPdf, edital.HashSha256!, endereco.OriginalString));
@@ -286,7 +286,7 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
     private async Task ConferirDocumentosDivulgadosAsync(
         Guid processoId, Guid ato, string identificador, DocumentoAPublicar edital, AnexoSemeado[] anexos)
     {
-        IReadOnlyList<DocumentoDivulgado> documentos = (await _acervo.EditaisDivulgadosAsync(processoId)).Single().Documentos!;
+        IReadOnlyList<DocumentoDivulgado> documentos = (await _acervo.AtosDivulgadosAsync(processoId)).Single().Documentos!;
         documentos.Select(static d => (d.Papel, d.Nome, d.TamanhoBytes)).Should().Equal(
             (PapelDoDocumentoDivulgado.Principal, $"{identificador}-edital-abertura.pdf", edital.TamanhoBytes!.Value),
             (PapelDoDocumentoDivulgado.Anexo, "Quadro de vagas.pdf", anexos[0].Conteudo.LongLength),
@@ -304,7 +304,7 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
         (await AcervoPublicoDeTeste.BaixarAnonimamenteAsync(_acervo.EnderecoDoAnexo(processoId, atos.Abertura, trocado.Anexo))).Should().Equal(trocado.Conteudo,
             "o ato retificado continua existindo, e o anexo que ele divulgou não some");
         (await AcervoPublicoDeTeste.BaixarAnonimamenteAsync(_acervo.EnderecoDoAnexo(processoId, atos.Abertura, mantido.Anexo))).Should().Equal(mantido.Conteudo);
-        IReadOnlyList<EditalDivulgado> registrados = await _acervo.EditaisDivulgadosAsync(processoId);
+        IReadOnlyList<AtoDivulgado> registrados = await _acervo.AtosDivulgadosAsync(processoId);
         registrados[0].Documentos!.Count(static d => d.Papel == PapelDoDocumentoDivulgado.Anexo).Should().Be(2);
         registrados[1].Documentos!.Where(static d => d.Papel == PapelDoDocumentoDivulgado.Anexo).Select(static d => d.Nome)
             .Should().Equal("Cronograma.pdf", "Quadro de vagas.pdf");
@@ -327,7 +327,7 @@ public sealed class DocumentosDoEditalNoAcervoPublicoIntegrationTests
 
     private async Task ConferirUmEnderecoPorAtoAsync(Guid processoId, string identificador, DocumentoAPublicar edital, Guid[] atos)
     {
-        IReadOnlyList<EditalDivulgado> registrados = await _acervo.EditaisDivulgadosAsync(processoId);
+        IReadOnlyList<AtoDivulgado> registrados = await _acervo.AtosDivulgadosAsync(processoId);
         registrados.Select(static e => e.AtoId).Should().Equal(atos);
         registrados.Select(static e => e.UrlDownload).Should().OnlyHaveUniqueItems(
             "o documento é o mesmo e o hash coincide: só o ato separa o endereço de cada versão");

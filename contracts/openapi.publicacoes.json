@@ -1069,8 +1069,8 @@
           "documentoHash",
           "assinante",
           "publicadoEm",
-          "versaoInvocadaId",
-          "versaoInvocadaHash",
+          "versaoDeConfiguracaoId",
+          "versaoDeConfiguracaoHash",
           "atoRetificadoId",
           "motivoRetificacao",
           "anexos"
@@ -1129,14 +1129,14 @@
             "type": "string",
             "format": "date-time"
           },
-          "versaoInvocadaId": {
+          "versaoDeConfiguracaoId": {
             "type": [
               "null",
               "string"
             ],
             "format": "uuid"
           },
-          "versaoInvocadaHash": {
+          "versaoDeConfiguracaoHash": {
             "type": [
               "null",
               "string"
@@ -1472,14 +1472,14 @@
           "assinante": {
             "type": "string"
           },
-          "versaoInvocadaId": {
+          "versaoDeConfiguracaoId": {
             "type": [
               "null",
               "string"
             ],
             "format": "uuid"
           },
-          "versaoInvocadaHash": {
+          "versaoDeConfiguracaoHash": {
             "type": [
               "null",
               "string"

@@ -25,7 +25,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.Registr
 public sealed partial class RecusasDoRegistroNaPublicacaoTests
 {
     private const string VagaOcupada = "uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo";
-    private const string RaizRetificada = "uniplus.publicacoes.ato_normativo.raiz_ja_retificada";
+    private const string AtoJaRetificado = "uniplus.publicacoes.ato_normativo.ato_ja_retificado";
 
     private readonly CascadingFixture _fixture;
 
@@ -75,14 +75,14 @@ public sealed partial class RecusasDoRegistroNaPublicacaoTests
 
         using HttpResponseMessage resposta = await RetificarAsync(client, processoId, await SemearDocumentoConfirmadoAsync(api, processoId));
 
-        await ExigirRecusaAsync(resposta, RaizRetificada, citando: "EDITAL");
+        await ExigirRecusaAsync(resposta, AtoJaRetificado, citando: "EDITAL");
         await ExigirSoAVersaoDaAberturaAsync(api, processoId, abertura);
     }
 
     private static AtoNormativoPublicado RetificacaoPorOutroCaminho(Guid abertura, Guid processoId) =>
         AtoDoProcesso(processoId, DadosDoAtoDeTeste.TipoRetificacao, "333/2026", new AtributosDoTipoAto(true, false, false, null)) with
         {
-            Correcao = new CorrecaoDoAto(abertura, "Retificação registrada fora do fluxo da Seleção"),
+            Retificacao = new RetificacaoDoAto(abertura, "Retificação registrada fora do fluxo da Seleção"),
             Vinculos = [],
         };
 
@@ -115,7 +115,7 @@ public sealed partial class RecusasDoRegistroNaPublicacaoTests
     private static async Task<int> VagasDoObjetoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope conferencia = api.Services.CreateAsyncScope();
-        return await conferencia.ServiceProvider.GetRequiredService<UniPlusDbContext>().Set<LinhagemUnicaPorObjeto>().AsNoTracking()
+        return await conferencia.ServiceProvider.GetRequiredService<UniPlusDbContext>().Set<VagaDeLinhagem>().AsNoTracking()
             .CountAsync(l => l.EntidadeId == processoId);
     }
 

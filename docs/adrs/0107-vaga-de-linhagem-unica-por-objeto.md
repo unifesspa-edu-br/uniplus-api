@@ -45,18 +45,18 @@ para um tipo único por objeto, um objeto é tratado por no máximo UMA linhagem
 
 **Escolhida: "C — a vaga que a linhagem reserva".**
 
-A tabela `publicacoes.linhagem_unica_por_objeto` guarda uma linha por `(entidade_tipo, entidade_id, tipo_codigo)` — a **vaga** do objeto para aquele tipo de ato — apontando para a `raiz_id` da linhagem que a ocupa. O índice único sobre essa tripla é a garantia dura, e é o banco que a impõe, inclusive contra duas transações concorrentes.
+A tabela `publicacoes.vagas_de_linhagem` guarda uma linha por `(entidade_tipo, entidade_id, tipo_codigo)` — a **vaga** do objeto para aquele tipo de ato — apontando para a `raiz_id` da linhagem que a ocupa. O índice único sobre essa tripla é a garantia dura, e é o banco que a impõe, inclusive contra duas transações concorrentes.
 
 Registrar um ato de tipo único por objeto, que se vincula a entidades, passa por duas verificações, e **cada uma vê o que a outra não vê**:
 
 1. **O histórico de atos.** Um ato do mesmo tipo já vinculado ao objeto, fora desta linhagem, é conflito — e a consulta o encontra ainda que ele não tenha reservado vaga alguma. Isso importa porque `unico_por_objeto` é editável: um ato publicado quando o tipo ainda **não** era único por objeto não reservou vaga, e sem esta verificação um ato posterior, publicado depois de o atributo virar, encontraria a vaga livre — e o objeto acabaria com duas linhagens vivas, sem que ninguém tivesse feito nada de errado.
 2. **A vaga.** O índice único, que fecha a corrida entre transações concorrentes — invisível a qualquer consulta, por definição.
 
-A recusa é **409**, e não 422: o payload está coerente; o que não cabe é o estado já gravado (mesmo critério de `RaizJaRetificada` e `VigenciaSobreposta`).
+A recusa é **409**, e não 422: o payload está coerente; o que não cabe é o estado já gravado (mesmo critério de `AtoJaRetificado` e `VigenciaSobreposta`).
 
 Quatro triggers sustentam a estrutura contra o `INSERT` cru, no espírito dos CHECKs que o ato já tem:
 
-- **Append-only** em `vinculo_ato_entidade` e em `linhagem_unica_por_objeto`: mutar um vínculo reescreveria de que objeto o ato tratava; mutar uma vaga transferiria o objeto de uma linhagem a outra sem que ato algum o dissesse.
+- **Append-only** em `vinculo_ato_entidade` e em `vagas_de_linhagem`: mutar um vínculo reescreveria de que objeto o ato tratava; mutar uma vaga transferiria o objeto de uma linhagem a outra sem que ato algum o dissesse.
 - **Coerência da vaga com o ato** (deferred): o tipo tem de ser o do ato, a raiz tem de ser a raiz verdadeira da sua cadeia, o ato tem de estar vinculado ao objeto, e o tipo tem de ser único por objeto.
 - **Correspondência reversa** (deferred): todo vínculo de um ato único por objeto exige a vaga daquele objeto reservada em nome da sua linhagem. É ela que faz o índice único valer alguma coisa — sem ela, gravar o vínculo e omitir a vaga (um importador, um seed, uma regressão) deixaria o objeto livre para uma segunda linhagem, e o índice, que só vê as vagas que existem, nada acusaria.
 

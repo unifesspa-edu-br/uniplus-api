@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
@@ -103,18 +104,18 @@ public static class AtualizarObrigatoriedadeLegalCommandHandler
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint)
+        catch (Exception ex) when (ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex) is { } constraint)
         {
             // Mesmo tratamento do Criar: race entre o ExisteRegraCodigoAtivoAsync
             // e o UPDATE (caller troca RegraCodigo para um valor que outra escrita
             // concorrente acabou de assumir) dispara a constraint do banco.
-            if (UniqueConstraintViolation.IsRegraCodigoConflict(constraint))
+            if (ConstraintsDaRegraAtiva.EhConflitoDoCodigoDaRegra(constraint))
             {
                 return Result.Failure(new DomainError(
                     "ObrigatoriedadeLegal.RegraCodigoDuplicada",
                     $"Já existe outra regra ativa com RegraCodigo '{command.RegraCodigo}'."));
             }
-            if (UniqueConstraintViolation.IsHashConflict(constraint))
+            if (ConstraintsDaRegraAtiva.EhConflitoDoHashDaRegra(constraint))
             {
                 return Result.Failure(new DomainError(
                     "ObrigatoriedadeLegal.HashColisao",

@@ -12,6 +12,7 @@ using Permissoes;
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -178,7 +179,7 @@ public static class CriarProcessoSeletivoCommandHandler
     private const string IndiceDoIdentificadorLegivel = "ix_processos_seletivos_identificador_legivel";
 
     internal static bool EhConflitoDeIdentificadorLegivel(Exception ex) => string.Equals(
-        UniqueConstraintViolation.GetViolatedConstraint(ex), IndiceDoIdentificadorLegivel, StringComparison.Ordinal);
+        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex), IndiceDoIdentificadorLegivel, StringComparison.Ordinal);
 
     /// <summary>
     /// O identificador declarado pelo cliente, já no formato do domínio. A ausência é erro

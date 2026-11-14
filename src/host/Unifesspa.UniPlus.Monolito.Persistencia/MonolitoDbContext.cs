@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 public sealed class MonolitoDbContext : UniPlusDbContext
 {
     /// <summary>Os módulos na ordem em que o modelo é montado e em que os interceptadores deles rodam.</summary>
-    internal static IReadOnlyList<IContribuicaoDoModulo> Contribuicoes { get; } =
+    internal static IReadOnlyList<IContribuicaoDoModulo> ContribuicoesDoMonolito { get; } =
     [
         new ConfiguracaoContribuicao(),
         new OrganizacaoInstitucionalContribuicao(),
@@ -34,5 +34,5 @@ public sealed class MonolitoDbContext : UniPlusDbContext
     {
     }
 
-    protected override IReadOnlyList<IContribuicaoDoModulo> Modulos => Contribuicoes;
+    protected override IReadOnlyList<IContribuicaoDoModulo> Contribuicoes => ContribuicoesDoMonolito;
 }

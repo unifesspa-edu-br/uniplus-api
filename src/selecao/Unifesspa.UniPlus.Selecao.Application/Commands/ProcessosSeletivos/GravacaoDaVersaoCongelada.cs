@@ -11,14 +11,15 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 public sealed class GravacaoDaVersaoCongelada(
     IProcessoSeletivoRepository processos,
     IAtoDoProcessoRepository atos,
     IRascunhoDePublicacaoRepository rascunhos,
-    IRegistroDeAtoNormativo registro,
-    GravacaoDaDivulgacao divulgacao,
+    IRegistroDeAtoNormativo registroCentralDeAtos,
+    MontagemDaDivulgacao divulgacao,
     IUnitOfWork unitOfWork)
 {
     private const string IndiceDoIdentificadorLegivelDivulgado = "ux_certames_divulgados_identificador_legivel";
@@ -35,7 +36,7 @@ public sealed class GravacaoDaVersaoCongelada(
         VersaoConfiguracao versao,
         AtoEDocumentoConferidos ato,
         DadosEdital dados,
-        RetificacaoInfo? retificacao,
+        RetificacaoDoEdital? retificacao,
         CancellationToken cancellationToken)
     {
         Result<AtoDoProcesso> registroDoAto = RegistroDoAtoDaVersao.Montar(
@@ -64,7 +65,7 @@ public sealed class GravacaoDaVersaoCongelada(
         AtoNormativoPublicado publicado,
         CancellationToken cancellationToken)
     {
-        Result salva = await RastrearESalvarAsync(processo, versao, registroDoAto, publicado, cancellationToken).ConfigureAwait(false);
+        Result salva = await GravarVersaoAtoEDivulgacaoAsync(processo, versao, registroDoAto, publicado, cancellationToken).ConfigureAwait(false);
         if (salva.IsSuccess)
         {
             await rascunhos.ApagarDoProcessoAsync(processo.Id, cancellationToken).ConfigureAwait(false);
@@ -76,7 +77,7 @@ public sealed class GravacaoDaVersaoCongelada(
     // A versão, o registro do ato, o ato no registro central e a divulgação vão na mesma gravação, nesta ordem: a
     // consulta dos atos do processo lê só o registro, e o certame passa a existir para o público no mesmo commit em que o
     // ato. A porta vem antes da divulgação para que a recusa dela não deixe certame montado no rastreador.
-    private async Task<Result> RastrearESalvarAsync(
+    private async Task<Result> GravarVersaoAtoEDivulgacaoAsync(
         ProcessoSeletivo processo,
         VersaoConfiguracao versao,
         AtoDoProcesso registroDoAto,
@@ -86,7 +87,7 @@ public sealed class GravacaoDaVersaoCongelada(
         await processos.AdicionarVersaoConfiguracaoAsync(versao, cancellationToken).ConfigureAwait(false);
         await atos.AdicionarAsync(registroDoAto, cancellationToken).ConfigureAwait(false);
 
-        Result aceito = await registro.RegistrarAsync(publicado, cancellationToken).ConfigureAwait(false);
+        Result aceito = await registroCentralDeAtos.RegistrarAsync(publicado, cancellationToken).ConfigureAwait(false);
         if (aceito.IsFailure)
         {
             return aceito;
@@ -118,12 +119,12 @@ public sealed class GravacaoDaVersaoCongelada(
 
     private DomainError? Traduzir(Exception excecao, ProcessoSeletivo processo, AtoDoProcesso registroDoAto)
     {
-        string? constraint = UniqueConstraintViolation.GetViolatedConstraint(excecao);
+        string? constraint = ConstraintVioladaNaGravacao.NomeDaConstraintViolada(excecao);
 
         return VersaoConfiguracaoConstraintViolation.Traduzir(constraint)
             ?? ConflitoDoIdentificadorLegivel(constraint, processo)
             ?? ConflitoNaGravacaoDoAtoDoProcesso.Traduzir(constraint, registroDoAto)
-            ?? registro.TraduzirConflitoDaGravacao(excecao);
+            ?? registroCentralDeAtos.TraduzirConflitoDaGravacao(excecao);
     }
 
     private static DomainError? ConflitoDoIdentificadorLegivel(string? constraint, ProcessoSeletivo processo) =>

@@ -83,8 +83,8 @@ public sealed class OrdemDeTravasDaCopiaAoAcervoNoHostTests : IClassFixture<Host
             divulgado.IdentificadorLegivel, divulgado.Nome, divulgado.Numero, divulgado.ModalidadesOfertadas,
             divulgado.InscricoesDe, divulgado.InscricoesAte);
 
-        divulgado.Avancar(2, outroAto, new string('b', 64), divulgado.VersaoProjecao, facetas, divulgado.Certame, DateTimeOffset.UtcNow);
-        divulgado.RegistrarEditalPendente(outroAto, numeroVersao: 2);
+        divulgado.Avancar(2, outroAto, new string('b', 64), divulgado.VersaoProjecao, facetas, divulgado.DocumentoPublico, DateTimeOffset.UtcNow);
+        divulgado.AbrirEntradaDoAto(outroAto, numeroVersao: 2);
 
         await publicacao.Servicos.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
     }

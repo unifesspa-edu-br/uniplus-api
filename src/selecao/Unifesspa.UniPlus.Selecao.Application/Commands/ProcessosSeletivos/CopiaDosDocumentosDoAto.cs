@@ -44,7 +44,7 @@ public sealed class CopiaDosDocumentosDoAto(
 {
     internal async Task CopiarERegistrarAsync(CopiarDocumentosDoAtoAoAcervo mensagem, CancellationToken cancellationToken)
     {
-        EditalDivulgado? copiado = await CopiarAsync(mensagem.AtoId, cancellationToken).ConfigureAwait(false);
+        AtoDivulgado? copiado = await CopiarAsync(mensagem.AtoId, cancellationToken).ConfigureAwait(false);
         if (copiado is not null)
         {
             await RegistrarEnderecosAsync(mensagem, copiado, cancellationToken).ConfigureAwait(false);
@@ -52,7 +52,7 @@ public sealed class CopiaDosDocumentosDoAto(
     }
 
     private async Task RegistrarEnderecosAsync(
-        CopiarDocumentosDoAtoAoAcervo mensagem, EditalDivulgado copiado, CancellationToken cancellationToken)
+        CopiarDocumentosDoAtoAoAcervo mensagem, AtoDivulgado copiado, CancellationToken cancellationToken)
     {
         await processos.TravarAsync(mensagem.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
 
@@ -68,8 +68,8 @@ public sealed class CopiaDosDocumentosDoAto(
         }
     }
 
-    /// <returns>O edital divulgado, ou <see langword="null"/> quando o ato não tem registro na Seleção.</returns>
-    private async Task<EditalDivulgado?> CopiarAsync(Guid atoId, CancellationToken cancellationToken)
+    /// <returns>O ato divulgado, ou <see langword="null"/> quando o ato não tem registro na Seleção.</returns>
+    private async Task<AtoDivulgado?> CopiarAsync(Guid atoId, CancellationToken cancellationToken)
     {
         AtoDoProcesso? ato = await atos.ObterComAnexosAsync(atoId, cancellationToken).ConfigureAwait(false);
         if (ato is null)
@@ -82,8 +82,8 @@ public sealed class CopiaDosDocumentosDoAto(
             .ConfigureAwait(false);
 
         return versoes.Count > 0
-            ? await acervo.PublicarVersaoAsync(versoes[0], ato, LerEnvelopeOuFalhar(versoes[0]), cancellationToken).ConfigureAwait(false)
-            : await acervo.PublicarAtoAsync(ato, cancellationToken).ConfigureAwait(false);
+            ? await acervo.CopiarVersaoAoAcervoAsync(versoes[0], ato, LerEnvelopeOuFalhar(versoes[0]), cancellationToken).ConfigureAwait(false)
+            : await acervo.CopiarAtoAoAcervoAsync(ato, cancellationToken).ConfigureAwait(false);
     }
 
     private JsonObject LerEnvelopeOuFalhar(VersaoConfiguracao versao)

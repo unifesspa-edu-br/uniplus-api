@@ -145,7 +145,7 @@ public sealed class RetificacaoPersistenciaTests : IClassFixture<ProcessoSeletiv
                 carregado, dadosRetificacao, docRetificacao.HashSha256!, FusoInstitucional.ZoneId,
                 // O alvo da retificação é o ato que criou a versão corrente — o
                 // topo da cadeia de CONFIGURAÇÃO —, como o handler faz.
-                new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição"), ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
+                new RetificacaoDoEdital(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição"), ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
                 TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
             Result<VersaoConfiguracao> retificar = carregado.Retificar(
                 dadosRetificacao, versaoAtual, canonicoRetificacao.Bytes, canonicoRetificacao.SchemaVersion, canonicoRetificacao.AlgoritmoHash,

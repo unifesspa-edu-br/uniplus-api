@@ -22,13 +22,13 @@ BEGIN
 END;
 $$;
 
-CREATE OR REPLACE FUNCTION publicacoes.fn_linhagem_unica_somente_insercao()
+CREATE OR REPLACE FUNCTION publicacoes.fn_vagas_de_linhagem_somente_insercao()
 RETURNS trigger
 LANGUAGE plpgsql
 AS $$
 BEGIN
     RAISE EXCEPTION
-        'linhagem_unica_por_objeto é append-only (ADR-0107): operação % é bloqueada; a vaga do objeto não se transfere.', TG_OP
+        'vagas_de_linhagem é append-only (ADR-0107): operação % é bloqueada; a vaga do objeto não se transfere.', TG_OP
         USING ERRCODE = 'restrict_violation';
 END;
 $$;
@@ -68,11 +68,11 @@ CREATE TRIGGER trg_vinculo_ato_entidade_somente_insercao
     FOR EACH ROW
     EXECUTE FUNCTION publicacoes.fn_vinculo_ato_entidade_somente_insercao();
 
-DROP TRIGGER IF EXISTS trg_linhagem_unica_somente_insercao ON publicacoes.linhagem_unica_por_objeto;
-CREATE TRIGGER trg_linhagem_unica_somente_insercao
-    BEFORE UPDATE OR DELETE ON publicacoes.linhagem_unica_por_objeto
+DROP TRIGGER IF EXISTS trg_vagas_de_linhagem_somente_insercao ON publicacoes.vagas_de_linhagem;
+CREATE TRIGGER trg_vagas_de_linhagem_somente_insercao
+    BEFORE UPDATE OR DELETE ON publicacoes.vagas_de_linhagem
     FOR EACH ROW
-    EXECUTE FUNCTION publicacoes.fn_linhagem_unica_somente_insercao();
+    EXECUTE FUNCTION publicacoes.fn_vagas_de_linhagem_somente_insercao();
 
 DROP TRIGGER IF EXISTS trg_anexo_do_ato_somente_insercao ON publicacoes.anexo_do_ato;
 CREATE TRIGGER trg_anexo_do_ato_somente_insercao
@@ -92,9 +92,9 @@ CREATE TRIGGER trg_vinculo_ato_entidade_bloqueia_truncate
     FOR EACH STATEMENT
     EXECUTE FUNCTION publicacoes.fn_bloqueia_truncate();
 
-DROP TRIGGER IF EXISTS trg_linhagem_unica_bloqueia_truncate ON publicacoes.linhagem_unica_por_objeto;
-CREATE TRIGGER trg_linhagem_unica_bloqueia_truncate
-    BEFORE TRUNCATE ON publicacoes.linhagem_unica_por_objeto
+DROP TRIGGER IF EXISTS trg_vagas_de_linhagem_bloqueia_truncate ON publicacoes.vagas_de_linhagem;
+CREATE TRIGGER trg_vagas_de_linhagem_bloqueia_truncate
+    BEFORE TRUNCATE ON publicacoes.vagas_de_linhagem
     FOR EACH STATEMENT
     EXECUTE FUNCTION publicacoes.fn_bloqueia_truncate();
 

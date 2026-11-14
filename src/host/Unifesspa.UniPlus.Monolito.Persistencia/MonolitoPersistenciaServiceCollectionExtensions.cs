@@ -31,7 +31,7 @@ public static class MonolitoPersistenciaServiceCollectionExtensions
         services.AddScoped<UniPlusDbContext>(static sp => sp.GetRequiredService<MonolitoDbContext>());
         services.AddScoped<IUnitOfWork>(static sp => sp.GetRequiredService<MonolitoDbContext>());
         services.AddDbContextMigrationsOnStartup<MonolitoDbContext>(
-            ScriptsDasContribuicoes.Assemblies(MonolitoDbContext.Contribuicoes), ExecutarEtapasPosterioresDosModulosAsync);
+            ScriptsDasContribuicoes.Assemblies(MonolitoDbContext.ContribuicoesDoMonolito), ExecutarEtapasPosterioresDosModulosAsync);
 
         return services;
     }
@@ -39,12 +39,12 @@ public static class MonolitoPersistenciaServiceCollectionExtensions
     private static void ConfigurarOpcoes(IServiceProvider servicos, DbContextOptionsBuilder opcoes)
     {
         opcoes.UseUniPlusNpgsqlConventions<MonolitoDbContext>(servicos, NomeDaConnectionString, UniPlusDbContext.EsquemaDaPlataforma);
-        opcoes.AdicionarInterceptadoresDosModulos(servicos, MonolitoDbContext.Contribuicoes);
+        opcoes.AdicionarInterceptadoresDosModulos(servicos, MonolitoDbContext.ContribuicoesDoMonolito);
     }
 
     private static async Task ExecutarEtapasPosterioresDosModulosAsync(IServiceProvider servicos, CancellationToken cancellationToken)
     {
-        foreach (IContribuicaoDoModulo modulo in MonolitoDbContext.Contribuicoes)
+        foreach (IContribuicaoDoModulo modulo in MonolitoDbContext.ContribuicoesDoMonolito)
         {
             await modulo.ExecutarEtapaPosteriorDaMigrationAsync(servicos, cancellationToken).ConfigureAwait(false);
         }

@@ -12,6 +12,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 
 /// <summary>
 /// Inicia a inscrição (issue #1858) — ou devolve a que já existe, idempotente por construção, não
@@ -127,7 +128,7 @@ public static class IniciarInscricaoCommandHandler
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) == InscricaoConstraintViolation.ProcessoCpfConstraint)
+        catch (Exception ex) when (ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex) == InscricaoConstraintViolation.ProcessoCpfConstraint)
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
 

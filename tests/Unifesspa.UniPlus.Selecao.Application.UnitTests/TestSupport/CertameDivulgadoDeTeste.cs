@@ -16,12 +16,12 @@ internal static class CertameDivulgadoDeTeste
     internal static readonly DateTimeOffset Agora = new(2026, 3, 10, 12, 0, 0, TimeSpan.Zero);
 
     /// <summary>Registra a entrada do ato como a divulgação a grava: pendente, e com endereço se a cópia já ocorreu.</summary>
-    internal static void Registrar(CertameDivulgado divulgado, EditalDivulgado edital)
+    internal static void Registrar(CertameDivulgado divulgado, AtoDivulgado edital)
     {
         ArgumentNullException.ThrowIfNull(divulgado);
         ArgumentNullException.ThrowIfNull(edital);
 
-        divulgado.RegistrarEditalPendente(edital.AtoId, edital.NumeroVersao);
+        divulgado.AbrirEntradaDoAto(edital.AtoId, edital.NumeroVersao);
         if (edital.UrlDownload is not null)
         {
             divulgado.RegistrarEnderecos(edital.AtoId, edital.UrlDownload, edital.Documentos ?? []);

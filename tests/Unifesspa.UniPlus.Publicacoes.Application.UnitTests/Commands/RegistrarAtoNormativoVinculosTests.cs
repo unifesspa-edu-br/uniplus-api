@@ -63,8 +63,8 @@ public sealed class RegistrarAtoNormativoVinculosTests
 
         await Executar(Comando(vinculos: [new(Objeto, Processo)]));
 
-        await _atos.DidNotReceive().AdicionarLinhagemAsync(
-            Arg.Any<LinhagemUnicaPorObjeto>(), Arg.Any<CancellationToken>());
+        await _atos.DidNotReceive().ReservarVagaAsync(
+            Arg.Any<VagaDeLinhagem>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Tipo único por objeto reserva a vaga em nome da própria raiz")]
@@ -78,9 +78,9 @@ public sealed class RegistrarAtoNormativoVinculosTests
         AtoNormativo? registrado = null;
         await _atos.AdicionarAsync(Arg.Do<AtoNormativo>(a => registrado = a), Arg.Any<CancellationToken>());
 
-        LinhagemUnicaPorObjeto? vaga = null;
-        await _atos.AdicionarLinhagemAsync(
-            Arg.Do<LinhagemUnicaPorObjeto>(l => vaga = l), Arg.Any<CancellationToken>());
+        VagaDeLinhagem? vaga = null;
+        await _atos.ReservarVagaAsync(
+            Arg.Do<VagaDeLinhagem>(l => vaga = l), Arg.Any<CancellationToken>());
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
             Comando(vinculos: [new(Objeto, Processo)]));
@@ -101,8 +101,8 @@ public sealed class RegistrarAtoNormativoVinculosTests
         Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando(vinculos: null));
 
         resultado.IsSuccess.Should().BeTrue();
-        await _atos.DidNotReceive().AdicionarLinhagemAsync(
-            Arg.Any<LinhagemUnicaPorObjeto>(), Arg.Any<CancellationToken>());
+        await _atos.DidNotReceive().ReservarVagaAsync(
+            Arg.Any<VagaDeLinhagem>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Recusa com 409 quando outra linhagem já trata o objeto com um ato do mesmo tipo")]
@@ -169,9 +169,9 @@ public sealed class RegistrarAtoNormativoVinculosTests
         _atos.ListarVinculosDoAtoAsync(retificado.Id, Arg.Any<CancellationToken>())
             .Returns([(Objeto, Processo)]);
 
-        LinhagemUnicaPorObjeto? vaga = null;
-        await _atos.AdicionarLinhagemAsync(
-            Arg.Do<LinhagemUnicaPorObjeto>(l => vaga = l), Arg.Any<CancellationToken>());
+        VagaDeLinhagem? vaga = null;
+        await _atos.ReservarVagaAsync(
+            Arg.Do<VagaDeLinhagem>(l => vaga = l), Arg.Any<CancellationToken>());
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
             Comando(vinculos: null, atoRetificadoId: retificado.Id, motivo: "corrige o anexo"));
@@ -198,15 +198,15 @@ public sealed class RegistrarAtoNormativoVinculosTests
 
         AtoNormativo raizDaVaga = AtoRetificado();
         VinculoAtoEntidade vinculoDaRaiz = raizDaVaga.Vinculos.First();
-        _atos.ObterLinhagemDoObjetoAsync(Objeto, Processo, Tipo, Arg.Any<CancellationToken>())
-            .Returns(LinhagemUnicaPorObjeto.Criar(raizDaVaga, vinculoDaRaiz, raiz));
+        _atos.ObterVagaDoObjetoAsync(Objeto, Processo, Tipo, Arg.Any<CancellationToken>())
+            .Returns(VagaDeLinhagem.Criar(raizDaVaga, vinculoDaRaiz, raiz));
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
             Comando(vinculos: null, atoRetificadoId: retificado.Id, motivo: "corrige o anexo"));
 
         resultado.IsSuccess.Should().BeTrue();
-        await _atos.DidNotReceive().AdicionarLinhagemAsync(
-            Arg.Any<LinhagemUnicaPorObjeto>(), Arg.Any<CancellationToken>());
+        await _atos.DidNotReceive().ReservarVagaAsync(
+            Arg.Any<VagaDeLinhagem>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A retificação pelo endpoint de um ato de processo seletivo é recusada, mesmo sem declarar o vínculo")]
@@ -254,7 +254,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             Comando(vinculos: [new(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, Processo)]) with
             {
                 AtributosDoTipo = new AtributosDoTipoAto(true, false, false, "Edital de abertura"),
-                RegistroPeloDominio = true,
+                ChegouPeloDominioDono = true,
             });
 
         resultado.IsSuccess.Should().BeTrue();
@@ -287,9 +287,9 @@ public sealed class RegistrarAtoNormativoVinculosTests
             .Returns((AtoNormativo?)null);
 
     private void VagaLivre() =>
-        _atos.ObterLinhagemDoObjetoAsync(
+        _atos.ObterVagaDoObjetoAsync(
             Arg.Any<string>(), Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns((LinhagemUnicaPorObjeto?)null);
+            .Returns((VagaDeLinhagem?)null);
 
     private static AtoNormativo AtoDeOutraLinhagem() =>
         AtoNormativo.Registrar(
@@ -297,7 +297,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             "CEPS", "EDITAL", 2026, "99", Tipo,
             congelaConfiguracao: true, efeitoIrreversivel: false, unicoPorObjeto: true,
             dataDoAto: DataDoAto, documentoHash: HashValido, assinante: "Jairo Belchior",
-            publicadoEm: Agora, versaoInvocada: null,
+            publicadoEm: Agora, versaoDeConfiguracao: null,
             vinculos: [(Objeto, Processo)]);
 
     private static AtoNormativo AtoRetificado() =>
@@ -306,7 +306,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             "CEPS", "EDITAL", 2026, "13", Tipo,
             congelaConfiguracao: true, efeitoIrreversivel: false, unicoPorObjeto: true,
             dataDoAto: DataDoAto, documentoHash: HashValido, assinante: "Jairo Belchior",
-            publicadoEm: Agora, versaoInvocada: null,
+            publicadoEm: Agora, versaoDeConfiguracao: null,
             vinculos: [(Objeto, Processo)]);
 
     private static RegistrarAtoNormativoCommand Comando(

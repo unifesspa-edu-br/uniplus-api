@@ -25,7 +25,7 @@ using static Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed.SqlD
 /// É dado administrado — depois de semeado, edita-se pelas telas de administração —, gravado direto
 /// no banco por decisão do líder técnico (uniplus-api#1802), para o processo real estar disponível
 /// sem cadastro manual em cada ambiente. Cada linha é construída pelas factories do domínio: o que o
-/// domínio recusaria derruba a subida do banco em vez de gravar dado que a API não aceita.
+/// domínio recusaria derruba a preparaÃ§Ã£o do banco em vez de gravar dado que a API não aceita.
 /// </para>
 /// <para>
 /// Os identificadores são fixos, para a inserção ser idempotente e as chaves estrangeiras baterem

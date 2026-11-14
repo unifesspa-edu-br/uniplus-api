@@ -51,7 +51,7 @@ public sealed class AtoAvulsoNoAcervoPublicoIntegrationTests
     {
         AtoAvulsoComPrincipalEAnexo avulso = await SemearAtoComPrincipalEAnexoAsync();
 
-        EditalDivulgado pendente = (await _acervo.EditaisDivulgadosAsync(avulso.ProcessoId)).Single(e => e.AtoId == avulso.Ato);
+        AtoDivulgado pendente = (await _acervo.AtosDivulgadosAsync(avulso.ProcessoId)).Single(e => e.AtoId == avulso.Ato);
         pendente.UrlDownload.Should().BeNull("o ato foi publicado, mas a cópia dos documentos ao acervo ainda não aconteceu");
         (await _acervo.ObjetosNoAcervoAsync(avulso.ChaveDoPrincipal)).Should().BeEmpty();
     }
@@ -68,7 +68,7 @@ public sealed class AtoAvulsoNoAcervoPublicoIntegrationTests
         await _acervo.CopiarAtoAvulsoAsync(ato);
         await _acervo.CopiarAtoAvulsoAsync(ato);
 
-        (await _acervo.EditaisDivulgadosAsync(processo.Id)).Count(e => e.AtoId == ato).Should().Be(1);
+        (await _acervo.AtosDivulgadosAsync(processo.Id)).Count(e => e.AtoId == ato).Should().Be(1);
     }
 
     [Fact(DisplayName = "Ato sem registro do processo, de outro domínio, não é divulgado nem falha")]
@@ -78,7 +78,7 @@ public sealed class AtoAvulsoNoAcervoPublicoIntegrationTests
 
         await _acervo.CopiarAtoAvulsoAsync(Guid.CreateVersion7());
 
-        (await _acervo.EditaisDivulgadosAsync(processo.Id)).Should().ContainSingle("só o edital que a divulgação já tinha");
+        (await _acervo.AtosDivulgadosAsync(processo.Id)).Should().ContainSingle("só o edital que a divulgação já tinha");
     }
 
     private async Task<AtoAvulsoComPrincipalEAnexo> SemearAtoComPrincipalEAnexoAsync()
@@ -108,7 +108,7 @@ public sealed class AtoAvulsoNoAcervoPublicoIntegrationTests
 
     private async Task ConferirRegistroNaDivulgacaoAsync(AtoAvulsoComPrincipalEAnexo avulso)
     {
-        EditalDivulgado registrado = (await _acervo.EditaisDivulgadosAsync(avulso.ProcessoId)).Single(e => e.AtoId == avulso.Ato);
+        AtoDivulgado registrado = (await _acervo.AtosDivulgadosAsync(avulso.ProcessoId)).Single(e => e.AtoId == avulso.Ato);
         registrado.NumeroVersao.Should().BeNull("o ato não criou versão de configuração");
         registrado.UrlDownload.Should().Be(AcervoDeTeste.Endereco.De(avulso.ChaveDoPrincipal).OriginalString);
         registrado.Documentos.Should().Equal(

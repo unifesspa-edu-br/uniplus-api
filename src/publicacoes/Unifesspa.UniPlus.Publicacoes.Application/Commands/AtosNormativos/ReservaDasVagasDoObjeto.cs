@@ -59,7 +59,7 @@ public sealed class ReservaDasVagasDoObjeto(IAtoNormativoRepository atos)
         CancellationToken cancellationToken)
     {
         Guid[] daLinhagem = [.. idsDaPropriaCadeia, ato.Id];
-        List<LinhagemUnicaPorObjeto> aReservar = [];
+        List<VagaDeLinhagem> aReservar = [];
         foreach (VinculoAtoEntidade vinculo in ato.Vinculos)
         {
             DomainError? recusa = await ExaminarAsync(ato, vinculo, daLinhagem, raizDaLinhagem, aReservar, cancellationToken)
@@ -79,7 +79,7 @@ public sealed class ReservaDasVagasDoObjeto(IAtoNormativoRepository atos)
         VinculoAtoEntidade vinculo,
         Guid[] daLinhagem,
         Guid raizDaLinhagem,
-        List<LinhagemUnicaPorObjeto> aReservar,
+        List<VagaDeLinhagem> aReservar,
         CancellationToken cancellationToken)
     {
         AtoNormativo? conflitante = await atos
@@ -91,8 +91,8 @@ public sealed class ReservaDasVagasDoObjeto(IAtoNormativoRepository atos)
             return Ocupada(ObjetoJaTemAtoVivoMensagem(vinculo, ato.TipoCodigo, conflitante));
         }
 
-        LinhagemUnicaPorObjeto? vaga = await atos
-            .ObterLinhagemDoObjetoAsync(vinculo.EntidadeTipo, vinculo.EntidadeId, ato.TipoCodigo, cancellationToken)
+        VagaDeLinhagem? vaga = await atos
+            .ObterVagaDoObjetoAsync(vinculo.EntidadeTipo, vinculo.EntidadeId, ato.TipoCodigo, cancellationToken)
             .ConfigureAwait(false);
         return await ExaminarVagaAsync(ato, vinculo, vaga, raizDaLinhagem, aReservar, cancellationToken).ConfigureAwait(false);
     }
@@ -104,14 +104,14 @@ public sealed class ReservaDasVagasDoObjeto(IAtoNormativoRepository atos)
     private async Task<DomainError?> ExaminarVagaAsync(
         AtoNormativo ato,
         VinculoAtoEntidade vinculo,
-        LinhagemUnicaPorObjeto? vaga,
+        VagaDeLinhagem? vaga,
         Guid raizDaLinhagem,
-        List<LinhagemUnicaPorObjeto> aReservar,
+        List<VagaDeLinhagem> aReservar,
         CancellationToken cancellationToken)
     {
         if (vaga is null)
         {
-            aReservar.Add(LinhagemUnicaPorObjeto.Criar(ato, vinculo, raizDaLinhagem));
+            aReservar.Add(VagaDeLinhagem.Criar(ato, vinculo, raizDaLinhagem));
             return null;
         }
 
@@ -121,11 +121,11 @@ public sealed class ReservaDasVagasDoObjeto(IAtoNormativoRepository atos)
     }
 
     private async Task ReservarTodasAsync(
-        List<LinhagemUnicaPorObjeto> aReservar, CancellationToken cancellationToken)
+        List<VagaDeLinhagem> aReservar, CancellationToken cancellationToken)
     {
-        foreach (LinhagemUnicaPorObjeto vaga in aReservar)
+        foreach (VagaDeLinhagem vaga in aReservar)
         {
-            await atos.AdicionarLinhagemAsync(vaga, cancellationToken).ConfigureAwait(false);
+            await atos.ReservarVagaAsync(vaga, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -140,7 +140,7 @@ public sealed class ReservaDasVagasDoObjeto(IAtoNormativoRepository atos)
 
     // A raiz da linhagem que ocupa a vaga é um ato registrado; só a leitura que falha em achá-lo deixa a recusa sem nomeá-lo.
     private async Task<string> MensagemDaVagaDeOutraLinhagemAsync(
-        VinculoAtoEntidade vinculo, string tipoCodigo, LinhagemUnicaPorObjeto vaga, CancellationToken cancellationToken)
+        VinculoAtoEntidade vinculo, string tipoCodigo, VagaDeLinhagem vaga, CancellationToken cancellationToken)
     {
         AtoNormativo? raiz = await atos.ObterPorIdParaLeituraAsync(vaga.RaizId, cancellationToken).ConfigureAwait(false);
         string ocupante = raiz is null ? "por outra linhagem de atos" : $"pela linhagem do ato {NumeracaoDoAto.Descrever(raiz)}";

@@ -118,7 +118,7 @@ public sealed class CadeiaDeRetificacaoDoAto(IAtoNormativoRepository atos)
     /// <summary>
     /// A classe de congelamento do ato que retifica deve coincidir com a do retificado: é essa
     /// classe, não o rótulo do tipo, que protege a integridade da configuração publicada
-    /// (UNI-REQ-0019). Depois, a linearidade: se a raiz já foi retificada, a nova retificação
+    /// (UNI-REQ-0019). Depois, a linearidade: se o ato já foi retificado, a nova retificação
     /// deveria emendar a cabeça da cadeia, e a recusa nomeia quem já a retificou.
     /// </summary>
     private async Task<DomainError?> ConferirRetificadoAsync(
@@ -135,7 +135,7 @@ public sealed class CadeiaDeRetificacaoDoAto(IAtoNormativoRepository atos)
 
         return retificador is null
             ? null
-            : new DomainError(AtoNormativoErrorCodes.RaizJaRetificada, RaizJaRetificadaMensagem(retificador));
+            : new DomainError(AtoNormativoErrorCodes.AtoJaRetificado, AtoJaRetificadoMensagem(retificador));
     }
 
     private static string RetificadoInexistenteMensagem(Guid retificadoId) =>
@@ -144,9 +144,9 @@ public sealed class CadeiaDeRetificacaoDoAto(IAtoNormativoRepository atos)
             "O ato retificado {0} não corresponde a nenhum ato registrado.",
             retificadoId);
 
-    private static string RaizJaRetificadaMensagem(AtoNormativo retificador) =>
+    private static string AtoJaRetificadoMensagem(AtoNormativo retificador) =>
         $"O ato que se tentou retificar já foi retificado pelo ato {NumeracaoDoAto.Descrever(retificador)}. "
-        + "A cadeia é linear: retifique a cabeça da cadeia, não uma raiz já retificada.";
+        + "A cadeia é linear: retifique a cabeça da cadeia, não um ato já retificado.";
 }
 
 /// <summary>

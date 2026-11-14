@@ -26,7 +26,7 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
         builder.Property(a => a.TipoNome).HasMaxLength(AtoDoProcesso.TipoNomeMaxLength).IsRequired();
         builder.Property(a => a.Numero).HasMaxLength(AtoDoProcesso.NumeroMaxLength);
         builder.Property(a => a.Assinante).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(AtoDoProcesso.AssinanteMaxLength).IsRequired();
-        builder.Property(a => a.UnidadeAdministradora).HasMaxLength(AtoDoProcesso.UnidadeAdministradoraMaxLength).IsRequired();
+        builder.Property(a => a.SlugDaUnidadeAdministradora).HasMaxLength(AtoDoProcesso.SlugDaUnidadeAdministradoraMaxLength).IsRequired();
         builder.Property(a => a.IdentificadorLegivelDoProcesso).HasMaxLength(AtoDoProcesso.IdentificadorLegivelMaxLength).IsRequired();
         builder.Property(a => a.MotivoDaCorrecao).HasMaxLength(AtoDoProcesso.MotivoDaCorrecaoMaxLength);
         builder.Property(a => a.PoliticaDeDivulgacaoConfirmadaPorSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(AtoDoProcesso.SubMaxLength);
@@ -55,8 +55,8 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
 
         // Sem FK: o ato corrigido pode ser o que criou uma versão ou outro registro, e ele é do
         // Publicações (ADR-0061). Único: a cadeia de correção é linear (ADR-0103), e o Publicações só
-        // enxerga a correção depois de registrá-la — duas correções pendentes do mesmo ato só são
-        // barradas aqui.
+        // enxerga a correção depois de registrá-la — duas correções simultâneas do mesmo ato, ainda sem
+        // registro no Publicações, só são barradas aqui.
         builder.HasIndex(a => a.AtoCorrigidoId)
             .IsUnique()
             .HasFilter("ato_corrigido_id IS NOT NULL")

@@ -18,7 +18,7 @@ using Queries.ProcessosSeletivos;
 internal abstract record OrigemDoCongelamento
 {
     /// <summary>O ato que a versão emenda e o motivo; nulo quando a versão não retifica nada.</summary>
-    public abstract RetificacaoInfo? Retificacao { get; }
+    public abstract RetificacaoDoEdital? Retificacao { get; }
 
     /// <summary>O que a versão vigente congelou das exigências e dos fatos derivados; nulo sem versão vigente.</summary>
     public abstract CongeladoNaVersaoVigente? CongeladoNaVersaoVigente { get; }
@@ -46,7 +46,7 @@ internal abstract record OrigemDoCongelamento
 /// <summary>A publicação de abertura: nenhuma versão a precede.</summary>
 internal sealed record PrimeiraPublicacao : OrigemDoCongelamento
 {
-    public override RetificacaoInfo? Retificacao => null;
+    public override RetificacaoDoEdital? Retificacao => null;
 
     public override CongeladoNaVersaoVigente? CongeladoNaVersaoVigente => null;
 
@@ -69,7 +69,7 @@ internal sealed record BaseDaRetificacao(
 /// <summary>O que as duas formas de retificar têm em comum: a base lida da cadeia de versões.</summary>
 internal abstract record OrigemRetificadora(BaseDaRetificacao Base) : OrigemDoCongelamento
 {
-    public override RetificacaoInfo? Retificacao => new(Base.VersaoVigente.AtoCriadorId, Base.Motivo);
+    public override RetificacaoDoEdital? Retificacao => new(Base.VersaoVigente.AtoCriadorId, Base.Motivo);
 
     public override CongeladoNaVersaoVigente? CongeladoNaVersaoVigente =>
         ProtecaoVigenteDasExigenciasDoProcesso.DoEnvelope(Base.VersaoReidratada);

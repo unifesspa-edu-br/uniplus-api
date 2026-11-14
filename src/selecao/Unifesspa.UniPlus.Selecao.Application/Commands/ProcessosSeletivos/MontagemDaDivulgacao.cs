@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// seguintes e a entrada do ato, ainda sem endereço. Quem grava é o comando que publica, na mesma gravação da versão e
 /// do ato.
 /// </summary>
-public sealed class GravacaoDaDivulgacao(ICertameDivulgadoRepository certames, IEnderecoNoAcervoPublico endereco)
+public sealed class MontagemDaDivulgacao(ICertameDivulgadoRepository certames, IEnderecoNoAcervoPublico endereco)
 {
     /// <summary>
     /// A divulgação vale o instante da versão (<see cref="VersaoConfiguracao.VigenteAPartirDe"/>), o mesmo do ato. A
@@ -61,7 +61,7 @@ public sealed class GravacaoDaDivulgacao(ICertameDivulgadoRepository certames, I
                 ProjecaoDoCertamePublicado.Versao, facetas, documento, versao.VigenteAPartirDe);
         }
 
-        divulgado.RegistrarEditalPendente(ato.Id, versao.NumeroVersao);
+        divulgado.AbrirEntradaDoAto(ato.Id, versao.NumeroVersao);
         return Result.Success();
     }
 

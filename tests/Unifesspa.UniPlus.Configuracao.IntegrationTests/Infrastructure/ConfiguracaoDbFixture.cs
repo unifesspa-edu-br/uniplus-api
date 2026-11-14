@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o
-/// schema do <see cref="UniPlusDbContext"/> subido por <c>SubirOBancoAsync</c> com as sementes do módulo,
+/// schema do <see cref="UniPlusDbContext"/> subido por <c>PrepararOBancoAsync</c> com as sementes do módulo,
 /// e expõe uma factory de DbContext com os MESMOS interceptors de produção
 /// (SoftDelete + Auditable). Cobre os cadastros Campus e LocalOferta (UNI-REQ #587).
 /// </summary>
@@ -40,7 +40,7 @@ public sealed class ConfiguracaoDbFixture : IAsyncLifetime
         await _postgres.StartAsync().ConfigureAwait(false);
 
         await using UniPlusDbContext context = CreateDbContext(userId: null);
-        await context.SubirOBancoAsync().ConfigureAwait(false);
+        await context.PrepararOBancoAsync().ConfigureAwait(false);
         await SementesDaConfiguracao.AplicarAsync(context, CancellationToken.None).ConfigureAwait(false);
     }
 

@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Interceptors;
 
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o
-/// schema do <see cref="UniPlusDbContext"/> subido por <c>SubirOBancoAsync</c>,
+/// schema do <see cref="UniPlusDbContext"/> subido por <c>PrepararOBancoAsync</c>,
 /// e expõe uma factory de <see cref="UniPlusDbContext"/> com os MESMOS
 /// interceptors da produção (Soft Delete + Auditable + Histórico de
 /// <c>ObrigatoriedadeLegal</c>).
@@ -61,7 +61,7 @@ public sealed class ObrigatoriedadeLegalDbFixture : IAsyncLifetime
         await _postgres.StartAsync().ConfigureAwait(false);
 
         await using UniPlusDbContext context = CreateDbContext(userId: null);
-        await context.SubirOBancoAsync().ConfigureAwait(false);
+        await context.PrepararOBancoAsync().ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()

@@ -138,7 +138,7 @@ public sealed class PublicacoesHandlersNoBusTests
             new ObterAtoNormativoPorIdQuery(registrado.Value!.AtoId), CancellationToken.None);
 
         lido.Should().NotBeNull();
-        // O tipo vigente congela configuração — copiado por valor no ato (AC5).
+        // O tipo vigente congela configuração — copiado por valor no ato.
         lido!.CongelaConfiguracao.Should().BeTrue();
     }
 }

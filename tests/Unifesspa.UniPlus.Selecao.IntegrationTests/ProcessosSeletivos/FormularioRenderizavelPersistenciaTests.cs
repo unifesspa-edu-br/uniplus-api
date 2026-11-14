@@ -407,7 +407,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             DefinicaoAvaliavel naRetificacao = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(carregado, CatalogoComCorRaca([.. CorRacaCorrigida()])).Value!;
             SnapshotCanonico congelado = Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(
                 carregado, dados, documento.HashSha256!, FusoInstitucional.ZoneId,
-                new RetificacaoInfo(versaoAtual.AtoCriadorId, "Correção do texto das opções"),
+                new RetificacaoDoEdital(versaoAtual.AtoCriadorId, "Correção do texto das opções"),
                 ValoresSelecionaveisCongelados: naRetificacao.ValoresSelecionaveis,
                 TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
             Result<VersaoConfiguracao> retificar = carregado.Retificar(

@@ -1,8 +1,8 @@
 namespace Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
-/// Rótulos de entidade (ADR-0105) cujos atos só entram em Publicações pela requisição
-/// durável do domínio dono do objeto, e nunca pelo endpoint administrativo.
+/// Rótulos de entidade (ADR-0105) cujos atos só entram em Publicações pela porta de escrita
+/// do domínio dono do objeto, na transação em que ele publica, e nunca pelo endpoint administrativo.
 /// </summary>
 /// <remarks>
 /// O endpoint administrativo recebe só os metadados e o hash do documento, não o arquivo.

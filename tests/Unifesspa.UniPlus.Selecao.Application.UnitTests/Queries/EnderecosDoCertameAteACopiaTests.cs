@@ -24,7 +24,7 @@ public sealed class EnderecosDoCertameAteACopiaTests
     public async Task Detalhe_AntesDaCopia_EditalSemEndereco()
     {
         (Guid processoId, CertameDivulgado divulgado, CertamePublicadoDto projecao) = Cenario();
-        divulgado.RegistrarEditalPendente(projecao.AtoCriadorId, 1);
+        divulgado.AbrirEntradaDoAto(projecao.AtoCriadorId, 1);
 
         CertamePublicadoDto servido = await LerAsync(processoId, divulgado);
 
@@ -37,7 +37,7 @@ public sealed class EnderecosDoCertameAteACopiaTests
     public async Task Detalhe_DepoisDaCopia_EditalComEndereco()
     {
         (Guid processoId, CertameDivulgado divulgado, CertamePublicadoDto projecao) = Cenario();
-        divulgado.RegistrarEditalPendente(projecao.AtoCriadorId, 1);
+        divulgado.AbrirEntradaDoAto(projecao.AtoCriadorId, 1);
         divulgado.RegistrarEnderecos(projecao.AtoCriadorId, EnderecoDoEdital, []);
 
         CertamePublicadoDto servido = await LerAsync(processoId, divulgado);
@@ -51,8 +51,8 @@ public sealed class EnderecosDoCertameAteACopiaTests
     {
         (Guid processoId, CertameDivulgado divulgado, CertamePublicadoDto projecao) = Cenario();
         Guid aviso = Guid.CreateVersion7();
-        divulgado.RegistrarEditalPendente(projecao.AtoCriadorId, 1);
-        divulgado.RegistrarEditalPendente(aviso, null);
+        divulgado.AbrirEntradaDoAto(projecao.AtoCriadorId, 1);
+        divulgado.AbrirEntradaDoAto(aviso, null);
         divulgado.RegistrarEnderecos(aviso, "https://acervo.teste/aviso.pdf", []);
 
         CertamePublicadoDto servido = await LerAsync(processoId, divulgado);
@@ -65,7 +65,7 @@ public sealed class EnderecosDoCertameAteACopiaTests
     public async Task Selo_MudaQuandoOEnderecoChega()
     {
         (Guid processoId, CertameDivulgado divulgado, CertamePublicadoDto projecao) = Cenario();
-        divulgado.RegistrarEditalPendente(projecao.AtoCriadorId, 1);
+        divulgado.AbrirEntradaDoAto(projecao.AtoCriadorId, 1);
         string antes = SeloDoCertamePublicado.De(await LerAsync(processoId, divulgado));
 
         divulgado.RegistrarEnderecos(projecao.AtoCriadorId, EnderecoDoEdital, []);

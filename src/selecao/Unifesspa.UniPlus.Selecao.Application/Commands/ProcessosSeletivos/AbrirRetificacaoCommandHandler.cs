@@ -11,6 +11,7 @@ using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 
 /// <summary>
 /// Abre a sessão editorial de retificação (Story #860, ADR-0110 D3).
@@ -98,7 +99,7 @@ public static class AbrirRetificacaoCommandHandler
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
+        catch (Exception ex) when (ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex) is { } constraint
             && RascunhoRetificacaoConstraintViolation.Traduzir(constraint) is { } erro)
         {
             // Duas aberturas concorrentes leem o agregado sem rascunho e passam ambas pela

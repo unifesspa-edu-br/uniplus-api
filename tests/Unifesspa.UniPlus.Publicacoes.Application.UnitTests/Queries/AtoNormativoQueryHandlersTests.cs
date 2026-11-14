@@ -123,7 +123,7 @@ public sealed class AtoNormativoQueryHandlersTests
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
             publicadoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
-            versaoInvocada: null);
+            versaoDeConfiguracao: null);
 
     private static AtoNormativo NovoRetificador(Guid atoRetificadoId) =>
         AtoNormativo.Registrar(
@@ -134,7 +134,7 @@ public sealed class AtoNormativoQueryHandlersTests
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
             publicadoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
-            versaoInvocada: null,
+            versaoDeConfiguracao: null,
             atoRetificadoId: atoRetificadoId,
             motivoRetificacao: "corrige o anexo II");
 }

@@ -16,7 +16,7 @@ using Wolverine.Tracking;
 /// e a vaga do objeto entram juntos, ou nenhum entra. O handler de teste segue o padrão do produto, no bus real do Host.
 /// </summary>
 /// <remarks>
-/// A exceção depois da gravação não deixa linha em nenhum esquema nem envelope. A retificação de uma raiz já retificada e a
+/// A exceção depois da gravação não deixa linha em nenhum esquema nem envelope. A retificação de um ato já retificado e a
 /// vaga ocupada por outro ato voltam como recusa nomeada da porta, e a Seleção não grava nada.
 /// </remarks>
 [Collection(MonolitoHostCollection.Name)]
@@ -64,8 +64,8 @@ public sealed class AtomicidadeDoRegistroDeAtoNoHostTests : IClassFixture<HostCo
             "o envelope do evento não chegou à fila durável");
     }
 
-    [Fact(DisplayName = "Retificar uma raiz já retificada volta como recusa nomeada e não deixa a Seleção nem o ato")]
-    public async Task RaizJaRetificada_RecusaSemResiduo()
+    [Fact(DisplayName = "Retificar um ato já retificado volta como recusa nomeada e não deixa a Seleção nem o ato")]
+    public async Task AtoJaRetificado_RecusaSemResiduo()
     {
         RegistrarAtoPelaPorta raiz = await NovoAsync(unicoPorObjeto: false, DesfechoDaGravacao.Sucesso);
         (await ExecucaoDeComandoNoHost.ExecutarAsync(_servicos, raiz)).Resultado!.IsSuccess.Should().BeTrue();
@@ -75,7 +75,7 @@ public sealed class AtomicidadeDoRegistroDeAtoNoHostTests : IClassFixture<HostCo
 
         ExecucaoDeComandoNoHost execucao = await ExecucaoDeComandoNoHost.ExecutarAsync(_servicos, segunda);
 
-        execucao.Resultado!.Error!.Code.Should().Be(AtoNormativoErrorCodes.RaizJaRetificada);
+        execucao.Resultado!.Error!.Code.Should().Be(AtoNormativoErrorCodes.AtoJaRetificado);
         await ConferirSemNadaAsync(segunda, execucao);
     }
 

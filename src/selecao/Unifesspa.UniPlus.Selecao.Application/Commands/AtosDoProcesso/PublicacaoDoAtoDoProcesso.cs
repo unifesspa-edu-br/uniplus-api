@@ -10,6 +10,7 @@ using DTOs;
 using ProcessosSeletivos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
@@ -21,7 +22,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </param>
 internal sealed record ProcessoDivulgadoConferido(string Orgao, CertameDivulgado Divulgado);
 
-/// <summary>Tudo o que a conferência decidiu sobre o ato e que o envio grava e manda ao Publicações.</summary>
+/// <summary>Tudo o que a conferência decidiu sobre o ato e que a publicação grava e manda ao Publicações.</summary>
 /// <param name="ProcessoSeletivoId">O processo que publica o ato.</param>
 /// <param name="Processo">O órgão e a divulgação do certame.</param>
 /// <param name="Tipo">O tipo do ato como o catálogo o declarava na conferência.</param>
@@ -34,7 +35,7 @@ internal sealed record ProcessoDivulgadoConferido(string Orgao, CertameDivulgado
 /// <param name="MotivoDaCorrecao">Motivo da correção, junto com <paramref name="AtoCorrigidoId"/>.</param>
 /// <param name="ItemDoEdital">A identidade do item do edital que o ato cumpre; nula no documento avulso.</param>
 /// <param name="PoliticaConfirmadaPorSub">Quem confirmou a política de divulgação; nulo quando ela não foi pedida.</param>
-internal sealed record AtoAEnviar(
+internal sealed record AtoAPublicar(
     Guid ProcessoSeletivoId,
     ProcessoDivulgadoConferido Processo,
     TipoAtoPublicadoView Tipo,
@@ -66,7 +67,7 @@ internal sealed record AtoAEnviar(
 /// registro porque a chave não muda depois de publicada.
 /// </para>
 /// </remarks>
-internal static class EnvioDoAtoDoProcesso
+internal static class PublicacaoDoAtoDoProcesso
 {
     public static async Task<Result<ProcessoDivulgadoConferido>> ConferirProcessoDivulgadoAsync(
         IProcessoSeletivoRepository processoSeletivoRepository,
@@ -96,48 +97,48 @@ internal static class EnvioDoAtoDoProcesso
             : Result<ProcessoDivulgadoConferido>.Success(new ProcessoDivulgadoConferido(orgao, divulgado));
     }
 
-    public static async Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> EnviarAsync(
-        AtoAEnviar ato,
+    public static async Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> PublicarAsync(
+        AtoAPublicar ato,
         IAtoDoProcessoRepository atoDoProcessoRepository,
-        IRegistroDeAtoNormativo registroDeAtos,
+        IRegistroDeAtoNormativo registroCentralDeAtos,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ato);
         ArgumentNullException.ThrowIfNull(atoDoProcessoRepository);
-        ArgumentNullException.ThrowIfNull(registroDeAtos);
+        ArgumentNullException.ThrowIfNull(registroCentralDeAtos);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         Result<AtoDoProcesso> registrado = await RegistrarAsync(ato, atoDoProcessoRepository, cancellationToken).ConfigureAwait(false);
 
         return registrado.IsFailure
             ? (Result<AtoPublicadoDto>.ValidationFailure(registrado.Errors), [])
-            : await ConfirmarAsync(ato, registrado.Value!, registroDeAtos, unitOfWork, cancellationToken).ConfigureAwait(false);
+            : await ConcluirPublicacaoAsync(ato, registrado.Value!, registroCentralDeAtos, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> ConfirmarAsync(
-        AtoAEnviar ato,
-        AtoDoProcesso registro,
-        IRegistroDeAtoNormativo registroDeAtos,
+    private static async Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> ConcluirPublicacaoAsync(
+        AtoAPublicar ato,
+        AtoDoProcesso atoDoProcesso,
+        IRegistroDeAtoNormativo registroCentralDeAtos,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        DomainError? recusa = await SubmeterAsync(ato, registro, registroDeAtos, unitOfWork, cancellationToken).ConfigureAwait(false);
+        DomainError? recusa = await RegistrarEGravarAsync(ato, atoDoProcesso, registroCentralDeAtos, unitOfWork, cancellationToken).ConfigureAwait(false);
 
         return recusa is not null
             ? (Result<AtoPublicadoDto>.Failure(recusa), [])
-            : (Result<AtoPublicadoDto>.Success(new AtoPublicadoDto(registro.Id)), [new CopiarDocumentosDoAtoAoAcervo(ato.ProcessoSeletivoId, registro.Id)]);
+            : (Result<AtoPublicadoDto>.Success(new AtoPublicadoDto(atoDoProcesso.Id)), [new CopiarDocumentosDoAtoAoAcervo(ato.ProcessoSeletivoId, atoDoProcesso.Id)]);
     }
 
-    private static async Task<DomainError?> SubmeterAsync(
-        AtoAEnviar ato,
-        AtoDoProcesso registro,
-        IRegistroDeAtoNormativo registroDeAtos,
+    private static async Task<DomainError?> RegistrarEGravarAsync(
+        AtoAPublicar ato,
+        AtoDoProcesso atoDoProcesso,
+        IRegistroDeAtoNormativo registroCentralDeAtos,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        Result aceito = await registroDeAtos
-            .RegistrarAsync(AtoPublicadoPeloProcesso.DoAtoAvulso(ato, registro), cancellationToken)
+        Result aceito = await registroCentralDeAtos
+            .RegistrarAsync(AtoPublicadoPeloProcesso.DoAtoSemVersao(ato, atoDoProcesso), cancellationToken)
             .ConfigureAwait(false);
         if (aceito.IsFailure)
         {
@@ -145,19 +146,19 @@ internal static class EnvioDoAtoDoProcesso
             return aceito.Error;
         }
 
-        ato.Processo.Divulgado.RegistrarEditalPendente(registro.Id, numeroVersao: null);
-        return await SalvarAsync(registro, registroDeAtos, unitOfWork, cancellationToken).ConfigureAwait(false);
+        ato.Processo.Divulgado.AbrirEntradaDoAto(atoDoProcesso.Id, numeroVersao: null);
+        return await SalvarAsync(atoDoProcesso, registroCentralDeAtos, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<DomainError?> SalvarAsync(
-        AtoDoProcesso registro, IRegistroDeAtoNormativo registroDeAtos, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+        AtoDoProcesso atoDoProcesso, IRegistroDeAtoNormativo registroCentralDeAtos, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
             return null;
         }
-        catch (Exception ex) when (Traduzir(ex, registro, registroDeAtos) is { } recusa)
+        catch (Exception excecao) when (Traduzir(excecao, atoDoProcesso, registroCentralDeAtos) is { } recusa)
         {
             // Corrida entre duas escritas do mesmo item, do mesmo ato corrigido ou da mesma vaga do objeto. A recusa
             // não devolve exceção, e o Wolverine salva de novo depois do handler: sem descartar o rastreamento, a
@@ -168,12 +169,12 @@ internal static class EnvioDoAtoDoProcesso
     }
 
     // A Seleção reconhece o que é dela, e a porta, o que é do registro central: quem não reconhece propaga.
-    private static DomainError? Traduzir(Exception excecao, AtoDoProcesso registro, IRegistroDeAtoNormativo registroDeAtos) =>
-        ConflitoNaGravacaoDoAtoDoProcesso.Traduzir(UniqueConstraintViolation.GetViolatedConstraint(excecao), registro)
-            ?? registroDeAtos.TraduzirConflitoDaGravacao(excecao);
+    private static DomainError? Traduzir(Exception excecao, AtoDoProcesso atoDoProcesso, IRegistroDeAtoNormativo registroCentralDeAtos) =>
+        ConflitoNaGravacaoDoAtoDoProcesso.Traduzir(ConstraintVioladaNaGravacao.NomeDaConstraintViolada(excecao), atoDoProcesso)
+            ?? registroCentralDeAtos.TraduzirConflitoDaGravacao(excecao);
 
     private static async Task<Result<AtoDoProcesso>> RegistrarAsync(
-        AtoAEnviar ato, IAtoDoProcessoRepository atoDoProcessoRepository, CancellationToken cancellationToken)
+        AtoAPublicar ato, IAtoDoProcessoRepository atoDoProcessoRepository, CancellationToken cancellationToken)
     {
         AtoDoProcesso versaoDivulgada = await VersaoDivulgadaAsync(ato, atoDoProcessoRepository, cancellationToken).ConfigureAwait(false);
         Result<AtoDoProcesso> registrado = AtoDoProcesso.Registrar(NovoAtoDe(ato, versaoDivulgada), ato.PublicadoEm);
@@ -186,7 +187,7 @@ internal static class EnvioDoAtoDoProcesso
     }
 
     private static async Task<AtoDoProcesso> VersaoDivulgadaAsync(
-        AtoAEnviar ato, IAtoDoProcessoRepository atoDoProcessoRepository, CancellationToken cancellationToken)
+        AtoAPublicar ato, IAtoDoProcessoRepository atoDoProcessoRepository, CancellationToken cancellationToken)
     {
         Guid atoCriadorId = ato.Processo.Divulgado.AtoCriadorId;
 
@@ -195,7 +196,7 @@ internal static class EnvioDoAtoDoProcesso
                 $"A divulgação do processo {ato.ProcessoSeletivoId} aponta para o ato {atoCriadorId}, que não tem registro do ato do processo.");
     }
 
-    private static NovoAtoDoProcesso NovoAtoDe(AtoAEnviar ato, AtoDoProcesso versaoDivulgada) =>
+    private static NovoAtoDoProcesso NovoAtoDe(AtoAPublicar ato, AtoDoProcesso versaoDivulgada) =>
         IdentidadeDoNovoAto(ato, versaoDivulgada) with
         {
             ItemDoEdital = ato.ItemDoEdital,
@@ -204,7 +205,7 @@ internal static class EnvioDoAtoDoProcesso
             PoliticaDeDivulgacaoConfirmadaPorSub = ato.PoliticaConfirmadaPorSub,
         };
 
-    private static NovoAtoDoProcesso IdentidadeDoNovoAto(AtoAEnviar ato, AtoDoProcesso versaoDivulgada) =>
+    private static NovoAtoDoProcesso IdentidadeDoNovoAto(AtoAPublicar ato, AtoDoProcesso versaoDivulgada) =>
         new(
             AtoId: Guid.CreateVersion7(ato.PublicadoEm),
             ProcessoSeletivoId: ato.ProcessoSeletivoId,
@@ -213,7 +214,7 @@ internal static class EnvioDoAtoDoProcesso
             Numero: ato.Numero,
             DataDoAto: ato.DataDoAto,
             Assinante: ato.Assinante,
-            UnidadeAdministradora: versaoDivulgada.UnidadeAdministradora,
+            SlugDaUnidadeAdministradora: versaoDivulgada.SlugDaUnidadeAdministradora,
             IdentificadorLegivelDoProcesso: versaoDivulgada.IdentificadorLegivelDoProcesso,
             DocumentoPrincipalId: ato.Documentos.Principal.Id,
             Anexos: [.. ato.Documentos.Anexos.Select(static a => new AnexoDeclarado(a.Documento.Id, a.Nome))]);

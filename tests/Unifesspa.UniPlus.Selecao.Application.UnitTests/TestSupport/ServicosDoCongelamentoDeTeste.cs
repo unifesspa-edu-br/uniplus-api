@@ -260,7 +260,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public MontagemDoCongelamento Montagem() => new(Contextos(), Canonicalizer, Usuario);
 
-    public GravacaoDaDivulgacao Divulgacao() => new(Certames, EnderecoNoAcervo());
+    public MontagemDaDivulgacao Divulgacao() => new(Certames, EnderecoNoAcervo());
 
     public GravacaoDaVersaoCongelada Gravacao() => new(Repositorio, Atos, Rascunhos, Registro, Divulgacao(), UnitOfWork);
 

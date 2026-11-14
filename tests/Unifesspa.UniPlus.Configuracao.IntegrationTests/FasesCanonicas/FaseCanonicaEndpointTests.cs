@@ -413,7 +413,7 @@ public sealed class FaseCanonicaEndpointTests
     /// <summary>
     /// Libera o slot de um codigo ocupado pelo seed das dezesseis fases. Desde que
     /// <c>FaseCanonica</c> passou a nascer semeada, todo codigo do vocabulario ja tem
-    /// linha viva ao subir o banco de teste, e um POST de criacao responderia 409.
+    /// linha viva ao preparar o banco de teste, e um POST de criacao responderia 409.
     /// O filtro pelo prefixo do id restringe o apagamento as linhas do seed.
     /// </summary>
     private async Task LiberarSlotDoSeedAsync(string codigo)

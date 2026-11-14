@@ -159,7 +159,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
                 new FacetasDoCertameDivulgado(
                     divulgado.IdentificadorLegivel, divulgado.Nome, divulgado.Numero, divulgado.ModalidadesOfertadas,
                     divulgado.InscricoesDe, divulgado.InscricoesAte.AddDays(5)),
-                divulgado.Certame,
+                divulgado.DocumentoPublico,
                 Agora.AddMinutes(1));
 
             await mutacao.SaveChangesAsync(CancellationToken.None);

@@ -89,7 +89,7 @@ E **uma** versão, separadamente, é a **corrente de emissão**. Quando a forma 
 - Versão **fora do registro** → recusa com erro nomeado.
 
 **O decoder devolve um envelope neutro completo** — o grafo das dimensões **+ `DadosEdital` +
-hash do documento + `RetificacaoInfo`** — porque o CA de round-trip precisa de todos eles, não só
+hash do documento + `RetificacaoDoEdital`** — porque o CA de round-trip precisa de todos eles, não só
 do grafo.
 
 **Fitness tests:** (a) a versão **corrente de emissão** tem encoder **e** decoder; (b) toda versão

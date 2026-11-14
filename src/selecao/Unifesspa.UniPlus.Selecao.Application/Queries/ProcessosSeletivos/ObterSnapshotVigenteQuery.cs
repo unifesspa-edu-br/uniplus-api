@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Resolve o snapshot congelado vigente do Processo Seletivo num instante
-/// EXPLÍCITO (congelamento dos parâmetros na publicação, UNI-REQ-0019, Story #759 T6 #787, ADR-0075/0076): o Edital vivo publicado
-/// de MAIOR <c>data_publicacao</c> ≤ <see cref="Instante"/>. Quando o instante
+/// EXPLÍCITO (congelamento dos parâmetros na publicação, UNI-REQ-0019, Story #759 T6 #787, ADR-0075/0076): a versão de
+/// configuração de vigência mais recente que já começou em <see cref="Instante"/>. Quando o instante
 /// é nulo, o handler o resolve do <c>TimeProvider</c> injetado e o repassa
 /// adiante — o seletor nunca lê o relógio por trás do contrato (ADR-0068).
 /// </summary>

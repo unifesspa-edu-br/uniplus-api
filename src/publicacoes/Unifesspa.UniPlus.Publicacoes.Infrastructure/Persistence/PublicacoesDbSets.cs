@@ -21,6 +21,6 @@ public static class PublicacoesDbSets
         public DbSet<AnexoDoAto> AnexosDoAto => contexto.Set<AnexoDoAto>();
 
         /// <summary>A chave que o banco trava para que um objeto não tenha duas linhagens de atos do mesmo tipo único.</summary>
-        public DbSet<LinhagemUnicaPorObjeto> LinhagensUnicasPorObjeto => contexto.Set<LinhagemUnicaPorObjeto>();
+        public DbSet<VagaDeLinhagem> VagasDeLinhagem => contexto.Set<VagaDeLinhagem>();
     }
 }

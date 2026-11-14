@@ -152,7 +152,7 @@
             }
           },
           "409": {
-            "description": "O objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.raiz_ja_retificada) ou outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
+            "description": "O objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.ato_ja_retificado) ou outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -10392,7 +10392,7 @@
             }
           },
           "409": {
-            "description": "Outra publica\u00E7\u00E3o concorrente congelou uma vers\u00E3o da configura\u00E7\u00E3o entre a leitura e a grava\u00E7\u00E3o desta (reler o processo e resubmeter), o identificador leg\u00EDvel j\u00E1 \u00E9 de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo) ou o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.raiz_ja_retificada). Tamb\u00E9m responde 409 quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
+            "description": "Outra publica\u00E7\u00E3o concorrente congelou uma vers\u00E3o da configura\u00E7\u00E3o entre a leitura e a grava\u00E7\u00E3o desta (reler o processo e resubmeter), o identificador leg\u00EDvel j\u00E1 \u00E9 de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo) ou o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.ato_ja_retificado). Tamb\u00E9m responde 409 quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -10523,7 +10523,7 @@
             }
           },
           "409": {
-            "description": "H\u00E1 uma retifica\u00E7\u00E3o em curso neste processo: enquanto a sess\u00E3o editorial existir, o atalho em um ato s\u00F3 recusa \u2014 fech\u00E1-la ou descart\u00E1-la libera esta rota. Tamb\u00E9m responde 409 quando outra publica\u00E7\u00E3o ou retifica\u00E7\u00E3o concorrente congelou uma vers\u00E3o da configura\u00E7\u00E3o entre a leitura e a grava\u00E7\u00E3o desta (reler o processo e resubmeter), quando o identificador leg\u00EDvel j\u00E1 \u00E9 de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.raiz_ja_retificada) e quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
+            "description": "H\u00E1 uma retifica\u00E7\u00E3o em curso neste processo: enquanto a sess\u00E3o editorial existir, o atalho em um ato s\u00F3 recusa \u2014 fech\u00E1-la ou descart\u00E1-la libera esta rota. Tamb\u00E9m responde 409 quando outra publica\u00E7\u00E3o ou retifica\u00E7\u00E3o concorrente congelou uma vers\u00E3o da configura\u00E7\u00E3o entre a leitura e a grava\u00E7\u00E3o desta (reler o processo e resubmeter), quando o identificador leg\u00EDvel j\u00E1 \u00E9 de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.ato_ja_retificado) e quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -11204,7 +11204,7 @@
             }
           },
           "409": {
-            "description": "A retifica\u00E7\u00E3o n\u00E3o est\u00E1 aberta, a base dela ficou para tr\u00E1s da vers\u00E3o vigente, ou outra publica\u00E7\u00E3o concorrente congelou uma vers\u00E3o entre a leitura e a grava\u00E7\u00E3o desta. Reler a retifica\u00E7\u00E3o em curso antes de repetir. Tamb\u00E9m responde 409 quando o identificador leg\u00EDvel j\u00E1 \u00E9 de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.raiz_ja_retificada) e quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
+            "description": "A retifica\u00E7\u00E3o n\u00E3o est\u00E1 aberta, a base dela ficou para tr\u00E1s da vers\u00E3o vigente, ou outra publica\u00E7\u00E3o concorrente congelou uma vers\u00E3o entre a leitura e a grava\u00E7\u00E3o desta. Reler a retifica\u00E7\u00E3o em curso antes de repetir. Tamb\u00E9m responde 409 quando o identificador leg\u00EDvel j\u00E1 \u00E9 de outro certame (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso), o objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.ato_ja_retificado) e quando outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -11982,7 +11982,7 @@
             }
           },
           "409": {
-            "description": "O objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.raiz_ja_retificada) ou outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
+            "description": "O objeto j\u00E1 tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige j\u00E1 foi retificado (uniplus.publicacoes.ato_normativo.ato_ja_retificado) ou outra requisi\u00E7\u00E3o com a mesma Idempotency-Key ainda est\u00E1 em processamento.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

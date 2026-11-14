@@ -45,18 +45,18 @@ internal sealed class TipoAtoPublicadoReader(UniPlusDbContext db) : ITipoAtoPubl
             t.PublicavelComoAvulso,
             t.ExigeAtoCorrigido);
 
-    private IQueryable<TipoAtoPublicado> Vigentes(DateOnly dataPublicacao) =>
+    private IQueryable<TipoAtoPublicado> Vigentes(DateOnly diaDaPublicacao) =>
         _db.Set<TipoAtoPublicado>()
             .AsNoTracking()
-            .Where(t => t.VigenciaInicio <= dataPublicacao
-                && (t.VigenciaFim == null || t.VigenciaFim > dataPublicacao));
+            .Where(t => t.VigenciaInicio <= diaDaPublicacao
+                && (t.VigenciaFim == null || t.VigenciaFim > diaDaPublicacao));
 
     public async Task<TipoAtoPublicadoView?> ObterVigenteAsync(
         string codigo,
-        DateOnly dataPublicacao,
+        DateOnly diaDaPublicacao,
         CancellationToken cancellationToken = default)
     {
-        return await Vigentes(dataPublicacao)
+        return await Vigentes(diaDaPublicacao)
             .Where(t => t.Codigo == codigo)
             .Select(Projecao)
             .FirstOrDefaultAsync(cancellationToken)
@@ -65,14 +65,14 @@ internal sealed class TipoAtoPublicadoReader(UniPlusDbContext db) : ITipoAtoPubl
 
     public async Task<IReadOnlyList<TipoAtoPublicadoView>> ListarVigentesAsync(
         IReadOnlyCollection<string> codigos,
-        DateOnly dataPublicacao,
+        DateOnly diaDaPublicacao,
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(codigos);
 
         string[] codigosDoLote = [.. codigos];
 
-        return await Vigentes(dataPublicacao)
+        return await Vigentes(diaDaPublicacao)
             .Where(t => codigosDoLote.Contains(t.Codigo))
             .Select(Projecao)
             .ToListAsync(cancellationToken)

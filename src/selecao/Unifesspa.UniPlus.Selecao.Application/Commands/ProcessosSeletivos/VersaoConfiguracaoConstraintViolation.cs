@@ -2,11 +2,13 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
+
 /// <summary>
 /// Traduz as violações de guard rail de banco da tabela
 /// <c>versoes_configuracao</c> (ADR-0104) para <see cref="DomainError"/>
 /// nomeado — que o mapper de contrato aflora como 422 (ADR-0102). O nome da
-/// constraint vem de <see cref="UniqueConstraintViolation.GetViolatedConstraint"/>,
+/// constraint vem de <see cref="ConstraintVioladaNaGravacao.NomeDaConstraintViolada"/>,
 /// que já cobre <c>UNIQUE</c> (23505) e <c>CHECK</c> (23514) — e os triggers
 /// de sucessão levantam <c>check_violation</c> declarando a constraint, para
 /// caírem no mesmo caminho.

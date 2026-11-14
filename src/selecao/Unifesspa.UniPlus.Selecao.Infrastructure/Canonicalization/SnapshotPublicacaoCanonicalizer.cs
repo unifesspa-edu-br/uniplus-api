@@ -85,7 +85,7 @@ public sealed class SnapshotPublicacaoCanonicalizer : ISnapshotPublicacaoCanonic
         ProjetarRetificacao(payload, entrada.Retificacao);
     }
 
-    private static void ProjetarRetificacao(JsonObject payload, RetificacaoInfo? retificacao)
+    private static void ProjetarRetificacao(JsonObject payload, RetificacaoDoEdital? retificacao)
     {
         if (retificacao is null)
         {

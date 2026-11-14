@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 /// Handler do <see cref="RegistrarAtoNormativoCommand"/> (convention-based Wolverine): monta o ato
 /// (<see cref="MontagemDoAtoNormativo"/>) com o instante da divulgação recebido (ou lido uma vez
 /// do relógio, no endpoint), registra-o append-only e computa o aviso de número
-/// duplicado (AC4).
+/// duplicado.
 /// </summary>
 public static class RegistrarAtoNormativoCommandHandler
 {

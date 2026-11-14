@@ -12,14 +12,14 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o schema
-/// do <see cref="UniPlusDbContext"/> subido por <c>SubirOBancoAsync</c>, e expõe
+/// do <see cref="UniPlusDbContext"/> subido por <c>PrepararOBancoAsync</c>, e expõe
 /// uma factory de DbContext com os MESMOS interceptors de produção
 /// (SoftDelete + Auditable).
 /// </summary>
 /// <remarks>
 /// O container sobe cru: nada do <c>init-db</c> roda aqui. Se a extensão
 /// <c>btree_gist</c> não nascesse no script compartilhado da plataforma, a exclusion constraint falharia
-/// já no <c>SubirOBancoAsync</c> — o que torna esta fixture, por si, a prova de que
+/// já no <c>PrepararOBancoAsync</c> — o que torna esta fixture, por si, a prova de que
 /// a extensão está no lugar certo.
 /// </remarks>
 [SuppressMessage(
@@ -45,7 +45,7 @@ public sealed class PublicacoesDbFixture : IAsyncLifetime
         await _postgres.StartAsync().ConfigureAwait(false);
 
         await using UniPlusDbContext context = CreateDbContext(userId: null);
-        await context.SubirOBancoAsync().ConfigureAwait(false);
+        await context.PrepararOBancoAsync().ConfigureAwait(false);
     }
 
     public async Task DisposeAsync()

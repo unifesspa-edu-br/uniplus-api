@@ -24,7 +24,7 @@ public static class ObterAtoNormativoPorIdQueryHandler
             return null;
         }
 
-        // Recomputa o aviso (AC4), excluindo do conjunto de conflitantes a linhagem
+        // Recomputa o aviso, excluindo do conjunto de conflitantes a linhagem
         // inteira: o próprio ato, a raiz e as demais retificações empilhadas. Uma
         // republicação com o mesmo número dentro da cadeia não é colisão (ADR-0103).
         // A cadeia sempre contém o próprio ato.

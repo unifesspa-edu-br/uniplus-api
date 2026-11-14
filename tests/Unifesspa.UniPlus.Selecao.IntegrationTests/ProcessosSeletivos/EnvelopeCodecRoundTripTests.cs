@@ -187,7 +187,7 @@ public sealed partial class EnvelopeCodecRoundTripTests
             .Select(static f => f!["tipoRenderizacao"]!.GetValue<string>()).Should().Contain(["DATA", "ENDERECO"]);
     }
 
-    [Fact(DisplayName = "A versão N>1 tem o bloco retificacao: o round-trip usa a RetificacaoInfo ORIGINAL, recuperada do próprio envelope")]
+    [Fact(DisplayName = "A versão N>1 tem o bloco retificacao: o round-trip usa a RetificacaoDoEdital ORIGINAL, recuperada do próprio envelope")]
     public void RoundTrip_VersaoRetificada()
     {
         // O round-trip de uma versão retificada não é o dos blocos da abertura sozinhos. Ela
@@ -195,7 +195,7 @@ public sealed partial class EnvelopeCodecRoundTripTests
         // canonicalização. Recanonicalizar sem ele produziria um envelope sem esse bloco
         // e a comparação falharia por uma razão que nada tem a ver com a reidratação.
         ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        RetificacaoInfo retificacao = new(CorpusEnvelope.AtoAbertura, "Correção do quadro de vagas do curso de Direito");
+        RetificacaoDoEdital retificacao = new(CorpusEnvelope.AtoAbertura, "Correção do quadro de vagas do curso de Direito");
 
         SnapshotCanonico abertura = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo, retificacao));

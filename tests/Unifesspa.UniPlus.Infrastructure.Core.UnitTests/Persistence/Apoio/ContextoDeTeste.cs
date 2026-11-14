@@ -17,7 +17,7 @@ internal sealed class ContextoDeTeste : UniPlusDbContext
 
     internal Guid ChaveDoModelo { get; } = Guid.NewGuid();
 
-    protected override IReadOnlyList<IContribuicaoDoModulo> Modulos => _modulos;
+    protected override IReadOnlyList<IContribuicaoDoModulo> Contribuicoes => _modulos;
 
     public static ContextoDeTeste Criar(params IContribuicaoDoModulo[] modulos)
     {

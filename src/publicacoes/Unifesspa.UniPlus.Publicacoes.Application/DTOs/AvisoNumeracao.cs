@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 
 /// <summary>
-/// Aviso de numeração duplicada (AC4 da #799): há outro(s) ato(s) com a mesma
+/// Aviso de numeração duplicada (#799): há outro(s) ato(s) com a mesma
 /// numeração <c>(orgao, serie, ano, numero)</c>. O número é declarado, não
 /// gerado — colisão é aviso, jamais recusa; é o que pega o erro humano de reusar
 /// um número já gasto.

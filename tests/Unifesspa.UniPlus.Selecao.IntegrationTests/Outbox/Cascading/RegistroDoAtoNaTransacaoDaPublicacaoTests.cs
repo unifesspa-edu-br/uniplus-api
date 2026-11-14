@@ -112,8 +112,8 @@ public sealed class RegistroDoAtoNaTransacaoDaPublicacaoTests
         evento.HashEdital.Should().Be(versao.AtoCriadorHash);
         evento.HashConfiguracao.Should().Be(versao.HashConfiguracao);
         ato.Id.Should().Be(versao.AtoCriadorId, "versão e ato registrado");
-        ato.VersaoInvocada!.Id.Should().Be(versao.Id);
-        ato.VersaoInvocada.Hash.Should().Be(versao.HashConfiguracao);
+        ato.VersaoDeConfiguracao!.Id.Should().Be(versao.Id);
+        ato.VersaoDeConfiguracao.Hash.Should().Be(versao.HashConfiguracao);
     }
 
     private static async Task ConferirGravadoNaTransacaoDaPublicacaoAsync(CascadingApiFactory api, Guid processoId, AtoNormativo ato)
@@ -125,7 +125,7 @@ public sealed class RegistroDoAtoNaTransacaoDaPublicacaoTests
         ato.PublicadoEm.Should().Be(versao.VigenteAPartirDe, "um só instante por comando: o da vigência da versão é o da divulgação do ato");
         (await db.Set<VinculoAtoEntidade>().AsNoTracking().AnyAsync(v => v.AtoId == ato.Id && v.EntidadeTipo == "PROCESSO_SELETIVO" && v.EntidadeId == processoId))
             .Should().BeTrue("sem o vínculo a consulta dos atos do certame não acha o ato");
-        (await db.Set<LinhagemUnicaPorObjeto>().AsNoTracking().AnyAsync(l => l.EntidadeId == processoId && l.RaizId == ato.Id))
+        (await db.Set<VagaDeLinhagem>().AsNoTracking().AnyAsync(l => l.EntidadeId == processoId && l.RaizId == ato.Id))
             .Should().BeTrue("a vaga do objeto é reservada pela linhagem do próprio ato");
     }
 
@@ -136,7 +136,7 @@ public sealed class RegistroDoAtoNaTransacaoDaPublicacaoTests
 
         (await db.Set<VinculoAtoEntidade>().AsNoTracking().AnyAsync(v => v.AtoId == retificacao && v.EntidadeId == processoId))
             .Should().BeTrue("a retificação herda o vínculo com o certame");
-        (await db.Set<LinhagemUnicaPorObjeto>().AsNoTracking().CountAsync(l => l.EntidadeId == processoId && l.TipoCodigo == "EDITAL_ABERTURA"))
+        (await db.Set<VagaDeLinhagem>().AsNoTracking().CountAsync(l => l.EntidadeId == processoId && l.TipoCodigo == "EDITAL_ABERTURA"))
             .Should().Be(1, "a retificação pertence à linhagem que já ocupa o objeto");
     }
 

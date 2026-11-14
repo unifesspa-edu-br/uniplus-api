@@ -162,7 +162,7 @@ internal static class ProjecaoDosProdutosPrevistos
 
     /// <summary>
     /// O que impede o item de ser publicado agora, ou nulo quando pode sair: é a mesma pergunta que a
-    /// consulta responde e que o comando de publicação confere antes de enviar o ato.
+    /// consulta responde e que o comando de publicação confere antes de publicar o ato.
     /// </summary>
     internal static ImpedimentoDoProdutoDto? ImpedimentoDe(
         Declarado produto,

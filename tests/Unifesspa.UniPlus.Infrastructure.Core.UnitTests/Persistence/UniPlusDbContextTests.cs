@@ -35,7 +35,7 @@ public sealed class UniPlusDbContextTests
         using ContextoDeTeste contexto = ContextoDeTeste.Criar(new ModuloDeTeste<EntidadeDoModuloA>("modulo_a"));
 
         IDbFunction funcao = contexto.GetService<IDesignTimeModel>().Model
-            .FindDbFunction(typeof(PgFunctions).GetMethod(nameof(PgFunctions.NormalizeForComparison))!)!;
+            .FindDbFunction(typeof(FuncoesDaPlataforma).GetMethod(nameof(FuncoesDaPlataforma.NormalizarParaComparacao))!)!;
 
         funcao.Schema.Should().Be(UniPlusDbContext.EsquemaDaPlataforma);
         funcao.Name.Should().Be("normalizar_para_comparacao");

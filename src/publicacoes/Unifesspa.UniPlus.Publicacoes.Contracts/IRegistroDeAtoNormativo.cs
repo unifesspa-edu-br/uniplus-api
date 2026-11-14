@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </para>
 /// <para>
 /// A recusa de negócio volta como <see cref="Result"/> nomeado, antes de qualquer gravação: ou o tipo não tem versão
-/// vigente, ou a vaga do objeto já tem ato vivo do tipo, ou a raiz já foi retificada. A violação de unicidade que só a
+/// vigente, ou a vaga do objeto já tem ato vivo do tipo, ou o ato já foi retificado. A violação de unicidade que só a
 /// gravação enxerga, quando outra transação ocupa a vaga ou retifica a raiz entre a conferência e a confirmação, é
 /// traduzida por <see cref="TraduzirConflitoDaGravacao"/>.
 /// </para>

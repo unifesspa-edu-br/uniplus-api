@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 /// <para>
 /// O par é <b>completo ou ausente</b>: um identificador sem hash não prova nada,
 /// então a factory recusa qualquer uma das metades isolada. Um ato pode não ter
-/// versão invocada (ato autônomo, sem vínculo com configuração) — nesse caso a
+/// versão de configuração (ato autônomo, sem vínculo com configuração) — nesse caso a
 /// referência simplesmente não existe (a propriedade fica nula no agregado).
 /// </para>
 /// <para>

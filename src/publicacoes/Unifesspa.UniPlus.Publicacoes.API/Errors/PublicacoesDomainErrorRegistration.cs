@@ -114,11 +114,11 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
                 "uniplus.publicacoes.ato_normativo.tipo_sem_versao_vigente",
                 "Não há versão vigente do tipo de ato na data da publicação")),
 
-        new(AtoNormativoErrorCodes.VersaoInvocadaIncompleta,
+        new(AtoNormativoErrorCodes.VersaoDeConfiguracaoIncompleta,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.ato_normativo.versao_invocada_incompleta",
-                "A versão invocada deve trazer o par (id, hash) completo ou nenhum dos dois")),
+                "uniplus.publicacoes.ato_normativo.versao_de_configuracao_incompleta",
+                "A versão de configuração deve trazer o par (id, hash) completo ou nenhum dos dois")),
 
         new(AtoNormativoErrorCodes.NaoEncontrado,
             new DomainErrorMapping(
@@ -140,10 +140,10 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
 
         // 409 e não 422: é conflito com o estado já gravado — o ato-alvo já tem um
         // retificador —, o mesmo critério que classifica a vigência sobreposta como 409.
-        new(AtoNormativoErrorCodes.RaizJaRetificada,
+        new(AtoNormativoErrorCodes.AtoJaRetificado,
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,
-                "uniplus.publicacoes.ato_normativo.raiz_ja_retificada",
+                "uniplus.publicacoes.ato_normativo.ato_ja_retificado",
                 "O ato que se tentou retificar já foi retificado por outro (a cadeia é linear)")),
 
         // 409 pelo mesmo critério: o payload está coerente, mas o objeto vinculado já é

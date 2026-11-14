@@ -63,7 +63,7 @@ public sealed class OrigemDoCongelamentoTests
         (_, VersaoConfiguracao vigente) = ProcessoPublicado();
         OrigemDoCongelamento origem = new RetificacaoDeAtoUnico(Base(vigente, CodecsDeTeste.QueReidrataSemTiposDeAto()));
 
-        origem.Retificacao.Should().Be(new RetificacaoInfo(vigente.AtoCriadorId, MotivoDaRetificacao));
+        origem.Retificacao.Should().Be(new RetificacaoDoEdital(vigente.AtoCriadorId, MotivoDaRetificacao));
     }
 
     [Fact(DisplayName = "A versão vigente que o codec não lê não congela nada e recusa com o erro do codec")]

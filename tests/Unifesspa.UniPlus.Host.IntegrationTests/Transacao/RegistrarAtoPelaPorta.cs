@@ -51,7 +51,7 @@ public static class RegistrarAtoPelaPortaHandler
     internal static AtoNormativoPublicado AtoDe(RegistrarAtoPelaPorta comando) =>
         AtoSemCorrecao(comando) with
         {
-            Correcao = comando.AtoRetificadoId is { } retificado ? new CorrecaoDoAto(retificado, "Correção de teste") : null,
+            Retificacao = comando.AtoRetificadoId is { } retificado ? new RetificacaoDoAto(retificado, "Correção de teste") : null,
         };
 
     private static AtoNormativoPublicado AtoSemCorrecao(RegistrarAtoPelaPorta comando) =>
@@ -63,7 +63,7 @@ public static class RegistrarAtoPelaPortaHandler
             Ano = 2026,
             Numero = $"{BitConverter.ToUInt32(comando.AtoId.ToByteArray(), 12) % 900000 + 100000}/2026",
             TipoCodigo = comando.TipoCodigo,
-            TipoConferido = new AtributosDoTipoAto(false, comando.UnicoPorObjeto, false, "Tipo de ato de teste"),
+            AtributosDoTipo = new AtributosDoTipoAto(false, comando.UnicoPorObjeto, false, "Tipo de ato de teste"),
             DataDoAto = new DateOnly(2026, 11, 14),
             PublicadoEm = new DateTimeOffset(2026, 11, 14, 15, 0, 0, TimeSpan.Zero),
             DocumentoHash = new string('a', 64),

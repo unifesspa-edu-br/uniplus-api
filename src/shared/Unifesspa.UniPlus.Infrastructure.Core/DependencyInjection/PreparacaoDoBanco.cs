@@ -8,10 +8,10 @@ using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
-/// A subida do banco, sempre na mesma ordem e sob a trava do banco: scripts <c>Pre</c>, migrations do EF, scripts pós e,
+/// A preparaÃ§Ã£o do banco, sempre na mesma ordem e sob a trava do banco: scripts <c>Pre</c>, migrations do EF, scripts pós e,
 /// por fim, a etapa posterior. Roda também sem migration pendente.
 /// </summary>
-internal static class SubidaDoBanco
+internal static class PreparacaoDoBanco
 {
     public static async Task ExecutarAsync(
         DbContext contexto,

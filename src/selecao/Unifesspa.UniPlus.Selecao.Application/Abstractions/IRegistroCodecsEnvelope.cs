@@ -25,7 +25,7 @@ public sealed class EnvelopeReidratado
         DadosEdital dados,
         string hashDocumento,
         string fusoHorario,
-        RetificacaoInfo? retificacao,
+        RetificacaoDoEdital? retificacao,
         ResultadoConformidade? conformidade,
         IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadadosFatosCongelados = null,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados = null,
@@ -112,7 +112,7 @@ public sealed class EnvelopeReidratado
     public string FusoHorario { get; }
 
     /// <summary><see langword="null"/> na versão 1 — o envelope de abertura não tem o 18º bloco.</summary>
-    public RetificacaoInfo? Retificacao { get; }
+    public RetificacaoDoEdital? Retificacao { get; }
 
     /// <summary>
     /// Evidência forense da conformidade legal congelada (Story #853, §3.4/CA-18) — fora

@@ -34,7 +34,7 @@ public sealed class IdempotencyFilter : IAsyncResourceFilter
     private readonly TimeProvider _time;
     private readonly IUserContext _userContext;
     private readonly IdempotencyOptions _options;
-    private readonly ExecucaoIdempotente _execucao;
+    private readonly IdempotentExecution _execution;
 
     public IdempotencyFilter(
         IIdempotencyStore store,
@@ -57,7 +57,7 @@ public sealed class IdempotencyFilter : IAsyncResourceFilter
         _time = time;
         _userContext = userContext;
         _options = options.Value;
-        _execucao = new ExecucaoIdempotente(store, encryption);
+        _execution = new IdempotentExecution(store, encryption);
     }
 
     public async Task OnResourceExecutionAsync(ResourceExecutingContext context, ResourceExecutionDelegate next)
@@ -65,121 +65,121 @@ public sealed class IdempotencyFilter : IAsyncResourceFilter
         ArgumentNullException.ThrowIfNull(context);
         ArgumentNullException.ThrowIfNull(next);
 
-        RequiresIdempotencyKeyAttribute? atributo = AtributoDaAction(context);
-        if (atributo is null)
+        RequiresIdempotencyKeyAttribute? attribute = AttributeOfAction(context);
+        if (attribute is null)
         {
             await next().ConfigureAwait(false);
         }
         else
         {
-            await ExecutarIdempotenteAsync(context, next, atributo).ConfigureAwait(false);
+            await ExecuteIdempotentAsync(context, next, attribute).ConfigureAwait(false);
         }
     }
 
-    private async Task ExecutarIdempotenteAsync(ResourceExecutingContext context, ResourceExecutionDelegate next, RequiresIdempotencyKeyAttribute atributo)
+    private async Task ExecuteIdempotentAsync(ResourceExecutingContext context, ResourceExecutionDelegate next, RequiresIdempotencyKeyAttribute attribute)
     {
-        Result<ChaveDaRequisicao> chave = await LeitorDaChaveDaRequisicao
-            .LerAsync(context.HttpContext, _userContext, _options.MaxBodyBytes)
+        Result<IdempotencyRequestKey> key = await IdempotencyRequestKeyReader
+            .ReadAsync(context.HttpContext, _userContext, _options.MaxBodyBytes)
             .ConfigureAwait(false);
-        if (chave.IsFailure)
+        if (key.IsFailure)
         {
-            Recusar(context, chave.Error!);
+            Refuse(context, key.Error!);
             return;
         }
 
-        if (await ReservarAsync(context, chave.Value!, atributo).ConfigureAwait(false))
+        if (await ReserveAsync(context, key.Value!, attribute).ConfigureAwait(false))
         {
-            await _execucao.ExecutarAsync(context, next, chave.Value!).ConfigureAwait(false);
+            await _execution.ExecuteAsync(context, next, key.Value!).ConfigureAwait(false);
         }
     }
 
     // Em miss, reserva a chave. Se a UNIQUE perder a corrida, relê: o vencedor pode já ter concluído (replay), ainda estar
     // em Processing (409) ou ter corpo diferente (422). Sem a releitura, o perdedor receberia 409 mesmo com o vencedor
     // pronto para replay, quebrando o contrato do draft IETF §3.
-    private async Task<bool> ReservarAsync(ResourceExecutingContext context, ChaveDaRequisicao chave, RequiresIdempotencyKeyAttribute atributo)
+    private async Task<bool> ReserveAsync(ResourceExecutingContext context, IdempotencyRequestKey key, RequiresIdempotencyKeyAttribute attribute)
     {
-        CancellationToken abortado = context.HttpContext.RequestAborted;
+        CancellationToken aborted = context.HttpContext.RequestAborted;
 
-        if (await ResponderPeloCacheAsync(context, chave, abortado).ConfigureAwait(false))
+        if (await RespondFromCacheAsync(context, key, aborted).ConfigureAwait(false))
         {
             return false;
         }
 
-        if (await TentarReservarAsync(chave, atributo, abortado).ConfigureAwait(false))
+        if (await TryReserveAsync(key, attribute, aborted).ConfigureAwait(false))
         {
             return true;
         }
 
-        await ResponderAposACorridaAsync(context, chave, abortado).ConfigureAwait(false);
+        await RespondAfterRaceAsync(context, key, aborted).ConfigureAwait(false);
         return false;
     }
 
-    private Task<bool> TentarReservarAsync(ChaveDaRequisicao chave, RequiresIdempotencyKeyAttribute atributo, CancellationToken cancellationToken)
+    private Task<bool> TryReserveAsync(IdempotencyRequestKey key, RequiresIdempotencyKeyAttribute attribute, CancellationToken cancellationToken)
     {
-        TimeSpan validade = atributo.TtlSeconds >= 0 ? TimeSpan.FromSeconds(atributo.TtlSeconds) : _options.Ttl;
-        return _store.TryReserveAsync(chave.Scope, chave.Endpoint, chave.Chave, chave.ResumoDoCorpo, _time.GetUtcNow().Add(validade), cancellationToken);
+        TimeSpan validity = attribute.TtlSeconds >= 0 ? TimeSpan.FromSeconds(attribute.TtlSeconds) : _options.Ttl;
+        return _store.TryReserveAsync(key.Scope, key.Endpoint, key.IdempotencyKey, key.BodyHash, _time.GetUtcNow().Add(validity), cancellationToken);
     }
 
-    private Task<IdempotencyLookupResult> ProcurarAsync(ChaveDaRequisicao chave, CancellationToken cancellationToken) =>
-        _store.LookupAsync(chave.Scope, chave.Endpoint, chave.Chave, chave.ResumoDoCorpo, cancellationToken);
+    private Task<IdempotencyLookupResult> LookupAsync(IdempotencyRequestKey key, CancellationToken cancellationToken) =>
+        _store.LookupAsync(key.Scope, key.Endpoint, key.IdempotencyKey, key.BodyHash, cancellationToken);
 
-    private async Task ResponderAposACorridaAsync(ResourceExecutingContext context, ChaveDaRequisicao chave, CancellationToken cancellationToken)
+    private async Task RespondAfterRaceAsync(ResourceExecutingContext context, IdempotencyRequestKey key, CancellationToken cancellationToken)
     {
-        if (await ResponderPeloCacheAsync(context, chave, cancellationToken).ConfigureAwait(false))
+        if (await RespondFromCacheAsync(context, key, cancellationToken).ConfigureAwait(false))
         {
             return;
         }
 
         // Miss aqui só ocorre se a entrada foi apagada entre a reserva e a releitura (5xx do vencedor): raro, e o 409 com
         // retry imediato é o caminho seguro.
-        Recusar(context, IdempotencyDomainErrorCodes.ProcessingConflict, "Request concorrente com mesma Idempotency-Key resolvida; tentar novamente.");
+        Refuse(context, IdempotencyDomainErrorCodes.ProcessingConflict, "Request concorrente com mesma Idempotency-Key resolvida; tentar novamente.");
     }
 
     /// <summary>Responde a requisição pelo que o cache já sabe; <c>false</c> em miss, quando o handler deve rodar.</summary>
-    private async Task<bool> ResponderPeloCacheAsync(ResourceExecutingContext context, ChaveDaRequisicao chave, CancellationToken cancellationToken)
+    private async Task<bool> RespondFromCacheAsync(ResourceExecutingContext context, IdempotencyRequestKey key, CancellationToken cancellationToken)
     {
-        IdempotencyLookupResult lookup = await ProcurarAsync(chave, cancellationToken).ConfigureAwait(false);
+        IdempotencyLookupResult lookup = await LookupAsync(key, cancellationToken).ConfigureAwait(false);
         if (lookup.Outcome == IdempotencyOutcome.HitMatch)
         {
-            await ReproduzirAsync(context, lookup.Entry!, cancellationToken).ConfigureAwait(false);
+            await ReplayAsync(context, lookup.Entry!, cancellationToken).ConfigureAwait(false);
             return true;
         }
 
-        DomainError? recusa = RecusaDoCache(lookup.Outcome);
-        if (recusa is not null)
+        DomainError? refusal = RefusalFromCache(lookup.Outcome);
+        if (refusal is not null)
         {
-            Recusar(context, recusa);
+            Refuse(context, refusal);
         }
 
-        return recusa is not null;
+        return refusal is not null;
     }
 
-    private static DomainError? RecusaDoCache(IdempotencyOutcome outcome) => outcome switch
+    private static DomainError? RefusalFromCache(IdempotencyOutcome outcome) => outcome switch
     {
         IdempotencyOutcome.HitMismatch => new DomainError(IdempotencyDomainErrorCodes.BodyMismatch, "Mesma Idempotency-Key reusada com body diferente."),
         IdempotencyOutcome.Processing => new DomainError(IdempotencyDomainErrorCodes.ProcessingConflict, "Request com a mesma Idempotency-Key ainda em processamento; tentar novamente."),
         _ => null,
     };
 
-    private async Task ReproduzirAsync(ResourceExecutingContext context, IdempotencyEntry entrada, CancellationToken cancellationToken)
+    private async Task ReplayAsync(ResourceExecutingContext context, IdempotencyEntry entry, CancellationToken cancellationToken)
     {
-        byte[] cifrado = entrada.ResponseBodyCipher
+        byte[] encrypted = entry.EncryptedResponseBody
             ?? throw new InvalidOperationException("A entrada de idempotência não guarda o corpo da resposta.");
-        byte[] corpo = await _encryption.DecryptAsync(IdempotencyOptions.EncryptionKeyName, cifrado, cancellationToken).ConfigureAwait(false);
+        byte[] body = await _encryption.DecryptAsync(IdempotencyOptions.EncryptionKeyName, encrypted, cancellationToken).ConfigureAwait(false);
 
-        RespostaGuardada.Reproduzir(context, entrada, corpo);
+        StoredResponse.Replay(context, entry, body);
     }
 
     // O atributo vale no método ou na classe; o do método vence, e o da classe cobre "todos os POSTs deste controller".
-    private static RequiresIdempotencyKeyAttribute? AtributoDaAction(ResourceExecutingContext context) =>
-        context.ActionDescriptor is ControllerActionDescriptor descritor
-            ? descritor.MethodInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true)
-                ?? descritor.ControllerTypeInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true)
+    private static RequiresIdempotencyKeyAttribute? AttributeOfAction(ResourceExecutingContext context) =>
+        context.ActionDescriptor is ControllerActionDescriptor descriptor
+            ? descriptor.MethodInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true)
+                ?? descriptor.ControllerTypeInfo.GetCustomAttribute<RequiresIdempotencyKeyAttribute>(inherit: true)
             : null;
 
-    private void Recusar(ResourceExecutingContext context, string codigo, string detalhe) =>
-        Recusar(context, new DomainError(codigo, detalhe));
+    private void Refuse(ResourceExecutingContext context, string code, string detail) =>
+        Refuse(context, new DomainError(code, detail));
 
-    private void Recusar(ResourceExecutingContext context, DomainError erro) =>
-        context.Result = Result.Failure(erro).ToActionResult(_errorMapper);
+    private void Refuse(ResourceExecutingContext context, DomainError error) =>
+        context.Result = Result.Failure(error).ToActionResult(_errorMapper);
 }
