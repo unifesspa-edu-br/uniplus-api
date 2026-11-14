@@ -12,6 +12,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 using Unifesspa.UniPlus.Publicacoes.Infrastructure.Messaging;
@@ -44,15 +45,16 @@ public sealed class AtosDaEntidadeEndpointTests
 
     // ── A consulta unificada ─────────────────────────────────────────────────
 
-    [Fact(DisplayName = "Uma entidade acumula vários atos, devolvidos em ordem de data de publicação")]
-    public async Task Listar_VariosAtos_OrdenadosPorDataDePublicacao()
+    [Fact(DisplayName = "Uma entidade acumula vários atos, devolvidos na ordem em que foram divulgados, e não na da data do ato")]
+    public async Task Listar_VariosAtos_OrdenadosPeloInstanteDaDivulgacao()
     {
         string tipo = await CriarTipoAsync(unicoPorObjeto: false);
         Guid chamada = Guid.CreateVersion7();
         using HttpClient client = _fixture.Factory.CreateClient();
 
         // A chamada reúne convocação, retificação da convocação e homologação — o caso
-        // que a story cita, publicado fora de ordem de propósito.
+        // que a story cita. A homologação declara a data mais tardia e é divulgada primeiro:
+        // a ordem é a da divulgação.
         Guid homologacao = await PostAtoIdAsync(client, PayloadAto(tipo, "20", "2026-04-10", [Vinculo(chamada)]));
         Guid convocacao = await PostAtoIdAsync(client, PayloadAto(tipo, "10", "2026-03-01", [Vinculo(chamada)]));
         Guid retificacao = await PostAtoIdAsync(
@@ -61,7 +63,7 @@ public sealed class AtosDaEntidadeEndpointTests
         JsonElement[] itens = await ListarDaEntidadeAsync(client, ObjetoA, chamada);
 
         itens.Select(i => i.GetProperty("id").GetGuid())
-            .Should().Equal(convocacao, retificacao, homologacao);
+            .Should().Equal(homologacao, convocacao, retificacao);
     }
 
     [Fact(DisplayName = "A retificação herda o vínculo do ato que emenda — sem isso, sumiria da consulta")]
@@ -350,7 +352,7 @@ public sealed class AtosDaEntidadeEndpointTests
                 ano = 2026,
                 numero = "13",
                 tipoCodigo = tipo,
-                dataPublicacao = "2026-03-13",
+                dataDoAto = "2026-03-13",
                 documentoHash = HashValido,
                 assinante = "Jairo Belchior",
                 vinculos = new object?[] { null },
@@ -438,12 +440,13 @@ public sealed class AtosDaEntidadeEndpointTests
 
         await RegistrarAtoNormativoRequisicaoHandler.Handle(
             new RegistrarAtoNormativoRequisicao(
-                atoId, "CEPS", "EDITAL", 2026, numero, tipoCodigo, new DateOnly(2026, 3, 13), HashValido,
+                atoId, "CEPS", "EDITAL", 2026, numero, tipoCodigo, new DateOnly(2026, 3, 13),
+                new DateTimeOffset(2026, 3, 13, 15, 0, 0, TimeSpan.Zero), HashValido,
                 "Jairo Belchior", null, null, null, null,
                 [new VinculoEntidadeRequisicao(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, processo)],
                 new AtributosDoTipoAto(true, false, false, "Tipo de teste")),
             sp.GetRequiredService<UniPlusDbContext>(),
-            sp.GetRequiredService<ITipoAtoPublicadoRepository>(),
+            sp.GetRequiredService<MontagemDoAtoNormativo>(),
             sp.GetRequiredService<IAtoNormativoRepository>(),
             sp.GetRequiredService<IUnitOfWork>(),
             sp.GetRequiredService<TimeProvider>(),
@@ -568,7 +571,7 @@ public sealed class AtosDaEntidadeEndpointTests
     }
 
     private static object PayloadAto(
-        string tipoCodigo, string numero, string dataPublicacao, IReadOnlyList<object> vinculos) =>
+        string tipoCodigo, string numero, string dataDoAto, IReadOnlyList<object> vinculos) =>
         new
         {
             orgao = "CEPS",
@@ -576,7 +579,7 @@ public sealed class AtosDaEntidadeEndpointTests
             ano = 2026,
             numero,
             tipoCodigo,
-            dataPublicacao,
+            dataDoAto,
             documentoHash = HashValido,
             assinante = "Jairo Belchior",
             vinculos,
@@ -585,7 +588,7 @@ public sealed class AtosDaEntidadeEndpointTests
     private static object PayloadRetificacao(
         string tipoCodigo,
         string numero,
-        string dataPublicacao,
+        string dataDoAto,
         Guid atoRetificadoId,
         string motivo,
         IReadOnlyList<object> vinculos) =>
@@ -596,7 +599,7 @@ public sealed class AtosDaEntidadeEndpointTests
             ano = 2026,
             numero,
             tipoCodigo,
-            dataPublicacao,
+            dataDoAto,
             documentoHash = HashValido,
             assinante = "Jairo Belchior",
             atoRetificadoId,

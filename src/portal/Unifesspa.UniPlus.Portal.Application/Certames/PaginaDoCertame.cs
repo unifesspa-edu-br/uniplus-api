@@ -9,8 +9,8 @@ namespace Unifesspa.UniPlus.Portal.Application.Certames;
 /// <param name="NumeroEdital">Número do edital, quando declarado na publicação.</param>
 /// <param name="Situacao">Situação da janela de inscrição, como Seleção a resolveu na leitura.</param>
 /// <param name="DocumentoEditalUrl">Endereço público do edital vigente, quando publicado.</param>
-/// <param name="DataPublicacao">
-/// Data de publicação do edital vigente — a do ato que criou a versão servida. Nula quando a linha
+/// <param name="DataDoAto">
+/// Data que o documento do edital vigente declara — a do ato que criou a versão servida. Nula quando a linha
 /// do tempo não alcança esse ato.
 /// </param>
 /// <param name="LinhaDoTempo">Atos do certame, do mais recente para o mais antigo.</param>
@@ -24,7 +24,7 @@ public sealed record PaginaDoCertame(
     string? NumeroEdital,
     SituacaoDaInscricao Situacao,
     Uri? DocumentoEditalUrl,
-    DateOnly? DataPublicacao,
+    DateOnly? DataDoAto,
     IReadOnlyList<EventoDaLinhaDoTempo> LinhaDoTempo,
     MotivoDaDegradacao? Degradacao);
 
@@ -32,7 +32,7 @@ public sealed record PaginaDoCertame(
 /// Um ato na linha do tempo da página pública.
 /// </summary>
 /// <param name="Id">Identificador do ato.</param>
-/// <param name="Data">Data de publicação declarada no documento do ato.</param>
+/// <param name="Data">Data declarada no documento do ato.</param>
 /// <param name="Titulo">Nome do tipo do ato seguido do número, quando declarado, sem compor o ano.</param>
 /// <param name="Numero">Número do ato como declarado pelo órgão, quando declarado.</param>
 /// <param name="Ano">Ano da numeração declarada pelo órgão.</param>

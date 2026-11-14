@@ -9,8 +9,8 @@ using System.Text.Json.Serialization;
 /// o ato emenda outro — a linhagem de retificação (<c>AtoRetificadoId</c> + motivo).
 /// </summary>
 /// <remarks>
-/// <para><c>DataPublicacao</c> é documental (o que o PDF declara);
-/// <c>RegistradoEm</c> é o instante forense em que o registro entrou no sistema.
+/// <para><c>DataDoAto</c> é documental (o que o PDF declara);
+/// <c>PublicadoEm</c> é o instante forense em que o registro entrou no sistema.
 /// São grandezas distintas — só a segunda ordena no relógio do sistema.</para>
 /// <para><c>TipoNome</c> é o nome do tipo copiado por valor no registro — não muda quando o
 /// tipo é renomeado no cadastro. Nulo nos atos registrados antes de o nome passar a ser
@@ -35,10 +35,10 @@ public sealed record AtoNormativoDto(
     bool CongelaConfiguracao,
     bool EfeitoIrreversivel,
     bool UnicoPorObjeto,
-    DateOnly DataPublicacao,
+    DateOnly DataDoAto,
     string DocumentoHash,
     string Assinante,
-    DateTimeOffset RegistradoEm,
+    DateTimeOffset PublicadoEm,
     Guid? VersaoInvocadaId,
     string? VersaoInvocadaHash,
     Guid? AtoRetificadoId,

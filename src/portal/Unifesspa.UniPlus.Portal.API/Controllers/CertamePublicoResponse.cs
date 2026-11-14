@@ -17,8 +17,8 @@ using Unifesspa.UniPlus.Portal.Application.Certames;
 /// edital, então a ausência quer dizer versão sem documento publicado, nunca erro. O documento não
 /// trafega pela Portal.
 /// </param>
-/// <param name="DataPublicacao">
-/// Data de publicação do edital vigente, a do ato que criou a versão servida. Ausente quando a
+/// <param name="DataDoAto">
+/// Data que o documento do edital vigente declara, a do ato que criou a versão servida. Ausente quando a
 /// linha do tempo não alcança esse ato.
 /// </param>
 /// <param name="LinhaDoTempo">Atos do certame, do mais recente para o mais antigo.</param>
@@ -32,7 +32,7 @@ internal sealed record CertamePublicoResponse(
     string? NumeroEdital,
     SituacaoDaInscricao Situacao,
     Uri? DocumentoEditalUrl,
-    DateOnly? DataPublicacao,
+    DateOnly? DataDoAto,
     IReadOnlyList<EventoDaLinhaDoTempoResponse> LinhaDoTempo,
     string? Aviso)
 {
@@ -51,7 +51,7 @@ internal sealed record CertamePublicoResponse(
             pagina.NumeroEdital,
             pagina.Situacao,
             pagina.DocumentoEditalUrl,
-            pagina.DataPublicacao,
+            pagina.DataDoAto,
             [.. pagina.LinhaDoTempo.Select(EventoDaLinhaDoTempoResponse.De)],
             pagina.Degradacao is null ? null : AvisoDeLinhaDoTempoIncompleta);
 }
@@ -60,10 +60,10 @@ internal sealed record CertamePublicoResponse(
 /// Um ato na linha do tempo da página pública.
 /// </summary>
 /// <param name="Id">Identificador do ato.</param>
-/// <param name="Data">Data de publicação declarada no documento do ato.</param>
+/// <param name="Data">Data declarada no documento do ato.</param>
 /// <param name="Titulo">Nome do tipo do ato seguido do número, quando declarado, sem compor o ano.</param>
 /// <param name="Numero">Número do ato como declarado pelo órgão. Ausente quando o ato não declara número.</param>
-/// <param name="Ano">Ano da numeração declarada pelo órgão (não é o ano da data de publicação).</param>
+/// <param name="Ano">Ano da numeração declarada pelo órgão (não é o ano da data do ato).</param>
 /// <param name="Tipo">Tipo do ato.</param>
 /// <param name="Descricao">Motivo da retificação, quando o ato retifica outro.</param>
 /// <param name="DocumentoUrl">

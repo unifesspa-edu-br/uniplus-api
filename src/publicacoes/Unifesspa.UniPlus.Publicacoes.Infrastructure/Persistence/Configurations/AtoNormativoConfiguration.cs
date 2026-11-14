@@ -92,7 +92,7 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
         builder.Property(a => a.EfeitoIrreversivel).IsRequired();
         builder.Property(a => a.UnicoPorObjeto).IsRequired();
 
-        builder.Property(a => a.DataPublicacao).IsRequired();
+        builder.Property(a => a.DataDoAto).IsRequired();
 
         builder.Property(a => a.DocumentoHash)
             .HasMaxLength(HashLength)
@@ -101,7 +101,7 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
 
         builder.Property(a => a.Assinante).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(AssinanteMaxLength).IsRequired();
 
-        builder.Property(a => a.RegistradoEm).IsRequired();
+        builder.Property(a => a.PublicadoEm).IsRequired();
 
         // Versão de configuração que governou o ato, por valor {id, hash} (ADR-0075),
         // sem chave estrangeira cruzando módulo (ADR-0061). Owned opcional: ambas as
@@ -142,9 +142,9 @@ internal sealed class AtoNormativoConfiguration : IEntityTypeConfiguration<AtoNo
         builder.Navigation(a => a.Anexos).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         // Suporte ao seek do keyset ordenado da consulta por entidade (ADR-0094): a
-        // ordenação é (data_publicacao, id), e o índice casa a mesma expressão.
-        builder.HasIndex(a => new { a.DataPublicacao, a.Id })
-            .HasDatabaseName("ix_ato_normativo_data_publicacao");
+        // ordenação é (publicado_em, id), e o índice casa a mesma expressão.
+        builder.HasIndex(a => new { a.PublicadoEm, a.Id })
+            .HasDatabaseName("ix_ato_normativo_publicado_em");
 
         // Linearidade da cadeia (ADR-0103): um ato é retificado no máximo uma vez.
         // Índice único parcial — garantia dura à prova da corrida check-then-act do

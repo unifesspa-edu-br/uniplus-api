@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
-/// Registra um ato publicado. O tipo é resolvido no catálogo vigente na
-/// <paramref name="DataPublicacao"/> e seus atributos de consequência
+/// Registra um ato publicado. <paramref name="DataDoAto"/> é a data que o documento declara.
+/// O tipo é resolvido no catálogo vigente nessa data e seus atributos de consequência
 /// (<c>congela_configuracao</c>, <c>efeito_irreversivel</c>) são copiados por
 /// valor server-side — o cliente não os informa, então não há como divergirem
 /// do catálogo (AC5).
@@ -26,6 +26,10 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// idempotente. Fica FORA do wire HTTP (<c>JsonIgnore</c>): quem publica pelo endpoint é o
 /// operador em Publicações, não há domínio remoto a quem o id pertença, e aceitá-lo do
 /// cliente deixaria forjar a identidade de um ato. Ausente, Publicações o gera.</para>
+/// <para><see cref="PublicadoEm"/> é o instante da divulgação que o sistema leu uma só vez antes de
+/// chamar Publicações, e que o registro por mensagem durável traz da operação que o decidiu. Fica FORA
+/// do wire (<c>JsonIgnore</c>): quem publica pelo endpoint não o informa, e o handler lê o relógio
+/// quando ele está ausente. Publicações o guarda e nunca o define por conta própria.</para>
 /// <para><see cref="Vinculos"/> liga o ato às entidades de que ele trata (ADR-0105).
 /// É o domínio quem os informa — <c>Selecao</c> ao publicar um edital, <c>Ingresso</c>
 /// ao convocar uma chamada —, e Publicações os guarda sem interpretar. Ausente ou vazio
@@ -50,7 +54,7 @@ public sealed record RegistrarAtoNormativoCommand(
     int Ano,
     string? Numero,
     string TipoCodigo,
-    DateOnly DataPublicacao,
+    DateOnly DataDoAto,
     string DocumentoHash,
     string Assinante,
     Guid? VersaoInvocadaId = null,
@@ -61,7 +65,8 @@ public sealed record RegistrarAtoNormativoCommand(
     IReadOnlyList<AnexoDoAtoInput>? Anexos = null,
     [property: JsonIgnore] Guid? AtoId = null,
     [property: JsonIgnore] AtributosDoTipoAto? AtributosDoTipo = null,
-    [property: JsonIgnore] bool RegistroPeloDominio = false) : ICommand<Result<RegistrarAtoNormativoResult>>;
+    [property: JsonIgnore] bool RegistroPeloDominio = false,
+    [property: JsonIgnore] DateTimeOffset? PublicadoEm = null) : ICommand<Result<RegistrarAtoNormativoResult>>;
 
 /// <summary>
 /// Entidade de outro domínio a que o ato se liga. O par é <b>opaco</b> para

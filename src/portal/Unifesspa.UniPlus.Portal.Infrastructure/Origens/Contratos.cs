@@ -50,6 +50,6 @@ internal sealed record AtoNormativoPayload(
     string? TipoNome,
     int Ano,
     string? Numero,
-    DateOnly DataPublicacao,
+    DateOnly DataDoAto,
     bool CongelaConfiguracao,
     string? MotivoRetificacao);

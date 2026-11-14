@@ -119,7 +119,7 @@ public sealed class AnexoDoAtoPersistenceTests
             $"""
             INSERT INTO publicacoes.ato_normativo
                 (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
-                 unico_por_objeto, data_publicacao, documento_hash, assinante, registrado_em)
+                 unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em)
             VALUES ('{ato.Id}', 'CEPS', 'EDITAL', 2026, NULL, 'EDITAL_ABERTURA', false, false, false,
                     DATE '2026-03-13', '{HashValido}', 'Jairo Belchior', now());
             INSERT INTO publicacoes.anexo_do_ato (id, ato_id, ordem, nome, tipo_midia, hash)
@@ -185,10 +185,10 @@ public sealed class AnexoDoAtoPersistenceTests
             congelaConfiguracao: false,
             efeitoIrreversivel: false,
             unicoPorObjeto: false,
-            dataPublicacao: new DateOnly(2026, 3, 13),
+            dataDoAto: new DateOnly(2026, 3, 13),
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
-            registradoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
+            publicadoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
             versaoInvocada: null,
             anexos: anexos);
 }

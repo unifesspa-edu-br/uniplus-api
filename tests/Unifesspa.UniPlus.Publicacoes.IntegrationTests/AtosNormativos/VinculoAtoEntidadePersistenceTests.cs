@@ -239,7 +239,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
             $"""
             INSERT INTO publicacoes.ato_normativo
                 (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
-                 unico_por_objeto, data_publicacao, documento_hash, assinante, registrado_em,
+                 unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em,
                  ato_retificado_id, motivo_retificacao)
             VALUES
                 ('{a}', 'CEPS', 'EDITAL', 2026, NULL, '{TipoUnico}', true, false, false,
@@ -324,7 +324,7 @@ public sealed class VinculoAtoEntidadePersistenceTests
         $"""
         INSERT INTO publicacoes.ato_normativo
             (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
-             unico_por_objeto, data_publicacao, documento_hash, assinante, registrado_em)
+             unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em)
         VALUES
             ('{ato.Id}', 'CEPS', 'EDITAL', 2026, NULL, '{ato.TipoCodigo}', true, false,
              {(ato.UnicoPorObjeto ? "true" : "false")}, DATE '2026-03-13', '{HashValido}',
@@ -357,10 +357,10 @@ public sealed class VinculoAtoEntidadePersistenceTests
             congelaConfiguracao: true,
             efeitoIrreversivel: false,
             unicoPorObjeto: unicoPorObjeto,
-            dataPublicacao: Publicacao,
+            dataDoAto: Publicacao,
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
-            registradoEm: Registro,
+            publicadoEm: Registro,
             versaoInvocada: null,
             vinculos: vinculos);
 }

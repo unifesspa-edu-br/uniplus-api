@@ -60,7 +60,7 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
         raiz.GetProperty("numeroEdital").GetString().Should().Be("012/2026");
         raiz.GetProperty("situacao").GetString().Should().Be("ultimosDias", "a Portal repassa a situação de Seleção com o vocabulário da vitrine");
         raiz.GetProperty("documentoEditalUrl").GetString().Should().Be(EditalNoAcervo.ToString());
-        raiz.GetProperty("dataPublicacao").GetString().Should().Be("2026-12-01", "é a data do edital vigente");
+        raiz.GetProperty("dataDoAto").GetString().Should().Be("2026-12-01", "é a data do edital vigente");
         raiz.GetProperty("aviso").ValueKind.Should().Be(JsonValueKind.Null);
 
         JsonElement[] linha = [.. raiz.GetProperty("linhaDoTempo").EnumerateArray()];
@@ -241,7 +241,7 @@ public sealed class CertamePublicoEndpointTests : IClassFixture<PortalComOrigens
 
         resposta.Headers.ETag.Should().BeNull();
         using JsonDocument corpo = await LerAsync(resposta);
-        corpo.RootElement.GetProperty("dataPublicacao").ValueKind.Should().Be(JsonValueKind.Null);
+        corpo.RootElement.GetProperty("dataDoAto").ValueKind.Should().Be(JsonValueKind.Null);
     }
 
     [Fact(DisplayName = "Versão do tipo de mídia não suportada: 406")]

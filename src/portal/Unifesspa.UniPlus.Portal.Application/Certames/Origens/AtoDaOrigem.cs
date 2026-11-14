@@ -14,7 +14,7 @@ namespace Unifesspa.UniPlus.Portal.Application.Certames.Origens;
 /// </param>
 /// <param name="Ano">Ano da numeração declarada pelo órgão.</param>
 /// <param name="Numero">Número declarado do ato, quando declarado.</param>
-/// <param name="DataPublicacao">Data que o documento do ato declara.</param>
+/// <param name="DataDoAto">Data que o documento do ato declara.</param>
 /// <param name="CongelaConfiguracao">Se o ato cria versão da configuração do certame.</param>
 /// <param name="MotivoRetificacao">Motivo, quando o ato retifica outro.</param>
 public sealed record AtoDaOrigem(
@@ -23,6 +23,6 @@ public sealed record AtoDaOrigem(
     string? TipoNome,
     int Ano,
     string? Numero,
-    DateOnly DataPublicacao,
+    DateOnly DataDoAto,
     bool CongelaConfiguracao,
     string? MotivoRetificacao);

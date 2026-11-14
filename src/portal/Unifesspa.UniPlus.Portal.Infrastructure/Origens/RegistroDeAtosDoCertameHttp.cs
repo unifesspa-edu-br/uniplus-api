@@ -89,7 +89,7 @@ internal sealed partial class RegistroDeAtosDoCertameHttp : IRegistroDeAtosDoCer
                         ato.TipoNome,
                         ato.Ano,
                         ato.Numero,
-                        ato.DataPublicacao,
+                        ato.DataDoAto,
                         ato.CongelaConfiguracao,
                         ato.MotivoRetificacao));
                 }

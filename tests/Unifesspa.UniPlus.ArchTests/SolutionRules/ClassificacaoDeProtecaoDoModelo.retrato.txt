@@ -1075,14 +1075,14 @@ publicacoes.ato_normativo.ano: Interno
 publicacoes.ato_normativo.assinante: Pessoal
 publicacoes.ato_normativo.ato_retificado_id: Interno
 publicacoes.ato_normativo.congela_configuracao: Interno
-publicacoes.ato_normativo.data_publicacao: Interno
+publicacoes.ato_normativo.data_do_ato: Interno
 publicacoes.ato_normativo.documento_hash: Interno
 publicacoes.ato_normativo.efeito_irreversivel: Interno
 publicacoes.ato_normativo.id: Interno
 publicacoes.ato_normativo.motivo_retificacao: Interno
 publicacoes.ato_normativo.numero: Interno
 publicacoes.ato_normativo.orgao: Interno
-publicacoes.ato_normativo.registrado_em: Interno
+publicacoes.ato_normativo.publicado_em: Interno
 publicacoes.ato_normativo.serie: Interno
 publicacoes.ato_normativo.tipo_codigo: Interno
 publicacoes.ato_normativo.tipo_nome: Interno

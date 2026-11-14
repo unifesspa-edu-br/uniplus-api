@@ -161,7 +161,8 @@ internal static class EnvioDoAtoDoProcesso
             Ano: ato.DataPublicacao.Year,
             Numero: registro.Numero,
             TipoCodigo: ato.Tipo.Codigo,
-            DataPublicacao: ato.DataPublicacao,
+            DataDoAto: ato.DataPublicacao,
+            PublicadoEm: timeProvider.GetUtcNow(),
             DocumentoHash: documentos.Principal.HashSha256!,
             Assinante: registro.Assinante,
             // Nenhuma versão de configuração: o ato do processo não congela.

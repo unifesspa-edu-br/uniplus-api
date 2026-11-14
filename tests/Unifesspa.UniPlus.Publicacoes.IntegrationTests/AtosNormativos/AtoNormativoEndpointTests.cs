@@ -130,7 +130,7 @@ public sealed class AtoNormativoEndpointTests
 
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Guid atoId = doc.RootElement.GetProperty("atoId").GetGuid();
-        doc.RootElement.GetProperty("registradoEm").GetDateTimeOffset().Should().NotBe(default);
+        doc.RootElement.GetProperty("publicadoEm").GetDateTimeOffset().Should().NotBe(default);
 
         // A consequência gravada é a do catálogo vigente, copiada por valor (AC5).
         using JsonDocument detalhe = JsonDocument.Parse(
@@ -180,10 +180,10 @@ public sealed class AtoNormativoEndpointTests
         AtoNormativo semNome = AtoNormativo.Registrar(
             Guid.CreateVersion7(), "CEPS", SerieUnica(), 2026, "1", tipo,
             congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
-            dataPublicacao: new DateOnly(2026, 3, 13),
+            dataDoAto: new DateOnly(2026, 3, 13),
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
-            registradoEm: DateTimeOffset.UtcNow,
+            publicadoEm: DateTimeOffset.UtcNow,
             versaoInvocada: null);
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
         {
@@ -237,7 +237,7 @@ public sealed class AtoNormativoEndpointTests
             ano = 2026,
             numero = "1",
             tipoCodigo = tipo,
-            dataPublicacao = Publicacao,
+            dataDoAto = Publicacao,
             documentoHash = HashValido,
             assinante = "Jairo Belchior",
             versaoInvocadaId = Guid.CreateVersion7(),
@@ -262,7 +262,7 @@ public sealed class AtoNormativoEndpointTests
             ano = 2026,
             numero = "1",
             tipoCodigo = tipo,
-            dataPublicacao = Publicacao,
+            dataDoAto = Publicacao,
             documentoHash = HashValido,
             assinante = "Jairo Belchior",
             versaoInvocadaId = Guid.Empty,
@@ -293,7 +293,7 @@ public sealed class AtoNormativoEndpointTests
             ano = 0,
             numero = "1",
             tipoCodigo = "QUALQUER",
-            dataPublicacao = Publicacao,
+            dataDoAto = Publicacao,
             documentoHash = "nao-e-hash",
             assinante = "Jairo Belchior",
             versaoInvocadaId = Guid.CreateVersion7(),
@@ -586,7 +586,7 @@ public sealed class AtoNormativoEndpointTests
             ano = 2026,
             numero,
             tipoCodigo,
-            dataPublicacao = Publicacao,
+            dataDoAto = Publicacao,
             documentoHash = HashValido,
             assinante = "Jairo Belchior",
         };
@@ -637,7 +637,7 @@ public sealed class AtoNormativoEndpointTests
             ano = 2026,
             numero = "1",
             tipoCodigo,
-            dataPublicacao = Publicacao,
+            dataDoAto = Publicacao,
             documentoHash = HashValido,
             assinante = "Jairo Belchior",
             anexos,
@@ -653,7 +653,7 @@ public sealed class AtoNormativoEndpointTests
             ano = 2026,
             numero,
             tipoCodigo,
-            dataPublicacao = Publicacao,
+            dataDoAto = Publicacao,
             documentoHash = HashValido,
             assinante = "Jairo Belchior",
             atoRetificadoId,

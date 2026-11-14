@@ -226,7 +226,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
         PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
         pagina.DocumentoEditalUrl.Should().Be(EditalNoAcervo);
-        pagina.DataPublicacao.Should().Be(new DateOnly(2026, 3, 20), "é a data do edital vigente, não a do ato mais recente");
+        pagina.DataDoAto.Should().Be(new DateOnly(2026, 3, 20), "é a data do edital vigente, não a do ato mais recente");
         pagina.LinhaDoTempo.Single(e => e.Id == Criador).DocumentoUrl.Should().Be(EditalNoAcervo);
         pagina.LinhaDoTempo.Where(e => e.Id != Criador).Select(e => e.DocumentoUrl)
             .Should().AllSatisfy(url => url.Should().BeNull(), "o edital do acervo é o da versão servida, e não de outro ato");
@@ -294,7 +294,7 @@ public sealed class ComposicaoDaPaginaDoCertameTests
 
         PaginaDoCertame pagina = (await composicao.ComporPorIdentificadorAsync(Identificador, CancellationToken.None)).Value!;
 
-        pagina.DataPublicacao.Should().BeNull();
+        pagina.DataDoAto.Should().BeNull();
         pagina.DocumentoEditalUrl.Should().Be(EditalNoAcervo, "o endereço vem de Seleção e não depende da linha do tempo");
     }
 

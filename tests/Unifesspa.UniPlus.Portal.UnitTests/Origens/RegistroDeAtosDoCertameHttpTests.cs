@@ -138,8 +138,8 @@ public sealed class RegistroDeAtosDoCertameHttpTests
               "id": "{{id}}", "orgao": "UNIFESSPA", "serie": "EDITAL", "ano": 2026, "numero": "012/2026",
               "tipoCodigo": "EDITAL_ABERTURA", "tipoNome": "Edital de abertura",
               "congelaConfiguracao": true, "efeitoIrreversivel": false, "unicoPorObjeto": true,
-              "dataPublicacao": "2026-12-01", "documentoHash": "ff", "assinante": "Fulano de Tal",
-              "registradoEm": "2026-12-01T10:00:00Z", "atoRetificadoId": null, "motivoRetificacao": null
+              "dataDoAto": "2026-12-01", "documentoHash": "ff", "assinante": "Fulano de Tal",
+              "publicadoEm": "2026-12-01T10:00:00Z", "atoRetificadoId": null, "motivoRetificacao": null
             }]
             """;
 
@@ -199,6 +199,6 @@ public sealed class RegistroDeAtosDoCertameHttpTests
 
     private static string Ato(Guid id) => $$"""
         { "id": "{{id}}", "tipoCodigo": "AVISO", "tipoNome": "Aviso", "ano": 2026, "numero": null,
-          "dataPublicacao": "2026-12-01", "congelaConfiguracao": false, "motivoRetificacao": null }
+          "dataDoAto": "2026-12-01", "congelaConfiguracao": false, "motivoRetificacao": null }
         """;
 }

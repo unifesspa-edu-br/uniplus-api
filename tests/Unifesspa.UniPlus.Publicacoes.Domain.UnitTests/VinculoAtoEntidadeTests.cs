@@ -154,10 +154,10 @@ public sealed class VinculoAtoEntidadeTests
             congelaConfiguracao: true,
             efeitoIrreversivel: false,
             unicoPorObjeto: unicoPorObjeto,
-            dataPublicacao: Publicacao,
+            dataDoAto: Publicacao,
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
-            registradoEm: Registro,
+            publicadoEm: Registro,
             versaoInvocada: null,
             vinculos: vinculos);
 }

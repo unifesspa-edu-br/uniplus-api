@@ -36,10 +36,10 @@ public sealed class AtoNormativoTests
             congelaConfiguracao: true,
             efeitoIrreversivel: false,
             unicoPorObjeto: true,
-            dataPublicacao: Publicacao,
+            dataDoAto: Publicacao,
             documentoHash: HashValido,
             assinante: "  Jairo Belchior  ",
-            registradoEm: Registro,
+            publicadoEm: Registro,
             versaoInvocada: null);
 
         ato.Id.Should().NotBe(Guid.Empty);
@@ -51,10 +51,10 @@ public sealed class AtoNormativoTests
         ato.CongelaConfiguracao.Should().BeTrue();
         ato.EfeitoIrreversivel.Should().BeFalse();
         ato.UnicoPorObjeto.Should().BeTrue();
-        ato.DataPublicacao.Should().Be(Publicacao);
+        ato.DataDoAto.Should().Be(Publicacao);
         ato.DocumentoHash.Should().Be(HashValido);
         ato.Assinante.Should().Be("Jairo Belchior");
-        ato.RegistradoEm.Should().Be(Registro);
+        ato.PublicadoEm.Should().Be(Registro);
         ato.VersaoInvocada.Should().BeNull();
         ato.AtoRetificadoId.Should().BeNull();
         ato.MotivoRetificacao.Should().BeNull();
@@ -214,10 +214,10 @@ public sealed class AtoNormativoTests
             congelaConfiguracao: false,
             efeitoIrreversivel: false,
             unicoPorObjeto: unicoPorObjeto,
-            dataPublicacao: Publicacao,
+            dataDoAto: Publicacao,
             documentoHash: documentoHash,
             assinante: assinante,
-            registradoEm: Registro,
+            publicadoEm: Registro,
             versaoInvocada: versao,
             atoRetificadoId: atoRetificadoId,
             motivoRetificacao: motivoRetificacao,

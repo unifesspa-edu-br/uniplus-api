@@ -104,7 +104,7 @@ public sealed class ComposicaoDaPaginaDoCertame
             certame.NumeroEdital,
             certame.Situacao,
             certame.DocumentoEditalUrl,
-            criador?.DataPublicacao,
+            criador?.DataDoAto,
             linhaDoTempo,
             AvaliarDegradacao(certame, leitura));
     }
@@ -173,7 +173,7 @@ public sealed class ComposicaoDaPaginaDoCertame
 
         return new EventoDaLinhaDoTempo(
             ato.Id,
-            ato.DataPublicacao,
+            ato.DataDoAto,
             Titulo(nomeDoTipo, numero),
             numero,
             ato.Ano,

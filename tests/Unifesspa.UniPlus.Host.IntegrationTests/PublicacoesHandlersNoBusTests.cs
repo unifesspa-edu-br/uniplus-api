@@ -125,7 +125,7 @@ public sealed class PublicacoesHandlersNoBusTests
                 Ano: 2026,
                 Numero: "1",
                 TipoCodigo: "BUS_ATO_TIPO",
-                DataPublicacao: Inicio.AddMonths(2),
+                DataDoAto: Inicio.AddMonths(2),
                 DocumentoHash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
                 Assinante: "Jairo Belchior"),
             CancellationToken.None);

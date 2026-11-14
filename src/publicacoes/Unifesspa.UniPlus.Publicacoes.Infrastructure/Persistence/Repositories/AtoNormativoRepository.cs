@@ -254,9 +254,9 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
         OrderedKeysetPage<AtoNormativo> page = await OrderedKeysetCursor
             .ApplyAsync(
                 query,
-                b => b.Ascending(a => a.DataPublicacao).Ascending(a => a.Id),
-                SortKeyDaData,
-                (sortKey, id) => new { DataPublicacao = DataDaSortKey(sortKey), Id = id },
+                b => b.Ascending(a => a.PublicadoEm).Ascending(a => a.Id),
+                SortKeyDoInstante,
+                (sortKey, id) => new { PublicadoEm = InstanteDaSortKey(sortKey), Id = id },
                 afterSortKey,
                 afterId,
                 limit,
@@ -268,13 +268,13 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
     }
 
     /// <summary>
-    /// Sort key da âncora: a data de publicação em ISO-8601 (<c>yyyy-MM-dd</c>). Ordem
-    /// lexicográfica e ordem cronológica coincidem nesse formato, e ele é estável entre
-    /// culturas. Nunca nula (ADR-0095): <c>data_publicacao</c> é coluna obrigatória.
+    /// Sort key da âncora: o instante da divulgação em ISO-8601 com deslocamento zero
+    /// (formato <c>O</c>). Ordem lexicográfica e ordem cronológica coincidem nesse formato, e
+    /// ele é estável entre culturas. Nunca nula (ADR-0095): <c>publicado_em</c> é coluna obrigatória.
     /// </summary>
-    private static string SortKeyDaData(AtoNormativo ato) =>
-        ato.DataPublicacao.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+    private static string SortKeyDoInstante(AtoNormativo ato) =>
+        ato.PublicadoEm.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture);
 
-    private static DateOnly DataDaSortKey(string sortKey) =>
-        DateOnly.ParseExact(sortKey, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+    private static DateTimeOffset InstanteDaSortKey(string sortKey) =>
+        DateTimeOffset.ParseExact(sortKey, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
 }

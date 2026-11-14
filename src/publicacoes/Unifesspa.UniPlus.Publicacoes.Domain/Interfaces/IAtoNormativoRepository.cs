@@ -121,10 +121,9 @@ public interface IAtoNormativoRepository
         CancellationToken cancellationToken);
 
     /// <summary>
-    /// Lista os atos vinculados a uma entidade, ordenados por data de publicação
-    /// ascendente com o <c>Id</c> (Guid v7) de desempate — a retificação republica a
-    /// mesma data, então a data sozinha não ordena de forma estável. Keyset ordenado
-    /// (ADR-0094) sob cursor opaco; as âncoras são o par <c>(data, id)</c>.
+    /// Lista os atos vinculados a uma entidade, ordenados pelo instante da divulgação
+    /// ascendente, com o <c>Id</c> (Guid v7) de desempate para o mesmo microssegundo.
+    /// Keyset ordenado (ADR-0094) sob cursor opaco; as âncoras são o par <c>(instante, id)</c>.
     /// </summary>
     Task<(IReadOnlyList<AtoNormativo> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo)>
         ListarPorEntidadeAsync(

@@ -9,6 +9,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
+using Unifesspa.UniPlus.Publicacoes.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
@@ -30,7 +31,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly TimeProvider _relogio = new RelogioFixo(Agora);
 
-    [Fact(DisplayName = "Recusa quando não há tipo vigente na data de publicação")]
+    [Fact(DisplayName = "Recusa quando não há tipo vigente na data do ato")]
     public async Task Handle_SemTipoVigente_Falha()
     {
         _tipos.ObterVigenteAsync("EDITAL_ABERTURA", Publicacao, Arg.Any<CancellationToken>())
@@ -59,8 +60,8 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
         capturado.Should().NotBeNull();
         capturado!.CongelaConfiguracao.Should().BeTrue();
         capturado.EfeitoIrreversivel.Should().BeTrue();
-        capturado.RegistradoEm.Should().Be(Agora);
-        resultado.Value!.RegistradoEm.Should().Be(Agora);
+        capturado.PublicadoEm.Should().Be(Agora);
+        resultado.Value!.PublicadoEm.Should().Be(Agora);
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -362,7 +363,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
 
     private Task<Result<RegistrarAtoNormativoResult>> Executar(RegistrarAtoNormativoCommand comando) =>
         RegistrarAtoNormativoCommandHandler.Handle(
-            comando, _tipos, _atos, _unitOfWork, _relogio, CancellationToken.None);
+            comando, MontagemDeTeste.Criar(_tipos, _atos), _atos, _unitOfWork, _relogio, CancellationToken.None);
 
     private void VigenteComConsequencia(bool congela, bool efeito, bool unico = false)
     {
@@ -378,10 +379,10 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
             Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "13", tipoCodigo,
             congelaConfiguracao: congela, efeitoIrreversivel: false, unicoPorObjeto: false,
-            dataPublicacao: Publicacao,
+            dataDoAto: Publicacao,
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
-            registradoEm: Agora,
+            publicadoEm: Agora,
             versaoInvocada: null);
 
     private void SemConflitoDeNumero() =>
@@ -397,7 +398,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
             Ano: 2026,
             Numero: "13",
             TipoCodigo: "EDITAL_ABERTURA",
-            DataPublicacao: Publicacao,
+            DataDoAto: Publicacao,
             DocumentoHash: HashValido,
             Assinante: "Jairo Belchior");
 }
