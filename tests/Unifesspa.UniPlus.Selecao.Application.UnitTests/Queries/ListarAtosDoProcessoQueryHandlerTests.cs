@@ -4,8 +4,6 @@ using System.Reflection;
 
 using AwesomeAssertions;
 
-using Microsoft.Extensions.Options;
-
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -19,14 +17,12 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A consulta administrativa projeta os registros dos atos do processo com os documentos e destaca a
-/// pendência que passou do limiar.
+/// A consulta administrativa projeta os registros dos atos do processo com os documentos.
 /// </summary>
 public sealed class ListarAtosDoProcessoQueryHandlerTests
 {
     private const string HashDoEdital = "9f2c1e0b7a4d5c6e8f0a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60";
     private static readonly DateTimeOffset Agora = new(2026, 12, 10, 12, 0, 0, TimeSpan.Zero);
-    private static readonly TimeSpan Limiar = TimeSpan.FromMinutes(30);
 
     private readonly Guid _processoId = Guid.CreateVersion7();
     private readonly IProcessoSeletivoRepository _processos = Substitute.For<IProcessoSeletivoRepository>();
@@ -45,8 +41,6 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
         _processos,
         _atos,
         _documentos,
-        Options.Create(new AtosDoProcessoOptions { LimiarDePendencia = Limiar }),
-        new RelogioFixo(Agora),
         CancellationToken.None);
 
     private DocumentoAPublicar Confirmado(string hash = HashDoEdital, FinalidadeDoDocumento finalidade = FinalidadeDoDocumento.DocumentoDoEdital)
@@ -58,7 +52,7 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
     }
 
     private AtoDoProcesso Registro(
-        DocumentoAPublicar principal, DateTimeOffset publicadoEm, bool registrado = false, IReadOnlyList<AnexoDeclarado>? anexos = null)
+        DocumentoAPublicar principal, DateTimeOffset publicadoEm, IReadOnlyList<AnexoDeclarado>? anexos = null)
     {
         AtoDoProcesso ato = AtoDoProcesso.Registrar(
             new NovoAtoDoProcesso(
@@ -67,11 +61,6 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
             publicadoEm).Value!;
         typeof(AtoDoProcesso).GetProperty(nameof(AtoDoProcesso.CreatedAt))!
             .SetValue(ato, publicadoEm);
-        if (registrado)
-        {
-            ato.ConfirmarRegistro(new RelogioFixo(publicadoEm.AddSeconds(5)));
-        }
-
         return ato;
     }
 
@@ -81,8 +70,8 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
         DocumentoAPublicar principalDoMaisNovo = Confirmado();
         DocumentoAPublicar anexo = Confirmado(new string('b', 64));
         DocumentoAPublicar principalDoMaisAntigo = Confirmado(new string('c', 64));
-        AtoDoProcesso maisNovo = Registro(principalDoMaisNovo, Agora.AddMinutes(-1), registrado: true, anexos: [new AnexoDeclarado(anexo.Id, "Anexo I")]);
-        AtoDoProcesso maisAntigo = Registro(principalDoMaisAntigo, Agora.AddDays(-2), registrado: true);
+        AtoDoProcesso maisNovo = Registro(principalDoMaisNovo, Agora.AddMinutes(-1), anexos: [new AnexoDeclarado(anexo.Id, "Anexo I")]);
+        AtoDoProcesso maisAntigo = Registro(principalDoMaisAntigo, Agora.AddDays(-2));
         _atos.ListarDoProcessoAsync(_processoId, Arg.Any<CancellationToken>()).Returns([maisNovo, maisAntigo]);
         _documentos.ListarDoProcessoAsync(_processoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns([principalDoMaisNovo, anexo, principalDoMaisAntigo]);
@@ -96,33 +85,10 @@ public sealed class ListarAtosDoProcessoQueryHandlerTests
         itens[0].Anexos.Select(a => (a.DocumentoAPublicarId, a.NomeDeExibicao)).Should().Equal((anexo.Id, "Anexo I"));
     }
 
-    [Fact(DisplayName = "Só a pendência mais antiga que o limiar vem em destaque")]
-    public async Task Handle_Pendencia_DestacaAlemDoLimiar()
-    {
-        DocumentoAPublicar antigo = Confirmado(new string('d', 64), FinalidadeDoDocumento.DocumentoDeAto);
-        DocumentoAPublicar recente = Confirmado(new string('e', 64), FinalidadeDoDocumento.DocumentoDeAto);
-        DocumentoAPublicar registradoHaMuito = Confirmado(new string('f', 64), FinalidadeDoDocumento.DocumentoDeAto);
-        AtoDoProcesso pendenteAntigo = Registro(antigo, Agora - Limiar - TimeSpan.FromMinutes(1));
-        AtoDoProcesso pendenteRecente = Registro(recente, Agora - Limiar + TimeSpan.FromMinutes(1));
-        AtoDoProcesso registrado = Registro(registradoHaMuito, Agora.AddDays(-3), registrado: true);
-        _atos.ListarDoProcessoAsync(_processoId, Arg.Any<CancellationToken>()).Returns([pendenteRecente, pendenteAntigo, registrado]);
-        _documentos.ListarDoProcessoAsync(_processoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([antigo, recente, registradoHaMuito]);
-
-        Result<ListarAtosDoProcessoResult> resultado = await Consultar();
-
-        resultado.Value!.Items.ToDictionary(i => i.Id, i => i.PendenciaAcimaDoLimiar).Should().Equal(
-            new Dictionary<Guid, bool>
-            {
-                [pendenteRecente.Id] = false,
-                [pendenteAntigo.Id] = true,
-                [registrado.Id] = false,
-            });
-    }
-
     [Fact(DisplayName = "Ato que referencia documento ausente é inconsistência de dado e não é escondido")]
     public async Task Handle_DocumentoReferenciadoAusente_Lanca()
     {
-        AtoDoProcesso ato = Registro(Confirmado(), Agora.AddMinutes(-1), registrado: true);
+        AtoDoProcesso ato = Registro(Confirmado(), Agora.AddMinutes(-1));
         _atos.ListarDoProcessoAsync(_processoId, Arg.Any<CancellationToken>()).Returns([ato]);
 
         Func<Task> consultar = Consultar;

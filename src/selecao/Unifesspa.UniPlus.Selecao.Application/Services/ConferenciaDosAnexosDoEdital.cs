@@ -11,8 +11,8 @@ using Kernel.Results;
 
 /// <summary>
 /// A conferência dos anexos do edital na publicação, na retificação e no fechamento da retificação:
-/// cada documento existe, é do processo e está confirmado — antes de qualquer escrita, porque o ato
-/// é registrado depois, por mensagem durável, e a recusa tardia viraria dead letter.
+/// cada documento existe, é do processo e está confirmado — antes de qualquer escrita, porque a
+/// recusa tardia desfaria o que a transação já rastreou.
 /// </summary>
 public sealed class ConferenciaDosAnexosDoEdital(IDocumentoAPublicarRepository repositorio)
 {

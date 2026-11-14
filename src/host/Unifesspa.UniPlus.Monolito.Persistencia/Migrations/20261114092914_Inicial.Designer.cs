@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261114064530_Inicial")]
+    [Migration("20261114092914_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -10720,14 +10720,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset>("PublicadoEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("publicado_em");
-
-                    b.Property<DateTimeOffset?>("RegistradoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("registrado_em");
-
-                    b.Property<int>("Situacao")
-                        .HasColumnType("integer")
-                        .HasColumnName("situacao");
 
                     b.Property<string>("TipoCodigo")
                         .IsRequired()

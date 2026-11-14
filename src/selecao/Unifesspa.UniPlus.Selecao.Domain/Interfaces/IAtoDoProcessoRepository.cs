@@ -48,29 +48,17 @@ public interface IAtoDoProcessoRepository
     Task<IReadOnlyList<Guid>> ListarCadeiaDeCorrecaoAsync(Guid atoId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// O ato que corrige <paramref name="atoCorrigidoId"/>, ainda que pendente; nulo quando nenhum o
-    /// corrige. Só o registro da Seleção enxerga o ato pendente: o Publicações ainda não o conhece.
+    /// O ato do processo que corrige <paramref name="atoCorrigidoId"/>; nulo quando nenhum o corrige.
     /// </summary>
     Task<Guid?> ObterAtoQueCorrigeAsync(Guid atoCorrigidoId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Se algum dos atos é a publicação de um item que o edital declara, ainda que pendente.
+    /// Se algum dos atos é a publicação de um item que o edital declara.
     /// </summary>
     Task<bool> ExisteItemDoEditalEntreAsync(IReadOnlyCollection<Guid> atoIds, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Se o processo já registrou um ato do tipo que não pertence às <paramref name="cadeiaDeCorrecao"/>,
-    /// ainda que pendente.
-    /// </summary>
-    Task<bool> ExisteAtoDoTipoForaDaCadeiaAsync(
-        Guid processoSeletivoId,
-        string tipoCodigo,
-        IReadOnlyCollection<Guid> cadeiaDeCorrecao,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Os códigos de tipo dos atos <paramref name="atoIds"/>, sem repetição, quaisquer que sejam, ainda
-    /// que o ato esteja pendente de registro em Publicações.
+    /// Os códigos de tipo dos atos <paramref name="atoIds"/>, sem repetição, quaisquer que sejam.
     /// </summary>
     /// <remarks>
     /// Quem decide se o tipo é único é o catálogo vigente, e não este registro: aqui só se diz que o

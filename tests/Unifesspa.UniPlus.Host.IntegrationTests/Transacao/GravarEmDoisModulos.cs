@@ -57,7 +57,7 @@ public static class GravarEmDoisModulosHandler
             codigo, "Tipo de ato de teste da transação", congelaConfiguracao: false, unicoPorObjeto: false,
             efeitoIrreversivel: false, ehResultado: false, new DateOnly(2026, 1, 1), vigenciaFim: null, baseLegal: null).Value!;
 
-    private static MotivoDeDecisao NovoMotivo(string codigo) =>
+    internal static MotivoDeDecisao NovoMotivo(string codigo) =>
         MotivoDeDecisao.Criar(new CamposDoMotivo(
             TipoMotivoDeDecisao.Classificacao, codigo, "Motivo de teste da transação.", Subclassificacao: null, SentidoDoMotivo.Favoravel)).Value!;
 

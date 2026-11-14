@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 /// <summary>
 /// Dados documentais do ato normativo que o operador declara ao publicar ou retificar
-/// (ADR-0108): o que o documento diz de si mesmo, e que Seleção não tem como saber.
+/// (ADR-0105): o que o documento diz de si mesmo, e que Seleção não tem como saber.
 /// </summary>
 /// <remarks>
 /// <para>

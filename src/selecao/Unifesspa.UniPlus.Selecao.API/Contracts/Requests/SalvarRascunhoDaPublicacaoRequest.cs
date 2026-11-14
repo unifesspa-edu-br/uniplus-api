@@ -13,7 +13,7 @@ using System.Text.Json.Serialization;
 /// </param>
 /// <param name="Conteudo">
 /// Documento JSON <b>opaco</b>. O servidor guarda e devolve sem interpretar — não conhece os
-/// campos do ato (ADR-0108) e não passa a conhecê-los por guardar o bloco.
+/// campos do ato e não passa a conhecê-los por guardar o bloco.
 /// </param>
 /// <remarks>
 /// <c>[JsonRequired]</c> em <paramref name="Conteudo"/> porque o parâmetro de construtor de

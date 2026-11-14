@@ -45,7 +45,7 @@ internal static class AssembliesDoProduto
         typeof(Unifesspa.UniPlus.Portal.Infrastructure.PortalInfrastructureRegistration).Assembly,
         typeof(Unifesspa.UniPlus.Publicacoes.API.Controllers.AtosNormativosController).Assembly,
         typeof(Unifesspa.UniPlus.Publicacoes.Application.PublicacoesApplicationAssemblyMarker).Assembly,
-        typeof(Unifesspa.UniPlus.Publicacoes.Contracts.AtoNormativoRegistrado).Assembly,
+        typeof(Unifesspa.UniPlus.Publicacoes.Contracts.AtoNormativoPublicado).Assembly,
         typeof(Unifesspa.UniPlus.Publicacoes.Domain.Entities.AnexoDoAto).Assembly,
         typeof(Unifesspa.UniPlus.Publicacoes.Infrastructure.PublicacoesInfrastructureRegistration).Assembly,
         typeof(Unifesspa.UniPlus.Selecao.API.Authorization.ExigeLeituraDoProcessoAttribute).Assembly,

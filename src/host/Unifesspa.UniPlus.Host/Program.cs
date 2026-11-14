@@ -138,13 +138,6 @@ builder.Host.UseWolverineOutboxCascading(
         opts.Discovery.IncludeAssembly(typeof(CriarProcessoSeletivoCommand).Assembly);
         opts.Discovery.IncludeAssembly(typeof(ProcessoPublicadoToKafkaCascadeHandler).Assembly);
 
-        // o handler da requisição de ato vive em Publicacoes.Infrastructure —
-        // o middleware transacional do Wolverine só instala a transação (e o SaveChanges
-        // automático) quando enxerga o DbContext CONCRETO na assinatura. Mesmo lugar, e
-        // mesmo motivo, do handler de cascade do Selecao logo acima.
-        opts.Discovery.IncludeAssembly(
-            typeof(Unifesspa.UniPlus.Publicacoes.Infrastructure.Messaging.RegistrarAtoNormativoRequisicaoHandler).Assembly);
-
         // O handler da sincronização de discentes também vive em Infrastructure, junto do
         // orquestrador e dos repositórios que ele usa.
         opts.Discovery.IncludeAssembly(
@@ -167,9 +160,6 @@ builder.Host.UseWolverineOutboxCascading(
         // Resultado da verificação do PDF de designação dos gestores: usa o transporte RabbitMQ que a
         // Seleção acabou de ligar.
         AutorizacaoMessagingRegistration.ConfigurarRouting(opts);
-
-        // fila PG durável dos atos (mesmo transporte de domain-events).
-        PublicacoesMessagingRegistration.ConfigurarRouting(opts);
 
         // fila PG durável dos pedidos de e-mail (capacidade compartilhada, sem módulo dono).
         EnvioDeEmailServiceCollectionExtensions.ConfigurarRoutingDeEmail(opts, builder.Configuration);

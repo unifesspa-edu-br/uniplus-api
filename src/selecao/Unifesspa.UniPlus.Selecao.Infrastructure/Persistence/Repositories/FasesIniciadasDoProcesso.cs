@@ -23,7 +23,7 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
     public async Task<FasesIniciadas> ObterAsync(Guid processoId, DateTimeOffset agora, CancellationToken cancellationToken = default)
     {
         IReadOnlyList<VersaoDasFases> versoes = await VersoesVigentesAsync(processoId, agora, cancellationToken).ConfigureAwait(false);
-        Fatos fatos = await FatosAsync(processoId, agora, cancellationToken).ConfigureAwait(false);
+        Fatos fatos = await FatosAsync(processoId, cancellationToken).ConfigureAwait(false);
         HashSet<Guid> iniciadas = InicioDasFases.Origens(versoes, agora, fatos);
 
         return new FasesIniciadas(
@@ -66,8 +66,8 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
             FasesNoEnvelope.Das(v.ConfiguracaoCongelada)))];
     }
 
-    private async Task<Fatos> FatosAsync(Guid processoId, DateTimeOffset agora, CancellationToken cancellationToken) => new(
-        await AtosAsync(processoId, agora, cancellationToken).ConfigureAwait(false),
+    private async Task<Fatos> FatosAsync(Guid processoId, CancellationToken cancellationToken) => new(
+        await AtosAsync(processoId, cancellationToken).ConfigureAwait(false),
         await ExecucoesDeEtapaAsync(processoId, cancellationToken).ConfigureAwait(false),
         await InscricoesAsync(processoId, cancellationToken).ConfigureAwait(false),
         await EnviosAoInepAsync(processoId, cancellationToken).ConfigureAwait(false));
@@ -106,15 +106,15 @@ internal sealed class FasesIniciadasDoProcesso : IFasesIniciadasDoProcesso
         return [.. lotes.Select(static l => new ImportacaoNaEtapa(l.EtapaProcessoId, l.VersaoConfiguracaoId, l.ImportadoEm))];
     }
 
-    private async Task<IReadOnlyList<(string Item, DateTimeOffset Instante)>> AtosAsync(Guid processoId, DateTimeOffset agora, CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<(string Item, DateTimeOffset Instante)>> AtosAsync(Guid processoId, CancellationToken cancellationToken)
     {
         var atos = await _context.AtosDoProcesso
             .AsNoTracking()
             .Where(a => a.ProcessoSeletivoId == processoId && a.ItemDoEdital != null)
-            .Select(a => new { Item = a.ItemDoEdital!, a.RegistradoEm })
+            .Select(a => new { Item = a.ItemDoEdital!, a.PublicadoEm })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return [.. atos.Select(a => (a.Item, a.RegistradoEm ?? agora))];
+        return [.. atos.Select(static a => (a.Item, a.PublicadoEm))];
     }
 }

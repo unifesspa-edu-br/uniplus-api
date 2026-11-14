@@ -4,7 +4,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// O que o comando de publicação declara ao registrar um ato do processo, crie ele versão de
 /// configuração ou não.
 /// </summary>
-/// <param name="AtoId">Identificador do ato, decidido pela Seleção — o mesmo que viaja na requisição de registro.</param>
+/// <param name="AtoId">Identificador do ato, decidido pela Seleção — o mesmo que o registro central recebe.</param>
 /// <param name="ProcessoSeletivoId">O processo a que o ato pertence.</param>
 /// <param name="TipoCodigo">Código do tipo do ato no catálogo de Publicações.</param>
 /// <param name="TipoNome">Nome do tipo, como o catálogo o declarava na conferência.</param>

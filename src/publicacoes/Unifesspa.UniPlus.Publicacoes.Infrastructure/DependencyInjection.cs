@@ -27,7 +27,6 @@ public static class PublicacoesInfrastructureRegistration
         // Leitura cross-módulo do catálogo (ADR-0056): deixa o domínio que vai publicar
         // conferir o tipo declarado ANTES de escrever, em vez de descobrir na dead letter.
         services.AddScoped<ITipoAtoPublicadoReader, TipoAtoPublicadoReader>();
-        services.AddScoped<IVagaDeLinhagemReader, VagaDeLinhagemReader>();
         services.AddScoped<IAtoNormativoRepository, AtoNormativoRepository>();
 
         // O que mantém o pod no Service é degradado responder 200, e não a ausência da tag: a

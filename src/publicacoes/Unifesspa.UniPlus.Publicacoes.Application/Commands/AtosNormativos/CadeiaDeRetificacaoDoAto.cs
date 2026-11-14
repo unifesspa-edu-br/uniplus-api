@@ -135,7 +135,7 @@ public sealed class CadeiaDeRetificacaoDoAto(IAtoNormativoRepository atos)
 
         return retificador is null
             ? null
-            : new DomainError(AtoNormativoErrorCodes.RaizJaRetificada, RaizJaRetificadaMensagem(retificado.Id, retificador));
+            : new DomainError(AtoNormativoErrorCodes.RaizJaRetificada, RaizJaRetificadaMensagem(retificador));
     }
 
     private static string RetificadoInexistenteMensagem(Guid retificadoId) =>
@@ -144,19 +144,9 @@ public sealed class CadeiaDeRetificacaoDoAto(IAtoNormativoRepository atos)
             "O ato retificado {0} não corresponde a nenhum ato registrado.",
             retificadoId);
 
-    private static string RaizJaRetificadaMensagem(Guid retificadoId, AtoNormativo retificador)
-    {
-        string numero = retificador.Numero is null ? "sem número" : "nº " + retificador.Numero;
-        return string.Format(
-            CultureInfo.InvariantCulture,
-            "O ato {0} já foi retificado pelo ato {1} ({2} {3}/{4}). A cadeia é linear: "
-            + "retifique a cabeça da cadeia, não uma raiz já retificada.",
-            retificadoId,
-            retificador.Id,
-            retificador.Serie,
-            numero,
-            retificador.Ano);
-    }
+    private static string RaizJaRetificadaMensagem(AtoNormativo retificador) =>
+        $"O ato que se tentou retificar já foi retificado pelo ato {NumeracaoDoAto.Descrever(retificador)}. "
+        + "A cadeia é linear: retifique a cabeça da cadeia, não uma raiz já retificada.";
 }
 
 /// <summary>

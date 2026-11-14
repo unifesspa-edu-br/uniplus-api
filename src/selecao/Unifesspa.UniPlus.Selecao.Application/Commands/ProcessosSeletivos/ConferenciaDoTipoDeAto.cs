@@ -9,10 +9,8 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </summary>
 /// <remarks>
 /// <para>
-/// O ato é registrado depois, por mensagem durável (ADR-0108). Sem esta conferência, o que
-/// o catálogo recusaria só apareceria no consumo da fila: o Edital já publicado, o cliente
-/// já com o 204 na mão, e a recusa virando dead letter. O que dá para recusar agora, com
-/// 422, não pode virar incidente operacional depois.
+/// O registro do ato recebe os atributos do tipo já conferidos, por valor: o que o catálogo recusaria tem de virar 422
+/// aqui, antes de qualquer escrita.
 /// </para>
 /// <para>
 /// A regra de fundo não é sobre rótulos, e sim sobre o que o ato FAZ: publicar e retificar
@@ -72,72 +70,5 @@ internal static class ConferenciaDoTipoDeAto
                 "ProcessoSeletivo.TipoDeAtoSemVersaoVigente",
                 $"Não há versão vigente do tipo de ato '{tipoAtoCodigo}' na data da publicação ({diaDaPublicacao:yyyy-MM-dd})."))
             : Result<TipoAtoPublicadoView>.Success(tipo);
-    }
-
-    /// <summary>
-    /// Confere a vaga que a linhagem reserva sobre o certame (ADR-0107), quando o tipo é
-    /// único por objeto.
-    /// </summary>
-    /// <remarks>
-    /// A vaga é monotônica: ocupada, nunca se libera. Se já estiver tomada por OUTRA
-    /// linhagem — por um ato registrado pelo endpoint administrativo, por exemplo —, o
-    /// registro seria recusado no consumo da fila, e o certame ficaria publicado sem ato.
-    /// A recusa tem de vir agora, com 422.
-    /// <para>
-    /// <paramref name="atosDaPropriaLinhagem"/> são os atos que criaram as versões deste
-    /// certame: uma retificação NÃO disputa a vaga que a sua própria linhagem já ocupa. Na
-    /// abertura a lista é vazia, e o objeto tem de estar livre.
-    /// </para>
-    /// <para>
-    /// A pergunta é feita sobre o HISTÓRICO de atos, e não só sobre a tabela de vagas, porque
-    /// <c>unico_por_objeto</c> é editável: um ato registrado quando o tipo ainda não era único
-    /// não reservou vaga, e mesmo assim conflita se o tipo passar a ser único depois. É a
-    /// mesma checagem que o registro faz.
-    /// </para>
-    /// </remarks>
-    public static async Task<Result> VagaDoObjetoAsync(
-        IVagaDeLinhagemReader reader,
-        TipoAtoPublicadoView tipo,
-        Guid processoSeletivoId,
-        IReadOnlyList<Guid> atosDaPropriaLinhagem,
-        CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(reader);
-        ArgumentNullException.ThrowIfNull(tipo);
-        ArgumentNullException.ThrowIfNull(atosDaPropriaLinhagem);
-
-        if (!tipo.UnicoPorObjeto)
-        {
-            return Result.Success();
-        }
-
-        bool ocupadaPorOutro = await reader
-            .ObjetoJaTemAtoDeOutraLinhagemAsync(
-                EntidadesDeRegistroPeloDominio.ProcessoSeletivo,
-                processoSeletivoId,
-                tipo.Codigo,
-                atosDaPropriaLinhagem,
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        if (!ocupadaPorOutro)
-        {
-            return Result.Success();
-        }
-
-        return Result.Failure(VagaOcupada(tipo));
-    }
-
-    /// <summary>
-    /// A recusa da vaga do objeto já tomada por outra linhagem. Única, porque a conferência no registro
-    /// central e a do registro local da Seleção respondem a mesma pergunta e devem recusar igual.
-    /// </summary>
-    public static DomainError VagaOcupada(TipoAtoPublicadoView tipo)
-    {
-        ArgumentNullException.ThrowIfNull(tipo);
-
-        return new DomainError(
-            "ProcessoSeletivo.ObjetoJaTemAtoVivoDoTipo",
-            $"Este Processo Seletivo já tem um ato vivo do tipo '{tipo.Codigo}', de outra linhagem. O tipo admite um único ato vivo por objeto, e a vaga não se libera.");
     }
 }

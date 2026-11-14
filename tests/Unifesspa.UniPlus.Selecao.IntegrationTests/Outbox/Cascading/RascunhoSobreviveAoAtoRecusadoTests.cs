@@ -14,6 +14,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using Wolverine;
@@ -52,20 +53,7 @@ public sealed class RascunhoSobreviveAoAtoRecusadoTests
         await OcuparAVersaoUmAsync(api, processoId);
         await SemearRascunhoDaPublicacaoAsync(api, processoId);
 
-        var publicarCommand = new PublicarProcessoSeletivoCommand(
-            processoId,
-            Numero: null,
-            PeriodoInscricaoInicio: null,
-            PeriodoInscricaoFim: null,
-            DocumentoEditalId: documentoId,
-            Ato: DadosDoAtoDeTeste.Padrao);
-
-        Result resultado;
-        await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
-        {
-            IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-            resultado = await bus.InvokeAsync<Result>(publicarCommand);
-        }
+        Result resultado = await PublicarPeloBusAsync(api, processoId, documentoId);
 
         resultado.IsFailure.Should().BeTrue("a versão 1 do processo já estava ocupada");
         resultado.HasErrorCode("VersaoConfiguracao.NumeroDuplicado").Should().BeTrue(
@@ -99,20 +87,7 @@ public sealed class RascunhoSobreviveAoAtoRecusadoTests
         (Guid processoId, Guid documentoId) = await SemearProcessoPublicavelAsync(api);
         await SemearRascunhoDaPublicacaoAsync(api, processoId);
 
-        var publicarCommand = new PublicarProcessoSeletivoCommand(
-            processoId,
-            Numero: null,
-            PeriodoInscricaoInicio: null,
-            PeriodoInscricaoFim: null,
-            DocumentoEditalId: documentoId,
-            Ato: DadosDoAtoDeTeste.Padrao);
-
-        Result resultado;
-        await using (AsyncServiceScope scope = api.Services.CreateAsyncScope())
-        {
-            IMessageBus bus = scope.ServiceProvider.GetRequiredService<IMessageBus>();
-            resultado = await bus.InvokeAsync<Result>(publicarCommand);
-        }
+        Result resultado = await PublicarPeloBusAsync(api, processoId, documentoId);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
 
@@ -125,7 +100,49 @@ public sealed class RascunhoSobreviveAoAtoRecusadoTests
             .AnyAsync(r => r.ProcessoSeletivoId == processoId);
 
         sobrou.Should().BeFalse(
-            "registrado o ato, a transcrição perdeu a razão de existir e o nome do assinante sai do banco");
+            "publicado o ato, a transcrição perdeu a razão de existir e o nome do assinante sai do banco");
+    }
+
+    [Fact(DisplayName =
+        "Publicação recusada pelo registro central por vaga ocupada não apaga o rascunho do ato")]
+    public async Task PublicacaoRecusadaPeloRegistro_NaoApagaORascunho()
+    {
+        CascadingApiFactory api = _fixture.Factory;
+        await TiposDeAtoSeeder.SemearAsync(api.Services);
+        (Guid processoId, Guid documentoId) = await SemearProcessoPublicavelAsync(api);
+        await RegistroPelaPortaDeTeste.RegistrarEGravarAsync(api, RegistroPelaPortaDeTeste.AtoDoProcesso(
+            processoId, DadosDoAtoDeTeste.TipoAbertura, "999/2026", new AtributosDoTipoAto(true, true, false, null)));
+        await SemearRascunhoDaPublicacaoAsync(api, processoId);
+
+        Result resultado = await PublicarPeloBusAsync(api, processoId, documentoId);
+
+        resultado.HasErrorCode("AtoNormativo.ObjetoJaTemAtoVivoDoTipo").Should().BeTrue($"veio '{resultado.Error?.Code}'");
+        await ExigirRascunhoPreservadoSemVersaoAsync(api, processoId);
+    }
+
+    private static async Task ExigirRascunhoPreservadoSemVersaoAsync(CascadingApiFactory api, Guid processoId)
+    {
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        UniPlusDbContext leitura = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        List<RascunhoDePublicacao> rascunhos = await leitura.RascunhosDePublicacao.AsNoTracking().Where(r => r.ProcessoSeletivoId == processoId).ToListAsync();
+
+        rascunhos.Should().ContainSingle("a recusa do registro central não leva a transcrição do operador junto").Which.Conteudo.Should().Contain("Fulano de Tal");
+        (await leitura.VersoesConfiguracao.AsNoTracking().AnyAsync(v => v.ProcessoSeletivoId == processoId))
+            .Should().BeFalse("a versão nasce na mesma transação do ato, e a recusa não deixa nenhuma das duas");
+    }
+
+    private static async Task<Result> PublicarPeloBusAsync(CascadingApiFactory api, Guid processoId, Guid documentoId)
+    {
+        var comando = new PublicarProcessoSeletivoCommand(
+            processoId,
+            Numero: null,
+            PeriodoInscricaoInicio: null,
+            PeriodoInscricaoFim: null,
+            DocumentoEditalId: documentoId,
+            Ato: DadosDoAtoDeTeste.Padrao);
+
+        await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
+        return await scope.ServiceProvider.GetRequiredService<IMessageBus>().InvokeAsync<Result>(comando);
     }
 
     private static async Task OcuparAVersaoUmAsync(CascadingApiFactory api, Guid processoId)

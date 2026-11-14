@@ -183,7 +183,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.RaizJaRetificada);
-        resultado.Error.Message.Should().Contain(jaRetificador.Id.ToString());
+        resultado.Error.Message.Should().Contain("EDITAL nº 13/2026").And.NotContain(jaRetificador.Id.ToString());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

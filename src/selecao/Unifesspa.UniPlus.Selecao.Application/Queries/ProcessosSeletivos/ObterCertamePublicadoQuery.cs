@@ -12,8 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <remarks>
 /// Duas coisas distinguem esta consulta das leituras internas do módulo.
 /// <para>
-/// <b>A visibilidade já está resolvida</b>: a divulgação é materializada quando o ato normativo se
-/// confirma no registro central, e a existência dessa linha É a publicidade do certame (ADR-0133).
+/// <b>A visibilidade já está resolvida</b>: a divulgação é materializada na transação que registra o ato normativo no registro central, e a existência dessa linha É a publicidade do certame (ADR-0133).
 /// A consulta não confere ato nenhum, nem pergunta a Publicações no caminho da requisição — ela lê
 /// a projeção que já está pronta.
 /// </para>

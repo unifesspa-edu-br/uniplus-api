@@ -201,7 +201,7 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         return json.RootElement.GetProperty("hashConfiguracao").GetString()!;
     }
 
-    /// <summary>A divulgação nasce quando o ato é registrado, de forma assíncrona; a leitura pública depende dela.</summary>
+    /// <summary>A divulgação nasce na transação da publicação; a leitura pública depende dela.</summary>
     private async Task AguardarDivulgacaoAsync(Guid processoId)
     {
         for (int tentativa = 0; tentativa < 100; tentativa++)
@@ -219,7 +219,7 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         Assert.Fail($"O certame {processoId} não foi divulgado a tempo.");
     }
 
-    /// <summary>Grava a versão seguinte sem avançar a divulgação, como a retificação cujo ato ainda não foi registrado. Devolve o hash da versão divulgada.</summary>
+    /// <summary>Grava a versão seguinte sem avançar a divulgação, como a versão gravada que a divulgação ainda não alcançou. Devolve o hash da versão divulgada.</summary>
     private async Task<string> SemearVersaoNaoDivulgadaAsync(Guid processoId)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();

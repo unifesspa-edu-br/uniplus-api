@@ -14,8 +14,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// enviado para um ato e não foi usado em outro; o principal é PDF e os anexos têm nomes distintos.
 /// </summary>
 /// <remarks>
-/// Antes de qualquer escrita, porque o ato é registrado depois, por mensagem durável (ADR-0108), e a
-/// recusa tardia não teria a quem responder. O documento usado em outro ato é recusado para que o
+/// Antes de qualquer escrita, porque o ato é gravado e registrado numa transação só e a recusa tardia
+/// desfaria o que já foi rastreado. O documento usado em outro ato é recusado para que o
 /// arquivo publicado tenha um único ato por trás; a finalidade já separa o documento do ato do
 /// documento e dos anexos do edital.
 /// </remarks>

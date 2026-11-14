@@ -34,7 +34,7 @@ internal static class ProcessoPublicadoComExigenciaDeDocumento
             client, HttpMethod.Post, $"/api/selecao/processos-seletivos/{processoId}/publicacao", PedidoDePublicacao(documentoEditalId));
         publicacao.StatusCode.Should().Be(HttpStatusCode.NoContent, await publicacao.Content.ReadAsStringAsync());
 
-        await EsperaDeAtoRegistrado.AguardarAsync(api, await AtoDaVersaoAsync(api, processoId), "ato da abertura", processoId);
+        await AtoNoRegistroCentral.LerAsync(api, await AtoDaVersaoAsync(api, processoId));
         await AguardarDivulgacaoAsync(client, processoId);
         return (processoId, exigenciaId);
     }
@@ -93,7 +93,7 @@ internal static class ProcessoPublicadoComExigenciaDeDocumento
             .SingleAsync();
     }
 
-    /// <summary>A divulgação do certame chega pela fila depois do registro do ato: antes, o certame responde 404.</summary>
+    /// <summary>A divulgação do certame nasce na transação da publicação: sem ela, o certame responde 404.</summary>
     private static async Task AguardarDivulgacaoAsync(HttpClient client, Guid processoId)
     {
         DateTimeOffset limite = DateTimeOffset.UtcNow + TimeSpan.FromSeconds(30);
@@ -105,7 +105,7 @@ internal static class ProcessoPublicadoComExigenciaDeDocumento
                 return;
             }
 
-            DateTimeOffset.UtcNow.Should().BeBefore(limite, "a divulgação do certame não chegou depois do registro do ato");
+            DateTimeOffset.UtcNow.Should().BeBefore(limite, "a divulgação do certame não existe depois da publicação");
             await Task.Delay(TimeSpan.FromMilliseconds(300));
         }
     }

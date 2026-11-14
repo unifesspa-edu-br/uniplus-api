@@ -93,7 +93,6 @@ public static partial class SelecaoMessagingRegistration
 
         ConfigurarFilaDosEventosDoProcesso(opts);
         ConfigurarFilaDaCopiaAoAcervo(opts);
-        ConfigurarFilaDaConfirmacaoDoRegistroDoAto(opts);
         ConfigurarVerificacaoDosArquivos(opts, configuration);
         ConfigurarPublicacaoAvroNoKafka(opts, configuration, srClient);
     }
@@ -115,17 +114,6 @@ public static partial class SelecaoMessagingRegistration
         opts.PublishMessage<CopiarDocumentosDoAtoAoAcervo>().ToPostgresqlQueue("selecao-copia-ao-acervo");
         opts.ListenToPostgresqlQueue("selecao-copia-ao-acervo");
         opts.Policies.Add<ReentregaDaCopiaAoAcervo>();
-    }
-
-    /// <summary>
-    /// O desfecho do registro do ato, vindo de Publicações, confirma o registro do ato do processo. Fila PostgreSQL,
-    /// pelo mesmo motivo da cópia ao acervo: a confirmação não pode se perder num encerramento.
-    /// </summary>
-    private static void ConfigurarFilaDaConfirmacaoDoRegistroDoAto(WolverineOptions opts)
-    {
-        opts.PublishMessage<Unifesspa.UniPlus.Publicacoes.Contracts.AtoNormativoRegistrado>()
-            .ToPostgresqlQueue("selecao-confirmacao-do-ato");
-        opts.ListenToPostgresqlQueue("selecao-confirmacao-do-ato");
     }
 
     /// <summary>

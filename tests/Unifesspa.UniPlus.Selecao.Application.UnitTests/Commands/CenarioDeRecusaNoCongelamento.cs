@@ -33,7 +33,6 @@ public enum DefeitoDoCongelamento
 {
     Documento,
     TipoDeAto,
-    AtoJaRetificado,
     ProtecaoPendente,
     VersoesPublicadasIlegiveis,
     UnidadeExcluida,
@@ -54,7 +53,6 @@ internal sealed class CenarioDeRecusaNoCongelamento
     {
         [DefeitoDoCongelamento.Documento] = static c => c.Servicos.ComDocumentos(Substitute.For<IDocumentoAPublicarRepository>()),
         [DefeitoDoCongelamento.TipoDeAto] = static c => c.TipoDeAtoQueNaoCongela(),
-        [DefeitoDoCongelamento.AtoJaRetificado] = static c => c.Servicos.Vagas.AtoJaFoiRetificadoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(true),
         [DefeitoDoCongelamento.ProtecaoPendente] = static c => c.Servicos.ComTiposDocumento(TiposDeDocumentoComExigenciaPendente()),
         [DefeitoDoCongelamento.VersoesPublicadasIlegiveis] = static c => c.Servicos.Codecs.Capacidades.Returns([]),
         [DefeitoDoCongelamento.UnidadeExcluida] = static c => c.Servicos.ComUnidades(ResolvedorDeUnidadeDeTeste.Com()),
@@ -69,7 +67,6 @@ internal sealed class CenarioDeRecusaNoCongelamento
     {
         [DefeitoDoCongelamento.Documento] = ConferenciaDoDocumentoDoEdital.NaoEncontrado,
         [DefeitoDoCongelamento.TipoDeAto] = "ProcessoSeletivo.TipoDeAtoNaoCongelaConfiguracao",
-        [DefeitoDoCongelamento.AtoJaRetificado] = "ProcessoSeletivo.AtoJaRetificado",
         [DefeitoDoCongelamento.ProtecaoPendente] = "ProcessoSeletivo.TipoDocumentoComProtecaoPendente",
         [DefeitoDoCongelamento.VersoesPublicadasIlegiveis] = "EnvelopeCodec.VersaoDesconhecida",
         [DefeitoDoCongelamento.UnidadeExcluida] = "FaseCronograma.UnidadeResponsavelNaoEncontrada",
@@ -89,7 +86,7 @@ internal sealed class CenarioDeRecusaNoCongelamento
 
     private static readonly DefeitoDoCongelamento[] DefeitosDaRetificacao =
     [
-        DefeitoDoCongelamento.Documento, DefeitoDoCongelamento.TipoDeAto, DefeitoDoCongelamento.AtoJaRetificado,
+        DefeitoDoCongelamento.Documento, DefeitoDoCongelamento.TipoDeAto,
         DefeitoDoCongelamento.ProtecaoPendente, DefeitoDoCongelamento.VersoesPublicadasIlegiveis, DefeitoDoCongelamento.UnidadeExcluida,
         DefeitoDoCongelamento.TiposDeAtoCongelados, DefeitoDoCongelamento.Anexos, DefeitoDoCongelamento.ConformidadeLegal,
         DefeitoDoCongelamento.Motivos,
@@ -97,7 +94,7 @@ internal sealed class CenarioDeRecusaNoCongelamento
 
     private static readonly DefeitoDoCongelamento[] DefeitosDoFechamento =
     [
-        DefeitoDoCongelamento.Documento, DefeitoDoCongelamento.TipoDeAto, DefeitoDoCongelamento.AtoJaRetificado,
+        DefeitoDoCongelamento.Documento, DefeitoDoCongelamento.TipoDeAto,
         DefeitoDoCongelamento.ProtecaoPendente, DefeitoDoCongelamento.UnidadeExcluida, DefeitoDoCongelamento.Cronograma,
         DefeitoDoCongelamento.TiposDeAtoCongelados, DefeitoDoCongelamento.Anexos, DefeitoDoCongelamento.ConformidadeLegal,
         DefeitoDoCongelamento.Motivos,

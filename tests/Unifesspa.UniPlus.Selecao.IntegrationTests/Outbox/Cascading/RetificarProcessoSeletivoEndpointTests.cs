@@ -87,8 +87,7 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         // retificação (ADR-0103). O tipo é o que o operador DECLAROU no corpo, não algo que o
         // servidor tenha deduzido do fato de ser uma retificação: um aviso pode emendar um
         // edital, e o rótulo do documento pertence ao órgão que o publica, não ao sistema.
-        AtoNormativo ato = await EsperaDeAtoRegistrado.AguardarAsync(
-            api, versoes[1].AtoCriadorId, "ato da retificação", processoId, atoPredecessorId: atoAberturaId);
+        AtoNormativo ato = await AtoNoRegistroCentral.LerAsync(api, versoes[1].AtoCriadorId);
         ato.AtoRetificadoId.Should().Be(atoAberturaId);
         ato.MotivoRetificacao.Should().Be("Correção do prazo de inscrição");
         ato.TipoCodigo.Should().Be(
@@ -131,7 +130,7 @@ public sealed class RetificarProcessoSeletivoEndpointTests
         // O snapshot forense (Seleção) e o ato registrado (Publicações) guardam o MESMO
         // valor NFC — a reconciliação entre os dois módulos vale mesmo com input decomposto
         // (Postgres não normaliza texto, e a normalização acontece uma vez só, no handler).
-        AtoNormativo ato = await EsperaDeAtoRegistrado.AguardarAsync(api, versao.AtoCriadorId, "ato da retificação", processoId);
+        AtoNormativo ato = await AtoNoRegistroCentral.LerAsync(api, versao.AtoCriadorId);
         ato.MotivoRetificacao.Should().Be(motivoNoSnapshot);
         ato.MotivoRetificacao.Should().Be(
             "correção do prazo de inscrição".Normalize(NormalizationForm.FormC));

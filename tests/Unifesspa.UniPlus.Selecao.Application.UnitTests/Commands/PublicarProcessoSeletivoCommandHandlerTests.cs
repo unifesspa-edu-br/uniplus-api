@@ -79,7 +79,6 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         IDocumentoAPublicarRepository DocumentoRepository,
         ISnapshotPublicacaoCanonicalizer Canonicalizer,
         ITipoAtoPublicadoReader TipoDeAtoReader,
-        IVagaDeLinhagemReader VagaDeLinhagemReader,
         IObrigatoriedadeLegalRepository ObrigatoriedadeLegalRepository,
         IFatoCandidatoReader FatoCandidatoReader);
 
@@ -118,7 +117,6 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             documentoRepository,
             canonicalizer,
             tipoDeAtoReader,
-            Substitute.For<IVagaDeLinhagemReader>(),
             obrigatoriedadeLegalRepository,
             fatoCandidatoReader), documento);
     }
@@ -219,7 +217,6 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             .ComCanonicalizer(mocks.Canonicalizer)
             .ComUsuario(UsuarioDoHandler())
             .ComTiposDeAto(mocks.TipoDeAtoReader)
-            .ComVagasDeLinhagem(mocks.VagaDeLinhagemReader)
             .ComObrigatoriedadesLegais(mocks.ObrigatoriedadeLegalRepository)
             .ComCatalogoDeFatos(mocks.FatoCandidatoReader)
             .ComRelogio(TimeProvider.System);

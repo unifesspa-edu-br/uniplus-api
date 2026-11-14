@@ -69,7 +69,7 @@ public static class RegistrarAtoNormativoCommandHandler
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
             return null;
         }
-        catch (Exception ex) when (ConflitoNaGravacaoDoAto.Traduzir(ex, command.AtoRetificadoId) is { } conflito)
+        catch (Exception ex) when (ConflitoNaGravacaoDoAto.Traduzir(ex) is { } conflito)
         {
             return conflito;
         }

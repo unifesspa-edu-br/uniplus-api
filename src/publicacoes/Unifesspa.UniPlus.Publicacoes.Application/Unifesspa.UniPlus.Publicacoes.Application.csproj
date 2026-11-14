@@ -15,4 +15,10 @@
     <ProjectReference Include="..\Unifesspa.UniPlus.Publicacoes.Domain\Unifesspa.UniPlus.Publicacoes.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- A porta de escrita do registro de ato é internal (só o contrato dela é público): os testes de unidade a exercitam
+         direto, como a Seleção faz com os seus internos. -->
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.Publicacoes.Application.UnitTests" />
+  </ItemGroup>
+
 </Project>

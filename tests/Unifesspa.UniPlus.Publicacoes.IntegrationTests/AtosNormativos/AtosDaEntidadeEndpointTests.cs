@@ -10,12 +10,9 @@ using AwesomeAssertions;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
-using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
-using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
-using Unifesspa.UniPlus.Publicacoes.Infrastructure.Messaging;
 using Unifesspa.UniPlus.Publicacoes.IntegrationTests.Infrastructure;
 
 /// <summary>
@@ -429,8 +426,8 @@ public sealed class AtosDaEntidadeEndpointTests
     // ── Helpers ──────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Registra o ato como o domínio dono do objeto faz: pelo handler da requisição durável,
-    /// que é o único caminho que admite o vínculo com o processo seletivo.
+    /// Registra o ato como o domínio dono do objeto faz: pela porta de escrita, que é o único caminho que admite o
+    /// vínculo com o processo seletivo, e com a gravação única que o domínio faz depois dela.
     /// </summary>
     private async Task<Guid> RegistrarPeloDominioAsync(string tipoCodigo, string numero, Guid processo)
     {
@@ -438,19 +435,25 @@ public sealed class AtosDaEntidadeEndpointTests
         await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
         IServiceProvider sp = escopo.ServiceProvider;
 
-        await RegistrarAtoNormativoRequisicaoHandler.Handle(
-            new RegistrarAtoNormativoRequisicao(
-                atoId, "CEPS", "EDITAL", 2026, numero, tipoCodigo, new DateOnly(2026, 3, 13),
-                new DateTimeOffset(2026, 3, 13, 15, 0, 0, TimeSpan.Zero), HashValido,
-                "Jairo Belchior", null, null, null, null,
-                [new VinculoEntidadeRequisicao(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, processo)],
-                new AtributosDoTipoAto(true, false, false, "Tipo de teste")),
-            sp.GetRequiredService<UniPlusDbContext>(),
-            sp.GetRequiredService<MontagemDoAtoNormativo>(),
-            sp.GetRequiredService<IAtoNormativoRepository>(),
-            sp.GetRequiredService<IUnitOfWork>(),
-            sp.GetRequiredService<TimeProvider>(),
+        Result registrado = await sp.GetRequiredService<IRegistroDeAtoNormativo>().RegistrarAsync(
+            new AtoNormativoPublicado
+            {
+                AtoId = atoId,
+                Orgao = "CEPS",
+                Serie = "EDITAL",
+                Ano = 2026,
+                Numero = numero,
+                TipoCodigo = tipoCodigo,
+                TipoConferido = new AtributosDoTipoAto(true, false, false, "Tipo de teste"),
+                DataDoAto = new DateOnly(2026, 3, 13),
+                PublicadoEm = new DateTimeOffset(2026, 3, 13, 15, 0, 0, TimeSpan.Zero),
+                DocumentoHash = HashValido,
+                Assinante = "Jairo Belchior",
+                Vinculos = [new VinculoDoAtoPublicado(EntidadesDeRegistroPeloDominio.ProcessoSeletivo, processo)],
+            },
             CancellationToken.None);
+        registrado.IsSuccess.Should().BeTrue(registrado.Error?.Message);
+        await sp.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync(CancellationToken.None);
 
         return atoId;
     }

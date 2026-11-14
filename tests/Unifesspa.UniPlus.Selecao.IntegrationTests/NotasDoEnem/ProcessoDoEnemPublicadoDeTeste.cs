@@ -72,7 +72,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
                 .Where(v => v.ProcessoSeletivoId == processo.Id)
                 .Select(v => v.AtoCriadorId)
                 .SingleAsync();
-            await EsperaDeAtoRegistrado.AguardarAsync(fixture.Factory, atoId, "ato da abertura", processo.Id);
+            await AtoNoRegistroCentral.LerAsync(fixture.Factory, atoId);
         }
 
         await AguardarDivulgacaoAsync(client, processo.Id);
@@ -168,7 +168,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
                 return;
             }
 
-            DateTimeOffset.UtcNow.Should().BeBefore(limite, "a divulgação do certame não chegou depois do registro do ato");
+            DateTimeOffset.UtcNow.Should().BeBefore(limite, "a divulgação do certame não existe depois da publicação");
             await Task.Delay(TimeSpan.FromMilliseconds(300));
         }
     }

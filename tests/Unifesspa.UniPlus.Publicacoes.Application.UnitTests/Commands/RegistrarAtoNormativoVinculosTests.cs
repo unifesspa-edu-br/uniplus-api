@@ -122,7 +122,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo);
-        resultado.Error.Message.Should().Contain(deOutraLinhagem.Id.ToString());
+        resultado.Error.Message.Should().Contain("EDITAL nº 99/2026").And.NotContain(deOutraLinhagem.Id.ToString());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

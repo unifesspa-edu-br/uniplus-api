@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 
-using System.Globalization;
-
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
@@ -28,6 +26,10 @@ internal static class ConflitoNaGravacaoDoAto
 
     private const string DbUpdateExceptionFullName = "Microsoft.EntityFrameworkCore.DbUpdateException";
 
+    private const string RaizJaRetificadaConcorrenteMensagem =
+        "O ato retificado já foi retificado por outro ato registrado concorrentemente. "
+        + "A cadeia é linear: retifique a cabeça da cadeia.";
+
     private const string VagaOcupadaConcorrenteMensagem =
         "A vaga do objeto vinculado foi ocupada por um ato registrado concorrentemente. "
         + "O tipo admite um único ato vivo por objeto — consulte os atos da entidade "
@@ -37,26 +39,19 @@ internal static class ConflitoNaGravacaoDoAto
     /// A recusa que corresponde à violação, ou <see langword="null"/> quando a exceção não é uma
     /// violação das constraints do ato: quem chama deve propagá-la.
     /// </summary>
-    public static DomainError? Traduzir(Exception ex, Guid? atoRetificadoId)
+    public static DomainError? Traduzir(Exception ex)
     {
         ArgumentNullException.ThrowIfNull(ex);
 
         return ConstraintViolada(ex) switch
         {
             LinearidadeConstraint => new DomainError(
-                AtoNormativoErrorCodes.RaizJaRetificada, RaizJaRetificadaConcorrenteMensagem(atoRetificadoId)),
+                AtoNormativoErrorCodes.RaizJaRetificada, RaizJaRetificadaConcorrenteMensagem),
             LinhagemUnicaConstraint => new DomainError(
                 AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo, VagaOcupadaConcorrenteMensagem),
             _ => null,
         };
     }
-
-    private static string RaizJaRetificadaConcorrenteMensagem(Guid? retificadoId) =>
-        string.Format(
-            CultureInfo.InvariantCulture,
-            "O ato {0} já foi retificado por outro ato registrado concorrentemente. "
-            + "A cadeia é linear: retifique a cabeça da cadeia.",
-            retificadoId);
 
     private static string? ConstraintViolada(Exception ex)
     {

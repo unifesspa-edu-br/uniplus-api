@@ -45,7 +45,7 @@ public sealed class ProdutosPrevistosDoProcessoController : ControllerBase
 
     /// <summary>
     /// Lista os itens previstos no edital vigente, agrupados pela fase do cronograma. Cada item diz
-    /// se está aberto, pendente ou publicado e, quando não pode ser publicado agora, o motivo.
+    /// se está aberto ou publicado e, quando não pode ser publicado agora, o motivo.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosAcompanhar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [HttpGet]
@@ -71,19 +71,20 @@ public sealed class ProdutosPrevistosDoProcessoController : ControllerBase
     /// com o ato corrigido e o motivo, e não esbarra na unicidade da primeira publicação.
     /// </summary>
     /// <remarks>
-    /// Responde 202: o registro no Publicações e a cópia ao acervo público acontecem depois, por mensagem
-    /// durável. O item só conta como publicado quando o Publicações confirma. O definitivo só sai depois
-    /// do preliminar da mesma matéria, e o preliminar não se corrige depois que o definitivo que fecha o
-    /// ciclo dele foi publicado. Tudo o que o registro central recusaria depois é conferido antes, com 422.
+    /// Responde 201 com o ato publicado e divulgado: o ato entra no registro central na mesma transação que o grava, e a
+    /// cópia dos documentos ao acervo público é o único efeito posterior, por mensagem durável. O definitivo só sai
+    /// depois do preliminar da mesma matéria, e o preliminar não se corrige depois que o definitivo que fecha o ciclo
+    /// dele foi publicado. A vaga do objeto já ocupada e o ato já retificado respondem 409, com a série, o número e o ano
+    /// do ato que a ocupa.
     /// </remarks>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosPublicar, ParametroDaRota = RotaDoProcesso.ParametroAninhado)]
     [HttpPost("{produtoId:guid}/publicacoes")]
     [RequiresIdempotencyKey]
-    [ProducesResponseType(typeof(AtoPublicadoDto), StatusCodes.Status202Accepted)]
+    [ProducesResponseType(typeof(AtoPublicadoDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
-            Description = "Outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
+            Description = "O objeto já tem ato vivo do tipo (uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo), o ato que se corrige já foi retificado (uniplus.publicacoes.ato_normativo.raiz_ja_retificada) ou outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
     public async Task<IActionResult> Publicar(
             Guid processoSeletivoId,
@@ -109,6 +110,8 @@ public sealed class ProdutosPrevistosDoProcessoController : ControllerBase
                 cancellationToken)
             .ConfigureAwait(false);
 
-        return resultado.IsSuccess ? StatusCode(StatusCodes.Status202Accepted, resultado.Value) : resultado.ToActionResult(_mapper);
+        return resultado.IsSuccess
+            ? CreatedAtAction(nameof(AtosDoProcessoController.Listar), "AtosDoProcesso", new { processoSeletivoId }, resultado.Value)
+            : resultado.ToActionResult(_mapper);
     }
 }
