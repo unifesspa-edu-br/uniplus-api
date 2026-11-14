@@ -123,7 +123,7 @@ public sealed class AtosDoProcessoController : ControllerBase
     [VendorMediaType(Resource = "ato-do-processo", Versions = [1])]
     [ProducesResponseType(typeof(AtoDoProcessoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound,
-            Description = "O processo não existe ou o ato não existe nele (uniplus.selecao.ato_do_processo.nao_encontrado); o ato de outro processo responde igual ao inexistente.")]
+            Description = "O processo não existe (uniplus.selecao.processo_seletivo.nao_encontrado) ou o ato não existe nele (uniplus.selecao.ato_do_processo.nao_encontrado); o ato de outro processo responde igual ao inexistente.")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> Obter(Guid processoSeletivoId, Guid atoId, CancellationToken cancellationToken)
     {
