@@ -1,0 +1,30 @@
+{
+  "formato": "uniplus.selecao.configuracao",
+  "versaoFormato": 1,
+  "identificacao": {
+    "nome": "Resultado Importado de Exemplo 2027",
+    "tipoProcessoCodigo": "PSR",
+    "unidadeAdministradoraCodigo": "CEPS",
+    "origemCandidatos": "importacaoExterna",
+    "localidadeCodigoIbge": "1505304",
+    "identificadorLegivel": "resultado-importado-2027"
+  },
+  "cronograma": {
+    "fases": [
+      {
+        "chave": "resultado-final",
+        "faseCanonicaCodigo": "RESULTADO_FINAL",
+        "ordem": 1,
+        "inicio": "2027-03-01T03:00:00Z",
+        "fim": "2027-03-01T14:00:00Z",
+        "unidadeResponsavelCodigo": "CEPS",
+        "produtos": [
+          { "atoCodigo": "RESULTADO_FINAL", "papel": "DEFINITIVO" }
+        ]
+      }
+    ]
+  },
+  "taxaDeInscricao": {
+    "cobra": false
+  }
+}

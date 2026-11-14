@@ -15,8 +15,9 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="JsonSchema.Net" />
     <PackageReference Include="NSubstitute" />
-      </ItemGroup>
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
@@ -25,6 +26,11 @@
   <!-- Schemas Avro embedded usados por SchemaRegistrationHostedServiceTests (#362) -->
   <ItemGroup>
     <EmbeddedResource Include="Messaging\SchemaRegistry\Resources\*.avsc" />
+  </ItemGroup>
+
+  <!-- Esquema versionado da configuração do processo seletivo e os exemplos, conferidos pelo teste de contrato. -->
+  <ItemGroup>
+    <None Include="..\..\contracts\selecao\configuracao\**\*.json" Link="Contratos\selecao-configuracao\%(RecursiveDir)%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <ItemGroup>
