@@ -41,7 +41,7 @@ public static class SelecaoModuleRegistration
         ArgumentNullException.ThrowIfNull(configuration);
 
         RegistrarContratoHttp(services, configuration);
-        RegistrarPermissoesEConferenciaDoDto(services);
+        RegistrarPermissoes(services);
         RegistrarAplicacaoEInfraestrutura(services);
         RegistrarRemocaoDeArquivosPendentes(services, configuration);
         RegistrarReconciliacaoDaVerificacao(services, configuration);
@@ -68,14 +68,11 @@ public static class SelecaoModuleRegistration
     }
 
     /// <summary>
-    /// O enum de permissões do módulo entra no catálogo da aplicação e é conferido na subida (ADR-0151). O DTO
-    /// administrativo declara a classificação de cada propriedade lida da coluna, e a subida confere que nenhuma fica
-    /// abaixo da classificação do modelo (ADR-0153).
+    /// O enum de permissões do módulo entra no catálogo da aplicação e é conferido na subida (ADR-0151).
     /// </summary>
-    private static void RegistrarPermissoesEConferenciaDoDto(IServiceCollection services)
+    private static void RegistrarPermissoes(IServiceCollection services)
     {
         services.AddCatalogoDePermissoes<PermissaoSelecao>();
-        services.TryAddEnumerable(ServiceDescriptor.Singleton<Microsoft.Extensions.Hosting.IHostedService, ConferenciaDoDtoAdministrativoNaSubida>());
     }
 
     private static void RegistrarAplicacaoEInfraestrutura(IServiceCollection services)

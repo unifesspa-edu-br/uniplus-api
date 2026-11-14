@@ -10,8 +10,10 @@ using Geo;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
 
+using Persistence;
 using Persistence.Cryptography;
 using Persistence.Interceptors;
 using Persistence.Readers;
@@ -147,6 +149,7 @@ public static class SelecaoInfrastructureRegistration
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddInterceptorDoHistoricoDasObrigatoriedades();
+        services.TryAddEnumerable(ServiceDescriptor.Singleton<IHostedService, ConferenciaDoDtoAdministrativoNaSubida>());
         services.AddProcessoSeletivoEAsLeiturasDaVersaoPublicada();
         services.AddCertameDivulgadoESnapshotDaVersao();
         services.AddRepositoriosDoModulo();
