@@ -9,8 +9,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Host.IntegrationTests.Infrastructure;
-using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
 /// Nenhuma chave estrangeira atravessa a fronteira de um módulo (ADR-0061).
@@ -27,6 +27,10 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 /// estrangeira cross-schema, exige que a consulta de detecção a encontre, remove-a,
 /// e só então assere que nenhuma real existe. Sem esse passo, uma consulta quebrada
 /// — ou um schema recém-criado e ainda vazio — passaria silenciosamente.</para>
+///
+/// <para>O catálogo também exige que toda tabela esteja no schema de um módulo, da plataforma ou do Wolverine
+/// (ADR-0170): nada em <c>public</c>. O canário planta uma tabela fora dos schemas declarados e exige que a
+/// consulta a encontre.</para>
 /// </summary>
 [Collection(MonolitoHostCollection.Name)]
 [SuppressMessage(
@@ -40,7 +44,13 @@ public sealed class IsolamentoCrossSchemaTests
     /// pegaria <c>wolverine</c>, <c>public</c>, <c>information_schema</c> e schemas de
     /// extensão, que não são módulos e têm regras próprias.
     /// </summary>
-    private const string SchemasDeModulo = "'configuracao','organizacao','selecao','ingresso','publicacoes'";
+    private static readonly string[] EsquemasDeModulo =
+        ["autorizacao", "configuracao", "discentes", "ingresso", "organizacao", "publicacoes", "selecao"];
+
+    /// <summary>Os schemas que não são de módulo e podem ter tabela: a plataforma (idempotência e histórico de migrations) e o outbox do Wolverine.</summary>
+    private static readonly string[] EsquemasDaInfraestrutura = ["plataforma", "wolverine", "wolverine_queues"];
+
+    private static readonly string SchemasDeModulo = Lista(EsquemasDeModulo);
 
     /// <summary>
     /// Chaves estrangeiras cuja tabela de origem está num schema de módulo e cuja
@@ -62,6 +72,35 @@ public sealed class IsolamentoCrossSchemaTests
         """,
         SchemasDeModulo);
 
+    /// <summary>
+    /// Tabelas (comuns e particionadas) fora dos schemas declarados. Os schemas do sistema do PostgreSQL não entram; qualquer
+    /// tabela em <c>public</c> entra, porque o modelo não cria nenhuma lá e extensão que crie tabela precisa ser declarada.
+    /// </summary>
+    private static readonly string ConsultaTabelasForaDoCatalogo = string.Format(
+        CultureInfo.InvariantCulture,
+        """
+        SELECT (esquema.nspname || '.' || tabela.relname) AS "Value"
+        FROM pg_class tabela
+        JOIN pg_namespace esquema ON esquema.oid = tabela.relnamespace
+        WHERE tabela.relkind IN ('r', 'p')
+          AND esquema.nspname NOT IN ({0})
+          AND esquema.nspname <> 'information_schema'
+          AND esquema.nspname NOT LIKE 'pg\_%'
+        """,
+        Lista([.. EsquemasDeModulo, .. EsquemasDaInfraestrutura]));
+
+    private static readonly string ConsultaEsquemasDeModuloSemTabela = string.Format(
+        CultureInfo.InvariantCulture,
+        """
+        SELECT esquema AS "Value"
+        FROM unnest(ARRAY[{0}]) AS esquema
+        WHERE NOT EXISTS (
+            SELECT 1 FROM pg_class tabela
+            JOIN pg_namespace ns ON ns.oid = tabela.relnamespace
+            WHERE ns.nspname = esquema AND tabela.relkind IN ('r', 'p'))
+        """,
+        SchemasDeModulo);
+
     private readonly MonolitoPostgresFixture _fixture;
 
     public IsolamentoCrossSchemaTests(MonolitoPostgresFixture fixture)
@@ -73,8 +112,8 @@ public sealed class IsolamentoCrossSchemaTests
     public async Task Canario_ChaveEstrangeiraCrossSchemaEDetectada()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        UniPlusDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        MonolitoDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<MonolitoDbContext>();
 
         try
         {
@@ -111,8 +150,8 @@ public sealed class IsolamentoCrossSchemaTests
     public async Task Modelo_NaoTemChaveEstrangeiraCrossSchema()
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        UniPlusDbContext dbContext =
-            scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        MonolitoDbContext dbContext =
+            scope.ServiceProvider.GetRequiredService<MonolitoDbContext>();
 
         IReadOnlyCollection<string> violacoes = await ListarViolacoesAsync(dbContext);
 
@@ -122,10 +161,45 @@ public sealed class IsolamentoCrossSchemaTests
             + "defende. O canário prova que a consulta acima detecta a violação quando ela existe.");
     }
 
-    private static async Task<IReadOnlyCollection<string>> ListarViolacoesAsync(DbContext dbContext)
+    [Fact(DisplayName = "Canário: a tabela fora dos schemas declarados existe, e a consulta do catálogo a encontra")]
+    public async Task Canario_TabelaForaDoCatalogoEDetectada()
     {
-        return await dbContext.Database
-            .SqlQueryRaw<string>(ConsultaViolacoes)
-            .ToListAsync(CancellationToken.None);
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        MonolitoDbContext dbContext = scope.ServiceProvider.GetRequiredService<MonolitoDbContext>();
+
+        try
+        {
+            await ExecutarAsync(dbContext, "CREATE TABLE public._canario_tabela_fora_do_catalogo (id uuid PRIMARY KEY);");
+
+            (await ListarAsync(dbContext, ConsultaTabelasForaDoCatalogo)).Should()
+                .ContainSingle(tabela => tabela == "public._canario_tabela_fora_do_catalogo", "sem encontrá-la, a ausência do outro teste não vale");
+        }
+        finally
+        {
+            await ExecutarAsync(dbContext, "DROP TABLE IF EXISTS public._canario_tabela_fora_do_catalogo;");
+        }
     }
+
+    [Fact(DisplayName = "ADR-0170: toda tabela está no schema de um módulo, da plataforma ou do Wolverine")]
+    public async Task Modelo_TodaTabelaEstaNoSchemaDeUmModuloOuDaPlataforma()
+    {
+        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        MonolitoDbContext dbContext = scope.ServiceProvider.GetRequiredService<MonolitoDbContext>();
+
+        (await ListarAsync(dbContext, ConsultaTabelasForaDoCatalogo)).Should().BeEmpty(
+            "toda tabela pertence ao schema de um módulo ou da plataforma; nada em public além do que o catálogo declarar");
+        (await ListarAsync(dbContext, ConsultaEsquemasDeModuloSemTabela)).Should().BeEmpty(
+            "o roster tem de corresponder aos schemas que o modelo cria: um schema do roster sem tabela indica roster desatualizado");
+    }
+
+    private static async Task<IReadOnlyCollection<string>> ListarViolacoesAsync(DbContext dbContext) =>
+        await ListarAsync(dbContext, ConsultaViolacoes);
+
+    private static async Task ExecutarAsync(DbContext dbContext, string comando) =>
+        await dbContext.Database.ExecuteSqlRawAsync(comando, CancellationToken.None);
+
+    private static async Task<IReadOnlyCollection<string>> ListarAsync(DbContext dbContext, string consulta) =>
+        await dbContext.Database.SqlQueryRaw<string>(consulta).ToListAsync(CancellationToken.None);
+
+    private static string Lista(IEnumerable<string> esquemas) => string.Join(',', esquemas.Select(static e => $"'{e}'"));
 }
