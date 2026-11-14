@@ -55,6 +55,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<ITipoBancaRepository, TipoBancaRepository>();
         services.AddScoped<ITipoProcessoRepository, TipoProcessoRepository>();
         services.AddScoped<ITipoEtapaRepository, TipoEtapaRepository>();
+        services.AddScoped<ITipoConceitoRepository, TipoConceitoRepository>();
         services.AddScoped<IPrecedenciaFaseRepository, PrecedenciaFaseRepository>();
         services.AddScoped<ICalendarioDiasUteisRepository, CalendarioDiasUteisRepository>();
         services.AddScoped<ITermoConsentimentoRepository, TermoConsentimentoRepository>();
@@ -92,6 +93,7 @@ public static class ConfiguracaoInfrastructureRegistration
         services.AddScoped<ITipoBancaReader, TipoBancaReader>();
         services.AddScoped<ITipoProcessoReader, TipoProcessoReader>();
         services.AddScoped<ITipoEtapaReader, TipoEtapaReader>();
+        services.AddScoped<ITipoConceitoReader, TipoConceitoReader>();
         services.AddScoped<IPrecedenciaFaseReader, PrecedenciaFaseReader>();
         services.AddScoped<ICalendarioVigenteReader, CalendarioVigenteReader>();
         services.AddScoped<ITermoConsentimentoReader, TermoConsentimentoReader>();
