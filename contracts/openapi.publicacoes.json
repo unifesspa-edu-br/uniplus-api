@@ -1065,10 +1065,10 @@
           "congelaConfiguracao",
           "efeitoIrreversivel",
           "unicoPorObjeto",
-          "dataPublicacao",
+          "dataDoAto",
           "documentoHash",
           "assinante",
-          "registradoEm",
+          "publicadoEm",
           "versaoInvocadaId",
           "versaoInvocadaHash",
           "atoRetificadoId",
@@ -1115,7 +1115,7 @@
           "unicoPorObjeto": {
             "type": "boolean"
           },
-          "dataPublicacao": {
+          "dataDoAto": {
             "type": "string",
             "format": "date"
           },
@@ -1125,7 +1125,7 @@
           "assinante": {
             "type": "string"
           },
-          "registradoEm": {
+          "publicadoEm": {
             "type": "string",
             "format": "date-time"
           },
@@ -1437,7 +1437,7 @@
           "ano",
           "numero",
           "tipoCodigo",
-          "dataPublicacao",
+          "dataDoAto",
           "documentoHash",
           "assinante"
         ],
@@ -1462,7 +1462,7 @@
           "tipoCodigo": {
             "type": "string"
           },
-          "dataPublicacao": {
+          "dataDoAto": {
             "type": "string",
             "format": "date"
           },
@@ -1521,7 +1521,7 @@
       "RegistrarAtoNormativoResult": {
         "required": [
           "atoId",
-          "registradoEm",
+          "publicadoEm",
           "avisos"
         ],
         "type": "object",
@@ -1530,7 +1530,7 @@
             "type": "string",
             "format": "uuid"
           },
-          "registradoEm": {
+          "publicadoEm": {
             "type": "string",
             "format": "date-time"
           },

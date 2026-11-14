@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// <summary>
 /// Ato publicado — o registro central e append-only de que algo foi publicado
 /// (ADR-0105). Guarda a essência documental do ato (órgão, série, ano, número,
-/// tipo, data de publicação, hash do documento, assinante) e, por valor, os
+/// tipo, data do ato, hash do documento, assinante) e, por valor, os
 /// atributos de consequência do catálogo e a versão de configuração que o
 /// governou. É a <b>prova</b> do publicado: o passado documental não se muta.
 /// </summary>
@@ -26,15 +26,16 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// jamais recusa.
 /// </para>
 /// <para>
-/// <b>Data documental ≠ ordem de vigência.</b> <see cref="DataPublicacao"/> é o
+/// <b>Data do ato ≠ instante da divulgação.</b> <see cref="DataDoAto"/> é o
 /// que o documento declara e nunca ordena vigência; a ordem pertence à versão de
-/// configuração, no relógio do sistema. <see cref="RegistradoEm"/> é o instante
-/// forense em que o registro entrou no sistema — distinto da data documental.
+/// configuração, no relógio do sistema. <see cref="PublicadoEm"/> é o instante
+/// da divulgação, lido uma vez pelo sistema e recebido aqui — Publicações o guarda e
+/// nunca o define —, distinto da data que o documento declara.
 /// </para>
 /// <para>
 /// <b>Cópia por valor.</b> <see cref="CongelaConfiguracao"/> e
 /// <see cref="EfeitoIrreversivel"/> são copiados do <c>TipoAtoPublicado</c>
-/// vigente na data de publicação, no instante do registro — nunca consultados de
+/// vigente no registro — nunca consultados de
 /// volta para decidir fluxo (ADR-0103). Editar o catálogo depois não reescreve
 /// ato nenhum.
 /// </para>
@@ -83,7 +84,7 @@ public sealed class AtoNormativo : IForensicEntity
     /// <summary>Número que o órgão deu ao ato. Opcional — há atos sem número (ex.: comunicado).</summary>
     public string? Numero { get; private init; }
 
-    /// <summary>Código do tipo de ato no catálogo (<c>TipoAtoPublicado</c>) vigente na data de publicação.</summary>
+    /// <summary>Código do tipo de ato no catálogo (<c>TipoAtoPublicado</c>) vigente no registro.</summary>
     public string TipoCodigo { get; private init; } = null!;
 
     /// <summary>
@@ -109,7 +110,7 @@ public sealed class AtoNormativo : IForensicEntity
     public bool UnicoPorObjeto { get; private init; }
 
     /// <summary>Data que o documento declara. Documental — nunca ordena vigência.</summary>
-    public DateOnly DataPublicacao { get; private init; }
+    public DateOnly DataDoAto { get; private init; }
 
     /// <summary>Hash SHA-256 do PDF publicado. É o que prova o publicado.</summary>
     public string DocumentoHash { get; private init; } = null!;
@@ -117,8 +118,8 @@ public sealed class AtoNormativo : IForensicEntity
     /// <summary>Nome de quem assina o ato.</summary>
     public string Assinante { get; private init; } = null!;
 
-    /// <summary>Instante forense em que o registro entrou no sistema (relógio do sistema, não o documento).</summary>
-    public DateTimeOffset RegistradoEm { get; private init; }
+    /// <summary>Instante da divulgação, lido uma vez pelo sistema (relógio do sistema, não o documento) e recebido por quem registra.</summary>
+    public DateTimeOffset PublicadoEm { get; private init; }
 
     /// <summary>
     /// Versão de configuração que governou o ato, por valor <c>{id, hash}</c>
@@ -192,10 +193,10 @@ public sealed class AtoNormativo : IForensicEntity
         bool congelaConfiguracao,
         bool efeitoIrreversivel,
         bool unicoPorObjeto,
-        DateOnly dataPublicacao,
+        DateOnly dataDoAto,
         string documentoHash,
         string assinante,
-        DateTimeOffset registradoEm,
+        DateTimeOffset publicadoEm,
         ReferenciaVersaoConfiguracao? versaoInvocada,
         Guid? atoRetificadoId = null,
         string? motivoRetificacao = null,
@@ -255,10 +256,10 @@ public sealed class AtoNormativo : IForensicEntity
             CongelaConfiguracao = congelaConfiguracao,
             EfeitoIrreversivel = efeitoIrreversivel,
             UnicoPorObjeto = unicoPorObjeto,
-            DataPublicacao = dataPublicacao,
+            DataDoAto = dataDoAto,
             DocumentoHash = documentoHash,
             Assinante = assinanteNorm,
-            RegistradoEm = registradoEm,
+            PublicadoEm = publicadoEm,
             VersaoInvocada = versaoInvocada,
             AtoRetificadoId = atoRetificadoId,
             MotivoRetificacao = motivoNorm,

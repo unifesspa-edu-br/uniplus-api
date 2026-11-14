@@ -9,6 +9,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
+using Unifesspa.UniPlus.Publicacoes.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
@@ -262,7 +263,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
 
     private Task<Result<RegistrarAtoNormativoResult>> Executar(RegistrarAtoNormativoCommand comando) =>
         RegistrarAtoNormativoCommandHandler.Handle(
-            comando, _tipos, _atos, _unitOfWork, _relogio, CancellationToken.None);
+            comando, MontagemDeTeste.Criar(_tipos, _atos), _atos, _unitOfWork, _relogio, CancellationToken.None);
 
     private void Vigente(bool unico)
     {
@@ -294,8 +295,8 @@ public sealed class RegistrarAtoNormativoVinculosTests
             Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "99", Tipo,
             congelaConfiguracao: true, efeitoIrreversivel: false, unicoPorObjeto: true,
-            dataPublicacao: Publicacao, documentoHash: HashValido, assinante: "Jairo Belchior",
-            registradoEm: Agora, versaoInvocada: null,
+            dataDoAto: Publicacao, documentoHash: HashValido, assinante: "Jairo Belchior",
+            publicadoEm: Agora, versaoInvocada: null,
             vinculos: [(Objeto, Processo)]);
 
     private static AtoNormativo AtoRetificado() =>
@@ -303,8 +304,8 @@ public sealed class RegistrarAtoNormativoVinculosTests
             Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "13", Tipo,
             congelaConfiguracao: true, efeitoIrreversivel: false, unicoPorObjeto: true,
-            dataPublicacao: Publicacao, documentoHash: HashValido, assinante: "Jairo Belchior",
-            registradoEm: Agora, versaoInvocada: null,
+            dataDoAto: Publicacao, documentoHash: HashValido, assinante: "Jairo Belchior",
+            publicadoEm: Agora, versaoInvocada: null,
             vinculos: [(Objeto, Processo)]);
 
     private static RegistrarAtoNormativoCommand Comando(
@@ -317,7 +318,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             Ano: 2026,
             Numero: "13",
             TipoCodigo: Tipo,
-            DataPublicacao: Publicacao,
+            DataDoAto: Publicacao,
             DocumentoHash: HashValido,
             Assinante: "Jairo Belchior",
             AtoRetificadoId: atoRetificadoId,

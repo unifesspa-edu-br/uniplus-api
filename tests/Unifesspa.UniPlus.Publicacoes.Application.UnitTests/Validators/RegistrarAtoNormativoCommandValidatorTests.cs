@@ -139,7 +139,7 @@ public sealed class RegistrarAtoNormativoCommandValidatorTests
             Ano: 2026,
             Numero: "13",
             TipoCodigo: "EDITAL_ABERTURA",
-            DataPublicacao: new DateOnly(2026, 3, 13),
+            DataDoAto: new DateOnly(2026, 3, 13),
             DocumentoHash: HashValido,
             Assinante: "Jairo Belchior");
 }

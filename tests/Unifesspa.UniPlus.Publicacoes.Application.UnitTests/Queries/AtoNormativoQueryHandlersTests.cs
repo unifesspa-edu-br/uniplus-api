@@ -119,10 +119,10 @@ public sealed class AtoNormativoQueryHandlersTests
             Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "13", "EDITAL_ABERTURA",
             congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
-            dataPublicacao: new DateOnly(2026, 3, 13),
+            dataDoAto: new DateOnly(2026, 3, 13),
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
-            registradoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
+            publicadoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
             versaoInvocada: null);
 
     private static AtoNormativo NovoRetificador(Guid atoRetificadoId) =>
@@ -130,10 +130,10 @@ public sealed class AtoNormativoQueryHandlersTests
             Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "13", "EDITAL_ABERTURA",
             congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto: false,
-            dataPublicacao: new DateOnly(2026, 3, 13),
+            dataDoAto: new DateOnly(2026, 3, 13),
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
-            registradoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
+            publicadoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
             versaoInvocada: null,
             atoRetificadoId: atoRetificadoId,
             motivoRetificacao: "corrige o anexo II");

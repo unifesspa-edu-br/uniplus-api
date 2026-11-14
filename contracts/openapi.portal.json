@@ -158,7 +158,7 @@
           "numeroEdital",
           "situacao",
           "documentoEditalUrl",
-          "dataPublicacao",
+          "dataDoAto",
           "linhaDoTempo",
           "aviso"
         ],
@@ -186,7 +186,7 @@
             ],
             "format": "uri"
           },
-          "dataPublicacao": {
+          "dataDoAto": {
             "type": [
               "null",
               "string"

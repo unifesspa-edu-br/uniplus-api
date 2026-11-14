@@ -64,10 +64,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     congela_configuracao = table.Column<bool>(type: "boolean", nullable: false),
                     efeito_irreversivel = table.Column<bool>(type: "boolean", nullable: false),
                     unico_por_objeto = table.Column<bool>(type: "boolean", nullable: false),
-                    data_publicacao = table.Column<DateOnly>(type: "date", nullable: false),
+                    data_do_ato = table.Column<DateOnly>(type: "date", nullable: false),
                     documento_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     assinante = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    registrado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    publicado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     versao_invocada_id = table.Column<Guid>(type: "uuid", nullable: true),
                     versao_invocada_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true),
                     ato_retificado_id = table.Column<Guid>(type: "uuid", nullable: true),
@@ -5561,16 +5561,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "inscricao_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_ato_normativo_data_publicacao",
-                schema: "publicacoes",
-                table: "ato_normativo",
-                columns: new[] { "data_publicacao", "id" });
-
-            migrationBuilder.CreateIndex(
                 name: "ix_ato_normativo_numeracao",
                 schema: "publicacoes",
                 table: "ato_normativo",
                 columns: new[] { "orgao", "serie", "ano", "numero" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_ato_normativo_publicado_em",
+                schema: "publicacoes",
+                table: "ato_normativo",
+                columns: new[] { "publicado_em", "id" });
 
             migrationBuilder.CreateIndex(
                 name: "ux_ato_normativo_retificado",

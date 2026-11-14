@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261114034123_Inicial")]
+    [Migration("20261114054514_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -10089,9 +10089,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("congela_configuracao");
 
-                    b.Property<DateOnly>("DataPublicacao")
+                    b.Property<DateOnly>("DataDoAto")
                         .HasColumnType("date")
-                        .HasColumnName("data_publicacao");
+                        .HasColumnName("data_do_ato");
 
                     b.Property<string>("DocumentoHash")
                         .IsRequired()
@@ -10120,9 +10120,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(200)")
                         .HasColumnName("orgao");
 
-                    b.Property<DateTimeOffset>("RegistradoEm")
+                    b.Property<DateTimeOffset>("PublicadoEm")
                         .HasColumnType("timestamp with time zone")
-                        .HasColumnName("registrado_em");
+                        .HasColumnName("publicado_em");
 
                     b.Property<string>("Serie")
                         .IsRequired()
@@ -10153,8 +10153,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ux_ato_normativo_retificado")
                         .HasFilter("ato_retificado_id IS NOT NULL");
 
-                    b.HasIndex("DataPublicacao", "Id")
-                        .HasDatabaseName("ix_ato_normativo_data_publicacao");
+                    b.HasIndex("PublicadoEm", "Id")
+                        .HasDatabaseName("ix_ato_normativo_publicado_em");
 
                     b.HasIndex("Orgao", "Serie", "Ano", "Numero")
                         .HasDatabaseName("ix_ato_normativo_numeracao");

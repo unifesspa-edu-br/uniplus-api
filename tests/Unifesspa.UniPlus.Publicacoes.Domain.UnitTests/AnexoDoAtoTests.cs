@@ -118,10 +118,10 @@ public sealed class AnexoDoAtoTests
             congelaConfiguracao: false,
             efeitoIrreversivel: false,
             unicoPorObjeto: false,
-            dataPublicacao: new DateOnly(2026, 3, 13),
+            dataDoAto: new DateOnly(2026, 3, 13),
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
-            registradoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
+            publicadoEm: new DateTimeOffset(2026, 3, 13, 19, 0, 0, TimeSpan.Zero),
             versaoInvocada: null,
             anexos: anexos);
 }

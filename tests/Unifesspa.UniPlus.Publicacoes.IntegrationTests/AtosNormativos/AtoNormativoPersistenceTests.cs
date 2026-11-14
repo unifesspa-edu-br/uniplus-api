@@ -56,7 +56,7 @@ public sealed class AtoNormativoPersistenceTests
         persistido.Orgao.Should().Be("CEPS");
         persistido.Numero.Should().Be("13");
         persistido.DocumentoHash.Should().Be(HashValido);
-        persistido.RegistradoEm.Should().Be(Registro);
+        persistido.PublicadoEm.Should().Be(Registro);
         persistido.VersaoInvocada.Should().NotBeNull();
         persistido.VersaoInvocada!.Id.Should().Be(versao.Id);
         persistido.VersaoInvocada.Hash.Should().Be(versao.Hash);
@@ -137,7 +137,7 @@ public sealed class AtoNormativoPersistenceTests
         await Gravar(Novo(numero: "15"));
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        int doDia = await ctx.AtosNormativos.CountAsync(a => a.DataPublicacao == Publicacao);
+        int doDia = await ctx.AtosNormativos.CountAsync(a => a.DataDoAto == Publicacao);
         doDia.Should().BeGreaterThanOrEqualTo(3);
     }
 
@@ -241,7 +241,7 @@ public sealed class AtoNormativoPersistenceTests
         DbUpdateException ex = (await segunda.Should().ThrowAsync<DbUpdateException>()).Which;
         PostgresException pg = (ex.InnerException as PostgresException)!;
         pg.SqlState.Should().Be(UniqueViolation);
-        // O nome da constraint violada é exatamente o que UniqueConstraintViolation
+        // O nome da constraint violada é exatamente o que ConflitoNaGravacaoDoAto
         // procura para traduzir a corrida check-then-act em RaizJaRetificada (409).
         pg.ConstraintName.Should().Be("ux_ato_normativo_retificado");
     }
@@ -451,7 +451,7 @@ public sealed class AtoNormativoPersistenceTests
             """
             INSERT INTO publicacoes.ato_normativo
                 (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
-                 unico_por_objeto, data_publicacao, documento_hash, assinante, registrado_em, versao_invocada_id, versao_invocada_hash,
+                 unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em, versao_invocada_id, versao_invocada_hash,
                  ato_retificado_id, motivo_retificacao)
             VALUES
                 (gen_random_uuid(), 'CEPS', 'EDITAL', @ano, '13', 'EDITAL_ABERTURA', false, false,
@@ -487,7 +487,7 @@ public sealed class AtoNormativoPersistenceTests
             """
             INSERT INTO publicacoes.ato_normativo
                 (id, orgao, serie, ano, numero, tipo_codigo, congela_configuracao, efeito_irreversivel,
-                 unico_por_objeto, data_publicacao, documento_hash, assinante, registrado_em, ato_retificado_id, motivo_retificacao)
+                 unico_por_objeto, data_do_ato, documento_hash, assinante, publicado_em, ato_retificado_id, motivo_retificacao)
             VALUES
                 (@id, 'CEPS', 'EDITAL', 2026, '13', 'EDITAL_ABERTURA', false, false,
                  false, @data, @hash, 'Assinante', now(), @id, 'corrige')
@@ -516,10 +516,10 @@ public sealed class AtoNormativoPersistenceTests
             congelaConfiguracao: false,
             efeitoIrreversivel: false,
             unicoPorObjeto: false,
-            dataPublicacao: Publicacao,
+            dataDoAto: Publicacao,
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
-            registradoEm: Registro,
+            publicadoEm: Registro,
             versaoInvocada: versao,
             atoRetificadoId: atoRetificadoId,
             motivoRetificacao: motivoRetificacao);

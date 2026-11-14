@@ -4,6 +4,8 @@ using FluentValidation;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
+
 /// <summary>
 /// Registra recursos da camada Application do módulo Publicações. Os handlers são
 /// descobertos pelo Wolverine (convention-based) a partir deste assembly, incluído
@@ -17,6 +19,9 @@ public static class PublicacoesApplicationServiceRegistration
 
         System.Reflection.Assembly assembly = typeof(PublicacoesApplicationServiceRegistration).Assembly;
         services.AddValidatorsFromAssembly(assembly);
+        services.AddScoped<ReservaDasVagasDoObjeto>();
+        services.AddScoped<CadeiaDeRetificacaoDoAto>();
+        services.AddScoped<MontagemDoAtoNormativo>();
 
         return services;
     }

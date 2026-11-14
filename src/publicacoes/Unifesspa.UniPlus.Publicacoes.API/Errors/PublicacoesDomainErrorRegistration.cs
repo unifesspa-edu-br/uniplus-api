@@ -112,7 +112,7 @@ internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistrat
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
                 "uniplus.publicacoes.ato_normativo.tipo_sem_versao_vigente",
-                "Não há versão vigente do tipo de ato na data de publicação")),
+                "Não há versão vigente do tipo de ato na data do ato")),
 
         new(AtoNormativoErrorCodes.VersaoInvocadaIncompleta,
             new DomainErrorMapping(

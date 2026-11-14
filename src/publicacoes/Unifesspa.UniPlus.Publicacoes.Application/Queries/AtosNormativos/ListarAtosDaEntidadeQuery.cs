@@ -5,9 +5,8 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>
 /// Todos os atos publicados que tratam de uma entidade — a consulta unificada que é o
-/// propósito do módulo (ADR-0105). Ordenada pela data de publicação, com o <c>Id</c>
-/// (Guid v7) de desempate: a retificação republica a mesma data, e a data sozinha não
-/// ordena de forma estável.
+/// propósito do módulo (ADR-0105). Ordenada pelo instante da divulgação, com o <c>Id</c>
+/// (Guid v7) de desempate para o mesmo microssegundo.
 /// </summary>
 /// <remarks>
 /// <para>O par <c>(EntidadeTipo, EntidadeId)</c> é <b>opaco</b>: Publicações não sabe se
@@ -15,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// que este módulo existe para manter. Entidade inexistente e entidade sem ato algum
 /// respondem, ambas, uma coleção vazia; nunca 404.</para>
 /// <para>Paginação por cursor opaco (ADR-0026) com keyset ordenado (ADR-0094): a âncora é
-/// o par <c>(data de publicação, Id)</c>, e o cursor é escopado à entidade — o de um
+/// o par <c>(instante da divulgação, Id)</c>, e o cursor é escopado à entidade — o de um
 /// certame não navega a coleção de outro.</para>
 /// </remarks>
 public sealed record ListarAtosDaEntidadeQuery(

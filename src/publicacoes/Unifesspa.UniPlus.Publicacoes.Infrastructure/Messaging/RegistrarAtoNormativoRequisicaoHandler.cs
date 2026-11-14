@@ -87,7 +87,7 @@ public static class RegistrarAtoNormativoRequisicaoHandler
     public static async Task<AtoNormativoRegistrado> Handle(
         RegistrarAtoNormativoRequisicao requisicao,
         UniPlusDbContext db,
-        ITipoAtoPublicadoRepository tiposRepository,
+        MontagemDoAtoNormativo montagem,
         IAtoNormativoRepository atosRepository,
         IUnitOfWork unitOfWork,
         TimeProvider timeProvider,
@@ -143,7 +143,8 @@ public static class RegistrarAtoNormativoRequisicaoHandler
             Ano: requisicao.Ano,
             Numero: requisicao.Numero,
             TipoCodigo: requisicao.TipoCodigo,
-            DataPublicacao: requisicao.DataPublicacao,
+            DataDoAto: requisicao.DataDoAto,
+            PublicadoEm: requisicao.PublicadoEm,
             DocumentoHash: requisicao.DocumentoHash,
             Assinante: requisicao.Assinante,
             VersaoInvocadaId: requisicao.VersaoInvocadaId,
@@ -167,7 +168,7 @@ public static class RegistrarAtoNormativoRequisicaoHandler
         try
         {
             resultado = await RegistrarAtoNormativoCommandHandler
-                .Handle(comando, tiposRepository, atosRepository, unitOfWork, timeProvider, cancellationToken)
+                .Handle(comando, montagem, atosRepository, unitOfWork, timeProvider, cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (DbUpdateException ex) when (EhViolacaoDeUnicidade(ex))

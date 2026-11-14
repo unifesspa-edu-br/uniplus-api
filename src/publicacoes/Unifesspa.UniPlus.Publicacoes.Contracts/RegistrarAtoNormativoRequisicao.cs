@@ -20,6 +20,10 @@ namespace Unifesspa.UniPlus.Publicacoes.Contracts;
 /// chave estrangeira (ADR-0061) — o modelo já previa que o ato viveria noutro módulo.
 /// </para>
 /// <para>
+/// <see cref="DataDoAto"/> é a data que o documento declara; <see cref="PublicadoEm"/> é o instante da
+/// divulgação, lido uma só vez pelo domínio que publica. Publicações guarda os dois e não define nenhum.
+/// </para>
+/// <para>
 /// Os <see cref="Anexos"/> são os arquivos que acompanham o documento principal, cada um com
 /// o hash do seu conteúdo. Anulável porque uma requisição emitida antes de o campo existir
 /// chega sem ele — e é lida como lista vazia, como o <c>Nome</c> de <see cref="AtributosDoTipoAto"/>.
@@ -32,7 +36,8 @@ public sealed record RegistrarAtoNormativoRequisicao(
     int Ano,
     string? Numero,
     string TipoCodigo,
-    DateOnly DataPublicacao,
+    DateOnly DataDoAto,
+    DateTimeOffset PublicadoEm,
     string DocumentoHash,
     string Assinante,
     Guid? VersaoInvocadaId,

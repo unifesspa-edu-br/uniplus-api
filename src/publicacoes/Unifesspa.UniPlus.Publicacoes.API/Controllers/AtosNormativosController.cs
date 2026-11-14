@@ -105,8 +105,8 @@ public sealed partial class AtosNormativosController : ControllerBase
     /// inexistente e entidade sem ato algum devolvem, ambas, uma coleção vazia — nunca
     /// 404. Distingui-las exigiria perguntar a outro módulo, e é justamente essa pergunta
     /// que a fronteira proíbe.</para>
-    /// <para>Ordem: data de publicação ascendente, com o <c>Id</c> (Guid v7) de
-    /// desempate — a retificação republica a mesma data. Paginação por cursor opaco
+    /// <para>Ordem: instante da divulgação (<c>publicadoEm</c>) ascendente, com o <c>Id</c>
+    /// (Guid v7) de desempate para o mesmo microssegundo. Paginação por cursor opaco
     /// escopado à entidade: um cursor emitido aqui não navega a coleção de outra
     /// entidade.</para>
     /// </remarks>
@@ -140,12 +140,12 @@ public sealed partial class AtosNormativosController : ControllerBase
                 detail: "O tipo da entidade deve ser um rótulo em maiúsculas, com grupos separados por sublinhado.");
         }
 
-        // A âncora do cursor é o par (data de publicação, Id), e a data chega como texto.
+        // A âncora do cursor é o par (instante da divulgação, Id), e o instante chega como texto.
         // Decodificar o wire é do boundary (ADR-0031): sem esta recusa, uma âncora
         // malformada só falharia lá dentro, ao construir a chave do seek — e um cursor
         // adulterado viraria 500 em vez de 400.
         if (page.AfterSortKey is { } ancora
-            && !DateOnly.TryParseExact(ancora, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out _))
+            && !DateTimeOffset.TryParseExact(ancora, "O", CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out _))
         {
             return Problem(
                 statusCode: StatusCodes.Status400BadRequest,
