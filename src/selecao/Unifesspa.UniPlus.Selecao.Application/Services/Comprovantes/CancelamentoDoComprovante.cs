@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services.Comprovantes;
 
 using System.Globalization;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;

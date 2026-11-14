@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <param name="ProcessoSeletivoId">O processo que publica o ato.</param>
 /// <param name="TipoAtoCodigo">Código do tipo do ato no catálogo de Publicações.</param>
 /// <param name="Numero">Número que o documento declara, quando o tipo o tem.</param>
-/// <param name="DataPublicacao">Data que o documento declara.</param>
+/// <param name="DataDoAto">Data que o documento declara; não conta para prazo, vigência nem escolha do tipo de ato.</param>
 /// <param name="Assinante">Quem assina o ato.</param>
 /// <param name="DocumentoPrincipalId">O documento a publicar confirmado que é o principal, sempre PDF.</param>
 /// <param name="Anexos">Os anexos, na ordem em que o ato os apresenta; nulo ou vazio quando não há.</param>
@@ -24,7 +24,7 @@ public sealed record PublicarAtoAvulsoDoProcessoCommand(
     Guid ProcessoSeletivoId,
     string TipoAtoCodigo,
     string? Numero,
-    DateOnly DataPublicacao,
+    DateOnly DataDoAto,
     string Assinante,
     Guid DocumentoPrincipalId,
     IReadOnlyList<AnexoSolicitadoDoAto>? Anexos = null,

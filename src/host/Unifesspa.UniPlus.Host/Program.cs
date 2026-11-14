@@ -39,6 +39,7 @@ WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 // Relógio único do processo: instantes em microssegundos, como o banco os persiste.
 builder.Services.Replace(ServiceDescriptor.Singleton<TimeProvider>(RelogioEmMicrossegundos.DoSistema));
+builder.Services.AddFusoInstitucional();
 
 const string nomeServico = "uniplus-monolito";
 

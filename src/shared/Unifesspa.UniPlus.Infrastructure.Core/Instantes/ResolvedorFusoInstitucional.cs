@@ -1,8 +1,8 @@
-namespace Unifesspa.UniPlus.Selecao.Infrastructure.Time;
+namespace Unifesspa.UniPlus.Infrastructure.Core.Instantes;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Tempo;
 
 /// <summary>
 /// Resolve <see cref="FusoInstitucional.ZoneId"/> contra a base de fusos do runtime.

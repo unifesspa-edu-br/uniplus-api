@@ -349,7 +349,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
                 orgao = "CEPS",
                 serie = "EDITAL",
                 ano = 2026,
-                dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                 assinante = "Diretor do CEPS",
                 tipoAtoCodigo = tipoAto,
             },

@@ -140,7 +140,7 @@ internal sealed class CenarioDeRetificacaoPublicada
             new NovoAtoDoProcesso(
                 Guid.CreateVersion7(), processoId, "RESULTADO_PROVA", "Resultado da prova", "1/2026", new DateOnly(2026, 1, 20),
                 "Diretor do CEPS", "ceps", "ps-eixos", Guid.CreateVersion7(), [], ItemDoEdital: IdentidadeDoItemDoEdital.DaFase(fase, preliminar)),
-            relogio).Value!;
+            relogio.GetUtcNow()).Value!;
         publicado.ConfirmarRegistro(relogio);
 
         return publicado;

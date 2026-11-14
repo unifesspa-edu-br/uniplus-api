@@ -26,6 +26,7 @@ public sealed class RegistrarAtoNormativoInstanteTests
 {
     private const string HashValido = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
     private static readonly DateOnly DataDoAto = new(2026, 3, 10);
+    private static readonly DateOnly DiaDaPublicacao = new(2026, 3, 13);
     private static readonly DateTimeOffset InstanteDoSistema = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
     private static readonly DateTimeOffset InstanteRecebido = new(2026, 3, 13, 18, 30, 0, TimeSpan.Zero);
 
@@ -82,7 +83,7 @@ public sealed class RegistrarAtoNormativoInstanteTests
         TipoAtoPublicado tipo = TipoAtoPublicado.Criar(
             "EDITAL_ABERTURA", "Edital de abertura", congelaConfiguracao: false, unicoPorObjeto: false,
             efeitoIrreversivel: false, ehResultado: false, new DateOnly(2026, 1, 1), null, null).Value!;
-        _tipos.ObterVigenteAsync("EDITAL_ABERTURA", DataDoAto, Arg.Any<CancellationToken>()).Returns(tipo);
+        _tipos.ObterVigenteAsync("EDITAL_ABERTURA", DiaDaPublicacao, Arg.Any<CancellationToken>()).Returns(tipo);
         _atos.ListarIdsComMesmaNumeracaoAsync(
             Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<string>(),
             Arg.Any<Guid?>(), Arg.Any<CancellationToken>())

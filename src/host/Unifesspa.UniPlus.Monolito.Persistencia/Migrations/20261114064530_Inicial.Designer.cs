@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261114054514_Inicial")]
+    [Migration("20261114064530_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -10717,6 +10717,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
 
+                    b.Property<DateTimeOffset>("PublicadoEm")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("publicado_em");
+
                     b.Property<DateTimeOffset?>("RegistradoEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("registrado_em");
@@ -10767,7 +10771,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ux_atos_do_processo_item_original")
                         .HasFilter("item_do_edital IS NOT NULL AND ato_corrigido_id IS NULL");
 
-                    b.HasIndex("ProcessoSeletivoId", "CreatedAt", "OrdemDeRegistro")
+                    b.HasIndex("ProcessoSeletivoId", "PublicadoEm", "OrdemDeRegistro")
                         .IsDescending(false, true, true)
                         .HasDatabaseName("ix_atos_do_processo_processo_recentes");
 

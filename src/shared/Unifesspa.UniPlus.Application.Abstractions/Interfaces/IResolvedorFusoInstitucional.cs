@@ -1,6 +1,6 @@
-namespace Unifesspa.UniPlus.Selecao.Application.Abstractions;
+namespace Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
-using Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Resolve a zona horária institucional contra a base de fusos do runtime, devolvendo recusa
@@ -14,7 +14,7 @@ using Kernel.Results;
 /// teste sem depender do sistema de arquivos do runner.</para>
 /// <para>A recusa é <strong>defeito da instalação, não da requisição</strong> — quem publica não
 /// declara fuso, e nenhum campo da configuração produz esse erro. Por isso o código mapeia para 500,
-/// junto com as outras causas internas do módulo.</para>
+/// junto com as outras causas internas.</para>
 /// </remarks>
 public interface IResolvedorFusoInstitucional
 {

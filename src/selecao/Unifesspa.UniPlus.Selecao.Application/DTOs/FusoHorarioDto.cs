@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.DTOs;
 
 using Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Kernel.Tempo;
+
 /// <summary>
 /// A zona em que o certame conta o dia civil: o identificador IANA, para converter instantes, e o
 /// nome com que o candidato a lê em "horário de …".

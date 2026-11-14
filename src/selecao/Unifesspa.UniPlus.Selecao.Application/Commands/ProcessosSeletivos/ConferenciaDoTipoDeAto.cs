@@ -32,11 +32,12 @@ internal static class ConferenciaDoTipoDeAto
     public static async Task<Result<TipoAtoPublicadoView>> CongelaConfiguracaoAsync(
         ITipoAtoPublicadoReader reader,
         DadosDoAto ato,
+        DateOnly diaDaPublicacao,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(ato);
 
-        Result<TipoAtoPublicadoView> vigente = await VigenteAsync(reader, ato.TipoAtoCodigo, ato.DataPublicacao, cancellationToken)
+        Result<TipoAtoPublicadoView> vigente = await VigenteAsync(reader, ato.TipoAtoCodigo, diaDaPublicacao, cancellationToken)
             .ConfigureAwait(false);
         if (vigente.IsFailure)
         {
@@ -51,24 +52,25 @@ internal static class ConferenciaDoTipoDeAto
     }
 
     /// <summary>
-    /// A versão do tipo que vigora na data de publicação declarada, ou a recusa de que não há.
+    /// A versão do tipo que vigora no dia civil da publicação, no fuso institucional, ou a recusa de que não há. A
+    /// data que o documento declara não escolhe o tipo.
     /// </summary>
     public static async Task<Result<TipoAtoPublicadoView>> VigenteAsync(
         ITipoAtoPublicadoReader reader,
         string tipoAtoCodigo,
-        DateOnly dataPublicacao,
+        DateOnly diaDaPublicacao,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(reader);
 
         TipoAtoPublicadoView? tipo = await reader
-            .ObterVigenteAsync(tipoAtoCodigo, dataPublicacao, cancellationToken)
+            .ObterVigenteAsync(tipoAtoCodigo, diaDaPublicacao, cancellationToken)
             .ConfigureAwait(false);
 
         return tipo is null
             ? Result<TipoAtoPublicadoView>.Failure(new DomainError(
                 "ProcessoSeletivo.TipoDeAtoSemVersaoVigente",
-                $"Não há versão vigente do tipo de ato '{tipoAtoCodigo}' na data de publicação declarada ({dataPublicacao:yyyy-MM-dd})."))
+                $"Não há versão vigente do tipo de ato '{tipoAtoCodigo}' na data da publicação ({diaDaPublicacao:yyyy-MM-dd})."))
             : Result<TipoAtoPublicadoView>.Success(tipo);
     }
 

@@ -22,7 +22,7 @@ internal static class PublicacaoDeTeste
         Orgao: "CEPS",
         Serie: "EDITAL",
         Ano: 2026,
-        DataPublicacao: new DateOnly(2026, 1, 1),
+        DataDoAto: new DateOnly(2026, 1, 1),
         Assinante: "Diretor do CEPS",
         TipoAtoCodigo: "EDITAL_ABERTURA");
 

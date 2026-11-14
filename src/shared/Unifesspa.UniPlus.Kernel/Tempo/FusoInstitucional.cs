@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+namespace Unifesspa.UniPlus.Kernel.Tempo;
 
 /// <summary>
 /// A zona horária em que o dia civil do certame começa e termina (UNI-REQ-0111).

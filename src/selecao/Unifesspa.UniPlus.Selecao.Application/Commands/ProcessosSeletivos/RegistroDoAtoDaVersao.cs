@@ -14,7 +14,8 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// <remarks>
 /// O registro nasce junto da versão e da requisição de registro do ato, na mesma transação. Tem o
 /// mesmo formato do registro do ato que não cria versão, e é o que dá à consulta dos atos do processo
-/// uma fonte única. A unidade e o identificador legível são os do processo no instante da publicação;
+/// uma fonte única. O ato é publicado no instante em que a versão passa a vigorar, o mesmo da mensagem de registro.
+/// A unidade e o identificador legível são os do processo no instante da publicação;
 /// o documento principal é o do edital e os anexos são os da versão que nasce, na ordem em que o edital os
 /// declara — os herdados, quando a retificação não traz lista nova.
 /// </remarks>
@@ -28,8 +29,7 @@ internal static class RegistroDoAtoDaVersao
         DadosEdital dados,
         Guid documentoEditalId,
         Guid? atoRetificadoId,
-        string? motivoRetificacao,
-        TimeProvider timeProvider)
+        string? motivoRetificacao)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(versao);
@@ -44,7 +44,7 @@ internal static class RegistroDoAtoDaVersao
                 TipoCodigo: ato.TipoAtoCodigo,
                 TipoNome: tipoConferido.Nome,
                 Numero: dados.Numero,
-                DataDoAto: ato.DataPublicacao,
+                DataDoAto: ato.DataDoAto,
                 Assinante: ato.Assinante,
                 UnidadeAdministradora: processo.UnidadeAdministradora.Slug,
                 IdentificadorLegivelDoProcesso: processo.IdentificadorLegivel!.Value.Valor,
@@ -52,6 +52,6 @@ internal static class RegistroDoAtoDaVersao
                 Anexos: [.. dados.Anexos.Select(static a => new AnexoDeclarado(a.DocumentoId, a.NomeArquivo))],
                 AtoCorrigidoId: atoRetificadoId,
                 MotivoDaCorrecao: motivoRetificacao),
-            timeProvider);
+            versao.VigenteAPartirDe);
     }
 }

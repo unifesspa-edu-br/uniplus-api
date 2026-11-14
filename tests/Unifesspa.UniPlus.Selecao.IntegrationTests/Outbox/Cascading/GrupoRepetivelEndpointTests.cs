@@ -219,7 +219,7 @@ public sealed class GrupoRepetivelEndpointTests
                 ano = 2026,
                 assinante = "Diretor do CEPS",
                 tipoAtoCodigo = "EDITAL_ABERTURA",
-                dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
             },
         });
 

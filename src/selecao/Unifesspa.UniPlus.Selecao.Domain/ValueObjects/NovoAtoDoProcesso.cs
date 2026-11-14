@@ -9,7 +9,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <param name="TipoCodigo">Código do tipo do ato no catálogo de Publicações.</param>
 /// <param name="TipoNome">Nome do tipo, como o catálogo o declarava na conferência.</param>
 /// <param name="Numero">Número do ato, quando o tipo o tem.</param>
-/// <param name="DataDoAto">Data que o documento declara.</param>
+/// <param name="DataDoAto">Data que o documento declara; não conta para prazo, vigência nem escolha do tipo de ato.</param>
 /// <param name="Assinante">Quem assina o ato.</param>
 /// <param name="UnidadeAdministradora">
 /// Slug da unidade administradora da versão vigente divulgada — segmento da chave do documento no acervo.

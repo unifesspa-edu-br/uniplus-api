@@ -149,7 +149,7 @@ public sealed class RegistroDoAtoDoProcessoTests
                     orgao = "CEPS",
                     serie = "EDITAL",
                     ano = 2026,
-                    dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+                    dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
                     assinante = "Diretor do CEPS",
                     tipoAtoCodigo = DadosDoAtoDeTeste.TipoAbertura,
                 },
@@ -235,7 +235,7 @@ public sealed class RegistroDoAtoDoProcessoTests
                 new NovoAtoDoProcesso(
                     atoId, processoId, tipoDoItem, "Resultado final", "7/2027", new DateOnly(2027, 1, 20),
                     "Diretor do CEPS", "ceps", "psm-medicina-2027", documentoId, [], ItemDoEdital: identidadeDoItem),
-                TimeProvider.System).Value!;
+                TimeProvider.System.GetUtcNow()).Value!;
             ato.ConfirmarRegistro(TimeProvider.System);
             db.AtosDoProcesso.Add(ato);
             await db.SaveChangesAsync();
@@ -278,7 +278,7 @@ public sealed class RegistroDoAtoDoProcessoTests
                     orgao = "CEPS",
                     serie = "EDITAL",
                     ano = 2027,
-                    dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
+                    dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture),
                     assinante = "Diretor do CEPS",
                     tipoAtoCodigo = DadosDoAtoDeTeste.TipoAbertura,
                 },

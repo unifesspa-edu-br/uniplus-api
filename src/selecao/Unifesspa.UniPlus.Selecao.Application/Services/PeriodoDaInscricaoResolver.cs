@@ -9,6 +9,8 @@ using Domain.ValueObjects;
 
 using Kernel.Results;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+
 /// <summary>
 /// Confere se a inscrição está no período no instante de quem chama: a janela vem da versão
 /// divulgada, e não da fixada pela inscrição, porque a retificação que prorroga o prazo vale para quem

@@ -12,8 +12,8 @@ public interface IDadosDoAtoPublicado
     /// <summary>Número que o documento declara, quando o tipo o tem.</summary>
     string? Numero { get; }
 
-    /// <summary>Data que o documento declara.</summary>
-    DateOnly DataPublicacao { get; }
+    /// <summary>Data que o documento declara; não conta para prazo, vigência nem escolha do tipo de ato.</summary>
+    DateOnly DataDoAto { get; }
 
     /// <summary>Quem assina o ato.</summary>
     string Assinante { get; }

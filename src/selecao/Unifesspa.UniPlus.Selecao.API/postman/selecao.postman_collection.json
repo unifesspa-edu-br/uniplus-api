@@ -2924,7 +2924,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"versao\": 1,\n  \"conteudo\": {\n    \"numero\": \"07/2027\",\n    \"periodoInscricaoInicio\": \"\",\n    \"periodoInscricaoFim\": \"\",\n    \"ato\": {\n      \"orgao\": \"REITORIA\",\n      \"serie\": \"EDITAL\",\n      \"ano\": \"2027\",\n      \"dataPublicacao\": \"2027-01-15\",\n      \"assinante\": \"Reitor\",\n      \"tipoAtoCodigo\": \"EDITAL_ABERTURA\"\n    }\n  }\n}",
+              "raw": "{\n  \"versao\": 1,\n  \"conteudo\": {\n    \"numero\": \"07/2027\",\n    \"periodoInscricaoInicio\": \"\",\n    \"periodoInscricaoFim\": \"\",\n    \"ato\": {\n      \"orgao\": \"REITORIA\",\n      \"serie\": \"EDITAL\",\n      \"ano\": \"2027\",\n      \"dataDoAto\": \"2027-01-15\",\n      \"assinante\": \"Reitor\",\n      \"tipoAtoCodigo\": \"EDITAL_ABERTURA\"\n    }\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3549,7 +3549,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"numero\": \"001/2026\",\n  \"documentoEditalId\": \"{{documento_edital_id}}\",\n  \"anexos\": [],\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataPublicacao\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_ABERTURA\"\n  }\n}",
+              "raw": "{\n  \"numero\": \"001/2026\",\n  \"documentoEditalId\": \"{{documento_edital_id}}\",\n  \"anexos\": [],\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataDoAto\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_ABERTURA\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3984,7 +3984,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"motivo\": \"Correção do número do Edital (smoke)\",\n  \"numero\": \"001/2026-R1\",\n  \"documentoEditalId\": \"{{documento_edital_id_ret}}\",\n  \"anexos\": [],\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataPublicacao\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_RETIFICACAO\"\n  }\n}",
+              "raw": "{\n  \"motivo\": \"Correção do número do Edital (smoke)\",\n  \"numero\": \"001/2026-R1\",\n  \"documentoEditalId\": \"{{documento_edital_id_ret}}\",\n  \"anexos\": [],\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataDoAto\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_RETIFICACAO\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4545,7 +4545,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"numero\": \"001/2026-R2\",\n  \"documentoEditalId\": \"{{documento_edital_id_fecha}}\",\n  \"anexos\": [],\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataPublicacao\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_RETIFICACAO\"\n  }\n}",
+              "raw": "{\n  \"numero\": \"001/2026-R2\",\n  \"documentoEditalId\": \"{{documento_edital_id_fecha}}\",\n  \"anexos\": [],\n  \"ato\": {\n    \"orgao\": \"CEPS\",\n    \"serie\": \"EDITAL\",\n    \"ano\": 2026,\n    \"dataDoAto\": \"2026-01-01\",\n    \"assinante\": \"Diretor do CEPS\",\n    \"tipoAtoCodigo\": \"EDITAL_RETIFICACAO\"\n  }\n}",
               "options": {
                 "raw": {
                   "language": "json"

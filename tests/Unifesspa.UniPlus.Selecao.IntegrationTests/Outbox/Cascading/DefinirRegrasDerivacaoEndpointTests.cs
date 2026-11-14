@@ -222,7 +222,7 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
                         orgao = "CEPS",
                         serie = "EDITAL",
                         ano = 2026,
-                        dataPublicacao = Hoje(),
+                        dataDoAto = Hoje(),
                         assinante = "Diretor do CEPS",
                         tipoAtoCodigo = "EDITAL_ABERTURA",
                     },

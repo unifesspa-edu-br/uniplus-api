@@ -12,7 +12,7 @@ using System.Text.Json.Nodes;
 /// publicado, e vive no módulo <c>Publicacoes</c>. O que este contrato publica
 /// dele é a referência <b>por valor</b> — o par <see cref="AtoId"/> +
 /// <see cref="HashEdital"/> (ADR-0061) —, e nada mais. Quem precisar dos atributos
-/// documentais (tipo, número, data de publicação, assinante) consulta
+/// documentais (tipo, número, data do ato, assinante) consulta
 /// <c>GET /api/publicacoes/atos/{atoId}</c>, que é a fonte única deles. Republicá-los
 /// aqui seria manter a posse do documento por outra porta, e obrigaria a Seleção a
 /// saber o que um ato <i>é</i> — o acoplamento que a ADR-0103 desfez.

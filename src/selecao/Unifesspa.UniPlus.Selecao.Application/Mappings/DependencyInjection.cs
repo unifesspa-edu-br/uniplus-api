@@ -28,7 +28,7 @@ public static class SelecaoApplicationServiceRegistration
 
         services.AddValidatorsFromAssembly(typeof(SelecaoApplicationServiceRegistration).Assembly);
         AddDefinicaoDoCronogramaDeFases(services);
-        AddCongelamentoDaVersao(services);
+        AddPublicacao(services);
         AddAcessoAoCampoEAoDocumentoDaInscricao(services);
 
         // Escopo por execução da rotina periódica: os repositórios e o DbContext são do escopo.
@@ -58,6 +58,13 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<DecisaoDoAcessoAoDocumento>();
         services.AddScoped<EmissaoDoAcessoAoArquivo>();
         services.AddScoped<AcessoARevelacaoPelaBanca>();
+    }
+
+    // Todo comando que publica (versão, ato avulso, item do edital) lê o relógio uma só vez por esta leitura.
+    private static void AddPublicacao(IServiceCollection services)
+    {
+        services.AddScoped<LeituraDoInstanteDaPublicacao>();
+        AddCongelamentoDaVersao(services);
     }
 
     // Os serviços que congelam uma versão (publicação, retificação de ato único e fechamento da sessão) guardam só as

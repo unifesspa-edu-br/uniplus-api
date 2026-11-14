@@ -1,8 +1,8 @@
-namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
+namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Abstractions;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Tempo;
 
 /// <summary>
 /// Resolve o fuso institucional de verdade, contra a base de fusos do runner. Não é mock: o valor

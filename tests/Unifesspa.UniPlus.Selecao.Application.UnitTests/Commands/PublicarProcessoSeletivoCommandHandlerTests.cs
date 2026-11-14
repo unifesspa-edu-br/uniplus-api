@@ -235,7 +235,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         new(processo.Id, "001/2026", null, null,
             DocumentoEditalId: documento.Id,
             Ato: new DadosDoAto(
-                Orgao: "CEPS", Serie: "EDITAL", Ano: 2026, DataPublicacao: new DateOnly(2026, 1, 1),
+                Orgao: "CEPS", Serie: "EDITAL", Ano: 2026, DataDoAto: new DateOnly(2026, 1, 1),
                 Assinante: "Diretor do CEPS", TipoAtoCodigo: "EDITAL_ABERTURA"));
 
     [Fact(DisplayName = "Fato reclassificado de PESSOAL para IDENTIFICADOR no catálogo publica como IDENTIFICADOR e a resposta é cifrada")]

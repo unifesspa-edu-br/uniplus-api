@@ -17,8 +17,11 @@ public sealed record PedidoDeCongelamento
     /// <summary>Sub do usuário autenticado (via <c>IUserContext</c>), nunca input do comando.</summary>
     public required string AtorUsuarioSub { get; init; }
 
-    /// <summary>Relógio injetado (ADR-0068), nunca lido implicitamente.</summary>
-    public required TimeProvider Clock { get; init; }
+    /// <summary>
+    /// O instante em que o comando publica, lido uma só vez do relógio injetado (ADR-0068) e nunca relido pelo
+    /// agregado: vale a vigência da versão e o id do ato que ela cria.
+    /// </summary>
+    public required DateTimeOffset Instante { get; init; }
 
     public required ContextoDeContagemDePrazos Contexto { get; init; }
 

@@ -339,7 +339,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
             new NovoAtoDoProcesso(
                 Guid.CreateVersion7(), processoId, item.AtoCodigo, "Resultado", Numero: null,
                 new DateOnly(2025, 12, 1), "Diretoria", "ceps", IdentificadoresDeTeste.NovoValor(), documento.Id, [], item),
-            TimeProvider.System).Value!);
+            TimeProvider.System.GetUtcNow()).Value!);
         await semeadura.SaveChangesAsync();
     }
 

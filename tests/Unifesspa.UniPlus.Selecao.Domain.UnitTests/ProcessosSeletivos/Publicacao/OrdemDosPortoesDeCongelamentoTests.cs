@@ -7,6 +7,7 @@ using System.Text.Json.Nodes;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -229,7 +230,7 @@ public sealed class OrdemDosPortoesDeCongelamentoTests
                 Dados = dados,
                 Documento = new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", Hash),
                 AtorUsuarioSub = "user-sub-123",
-                Clock = new RelogioFixo(Agora),
+                Instante = Agora,
                 Contexto = contexto,
                 FatosDeModalidade = FatosDeModalidadeDeTeste.DoCatalogo,
                 TiposDeAtoUnicos = tipos,

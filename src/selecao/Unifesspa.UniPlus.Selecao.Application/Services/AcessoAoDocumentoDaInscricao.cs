@@ -11,6 +11,7 @@ using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// O que os passos do documento da inscrição conferem antes de tudo. No envio: a inscrição ativa é a do dono

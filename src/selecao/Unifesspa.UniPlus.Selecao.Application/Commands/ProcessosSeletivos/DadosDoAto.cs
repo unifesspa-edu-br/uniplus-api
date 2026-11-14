@@ -23,6 +23,6 @@ public sealed record DadosDoAto(
     string Orgao,
     string Serie,
     int Ano,
-    DateOnly DataPublicacao,
+    DateOnly DataDoAto,
     string Assinante,
     string TipoAtoCodigo);

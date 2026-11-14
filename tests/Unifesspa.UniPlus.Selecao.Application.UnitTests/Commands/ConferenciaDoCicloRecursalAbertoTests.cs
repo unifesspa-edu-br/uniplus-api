@@ -216,7 +216,7 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
             new NovoAtoDoProcesso(
                 Guid.CreateVersion7(), _processoId, Materia, NomeDaMateria, "1/2027", new DateOnly(2027, 1, 20), "Diretor do CEPS", "ceps", "psm-medicina-2027",
                 Guid.CreateVersion7(), [], ItemDoEdital: item),
-            new RelogioFixo(Agora)).Value!;
+            Agora).Value!;
         ato.ConfirmarRegistro(new RelogioFixo(Agora));
         _atos.Add(ato);
     }

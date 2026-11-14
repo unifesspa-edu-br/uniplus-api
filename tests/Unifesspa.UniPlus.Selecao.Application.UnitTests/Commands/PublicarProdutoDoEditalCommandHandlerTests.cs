@@ -11,6 +11,8 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.AtosDoProcesso;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Services;
+using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -95,6 +97,37 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         requisicao.TipoCodigo.Should().Be(Materia);
         requisicao.DocumentoHash.Should().Be(_principal.HashSha256);
         requisicao.AtoRetificadoId.Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O item lê o relógio uma vez e usa o instante no ato gravado e na mensagem de registro")]
+    public async Task Item_LeORelogioUmaVez_EOInstanteVaiParaOAtoEAMensagem()
+    {
+        (ProdutoDaFase preliminar, _) = Par();
+        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        RelogioDeLeituraContada relogio = new(Agora);
+        AtoDoProcesso? gravado = null;
+        await _atos.AdicionarAsync(Arg.Do<AtoDoProcesso>(a => gravado = a), Arg.Any<CancellationToken>());
+
+        (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(preliminar.Id), relogio);
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        relogio.Leituras.Should().Be(1);
+        gravado!.PublicadoEm.Should().Be(Agora);
+        mensagens.OfType<RegistrarAtoNormativoRequisicao>().Should().ContainSingle().Which.PublicadoEm.Should().Be(Agora);
+    }
+
+    [Fact(DisplayName = "O tipo do item é consultado no dia do instante, e a data que o documento declara não entra na consulta")]
+    public async Task Item_ConsultaOTipoNoDiaDoInstante_NaoNoDaDataDoAto()
+    {
+        (ProdutoDaFase preliminar, _) = Par();
+        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        DateOnly declarada = DataDoAto.AddDays(-5);
+
+        (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(preliminar.Id) with { DataDoAto = declarada });
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+        await _tipos.Received().ObterVigenteAsync(Materia, DataDoAto, Arg.Any<CancellationToken>());
+        await _tipos.DidNotReceive().ObterVigenteAsync(Materia, declarada, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A correção do item sem motivo é recusada no campo do motivo, antes de travar ou consultar o processo")]
@@ -335,10 +368,10 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    private Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Publicar(PublicarProdutoDoEditalCommand comando) =>
+    private Task<(Result<AtoPublicadoDto> Resposta, IEnumerable<object> Eventos)> Publicar(PublicarProdutoDoEditalCommand comando, TimeProvider? relogio = null) =>
         PublicarProdutoDoEditalCommandHandler.Handle(
             comando, _processos, _divulgados, _atos, _documentos, _codecs, _tipos, _vagas, _usuario, _unitOfWork,
-            new RelogioFixo(Agora), CancellationToken.None);
+            new LeituraDoInstanteDaPublicacao(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()), CancellationToken.None);
 
     private PublicarProdutoDoEditalCommand Comando(Guid produtoId, bool politica = true, Guid? corrige = null) =>
         new(_processoId, produtoId, "5/2027", DataDoAto, "Diretor do CEPS", _principal.Id,
@@ -386,7 +419,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
             new NovoAtoDoProcesso(
                 Guid.CreateVersion7(), _processoId, tipo, tipo, "1/2027", DataDoAto, "Diretor do CEPS", "ceps", "psm-medicina-2027",
                 Guid.CreateVersion7(), [], ItemDoEdital: _itensDoCronograma[produtoId]),
-            new RelogioFixo(Agora)).Value!;
+            Agora).Value!;
         typeof(AtoDoProcesso).GetProperty(nameof(AtoDoProcesso.CreatedAt))!.SetValue(ato, Agora.AddMinutes(-60 + _atosDoProcesso.Count));
         if (registrado)
         {
@@ -403,7 +436,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         new NovoAtoDoProcesso(
             atoId, _processoId, tipo, tipo, "1/2027", DataDoAto, "Diretor do CEPS", "ceps", "psm-medicina-2027",
             Guid.CreateVersion7(), []),
-        new RelogioFixo(Agora)).Value!;
+        Agora).Value!;
 
     private static DocumentoAPublicar Documento()
     {

@@ -51,7 +51,7 @@ internal static class MensagensDaPublicacao
                 // ordena as versões é o relógio do sistema (ADR-0104). É por isso que ela fica
                 // fora da configuração congelada: vai para o Publicações nesta requisição e
                 // para o registro do ato do processo, que a guarda como atributo do ato.
-                DataDoAto: ato.DataPublicacao,
+                DataDoAto: ato.DataDoAto,
                 // O instante da divulgação é o da versão congelada: o mesmo que a versão grava como
                 // vigente a partir dele, e que Publicações guarda sem definir.
                 PublicadoEm: versao.VigenteAPartirDe,

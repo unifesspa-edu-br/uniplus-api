@@ -44,7 +44,7 @@ public sealed class AtoDoProcessoTests
             anexos: [new AnexoDeclarado(segundo, "Anexo B"), new AnexoDeclarado(primeiro, "Anexo A")],
             politicaConfirmadaPor: "sub-do-usuario");
 
-        AtoDoProcesso ato = AtoDoProcesso.Registrar(novo, new RelogioFixo(Agora)).Value!;
+        AtoDoProcesso ato = AtoDoProcesso.Registrar(novo, Agora).Value!;
 
         ato.Id.Should().Be(novo.AtoId, "o registro é identificado pelo ato que a Seleção decidiu");
         ato.Situacao.Should().Be(SituacaoDoRegistroDoAto.Pendente);
@@ -55,10 +55,29 @@ public sealed class AtoDoProcessoTests
             .Should().Equal((0, segundo, "Anexo B"), (1, primeiro, "Anexo A"));
     }
 
+    [Fact(DisplayName = "O registro guarda o instante da divulgação que recebe, sem confundi-lo com a data que o documento declara")]
+    public void Registrar_GuardaOInstanteDaPublicacaoRecebido()
+    {
+        DateTimeOffset publicadoEm = new(2026, 12, 11, 2, 30, 0, TimeSpan.Zero);
+
+        AtoDoProcesso ato = AtoDoProcesso.Registrar(Novo(), publicadoEm).Value!;
+
+        ato.PublicadoEm.Should().Be(publicadoEm);
+        ato.DataDoAto.Should().Be(new DateOnly(2026, 12, 10));
+    }
+
+    [Fact(DisplayName = "O registro sem instante de publicação é violação de programação, não recusa de negócio")]
+    public void Registrar_SemInstanteDaPublicacao_Lanca()
+    {
+        Func<Result<AtoDoProcesso>> registrar = () => AtoDoProcesso.Registrar(Novo(), default);
+
+        registrar.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
     [Fact(DisplayName = "Confirmar o registro marca o instante uma vez só: a repetição não muda nada")]
     public void ConfirmarRegistro_Repetido_NaoMudaNada()
     {
-        AtoDoProcesso ato = AtoDoProcesso.Registrar(Novo(), new RelogioFixo(Agora)).Value!;
+        AtoDoProcesso ato = AtoDoProcesso.Registrar(Novo(), Agora).Value!;
 
         ato.ConfirmarRegistro(new RelogioFixo(Agora.AddMinutes(1))).Should().BeTrue();
         ato.ConfirmarRegistro(new RelogioFixo(Agora.AddMinutes(9))).Should().BeFalse();
@@ -70,7 +89,7 @@ public sealed class AtoDoProcessoTests
     [Fact(DisplayName = "Ato corrigido sem motivo é recusado com falha nomeada no campo do motivo")]
     public void Registrar_AtoCorrigidoSemMotivo_DevolveFalhaNomeada()
     {
-        Result<AtoDoProcesso> resultado = AtoDoProcesso.Registrar(Novo(atoCorrigidoId: Guid.CreateVersion7()), TimeProvider.System);
+        Result<AtoDoProcesso> resultado = AtoDoProcesso.Registrar(Novo(atoCorrigidoId: Guid.CreateVersion7()), Agora);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
@@ -81,7 +100,7 @@ public sealed class AtoDoProcessoTests
     [Fact(DisplayName = "Motivo sem ato corrigido é recusado com falha nomeada no campo do ato")]
     public void Registrar_MotivoSemAtoCorrigido_DevolveFalhaNomeada()
     {
-        Result<AtoDoProcesso> resultado = AtoDoProcesso.Registrar(Novo(motivo: "Erro de grafia"), TimeProvider.System);
+        Result<AtoDoProcesso> resultado = AtoDoProcesso.Registrar(Novo(motivo: "Erro de grafia"), Agora);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
@@ -92,7 +111,7 @@ public sealed class AtoDoProcessoTests
     [Fact(DisplayName = "Ato corrigido com identificador vazio é recusado com falha nomeada")]
     public void Registrar_AtoCorrigidoVazio_DevolveFalhaNomeada()
     {
-        Result<AtoDoProcesso> resultado = AtoDoProcesso.Registrar(Novo(atoCorrigidoId: Guid.Empty, motivo: "Erro de grafia"), TimeProvider.System);
+        Result<AtoDoProcesso> resultado = AtoDoProcesso.Registrar(Novo(atoCorrigidoId: Guid.Empty, motivo: "Erro de grafia"), Agora);
 
         resultado.Errors.Should().ContainSingle()
             .Which.Should().Match<FieldError>(e => e.Field == "atoCorrigidoId"
@@ -103,7 +122,7 @@ public sealed class AtoDoProcessoTests
     public void Registrar_AtoQueCorrigeASiMesmo_Lanca()
     {
         NovoAtoDoProcesso novo = Novo(motivo: "Erro de grafia");
-        Func<Result<AtoDoProcesso>> registrar = () => AtoDoProcesso.Registrar(novo with { AtoCorrigidoId = novo.AtoId }, TimeProvider.System);
+        Func<Result<AtoDoProcesso>> registrar = () => AtoDoProcesso.Registrar(novo with { AtoCorrigidoId = novo.AtoId }, Agora);
 
         registrar.Should().Throw<ArgumentException>();
     }
@@ -115,9 +134,9 @@ public sealed class AtoDoProcessoTests
         Guid anexo = Guid.CreateVersion7();
 
         Func<Result<AtoDoProcesso>> principalComoAnexo = () => AtoDoProcesso.Registrar(
-            Novo(principal: principal, anexos: [new AnexoDeclarado(principal, "Anexo")]), TimeProvider.System);
+            Novo(principal: principal, anexos: [new AnexoDeclarado(principal, "Anexo")]), Agora);
         Func<Result<AtoDoProcesso>> anexoDuasVezes = () => AtoDoProcesso.Registrar(
-            Novo(anexos: [new AnexoDeclarado(anexo, "Anexo"), new AnexoDeclarado(anexo, "Outro")]), TimeProvider.System);
+            Novo(anexos: [new AnexoDeclarado(anexo, "Anexo"), new AnexoDeclarado(anexo, "Outro")]), Agora);
 
         principalComoAnexo.Should().Throw<ArgumentException>();
         anexoDuasVezes.Should().Throw<ArgumentException>();
@@ -128,7 +147,7 @@ public sealed class AtoDoProcessoTests
     {
         NovoAtoDoProcesso novo = Novo(politicaConfirmadaPor: "  ") with { Numero = "   " };
 
-        AtoDoProcesso ato = AtoDoProcesso.Registrar(novo, new RelogioFixo(Agora)).Value!;
+        AtoDoProcesso ato = AtoDoProcesso.Registrar(novo, Agora).Value!;
 
         ato.Numero.Should().BeNull();
         ato.PoliticaDeDivulgacaoConfirmadaPorSub.Should().BeNull();

@@ -58,7 +58,7 @@ public sealed class OrdemDosAtosDoProcessoTests : IClassFixture<InscricaoDbFixtu
 
     private static async Task RegistrarAsync(UniPlusDbContext db, NovoAtoDoProcesso novo)
     {
-        db.AtosDoProcesso.Add(AtoDoProcesso.Registrar(novo, TimeProvider.System).Value!);
+        db.AtosDoProcesso.Add(AtoDoProcesso.Registrar(novo, TimeProvider.System.GetUtcNow()).Value!);
         await db.SaveChangesAsync();
     }
 }

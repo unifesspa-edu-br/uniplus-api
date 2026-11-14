@@ -31,7 +31,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         var tipoDaOperacao = new TipoAtoPublicadoView("EDITAL_DA_OPERACAO", "Edital", true, true, false, false);
 
         Result<TiposDeAtoUnicosPorObjeto> resultado = await new ResolucaoDosTiposDeAtoUnicos(reader, AtosQueRegistram(atoDaLinhagem, "EDITAL_JA_REGISTRADO"), RelogioDeHoje)
-            .ConferirAsync(processo, tipoDaOperacao, [atoDaLinhagem], TimeZoneInfo.Utc, SemCongelados(), CancellationToken.None);
+            .ConferirAsync(processo, tipoDaOperacao, [atoDaLinhagem], Hoje, SemCongelados(), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         AfirmarAUnicidadeDoLote(resultado.Value!);
@@ -118,7 +118,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
 
         Result<TiposDeAtoUnicosPorObjeto> resultado = await new ResolucaoDosTiposDeAtoUnicos(
                 Substitute.For<ITipoAtoPublicadoReader>(), Substitute.For<IAtoDoProcessoRepository>(), RelogioDeHoje)
-            .ConferirAsync(processo, tipoDaOperacao, [], TimeZoneInfo.Utc, congelados, CancellationToken.None);
+            .ConferirAsync(processo, tipoDaOperacao, [], Hoje, congelados, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.EhUnico("RESULTADO_X").Should().BeFalse("a unicidade do item é a congelada");
@@ -134,7 +134,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
         new ResolucaoDosTiposDeAtoUnicos(reader, Substitute.For<IAtoDoProcessoRepository>(), RelogioDeHoje)
             .ConferirAsync(
                 processo, new TipoAtoPublicadoView("EDITAL_RETIFICACAO", "Retificação", true, false, false, false), [],
-                TimeZoneInfo.Utc, congelados, CancellationToken.None);
+                Hoje, congelados, CancellationToken.None);
 
     private static ProcessoSeletivo ProcessoQueProduz(params (string Tipo, PapelProdutoFase? Papel)[] produtos)
     {

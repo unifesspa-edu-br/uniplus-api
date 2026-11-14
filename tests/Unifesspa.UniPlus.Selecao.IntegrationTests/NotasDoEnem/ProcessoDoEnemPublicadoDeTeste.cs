@@ -144,7 +144,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
                     orgao = "CEPS",
                     serie = "EDITAL",
                     ano = 2027,
-                    dataPublicacao = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                    dataDoAto = DateOnly.FromDateTime(DateTime.UtcNow).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
                     assinante = "Diretor do CEPS",
                     tipoAtoCodigo = DadosDoAtoDeTeste.TipoAbertura,
                 },

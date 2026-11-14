@@ -135,7 +135,7 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         Guid processoId, string identificador, Guid ato, DocumentoAPublicar principal, DocumentoAPublicar? anexo = null)
     {
         AtoDoProcesso registro = AtoDoProcesso.Registrar(
-            DeclaracaoDoAtoAvulso(processoId, identificador, ato, principal, anexo), TimeProvider.System).Value!;
+            DeclaracaoDoAtoAvulso(processoId, identificador, ato, principal, anexo), TimeProvider.System.GetUtcNow()).Value!;
         await using UniPlusDbContext context = acervo.Db.CreateDbContext();
         context.AtosDoProcesso.Add(registro);
         await context.SaveChangesAsync();

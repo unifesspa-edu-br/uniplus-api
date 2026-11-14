@@ -3422,6 +3422,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     tipo_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     numero = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
                     data_do_ato = table.Column<DateOnly>(type: "date", nullable: false),
+                    publicado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     assinante = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     unidade_administradora = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     identificador_legivel_do_processo = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
@@ -5590,7 +5591,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ix_atos_do_processo_processo_recentes",
                 schema: "selecao",
                 table: "atos_do_processo",
-                columns: new[] { "processo_seletivo_id", "created_at", "ordem_de_registro" },
+                columns: new[] { "processo_seletivo_id", "publicado_em", "ordem_de_registro" },
                 descending: new[] { false, true, true });
 
             migrationBuilder.CreateIndex(

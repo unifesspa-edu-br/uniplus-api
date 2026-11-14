@@ -26,13 +26,13 @@ public sealed class DiaDaConsultaDosTiposDeAtoTests
     private static readonly DateTimeOffset InstanteDeInicio = new(2026, 10, 17, 2, 30, 0, TimeSpan.Zero);
     private static readonly TimeZoneInfo Fuso = TimeZoneInfo.CreateCustomTimeZone("fuso-institucional", TimeSpan.FromHours(-3), "fuso", "fuso");
 
-    [Fact(DisplayName = "A conferência consulta o catálogo no dia calculado antes da leitura das vagas, ainda que a meia-noite passe durante ela")]
-    public async Task Conferir_ConsultaNoDiaCalculadoAntesDaLeitura()
+    [Fact(DisplayName = "A conferência consulta o catálogo no dia da publicação que recebe, ainda que a meia-noite passe durante a leitura das vagas")]
+    public async Task Conferir_ConsultaNoDiaDaPublicacaoRecebido()
     {
         Cenario cenario = new();
 
         await new ResolucaoDosTiposDeAtoUnicos(cenario.Catalogo, cenario.Atos, cenario.Relogio).ConferirAsync(
-            cenario.Processo, TipoDaOperacao(), [cenario.AtoDaLinhagem], Fuso, SemCongelados(), CancellationToken.None);
+            cenario.Processo, TipoDaOperacao(), [cenario.AtoDaLinhagem], DiaDeInicio, SemCongelados(), CancellationToken.None);
 
         await cenario.Catalogo.Received(1).ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), DiaDeInicio, Arg.Any<CancellationToken>());
     }

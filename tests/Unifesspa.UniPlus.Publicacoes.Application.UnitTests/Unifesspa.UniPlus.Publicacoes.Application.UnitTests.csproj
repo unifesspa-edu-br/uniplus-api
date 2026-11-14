@@ -20,6 +20,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
+    <Compile Include="../Shared/ResolvedorFusoDeTeste.cs" Link="ResolvedorFusoDeTeste.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 

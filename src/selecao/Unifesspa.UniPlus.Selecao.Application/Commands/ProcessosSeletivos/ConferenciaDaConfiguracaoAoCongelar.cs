@@ -10,6 +10,7 @@ using Kernel.Results;
 
 using Services;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
@@ -180,7 +181,7 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar
             }
 
             Result<TiposDeAtoUnicosPorObjeto> unicos = await servicos._tiposDeAto
-                .ConferirAsync(processo, ato.TipoDoAto, ato.AtosDaLinhagem, _fuso!, jaCongelados.Value!, cancellationToken)
+                .ConferirAsync(processo, ato.TipoDoAto, ato.AtosDaLinhagem, ato.Publicacao.Dia, jaCongelados.Value!, cancellationToken)
                 .ConfigureAwait(false);
             _tiposDeAtoUnicos = unicos.Value;
 

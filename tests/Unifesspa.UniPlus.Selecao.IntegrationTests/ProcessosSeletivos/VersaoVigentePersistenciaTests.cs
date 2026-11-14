@@ -10,6 +10,7 @@ using Microsoft.EntityFrameworkCore.Diagnostics;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
@@ -250,13 +251,13 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
     public async Task ObterVersaoVigente_NoInstanteDoProprioAto_ResolveAVersaoQueEleCriou()
     {
         // O instante que o ProcessoPublicadoEvent publica é o do ATO
-        // (Edital.DataPublicacao). Um consumidor que reavalie o ato contra a
+        // (Edital.DataDoAto). Um consumidor que reavalie o ato contra a
         // configuração vigente naquele instante — que é o que a ADR-0075 manda
         // fazer — precisa encontrar a versão que o próprio ato criou.
         //
         // Com o relógio REAL (não o manual dos demais testes), duas leituras de
         // GetUtcNow() dentro de Publicar deixariam VigenteAPartirDe alguns ticks à
-        // frente de DataPublicacao, e a consulta no instante do ato não acharia
+        // frente de DataDoAto, e a consulta no instante do ato não acharia
         // nada. A raiz lê o relógio uma única vez — este teste é o que trava isso.
         ProcessoSeletivo processo = NovoProcessoConforme(nameof(ObterVersaoVigente_NoInstanteDoProprioAto_ResolveAVersaoQueEleCriou));
         DocumentoAPublicar documento = DocumentoConfirmado(processo.Id);

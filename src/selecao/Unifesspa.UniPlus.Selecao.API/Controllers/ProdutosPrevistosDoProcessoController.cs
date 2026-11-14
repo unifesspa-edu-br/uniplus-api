@@ -99,7 +99,7 @@ public sealed class ProdutosPrevistosDoProcessoController : ControllerBase
                     processoSeletivoId,
                     produtoId,
                     request.Numero,
-                    request.DataPublicacao,
+                    request.DataDoAto,
                     request.Assinante,
                     request.DocumentoPrincipalId,
                     AnexoDoAtoRequest.ParaComando(request.Anexos),

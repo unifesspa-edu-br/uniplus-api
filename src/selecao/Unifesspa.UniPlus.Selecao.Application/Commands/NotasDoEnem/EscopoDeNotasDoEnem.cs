@@ -13,6 +13,7 @@ using Kernel.Results;
 
 using Services;
 
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Regras.Services;
 
 /// <summary>

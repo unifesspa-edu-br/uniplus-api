@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
 /// Confere no catálogo de Publicações, antes de enviar o ato, que o tipo declarado serve a um ato
-/// avulso: vigora na data do documento, não congela configuração e o catálogo o declara publicável
+/// avulso: vigora no dia da publicação, não congela configuração e o catálogo o declara publicável
 /// como documento avulso.
 /// </summary>
 /// <remarks>
@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// <para>
 /// O documento avulso não é item do edital: o tipo dele não é declarado no cronograma, e a versão publicada
 /// só congela a classificação dos tipos que o cronograma declara. Por isso as classificações que importam
-/// aqui — se congela e se é único — vêm do catálogo vigente na data do documento, e não da versão publicada.
+/// aqui — se congela e se é único — vêm do catálogo vigente no dia da publicação, e não da versão publicada.
 /// </para>
 /// </remarks>
 internal static class ConferenciaDoTipoDoAtoAvulso
@@ -30,11 +30,11 @@ internal static class ConferenciaDoTipoDoAtoAvulso
     public static async Task<Result<TipoAtoPublicadoView>> ConferirAsync(
         ITipoAtoPublicadoReader reader,
         string tipoAtoCodigo,
-        DateOnly dataPublicacao,
+        DateOnly diaDaPublicacao,
         CancellationToken cancellationToken)
     {
         Result<TipoAtoPublicadoView> vigente = await ConferenciaDoTipoDeAto
-            .VigenteAsync(reader, tipoAtoCodigo, dataPublicacao, cancellationToken)
+            .VigenteAsync(reader, tipoAtoCodigo, diaDaPublicacao, cancellationToken)
             .ConfigureAwait(false);
         if (vigente.IsFailure)
         {
