@@ -200,7 +200,7 @@ public sealed class PublicarProdutoDoEditalEndpointTests
     }
 
     /// <summary>O que a fase do formulário declara publicar: o preliminar e o definitivo da homologação, cada um com o seu <c>Id</c>.</summary>
-    private static ProdutoDaFase[] ProdutosDaHomologacao() =>
+    internal static ProdutoDaFase[] ProdutosDaHomologacao() =>
     [
         ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultado, PapelProdutoFase.Preliminar),
         ProdutoDaFase.Criar(DadosDoAtoDeTeste.TipoResultado, PapelProdutoFase.Definitivo),
@@ -218,7 +218,7 @@ public sealed class PublicarProdutoDoEditalEndpointTests
         return atoId;
     }
 
-    private static Task<HttpResponseMessage> PublicarAsync(
+    internal static Task<HttpResponseMessage> PublicarAsync(
         HttpClient client,
         Guid processoId,
         Guid produtoId,
@@ -244,7 +244,7 @@ public sealed class PublicarProdutoDoEditalEndpointTests
         return client.SendAsync(pedido);
     }
 
-    private static async Task<JsonElement> ConsultarItensAsync(HttpClient client, Guid processoId)
+    internal static async Task<JsonElement> ConsultarItensAsync(HttpClient client, Guid processoId)
     {
         using HttpRequestMessage pedido = PublicarAtoAvulsoEndpointTests.Autenticado(
             HttpMethod.Get, $"/api/selecao/processos-seletivos/{processoId}/produtos-previstos");
