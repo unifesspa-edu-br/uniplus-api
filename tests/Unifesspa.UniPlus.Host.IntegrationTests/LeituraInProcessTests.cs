@@ -90,7 +90,7 @@ public sealed class LeituraInProcessTests
             TipoUnidade.Centro,
             false).Value!;
 
-        // Semeia pelo DbContext do MÓDULO resolvido do container do host — o
+        // Semeia pelo contexto do container do host — o
         // schema `organizacao` já foi criado pelas migrations on startup no boot.
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext dbContext =

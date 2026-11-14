@@ -20,10 +20,7 @@ public static class DefinirEtapasCommandHandler
     /// SEM <c>[NonTransactional]</c>, de propósito: este handler depende da transação ambiente do Wolverine
     /// para <see cref="IProcessoSeletivoRepository.ObterParaMutacaoAsync"/>. O <c>SELECT ... FOR UPDATE</c>
     /// só serializa handlers concorrentes porque roda enrolado nela, e <c>[NonTransactional]</c> o
-    /// desabilitaria. Injetar readers cross-módulo junto do mesmo lock não é ambíguo para o
-    /// <c>AutoApplyTransactions</c>, desde que cada contrato tenha o <c>AlwaysUseServiceLocationFor</c>
-    /// declarado: um reader novo sem esse opt-in reintroduz a ambiguidade de DbContext e derruba o
-    /// enrolamento de que o lock depende.
+    /// desabilitaria.
     /// </remarks>
     public static async Task<Result<MutacaoAceita>> Handle(
         DefinirEtapasCommand command,

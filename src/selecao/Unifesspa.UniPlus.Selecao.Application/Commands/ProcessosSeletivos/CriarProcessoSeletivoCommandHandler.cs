@@ -18,8 +18,6 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Governance.Contracts;
 
-using Wolverine.Attributes;
-
 /// <summary>
 /// Handler convention-based do <see cref="CriarProcessoSeletivoCommand"/>:
 /// resolve a Unidade administradora viva via <see cref="IUnidadeReader"/> (ADR-0056),
@@ -29,22 +27,6 @@ using Wolverine.Attributes;
 /// </summary>
 public static class CriarProcessoSeletivoCommandHandler
 {
-    /// <summary>
-    /// <c>[NonTransactional]</c> necessário porque este handler injeta <see cref="IUnidadeReader"/>
-    /// (Organização Institucional, dependente de <c>OrganizacaoInstitucionalDbContext</c>) junto de
-    /// <see cref="IUnitOfWork"/> (Seleção, dependente de <c>SelecaoDbContext</c>) — o mesmo
-    /// problema que <c>CriarOfertaCursoCommandHandler</c> (Configuração), primeiro consumidor
-    /// cross-módulo de <see cref="IUnidadeReader"/>, já resolveu: o detector de transação do
-    /// Wolverine.EntityFrameworkCore (<c>AutoApplyTransactions</c>) enumera as dependências
-    /// transitivas dos parâmetros do handler em busca de um único <c>DbContext</c> a enrolar na
-    /// transação do outbox — encontraria dois e falharia por ambiguidade no boot do host. A
-    /// persistência continua correta sem o enrolamento automático: o handler chama
-    /// <see cref="IUnitOfWork.SalvarAlteracoesAsync"/> explicitamente, e
-    /// <see cref="ProcessoSeletivo.Criar"/> não levanta domain event — não há atomicidade
-    /// write+evento de outbox a perder (ADR-0004 não se aplica aqui). O reader é só leitura, sem
-    /// participação na transação de escrita.
-    /// </summary>
-    [NonTransactional]
     public static async Task<Result<Guid>> Handle(
         CriarProcessoSeletivoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,

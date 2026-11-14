@@ -17,10 +17,8 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 
 /// <summary>
 /// A solicitação da proteção do catálogo, no host real, com a decisão de acesso e a leitura dos destinatários dentro do
-/// handler: o verificador e os titulares leem o <c>UniPlusDbContext</c>, e o handler continua com um único contexto
-/// transacional, o da Configuração. Se o detector do Wolverine visse os dois contextos, o handler nem seria gerado; e a
-/// escrita e o aviso por e-mail, que o handler devolve como mensagem, só chegam juntos quando a transação do outbox é a mesma
-/// da escrita.
+/// handler: o verificador, os titulares e a escrita usam o mesmo <c>UniPlusDbContext</c>. A escrita e o aviso por e-mail,
+/// que o handler devolve como mensagem, só chegam juntos quando a transação do outbox é a mesma da escrita.
 /// </summary>
 [Collection(MonolitoComMailpitCollection.Name)]
 public sealed class SolicitacaoDaProtecaoNoHostTests

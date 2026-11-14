@@ -21,8 +21,8 @@ using Wolverine.Attributes;
 public static class EmitirComprovanteDaInscricaoQueryHandler
 {
     /// <summary>
-    /// <c>[NonTransactional]</c>: o verificador de acesso lê as concessões do <c>AutorizacaoDbContext</c> e os repositórios
-    /// leem o <c>SelecaoDbContext</c>; o detector de transação do Wolverine recusa dois contextos. A consulta só lê.
+    /// <c>[NonTransactional]</c>: a consulta não grava no banco, e o registro do acesso é publicado de forma síncrona no
+    /// Kafka. A transação ambiente do Wolverine seguraria a conexão aberta até o broker confirmar.
     /// </summary>
     [NonTransactional]
     public static async Task<Result<ComprovanteDaInscricaoDto>> Handle(

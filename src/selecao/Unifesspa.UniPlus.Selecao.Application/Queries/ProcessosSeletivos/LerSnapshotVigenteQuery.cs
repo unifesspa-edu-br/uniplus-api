@@ -12,8 +12,6 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Kernel.Results;
 
-using Wolverine.Attributes;
-
 /// <summary>
 /// A leitura do snapshot vigente por quem o consulta: para quem configura o processo, o que
 /// <see cref="ObterSnapshotVigenteQuery"/> devolve (a versão vigente no <paramref name="Instante"/>); para quem não
@@ -28,11 +26,6 @@ public sealed record LerSnapshotVigenteQuery(Guid ProcessoSeletivoId, DateTimeOf
 /// </summary>
 public static class LerSnapshotVigenteQueryHandler
 {
-    /// <summary>
-    /// <c>[NonTransactional]</c>: a decisão lê o <c>AutorizacaoDbContext</c> e o repositório, o <c>SelecaoDbContext</c>; o
-    /// detector de transação do Wolverine recusa dois contextos. A consulta só lê.
-    /// </summary>
-    [NonTransactional]
     public static async Task<Result<SnapshotVigenteDto>> Handle(
         LerSnapshotVigenteQuery query,
         IProcessoSeletivoRepository processos,

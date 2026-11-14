@@ -13,8 +13,6 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Kernel.Results;
 
-using Wolverine.Attributes;
-
 /// <summary>
 /// A leitura do processo por quem o consulta: o que <see cref="ObterProcessoSeletivoQuery"/> devolve, menos o que ainda
 /// não foi publicado para quem não configura o processo. "Não encontrado" é estado normal de leitura.
@@ -30,11 +28,6 @@ public sealed record LerProcessoSeletivoQuery(Guid Id) : IQuery<ProcessoSeletivo
 /// </summary>
 public static class LerProcessoSeletivoQueryHandler
 {
-    /// <summary>
-    /// <c>[NonTransactional]</c>: a decisão lê o <c>AutorizacaoDbContext</c> e o repositório, o <c>SelecaoDbContext</c>; o
-    /// detector de transação do Wolverine recusa dois contextos. A consulta só lê.
-    /// </summary>
-    [NonTransactional]
     public static async Task<ProcessoSeletivoDto?> Handle(
         LerProcessoSeletivoQuery query,
         IProcessoSeletivoRepository processos,

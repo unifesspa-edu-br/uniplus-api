@@ -8,8 +8,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-using Wolverine.Attributes;
-
 /// <summary>
 /// Handler convention-based do <see cref="AtualizarObrigatoriedadeLegalCommand"/>.
 /// Semântica full-replace (ADR-0058 Emenda 1): o caller deve repassar todos os
@@ -18,7 +16,6 @@ using Wolverine.Attributes;
 /// </summary>
 public static class AtualizarObrigatoriedadeLegalCommandHandler
 {
-    [NonTransactional]
     public static async Task<Result> Handle(
         AtualizarObrigatoriedadeLegalCommand command,
         IObrigatoriedadeLegalRepository repository,

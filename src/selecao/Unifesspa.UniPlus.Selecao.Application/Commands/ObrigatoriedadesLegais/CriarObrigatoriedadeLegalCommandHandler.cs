@@ -8,8 +8,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-using Wolverine.Attributes;
-
 /// <summary>
 /// Handler convention-based do <see cref="CriarObrigatoriedadeLegalCommand"/>.
 /// Checa colisão de <c>RegraCodigo</c>, chama a factory canônica da entity e
@@ -18,7 +16,6 @@ using Wolverine.Attributes;
 /// </summary>
 public static class CriarObrigatoriedadeLegalCommandHandler
 {
-    [NonTransactional]
     public static async Task<Result<Guid>> Handle(
         CriarObrigatoriedadeLegalCommand command,
         IObrigatoriedadeLegalRepository repository,
