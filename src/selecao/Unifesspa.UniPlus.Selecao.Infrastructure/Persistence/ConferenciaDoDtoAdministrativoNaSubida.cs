@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.API;
+namespace Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
