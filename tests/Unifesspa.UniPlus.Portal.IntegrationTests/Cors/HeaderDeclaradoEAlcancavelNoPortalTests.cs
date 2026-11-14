@@ -61,6 +61,16 @@ public sealed class HeaderDeclaradoEAlcancavelNoPortalTests : IClassFixture<Port
         HeadersExpostos(resposta).Should().Contain("Retry-After", "o 503 do certame indica nele quando tentar de novo");
     }
 
+    [Fact(DisplayName = "O Portal não expõe pelo CORS os headers que só o host de Seleção emite")]
+    public void Politica_QuandoPortal_NaoDeveExporHeadersDeOutroDeployable()
+    {
+        IReadOnlyCollection<string> expostos = HeadersDoContrato.ExpostosPelaPoliticaPadrao(_factory.Services);
+
+        expostos.Should().NotContain(
+            static nome => nome.StartsWith("X-Certames-", StringComparison.OrdinalIgnoreCase) || nome.Equals("Location", StringComparison.OrdinalIgnoreCase),
+            "um deployable só expõe o que os seus controllers declaram");
+    }
+
     private static IReadOnlyList<string> HeadersExpostos(HttpResponseMessage resposta) =>
         resposta.Headers.TryGetValues("Access-Control-Expose-Headers", out IEnumerable<string>? valores)
             ? [.. valores.SelectMany(static v => v.Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))]
