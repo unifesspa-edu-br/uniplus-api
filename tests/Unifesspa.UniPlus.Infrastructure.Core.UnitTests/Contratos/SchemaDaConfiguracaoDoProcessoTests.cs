@@ -201,6 +201,28 @@ public sealed class SchemaDaConfiguracaoDoProcessoTests
         CaminhosComErro(documento).Should().Contain("/etapas/0/escalaDeAtendimento/0");
     }
 
+    [Fact(DisplayName = "O id do processo é um uuid e a versão é um inteiro a partir de 1, os dois na raiz")]
+    public void IdEVersao_NaRaiz()
+    {
+        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
+        documento["id"]!.GetValue<string>().Should().MatchRegex("^[0-9a-f]{8}-");
+        documento["versao"]!.GetValue<int>().Should().BeGreaterThanOrEqualTo(1);
+        CaminhosComErro(documento).Should().BeEmpty();
+
+        documento["id"] = "processo-exemplo";
+        documento["versao"] = 0;
+        CaminhosComErro(documento).Should().Contain(["/id", "/versao"]);
+    }
+
+    [Fact(DisplayName = "O item não tem id: a propriedade id num item é recusada")]
+    public void IdNoItem_Recusa()
+    {
+        JsonNode documento = Carregar(Path.Join("exemplos", "inscricao-pelo-sistema.json"));
+        documento["cronograma"]!["fases"]![0]!["id"] = "3f2a9c1e-5b7d-4e8a-9c3f-1a2b3c4d5e6f";
+
+        CaminhosComErro(documento).Should().Contain("/cronograma/fases/0/id");
+    }
+
     [Fact(DisplayName = "A data de publicação é um instante UTC e o instante com outro fuso é recusado")]
     public void PublicadoEm_EInstanteUtc()
     {

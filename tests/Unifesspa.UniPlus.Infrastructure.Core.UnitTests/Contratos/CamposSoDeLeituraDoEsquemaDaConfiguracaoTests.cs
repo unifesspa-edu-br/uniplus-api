@@ -15,6 +15,8 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
 
     public static TheoryData<string> CamposSoDeLeitura =>
     [
+        "properties/id",
+        "properties/versao",
         "properties/publicadoEm",
         "properties/tiposDeAtoCongelados",
         "$defs/identificacao/properties/localidadeNome",
@@ -50,22 +52,28 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
         Navegar(caminho)["readOnly"].Should().BeNull();
     }
 
-    [Fact(DisplayName = "O esquema não tem campo interno: id do banco, datas de auditoria nem autoria")]
+    [Fact(DisplayName = "O esquema não tem campo interno nos itens nem na raiz: só o id e a versão do processo, de leitura")]
     public void Esquema_NaoTemCampoInterno()
     {
         string[] internos = ["id", "criadoEm", "atualizadoEm", "criadoPor", "atualizadoPor", "createdBy", "updatedBy"];
 
-        NomesDePropriedades(Esquema).Intersect(internos, StringComparer.Ordinal).Should().BeEmpty();
+        NomesDePropriedades(Esquema, ehRaiz: true).Intersect(internos, StringComparer.Ordinal).Should().BeEmpty();
+        Esquema["properties"]!.AsObject().Select(static par => par.Key).Intersect(internos.Where(static nome => nome != "id"), StringComparer.Ordinal)
+            .Should().BeEmpty();
     }
 
-    private static IEnumerable<string> NomesDePropriedades(JsonNode? no) => no switch
+    // O id só é aceito na raiz do documento, onde identifica o processo; em qualquer item a identidade é a chave.
+    private static IEnumerable<string> NomesDePropriedades(JsonNode? no, bool ehRaiz = false) => no switch
     {
-        JsonObject objeto => objeto.SelectMany(static par => (par.Key == "properties" && par.Value is JsonObject propriedades
-            ? propriedades.Select(static p => p.Key)
-            : []).Concat(NomesDePropriedades(par.Value))),
-        JsonArray lista => lista.SelectMany(NomesDePropriedades),
+        JsonObject objeto => objeto.SelectMany(par => NomesDoFilho(par, ehRaiz)),
+        JsonArray lista => lista.SelectMany(item => NomesDePropriedades(item)),
         _ => [],
     };
+
+    private static IEnumerable<string> NomesDoFilho(KeyValuePair<string, JsonNode?> par, bool ehRaiz) =>
+        par.Key == "properties" && par.Value is JsonObject propriedades
+            ? propriedades.SelectMany(p => (ehRaiz ? [] : new[] { p.Key }).Concat(NomesDePropriedades(p.Value)))
+            : NomesDePropriedades(par.Value);
 
     private static JsonNode Navegar(string caminho) =>
         caminho.Split('/').Aggregate(Esquema, static (no, passo) => no[passo]!);

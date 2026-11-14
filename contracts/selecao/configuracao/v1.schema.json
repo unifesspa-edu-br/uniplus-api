@@ -20,6 +20,20 @@
       "description": "Versão principal do formato. Neste esquema é sempre 1. Mudança incompatível cria a versão 2 em outro esquema.",
       "const": 1
     },
+    "id": {
+      "title": "Id do processo",
+      "description": "Identificador único (uuid) do processo. No rascunho é o id do próprio rascunho, que vira o id do processo na publicação. Não concede pertencimento. Campo só de leitura: ignorado na importação, porque o processo importado ganha id novo.",
+      "type": "string",
+      "format": "uuid",
+      "readOnly": true
+    },
+    "versao": {
+      "title": "Versão",
+      "description": "Número da versão do processo que foi exportada, a partir de 1. Não existe no rascunho. Campo só de leitura: ignorado na importação e definido pela publicação.",
+      "type": "integer",
+      "minimum": 1,
+      "readOnly": true
+    },
     "publicadoEm": {
       "title": "Publicado em",
       "description": "Instante da divulgação da versão exportada, em UTC. A publicidade é a divulgação gravada na transação; numa retificação o campo traz o instante da versão retificada. Não existe no rascunho. Campo só de leitura: ignorado na importação e definido pela divulgação.",
