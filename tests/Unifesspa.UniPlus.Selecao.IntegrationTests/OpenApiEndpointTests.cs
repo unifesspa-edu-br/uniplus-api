@@ -112,6 +112,44 @@ public sealed class OpenApiEndpointTests
             .GetProperty("description").GetString().Should().Contain("depois da cópia ao acervo");
     }
 
+    [Fact(DisplayName = "O endereço do documento do ato é obrigatório e não nulo; o do edital, do documento do edital e do modelo é obrigatório e pode ser nulo")]
+    public async Task UrlDownloadDoCertame_NuloSoOndeAAusenciaExiste()
+    {
+        using JsonDocument spec = await LerSpecAsync();
+
+        JsonElement schemas = spec.RootElement.GetProperty("components").GetProperty("schemas");
+
+        ExigirUrlDownload(schemas, "DocumentoDoAtoCertameDto", nulo: false);
+        ExigirUrlDownload(schemas, "EditalPublicadoCertameDto", nulo: true);
+        ExigirUrlDownload(schemas, "DocumentoEditalCertameDto", nulo: true);
+        ExigirUrlDownload(schemas, "ModeloDocumentalCertameDto", nulo: true);
+    }
+
+    [Fact(DisplayName = "A consulta de um ato declara o 200 do ato e o 404 nomeado")]
+    public async Task ConsultaDeUmAto_DeclaraOkENaoEncontrado()
+    {
+        using JsonDocument spec = await LerSpecAsync();
+
+        JsonElement responses = spec.RootElement.GetProperty("paths")
+            .GetProperty("/api/selecao/processos-seletivos/{processoSeletivoId}/atos/{atoId}")
+            .GetProperty("get").GetProperty("responses");
+
+        responses.TryGetProperty("200", out _).Should().BeTrue();
+        responses.GetProperty("404").GetProperty("description").GetString()
+            .Should().Contain("uniplus.selecao.ato_do_processo.nao_encontrado");
+    }
+
+    private static void ExigirUrlDownload(JsonElement schemas, string schema, bool nulo)
+    {
+        JsonElement definicao = schemas.GetProperty(schema);
+        definicao.GetProperty("required").EnumerateArray().Select(static e => e.GetString())
+            .Should().Contain("urlDownload", $"{schema} sempre traz o campo");
+        JsonElement tipo = definicao.GetProperty("properties").GetProperty("urlDownload").GetProperty("type");
+        bool aceitaNulo = tipo.ValueKind == JsonValueKind.Array
+            && tipo.EnumerateArray().Any(static t => t.GetString() == "null");
+        aceitaNulo.Should().Be(nulo, $"{schema}.urlDownload {(nulo ? "pode" : "não pode")} ser nulo");
+    }
+
     private async Task<JsonDocument> LerSpecAsync()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
