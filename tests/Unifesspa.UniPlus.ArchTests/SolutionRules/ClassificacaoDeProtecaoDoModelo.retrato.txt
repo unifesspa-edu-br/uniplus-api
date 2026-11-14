@@ -1087,8 +1087,8 @@ publicacoes.ato_normativo.serie: Interno
 publicacoes.ato_normativo.tipo_codigo: Interno
 publicacoes.ato_normativo.tipo_nome: Interno
 publicacoes.ato_normativo.unico_por_objeto: Interno
-publicacoes.ato_normativo.versao_invocada_hash: Interno
-publicacoes.ato_normativo.versao_invocada_id: Interno
+publicacoes.ato_normativo.versao_do_objeto_hash: Interno
+publicacoes.ato_normativo.versao_do_objeto_id: Interno
 publicacoes.tipo_ato_publicado.base_legal: Interno
 publicacoes.tipo_ato_publicado.codigo: Interno
 publicacoes.tipo_ato_publicado.congela_configuracao: Interno

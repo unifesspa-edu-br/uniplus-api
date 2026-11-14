@@ -297,7 +297,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             "CEPS", "EDITAL", 2026, "99", Tipo,
             congelaConfiguracao: true, efeitoIrreversivel: false, unicoPorObjeto: true,
             dataDoAto: DataDoAto, documentoHash: HashValido, assinante: "Jairo Belchior",
-            publicadoEm: Agora, versaoInvocada: null,
+            publicadoEm: Agora, versaoDoObjeto: null,
             vinculos: [(Objeto, Processo)]);
 
     private static AtoNormativo AtoRetificado() =>
@@ -306,7 +306,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
             "CEPS", "EDITAL", 2026, "13", Tipo,
             congelaConfiguracao: true, efeitoIrreversivel: false, unicoPorObjeto: true,
             dataDoAto: DataDoAto, documentoHash: HashValido, assinante: "Jairo Belchior",
-            publicadoEm: Agora, versaoInvocada: null,
+            publicadoEm: Agora, versaoDoObjeto: null,
             vinculos: [(Objeto, Processo)]);
 
     private static RegistrarAtoNormativoCommand Comando(

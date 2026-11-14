@@ -67,15 +67,15 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
     }
 
     [Fact(DisplayName = "Par de versão incompleto (só id) é recusado")]
-    public async Task Handle_ComVersaoInvocadaIncompleta_Falha()
+    public async Task Handle_ComVersaoDoObjetoIncompleta_Falha()
     {
         VigenteComConsequencia(congela: false, efeito: false);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
-            Comando() with { VersaoInvocadaId = Guid.CreateVersion7(), VersaoInvocadaHash = null });
+            Comando() with { VersaoDoObjetoId = Guid.CreateVersion7(), VersaoDoObjetoHash = null });
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.VersaoInvocadaIncompleta);
+        resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.VersaoDoObjetoIncompleta);
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -384,7 +384,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
             documentoHash: HashValido,
             assinante: "Jairo Belchior",
             publicadoEm: Agora,
-            versaoInvocada: null);
+            versaoDoObjeto: null);
 
     private void SemConflitoDeNumero() =>
         _atos.ListarIdsComMesmaNumeracaoAsync(

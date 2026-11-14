@@ -45,20 +45,20 @@ public sealed class RegistrarAtoNormativoCommandValidator
             .MaximumLength(AtoNormativoRegras.AssinanteMaxLength).WithMessage(AtoNormativoRegras.AssinanteTamanho)
             .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.Assinante));
 
-        // O par {id, hash} é completo ou ausente: um lado só não identifica a versão invocada.
+        // O par {id, hash} é completo ou ausente: um lado só não identifica a versão do objeto.
         RuleFor(x => x)
-            .Must(x => x.VersaoInvocadaId.HasValue == (x.VersaoInvocadaHash is not null))
-            .WithMessage(AtoNormativoRegras.VersaoInvocadaIncompleta)
-            .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.VersaoInvocadaHash));
+            .Must(x => x.VersaoDoObjetoId.HasValue == (x.VersaoDoObjetoHash is not null))
+            .WithMessage(AtoNormativoRegras.VersaoDoObjetoIncompleta)
+            .OverridePropertyName(nameof(RegistrarAtoNormativoCommand.VersaoDoObjetoHash));
 
         // Id zerado não é referência: um Guid.Empty não aponta versão alguma.
-        RuleFor(x => x.VersaoInvocadaId)
-            .Must(id => id != Guid.Empty).WithMessage(AtoNormativoRegras.VersaoInvocadaIdObrigatorio)
-            .When(x => x.VersaoInvocadaId.HasValue);
+        RuleFor(x => x.VersaoDoObjetoId)
+            .Must(id => id != Guid.Empty).WithMessage(AtoNormativoRegras.VersaoDoObjetoIdObrigatorio)
+            .When(x => x.VersaoDoObjetoId.HasValue);
 
-        RuleFor(x => x.VersaoInvocadaHash)
-            .Matches(AtoNormativoRegras.HashPattern).WithMessage(AtoNormativoRegras.VersaoInvocadaHashFormato)
-            .When(x => x.VersaoInvocadaHash is not null);
+        RuleFor(x => x.VersaoDoObjetoHash)
+            .Matches(AtoNormativoRegras.HashPattern).WithMessage(AtoNormativoRegras.VersaoDoObjetoHashFormato)
+            .When(x => x.VersaoDoObjetoHash is not null);
 
         // A retificação é o par (ato retificado, motivo), completo ou ausente (ADR-0103).
         RuleFor(x => x)

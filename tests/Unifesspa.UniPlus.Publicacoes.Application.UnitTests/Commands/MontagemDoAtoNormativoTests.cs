@@ -102,7 +102,7 @@ public sealed class MontagemDoAtoNormativoTests
             Guid.CreateVersion7(),
             "CEPS", "EDITAL", 2026, "13", Tipo,
             congelaConfiguracao: false, efeitoIrreversivel: false, unicoPorObjeto,
-            DataDoAto, HashValido, "Jairo Belchior", PublicadoEm, versaoInvocada: null);
+            DataDoAto, HashValido, "Jairo Belchior", PublicadoEm, versaoDoObjeto: null);
 
     private static RegistrarAtoNormativoCommand Comando() =>
         new(

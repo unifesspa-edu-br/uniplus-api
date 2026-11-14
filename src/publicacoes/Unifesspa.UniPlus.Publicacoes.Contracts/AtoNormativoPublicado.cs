@@ -52,8 +52,8 @@ public sealed record AtoNormativoPublicado
     /// <summary>Quem assina o ato.</summary>
     public required string Assinante { get; init; }
 
-    /// <summary>A versão de configuração que o ato invoca; nula quando não invoca nenhuma.</summary>
-    public VersaoInvocadaDoAto? VersaoInvocada { get; init; }
+    /// <summary>A versão do objeto a que o ato se refere; nula quando o ato não se refere a nenhuma.</summary>
+    public VersaoDoObjetoDoAto? VersaoDoObjeto { get; init; }
 
     /// <summary>O ato que este corrige; nulo quando o ato não retifica nenhum.</summary>
     public RetificacaoDoAto? Retificacao { get; init; }
@@ -65,8 +65,8 @@ public sealed record AtoNormativoPublicado
     public IReadOnlyList<AnexoDoAtoPublicado> Anexos { get; init; } = [];
 }
 
-/// <summary>A versão de configuração que o ato invoca: o identificador e o hash dela, recebidos por valor.</summary>
-public sealed record VersaoInvocadaDoAto(Guid Id, string Hash);
+/// <summary>A versão do objeto a que o ato se refere: o identificador e o hash dela, recebidos por valor.</summary>
+public sealed record VersaoDoObjetoDoAto(Guid Id, string Hash);
 
 /// <summary>O ato que o novo ato retifica e o motivo da retificação (ADR-0103).</summary>
 public sealed record RetificacaoDoAto(Guid AtoRetificadoId, string Motivo);

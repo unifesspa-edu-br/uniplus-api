@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 
 /// <summary>
 /// Monta o <see cref="AtoNormativo"/> de um <see cref="RegistrarAtoNormativoCommand"/>: confere o
-/// que o registro exige, resolve o tipo e a versão de configuração, aplica a cadeia de
+/// que o registro exige, resolve o tipo e a versão do objeto, aplica a cadeia de
 /// retificação e reserva as vagas do objeto. Não grava o ato: quem chama o adiciona e salva.
 /// </summary>
 public sealed class MontagemDoAtoNormativo(
@@ -121,20 +121,20 @@ public sealed class MontagemDoAtoNormativo(
 
     /// <summary>
     /// O par {id, hash} é recebido por valor, completo ou ausente. Ausente devolve
-    /// <see langword="null"/>: o ato não invoca configuração.
+    /// <see langword="null"/>: o ato não se refere a versão de objeto.
     /// </summary>
-    private static Result<ReferenciaVersaoConfiguracao>? ResolverVersaoInvocada(RegistrarAtoNormativoCommand command)
+    private static Result<ReferenciaVersaoDoObjeto>? ResolverVersaoDoObjeto(RegistrarAtoNormativoCommand command)
     {
-        bool temId = command.VersaoInvocadaId.HasValue;
-        if (!temId && command.VersaoInvocadaHash is null)
+        bool temId = command.VersaoDoObjetoId.HasValue;
+        if (!temId && command.VersaoDoObjetoHash is null)
         {
             return null;
         }
 
-        return temId != (command.VersaoInvocadaHash is not null)
-            ? Result<ReferenciaVersaoConfiguracao>.Failure(new DomainError(
-                AtoNormativoErrorCodes.VersaoInvocadaIncompleta, AtoNormativoRegras.VersaoInvocadaIncompleta))
-            : CriarReferenciaDaVersao(command.VersaoInvocadaId!.Value, command.VersaoInvocadaHash!);
+        return temId != (command.VersaoDoObjetoHash is not null)
+            ? Result<ReferenciaVersaoDoObjeto>.Failure(new DomainError(
+                AtoNormativoErrorCodes.VersaoDoObjetoIncompleta, AtoNormativoRegras.VersaoDoObjetoIncompleta))
+            : CriarReferenciaDaVersao(command.VersaoDoObjetoId!.Value, command.VersaoDoObjetoHash!);
     }
 
     /// <summary>
@@ -142,12 +142,12 @@ public sealed class MontagemDoAtoNormativo(
     /// recusa é traduzida para um código mapeado em vez de vazar o erro do value object como
     /// "erro não mapeado".
     /// </summary>
-    private static Result<ReferenciaVersaoConfiguracao> CriarReferenciaDaVersao(Guid id, string hash)
+    private static Result<ReferenciaVersaoDoObjeto> CriarReferenciaDaVersao(Guid id, string hash)
     {
-        Result<ReferenciaVersaoConfiguracao> versao = ReferenciaVersaoConfiguracao.Criar(id, hash);
+        Result<ReferenciaVersaoDoObjeto> versao = ReferenciaVersaoDoObjeto.Criar(id, hash);
         return versao.IsFailure
-            ? Result<ReferenciaVersaoConfiguracao>.Failure(new DomainError(
-                AtoNormativoErrorCodes.VersaoInvocadaIncompleta, versao.Error!.Message))
+            ? Result<ReferenciaVersaoDoObjeto>.Failure(new DomainError(
+                AtoNormativoErrorCodes.VersaoDoObjetoIncompleta, versao.Error!.Message))
             : versao;
     }
 
@@ -168,7 +168,7 @@ public sealed class MontagemDoAtoNormativo(
     private async Task<Result<DadosConferidos>> ConferirVersaoAsync(
         RegistrarAtoNormativoCommand command, TipoResolvido tipo, CancellationToken cancellationToken)
     {
-        Result<ReferenciaVersaoConfiguracao>? versao = ResolverVersaoInvocada(command);
+        Result<ReferenciaVersaoDoObjeto>? versao = ResolverVersaoDoObjeto(command);
         return versao is { IsFailure: true }
             ? Result<DadosConferidos>.Failure(versao.Error!)
             : await ConferirCadeiaAsync(command, tipo, versao?.Value, cancellationToken).ConfigureAwait(false);
@@ -183,7 +183,7 @@ public sealed class MontagemDoAtoNormativo(
     private async Task<Result<DadosConferidos>> ConferirCadeiaAsync(
         RegistrarAtoNormativoCommand command,
         TipoResolvido tipo,
-        ReferenciaVersaoConfiguracao? versao,
+        ReferenciaVersaoDoObjeto? versao,
         CancellationToken cancellationToken)
     {
         DomainError? retificacao = await cadeia
@@ -230,7 +230,7 @@ public sealed class MontagemDoAtoNormativo(
 
     private sealed record DadosConferidos(
         TipoResolvido Tipo,
-        ReferenciaVersaoConfiguracao? Versao,
+        ReferenciaVersaoDoObjeto? Versao,
         LinhagemDoAto Linhagem);
 }
 

@@ -8,7 +8,7 @@ using System.Text.RegularExpressions;
 /// canônico vive em <c>Selecao.Domain</c> e o isolamento de módulo (R8/ADR-0056)
 /// proíbe Publicações de referenciá-lo. Aqui só se valida o <b>formato</b>: o
 /// hash em si é prova recebida pronta (o hash do PDF publicado, ou o hash da
-/// versão de configuração que governou o ato), nunca recomputado por este módulo.
+/// versão do objeto a que o ato se refere), nunca recomputado por este módulo.
 /// </summary>
 public static partial class HashSha256
 {

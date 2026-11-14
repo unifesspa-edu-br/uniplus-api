@@ -7,8 +7,8 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 /// Ato publicado — o registro central e append-only de que algo foi publicado
 /// (ADR-0105). Guarda a essência documental do ato (órgão, série, ano, número,
 /// tipo, data do ato, hash do documento, assinante) e, por valor, os
-/// atributos de consequência do catálogo e a versão de configuração que o
-/// governou. É a <b>prova</b> do publicado: o passado documental não se muta.
+/// atributos de consequência do catálogo e a versão do objeto a que o ato
+/// se refere. É a <b>prova</b> do publicado: o passado documental não se muta.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -122,10 +122,10 @@ public sealed class AtoNormativo : IForensicEntity
     public DateTimeOffset PublicadoEm { get; private init; }
 
     /// <summary>
-    /// Versão de configuração que governou o ato, por valor <c>{id, hash}</c>
-    /// (ADR-0075). Nula quando o ato não invoca configuração (ato autônomo).
+    /// Versão do objeto a que o ato se refere, por valor <c>{id, hash}</c>
+    /// (ADR-0075). Nula quando o ato não se refere a versão de objeto algum (ato autônomo).
     /// </summary>
-    public ReferenciaVersaoConfiguracao? VersaoInvocada { get; private init; }
+    public ReferenciaVersaoDoObjeto? VersaoDoObjeto { get; private init; }
 
     /// <summary>
     /// Ato que este retifica, quando é uma retificação (ADR-0103). Nulo num ato que
@@ -197,7 +197,7 @@ public sealed class AtoNormativo : IForensicEntity
         string documentoHash,
         string assinante,
         DateTimeOffset publicadoEm,
-        ReferenciaVersaoConfiguracao? versaoInvocada,
+        ReferenciaVersaoDoObjeto? versaoDoObjeto,
         Guid? atoRetificadoId = null,
         string? motivoRetificacao = null,
         IEnumerable<(string EntidadeTipo, Guid EntidadeId)>? vinculos = null,
@@ -260,7 +260,7 @@ public sealed class AtoNormativo : IForensicEntity
             DocumentoHash = documentoHash,
             Assinante = assinanteNorm,
             PublicadoEm = publicadoEm,
-            VersaoInvocada = versaoInvocada,
+            VersaoDoObjeto = versaoDoObjeto,
             AtoRetificadoId = atoRetificadoId,
             MotivoRetificacao = motivoNorm,
         };

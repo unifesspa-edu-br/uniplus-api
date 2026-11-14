@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
 /// <summary>
-/// Referência, <b>por valor</b>, à versão de configuração que governou um ato
+/// Referência, <b>por valor</b>, à versão do objeto a que um ato se refere
 /// no instante em que foi publicado — o par <c>{id, hash}</c> (ADR-0075). O
 /// <c>id</c> aponta a versão no módulo que a produziu (Seleção); o <c>hash</c>
 /// prova que a definição aplicada não mudou depois. Não há chave estrangeira
@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 /// <para>
 /// O par é <b>completo ou ausente</b>: um identificador sem hash não prova nada,
 /// então a factory recusa qualquer uma das metades isolada. Um ato pode não ter
-/// versão invocada (ato autônomo, sem vínculo com configuração) — nesse caso a
+/// versão do objeto (ato autônomo, sem objeto versionado) — nesse caso a
 /// referência simplesmente não existe (a propriedade fica nula no agregado).
 /// </para>
 /// <para>
@@ -24,9 +24,9 @@ using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 /// no módulo de origem — Publicações a recebe já resolvida, por valor.
 /// </para>
 /// </remarks>
-public sealed record ReferenciaVersaoConfiguracao
+public sealed record ReferenciaVersaoDoObjeto
 {
-    private ReferenciaVersaoConfiguracao(Guid id, string hash)
+    private ReferenciaVersaoDoObjeto(Guid id, string hash)
     {
         Id = id;
         Hash = hash;
@@ -40,23 +40,23 @@ public sealed record ReferenciaVersaoConfiguracao
     /// <see cref="Guid.Empty"/> e que <paramref name="hash"/> tem o formato de um
     /// SHA-256 hex minúsculo (64 caracteres).
     /// </summary>
-    public static Result<ReferenciaVersaoConfiguracao> Criar(Guid id, string hash)
+    public static Result<ReferenciaVersaoDoObjeto> Criar(Guid id, string hash)
     {
         if (id == Guid.Empty)
         {
-            return Result<ReferenciaVersaoConfiguracao>.Failure(new DomainError(
-                ReferenciaVersaoConfiguracaoErrorCodes.IdObrigatorio,
-                "Identificador da versão de configuração é obrigatório."));
+            return Result<ReferenciaVersaoDoObjeto>.Failure(new DomainError(
+                ReferenciaVersaoDoObjetoErrorCodes.IdObrigatorio,
+                "Identificador da versão do objeto é obrigatório."));
         }
 
         if (!HashSha256.TemFormatoValido(hash))
         {
-            return Result<ReferenciaVersaoConfiguracao>.Failure(new DomainError(
-                ReferenciaVersaoConfiguracaoErrorCodes.HashInvalido,
-                "Hash da versão de configuração deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres)."));
+            return Result<ReferenciaVersaoDoObjeto>.Failure(new DomainError(
+                ReferenciaVersaoDoObjetoErrorCodes.HashInvalido,
+                "Hash da versão do objeto deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres)."));
         }
 
-        return Result<ReferenciaVersaoConfiguracao>.Success(
-            new ReferenciaVersaoConfiguracao(id, hash));
+        return Result<ReferenciaVersaoDoObjeto>.Success(
+            new ReferenciaVersaoDoObjeto(id, hash));
     }
 }

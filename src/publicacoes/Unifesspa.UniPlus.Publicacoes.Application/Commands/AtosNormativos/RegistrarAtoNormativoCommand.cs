@@ -14,9 +14,9 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// do catálogo.
 /// </summary>
 /// <remarks>
-/// <para>O par <see cref="VersaoInvocadaId"/>/<see cref="VersaoInvocadaHash"/> é
+/// <para>O par <see cref="VersaoDoObjetoId"/>/<see cref="VersaoDoObjetoHash"/> é
 /// recebido por valor, completo ou ausente: Publicações não resolve a
-/// versão de configuração — ela vive noutro módulo e chega já resolvida.</para>
+/// versão do objeto — ela vive no módulo dono do objeto e chega já resolvida.</para>
 /// <para>O par <see cref="AtoRetificadoId"/>/<see cref="MotivoRetificacao"/> torna
 /// o registro uma retificação (ADR-0103), quando presente — simétrico (um existe
 /// se e somente se o outro existe). É o mesmo comando de publicar: retificar é
@@ -57,8 +57,8 @@ public sealed record RegistrarAtoNormativoCommand(
     DateOnly DataDoAto,
     string DocumentoHash,
     string Assinante,
-    Guid? VersaoInvocadaId = null,
-    string? VersaoInvocadaHash = null,
+    Guid? VersaoDoObjetoId = null,
+    string? VersaoDoObjetoHash = null,
     Guid? AtoRetificadoId = null,
     string? MotivoRetificacao = null,
     IReadOnlyList<VinculoEntidadeInput>? Vinculos = null,
