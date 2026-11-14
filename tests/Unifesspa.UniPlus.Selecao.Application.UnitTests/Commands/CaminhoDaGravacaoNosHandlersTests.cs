@@ -7,6 +7,7 @@ using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
@@ -39,7 +40,7 @@ public sealed class CaminhoDaGravacaoNosHandlersTests
         });
     }
 
-    [Theory(DisplayName = "No sucesso a resposta traz o registro do ato da versão gravada, e só ele nos eventos do ato")]
+    [Theory(DisplayName = "No sucesso a resposta traz o registro do ato da versão gravada e a cópia dos documentos do mesmo ato, e só eles nos eventos do ato")]
     [MemberData(nameof(Atos))]
     public async Task Sucesso_RespondeComORegistroDoAtoDaVersaoGravada(OperacaoQueCongela operacao)
     {
@@ -52,8 +53,8 @@ public sealed class CaminhoDaGravacaoNosHandlersTests
 
         RegistrarAtoNormativoRequisicao requisicao = eventos.Should().ContainSingle(static e => e is RegistrarAtoNormativoRequisicao)
             .Which.Should().BeOfType<RegistrarAtoNormativoRequisicao>().Subject;
-        eventos.Last().Should().BeSameAs(requisicao);
-        requisicao.AtoId.Should().Be(gravada!.AtoCriadorId);
+        eventos.Last().Should().Be(new CopiarDocumentosDoAtoAoAcervo(cenario.Processo.Id, gravada!.AtoCriadorId));
+        requisicao.AtoId.Should().Be(gravada.AtoCriadorId);
         (requisicao.AtoRetificadoId is null).Should().Be(operacao == OperacaoQueCongela.Publicar);
     }
 

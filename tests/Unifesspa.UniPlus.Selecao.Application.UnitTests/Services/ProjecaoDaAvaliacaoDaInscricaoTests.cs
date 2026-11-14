@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -73,7 +74,7 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
             [(Documento(FaseDaInscricao, FinalidadeFormulario.Inscricao, modelo), SituacaoDoDocumento.Pendente)], faseId: null)
             .Value!.Documentos.Fases[0].Documentos.Single();
 
-        documento.Modelo!.UrlDownload.ToString().Should().Contain($"/atos/{AtoId:D}/");
+        documento.Modelo!.UrlDownload!.ToString().Should().Contain($"/atos/{AtoId:D}/");
         documento.Modelo.NomeArquivo.Should().Be("Autodeclaração.odt");
     }
 
@@ -143,10 +144,10 @@ public sealed class ProjecaoDaAvaliacaoDaInscricaoTests
             [], null, new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal),
             new RespostasAdmitidas(new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), new HashSet<string>(StringComparer.Ordinal), new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal), new HashSet<Guid>(), new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal)),
             configuracao, AtoId, configuracao, null, []);
-        IEnderecoNoAcervoPublico acervo = Substitute.For<IEnderecoNoAcervoPublico>();
-        acervo.De(Arg.Any<string>()).Returns(static chamada => new Uri($"https://acervo.teste/{chamada.Arg<string>()}"));
+        DocumentosDoAtoNoAcervo acervo = new(
+            ProcessoId, AtoId, static chave => new Uri($"https://acervo.teste/{chave}"), Copiados: true);
 
-        return ProjecaoDaAvaliacaoDaInscricao.Projetar(resultado, contexto, ProcessoId, acervo, arquivos ?? [], faseId);
+        return ProjecaoDaAvaliacaoDaInscricao.Projetar(resultado, contexto, acervo, arquivos ?? [], faseId);
     }
 
     private static DocumentoExigido Documento(FaseCronograma fase, FinalidadeFormulario finalidade, ModeloDaExigencia? modelo = null) =>

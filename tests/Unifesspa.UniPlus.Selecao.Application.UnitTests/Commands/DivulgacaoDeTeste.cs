@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -40,6 +41,10 @@ internal static class DivulgacaoDeTeste
         repositorio.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>()).Returns(divulgado);
         return repositorio;
     }
+
+    /// <summary>Os endereços do acervo de teste: o certame não está divulgado, então nenhum endereço é exposto.</summary>
+    public static EnderecosDosDocumentosDoAto Enderecos() =>
+        new(Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IEnderecoNoAcervoPublico>());
 
     /// <summary>O ETag que o candidato tem depois de o rascunho adotar a versão divulgada: a adoção sobe a revisão uma vez.</summary>
     public static string ETagDepoisDeAdotar(Inscricao rascunho, VersaoConfiguracao divulgada) =>

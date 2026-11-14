@@ -31,7 +31,6 @@ public static class ObterFormularioDaInscricaoQueryHandler
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegistroCodecsEnvelope registroCodecs,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
         IUserContext userContext,
         CancellationToken cancellationToken)
     {
@@ -39,7 +38,6 @@ public static class ObterFormularioDaInscricaoQueryHandler
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(enderecoNoAcervo);
         ArgumentNullException.ThrowIfNull(userContext);
 
         if (userContext.Cpf is not { } cpfDoToken)
@@ -78,7 +76,6 @@ public static class ObterFormularioDaInscricaoQueryHandler
         }
 
         return ProjecaoDoFormularioDaVersao.Projetar(
-            resolvida.Value!, FinalidadeFormulario.Inscricao, resolvida.Value!.AtoCriadorId, registroCodecs, enderecoNoAcervo,
-            comComprovacaoDocumental: false);
+            resolvida.Value!, FinalidadeFormulario.Inscricao, registroCodecs, acervoDaComprovacao: null);
     }
 }

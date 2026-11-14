@@ -151,7 +151,7 @@ public sealed class BuscaEOrdenacaoDaVitrineTests : IClassFixture<ProcessoSeleti
         await using (UniPlusDbContext mutacao = _fixture.CreateDbContext())
         {
             CertameDivulgado divulgado = await mutacao.CertamesDivulgados.FirstAsync(CancellationToken.None);
-            divulgado.TentarAvancar(
+            divulgado.Avancar(
                 divulgado.NumeroVersao + 1,
                 Guid.CreateVersion7(),
                 new string('b', 64),

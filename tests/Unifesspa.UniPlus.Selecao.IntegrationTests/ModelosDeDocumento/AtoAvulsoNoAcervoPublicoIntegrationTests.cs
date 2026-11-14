@@ -4,7 +4,6 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
-using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -41,26 +40,20 @@ public sealed class AtoAvulsoNoAcervoPublicoIntegrationTests
     {
         AtoAvulsoComPrincipalEAnexo avulso = await SemearAtoComPrincipalEAnexoAsync();
 
-        await _acervo.DivulgarAtoAsync(avulso.Ato);
+        await _acervo.CopiarAtoAvulsoAsync(avulso.Ato);
 
         await ConferirCopiasNoAcervoAsync(avulso);
         await ConferirRegistroNaDivulgacaoAsync(avulso);
     }
 
-    [Fact(DisplayName = "Ato que não cria versão, registrado antes da divulgação do certame, espera sem copiar nada ao acervo")]
-    public async Task AtoQueNaoCriaVersao_AntesDaDivulgacaoDoCertame_EsperaSemCopiar()
+    [Fact(DisplayName = "Ato que não cria versão entra na divulgação do certame sem endereço, e nada é copiado ao acervo antes da cópia")]
+    public async Task AtoQueNaoCriaVersao_AntesDaCopia_EntraSemEndereco()
     {
-        (ProcessoSeletivo processo, _) = await _semeador.ProcessoComModeloAsync();
-        DocumentoAPublicar principal = await _semeador.DocumentoDoAtoAsync(
-            processo.Id, "aviso.pdf", TiposDeMidiaDeDocumento.Pdf, SemeadorDoAcervoPublico.ArquivoDeEdital("aviso"));
-        Guid ato = Guid.CreateVersion7();
-        await _semeador.AtoDoProcessoAsync(processo.Id, IdentificadoresDeTeste.NovoValor(), ato, principal);
+        AtoAvulsoComPrincipalEAnexo avulso = await SemearAtoComPrincipalEAnexoAsync();
 
-        Func<Task> divulgar = () => _acervo.DivulgarAtoAsync(ato);
-
-        await divulgar.Should().ThrowAsync<CertameAindaNaoDivulgadoException>(
-            "é a corrida com a divulgação do edital, que a política de reentrega espera");
-        (await _acervo.ObjetosDoProcessoNoAcervoAsync(processo.Id)).Should().BeEmpty();
+        EditalDivulgado pendente = (await _acervo.EditaisDivulgadosAsync(avulso.ProcessoId)).Single(e => e.AtoId == avulso.Ato);
+        pendente.UrlDownload.Should().BeNull("o ato foi publicado, mas a cópia dos documentos ao acervo ainda não aconteceu");
+        (await _acervo.ObjetosNoAcervoAsync(avulso.ChaveDoPrincipal)).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "Reentrega do ato que não cria versão não duplica o registro na divulgação")]
@@ -72,8 +65,8 @@ public sealed class AtoAvulsoNoAcervoPublicoIntegrationTests
         Guid ato = Guid.CreateVersion7();
         await _semeador.AtoDoProcessoAsync(processo.Id, identificador, ato, principal);
 
-        await _acervo.DivulgarAtoAsync(ato);
-        await _acervo.DivulgarAtoAsync(ato);
+        await _acervo.CopiarAtoAvulsoAsync(ato);
+        await _acervo.CopiarAtoAvulsoAsync(ato);
 
         (await _acervo.EditaisDivulgadosAsync(processo.Id)).Count(e => e.AtoId == ato).Should().Be(1);
     }
@@ -83,7 +76,7 @@ public sealed class AtoAvulsoNoAcervoPublicoIntegrationTests
     {
         (ProcessoSeletivo processo, _) = await _semeador.CertameDivulgadoAsync();
 
-        await _acervo.DivulgarAtoAsync(Guid.CreateVersion7());
+        await _acervo.CopiarAtoAvulsoAsync(Guid.CreateVersion7());
 
         (await _acervo.EditaisDivulgadosAsync(processo.Id)).Should().ContainSingle("só o edital que a divulgação já tinha");
     }

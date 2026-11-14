@@ -11,6 +11,7 @@ using Serilog;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 using Unifesspa.UniPlus.Selecao.Application.Commands.DocumentosDaInscricao;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Verificador.Contratos;
 
@@ -91,7 +92,8 @@ public static partial class SelecaoMessagingRegistration
         ArgumentNullException.ThrowIfNull(configuration);
 
         ConfigurarFilaDosEventosDoProcesso(opts);
-        ConfigurarFilaDaDivulgacaoDoCertame(opts);
+        ConfigurarFilaDaCopiaAoAcervo(opts);
+        ConfigurarFilaDaConfirmacaoDoRegistroDoAto(opts);
         ConfigurarVerificacaoDosArquivos(opts, configuration);
         ConfigurarPublicacaoAvroNoKafka(opts, configuration, srClient);
     }
@@ -103,17 +105,27 @@ public static partial class SelecaoMessagingRegistration
     }
 
     /// <summary>
-    /// O desfecho do registro do ato, vindo de Publicações, é o que materializa a divulgação pública do certame. Fila
-    /// PostgreSQL, e não local: a local é em memória, e um encerramento entre o commit do ato e a projeção deixaria um
-    /// certame registrado que nunca aparece. Sem regra de falha, a primeira exceção do consumo manda o envelope para a
-    /// fila morta e o certame fica invisível com o ato já registrado (ver <c>ReentregaDaDivulgacaoDoCertame</c>).
+    /// A cópia dos documentos de um ato ao acervo público é o efeito posterior da publicação: sai pelo outbox, na
+    /// transação que gravou a versão, o ato e a divulgação. Fila PostgreSQL, e não local: a local é em memória, e um
+    /// encerramento entre o commit e a cópia deixaria o documento sem endereço para sempre. Sem regra de falha, a
+    /// primeira exceção do consumo manda o envelope para a fila morta (ver <c>ReentregaDaCopiaAoAcervo</c>).
     /// </summary>
-    private static void ConfigurarFilaDaDivulgacaoDoCertame(WolverineOptions opts)
+    private static void ConfigurarFilaDaCopiaAoAcervo(WolverineOptions opts)
+    {
+        opts.PublishMessage<CopiarDocumentosDoAtoAoAcervo>().ToPostgresqlQueue("selecao-copia-ao-acervo");
+        opts.ListenToPostgresqlQueue("selecao-copia-ao-acervo");
+        opts.Policies.Add<ReentregaDaCopiaAoAcervo>();
+    }
+
+    /// <summary>
+    /// O desfecho do registro do ato, vindo de Publicações, confirma o registro do ato do processo. Fila PostgreSQL,
+    /// pelo mesmo motivo da cópia ao acervo: a confirmação não pode se perder num encerramento.
+    /// </summary>
+    private static void ConfigurarFilaDaConfirmacaoDoRegistroDoAto(WolverineOptions opts)
     {
         opts.PublishMessage<Unifesspa.UniPlus.Publicacoes.Contracts.AtoNormativoRegistrado>()
-            .ToPostgresqlQueue("selecao-divulgacao-certame");
-        opts.ListenToPostgresqlQueue("selecao-divulgacao-certame");
-        opts.Policies.Add<ReentregaDaDivulgacaoDoCertame>();
+            .ToPostgresqlQueue("selecao-confirmacao-do-ato");
+        opts.ListenToPostgresqlQueue("selecao-confirmacao-do-ato");
     }
 
     /// <summary>

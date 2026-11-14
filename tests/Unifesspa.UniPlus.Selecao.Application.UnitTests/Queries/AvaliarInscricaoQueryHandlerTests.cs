@@ -81,7 +81,7 @@ public sealed class AvaliarInscricaoQueryHandlerTests
         Result<AvaliacaoDaInscricaoDto> resultado = await AvaliarInscricaoQueryHandler.Handle(
             new AvaliarInscricaoQuery(ProcessoId, corpo),
             inscricaoRepository, processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(),
-            Substitute.For<IConferenciaEnderecoGeo>(), Substitute.For<IEnderecoNoAcervoPublico>(), usuario, DivulgacaoDeTeste.Relogio,
+            Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), usuario, DivulgacaoDeTeste.Relogio,
             CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);

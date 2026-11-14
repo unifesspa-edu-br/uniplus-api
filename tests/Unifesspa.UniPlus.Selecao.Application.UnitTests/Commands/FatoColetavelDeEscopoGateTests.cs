@@ -97,7 +97,7 @@ public sealed class FatoColetavelDeEscopoGateTests
     {
         ISnapshotPublicacaoCanonicalizer canonicalizer = Substitute.For<ISnapshotPublicacaoCanonicalizer>();
         canonicalizer.Canonicalizar(Arg.Any<EntradaCanonicalizacao>())
-            .Returns(new SnapshotCanonico("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1"));
+            .Returns(new SnapshotCanonico(EnvelopeProjetavelDeTeste.Bytes, "1.1", "canonical-json/sha256@v1"));
         return canonicalizer;
     }
 

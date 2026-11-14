@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 
 /// <summary>
 /// Monta as mensagens que saem de uma publicação ou retificação: os domain events do
-/// agregado e a requisição de registro do ato em <c>Publicacoes</c> (ADR-0108).
+/// agregado, a requisição de registro do ato em <c>Publicacoes</c> (ADR-0108) e a cópia dos documentos do ato ao
+/// acervo público, efeito posterior da divulgação (ADR-0132).
 /// </summary>
 /// <remarks>
 /// Publicar e retificar produzem a MESMA orquestração — o que muda é só o par
@@ -63,6 +64,7 @@ internal static class MensagensDaPublicacao
                 MotivoRetificacao: motivoRetificacao,
                 Vinculos: [RequisicaoDeRegistroDoAto.VinculoDoProcesso(processo.Id)],
                 AtributosDoTipo: RequisicaoDeRegistroDoAto.AtributosDoTipo(tipoConferido)),
+            new CopiarDocumentosDoAtoAoAcervo(processo.Id, versao.AtoCriadorId),
         ];
     }
 }

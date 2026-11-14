@@ -38,7 +38,7 @@ public sealed record AvaliacaoDaInscricaoDto(
     public static AvaliacaoDaInscricaoDto De(
         ResultadoDaAvaliacaoDaInscricao resultado,
         IEnumerable<FaseCronograma> fases,
-        Func<ModeloDaExigencia, Uri> enderecoDoModelo,
+        Func<ModeloDaExigencia, Uri?> enderecoDoModelo,
         IReadOnlyList<ArquivoDaApresentacaoDto> arquivos)
     {
         ArgumentNullException.ThrowIfNull(resultado);
@@ -71,7 +71,7 @@ public sealed record AvaliacaoDaInscricaoDto(
     private static PendenciaDaAvaliacaoDto Pendencia(PendenciaDaAvaliacao pendencia) =>
         new(pendencia.FatoCodigo, pendencia.Rotulo, pendencia.SecaoCodigo);
 
-    private static DocumentoDaInscricaoDto Documento(DocumentoAvaliado avaliado, Func<ModeloDaExigencia, Uri> enderecoDoModelo, IReadOnlyList<ArquivoDaApresentacaoDto> arquivos)
+    private static DocumentoDaInscricaoDto Documento(DocumentoAvaliado avaliado, Func<ModeloDaExigencia, Uri?> enderecoDoModelo, IReadOnlyList<ArquivoDaApresentacaoDto> arquivos)
     {
         DocumentoExigido documento = avaliado.Documento;
         return new DocumentoDaInscricaoDto(

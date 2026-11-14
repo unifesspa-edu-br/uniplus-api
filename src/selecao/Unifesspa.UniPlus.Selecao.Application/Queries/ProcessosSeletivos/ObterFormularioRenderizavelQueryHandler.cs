@@ -48,14 +48,14 @@ public static class ObterFormularioRenderizavelQueryHandler
         IProcessoSeletivoRepository processoSeletivoRepository,
         ICertameDivulgadoRepository certameDivulgadoRepository,
         IRegistroCodecsEnvelope registroCodecs,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
+        EnderecosDosDocumentosDoAto enderecos,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
         ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(enderecoNoAcervo);
+        ArgumentNullException.ThrowIfNull(enderecos);
 
         Result<Services.VersaoDivulgada> divulgada = await Services.VersaoDivulgadaResolver
             .ResolverAsync(query.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, cancellationToken)
@@ -65,9 +65,11 @@ public static class ObterFormularioRenderizavelQueryHandler
             return Result<FormularioRenderizavelDto>.Failure(divulgada.Error!);
         }
 
-
+        DocumentosDoAtoNoAcervo acervo = await enderecos
+            .DoAtoAsync(query.ProcessoSeletivoId, divulgada.Value!.AtoDaDivulgacao, cancellationToken)
+            .ConfigureAwait(false);
         Result<FormularioRenderizavelDto> projetado = ProjecaoDoFormularioDaVersao.Projetar(
-            divulgada.Value!.Versao, query.Finalidade, divulgada.Value!.AtoDaDivulgacao, registroCodecs, enderecoNoAcervo);
+            divulgada.Value!.Versao, query.Finalidade, registroCodecs, acervo);
 
         // A projeção compartilhada nomeia a ausência de formulário da finalidade; a leitura
         // pública a colapsa no mesmo não encontrado dos demais casos sem linha (ver remarks).

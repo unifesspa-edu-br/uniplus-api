@@ -15809,7 +15809,10 @@
             "type": "string"
           },
           "urlDownload": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uri"
           }
         }
@@ -16034,7 +16037,10 @@
             "format": "uuid"
           },
           "urlDownload": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uri"
           },
           "documentos": {
@@ -19617,7 +19623,10 @@
             "type": "string"
           },
           "urlDownload": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "uri"
           }
         }

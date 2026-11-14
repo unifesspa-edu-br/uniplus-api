@@ -12,6 +12,8 @@ using DTOs;
 using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
+using Queries.ProcessosSeletivos;
+
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
@@ -36,7 +38,7 @@ public static class AvaliarInscricaoQueryHandler
         IRegistroCodecsEnvelope registroCodecs,
         IResolvedorFusoInstitucional resolvedorFuso,
         IConferenciaEnderecoGeo conferenciaEnderecoGeo,
-        IEnderecoNoAcervoPublico enderecoNoAcervo,
+        EnderecosDosDocumentosDoAto enderecos,
         IUserContext userContext,
         TimeProvider timeProvider,
         CancellationToken cancellationToken)
@@ -46,7 +48,7 @@ public static class AvaliarInscricaoQueryHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
         ArgumentNullException.ThrowIfNull(resolvedorFuso);
-        ArgumentNullException.ThrowIfNull(enderecoNoAcervo);
+        ArgumentNullException.ThrowIfNull(enderecos);
 
         if (userContext.Cpf is not { } cpfDoToken || Cpf.Criar(cpfDoToken) is not { IsSuccess: true } cpf)
         {
@@ -126,7 +128,9 @@ public static class AvaliarInscricaoQueryHandler
             return Result<AvaliacaoDaInscricaoDto>.Failure(avaliacao.Error!);
         }
 
-        return ProjecaoDaAvaliacaoDaInscricao.Projetar(avaliacao.Value!, contexto.Value!, query.ProcessoSeletivoId, enderecoNoAcervo,
-            arquivos.ParaOCandidato(), query.FaseId);
+        DocumentosDoAtoNoAcervo acervo = await enderecos
+            .DoAtoAsync(query.ProcessoSeletivoId, contexto.Value!.AtoCriadorId, cancellationToken)
+            .ConfigureAwait(false);
+        return ProjecaoDaAvaliacaoDaInscricao.Projetar(avaliacao.Value!, contexto.Value!, acervo, arquivos.ParaOCandidato(), query.FaseId);
     }
 }

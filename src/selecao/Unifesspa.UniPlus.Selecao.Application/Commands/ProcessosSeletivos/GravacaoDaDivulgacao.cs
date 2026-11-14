@@ -1,75 +1,41 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using System.Text.Json;
+using System.Text.Json.Nodes;
+
+using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
-using Domain.ValueObjects;
 
 using DTOs;
 
 using Queries.ProcessosSeletivos;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Grava a divulgação do certame: cria a linha na primeira versão divulgada, avança nas seguintes e
-/// salva, classificando a violação do identificador legível único.
+/// Monta no rastreador a divulgação do certame que a publicação cria: a linha na primeira versão, o avanço nas
+/// seguintes e a entrada do ato, ainda sem endereço. Quem grava é o comando que publica, na mesma gravação da versão e
+/// do ato.
 /// </summary>
-internal sealed class GravacaoDaDivulgacao
+public sealed class GravacaoDaDivulgacao(ICertameDivulgadoRepository certames, IEnderecoNoAcervoPublico endereco)
 {
-    public GravacaoDaDivulgacao(ICertameDivulgadoRepository certames, IUnitOfWork unitOfWork, TimeProvider relogio)
-    {
-        Certames = certames;
-        UnitOfWork = unitOfWork;
-        Relogio = relogio;
-    }
-
-    private ICertameDivulgadoRepository Certames { get; }
-
-    private IUnitOfWork UnitOfWork { get; }
-
-    private TimeProvider Relogio { get; }
-
     /// <summary>
-    /// Confere, sem rastrear a linha, que o processo já tem divulgação para receber os documentos do ato:
-    /// a linha para mutação só é lida depois, para não segurar a versão dela durante cópias demoradas.
+    /// A divulgação vale o instante da versão (<see cref="VersaoConfiguracao.VigenteAPartirDe"/>), o mesmo do ato. A
+    /// projeção que não se deixa ler recusa a publicação com <see cref="ProjecaoDoCertamePublicado.CodigoEnvelopeInesperado"/>.
     /// </summary>
-    internal async Task ExigirDivulgacaoAsync(AtoDoProcesso ato, CancellationToken cancellationToken)
+    internal async Task<Result> MontarDaVersaoAsync(
+        ProcessoSeletivo processo, VersaoConfiguracao versao, AtoDoProcesso ato, CancellationToken cancellationToken)
     {
-        if (await Certames.ObterParaLeituraAsync(ato.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false) is null)
+        Result<CertamePublicadoDto> projecao = Projetar(processo, versao, ato);
+        if (projecao.IsFailure)
         {
-            throw new CertameAindaNaoDivulgadoException(
-                $"O processo {ato.ProcessoSeletivoId} ainda não tem divulgação para receber os documentos do ato {ato.Id}.");
+            return Result.Failure(projecao.Error!);
         }
-    }
 
-    /// <summary>
-    /// Registra na divulgação do processo o edital do ato que não cria versão. Registrado só depois da
-    /// cópia: o endereço divulgado nunca aponta para arquivo ausente.
-    /// </summary>
-    internal async Task RegistrarEditalDoAtoAsync(AtoDoProcesso ato, EditalDivulgado edital, CancellationToken cancellationToken)
-    {
-        CertameDivulgado divulgado = await Certames
-            .ObterParaMutacaoAsync(ato.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false)
-            ?? throw new CertameAindaNaoDivulgadoException(
-                $"O processo {ato.ProcessoSeletivoId} perdeu a divulgação durante a cópia dos documentos do ato {ato.Id}.");
-
-        if (divulgado.RegistrarEdital(edital))
-        {
-            await UnitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-    }
-
-    internal async Task RegistrarAsync(
-        VersaoConfiguracao versao,
-        CertamePublicadoDto certame,
-        EditalDivulgado edital,
-        CancellationToken cancellationToken)
-    {
+        CertamePublicadoDto certame = projecao.Value!;
         string documento = JsonSerializer.Serialize(certame, ProjecaoDoCertamePublicado.OpcoesDoDocumento);
-        DateTimeOffset agora = Relogio.GetUtcNow();
 
         // Da MESMA projeção que produziu o documento: é o que impede consulta e resposta divergirem.
         FacetasDoCertameDivulgado facetas = new(
@@ -80,90 +46,28 @@ internal sealed class GravacaoDaDivulgacao
             certame.Periodo.Inicio,
             certame.Periodo.Fim);
 
-        CertameDivulgado? divulgado = await Certames
-            .ObterParaMutacaoAsync(versao.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-
-        bool alterou = divulgado is null
-            ? await AdicionarAsync(versao, edital, facetas, documento, agora, cancellationToken).ConfigureAwait(false)
-            : Atualizar(divulgado, versao, edital, facetas, documento, agora);
-
-        if (alterou)
+        CertameDivulgado? divulgado = await certames.ObterParaMutacaoAsync(processo.Id, cancellationToken).ConfigureAwait(false);
+        if (divulgado is null)
         {
-            await SalvarAsync(versao, certame, cancellationToken).ConfigureAwait(false);
+            divulgado = CertameDivulgado.Criar(
+                processo.Id, versao.NumeroVersao, versao.AtoCriadorId, versao.HashConfiguracao,
+                ProjecaoDoCertamePublicado.Versao, facetas, documento, versao.VigenteAPartirDe);
+            await certames.AdicionarAsync(divulgado, cancellationToken).ConfigureAwait(false);
         }
-    }
-
-    private async Task<bool> AdicionarAsync(
-        VersaoConfiguracao versao,
-        EditalDivulgado edital,
-        FacetasDoCertameDivulgado facetas,
-        string documento,
-        DateTimeOffset agora,
-        CancellationToken cancellationToken)
-    {
-        CertameDivulgado nova = CertameDivulgado.Criar(
-            versao.ProcessoSeletivoId,
-            versao.NumeroVersao,
-            versao.AtoCriadorId,
-            versao.HashConfiguracao,
-            ProjecaoDoCertamePublicado.Versao,
-            facetas,
-            documento,
-            agora);
-        nova.RegistrarEdital(edital);
-
-        await Certames.AdicionarAsync(nova, cancellationToken).ConfigureAwait(false);
-        return true;
-    }
-
-    private static bool Atualizar(
-        CertameDivulgado divulgado,
-        VersaoConfiguracao versao,
-        EditalDivulgado edital,
-        FacetasDoCertameDivulgado facetas,
-        string documento,
-        DateTimeOffset agora)
-    {
-        bool avancou = divulgado.TentarAvancar(
-            versao.NumeroVersao,
-            versao.AtoCriadorId,
-            versao.HashConfiguracao,
-            ProjecaoDoCertamePublicado.Versao,
-            facetas,
-            documento,
-            agora);
-
-        // O edital registra-se também quando a versão não avança: o ato atrasado de uma versão anterior
-        // não desfaz a vigente, mas o seu edital já está no acervo e a linha do tempo precisa dele.
-        // Reentrega do que já está registrado não muda nada.
-        bool registrou = divulgado.RegistrarEdital(edital);
-        return avancou || registrou;
-    }
-
-    private async Task SalvarAsync(VersaoConfiguracao versao, CertamePublicadoDto certame, CancellationToken cancellationToken)
-    {
-        try
+        else
         {
-            await UnitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            divulgado.Avancar(
+                versao.NumeroVersao, versao.AtoCriadorId, versao.HashConfiguracao,
+                ProjecaoDoCertamePublicado.Versao, facetas, documento, versao.VigenteAPartirDe);
         }
-        catch (Exception falha) when (IdentificadorLegivelJaDivulgadoException.EhViolacaoDoIndice(falha))
-        {
-            UnitOfWork.DescartarAlteracoesNaoSalvas();
 
-            CertameDivulgado? dono = await Certames
-                .ObterParaLeituraPorIdentificadorAsync(certame.IdentificadorLegivel, cancellationToken)
-                .ConfigureAwait(false);
-
-            // Linha do próprio processo (entregas de versões dele correndo juntas) ou já removida: é
-            // corrida, que a reentrega resolve — a falha original segue para a política transiente.
-            if (IdentificadorLegivelJaDivulgadoException.Classificar(
-                falha, versao.ProcessoSeletivoId, dono?.Id, certame.IdentificadorLegivel) is not { } conflito)
-            {
-                throw;
-            }
-
-            throw conflito;
-        }
+        divulgado.RegistrarEditalPendente(ato.Id, versao.NumeroVersao);
+        return Result.Success();
     }
+
+    private Result<CertamePublicadoDto> Projetar(ProcessoSeletivo processo, VersaoConfiguracao versao, AtoDoProcesso ato) =>
+        EnvelopeCongelado.TentarLer(versao.ConfiguracaoCongelada, out JsonObject? envelope)
+            ? ProjecaoDoCertamePublicado.Projetar(
+                processo.Id, AtoDaDivulgacao.De(ato), processo.Nome, versao.HashConfiguracao, envelope, endereco.De)
+            : ProjecaoDoCertamePublicado.Recusar<CertamePublicadoDto>("configuração congelada");
 }

@@ -5,8 +5,8 @@ namespace Unifesspa.UniPlus.Selecao.Application.Abstractions;
 /// lido anonimamente por endereço imutável.
 /// </summary>
 /// <remarks>
-/// <b>Caminho único de escrita.</b> Só a materialização da divulgação, que roda depois de o ato ser
-/// registrado, depende deste port — é o que garante que nada fica público antes do ato. Documento
+/// <b>Caminho único de escrita.</b> Só a cópia dos documentos de um ato ao acervo, efeito posterior à publicação do ato,
+/// depende deste port — é o que garante que nenhum endereço é registrado antes de o arquivo estar no acervo. Documento
 /// de candidato não tem caminho até aqui.
 /// </remarks>
 public interface IAcervoPublico

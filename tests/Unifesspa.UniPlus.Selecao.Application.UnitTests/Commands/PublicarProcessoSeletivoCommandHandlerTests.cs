@@ -96,7 +96,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
 
         ISnapshotPublicacaoCanonicalizer canonicalizer = Substitute.For<ISnapshotPublicacaoCanonicalizer>();
         canonicalizer.Canonicalizar(Arg.Do<EntradaCanonicalizacao>(e => captura?.Invoke(e)))
-            .Returns(new SnapshotCanonico("{}"u8.ToArray(), "1.3", "canonical-json/sha256@v1"));
+            .Returns(new SnapshotCanonico(EnvelopeProjetavelDeTeste.Bytes, "1.3", "canonical-json/sha256@v1"));
 
         ITipoAtoPublicadoReader tipoDeAtoReader = Substitute.For<ITipoAtoPublicadoReader>().ComQualquerTipoDeclarado();
         tipoDeAtoReader.ObterVigenteAsync("EDITAL_ABERTURA", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())

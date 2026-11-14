@@ -124,7 +124,7 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
         await using (UniPlusDbContext context = _fixture.CreateDbContext())
         {
             CertameDivulgado ultimo = await context.CertamesDivulgados.SingleAsync(c => c.Id == _semeados[2].Id);
-            ultimo.TentarAvancar(
+            ultimo.Avancar(
                 numeroVersao: 2,
                 Guid.CreateVersion7(),
                 new string('b', 64),
@@ -132,7 +132,7 @@ public sealed class RevisaoDoRecortePersistenciaTests : IClassFixture<ProcessoSe
                 new FacetasDoCertameDivulgado(
                     ultimo.IdentificadorLegivel, "Certame retificado", "001/2026", ["AC"], Agora.AddDays(-5), Agora.AddDays(10)),
                 """{"nome":"Certame retificado"}""",
-                Agora.AddDays(-30)).Should().BeTrue();
+                Agora.AddDays(-30));
             await context.SaveChangesAsync();
         }
 

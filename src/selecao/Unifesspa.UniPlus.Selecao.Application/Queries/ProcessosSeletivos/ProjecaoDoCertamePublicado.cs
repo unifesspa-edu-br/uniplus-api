@@ -102,7 +102,7 @@ internal static class ProjecaoDoCertamePublicado
         }
 
         Result<ParticipacaoNoCertame> participacao = LerParticipacao(
-            envelope, new DocumentosDoAtoNoAcervo(processoSeletivoId, ato.Id, enderecoNoAcervo));
+            envelope, new DocumentosDoAtoNoAcervo(processoSeletivoId, ato.Id, enderecoNoAcervo, Copiados: true));
         if (participacao.IsFailure)
         {
             return Result<CertamePublicadoDto>.Failure(participacao.Error!);

@@ -11,10 +11,8 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>Handler próprio, e não um ramo de <c>DivulgarCertameAoRegistrarAtoHandler</c>.</b> Aquele parte
-/// da versão que o ato criou e sai cedo quando não há versão; a transição vale para todo ato do
-/// processo. O Wolverine processa a confirmação na mesma cadeia dos dois handlers: se a divulgação
-/// falha, a cadeia é reprocessada inteira e esta transição é reaplicada junto.
+/// A transição vale para todo ato do processo, inclusive o que não cria versão. A divulgação do certame não
+/// depende desta confirmação: ela nasce na transação que publica o ato.
 /// </para>
 /// <para>
 /// <b>Idempotente.</b> A confirmação é entregue pelo menos uma vez; a repetição encontra o registro

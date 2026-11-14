@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -60,43 +61,61 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     /// </summary>
     private static readonly Guid AtoDaDivulgacao = Guid.CreateVersion7();
 
-    /// <summary>O acervo público, com o endereço base da borda fixado para o teste.</summary>
-    private static readonly IEnderecoNoAcervoPublico Acervo = CriarAcervo();
-
-    private static IEnderecoNoAcervoPublico CriarAcervo()
+    /// <summary>Os endereços do acervo público, com o endereço base da borda fixado para o teste, sobre a divulgação lida.</summary>
+    private static EnderecosDosDocumentosDoAto Enderecos(ICertameDivulgadoRepository divulgacao)
     {
         IEnderecoNoAcervoPublico acervo = Substitute.For<IEnderecoNoAcervoPublico>();
         acervo.De(Arg.Any<string>()).Returns(static chamada => new Uri($"https://acervo.teste/{chamada.Arg<string>()}"));
-        return acervo;
+        return new EnderecosDosDocumentosDoAto(divulgacao, acervo);
     }
 
     private static Task<Result<FormularioRenderizavelDto>> HandleAsync(
         IProcessoSeletivoRepository repository,
         Guid processoId,
         ICertameDivulgadoRepository? divulgadoRepository = null,
-        FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao) =>
-        ObterFormularioRenderizavelQueryHandler.Handle(
+        FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
+    {
+        ICertameDivulgadoRepository divulgacao = divulgadoRepository ?? RepositorioComDivulgacao(processoId);
+        return ObterFormularioRenderizavelQueryHandler.Handle(
             new ObterFormularioRenderizavelQuery(processoId, finalidade),
             repository,
-            divulgadoRepository ?? RepositorioComDivulgacao(processoId),
+            divulgacao,
             RegistroReconhecendoVersaoCorrente,
-            Acervo,
+            Enderecos(divulgacao),
             CancellationToken.None);
+    }
 
-    /// <summary>Repositório cuja linha de divulgação existe — o processo É público.</summary>
+    /// <summary>Repositório cuja linha de divulgação existe e cujo ato já teve os documentos copiados ao acervo — o processo É público.</summary>
     private static ICertameDivulgadoRepository RepositorioComDivulgacao(Guid processoId)
     {
+        CertameDivulgado divulgado = Divulgado(processoId);
+        divulgado.RegistrarEnderecos(AtoDaDivulgacao, "https://acervo.teste/edital.pdf", []);
+        return RepositorioDe(divulgado);
+    }
+
+    /// <summary>Repositório cuja linha de divulgação existe e cujo ato ainda espera a cópia ao acervo.</summary>
+    private static ICertameDivulgadoRepository RepositorioComDivulgacaoAindaNaoCopiada(Guid processoId) =>
+        RepositorioDe(Divulgado(processoId));
+
+    private static CertameDivulgado Divulgado(Guid processoId)
+    {
+        CertameDivulgado divulgado = CertameDivulgado.Criar(
+            processoId,
+            numeroVersao: 1,
+            AtoDaDivulgacao,
+            new string('a', 64),
+            versaoProjecao: "1",
+            new FacetasDoCertameDivulgado("certame-formulario", "Certame", "001/2026", ["AC"], DataHoraFixa, DataHoraFixa.AddDays(30)),
+            """{"nome":"documento"}""",
+            DataHoraFixa);
+        divulgado.RegistrarEditalPendente(AtoDaDivulgacao, 1);
+        return divulgado;
+    }
+
+    private static ICertameDivulgadoRepository RepositorioDe(CertameDivulgado divulgado)
+    {
         ICertameDivulgadoRepository repositorio = Substitute.For<ICertameDivulgadoRepository>();
-        repositorio.ObterParaLeituraAsync(processoId, Arg.Any<CancellationToken>())
-            .Returns(CertameDivulgado.Criar(
-                processoId,
-                numeroVersao: 1,
-                AtoDaDivulgacao,
-                new string('a', 64),
-                versaoProjecao: "1",
-                new FacetasDoCertameDivulgado("certame-formulario", "Certame", "001/2026", ["AC"], DataHoraFixa, DataHoraFixa.AddDays(30)),
-                """{"nome":"documento"}""",
-                DataHoraFixa));
+        repositorio.ObterParaLeituraAsync(divulgado.Id, Arg.Any<CancellationToken>()).Returns(divulgado);
         return repositorio;
     }
 
@@ -158,14 +177,18 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             ]).Value!;
 
     private static Task<Result<FormularioRenderizavelDto>> HandleAsync(
-        Guid processoId, string envelopeJson, EnvelopeReidratado reidratado, FinalidadeFormulario finalidade) =>
-        ObterFormularioRenderizavelQueryHandler.Handle(
+        Guid processoId, string envelopeJson, EnvelopeReidratado reidratado, FinalidadeFormulario finalidade,
+        ICertameDivulgadoRepository? divulgacao = null)
+    {
+        ICertameDivulgadoRepository lida = divulgacao ?? RepositorioComDivulgacao(processoId);
+        return ObterFormularioRenderizavelQueryHandler.Handle(
             new ObterFormularioRenderizavelQuery(processoId, finalidade),
             MockComVersaoVigente(processoId, envelopeJson),
-            RepositorioComDivulgacao(processoId),
+            lida,
             RegistroReidratando(reidratado),
-            Acervo,
+            Enderecos(lida),
             CancellationToken.None);
+    }
 
     [Fact(DisplayName = "Certame sem divulgação não serve formulário, e a recusa não diz por quê")]
     public async Task Handle_SemDivulgacao_RetornaNaoEncontrado()
@@ -318,6 +341,27 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         inscricao.Value!.ComprovacaoDocumental.Should().BeNull("o formulário de inscrição não tem o bloco");
     }
 
+    [Fact(DisplayName = "Antes de a cópia ao acervo registrar o endereço do ato, o modelo da comprovação não traz endereço")]
+    public async Task Handle_AntesDaCopiaAoAcervo_ModeloSemEndereco()
+    {
+        Guid fase = Guid.Parse("0199a000-0000-7000-8000-0000000000f2");
+        Guid processoId = Guid.CreateVersion7();
+
+        Result<FormularioRenderizavelDto> habilitacao = await HandleAsync(
+            processoId, ExigenciaComModeloNaFase(fase), EnvelopeCom(Formulario(FinalidadeFormulario.Habilitacao, fase, comComprovacao: true)),
+            FinalidadeFormulario.Habilitacao, RepositorioComDivulgacaoAindaNaoCopiada(processoId));
+
+        ModeloDocumentalCertameDto modelo = habilitacao.Value!.ComprovacaoDocumental!.Single().Modelo!;
+        modelo.NomeArquivo.Should().Be("Autodeclaração.odt");
+        modelo.UrlDownload.Should().BeNull("o arquivo pode ainda não estar no acervo, e o endereço só é exposto depois da cópia");
+    }
+
+    private static string ExigenciaComModeloNaFase(Guid fase) => $$"""
+        {"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [
+          {{Exigencia("Autodeclaração étnico-racial", "Condicional", fase, "HABILITACAO", Modelo)}}
+        ] } }
+        """;
+
     /// <summary>
     /// Inscrição e isenção respondidas na mesma fase, as duas com o bloco de comprovação: a fase não
     /// separa os documentos, e cada formulário mostra só os da sua finalidade. O documento fora de
@@ -424,12 +468,13 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(
             Result<EnvelopeReidratado>.Failure(new DomainError("EnvelopeCodec.HashDivergente", "Os bytes não batem com o hash.")));
 
+        ICertameDivulgadoRepository divulgacao = RepositorioComDivulgacao(processoId);
         Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelQueryHandler.Handle(
             new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao),
             MockComVersaoVigente(processoId, envelope),
-            RepositorioComDivulgacao(processoId),
+            divulgacao,
             registro,
-            Acervo,
+            Enderecos(divulgacao),
             CancellationToken.None);
 
         resultado.Error!.Code.Should().Be("EnvelopeCodec.HashDivergente", "as regras saem da reidratação, e uma versão que não se prova não é servida");

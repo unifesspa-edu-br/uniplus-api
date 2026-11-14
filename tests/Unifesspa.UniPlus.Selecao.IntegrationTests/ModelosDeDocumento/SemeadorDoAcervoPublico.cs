@@ -5,12 +5,17 @@ using System.Text;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -78,12 +83,14 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         IReadOnlyList<AnexoDoEdital>? anexos = null)
     {
         edital ??= await EditalAsync(processo.Id);
+        identificador ??= IdentificadoresDeTeste.NovoValor();
         byte[] envelope = EnvelopeDeReferenciaComModelo.Montar(
-            modelo, identificador ?? IdentificadoresDeTeste.NovoValor(), edital.Id, hashDoEditalCongelado ?? edital.HashSha256!, anexos);
-
-        return await GravarAsync(VersaoConfiguracao.Abrir(
+            modelo, identificador, edital.Id, hashDoEditalCongelado ?? edital.HashSha256!, anexos);
+        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             processo.Id, envelope, CorpusEnvelope.Codec.SchemaVersion, CorpusEnvelope.Codec.AlgoritmoHash,
-            atoCriadorId: ato, atoCriadorHash: new string('a', 64), atorUsuarioSub: "teste", instante: DateTimeOffset.UtcNow));
+            atoCriadorId: ato, atoCriadorHash: new string('a', 64), atorUsuarioSub: "teste", instante: DateTimeOffset.UtcNow);
+
+        return await PublicarAsync(processo, versao, AcervoPublicoDeTeste.TipoDoAto, identificador, edital);
     }
 
     public async Task<VersaoConfiguracao> RetificacaoAsync(
@@ -96,14 +103,18 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
     {
         edital ??= await EditalAsync(anterior.ProcessoSeletivoId);
         byte[] envelope = EnvelopeDeReferenciaComModelo.Montar(modelo, identificador, edital.Id, edital.HashSha256!, anexos);
-
-        return await GravarAsync(VersaoConfiguracao.Suceder(
+        VersaoConfiguracao versao = VersaoConfiguracao.Suceder(
             anterior, envelope, CorpusEnvelope.Codec.SchemaVersion, CorpusEnvelope.Codec.AlgoritmoHash,
             atoCriadorId: ato, atoCriadorHash: new string('b', 64), atoCriadorRetificaId: anterior.AtoCriadorId,
-            atorUsuarioSub: "teste", instante: DateTimeOffset.UtcNow));
+            atorUsuarioSub: "teste", instante: DateTimeOffset.UtcNow);
+
+        await using UniPlusDbContext leitura = acervo.Db.CreateDbContext();
+        ProcessoSeletivo processo = await leitura.ProcessosSeletivos.AsNoTracking().SingleAsync(p => p.Id == anterior.ProcessoSeletivoId);
+
+        return await PublicarAsync(processo, versao, AcervoPublicoDeTeste.Retificacao, identificador, edital);
     }
 
-    /// <summary>A versão que o ato de abertura cria, já divulgada: o edital e os anexos estão no acervo.</summary>
+    /// <summary>A versão que o ato de abertura cria, já divulgada: o edital e os anexos foram copiados para o acervo.</summary>
     public async Task<VersaoConfiguracao> AberturaDivulgadaAsync(
         ProcessoSeletivo processo,
         ModeloDeDocumento modelo,
@@ -113,11 +124,11 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         IReadOnlyList<AnexoDoEdital>? anexos = null)
     {
         VersaoConfiguracao versao = await VersaoAsync(processo, modelo, ato, identificador, edital, anexos: anexos);
-        await acervo.DivulgarAsync(ato);
+        await acervo.CopiarAoAcervoAsync(ato);
         return versao;
     }
 
-    /// <summary>A versão que o ato de retificação cria, já divulgada.</summary>
+    /// <summary>A versão que o ato de retificação cria, já divulgada e copiada para o acervo.</summary>
     public async Task<VersaoConfiguracao> RetificacaoDivulgadaAsync(
         VersaoConfiguracao anterior,
         ModeloDeDocumento modelo,
@@ -127,7 +138,7 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         IReadOnlyList<AnexoDoEdital>? anexos = null)
     {
         VersaoConfiguracao versao = await RetificacaoAsync(anterior, modelo, ato, identificador, edital, anexos);
-        await acervo.DivulgarAsync(ato, AcervoPublicoDeTeste.Retificacao);
+        await acervo.CopiarAoAcervoAsync(ato);
         return versao;
     }
 
@@ -135,9 +146,11 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         Guid processoId, string identificador, Guid ato, DocumentoAPublicar principal, DocumentoAPublicar? anexo = null)
     {
         AtoDoProcesso registro = AtoDoProcesso.Registrar(
-            DeclaracaoDoAtoAvulso(processoId, identificador, ato, principal, anexo), TimeProvider.System.GetUtcNow()).Value!;
+            DeclaracaoDoAto(processoId, AcervoPublicoDeTeste.TipoAvulso, identificador, ato, principal, anexo), TimeProvider.System.GetUtcNow()).Value!;
         await using UniPlusDbContext context = acervo.Db.CreateDbContext();
         context.AtosDoProcesso.Add(registro);
+        CertameDivulgado? divulgado = await context.CertamesDivulgados.SingleOrDefaultAsync(c => c.Id == processoId);
+        divulgado?.RegistrarEditalPendente(ato, numeroVersao: null);
         await context.SaveChangesAsync();
         return registro;
     }
@@ -149,17 +162,38 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         string identificador = IdentificadoresDeTeste.NovoValor();
         Guid abertura = Guid.CreateVersion7();
         await VersaoAsync(processo, modelo, abertura, identificador);
-        await acervo.DivulgarAsync(abertura);
+        await acervo.CopiarAoAcervoAsync(abertura);
         return (processo, identificador);
     }
 
-    private static NovoAtoDoProcesso DeclaracaoDoAtoAvulso(
-        Guid processoId, string identificador, Guid ato, DocumentoAPublicar principal, DocumentoAPublicar? anexo) =>
+    /// <summary>
+    /// A publicação como a Seleção a grava: a versão, o ato que a criou e a divulgação do certame com a entrada do ato
+    /// ainda sem endereço, num mesmo commit. A cópia ao acervo vem depois.
+    /// </summary>
+    private async Task<VersaoConfiguracao> PublicarAsync(
+        ProcessoSeletivo processo, VersaoConfiguracao versao, string tipoDoAto, string identificador, DocumentoAPublicar edital)
+    {
+        AtoDoProcesso ato = AtoDoProcesso.Registrar(
+            DeclaracaoDoAto(processo.Id, tipoDoAto, identificador, versao.AtoCriadorId, edital), versao.VigenteAPartirDe).Value!;
+        await using UniPlusDbContext context = acervo.Db.CreateDbContext();
+        context.VersoesConfiguracao.Add(versao);
+        context.AtosDoProcesso.Add(ato);
+        GravacaoDaDivulgacao divulgacao = new(new CertameDivulgadoRepository(context), AcervoDeTeste.Endereco);
+
+        Result montada = await divulgacao.MontarDaVersaoAsync(processo, versao, ato, CancellationToken.None);
+
+        montada.IsSuccess.Should().BeTrue(montada.Error?.Message);
+        await context.SaveChangesAsync();
+        return versao;
+    }
+
+    private static NovoAtoDoProcesso DeclaracaoDoAto(
+        Guid processoId, string tipoDoAto, string identificador, Guid ato, DocumentoAPublicar principal, DocumentoAPublicar? anexo = null) =>
         new(
             ato,
             processoId,
-            AcervoPublicoDeTeste.TipoAvulso,
-            "Aviso",
+            tipoDoAto,
+            tipoDoAto,
             Numero: null,
             new DateOnly(AcervoPublicoDeTeste.AnoDoAto, 10, 1),
             "Diretoria do CEPS",
@@ -181,14 +215,6 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         context.DocumentosAPublicar.Add(documento);
         await context.SaveChangesAsync();
         return documento;
-    }
-
-    private async Task<VersaoConfiguracao> GravarAsync(VersaoConfiguracao versao)
-    {
-        await using UniPlusDbContext context = acervo.Db.CreateDbContext();
-        context.VersoesConfiguracao.Add(versao);
-        await context.SaveChangesAsync();
-        return versao;
     }
 }
 

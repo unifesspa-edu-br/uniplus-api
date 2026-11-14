@@ -8,15 +8,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>A existência desta linha É a publicidade do certame.</b> Ela nasce quando o ato normativo da
-/// versão se confirma no registro central, e avança quando o ato de uma retificação se confirma.
-/// Não há coluna de "visível": não existir e não ser público são a mesma coisa. É o que torna a
-/// leitura pública uma consulta de tabela única.
+/// <b>A existência desta linha É a publicidade do certame.</b> Ela nasce na transação que publica o
+/// edital de abertura, junto da versão e do ato, e avança na que publica a retificação. Não há coluna
+/// de "visível": não existir e não ser público são a mesma coisa. É o que torna a leitura pública uma
+/// consulta de tabela única.
 /// </para>
 /// <para>
-/// <b>A retificação cujo ato não se confirma não avança a linha</b>, e o certame permanece no ar
-/// com o conteúdo anterior — publicação é ato público, e para emendá-la existe retificação de ato,
-/// não supressão.
+/// <b>O endereço dos documentos de cada ato chega depois</b>, quando a cópia ao acervo termina: até lá a
+/// entrada do ato existe e não tem endereço.
 /// </para>
 /// <para>
 /// Derivado e reconstruível: tudo sai da versão de configuração congelada, que permanece a fonte.
@@ -85,8 +84,7 @@ public sealed class CertameDivulgado : IIdentificavel
     /// <summary>
     /// Os documentos de cada ato divulgado do processo, identificados pelo ato: o edital de cada versão,
     /// pelo ato que a criou, e o documento de cada ato que não cria versão. Fica fora do documento
-    /// <see cref="Certame"/> — que descreve só a versão vigente — e cresce a cada divulgação, inclusive
-    /// a de um ato que chega depois de uma versão mais nova.
+    /// <see cref="Certame"/> — que descreve só a versão vigente — e cresce a cada divulgação.
     /// </summary>
     public IReadOnlyList<EditalDivulgado> EditaisDivulgados { get; private set; } = [];
 
@@ -127,11 +125,10 @@ public sealed class CertameDivulgado : IIdentificavel
     }
 
     /// <summary>
-    /// Avança a divulgação para uma versão mais nova. Recusa retroceder: a reentrega da mensagem de
-    /// registro é esperada, e uma entrega atrasada do ato de uma versão ANTERIOR não pode desfazer
-    /// uma retificação já divulgada.
+    /// Avança a divulgação para uma versão mais nova. A versão que não é mais nova é erro de programação: o
+    /// comando que publica trava o processo antes de ler a divulgação, então a cadeia de versões é linear.
     /// </summary>
-    public bool TentarAvancar(
+    public void Avancar(
         int numeroVersao,
         Guid atoCriadorId,
         string hashConfiguracao,
@@ -144,7 +141,8 @@ public sealed class CertameDivulgado : IIdentificavel
 
         if (numeroVersao <= NumeroVersao)
         {
-            return false;
+            throw new InvalidOperationException(
+                $"A divulgação do processo {Id} está na versão {NumeroVersao} e não avança para a versão {numeroVersao}.");
         }
 
         NumeroVersao = numeroVersao;
@@ -159,27 +157,49 @@ public sealed class CertameDivulgado : IIdentificavel
         InscricoesAte = facetas.InscricoesAte;
         Certame = certame;
         DivulgadoEm = divulgadoEm;
-        return true;
     }
 
     /// <summary>
-    /// Registra o edital que um ato divulgou, sem tocar na versão vigente. Idempotente por ato: a
-    /// reentrega da mensagem de registro não duplica a entrada, e o ato atrasado de uma versão
-    /// anterior — que <see cref="TentarAvancar"/> recusa — ainda deixa o seu edital registrado.
+    /// Registra a entrada do ato que o comando acabou de divulgar, ainda sem endereço. Um ato divulga uma
+    /// vez: repetir a entrada é erro de programação.
     /// </summary>
-    /// <returns><see langword="true"/> quando a lista mudou.</returns>
-    public bool RegistrarEdital(EditalDivulgado edital)
+    public void RegistrarEditalPendente(Guid atoId, int? numeroVersao)
     {
-        ArgumentNullException.ThrowIfNull(edital);
-
-        if (EditaisDivulgados.Any(e => e.AtoId == edital.AtoId))
+        if (EditaisDivulgados.Any(e => e.AtoId == atoId))
         {
-            return false;
+            throw new InvalidOperationException($"O ato {atoId} já tem entrada na divulgação do processo {Id}.");
         }
 
         // Lista nova, e não mutação da atual: o rastreador detecta a mudança por comparação do
         // valor, e a instância antiga pode estar compartilhada com quem a leu.
-        EditaisDivulgados = [.. EditaisDivulgados, edital];
+        EditaisDivulgados = [.. EditaisDivulgados, EditalDivulgado.Pendente(atoId, numeroVersao)];
+    }
+
+    /// <summary>
+    /// Registra o endereço e os documentos do ato depois da cópia ao acervo. Idempotente por ato: a reentrega da
+    /// cópia não muda a entrada que já tem endereço, e a cópia de um ato mais antigo não toca na de nenhum outro.
+    /// </summary>
+    /// <returns><see langword="true"/> quando a lista mudou.</returns>
+    public bool RegistrarEnderecos(Guid atoId, string urlDownload, IReadOnlyList<DocumentoDivulgado> documentos)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(urlDownload);
+        ArgumentNullException.ThrowIfNull(documentos);
+
+        if (EntradaDoAto(atoId).UrlDownload is not null)
+        {
+            return false;
+        }
+
+        EditaisDivulgados = [.. EditaisDivulgados.Select(e => e.AtoId == atoId ? e with { UrlDownload = urlDownload, Documentos = documentos } : e)];
+
         return true;
     }
+
+    private EditalDivulgado EntradaDoAto(Guid atoId) =>
+        EditaisDivulgados.SingleOrDefault(e => e.AtoId == atoId)
+        ?? throw new InvalidOperationException($"O ato {atoId} não tem entrada na divulgação do processo {Id}.");
+
+    /// <summary>Se a cópia ao acervo dos documentos do ato já registrou o endereço.</summary>
+    public bool CopiouOsDocumentosDoAto(Guid atoId) =>
+        EditaisDivulgados.Any(e => e.AtoId == atoId && e.UrlDownload is not null);
 }
