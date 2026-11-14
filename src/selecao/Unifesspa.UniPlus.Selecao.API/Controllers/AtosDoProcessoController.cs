@@ -34,11 +34,9 @@ using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 public sealed class AtosDoProcessoController : ControllerBase
 {
     /// <summary>
-    /// O que o <c>Location</c> do 201 de publicação endereça. A Seleção não tem leitura de um ato só, e o ato
-    /// criado consta na lista do processo, onde o <c>atoId</c> do corpo o identifica.
+    /// O que o <c>Location</c> do 201 de publicação endereça: a consulta do ato criado.
     /// </summary>
-    internal const string DescricaoDoLocationDoAtoPublicado =
-        "Endereço da lista de atos do processo, onde o ato publicado consta; o atoId do corpo o identifica nela.";
+    internal const string DescricaoDoLocationDoAtoPublicado = "Endereço do ato publicado.";
 
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
@@ -95,7 +93,7 @@ public sealed class AtosDoProcessoController : ControllerBase
             .ConfigureAwait(false);
 
         return resultado.IsSuccess
-            ? CreatedAtAction(nameof(Listar), new { processoSeletivoId }, resultado.Value)
+            ? CreatedAtAction(nameof(Obter), new { processoSeletivoId, atoId = resultado.Value!.AtoId }, resultado.Value)
             : resultado.ToActionResult(_mapper);
     }
 

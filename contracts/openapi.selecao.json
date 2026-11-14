@@ -115,7 +115,7 @@
             "description": "Created",
             "headers": {
               "Location": {
-                "description": "Endere\u00E7o da lista de atos do processo, onde o ato publicado consta; o atoId do corpo o identifica nela.",
+                "description": "Endere\u00E7o do ato publicado.",
                 "schema": {
                   "type": "string"
                 }
@@ -12037,7 +12037,7 @@
             "description": "Created",
             "headers": {
               "Location": {
-                "description": "Endere\u00E7o da lista de atos do processo, onde o ato publicado consta; o atoId do corpo o identifica nela.",
+                "description": "Endere\u00E7o do ato publicado.",
                 "schema": {
                   "type": "string"
                 }
