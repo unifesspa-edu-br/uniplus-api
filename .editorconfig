@@ -174,28 +174,3 @@ dotnet_diagnostic.CA1861.severity = none
 # método seria artificial. Mapeamento longo se divide por assunto; quem cobra é a revisão.
 [src/**/Persistence/Configurations/**.cs]
 dotnet_diagnostic.MA0051.severity = none
-
-# Migrations EF Core são auto-geradas pelo tool — analyzers que cobram
-# defensive coding, perf de array literal ou estilo C# moderno não se aplicam:
-# - CA1062: tool não emite ArgumentNullException no migrationBuilder
-# - CA1861: tool emite arrays inline (`new[] { ... }`) em CreateIndex
-# - CA1825: tool emite `new string[0]` no InsertData das sementes com coluna de array vazia
-# - IDE0161: tool emite namespace-block clássico, não file-scoped
-# - MA0051, S104, S3776, S1541, S107: tamanho e complexidade vêm do modelo, não de quem escreve
-#
-# Pelo mesmo motivo, duas regras de formatação seguem o que o `dotnet ef`
-# emite, em vez de exigir retrabalho manual a cada migration gerada:
-# - charset: o tool grava com BOM
-# - separate_import_directive_groups: o tool não separa grupos de using
-[src/**/Migrations/**.cs]
-dotnet_diagnostic.MA0051.severity = none
-dotnet_diagnostic.S104.severity = none
-dotnet_diagnostic.S3776.severity = none
-dotnet_diagnostic.S1541.severity = none
-dotnet_diagnostic.S107.severity = none
-charset = utf-8-bom
-dotnet_separate_import_directive_groups = false
-dotnet_diagnostic.CA1062.severity = none
-dotnet_diagnostic.CA1861.severity = none
-dotnet_diagnostic.CA1825.severity = none
-dotnet_diagnostic.IDE0161.severity = none
