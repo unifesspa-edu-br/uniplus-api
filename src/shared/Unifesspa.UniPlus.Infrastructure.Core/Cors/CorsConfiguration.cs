@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Cors;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -40,26 +41,24 @@ public static class CorsConfiguration
     ];
 
     // Headers de RESPOSTA que o browser deixa o JavaScript ler. Por default, uma resposta
-    // cross-origin só expõe sete headers "seguros" — e ETag não é um deles. Sem esta lista,
-    // o servidor emite o ETag corretamente, o browser o recebe, e o fetch() do frontend
-    // simplesmente NÃO O ENXERGA: response.headers.get('ETag') devolve null.
+    // cross-origin só expõe sete headers "seguros", e nenhum dos nossos é um deles. Sem expô-lo, o
+    // servidor emite o header corretamente, o browser o recebe, e response.headers.get(...) do
+    // frontend simplesmente devolve null, sem erro e sem nada a investigar.
     //
-    // - ETag: a precondição da sessão editorial de retificação (ADR-0110 D5). O cliente lê
-    //   o tag daqui e o devolve no If-Match da próxima mutação. Sem expô-lo, toda edição
-    //   sob retificação sairia 428 no browser — correta no servidor, inoperável na SPA.
-    // - Idempotency-Replayed: diagnóstico de replay (ADR-0027); o frontend distingue
-    //   "executou agora" de "resposta gravada".
-    // - Link e X-Page-Size: a navegação por cursor vive inteiramente neles. Sem expô-los, uma
-    //   aplicação de origem cruzada recebe a página e não tem como pedir a seguinte — o corpo é
-    //   um array puro, e o endereço de continuação só existe no header.
-    // - X-Total-Count: o total da coleção, quando a requisição o pede (ADR-0026). Sai do mesmo
-    //   lugar que Link e X-Page-Size, e não pertence a módulo nenhum — quem o emite é a extensão
-    //   de paginação compartilhada. Sem expô-lo, a tela pede a contagem e lê null.
+    // Esta lista traz só o que a infraestrutura compartilhada emite sem que nenhum endpoint o
+    // declare. Todo header que um endpoint promete no contrato (EmiteHeader e EmiteETag) é somado
+    // à política na subida de cada aplicação, a partir dos controllers que ela de fato hospeda;
+    // por isso um header de um módulo só é exposto onde esse módulo é servido, e nenhuma lista
+    // paralela precisa ser mantida à mão.
     //
-    // Header que só um módulo emite NÃO entra aqui: esta lista é compartilhada por todos os
-    // deployables, e um nome de recurso de um módulo nela faz os outros autorizarem a leitura de um
-    // header que nunca emitem — num endereço onde aquele recurso sequer existe. Quem tem header
-    // próprio o declara no seu composition root, pelo parâmetro de AddCorsConfiguration.
+    // - ETag: a precondição da sessão editorial de retificação (ADR-0110 D5); o cliente o lê e o
+    //   devolve no If-Match da próxima mutação.
+    // - Idempotency-Replayed: diagnóstico de replay (ADR-0027), emitido pelo filtro de
+    //   idempotência; o frontend distingue "executou agora" de "resposta gravada".
+    // - Link e X-Page-Size: a navegação por cursor vive inteiramente neles (ADR-0026); o corpo é um
+    //   array puro e o endereço da página seguinte só existe no header.
+    // - X-Total-Count: o total da coleção, quando a requisição o pede (ADR-0026). Sai da mesma
+    //   extensão de paginação, que não pertence a módulo nenhum.
     private static readonly string[] DefaultExposedHeaders =
     [
         "ETag",
@@ -73,42 +72,23 @@ public static class CorsConfiguration
     /// Binds <see cref="CorsOptions"/> and registers the default CORS policy.
     /// Outside Development, startup fails if <see cref="CorsOptions.AllowedOrigins"/> is empty.
     /// </summary>
-    /// <param name="additionalExposedHeaders">
-    /// Headers de resposta específicos da aplicação que está sendo composta, somados aos comuns.
-    /// É por aqui que um módulo declara o header que só ele emite, sem impô-lo aos demais.
-    /// </param>
+    /// <remarks>
+    /// Os headers de resposta que a política expõe são os comuns mais os que os controllers da
+    /// aplicação declaram no contrato. A leitura dos controllers acontece quando as opções são
+    /// resolvidas, depois de o MVC conhecer todos eles.
+    /// </remarks>
     public static IServiceCollection AddCorsConfiguration(
         this IServiceCollection services,
         IConfiguration configuration,
-        IHostEnvironment environment,
-        params string[] additionalExposedHeaders)
+        IHostEnvironment environment)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentNullException.ThrowIfNull(environment);
-        ArgumentNullException.ThrowIfNull(additionalExposedHeaders);
 
-        string[] exposedHeaders = additionalExposedHeaders.Length == 0
-            ? DefaultExposedHeaders
-            : [.. DefaultExposedHeaders, .. additionalExposedHeaders];
-
-        services.AddOptions<CorsOptions>()
-            .Bind(configuration.GetSection(CorsOptions.SectionName))
-            .Validate(
-                options => environment.IsDevelopment() || options.AllowedOrigins.Count > 0,
-                "CORS AllowedOrigins must be configured outside Development. Set 'Cors:AllowedOrigins' with the list of trusted frontend origins.")
-            .ValidateOnStart();
-
+        RegistrarOpcoes(services, configuration, environment);
         services.AddCors();
-
-        services.AddOptions<FrameworkCorsOptions>()
-            .Configure<IOptions<CorsOptions>>((frameworkOptions, ourOptionsAccessor) =>
-            {
-                CorsOptions opts = ourOptionsAccessor.Value;
-                frameworkOptions.AddPolicy(
-                    DefaultPolicyName,
-                    builder => ConfigurePolicy(builder, opts, environment, exposedHeaders));
-            });
+        RegistrarPoliticaPadrao(services, environment);
 
         return services;
     }
@@ -118,6 +98,32 @@ public static class CorsConfiguration
     /// </summary>
     public static IApplicationBuilder UseCorsConfiguration(this IApplicationBuilder app) =>
         app.UseCors(DefaultPolicyName);
+
+    private static void RegistrarOpcoes(
+        IServiceCollection services,
+        IConfiguration configuration,
+        IHostEnvironment environment) =>
+        services.AddOptions<CorsOptions>()
+            .Bind(configuration.GetSection(CorsOptions.SectionName))
+            .Validate(
+                options => environment.IsDevelopment() || options.AllowedOrigins.Count > 0,
+                "CORS AllowedOrigins must be configured outside Development. Set 'Cors:AllowedOrigins' with the list of trusted frontend origins.")
+            .ValidateOnStart();
+
+    private static void RegistrarPoliticaPadrao(IServiceCollection services, IHostEnvironment environment) =>
+        services.AddOptions<FrameworkCorsOptions>()
+            .Configure<IOptions<CorsOptions>, IActionDescriptorCollectionProvider>(
+                (frameworkOptions, ourOptionsAccessor, acoes) =>
+                {
+                    CorsOptions opts = ourOptionsAccessor.Value;
+                    string[] exposedHeaders = ExposedHeaders(acoes);
+                    frameworkOptions.AddPolicy(
+                        DefaultPolicyName,
+                        builder => ConfigurePolicy(builder, opts, environment, exposedHeaders));
+                });
+
+    private static string[] ExposedHeaders(IActionDescriptorCollectionProvider acoes) =>
+        [.. DefaultExposedHeaders.Union(HeadersDeclaradosNoContrato.Ler(acoes), StringComparer.OrdinalIgnoreCase)];
 
     private static void ConfigurePolicy(
         CorsPolicyBuilder builder,

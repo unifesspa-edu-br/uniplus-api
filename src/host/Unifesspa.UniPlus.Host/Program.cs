@@ -75,17 +75,7 @@ builder.Services.AddCorrelationIdAccessor();
 builder.Services.AddRequestLogging(builder.Configuration);
 builder.Services.AdicionarObservabilidade(nomeServico, builder.Configuration, builder.Environment);
 builder.Services.AddReverseProxyConfiguration(builder.Configuration, builder.Environment);
-builder.Services.AddCorsConfiguration(
-    builder.Configuration,
-    builder.Environment,
-    // Contagem por situação e revisão do recorte da vitrine pública de certames, que alimentam os
-    // filtros da tela e a detecção de coleção alterada entre páginas. Vivem aqui, e não na lista
-    // comum do CORS compartilhado, porque só o Seleção emite estes headers.
-    "X-Certames-Em-Breve",
-    "X-Certames-Inscricoes-Abertas",
-    "X-Certames-Ultimos-Dias",
-    "X-Certames-Encerrados",
-    "X-Certames-Revisao");
+builder.Services.AddCorsConfiguration(builder.Configuration, builder.Environment);
 builder.Services.AddUniPlusStorage(builder.Configuration, builder.Environment);
 // Acervo público (ADR-0132): só o host, que hospeda Seleção, publica documento de ato nele.
 builder.Services.AddUniPlusAcervoPublico(builder.Configuration, builder.Environment);

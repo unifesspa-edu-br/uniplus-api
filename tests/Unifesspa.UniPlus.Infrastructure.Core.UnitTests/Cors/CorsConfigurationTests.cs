@@ -3,17 +3,6 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Cors;
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Cors.Infrastructure;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
-
-using NSubstitute;
-
-using Unifesspa.UniPlus.Infrastructure.Core.Cors;
-
-using FrameworkCorsOptions = Microsoft.AspNetCore.Cors.Infrastructure.CorsOptions;
 
 public sealed class CorsConfigurationTests
 {
@@ -90,42 +79,6 @@ public sealed class CorsConfigurationTests
         policy.ExposedHeaders.Should().Contain(["ETag", "Idempotency-Replayed"]);
     }
 
-    [Fact]
-    public void Policy_QuandoModuloDeclaraHeaderProprio_DeveSomarSemPerderOsComuns()
-    {
-        // Header que só um deployable emite não pertence à lista compartilhada: declará-lo lá faria
-        // os outros anunciarem, no preflight, um header que nunca emitem. O composition root de
-        // quem o emite o acrescenta — e acrescentar não pode custar os comuns.
-        CorsPolicy policy = BuildDefaultPolicy(allowAnyHeader: false, "X-Certames-Em-Breve");
-
-        policy.ExposedHeaders.Should().Contain("X-Certames-Em-Breve");
-        policy.ExposedHeaders.Should().Contain(["ETag", "Idempotency-Replayed", "Link", "X-Page-Size", "X-Total-Count"]);
-    }
-
-    private static CorsPolicy BuildDefaultPolicy(bool allowAnyHeader, params string[] additionalExposedHeaders)
-    {
-        Dictionary<string, string?> settings = new()
-        {
-            ["Cors:AllowedOrigins:0"] = "https://selecao.standalone.portaluni.com.br",
-            ["Cors:AllowAnyHeader"] = allowAnyHeader.ToString(),
-        };
-
-        IConfiguration configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(settings)
-            .Build();
-
-        IHostEnvironment environment = Substitute.For<IHostEnvironment>();
-        environment.EnvironmentName.Returns("Production");
-
-        ServiceCollection services = new();
-        services.AddSingleton(NullLoggerFactory.Instance);
-        services.AddCorsConfiguration(configuration, environment, additionalExposedHeaders);
-
-        using ServiceProvider provider = services.BuildServiceProvider();
-        FrameworkCorsOptions options = provider.GetRequiredService<IOptions<FrameworkCorsOptions>>().Value;
-
-        CorsPolicy? policy = options.GetPolicy(CorsConfiguration.DefaultPolicyName);
-        policy.Should().NotBeNull();
-        return policy!;
-    }
+    private static CorsPolicy BuildDefaultPolicy(bool allowAnyHeader) =>
+        PoliticaCorsDeTeste.Construir(allowAnyHeader);
 }
