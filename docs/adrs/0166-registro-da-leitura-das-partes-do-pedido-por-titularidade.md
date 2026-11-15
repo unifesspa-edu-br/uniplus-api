@@ -128,7 +128,7 @@ Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um p
 - **Emenda a [ADR-0153](0153-projecao-por-protecao.md):** o escopo deixa de excluir a leitura feita pelas partes de um pedido de concessão, que é registrada com a fonte `titularidade`.
 - **Emenda a [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md):** o vocabulário da fonte registrada ganha `titularidade`, que existe só no registro e não é fonte de concessão efetiva.
 - **[ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md):** quando esta ADR for aceita, a regra "Leituras do Encarregado" deixa de remeter a fila dos próprios pedidos à issue #2389 e passa a dizer que a parte sem a consulta dos pedidos tem a leitura registrada por titularidade, como decidido aqui.
-- Contrato: `contracts/kafka/registro-de-acesso/v1.schema.json` e `contracts/README.md`.
+- Contrato: o esquema Avro `LoteDoRegistroDeAcesso.avsc` do projeto de contrato de autorização e `contracts/README.md`.
 
 ## Emenda (2026-11-14) — campo do ator no registro
 

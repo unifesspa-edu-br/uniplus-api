@@ -138,6 +138,9 @@ enviar_pdf() {
 situacao_do_pedido() { api "$2" GET "/api/autorizacao/pedidos-de-concessao/$1" >/dev/null; corpo -r .situacao; }
 
 # Kafka lido de dentro do broker, pelo listener interno. O consumidor de linha de comando é só instrumento de teste.
+# Atenção: o valor do registro de acesso agora é Avro. O consumidor de linha de comando o mostra em binário, e o `jq`
+# dos passos que usam `valores_desde` foi escrito para o valor em JSON: para conferir o conteúdo, decodifique o valor
+# com o esquema registrado no Apicurio (o teste de integração do registro de acesso faz essa leitura).
 fim_do_topico() {
   dc exec -T kafka /opt/kafka/bin/kafka-get-offsets.sh --bootstrap-server kafka:29092 --topic "$TOPICO" --time -1 | awk -F: '{print $NF}'
 }
@@ -328,7 +331,7 @@ api diogo.souza GET "/api/autorizacao/concessoes/$C_BETINA/trilha"; corpo '[.[].
 
 ## 6. Registro de acesso no tópico Kafka
 
-Formato, conforme `contracts/kafka/registro-de-acesso/v1.schema.json`: uma mensagem por requisição, com chave igual ao `execucaoId`; o valor é um array de `{chave, registro}`, um item por resource lido; a `chave` tem 64 caracteres hexadecimais; o cabeçalho `uniplus.quantidade` é o tamanho do array.
+Formato, conforme o esquema Avro `LoteDoRegistroDeAcesso.avsc` (ver `contracts/README.md`): uma mensagem por requisição, com chave igual ao `execucaoId`; o valor é um registro Avro, no envelope do Confluent com o schema-id, cuja lista `registros` tem um item `{chave, registro}` por resource lido; a `chave` tem 64 caracteres hexadecimais; o cabeçalho `uniplus.quantidade` é o tamanho do array.
 
 | Origem do acesso | `permissao` | `fonteGrant` | `grantId` | `perfilId` |
 |---|---|---|---|---|
