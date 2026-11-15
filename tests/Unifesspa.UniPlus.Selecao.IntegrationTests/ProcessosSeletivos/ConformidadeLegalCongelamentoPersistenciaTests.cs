@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -176,7 +177,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
         await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
         await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!, CancellationToken.None);
@@ -213,7 +214,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         // id, o conjunto inteiro — produz exatamente o mesmo (RegraId, Hash). Nenhuma
         // entrada órfã no congelado; nenhuma regra vigente de fora do congelado.
         await using UniPlusDbContext freshReadContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository processoRepository = new(freshReadContext, TimeProvider.System);
+        ProcessoSeletivoRepository processoRepository = ProcessoSeletivoRepositoryDeTeste.Criar(freshReadContext);
         ObrigatoriedadeLegalRepository freshRepository = new(freshReadContext, TimeProvider.System);
 
         ProcessoSeletivo processoVivo = (await processoRepository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;

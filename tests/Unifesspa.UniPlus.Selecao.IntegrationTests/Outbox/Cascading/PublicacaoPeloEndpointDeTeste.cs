@@ -51,7 +51,7 @@ internal static class PublicacaoPeloEndpointDeTeste
             new { numero = "001/2026", documentoEditalId = documentoId, ato = AtoDeTeste(tipoAto ?? DadosDoAtoDeTeste.TipoAbertura) });
 
     internal static Task<HttpResponseMessage> RetificarAsync(
-        HttpClient client, Guid processoId, Guid documentoId, string? tipoAto = null) =>
+        HttpClient client, Guid processoId, Guid documentoId, string? tipoAto = null, string? chaveDeIdempotencia = null) =>
         PostarComoOperadorAsync(
             client,
             $"/api/selecao/processos-seletivos/{processoId}/retificacoes",
@@ -61,7 +61,8 @@ internal static class PublicacaoPeloEndpointDeTeste
                 numero = "001/2026-R1",
                 documentoEditalId = documentoId,
                 ato = AtoDeTeste(tipoAto ?? DadosDoAtoDeTeste.TipoRetificacao),
-            });
+            },
+            chaveDeIdempotencia);
 
     private static object AtoDeTeste(string tipoAtoCodigo) => new
     {
@@ -73,7 +74,8 @@ internal static class PublicacaoPeloEndpointDeTeste
         tipoAtoCodigo,
     };
 
-    private static async Task<HttpResponseMessage> PostarComoOperadorAsync(HttpClient client, string rota, object corpo)
+    private static async Task<HttpResponseMessage> PostarComoOperadorAsync(
+        HttpClient client, string rota, object corpo, string? chaveDeIdempotencia = null)
     {
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri(rota, UriKind.Relative))
         {
@@ -82,7 +84,7 @@ internal static class PublicacaoPeloEndpointDeTeste
         request.Headers.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
-        request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
+        request.Headers.TryAddWithoutValidation("Idempotency-Key", chaveDeIdempotencia ?? Guid.CreateVersion7().ToString("N"));
         return await client.SendAsync(request);
     }
 

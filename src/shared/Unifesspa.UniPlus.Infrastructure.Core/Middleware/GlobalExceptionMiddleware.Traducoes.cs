@@ -10,6 +10,8 @@ using Microsoft.Extensions.Logging;
 
 using Pagination;
 
+using Persistence;
+
 using Unifesspa.UniPlus.Authorization.Abstractions;
 
 public sealed partial class GlobalExceptionMiddleware
@@ -37,6 +39,10 @@ public sealed partial class GlobalExceptionMiddleware
             typeof(CatalogoDesatualizadoException),
             static (l, p, e) => LogCatalogoDesatualizado(l, p, e),
             static (c, _, f, _) => EscreverRespostaCatalogoDesatualizado(c, f)),
+        new(
+            typeof(EsperaPelaTravaEsgotadaException),
+            static (l, p, e) => LogEsperaPelaTravaEsgotada(l, p, e),
+            static (c, _, f, _) => EscreverRespostaEsperaPelaTravaEsgotada(c, f)),
     ];
 
     private static readonly TraducaoDeExcecao NaoTratada = new(

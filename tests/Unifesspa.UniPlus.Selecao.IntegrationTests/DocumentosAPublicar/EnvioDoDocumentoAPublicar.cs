@@ -31,7 +31,7 @@ internal sealed class EnvioDoDocumentoAPublicar : IAsyncDisposable
         Context = context;
         Processo = processo;
         Documentos = new DocumentoAPublicarRepository(context);
-        _processos = new ProcessoSeletivoRepository(context, TimeProvider.System);
+        _processos = ProcessoSeletivoRepositoryDeTeste.Criar(context);
         _storage = storage;
     }
 

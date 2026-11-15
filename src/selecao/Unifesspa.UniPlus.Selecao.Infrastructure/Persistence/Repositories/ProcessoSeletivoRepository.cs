@@ -6,6 +6,7 @@ using Domain.Interfaces;
 using Domain.ValueObjects;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
@@ -15,11 +16,16 @@ public sealed partial class ProcessoSeletivoRepository : IProcessoSeletivoReposi
 {
     private readonly UniPlusDbContext _context;
     private readonly TimeProvider _timeProvider;
+    private readonly TravaDaLinhaDoProcesso _trava;
 
-    public ProcessoSeletivoRepository(UniPlusDbContext context, TimeProvider timeProvider)
+    public ProcessoSeletivoRepository(UniPlusDbContext context, TimeProvider timeProvider, IOptions<TravaDoProcessoOptions> trava)
     {
+        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(trava);
+
         _context = context;
         _timeProvider = timeProvider;
+        _trava = new TravaDaLinhaDoProcesso(context, trava.Value);
     }
 
     public async Task<ProcessoSeletivo?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -88,12 +94,8 @@ public sealed partial class ProcessoSeletivoRepository : IProcessoSeletivoReposi
             .ConfigureAwait(false);
     }
 
-    public async Task TravarAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        await _context.Database
-            .ExecuteSqlInterpolatedAsync($"SELECT 1 FROM selecao.processos_seletivos WHERE id = {id} FOR UPDATE", cancellationToken)
-            .ConfigureAwait(false);
-    }
+    public Task TravarAsync(Guid id, CancellationToken cancellationToken = default) =>
+        _trava.AdquirirAsync(id, cancellationToken);
 
     private static IQueryable<ProcessoSeletivo> ComConfiguracao(IQueryable<ProcessoSeletivo> query) =>
         query

@@ -24,6 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Configuração dos critérios de desempate, do bônus regional, das opções de curso, da taxa de inscrição, da divulgação, da cascata de remanejamento e da classificação do processo seletivo.
 /// </summary>
 [ApiController]
+[EmiteEsperaEsgotadaPelaTrava]
 [Route("processos-seletivos")]
 [Tags("ProcessoSeletivo")]
 [Authorize]

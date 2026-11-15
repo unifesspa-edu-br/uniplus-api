@@ -55,6 +55,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/etapas")]
+    [EmiteEsperaEsgotadaPelaTrava]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -84,6 +85,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/fatos/{fatoCodigo}/opcoes")]
+    [EmiteEsperaEsgotadaPelaTrava]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -125,6 +127,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/atendimento-especializado")]
+    [EmiteEsperaEsgotadaPelaTrava]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -159,6 +162,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/distribuicao-vagas")]
+    [EmiteEsperaEsgotadaPelaTrava]
     [RequiresIdempotencyKey]
     [ProducesResponseType(typeof(IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]

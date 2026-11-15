@@ -189,6 +189,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -1945,6 +1955,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2013,6 +2033,16 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado: releia o estado do processo e envie de novo.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2186,6 +2216,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -2367,6 +2407,16 @@
                 }
               }
             }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2525,6 +2575,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -5390,6 +5450,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado: releia o estado do processo e envie de novo.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -5654,6 +5724,16 @@
           },
           "422": {
             "description": "Unprocessable Entity",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado: releia o estado do processo e envie de novo.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -6851,6 +6931,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -7025,6 +7115,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -7183,6 +7283,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7384,6 +7494,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -7876,6 +7996,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -8014,6 +8144,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8197,6 +8337,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -8355,6 +8505,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8529,6 +8689,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -8687,6 +8857,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -8861,6 +9041,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -9027,6 +9217,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -9185,6 +9385,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9368,6 +9578,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -9543,6 +9763,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -9701,6 +9931,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -9875,6 +10115,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -10041,6 +10291,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -10199,6 +10459,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -10382,6 +10652,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -10513,6 +10793,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -10636,6 +10926,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -10792,6 +11092,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -11047,6 +11357,16 @@
               }
             }
           },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
           "401": {
             "description": "Requisi\u00E7\u00E3o n\u00E3o autenticada \u2014 token ausente ou inv\u00E1lido (a rota exige autentica\u00E7\u00E3o). Tamb\u00E9m emitido quando o principal \u00E9 exigido e n\u00E3o est\u00E1 presente (uniplus.idempotency.principal_requerido).",
             "content": {
@@ -11177,6 +11497,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -11337,6 +11667,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -12103,6 +12443,16 @@
           },
           "413": {
             "description": "Corpo acima do limite dos endpoints idempotentes (uniplus.idempotency.body_muito_grande). O limite \u00E9 do filtro, n\u00E3o do servidor.",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Outra opera\u00E7\u00E3o ret\u00E9m o processo al\u00E9m do limite de espera (uniplus.concorrencia.espera_esgotada). Nada foi gravado, mas a recusa fica guardada pela Idempotency-Key: releia o estado do processo e envie com uma nova chave.",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

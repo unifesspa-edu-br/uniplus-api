@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -37,14 +38,14 @@ public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
         await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(configureContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
             EtapaProcesso tracked = carregado.Etapas.Single(e => e.Id == etapa.Id);
 
@@ -59,7 +60,7 @@ public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<
         }
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivo recarregado = (await new ProcessoSeletivoRepository(readContext, TimeProvider.System)
+        ProcessoSeletivo recarregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(readContext)
             .ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
         TipoEtapaSnapshot regravado = recarregado.Etapas.Single(e => e.Id == etapa.Id).TipoEtapa;
         regravado.AdmitePontuacao.Should().BeTrue();
@@ -81,14 +82,14 @@ public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
         await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(configureContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
             EtapaProcesso tracked = carregado.Etapas.Single(e => e.Id == doEnem.Id);
 
@@ -102,7 +103,7 @@ public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<
         }
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivo recarregado = (await new ProcessoSeletivoRepository(readContext, TimeProvider.System)
+        ProcessoSeletivo recarregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(readContext)
             .ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
         TipoEtapaSnapshot regravado = recarregado.Etapas.Single(e => e.Id == doEnem.Id).TipoEtapa;
         regravado.AdmiteEliminacao.Should().BeFalse("a regravação dos sinalizadores chegou ao banco");

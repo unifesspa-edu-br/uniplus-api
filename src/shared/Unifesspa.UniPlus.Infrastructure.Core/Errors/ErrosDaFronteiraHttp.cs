@@ -40,6 +40,9 @@ public static class ErrosDaFronteiraHttp
     public static readonly DomainErrorMapping CatalogoDePermissoesDesatualizado = new(
         StatusCodes.Status503ServiceUnavailable, "uniplus.autorizacao.catalogo.desatualizado", "Sistema em atualização");
 
+    public static readonly DomainErrorMapping EsperaPelaTravaEsgotada = new(
+        StatusCodes.Status503ServiceUnavailable, "uniplus.concorrencia.espera_esgotada", "Processo ocupado por outra operação");
+
     public static readonly DomainErrorMapping ErroInesperado = new(
         StatusCodes.Status500InternalServerError, "uniplus.internal.unexpected", "Erro interno do servidor");
 }

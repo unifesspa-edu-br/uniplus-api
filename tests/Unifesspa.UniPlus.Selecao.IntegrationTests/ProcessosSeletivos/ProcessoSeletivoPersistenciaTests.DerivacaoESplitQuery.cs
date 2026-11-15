@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed partial class ProcessoSeletivoPersistenciaTests
@@ -37,7 +38,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -46,7 +47,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
         // Clear+Add deve marcar as regras e condições antigas como órfãs e o cascade deve deletá-las.
         await using (UniPlusDbContext mutateContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(mutateContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(mutateContext);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
             carregado.DefinirRegrasDerivacao(
@@ -74,7 +75,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
             .CountAsync(c => regraIds.Contains(c.RegraDerivacaoConfiguradaId), CancellationToken.None);
         condicoesRestantes.Should().Be(0, "a condição da regra AC_PCD antiga foi apagada em cascata");
 
-        ProcessoSeletivoRepository readRepo = new(readContext, TimeProvider.System);
+        ProcessoSeletivoRepository readRepo = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
         ProcessoSeletivo recarregado = (await readRepo.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
         recarregado.RegrasDerivacao.Single().Regras.Should().ContainSingle(r => r.Contribui == "AC");
     }
@@ -184,7 +185,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
     {
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -202,7 +203,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
             .Options;
 
         await using MonolitoDbContext context = new(options);
-        ProcessoSeletivoRepository leitura = new(context, TimeProvider.System);
+        ProcessoSeletivoRepository leitura = ProcessoSeletivoRepositoryDeTeste.Criar(context);
         return await leitura.ObterComConfiguracaoAsync(processoId, CancellationToken.None);
     }
 

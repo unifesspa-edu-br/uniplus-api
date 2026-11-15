@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Mvc;
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Idempotency;
+using Unifesspa.UniPlus.Infrastructure.Core.OpenApi;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.API.Authorization;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
@@ -22,6 +23,7 @@ using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 /// Publicação do processo seletivo: congela a primeira versão da configuração e registra o ato em Publicações.
 /// </summary>
 [ApiController]
+[EmiteEsperaEsgotadaPelaTrava]
 [Route("processos-seletivos")]
 [Tags("ProcessoSeletivo")]
 [Authorize]

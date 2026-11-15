@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -70,7 +71,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -128,14 +129,14 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
         await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(configureContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
             Result desempateResult = carregado.DefinirCriteriosDesempate(
@@ -178,14 +179,14 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
         await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(configureContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
             // Reproduz a reconciliação do DefinirEtapasCommandHandler: o

@@ -29,6 +29,7 @@ using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 /// leiautes, que não é de um processo, tem permissão institucional.
 /// </summary>
 [ApiController]
+[EmiteEsperaEsgotadaPelaTrava]
 [Authorize]
 [SuppressMessage(
     "Performance",

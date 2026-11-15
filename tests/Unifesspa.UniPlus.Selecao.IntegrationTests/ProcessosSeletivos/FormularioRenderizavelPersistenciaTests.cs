@@ -189,7 +189,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         async Task<FormularioRenderizavelDto> LerAsync()
         {
             await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-            ProcessoSeletivoRepository repository = new(readContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
             Result<FormularioRenderizavelDto> resultado = await ObterFormularioRenderizavelQueryHandler.Handle(
                 new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao), repository,
                 new CertameDivulgadoRepository(readContext), RegistroCodecs,
@@ -232,7 +232,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<FormularioRenderizavelDto> lido = await ObterFormularioRenderizavelQueryHandler.Handle(
-            new ObterFormularioRenderizavelQuery(processo.Id, FinalidadeFormulario.Inscricao), new ProcessoSeletivoRepository(readContext, TimeProvider.System),
+            new ObterFormularioRenderizavelQuery(processo.Id, FinalidadeFormulario.Inscricao), ProcessoSeletivoRepositoryDeTeste.Criar(readContext),
             new CertameDivulgadoRepository(readContext), RegistroCodecs,
                 new EnderecosDosDocumentosDoAto(new CertameDivulgadoRepository(readContext), AcervoDeTeste.Endereco), CancellationToken.None);
         lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
@@ -311,7 +311,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         await using UniPlusDbContext rascunhoContext = _fixture.CreateDbContext();
         Result<FormularioRenderizavelDto> rascunho = await ObterFormularioRenderizavelDoRascunhoQueryHandler.Handle(
             new ObterFormularioRenderizavelDoRascunhoQuery(processo.Id, FinalidadeFormulario.Inscricao),
-            new ProcessoSeletivoRepository(rascunhoContext, TimeProvider.System), renomeado, fuso, CancellationToken.None);
+            ProcessoSeletivoRepositoryDeTeste.Criar(rascunhoContext), renomeado, fuso, CancellationToken.None);
 
         rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);
         Municipio(rascunho.Value!).Rotulo.Should().Be("Cidade onde mora", "o rascunho lê o catálogo vivo");
@@ -371,7 +371,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         await using UniPlusDbContext rascunhoContext = _fixture.CreateDbContext();
         Result<FormularioRenderizavelDto> rascunho = await ObterFormularioRenderizavelDoRascunhoQueryHandler.Handle(
             new ObterFormularioRenderizavelDoRascunhoQuery(processo.Id, FinalidadeFormulario.Inscricao),
-            new ProcessoSeletivoRepository(rascunhoContext, TimeProvider.System), catalogoVivo, fuso, CancellationToken.None);
+            ProcessoSeletivoRepositoryDeTeste.Criar(rascunhoContext), catalogoVivo, fuso, CancellationToken.None);
 
         rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);
         rascunho.Value!.FatosColetados.Single(static f => f.FatoCodigo == "COR_RACA").ValoresSelecionaveis!
@@ -397,7 +397,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         documento.Confirmar(1024, string.Concat(Enumerable.Repeat("ab01234567", 7))[..64], TimeProvider.System).IsSuccess.Should().BeTrue();
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
             VersaoConfiguracao versaoAtual = (await repository.ObterVersaoAtualAsync(processo.Id, CancellationToken.None))!;
             DadosEdital dados = DadosEdital.Criar(
@@ -440,7 +440,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
     {
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<FormularioRenderizavelDto> lido = await ObterFormularioRenderizavelQueryHandler.Handle(
-            new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao), new ProcessoSeletivoRepository(readContext, TimeProvider.System),
+            new ObterFormularioRenderizavelQuery(processoId, FinalidadeFormulario.Inscricao), ProcessoSeletivoRepositoryDeTeste.Criar(readContext),
             new CertameDivulgadoRepository(readContext), RegistroCodecs,
                 new EnderecosDosDocumentosDoAto(new CertameDivulgadoRepository(readContext), AcervoDeTeste.Endereco), CancellationToken.None);
         lido.IsSuccess.Should().BeTrue(lido.Error?.Message);
@@ -496,7 +496,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         Result<FormularioRenderizavelDto> lido = await ObterFormularioRenderizavelQueryHandler.Handle(
-            new ObterFormularioRenderizavelQuery(processo.Id, FinalidadeFormulario.Habilitacao), new ProcessoSeletivoRepository(readContext, TimeProvider.System),
+            new ObterFormularioRenderizavelQuery(processo.Id, FinalidadeFormulario.Habilitacao), ProcessoSeletivoRepositoryDeTeste.Criar(readContext),
             new CertameDivulgadoRepository(readContext), RegistroCodecs,
                 new EnderecosDosDocumentosDoAto(new CertameDivulgadoRepository(readContext), AcervoDeTeste.Endereco), CancellationToken.None);
 
@@ -548,7 +548,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
     private async Task PersistirDivulgadoAsync(ProcessoSeletivo processo, VersaoConfiguracao versao, DadosEdital dados)
     {
         await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await repository.AdicionarVersaoConfiguracaoAsync(versao, CancellationToken.None);
         await new CertameDivulgadoRepository(writeContext).AdicionarAsync(

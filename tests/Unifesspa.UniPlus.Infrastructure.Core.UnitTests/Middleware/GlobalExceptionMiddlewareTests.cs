@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 
 public sealed class GlobalExceptionMiddlewareTests
 {
-    private const string BaseUriDoCatalogo = "https://unifesspa-edu-br.github.io/uniplus-developers/erros/";
+    private const string BaseUriDoCatalogo = MiddlewareDeErrosDeTeste.BaseUriDoCatalogo;
 
     // ─── Fluxo sem exceção ─────────────────────────────────────────────────
 
@@ -29,13 +29,13 @@ public sealed class GlobalExceptionMiddlewareTests
     public async Task InvokeAsync_SemExcecao_DevePassarParaProximoMiddleware()
     {
         bool proximoChamado = false;
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
         {
             proximoChamado = true;
             return Task.CompletedTask;
         });
 
-        await middleware.InvokeAsync(CriarContexto());
+        await middleware.InvokeAsync(MiddlewareDeErrosDeTeste.CriarContexto());
 
         proximoChamado.Should().BeTrue();
     }
@@ -45,8 +45,8 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComValidationException_DeveRetornar422()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
             throw ExcecaoDeValidacao(ComandoValido() with { Email = "invalido" }));
 
         await middleware.InvokeAsync(context);
@@ -57,8 +57,8 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComValidationException_ContentTypeDeveSerApplicationProblemJson()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
             throw ExcecaoDeValidacao(ComandoValido() with { Nome = "" }));
 
         await middleware.InvokeAsync(context);
@@ -69,13 +69,13 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComValidationException_DeveConterArrayDeErrorsNoFormato()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
             throw ExcecaoDeValidacao(ComandoValido() with { Email = "invalido" }));
 
         await middleware.InvokeAsync(context);
 
-        using JsonDocument doc = await LerBodyAsync(context);
+        using JsonDocument doc = await MiddlewareDeErrosDeTeste.LerBodyAsync(context);
         JsonElement errors = doc.RootElement.GetProperty("errors");
         errors.GetArrayLength().Should().Be(1);
 
@@ -106,12 +106,12 @@ public sealed class GlobalExceptionMiddlewareTests
             nameof(ComandoDeTeste.Idade) => ComandoValido() with { Idade = int.Parse(valor, System.Globalization.CultureInfo.InvariantCulture) },
             _ => ComandoValido() with { Apelido = valor },
         };
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ => throw ExcecaoDeValidacao(comando));
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ => throw ExcecaoDeValidacao(comando));
 
         await middleware.InvokeAsync(context);
 
-        using JsonDocument doc = await LerBodyAsync(context);
+        using JsonDocument doc = await MiddlewareDeErrosDeTeste.LerBodyAsync(context);
         JsonElement errors = doc.RootElement.GetProperty("errors");
         errors.GetArrayLength().Should().Be(1);
         errors[0].GetProperty("code").GetString().Should().Be(codeEsperado);
@@ -120,26 +120,26 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComWithErrorCodeExplicito_CodeVemDoMapeamentoDaRegra()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
             throw ExcecaoDeValidacao(ComandoValido() with { Cpf = "123" }));
 
         await middleware.InvokeAsync(context);
 
-        using JsonDocument doc = await LerBodyAsync(context);
+        using JsonDocument doc = await MiddlewareDeErrosDeTeste.LerBodyAsync(context);
         doc.RootElement.GetProperty("errors")[0].GetProperty("code").GetString().Should().Be("uniplus.cpf.invalido");
     }
 
     [Fact]
     public async Task InvokeAsync_ComViolacaoEmColecao_FieldEmCamelCasePorSegmentoPreservandoIndice()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
             throw ExcecaoDeValidacao(ComandoValido() with { Itens = [new ItemDeTeste(1), new ItemDeTeste(0)] }));
 
         await middleware.InvokeAsync(context);
 
-        using JsonDocument doc = await LerBodyAsync(context);
+        using JsonDocument doc = await MiddlewareDeErrosDeTeste.LerBodyAsync(context);
         JsonElement primeiro = doc.RootElement.GetProperty("errors")[0];
         primeiro.GetProperty("field").GetString().Should().Be("itens[1].quantidade");
         primeiro.GetProperty("code").GetString().Should().Be(ValidationErrorCodes.Faixa);
@@ -148,13 +148,13 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComValidationException_TitleVemDoMapper()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
             throw ExcecaoDeValidacao(ComandoValido() with { Nome = "" }));
 
         await middleware.InvokeAsync(context);
 
-        using JsonDocument doc = await LerBodyAsync(context);
+        using JsonDocument doc = await MiddlewareDeErrosDeTeste.LerBodyAsync(context);
         doc.RootElement.GetProperty("title").GetString().Should().Be("Erro de validação");
         doc.RootElement.GetProperty("status").GetInt32().Should().Be(StatusCodes.Status422UnprocessableEntity);
     }
@@ -162,13 +162,13 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComValidationException_DeveConterExtensionsRfc9457()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
             throw ExcecaoDeValidacao(ComandoValido() with { Nome = "" }));
 
         await middleware.InvokeAsync(context);
 
-        using JsonDocument doc = await LerBodyAsync(context);
+        using JsonDocument doc = await MiddlewareDeErrosDeTeste.LerBodyAsync(context);
         doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.validacao");
         doc.RootElement.GetProperty("instance").GetString().Should().StartWith("urn:uuid:");
 
@@ -181,13 +181,13 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComValidationException_InstanceDeveSerUrnUuidOpaco()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
             throw ExcecaoDeValidacao(ComandoValido() with { Cpf = "123" }));
 
         await middleware.InvokeAsync(context);
 
-        using JsonDocument doc = await LerBodyAsync(context);
+        using JsonDocument doc = await MiddlewareDeErrosDeTeste.LerBodyAsync(context);
         string? instance = doc.RootElement.GetProperty("instance").GetString();
         instance.Should().StartWith("urn:uuid:");
         Guid.TryParse(instance!["urn:uuid:".Length..], out _).Should().BeTrue();
@@ -198,8 +198,8 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComDbUpdateConcurrencyException_DeveRetornar409()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
             throw new DbUpdateConcurrencyException("conflito sintético de teste"));
 
         await middleware.InvokeAsync(context);
@@ -210,8 +210,8 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComDbUpdateConcurrencyException_ContentTypeDeveSerApplicationProblemJson()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
             throw new DbUpdateConcurrencyException("conflito sintético de teste"));
 
         await middleware.InvokeAsync(context);
@@ -222,13 +222,13 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComDbUpdateConcurrencyException_DeveConterExtensionsRfc9457()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
             throw new DbUpdateConcurrencyException("conflito sintético de teste"));
 
         await middleware.InvokeAsync(context);
 
-        using JsonDocument doc = await LerBodyAsync(context);
+        using JsonDocument doc = await MiddlewareDeErrosDeTeste.LerBodyAsync(context);
         doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.concorrencia.conflito");
         doc.RootElement.GetProperty("status").GetInt32().Should().Be(StatusCodes.Status409Conflict);
         doc.RootElement.GetProperty("detail").GetString().Should().NotBeNullOrWhiteSpace();
@@ -244,8 +244,8 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComExcecaoGenerica_DeveRetornar500()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ => throw new InvalidOperationException("erro interno"));
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ => throw new InvalidOperationException("erro interno"));
 
         await middleware.InvokeAsync(context);
 
@@ -255,8 +255,8 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComExcecaoGenerica_ContentTypeDeveSerApplicationProblemJson()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ => throw new InvalidOperationException("qualquer erro"));
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ => throw new InvalidOperationException("qualquer erro"));
 
         await middleware.InvokeAsync(context);
 
@@ -266,13 +266,13 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComExcecaoGenerica_DetailDeveSerMensagemOpaca()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
             throw new InvalidOperationException("dado sensível do banco de dados"));
 
         await middleware.InvokeAsync(context);
 
-        using JsonDocument doc = await LerBodyAsync(context);
+        using JsonDocument doc = await MiddlewareDeErrosDeTeste.LerBodyAsync(context);
         string? detail = doc.RootElement.GetProperty("detail").GetString();
         detail.Should().NotContain("dado sensível", "a mensagem interna não deve vazar para o cliente");
         detail.Should().Be("Ocorreu um erro inesperado. Tente novamente mais tarde.");
@@ -281,12 +281,12 @@ public sealed class GlobalExceptionMiddlewareTests
     [Fact]
     public async Task InvokeAsync_ComExcecaoGenerica_DeveConterExtensionsRfc9457()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ => throw new InvalidOperationException("erro"));
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ => throw new InvalidOperationException("erro"));
 
         await middleware.InvokeAsync(context);
 
-        using JsonDocument doc = await LerBodyAsync(context);
+        using JsonDocument doc = await MiddlewareDeErrosDeTeste.LerBodyAsync(context);
         doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.internal.unexpected");
         doc.RootElement.GetProperty("instance").GetString().Should().StartWith("urn:uuid:");
 
@@ -308,12 +308,12 @@ public sealed class GlobalExceptionMiddlewareTests
     [InlineData("uniplus.internal.unexpected")]
     public async Task InvokeAsync_QualquerRecusaDoBoundary_TypeUsaBaseDoCatalogo(string codeEsperado)
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ => throw ExcecaoPara(codeEsperado));
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ => throw ExcecaoPara(codeEsperado));
 
         await middleware.InvokeAsync(context);
 
-        using JsonDocument doc = await LerBodyAsync(context);
+        using JsonDocument doc = await MiddlewareDeErrosDeTeste.LerBodyAsync(context);
         doc.RootElement.GetProperty("type").GetString()
             .Should().Be(BaseUriDoCatalogo + codeEsperado);
     }
@@ -340,41 +340,19 @@ public sealed class GlobalExceptionMiddlewareTests
         return new ValidationException(resultado.Errors);
     }
 
-    private static DefaultHttpContext CriarContexto()
-    {
-        DefaultHttpContext context = new();
-        context.Response.Body = new MemoryStream();
-        return context;
-    }
-
     [Fact(DisplayName = "Falha ao gravar o registro de acesso responde 503 com o código do catálogo, sem vazar a causa")]
     public async Task InvokeAsync_RegistroDeAcessoNaoGravado_Responde503()
     {
-        DefaultHttpContext context = CriarContexto();
-        GlobalExceptionMiddleware middleware = CriarMiddleware(_ =>
+        DefaultHttpContext context = MiddlewareDeErrosDeTeste.CriarContexto();
+        GlobalExceptionMiddleware middleware = MiddlewareDeErrosDeTeste.Criar(_ =>
             throw new RegistroDeAcessoNaoGravadoException(new InvalidOperationException("detalhe interno do banco")));
 
         await middleware.InvokeAsync(context);
 
         context.Response.StatusCode.Should().Be(StatusCodes.Status503ServiceUnavailable);
-        using JsonDocument doc = await LerBodyAsync(context);
+        using JsonDocument doc = await MiddlewareDeErrosDeTeste.LerBodyAsync(context);
         doc.RootElement.GetProperty("code").GetString().Should().Be("uniplus.autorizacao.registro_de_acesso.falha_ao_gravar");
         doc.RootElement.GetRawText().Should().NotContain("detalhe interno do banco");
-    }
-
-    private static GlobalExceptionMiddleware CriarMiddleware(RequestDelegate next)
-    {
-        ILogger<GlobalExceptionMiddleware> logger = Substitute.For<ILogger<GlobalExceptionMiddleware>>();
-        ProblemTypeUriFactory problemTypeUriFactory = new(
-            Options.Create(new ProblemTypeOptions { BaseUri = BaseUriDoCatalogo }));
-        DomainErrorMappingRegistry mapper = new([new KernelDomainErrorRegistration()], problemTypeUriFactory);
-        return new GlobalExceptionMiddleware(next, logger, problemTypeUriFactory, mapper);
-    }
-
-    private static async Task<JsonDocument> LerBodyAsync(HttpContext context)
-    {
-        context.Response.Body.Seek(0, SeekOrigin.Begin);
-        return await JsonDocument.ParseAsync(context.Response.Body);
     }
 
     public sealed record ItemDeTeste(int Quantidade);

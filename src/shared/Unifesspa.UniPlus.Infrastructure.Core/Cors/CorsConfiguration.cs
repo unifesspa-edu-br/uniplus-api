@@ -46,7 +46,7 @@ public static class CorsConfiguration
     // frontend simplesmente devolve null, sem erro e sem nada a investigar.
     //
     // Esta lista traz só o que a infraestrutura compartilhada emite sem que nenhum endpoint o
-    // declare. Todo header que um endpoint promete no contrato (EmiteHeader e EmiteETag) é somado
+    // declare. Todo header que um endpoint promete no contrato (EmiteHeader, EmiteETag e EmiteEsperaEsgotadaPelaTrava) é somado
     // à política na subida de cada aplicação, a partir dos controllers que ela de fato hospeda;
     // por isso um header de um módulo só é exposto onde esse módulo é servido, e nenhuma lista
     // paralela precisa ser mantida à mão.

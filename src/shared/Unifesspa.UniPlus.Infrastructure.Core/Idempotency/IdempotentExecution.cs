@@ -7,13 +7,23 @@ using Errors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc.Filters;
 
+using Middleware;
+
+using OpenApi;
+
+using Persistence;
+
 using Unifesspa.UniPlus.Authorization.Abstractions;
 
 /// <summary>
 /// Executa a action de uma requisição idempotente já reservada, capturando a resposta, e decide o destino da reserva: guarda
-/// a resposta cifrada quando ela reflete uma mutação persistida, ou libera a chave para o cliente repetir.
+/// a resposta cifrada quando ela reflete uma mutação persistida ou recusa a repetição, ou libera a chave para o cliente
+/// repetir.
 /// </summary>
-internal sealed class IdempotentExecution(IIdempotencyStore store, IUniPlusEncryptionService encryption)
+internal sealed class IdempotentExecution(
+    IIdempotencyStore store,
+    IUniPlusEncryptionService encryption,
+    IProblemTypeUriFactory problemTypeUriFactory)
 {
     public async Task ExecuteAsync(ResourceExecutingContext context, ResourceExecutionDelegate next, IdempotencyRequestKey key)
     {
@@ -49,7 +59,7 @@ internal sealed class IdempotentExecution(IIdempotencyStore store, IUniPlusEncry
         // do resultado, e a exceção pode ter nascido depois de o comando persistir.
         if (executed.Exception is not null && !executed.ExceptionHandled)
         {
-            await ReleaseIfFailureBeforeMutationAsync(executed.Exception, key).ConfigureAwait(false);
+            await ConcludeFailureAsync(http, executed, key, capture).ConfigureAwait(false);
             return;
         }
 
@@ -57,10 +67,23 @@ internal sealed class IdempotentExecution(IIdempotencyStore store, IUniPlusEncry
         await capture.ReturnToClientAsync(http.RequestAborted).ConfigureAwait(false);
     }
 
+    private async Task ConcludeFailureAsync(HttpContext http, ResourceExecutedContext executed, IdempotencyRequestKey key, ResponseCapture capture)
+    {
+        EsperaPelaTravaEsgotadaException? waitExhausted = Find<EsperaPelaTravaEsgotadaException>(executed.Exception!);
+        if (waitExhausted is not null)
+        {
+            await StoreRefusalToRepeatAsync(http, key, capture).ConfigureAwait(false);
+            executed.ExceptionHandled = true;
+            return;
+        }
+
+        await ReleaseIfFailureBeforeMutationAsync(executed.Exception!, key).ConfigureAwait(false);
+    }
+
     // Só se guarda a resposta que reflete uma mutação persistida (ADR-0027 §"Status codes em cache"): o 2xx, e o 4xx que o
     // handler devolve depois de gravar (RespostaDeRecusaAposGravacao), pois um retry o executaria sobre o estado já mudado.
-    // Todo outro 4xx produzido dentro do MVC, e todo 5xx, libera a reserva: o 4xx recusa a requisição, não a executa, e
-    // guardá-lo prenderia por 24 h o cliente que corrige a causa e repete a chave.
+    // Todo outro 4xx produzido dentro do MVC, e todo 5xx devolvido por ele, libera a reserva: o 4xx recusa a requisição, não
+    // a executa, e guardá-lo prenderia por 24 h o cliente que corrige a causa e repete a chave.
     private static bool ShouldReleaseReservation(ResourceExecutedContext executed, int status)
     {
         bool refusalAfterWrite = status < 500 && executed.Result is RespostaDeRecusaAposGravacao;
@@ -78,18 +101,38 @@ internal sealed class IdempotentExecution(IIdempotencyStore store, IUniPlusEncry
             StoredResponse.SerializeHeaders(http.Response), encrypted, http.RequestAborted).ConfigureAwait(false);
     }
 
-    // A falha de registrar o acesso e o catálogo desatualizado nascem antes da mutação: nada foi persistido, e prender a chave
-    // por 24 h faria a repetição, que agora poderia dar certo, receber 409.
+    // A espera esgotada guarda a recusa (StoreRefusalToRepeatAsync), porque a mesma requisição, repetida depois da corrida
+    // perdida, pode agir sobre o que o vencedor mudou. A falha de registrar o acesso e o catálogo desatualizado nascem antes
+    // da mutação: nada foi persistido, e prender a chave por 24 h faria a repetição, que agora poderia dar certo, receber 409.
     private async Task ReleaseIfFailureBeforeMutationAsync(Exception failure, IdempotencyRequestKey key)
+    {
+        if (Find<RegistroDeAcessoNaoGravadoException>(failure) is not null || Find<CatalogoDesatualizadoException>(failure) is not null)
+        {
+            await ReleaseAsync(key).ConfigureAwait(false);
+        }
+    }
+
+    // A reserva guarda o 503: o cliente que repete com a mesma chave recebe esta mesma recusa, e a saída é reler o estado e
+    // enviar com outra chave. O middleware de erros não guarda nada, então a resposta é escrita aqui.
+    private async Task StoreRefusalToRepeatAsync(HttpContext http, IdempotencyRequestKey key, ResponseCapture capture)
+    {
+        await RespostaDaEsperaEsgotadaPelaTrava.EscreverAsync(http, problemTypeUriFactory).ConfigureAwait(false);
+        await StoreAsync(http, key, capture).ConfigureAwait(false);
+        await capture.ReturnToClientAsync(http.RequestAborted).ConfigureAwait(false);
+    }
+
+    private static T? Find<T>(Exception failure)
+        where T : Exception
     {
         for (Exception? current = failure; current is not null; current = current.InnerException)
         {
-            if (current is RegistroDeAcessoNaoGravadoException or CatalogoDesatualizadoException)
+            if (current is T found)
             {
-                await ReleaseAsync(key).ConfigureAwait(false);
-                return;
+                return found;
             }
         }
+
+        return null;
     }
 
     // CancellationToken.None: o RequestAborted já está disparado quando o cliente cancelou a requisição.

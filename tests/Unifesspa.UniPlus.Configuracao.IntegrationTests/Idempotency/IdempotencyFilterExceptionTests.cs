@@ -91,7 +91,7 @@ public sealed class IdempotencyFilterExceptionTests
         userContext.IsAuthenticated.Returns(true);
         userContext.UserId.Returns("idempotency-filter-exception-test-user");
 
-        IdempotencyFilter filter = new(store, encryption, errorMapper, time, userContext, options);
+        IdempotencyFilter filter = new(store, encryption, errorMapper, time, userContext, options, services.GetRequiredService<IProblemTypeUriFactory>());
 
         MethodInfo idempotentMethod = typeof(TermosConsentimentoController)
             .GetMethod(nameof(TermosConsentimentoController.MarcarRevisado))!;
@@ -203,7 +203,8 @@ public sealed class IdempotencyFilterExceptionTests
             services.GetRequiredService<IDomainErrorMapper>(),
             services.GetRequiredService<TimeProvider>(),
             userContext,
-            services.GetRequiredService<IOptions<IdempotencyOptions>>());
+            services.GetRequiredService<IOptions<IdempotencyOptions>>(),
+            services.GetRequiredService<IProblemTypeUriFactory>());
         ControllerActionDescriptor actionDescriptor = new()
         {
             MethodInfo = typeof(TermosConsentimentoController).GetMethod(nameof(TermosConsentimentoController.MarcarRevisado))!,

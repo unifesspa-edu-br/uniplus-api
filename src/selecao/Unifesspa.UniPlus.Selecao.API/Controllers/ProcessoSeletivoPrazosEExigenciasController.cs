@@ -24,6 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Configuração do cronograma de fases, dos documentos exigidos, do identificador legível, da localidade, do algoritmo de contagem de prazo, da referência temporal dos fatos e das regras de derivação do processo seletivo.
 /// </summary>
 [ApiController]
+[EmiteEsperaEsgotadaPelaTrava]
 [Route("processos-seletivos")]
 [Tags("ProcessoSeletivo")]
 [Authorize]

@@ -30,6 +30,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// do que foi publicado se retira.
 /// </summary>
 [ApiController]
+[EmiteEsperaEsgotadaPelaTrava]
 [Route("processos-seletivos")]
 [Tags("ProcessoSeletivo")]
 [Authorize]

@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -88,7 +89,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -151,7 +152,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -189,14 +190,14 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
         await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(configureContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
             RegraEliminacao eliminacao = RegraEliminacao.Criar(
@@ -236,13 +237,13 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivo recarregado = (await new ProcessoSeletivoRepository(readContext, TimeProvider.System)
+        ProcessoSeletivo recarregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(readContext)
             .ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
         ConfiguracaoClassificacao classificacao = recarregado.Classificacao!;
@@ -272,7 +273,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -282,7 +283,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
 
         await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(configureContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
             ConfiguracaoClassificacao semEnem = ConfiguracaoClassificacao.Criar(
@@ -301,7 +302,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
 
         await using (UniPlusDbContext readContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivo recarregado = (await new ProcessoSeletivoRepository(readContext, TimeProvider.System)
+            ProcessoSeletivo recarregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(readContext)
                 .ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
             recarregado.Classificacao!.BaseadoEmEnem.Should().BeFalse();
             recarregado.Classificacao.ResolucaoPesoAreaEnem.Should().BeNull();
@@ -344,7 +345,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
         ProcessoSeletivo processo = NovoProcessoComClassificacaoEnem();
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            await new ProcessoSeletivoRepository(writeContext, TimeProvider.System).AdicionarAsync(processo, CancellationToken.None);
+            await ProcessoSeletivoRepositoryDeTeste.Criar(writeContext).AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
@@ -413,14 +414,14 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
         await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(configureContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
             // Reproduz a reconciliação do DefinirEtapasCommandHandler: o
@@ -474,7 +475,7 @@ public sealed class ClassificacaoPersistenciaTests : IClassFixture<ProcessoSelet
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Cors;
 
+using System.Reflection;
+
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Cors.Infrastructure;
@@ -61,7 +63,11 @@ internal static class PoliticaCorsDeTeste
         [
             .. controllers
                 .SelectMany(static controller => controller.GetMethods().Where(static m => m.DeclaringType != typeof(object)))
-                .Select(static metodo => new ControllerActionDescriptor { MethodInfo = metodo }),
+                .Select(static metodo => new ControllerActionDescriptor
+                {
+                    MethodInfo = metodo,
+                    ControllerTypeInfo = metodo.DeclaringType!.GetTypeInfo(),
+                }),
         ];
 
         IActionDescriptorCollectionProvider provider = Substitute.For<IActionDescriptorCollectionProvider>();

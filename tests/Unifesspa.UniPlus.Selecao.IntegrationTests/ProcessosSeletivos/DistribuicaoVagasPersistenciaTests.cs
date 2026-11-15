@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -85,7 +86,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -143,7 +144,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -174,7 +175,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         processo.DefinirDistribuicaoVagas([oferta], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            await new ProcessoSeletivoRepository(writeContext, TimeProvider.System).AdicionarAsync(processo, CancellationToken.None);
+            await ProcessoSeletivoRepositoryDeTeste.Criar(writeContext).AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
             // As colunas não têm CHECK de "ambas ou nenhuma": uma correção de dados pode anular
             // só uma delas.
@@ -208,14 +209,14 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
         await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(configureContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
             ConfiguracaoDistribuicaoVagas nova = ConfiguracaoDistribuicaoVagas.Criar(

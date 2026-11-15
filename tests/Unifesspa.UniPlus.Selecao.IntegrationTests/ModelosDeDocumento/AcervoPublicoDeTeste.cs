@@ -93,7 +93,7 @@ internal sealed class AcervoPublicoDeTeste
     private CopiaDosDocumentosDoAto CopiaDosDocumentos(UniPlusDbContext context, string bucket) =>
         new(
             new AtoDoProcessoRepository(context),
-            new ProcessoSeletivoRepository(context, TimeProvider.System),
+            ProcessoSeletivoRepositoryDeTeste.Criar(context),
             new RegistroCodecsEnvelope(),
             new AcervoDaDivulgacao(
                 new DocumentoAPublicarRepository(context), new ModeloDeDocumentoRepository(context), AcervoNoBucket(bucket), AcervoDeTeste.Endereco),

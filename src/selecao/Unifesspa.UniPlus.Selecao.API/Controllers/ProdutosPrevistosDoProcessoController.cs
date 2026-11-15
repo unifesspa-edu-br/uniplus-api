@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 /// de cada um na visão administrativa, e a publicação deles.
 /// </summary>
 [ApiController]
+[EmiteEsperaEsgotadaPelaTrava]
 [Route("processos-seletivos/{processoSeletivoId:guid}/produtos-previstos")]
 [Authorize]
 [SuppressMessage(
