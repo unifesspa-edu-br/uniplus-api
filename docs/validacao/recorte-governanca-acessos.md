@@ -138,20 +138,85 @@ enviar_pdf() {
 situacao_do_pedido() { api "$2" GET "/api/autorizacao/pedidos-de-concessao/$1" >/dev/null; corpo -r .situacao; }
 
 # Kafka lido de dentro do broker, pelo listener interno. O consumidor de linha de comando é só instrumento de teste.
-# Atenção: o valor do registro de acesso agora é Avro. O consumidor de linha de comando o mostra em binário, e o `jq`
-# dos passos que usam `valores_desde` foi escrito para o valor em JSON: para conferir o conteúdo, decodifique o valor
-# com o esquema registrado no Apicurio (o teste de integração do registro de acesso faz essa leitura).
+# O valor da mensagem é Avro (envelope do Confluent, com o schema-id nos 5 primeiros bytes). O consumidor de linha de
+# comando o mostra com o BytesDeserializer, que escreve cada byte não imprimível como \xNN, uma mensagem por linha.
 fim_do_topico() {
   dc exec -T kafka /opt/kafka/bin/kafka-get-offsets.sh --bootstrap-server kafka:29092 --topic "$TOPICO" --time -1 | awk -F: '{print $NF}'
 }
 mensagens_desde() {   # cabeçalhos, chave e valor (no Kafka 4.2 a opção é --formatter-property)
   dc exec -T kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:29092 --topic "$TOPICO" \
     --partition 0 --offset "$1" --timeout-ms 8000 \
-    --formatter-property print.offset=true --formatter-property print.headers=true --formatter-property print.key=true 2>/dev/null
+    --formatter-property print.offset=true --formatter-property print.headers=true --formatter-property print.key=true \
+    --formatter-property value.deserializer=org.apache.kafka.common.serialization.BytesDeserializer 2>/dev/null
 }
-valores_desde() {     # só o valor, um lote JSON por linha
+valores_desde() {     # só o valor, decodificado: a lista de {chave, registro} do lote, um lote JSON por linha
   dc exec -T kafka /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:29092 --topic "$TOPICO" \
-    --partition 0 --offset "$1" --timeout-ms 8000 2>/dev/null
+    --partition 0 --offset "$1" --timeout-ms 8000 \
+    --formatter-property value.deserializer=org.apache.kafka.common.serialization.BytesDeserializer 2>/dev/null \
+    | decodifica_lote
+}
+# Decodifica o Avro do lote com o esquema embutido no repositório, só com a biblioteca padrão do Python: sem
+# credencial e sem consultar o Apicurio. O instante sai em microssegundos, como está no valor.
+decodifica_lote() {
+  local programa  # o programa vai em -c, porque o stdin do Python é o fluxo do consumidor
+  programa=$(cat <<'PY'
+import json, re, sys
+
+esquema = json.load(open(sys.argv[1]))
+
+class Leitor:
+    def __init__(self, dados):
+        self.dados, self.posicao = dados, 0
+
+    def inteiro(self):
+        valor, deslocamento = 0, 0
+        while True:
+            byte = self.dados[self.posicao]
+            self.posicao += 1
+            valor |= (byte & 0x7F) << deslocamento
+            deslocamento += 7
+            if not byte & 0x80:
+                return (valor >> 1) ^ -(valor & 1)
+
+    def texto(self):
+        tamanho = self.inteiro()
+        trecho = self.dados[self.posicao:self.posicao + tamanho]
+        self.posicao += tamanho
+        return trecho.decode("utf-8")
+
+def ler(leitor, tipo):
+    if isinstance(tipo, list):
+        return ler(leitor, tipo[leitor.inteiro()])
+    if isinstance(tipo, dict):
+        if tipo["type"] == "record":
+            return {campo["name"]: ler(leitor, campo["type"]) for campo in tipo["fields"]}
+        if tipo["type"] == "array":
+            return ler_lista(leitor, tipo["items"])
+        return ler(leitor, tipo["type"])
+    if tipo == "string":
+        return leitor.texto()
+    if tipo in ("long", "int"):
+        return leitor.inteiro()
+    if tipo == "boolean":
+        leitor.posicao += 1
+        return leitor.dados[leitor.posicao - 1] != 0
+    return None
+
+def ler_lista(leitor, itens):
+    lista = []
+    while (quantidade := leitor.inteiro()) != 0:
+        if quantidade < 0:
+            leitor.inteiro()
+            quantidade = -quantidade
+        lista += [ler(leitor, itens) for _ in range(quantidade)]
+    return lista
+
+for linha in sys.stdin:
+    bruto = re.sub(r"\\x([0-9A-Fa-f]{2})", lambda m: chr(int(m.group(1), 16)), linha.rstrip("\n")).encode("latin-1")
+    print(json.dumps(ler(Leitor(bruto[5:]), esquema)["registros"], ensure_ascii=False))
+PY
+)
+  python3 -c "$programa" "$API_DIR/src/shared/Unifesspa.UniPlus.Authorization/Contracts/Schemas/LoteDoRegistroDeAcesso.avsc"
 }
 
 # O realm importado só registra os clients web em 4200-4203: alinha os quatro às portas novas.
