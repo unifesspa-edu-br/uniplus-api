@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Authorization;
 
-using System.Text.Json.Nodes;
-
 using AwesomeAssertions;
 
 using Microsoft.AspNetCore.Http;
@@ -13,6 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 
 using NSubstitute;
 
+using unifesspa.uniplus.autorizacao.registrodeacesso;
+
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Catalogo;
@@ -20,6 +20,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Enums;
 using Unifesspa.UniPlus.Authorization.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Authorization;
+using Unifesspa.UniPlus.Infrastructure.Core.Authorization.Avro;
 using Unifesspa.UniPlus.Infrastructure.Core.Middleware;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -256,11 +257,11 @@ public sealed class VerificadorDeAcessoHttpTests
     {
         (_, IReadOnlyList<RegistroDecisaoAcesso> gravados) = await LerPorTitularidadeAsync(_verificador, [Guid.CreateVersion7()]);
 
-        JsonNode registro = JsonNode.Parse(RegistroDeAcessoKafka.ValorDoLote(gravados))![0]!["registro"]!;
+        RegistroDeAcesso registro = MapeadorDoRegistroDeAcesso.ParaLote(gravados).Registros[0].Registro;
 
-        (registro["fonteGrant"]!.GetValue<string>(), registro["permissao"]!.GetValue<string>(), registro["resultado"]!.GetValue<string>(), registro["permitido"]!.GetValue<bool>())
+        (registro.FonteGrant, registro.Permissao, registro.Resultado, registro.Permitido)
             .Should().Be(("titularidade", LeituraPorTitularidade, "permitido", true));
-        new[] { "grantId", "perfilId", "versaoId", "escopoUnidadeId" }.Should().AllSatisfy(campo => registro[campo].Should().BeNull());
+        new[] { registro.GrantId, registro.PerfilId, registro.VersaoId, registro.EscopoUnidadeId }.Should().AllBeEquivalentTo((string?)null);
     }
 
     [Fact(DisplayName = "Sem sujeito, a leitura por titularidade responde identidade incompleta e nada é gravado")]

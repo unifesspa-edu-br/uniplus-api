@@ -6,6 +6,8 @@ using Confluent.Kafka;
 
 using NSubstitute;
 
+using unifesspa.uniplus.autorizacao.registrodeacesso;
+
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Enums;
@@ -25,10 +27,10 @@ public sealed class RegistroDeAcessoKafkaRecriacaoTests
     [Fact(DisplayName = "Erro fatal do produtor recria o produtor: a requisição corrente falha e a seguinte grava")]
     public async Task ErroFatal_RecriaOProdutor()
     {
-        IProducer<string, string> falho = ProdutorComErro(new Error(ErrorCode.Local_Fatal, "fatal", isFatal: true));
-        IProducer<string, string> novo = ProdutorQueEntrega();
-        Queue<IProducer<string, string>> produtores = new([falho, novo]);
-        using RegistroDeAcessoKafka registro = new(produtores.Dequeue, "topico", TimeSpan.FromSeconds(1), Relogio);
+        IProducer<string, byte[]> falho = ProdutorComErro(new Error(ErrorCode.Local_Fatal, "fatal", isFatal: true));
+        IProducer<string, byte[]> novo = ProdutorQueEntrega();
+        Queue<IProducer<string, byte[]>> produtores = new([falho, novo]);
+        using RegistroDeAcessoKafka registro = new(produtores.Dequeue, new SerializadorDoLoteDeTeste(), "topico", TimeSpan.FromSeconds(1), Relogio);
 
         Func<Task> primeira = () => registro.RegistrarAsync([Registro()], default);
         await primeira.Should().ThrowAsync<RegistroDeAcessoNaoGravadoException>();
@@ -36,15 +38,15 @@ public sealed class RegistroDeAcessoKafkaRecriacaoTests
 
         // O descarte do produtor antigo é em segundo plano.
         await Esperar(() => falho.ReceivedCalls().Any(static c => c.GetMethodInfo().Name == nameof(IDisposable.Dispose)));
-        await novo.Received(1).ProduceAsync(Arg.Any<string>(), Arg.Any<Message<string, string>>(), Arg.Any<CancellationToken>());
+        await novo.Received(1).ProduceAsync(Arg.Any<string>(), Arg.Any<Message<string, byte[]>>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Erro não fatal mantém o produtor")]
     public async Task ErroNaoFatal_MantemOProdutor()
     {
-        IProducer<string, string> produtor = ProdutorComErro(new Error(ErrorCode.Local_MsgTimedOut, "prazo"));
+        IProducer<string, byte[]> produtor = ProdutorComErro(new Error(ErrorCode.Local_MsgTimedOut, "prazo"));
         int criados = 0;
-        using RegistroDeAcessoKafka registro = new(() => { criados++; return produtor; }, "topico", TimeSpan.FromSeconds(1), Relogio);
+        using RegistroDeAcessoKafka registro = new(() => { criados++; return produtor; }, new SerializadorDoLoteDeTeste(), "topico", TimeSpan.FromSeconds(1), Relogio);
 
         Func<Task> acao = () => registro.RegistrarAsync([Registro()], default);
         await acao.Should().ThrowAsync<RegistroDeAcessoNaoGravadoException>();
@@ -56,31 +58,35 @@ public sealed class RegistroDeAcessoKafkaRecriacaoTests
     [Fact(DisplayName = "Falha ao criar o novo produtor sai como falha de registro, e o descarte não bloqueia a requisição")]
     public async Task FalhaNaFabrica_ViraFalhaDeRegistro()
     {
-        IProducer<string, string> falho = ProdutorComErro(new Error(ErrorCode.Local_Fatal, "fatal", isFatal: true));
+        IProducer<string, byte[]> falho = ProdutorComErro(new Error(ErrorCode.Local_Fatal, "fatal", isFatal: true));
         int chamadas = 0;
         using RegistroDeAcessoKafka registro = new(
-            () => ++chamadas == 1 ? falho : throw new InvalidOperationException("sem broker"), "topico", TimeSpan.FromSeconds(1), Relogio);
+            () => ++chamadas == 1 ? falho : throw new InvalidOperationException("sem broker"),
+            new SerializadorDoLoteDeTeste(),
+            "topico",
+            TimeSpan.FromSeconds(1),
+            Relogio);
 
         Func<Task> acao = () => registro.RegistrarAsync([Registro()], default);
 
         await acao.Should().ThrowAsync<RegistroDeAcessoNaoGravadoException>();
     }
 
-    private static IProducer<string, string> ProdutorComErro(Error erro)
+    private static IProducer<string, byte[]> ProdutorComErro(Error erro)
     {
-        IProducer<string, string> produtor = Substitute.For<IProducer<string, string>>();
-        produtor.ProduceAsync(Arg.Any<string>(), Arg.Any<Message<string, string>>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromException<DeliveryResult<string, string>>(
-                new ProduceException<string, string>(erro, new DeliveryResult<string, string>())));
+        IProducer<string, byte[]> produtor = Substitute.For<IProducer<string, byte[]>>();
+        produtor.ProduceAsync(Arg.Any<string>(), Arg.Any<Message<string, byte[]>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException<DeliveryResult<string, byte[]>>(
+                new ProduceException<string, byte[]>(erro, new DeliveryResult<string, byte[]>())));
 
         return produtor;
     }
 
-    private static IProducer<string, string> ProdutorQueEntrega()
+    private static IProducer<string, byte[]> ProdutorQueEntrega()
     {
-        IProducer<string, string> produtor = Substitute.For<IProducer<string, string>>();
-        produtor.ProduceAsync(Arg.Any<string>(), Arg.Any<Message<string, string>>(), Arg.Any<CancellationToken>())
-            .Returns(Task.FromResult(new DeliveryResult<string, string>()));
+        IProducer<string, byte[]> produtor = Substitute.For<IProducer<string, byte[]>>();
+        produtor.ProduceAsync(Arg.Any<string>(), Arg.Any<Message<string, byte[]>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new DeliveryResult<string, byte[]>()));
 
         return produtor;
     }

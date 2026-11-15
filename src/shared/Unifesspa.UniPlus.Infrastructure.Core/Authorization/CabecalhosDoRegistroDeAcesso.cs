@@ -17,7 +17,6 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 internal static class CabecalhosDoRegistroDeAcesso
 {
-    internal const string ContentType = "content-type";
     internal const string Tipo = "uniplus.tipo";
     internal const string VersaoSchema = "uniplus.versao-schema";
     internal const string ExecucaoId = "uniplus.execucao-id";
@@ -37,17 +36,7 @@ internal static class CabecalhosDoRegistroDeAcesso
 
     public static Headers De(IReadOnlyList<RegistroDecisaoAcesso> registros, DateTimeOffset produzidoEm, Activity? atividade)
     {
-        Headers cabecalhos = new()
-        {
-            { ContentType, Utf8("application/json") },
-            { Tipo, Utf8(TipoDoLote) },
-            { VersaoSchema, Utf8(VersaoDoSchema) },
-            { ExecucaoId, Utf8(registros[0].ExecucaoId.ToString()) },
-            { ProduzidoEm, Utf8(produzidoEm.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)) },
-            { Quantidade, Utf8(registros.Count.ToString(CultureInfo.InvariantCulture)) },
-            { Resultado, Utf8(ResultadoDoLote(registros)) },
-            { SensibilidadeMaxima, Utf8(registros.Select(static r => r.Sensibilidade).MaxBy(static s => OrdemDaSensibilidade[s])!) },
-        };
+        Headers cabecalhos = Obrigatorios(registros, produzidoEm);
 
         if (registros[0].ClienteOidc is { } cliente)
         {
@@ -61,6 +50,18 @@ internal static class CabecalhosDoRegistroDeAcesso
 
         return cabecalhos;
     }
+
+    private static Headers Obrigatorios(IReadOnlyList<RegistroDecisaoAcesso> registros, DateTimeOffset produzidoEm) =>
+        new()
+        {
+            { Tipo, Utf8(TipoDoLote) },
+            { VersaoSchema, Utf8(VersaoDoSchema) },
+            { ExecucaoId, Utf8(registros[0].ExecucaoId.ToString()) },
+            { ProduzidoEm, Utf8(produzidoEm.UtcDateTime.ToString("O", CultureInfo.InvariantCulture)) },
+            { Quantidade, Utf8(registros.Count.ToString(CultureInfo.InvariantCulture)) },
+            { Resultado, Utf8(ResultadoDoLote(registros)) },
+            { SensibilidadeMaxima, Utf8(registros.Select(static r => r.Sensibilidade).MaxBy(static s => OrdemDaSensibilidade[s])!) },
+        };
 
     private static string ResultadoDoLote(IReadOnlyList<RegistroDecisaoAcesso> registros)
     {
