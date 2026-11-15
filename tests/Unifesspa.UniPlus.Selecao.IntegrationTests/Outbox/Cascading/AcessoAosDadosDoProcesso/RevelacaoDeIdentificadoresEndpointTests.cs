@@ -201,7 +201,7 @@ public sealed class RevelacaoDeIdentificadoresEndpointTests : IAsyncLifetime
         RegistroDecisaoAcesso decisao = _decisoes.DaRevelacao(cenario, cenario.InscricaoDeErick).Should().ContainSingle().Subject;
         decisao.Permitido.Should().BeTrue();
         decisao.Permissao.Should().Be(PermissaoSelecao.DadosIdentificadoresRevelar.Codigo);
-        decisao.AtorSubject.Should().Be(PersonasDoAcesso.Diogo);
+        decisao.AtorContaId.Should().Be(PersonasDoAcesso.Diogo);
         decisao.FatoCodigo.Should().Be(FatosDoCenario.Identificador);
         decisao.InscricaoId.Should().Be(cenario.InscricaoDeErick);
         decisao.GrantId.Should().NotBeNull();

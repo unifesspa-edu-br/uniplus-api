@@ -190,7 +190,7 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
     private RegistroDeDecisoesDeTeste Registro => Fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>();
 
     private IEnumerable<RegistroDecisaoAcesso> DaCecilia(int antes) =>
-        Registro.Registrados.Skip(antes).Where(static r => r.AtorSubject == Cecilia.ContaId.ToString());
+        Registro.Registrados.Skip(antes).Where(static r => r.AtorContaId == Cecilia.ContaId.ToString());
 
     // Cecília só com o perfil de Encarregado de dados, recém-concedido e vigente.
     private async Task<HttpClient> EncarregadaAsync()

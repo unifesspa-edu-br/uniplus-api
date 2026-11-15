@@ -99,7 +99,7 @@ public sealed class RegistroDeAcessoKafkaTests : IAsyncLifetime
         json.RootElement.EnumerateArray().Select(static r => r.GetProperty("chave").GetString())
             .Should().BeEquivalentTo(lote.Select(static r => r.Chave));
         json.RootElement.EnumerateArray().Should().OnlyContain(e =>
-            e.GetProperty("registro").GetProperty("atorSubject").GetString() == "leandro.viana"
+            e.GetProperty("registro").GetProperty("atorContaId").GetString() == "leandro.viana"
             && e.GetProperty("registro").GetProperty("inscricaoId").GetGuid() == e.GetProperty("registro").GetProperty("resourceId").GetGuid());
     }
 

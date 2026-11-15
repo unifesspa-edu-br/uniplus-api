@@ -327,7 +327,7 @@ public sealed class AuthorizationDecisionServiceTests
     {
         RegistroDecisaoAcesso registro = await RegistroDe(Sujeito(concessoes: Concessao()), RequisitoPessoal());
         registro.AtorEmissor.Should().Be("https://idp.exemplo/realms/unifesspa");
-        registro.AtorSubject.Should().Be("conta-opaco-123");
+        registro.AtorContaId.Should().Be("conta-opaco-123");
         typeof(RegistroDecisaoAcesso).GetProperties().Select(static p => p.Name)
             .Should().NotContain("Jti", "o jti identifica a sessão e não é do registro");
     }

@@ -71,7 +71,7 @@ public sealed class HistoricoDasManifestacoesEndpointTests : ManifestacaoDaProte
             (1, "ENCERRADA"), (2, "SUBSTITUIDA"), (2, "VIGENTE"));
         historico.SelectMany(static m => m.EnumerateObject().Select(p => p.Name)).Should().NotContain(["autorContaId", "autorEmissor", "contaId", "emissor"]);
         Registro.Registrados.Skip(antes).Should().Contain(r =>
-            r.AtorSubject == Lucia.ContaId && r.Permissao == "configuracao:protecao-do-catalogo:consultar" && r.Permitido);
+            r.AtorContaId == Lucia.ContaId && r.Permissao == "configuracao:protecao-do-catalogo:consultar" && r.Permitido);
     }
 
     [Fact(DisplayName = "O histórico do item inexistente responde 404, e quem só mantém o cadastro recebe 403")]

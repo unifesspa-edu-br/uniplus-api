@@ -245,7 +245,7 @@ public sealed class VerificadorDeAcessoHttpTests
 
         resultado.Should().Be(ResultadoDoAcesso.Permitido);
         gravados.Select(static r => r.ResourceId).Should().Equal(pedidos.Select(static p => (Guid?)p));
-        gravados.Should().AllSatisfy(static r => (r.Permissao, r.FonteGrant, r.ResourceTipo, r.Sensibilidade, r.Resultado, r.AtorSubject)
+        gravados.Should().AllSatisfy(static r => (r.Permissao, r.FonteGrant, r.ResourceTipo, r.Sensibilidade, r.Resultado, r.AtorContaId)
             .Should().Be((LeituraPorTitularidade, "titularidade", "pedido", "pessoal", ResultadoDoAcesso.Permitido, "conta-opaco-123")));
         gravados.Should().AllSatisfy(static r => (r.GrantId, r.PerfilId, r.VersaoId, r.EscopoUnidadeId).Should().Be(((Guid?)null, (Guid?)null, (Guid?)null, (Guid?)null)));
         await _decisao.DidNotReceiveWithAnyArgs().DecidirAsync(default!, default!, default!, default!, default);

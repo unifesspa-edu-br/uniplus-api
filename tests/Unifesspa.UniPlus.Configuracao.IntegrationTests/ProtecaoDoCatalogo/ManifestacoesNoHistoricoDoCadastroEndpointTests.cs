@@ -79,7 +79,7 @@ public sealed class ManifestacoesNoHistoricoDoCadastroEndpointTests : Manifestac
         await LerAsync(client, Lucia, $"{Tipos}/{tipo}/protecao/manifestacoes");
         await LerAsync(client, Lucia, $"{Fatos}/{fato}/protecao/manifestacoes");
 
-        Registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Lucia.ContaId && r.Permitido)
+        Registro.Registrados.Skip(antes).Where(r => r.AtorContaId == Lucia.ContaId && r.Permitido)
             .Select(static r => r.Permissao).Should().HaveCount(2).And.OnlyContain(static p => p == "configuracao:protecao-do-catalogo:consultar");
     }
 

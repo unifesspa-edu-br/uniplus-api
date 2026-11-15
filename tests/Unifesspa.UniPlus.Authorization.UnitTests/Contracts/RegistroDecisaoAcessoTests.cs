@@ -30,7 +30,7 @@ public sealed class RegistroDecisaoAcessoTests
             && r.Permissao == Permissao
             && r.Sensibilidade == "pessoal"
             && r.ProcessoId == processo
-            && r.AtorSubject == "conta-opaco-123");
+            && r.AtorContaId == "conta-opaco-123");
     }
 
     [Theory(DisplayName = "O registro leva o client OIDC do contexto; sem ele, ou em branco, vai nulo e a decisão não muda")]

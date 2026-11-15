@@ -222,7 +222,7 @@ public sealed class ConsultaAdministrativaDasInscricoesEndpointTests : IAsyncLif
         resposta.Headers.CacheControl!.NoStore.Should().BeTrue("a lista traz nome e CPF mascarado");
         registros.Select(static r => r.ResourceId).Should().BeEquivalentTo(
             [cenario.InscricaoId, cenario.InscricaoDeErick, cenario.InscricaoDaServidora, cenario.InscricaoComGrupo], "um registro por inscrição enviada exibida");
-        registros.Should().OnlyContain(r => r.Permitido && r.AtorSubject == PersonasDoAcesso.Diogo && r.InscricaoId == r.ResourceId);
+        registros.Should().OnlyContain(r => r.Permitido && r.AtorContaId == PersonasDoAcesso.Diogo && r.InscricaoId == r.ResourceId);
     }
 
     private static async Task ConferirListaSemDadosAsync(HttpResponseMessage resposta)

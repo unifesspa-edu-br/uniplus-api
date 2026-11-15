@@ -43,7 +43,7 @@ public sealed class AceiteDoTermoNaConsultaDoEncarregadoNoHostTests : TermoNoHos
 
         aceite.GetProperty("pessoa").GetProperty("nome").GetString().Should().Be(Betina.Nome);
         aceite.GetProperty("resumo").GetString().Should().Be(Vigente.Resumo);
-        Registro.Registrados.Skip(antes).Should().Contain(r => r.AtorSubject == Cecilia.ContaId.ToString()
+        Registro.Registrados.Skip(antes).Should().Contain(r => r.AtorContaId == Cecilia.ContaId.ToString()
             && r.Permissao == "autorizacao:pedidos:consultar" && r.ResourceId == id && r.Resultado == ResultadoDoAcesso.Permitido);
     }
 

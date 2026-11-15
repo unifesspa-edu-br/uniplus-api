@@ -97,7 +97,7 @@ public sealed class FalhaAoRegistrarLeituraDosPropriosPedidosTests
 
         status.Should().Be(HttpStatusCode.OK, corpo);
         RegistroDecisaoAcesso gravado = registro.Gravados.Should().ContainSingle(r => r.ResourceId == pedido).Subject;
-        (gravado.AtorSubject, gravado.Permissao, gravado.FonteGrant, gravado.GrantId, gravado.Permitido)
+        (gravado.AtorContaId, gravado.Permissao, gravado.FonteGrant, gravado.GrantId, gravado.Permitido)
             .Should().Be((Paulo, "autorizacao:pedidos:ler-proprios", "titularidade", (Guid?)null, true));
     }
 
