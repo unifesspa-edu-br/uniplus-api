@@ -111,7 +111,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         outroCadastro.StatusCode.Should().Be(HttpStatusCode.Forbidden, permissao.Codigo);
         string codigo = permissao.Codigo;
         _fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados.Should().Contain(
-            r => r.AtorSubject == Leandro && r.Permissao == codigo && !r.Permitido && r.MotivoNegativa == "sem_concessao_aplicavel",
+            r => r.AtorContaId == Leandro && r.Permissao == codigo && !r.Permitido && r.MotivoNegativa == "sem_concessao_aplicavel",
             "toda negativa por falta de permissão é registrada, de qualquer sensibilidade");
     }
 

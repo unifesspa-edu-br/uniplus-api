@@ -10,5 +10,5 @@ internal sealed record TrilhaDeAcesso(string Ator, string Permissao, string Reso
     /// <summary>Os registros do único desfecho gravado pelo verificador.</summary>
     public static IEnumerable<TrilhaDeAcesso> Do(VerificadorDeTeste verificador) =>
         verificador.Gravados.Should().ContainSingle().Which
-            .Select(static r => new TrilhaDeAcesso(r.AtorSubject, r.Permissao, r.ResourceTipo, r.ResourceId, r.Resultado));
+            .Select(static r => new TrilhaDeAcesso(r.AtorContaId, r.Permissao, r.ResourceTipo, r.ResourceId, r.Resultado));
 }

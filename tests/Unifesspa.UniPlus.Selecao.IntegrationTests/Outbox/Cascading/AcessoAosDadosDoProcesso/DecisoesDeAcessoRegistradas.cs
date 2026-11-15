@@ -16,7 +16,7 @@ internal sealed class DecisoesDeAcessoRegistradas(CascadingFixture fixture)
         fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>().Registrados;
 
     public IEnumerable<RegistroDecisaoAcesso> DoAtor(string persona) =>
-        Todas.Where(r => r.AtorSubject == persona);
+        Todas.Where(r => r.AtorContaId == persona);
 
     public IReadOnlyList<RegistroDecisaoAcesso> DosDados(Guid processoId, PermissaoSelecao permissao) =>
         [.. Todas.Where(r => r.ProcessoId == processoId && r.Permissao == permissao.Codigo && r.ResourceId is not null)];

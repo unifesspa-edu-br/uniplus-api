@@ -23,7 +23,7 @@
       "required": [
         "instante",
         "atorEmissor",
-        "atorSubject",
+        "atorContaId",
         "requestId",
         "execucaoId",
         "permissao",
@@ -43,8 +43,8 @@
           "description": "Emissor do token de quem acessou.",
           "type": "string"
         },
-        "atorSubject": {
-          "description": "Subject opaco do token de quem acessou.",
+        "atorContaId": {
+          "description": "Identificador da conta, opaco, atribuído pelo emissor da identidade, de quem acessou.",
           "type": "string"
         },
         "requestId": {

@@ -51,7 +51,7 @@ public sealed class FilaETrilhaDasProvidenciasEndpointTests : ProvidenciaEndpoin
 
         trilha.RootElement.EnumerateArray().Select(static e => e.GetProperty("tipo").GetString()).Should().Contain("providencia_solicitada");
         Registro.Registrados.Skip(antes).Should().Contain(r =>
-            r.ResourceTipo == "providencia-sobre-concessao" && r.ResourceId == providencia && r.AtorSubject == Diogo.ContaId && r.Permissao == Administrar);
+            r.ResourceTipo == "providencia-sobre-concessao" && r.ResourceId == providencia && r.AtorContaId == Diogo.ContaId && r.Permissao == Administrar);
     }
 
     // Três providências abertas, com a abertura recuada para antes de qualquer outra da base e invertida em relação aos

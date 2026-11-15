@@ -48,7 +48,7 @@ public sealed class AberturaDeDocumentosPorClassificacaoEndpointTests : IAsyncLi
 
         pessoalComPessoais.StatusCode.Should().Be(HttpStatusCode.OK, await pessoalComPessoais.Content.ReadAsStringAsync());
         laudoComPessoais.StatusCode.Should().Be(HttpStatusCode.NotFound, "documentos pessoais não abrem o laudo sensível");
-        _decisoes.DoDocumento(cenario).Should().ContainSingle(r => r.AtorSubject == PersonasDoAcesso.Leandro && !r.Permitido && r.ResourceId == cenario.Arquivos.Sensivel)
+        _decisoes.DoDocumento(cenario).Should().ContainSingle(r => r.AtorContaId == PersonasDoAcesso.Leandro && !r.Permitido && r.ResourceId == cenario.Arquivos.Sensivel)
             .Which.Permissao.Should().Be(PermissaoSelecao.DocumentosSensiveisConsultar.Codigo, "a recusa vem da permissão da classe, e não da falta de consultar as inscrições");
         laudoComSensiveis.StatusCode.Should().Be(HttpStatusCode.OK, await laudoComSensiveis.Content.ReadAsStringAsync());
         laudoComSensiveis.Headers.CacheControl!.NoStore.Should().BeTrue();

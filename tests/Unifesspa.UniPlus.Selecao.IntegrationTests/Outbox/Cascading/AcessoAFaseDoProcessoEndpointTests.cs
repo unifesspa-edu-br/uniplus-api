@@ -97,7 +97,7 @@ public sealed class AcessoAFaseDoProcessoEndpointTests : IAsyncLifetime
         RegistroDecisaoAcesso registro = Registros().Where(r => r.ProcessoId == publicado.ProcessoId)
             .Should().ContainSingle("só a negativa é gravada").Subject;
         registro.Permitido.Should().BeFalse();
-        registro.AtorSubject.Should().Be(Leandro);
+        registro.AtorContaId.Should().Be(Leandro);
         registro.Permissao.Should().Be(PermissaoSelecao.DocumentosDaFasePublicar.Codigo);
         registro.ResourceId.Should().Be(publicado.FaseId);
     }

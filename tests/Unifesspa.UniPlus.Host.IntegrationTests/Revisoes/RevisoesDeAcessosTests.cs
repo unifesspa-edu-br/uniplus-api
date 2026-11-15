@@ -158,7 +158,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
 
         (await EnviarAsync(diogo, HttpMethod.Post, RotaDasRevisoes)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Diogo.ContaId.ToString())
+        registro.Registrados.Skip(antes).Where(r => r.AtorContaId == Diogo.ContaId.ToString())
             .Select(static r => (r.Permissao, r.Resultado))
             .Should().BeEquivalentTo([("autorizacao:revisoes:conduzir", ResultadoDoAcesso.Negado)]);
     }
@@ -176,7 +176,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
 
         await ConferirErroAsync(await EnviarAsync(marlene, HttpMethod.Post, rota), HttpStatusCode.UnprocessableEntity, "revisao.decisor_nao_decide_o_item");
 
-        registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Marlene.ContaId.ToString())
+        registro.Registrados.Skip(antes).Where(r => r.AtorContaId == Marlene.ContaId.ToString())
             .Select(r => (r.Permissao, r.Resultado, r.ResourceId))
             .Should().BeEquivalentTo([("autorizacao:revisoes:rever-protecao-de-dados", ResultadoDoAcesso.Negado, (Guid?)revisaoId)]);
     }

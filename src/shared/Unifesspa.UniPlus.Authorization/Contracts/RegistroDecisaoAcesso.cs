@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 /// <remarks>
 /// <para>
-/// <b>O ator é o par emissor e <i>subject</i> do token</b>, que são opacos: o registro
+/// <b>O ator é o par emissor e identificador da conta no token</b>, que são opacos: o registro
 /// precisa dizer quem acessou, e a consulta por pessoa depende disso. O <c>jti</c>
 /// identifica a sessão e não entra. A correlação com a requisição fica pelo
 /// <see cref="RequestId"/>. O resource entra por metadados (tipo, identificadores
@@ -37,8 +37,8 @@ public sealed record RegistroDecisaoAcesso
     /// <summary>Emissor do token de quem acessou.</summary>
     public string AtorEmissor { get; }
 
-    /// <summary><i>Subject</i> opaco do token de quem acessou.</summary>
-    public string AtorSubject { get; }
+    /// <summary>Identificador da conta, opaco e atribuído pelo emissor da identidade, de quem acessou.</summary>
+    public string AtorContaId { get; }
 
     /// <summary>Correlação da requisição, para cruzar com logs e mensagens. Vem do cliente e não identifica o acesso.</summary>
     public string RequestId { get; }
@@ -124,7 +124,7 @@ public sealed record RegistroDecisaoAcesso
 
     private RegistroDecisaoAcesso(
         string atorEmissor,
-        string atorSubject,
+        string atorContaId,
         DateTimeOffset instante,
         string requestId,
         Guid execucaoId,
@@ -148,7 +148,7 @@ public sealed record RegistroDecisaoAcesso
         Guid? escopoUnidadeId)
     {
         AtorEmissor = atorEmissor;
-        AtorSubject = atorSubject;
+        AtorContaId = atorContaId;
         Instante = instante;
         RequestId = requestId;
         ExecucaoId = execucaoId;
@@ -269,7 +269,7 @@ public sealed record RegistroDecisaoAcesso
         {
             ExecucaoId,
             AtorEmissor,
-            AtorSubject,
+            AtorContaId,
             Permissao,
             ResourceTipo,
             ResourceId,
