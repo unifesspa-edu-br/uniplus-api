@@ -51,6 +51,7 @@ internal sealed class GeracaoDeEnvioAoInepConfiguration : IEntityTypeConfigurati
         builder.HasOne<ProcessoSeletivo>()
             .WithMany()
             .HasForeignKey(g => g.ProcessoSeletivoId)
+            .HasConstraintName("fk_geracoes_de_envio_ao_inep_processo_seletivo")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(g => new { g.ProcessoSeletivoId, g.EtapaProcessoId, g.EdicaoCodigo, g.GeradoEm })

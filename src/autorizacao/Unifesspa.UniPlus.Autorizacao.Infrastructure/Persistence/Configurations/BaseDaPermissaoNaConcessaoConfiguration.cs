@@ -52,6 +52,7 @@ internal sealed class BaseDaPermissaoNaConcessaoConfiguration : IEntityTypeConfi
         builder.HasOne<Concessao>()
             .WithMany(c => c.Bases)
             .HasForeignKey(b => new { b.PerfilId, b.ConcessaoId })
+            .HasConstraintName("fk_bases_da_permissao_concedida_concessao")
             .HasPrincipalKey(c => new { c.PerfilId, c.Id })
             .OnDelete(DeleteBehavior.Restrict);
 

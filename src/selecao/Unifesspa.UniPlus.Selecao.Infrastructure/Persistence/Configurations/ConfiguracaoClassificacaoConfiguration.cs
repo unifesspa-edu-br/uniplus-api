@@ -63,6 +63,7 @@ internal sealed class ConfiguracaoClassificacaoConfiguration : IEntityTypeConfig
         builder.HasMany(c => c.RegrasEliminacao)
             .WithOne()
             .HasForeignKey(r => r.ConfiguracaoClassificacaoId)
+            .HasConstraintName("fk_regras_eliminacao_configuracao_classificacao")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(c => c.RegrasEliminacao)
@@ -79,6 +80,7 @@ internal sealed class ConfiguracaoClassificacaoConfiguration : IEntityTypeConfig
         builder.HasMany(c => c.QuadroPesoAreaEnem)
             .WithOne()
             .HasForeignKey(g => g.ConfiguracaoClassificacaoId)
+            .HasConstraintName("fk_grupos_do_quadro_de_pesos_configuracao_classificacao")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(c => c.QuadroPesoAreaEnem)

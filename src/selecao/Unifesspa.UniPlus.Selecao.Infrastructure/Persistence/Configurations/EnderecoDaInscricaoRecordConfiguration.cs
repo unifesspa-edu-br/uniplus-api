@@ -50,6 +50,7 @@ internal sealed class EnderecoDaInscricaoRecordConfiguration : IEntityTypeConfig
         builder.HasOne<OcorrenciaDeGrupoDaInscricaoRecord>()
             .WithMany()
             .HasForeignKey(e => e.OcorrenciaId)
+            .HasConstraintName("fk_enderecos_da_inscricao_ocorrencia_de_grupo_da_inscricao")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(e => new { e.InscricaoId, e.OcorrenciaId, e.FatoCodigo })

@@ -151,6 +151,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         builder.HasMany(f => f.ValoresDominioDeclarados)
             .WithOne()
             .HasForeignKey(v => v.FatoCandidatoId)
+            .HasConstraintName("fk_valores_de_dominio_do_fato_fato_do_candidato")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(f => f.ValoresDominioDeclarados)

@@ -25,6 +25,7 @@ public sealed class AnexoDoAtoDoProcessoConfiguration : IEntityTypeConfiguration
         builder.HasOne<DocumentoAPublicar>()
             .WithMany()
             .HasForeignKey(a => a.DocumentoAPublicarId)
+            .HasConstraintName("fk_anexos_do_ato_do_processo_documento_a_publicar")
             .OnDelete(DeleteBehavior.Restrict);
 
         // Dentro do ato, um documento é anexo uma só vez e a posição é única. Entre atos o documento

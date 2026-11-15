@@ -44,7 +44,7 @@ public sealed class BaseLegalBonusRegionalConfiguration : IEntityTypeConfigurati
         {
             m.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             m.ToTable("municipios_da_base_legal_bonus");
-            m.WithOwner().HasForeignKey("BaseLegalBonusRegionalId");
+            m.WithOwner().HasForeignKey("BaseLegalBonusRegionalId").HasConstraintName("fk_municipios_da_base_legal_bonus_base_legal_do_bonus_regional");
 
             m.Property(x => x.CodigoIbge).HasColumnName("codigo_ibge").HasMaxLength(7).IsRequired();
             m.Property(x => x.Nome).HasColumnName("nome").HasMaxLength(150).IsRequired();

@@ -49,6 +49,7 @@ internal sealed class ConfiguracaoBonusRegionalConfiguration : IEntityTypeConfig
         builder.HasMany(b => b.Municipios)
             .WithOne()
             .HasForeignKey(m => m.ConfiguracaoBonusRegionalId)
+            .HasConstraintName("fk_municipios_do_bonus_regional_configuracao_de_bonus_regional")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(b => b.Municipios)

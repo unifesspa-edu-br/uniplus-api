@@ -63,6 +63,7 @@ internal sealed class LancamentoDeNotaConfiguration : IEntityTypeConfiguration<L
         builder.HasOne<InscritoDoLoteDeNotas>()
             .WithMany()
             .HasForeignKey(l => new { l.LoteId, l.InscricaoId })
+            .HasConstraintName("fk_lancamentos_de_nota_inscrito_do_lote_de_notas")
             .HasPrincipalKey(i => new { i.LoteId, i.InscricaoId })
             .OnDelete(DeleteBehavior.Restrict);
 

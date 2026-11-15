@@ -40,10 +40,17 @@ internal sealed class ConfiguracaoCascataRemanejamentoConfiguration : IEntityTyp
         builder.HasMany(c => c.Destinos)
             .WithOne()
             .HasForeignKey(d => d.ConfiguracaoCascataRemanejamentoId)
+            .HasConstraintName("fk_destinos_remanejamento_configuracao_de_remanejamento")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(c => c.Destinos)
             .UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasOne<ProcessoSeletivo>()
+            .WithOne(p => p.Cascata)
+            .HasForeignKey<ConfiguracaoCascataRemanejamento>(c => c.ProcessoSeletivoId)
+            .HasConstraintName("fk_configuracoes_de_remanejamento_processo_seletivo")
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Uma cascata por processo (§2.2 da story — a cascata NÃO é por oferta).
         builder.HasIndex(c => c.ProcessoSeletivoId)

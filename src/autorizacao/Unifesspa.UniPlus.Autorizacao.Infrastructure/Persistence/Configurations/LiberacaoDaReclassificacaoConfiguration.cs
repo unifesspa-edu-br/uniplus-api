@@ -56,10 +56,11 @@ internal sealed class LiberacaoDaReclassificacaoConfiguration : IEntityTypeConfi
         builder.Ignore(l => l.Decisor);
         builder.Ignore(l => l.OrdinalLocal);
 
-        builder.HasOne<ReclassificacaoDaPermissao>().WithMany().HasForeignKey(l => l.ReclassificacaoId).OnDelete(DeleteBehavior.Restrict);
+        builder.HasOne<ReclassificacaoDaPermissao>().WithMany().HasForeignKey(l => l.ReclassificacaoId).HasConstraintName("fk_liberacoes_da_reclassificacao_reclassificacao_da_permissao").OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<Concessao>()
             .WithMany()
             .HasForeignKey(l => new { l.PerfilId, l.ConcessaoId })
+            .HasConstraintName("fk_liberacoes_da_reclassificacao_concessao")
             .HasPrincipalKey(c => new { c.PerfilId, c.Id })
             .OnDelete(DeleteBehavior.Restrict);
 

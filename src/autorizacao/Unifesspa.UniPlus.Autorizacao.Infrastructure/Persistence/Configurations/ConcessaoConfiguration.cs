@@ -99,6 +99,7 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
         builder.HasOne<JanelaDeMigracao>()
             .WithMany()
             .HasForeignKey(c => new { c.RevogadaPelaJanelaId, c.PerfilId })
+            .HasConstraintName("fk_concessoes_janela_de_migracao_que_revogou")
             .HasPrincipalKey(j => new { j.Id, j.PerfilId })
             .OnDelete(DeleteBehavior.Restrict);
 

@@ -112,6 +112,7 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
         builder.HasMany(c => c.Modalidades)
             .WithOne()
             .HasForeignKey(m => m.ConfiguracaoDistribuicaoVagasId)
+            .HasConstraintName("fk_modalidades_selecionadas_configuracao_de_vagas")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(c => c.Modalidades)
@@ -124,6 +125,7 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
         builder.HasMany(c => c.VagasOfertadas)
             .WithOne()
             .HasForeignKey(v => v.ConfiguracaoDistribuicaoVagasId)
+            .HasConstraintName("fk_vagas_ofertadas_configuracao_de_vagas")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(c => c.VagasOfertadas)

@@ -102,6 +102,7 @@ public sealed class NoExigenciaConfiguration : IEntityTypeConfiguration<NoExigen
         builder.HasOne<NoExigencia>()
             .WithMany(n => n.Filhos)
             .HasForeignKey(n => n.NoPaiId)
+            .HasConstraintName("fk_nos_da_arvore_de_exigencias_no_pai")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.Navigation(n => n.Filhos)
@@ -113,6 +114,7 @@ public sealed class NoExigenciaConfiguration : IEntityTypeConfiguration<NoExigen
         builder.HasOne(n => n.DocumentoExigido)
             .WithMany()
             .HasForeignKey(n => n.DocumentoExigidoId)
+            .HasConstraintName("fk_nos_da_arvore_de_exigencias_documento_exigido")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(n => n.DocumentoExigidoId)

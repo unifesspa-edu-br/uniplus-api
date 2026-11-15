@@ -43,6 +43,9 @@ internal sealed class ModalidadeSelecionadaConfiguration : IEntityTypeConfigurat
         builder.Property(m => m.RegraRemanejamento).HasConversion<string>().HasMaxLength(TokenMaxLength).IsRequired();
         builder.Property(m => m.RemanejamentoDestino).HasMaxLength(CodigoMaxLength);
         builder.Property(m => m.RemanejamentoPar).HasMaxLength(CodigoMaxLength);
+
+        builder.HasIndex(m => m.ConfiguracaoDistribuicaoVagasId)
+            .HasDatabaseName("ix_modalidades_selecionadas_configuracao_de_vagas");
         builder.Property(m => m.RemanejamentoFallback).HasMaxLength(CodigoMaxLength);
 
         // A regra é a cópia por valor da regra do cadastro, lida e gravada sempre inteira com a

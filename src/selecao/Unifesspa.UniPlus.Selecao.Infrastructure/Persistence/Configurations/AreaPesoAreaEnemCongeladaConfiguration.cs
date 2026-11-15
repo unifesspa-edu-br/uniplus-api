@@ -70,6 +70,7 @@ internal sealed class AreaPesoAreaEnemCongeladaConfiguration : IEntityTypeConfig
             .HasComment("Nota mínima da área (0 a 1000), copiada da resolução de Pesos por Área; nulo quando a área não tem corte.");
 
         builder.HasIndex(a => new { a.GrupoPesoAreaEnemCongeladoId, a.Codigo })
-            .IsUnique();
+            .IsUnique()
+            .HasDatabaseName("ux_areas_do_quadro_de_pesos_grupo_do_quadro_codigo");
     }
 }
