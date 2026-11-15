@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 /// Publicações.
 /// </para>
 /// </remarks>
-public sealed class ProdutoDaEtapa : EntityBase
+public sealed class ProdutoDaEtapa : EntityBase, IProdutoPublicado
 {
     public Guid EtapaProcessoId { get; private set; }
 
@@ -69,11 +69,11 @@ public sealed class ProdutoDaEtapa : EntityBase
     }
 
     /// <summary>
-    /// Troca o papel preservando a linha. A reconciliação da restauração casa o produto vivo
+    /// Troca o papel preservando a linha. A reconciliação da restauração (<see cref="Services.ProdutosPublicados"/>) casa o produto vivo
     /// pelo ato quando o papel foi o que mudou; recriá-lo faria a mesma matéria sair e voltar,
     /// com DELETE e INSERT disputando o mesmo slot do índice único na mesma transação.
     /// </summary>
-    internal void AtualizarPapel(PapelProdutoFase? papel) => Papel = papel;
+    void IProdutoPublicado.AtualizarPapel(PapelProdutoFase? papel) => Papel = papel;
 
     internal void VincularEtapa(Guid etapaProcessoId) => EtapaProcessoId = etapaProcessoId;
 }

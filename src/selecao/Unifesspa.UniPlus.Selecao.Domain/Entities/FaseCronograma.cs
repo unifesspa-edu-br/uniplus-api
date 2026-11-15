@@ -630,9 +630,10 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// fase que nunca deixou de existir, e derrubaria toda referência guardada por Id —
     /// documentos exigidos e referência temporal de fatos apontam para a fase pelo Id
     /// congelado. Os produtos exigem o mesmo cuidado pela mesma razão, e são reconciliados
-    /// pelo par <see cref="ProdutoDaFase.AtoCodigo"/> + <see cref="ProdutoDaFase.Papel"/>,
-    /// reusando a instância rastreada; <c>bancas_requeridas</c> não é referenciada por Id
-    /// de fora da fase e por isso segue com a reposição simples.
+    /// pelo par <see cref="ProdutoDaFase.AtoCodigo"/> + <see cref="ProdutoDaFase.Papel"/>
+    /// (<see cref="ProdutosPublicados"/>), reusando a instância rastreada;
+    /// <c>bancas_requeridas</c> não é referenciada por Id de fora da fase e por isso segue com
+    /// a reposição simples.
     /// </para>
     /// <para>
     /// <b>O recorte de competência viaja junto da sua banca, e não precisa de reconciliação
@@ -648,86 +649,61 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(origem);
         ArgumentNullException.ThrowIfNull(produtos);
 
+        CopiarOrigemCanonicaDe(origem);
+        CopiarDecisoesDoEditalDe(origem);
+        ReconciliarProdutos(produtos);
+        ReporBancasRequeridasDe(origem);
+        ReporRegraDeRecursoDe(origem, produtos);
+    }
+
+    private void CopiarOrigemCanonicaDe(FaseCronograma origem)
+    {
         FaseCanonicaOrigemId = origem.FaseCanonicaOrigemId;
-        Ordem = origem.Ordem;
         Codigo = origem.Codigo.Trim();
         OrigemData = origem.OrigemData;
         AgrupaEtapas = origem.AgrupaEtapas;
         PermiteComplementacao = origem.PermiteComplementacao;
         ColetaInscricao = origem.ColetaInscricao;
         ColetaSolicitacaoIsencao = origem.ColetaSolicitacaoIsencao;
+    }
+
+    private void CopiarDecisoesDoEditalDe(FaseCronograma origem)
+    {
+        Ordem = origem.Ordem;
         Inicio = EmUtc(origem.Inicio);
         Fim = EmUtc(origem.Fim);
         FaseConcluinteCodigo = NormalizarCodigo(origem.FaseConcluinteCodigo);
         EmiteParecerIndividual = origem.EmiteParecerIndividual;
         DefinirUnidadeResponsavel(origem.UnidadeResponsavel);
+    }
 
-        // Duas passadas, porque a chave da linha é o par ato + papel e o papel é justamente
-        // o que a edição pode trocar. A primeira casa o par inteiro — a linha que não mudou.
-        // A segunda casa pelo ato entre as rastreadas que sobraram, e é ela que preserva o
-        // Id de quem só trocou de papel: sem ela, a linha sairia como órfã e voltaria como
-        // inserção, DELETE e INSERT disputando o mesmo slot do índice único na mesma
-        // transação. Cada rastreada é consumida uma vez só, senão duas publicações da mesma
-        // matéria — a preliminar e a definitiva — casariam com a mesma linha.
-        List<ProdutoDaFase> disponiveis = [.. _produtos];
-        List<ProdutoDaFase> reconciliados = [];
-        List<ProdutoDaFase> semPar = [];
+    private void ReconciliarProdutos(IReadOnlyList<ProdutoDaFase> chegados)
+    {
+        ProdutosReconciliados<ProdutoDaFase> reconciliados = ProdutosPublicados
+            .ReconciliarPreservandoIdentidadeMesmoComTrocaDePapel(_produtos, chegados, static ato => ato);
 
-        foreach (ProdutoDaFase novo in produtos)
-        {
-            ProdutoDaFase? mesmoParaOMesmoPapel = disponiveis
-                .Find(p => string.Equals(p.AtoCodigo, novo.AtoCodigo, StringComparison.Ordinal)
-                    && p.Papel == novo.Papel);
-            if (mesmoParaOMesmoPapel is not null)
-            {
-                disponiveis.Remove(mesmoParaOMesmoPapel);
-                reconciliados.Add(mesmoParaOMesmoPapel);
-            }
-            else
-            {
-                // Guarda o lugar na ordem de chegada; a segunda passada o preenche.
-                reconciliados.Add(novo);
-                semPar.Add(novo);
-            }
-        }
-
-        foreach (ProdutoDaFase novo in semPar)
-        {
-            ProdutoDaFase? mesmoAto = disponiveis
-                .Find(p => string.Equals(p.AtoCodigo, novo.AtoCodigo, StringComparison.Ordinal));
-            if (mesmoAto is null)
-            {
-                continue;
-            }
-
-            disponiveis.Remove(mesmoAto);
-            mesmoAto.AtualizarPapel(novo.Papel);
-            reconciliados[reconciliados.IndexOf(novo)] = mesmoAto;
-        }
-
-        // Os que sobraram fora de `reconciliados` saem da coleção e o EF os remove como
-        // órfãos; os rastreados voltam para ela e sobrevivem com o Id que já tinham.
         _produtos.Clear();
-        foreach (ProdutoDaFase produto in reconciliados)
-        {
-            produto.VincularFase(Id);
-            _produtos.Add(produto);
-        }
+        AdotarProdutos(reconciliados.Produtos);
+    }
 
+    private void ReporBancasRequeridasDe(FaseCronograma origem)
+    {
         List<BancaRequerida> bancasRequeridas = [.. origem.BancasRequeridas];
+
         _bancasRequeridas.Clear();
-        foreach (BancaRequerida banca in bancasRequeridas)
+        AdotarBancasRequeridas(bancasRequeridas);
+    }
+
+    private void ReporRegraDeRecursoDe(FaseCronograma origem, IReadOnlyList<ProdutoDaFase> produtos)
+    {
+        RegraRecurso = origem.RegraRecurso;
+        if (RegraRecurso is null)
         {
-            banca.VincularFase(Id);
-            _bancasRequeridas.Add(banca);
+            return;
         }
 
-        RegraRecurso = origem.RegraRecurso;
-        if (RegraRecurso is not null)
-        {
-            RegraRecurso.VincularFase(Id);
-            RemapearAncoraDoRecurso(RegraRecurso, produtos);
-        }
+        RegraRecurso.VincularFase(Id);
+        RemapearAncoraDoRecurso(RegraRecurso, produtos);
     }
 
     /// <summary>
@@ -735,9 +711,9 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A reconciliação acima troca a instância de cada produto pela <b>rastreada</b> de
-    /// mesmo <see cref="ProdutoDaFase.AtoCodigo"/>, que tem o Id que já estava no banco — e
-    /// não o Id da coleção que chegou, para onde a âncora aponta. Sem este remapeamento a
+    /// A reconciliação de <see cref="AtualizarDe"/> troca a instância de cada produto pela
+    /// <b>rastreada</b> de mesmo <see cref="ProdutoDaFase.AtoCodigo"/>, que tem o Id que já
+    /// estava no banco — e não o Id da coleção que chegou, para onde a âncora aponta. Sem este remapeamento a
     /// regra de recurso ficaria referenciando uma linha que a mesma transação remove como
     /// órfã, e o sintoma só apareceria muito depois, ao tentar resolver a configuração de
     /// recurso de um ato publicado. Vale para os dois caminhos que chamam este método: a
@@ -775,22 +751,31 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         IReadOnlyList<BancaRequerida> bancasRequeridas,
         RegraRecursoFase? regraRecurso)
     {
-        foreach (ProdutoDaFase produto in produtos)
-        {
-            produto.VincularFase(Id);
-            _produtos.Add(produto);
-        }
-
-        foreach (BancaRequerida banca in bancasRequeridas)
-        {
-            banca.VincularFase(Id);
-            _bancasRequeridas.Add(banca);
-        }
+        AdotarProdutos(produtos);
+        AdotarBancasRequeridas(bancasRequeridas);
 
         if (regraRecurso is not null)
         {
             regraRecurso.VincularFase(Id);
             RegraRecurso = regraRecurso;
+        }
+    }
+
+    private void AdotarProdutos(IEnumerable<ProdutoDaFase> produtos)
+    {
+        foreach (ProdutoDaFase produto in produtos)
+        {
+            produto.VincularFase(Id);
+            _produtos.Add(produto);
+        }
+    }
+
+    private void AdotarBancasRequeridas(IEnumerable<BancaRequerida> bancasRequeridas)
+    {
+        foreach (BancaRequerida banca in bancasRequeridas)
+        {
+            banca.VincularFase(Id);
+            _bancasRequeridas.Add(banca);
         }
     }
 

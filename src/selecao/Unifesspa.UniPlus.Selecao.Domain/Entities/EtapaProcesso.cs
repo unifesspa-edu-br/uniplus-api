@@ -154,66 +154,42 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// é publicada uma vez como preliminar e outra como definitiva. Ver
     /// <see cref="FaseCronograma"/>, onde a mesma chave governa os produtos da fase.
     /// </summary>
+    /// <remarks>
+    /// O ato é comparado em NFC, como o documento canônico o emite: sem normalizar, o mesmo
+    /// código escrito uma vez com acento composto e outra com acento decomposto atravessaria a
+    /// guarda e produziria duas linhas com <c>atoCodigo</c> e papel idênticos no documento. A
+    /// reconciliação pelo par (<see cref="ProdutosPublicados"/>) preserva a linha do que não mudou
+    /// em vez de trocar a coleção: o cliente devolve o que leu, e recriar a linha giraria o Id, que
+    /// entra nos bytes canônicos — o hash da publicação mudaria a cada gravação idêntica.
+    /// </remarks>
     public Result DefinirProdutos(IReadOnlyList<ProdutoDaEtapa> produtos)
     {
         ArgumentNullException.ThrowIfNull(produtos);
 
-        // A chave da duplicidade é a mesma sob a qual a reconciliação abaixo e o documento
-        // canônico comparam o ato: sem normalizar aqui, o mesmo código escrito uma vez com
-        // acento composto e outra com acento decomposto atravessa a guarda e produz duas
-        // linhas que o documento emite com atoCodigo e papel idênticos — duas âncoras
-        // indistinguíveis para a janela recursal resolver.
-        ProdutoDaEtapa? duplicado = produtos
-            .GroupBy(static p => (Ato: HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), p.Papel))
-            .FirstOrDefault(static g => g.Count() > 1)?.First();
-        if (duplicado is not null)
+        if (ProdutosPublicados.PrimeiroParRepetido(produtos, HashCanonicalComputer.NormalizeNfc) is { } duplicado)
         {
-            return Result.Failure(new DomainError(
-                "EtapaProcesso.AtoDuplicadoNaEtapa",
-                $"A etapa declara o ato '{duplicado.AtoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por etapa."));
+            return AtoDuplicadoNaEtapa(duplicado);
         }
 
-        // Reconcilia pelo par que identifica o produto, em vez de trocar a coleção inteira: o
-        // cliente devolve o que leu, e recriar a linha do que não mudou gira o Id, que entra nos
-        // bytes canônicos. O hash da publicação passaria a mudar a cada gravação idêntica, e com
-        // ele a resposta para "esta configuração ainda é a que foi publicada?".
-        //
-        // É o mesmo tratamento que a reposição da versão congelada já dá alguns métodos abaixo,
-        // e pela mesma razão que o cronograma reconcilia as fases: preservar a linha preserva o
-        // CreatedAt e as referências que apontam para o Id — aqui, o produto âncora do recurso.
-        List<ProdutoDaEtapa> disponiveis = [.. _produtos];
-        List<ProdutoDaEtapa> reconciliados = [];
-        foreach (ProdutoDaEtapa declarado in produtos)
-        {
-            // Compara sob a mesma normalização que o documento canônico usa: o cliente pode
-            // devolver o acento em forma decomposta, e ordinalmente esse texto não é o mesmo.
-            // Sem isto, um reenvio idêntico aos olhos do operador recriaria a linha.
-            string atoDeclarado = HashCanonicalComputer.NormalizeNfc(declarado.AtoCodigo);
-            ProdutoDaEtapa? existente = disponiveis.Find(p =>
-                string.Equals(
-                    HashCanonicalComputer.NormalizeNfc(p.AtoCodigo),
-                    atoDeclarado,
-                    StringComparison.Ordinal)
-                && p.Papel == declarado.Papel);
+        SubstituirProdutos(ProdutosPublicados
+            .ReconciliarPreservandoIdentidade(_produtos, produtos, HashCanonicalComputer.NormalizeNfc).Produtos);
 
-            if (existente is null)
-            {
-                reconciliados.Add(declarado);
-                continue;
-            }
+        return Result.Success();
+    }
 
-            disponiveis.Remove(existente);
-            reconciliados.Add(existente);
-        }
+    private static Result AtoDuplicadoNaEtapa(ProdutoDaEtapa duplicado) =>
+        Result.Failure(new DomainError(
+            "EtapaProcesso.AtoDuplicadoNaEtapa",
+            $"A etapa declara o ato '{duplicado.AtoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por etapa."));
 
+    private void SubstituirProdutos(IEnumerable<ProdutoDaEtapa> produtos)
+    {
         _produtos.Clear();
-        foreach (ProdutoDaEtapa produto in reconciliados)
+        foreach (ProdutoDaEtapa produto in produtos)
         {
             produto.VincularEtapa(Id);
             _produtos.Add(produto);
         }
-
-        return Result.Success();
     }
 
     /// <summary>
@@ -414,9 +390,25 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     {
         ArgumentNullException.ThrowIfNull(congelada);
 
+        ReporIdentificacaoDe(congelada);
+        ReporAvaliacaoDe(congelada);
+        ReporFilhasDe(congelada);
+    }
+
+    private void ReporIdentificacaoDe(EtapaProcesso congelada)
+    {
         Nome = congelada.Nome.Trim();
         Carater = congelada.Carater;
         TipoEtapa = congelada.TipoEtapa;
+        Ordem = congelada.Ordem;
+        FaseCodigo = string.IsNullOrWhiteSpace(congelada.FaseCodigo) ? null : congelada.FaseCodigo.Trim();
+        Inicio = congelada.Inicio?.ToUniversalTime();
+        Fim = congelada.Fim?.ToUniversalTime();
+        EmiteParecerIndividual = congelada.EmiteParecerIndividual;
+    }
+
+    private void ReporAvaliacaoDe(EtapaProcesso congelada)
+    {
         Peso = congelada.Peso;
         NotaMinima = congelada.NotaMinima;
         NotaMaxima = congelada.NotaMaxima;
@@ -424,135 +416,118 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         FormaDeAvaliacao = congelada.FormaDeAvaliacao;
         RegraConsolidacao = congelada.RegraConsolidacao;
         EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(congelada.EscalaDeAtendimento);
-        Ordem = congelada.Ordem;
-        FaseCodigo = string.IsNullOrWhiteSpace(congelada.FaseCodigo) ? null : congelada.FaseCodigo.Trim();
-        Inicio = congelada.Inicio?.ToUniversalTime();
         ReporItensCongelados(congelada.ItensDeAvaliacao);
-        Fim = congelada.Fim?.ToUniversalTime();
-        EmiteParecerIndividual = congelada.EmiteParecerIndividual;
+    }
 
-        // Produtos em duas passadas, como na fase: a primeira casa o par ato + papel — a linha
-        // que não mudou — e a segunda casa pelo ato entre as que sobraram, preservando o Id de
-        // quem só trocou de papel. Sem isso a linha sairia como órfã e voltaria como inserção,
-        // com DELETE e INSERT disputando o mesmo slot do índice único (etapa, ato, papel)
-        // dentro da mesma transação. Cada viva é consumida uma vez só, senão a preliminar e a
-        // definitiva da mesma matéria casariam com a mesma linha.
-        Dictionary<Guid, Guid> ancoraCongeladaParaViva = [];
-        List<ProdutoDaEtapa> disponiveis = [.. _produtos];
-        List<ProdutoDaEtapa> reconciliados = [];
-        List<ProdutoDaEtapa> semPar = [];
+    private void ReporFilhasDe(EtapaProcesso congelada)
+    {
+        IReadOnlyDictionary<Guid, Guid> produtoVivoPorCongelado = ReporProdutosDe(congelada);
+        ReporBancasDe(congelada);
+        ReporRecursosDe(congelada, produtoVivoPorCongelado);
+    }
 
-        foreach (ProdutoDaEtapa congelado in congelada.Produtos)
-        {
-            // Sob a mesma normalização da gravação: o envelope congela o ato em NFC, e a linha
-            // viva guarda o que o cliente escreveu. Casar ordinalmente faria a linha existente
-            // sair como órfã e a congelada entrar como inserção, com DELETE e INSERT disputando
-            // o mesmo slot do índice único (etapa, ato, papel) dentro da mesma transação.
-            string atoCongelado = HashCanonicalComputer.NormalizeNfc(congelado.AtoCodigo);
-            ProdutoDaEtapa? mesmoParaOMesmoPapel = disponiveis.Find(
-                p => string.Equals(
-                        HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), atoCongelado, StringComparison.Ordinal)
-                    && p.Papel == congelado.Papel);
-            if (mesmoParaOMesmoPapel is not null)
-            {
-                disponiveis.Remove(mesmoParaOMesmoPapel);
-                reconciliados.Add(mesmoParaOMesmoPapel);
-                ancoraCongeladaParaViva[congelado.Id] = mesmoParaOMesmoPapel.Id;
-            }
-            else
-            {
-                // Guarda o lugar na ordem de chegada; a segunda passada o preenche.
-                reconciliados.Add(congelado);
-                semPar.Add(congelado);
-            }
-        }
+    /// <summary>
+    /// Produtos em duas passadas, como na fase: a linha que só trocou de papel mantém o Id, senão
+    /// sairia como órfã e voltaria como inserção, com DELETE e INSERT disputando o mesmo slot do
+    /// índice único (etapa, ato, papel) dentro da mesma transação. O ato é comparado em NFC: o
+    /// envelope congela o ato em NFC e a linha viva guarda o que o cliente escreveu.
+    /// </summary>
+    /// <returns>O Id da linha que ficou, por Id do produto congelado.</returns>
+    private IReadOnlyDictionary<Guid, Guid> ReporProdutosDe(EtapaProcesso congelada)
+    {
+        ProdutosReconciliados<ProdutoDaEtapa> reconciliados = ProdutosPublicados
+            .ReconciliarPreservandoIdentidadeMesmoComTrocaDePapel(
+                _produtos, congelada.Produtos, HashCanonicalComputer.NormalizeNfc);
 
-        foreach (ProdutoDaEtapa congelado in semPar)
-        {
-            string atoCongelado = HashCanonicalComputer.NormalizeNfc(congelado.AtoCodigo);
-            ProdutoDaEtapa? mesmoAto = disponiveis.Find(
-                p => string.Equals(
-                    HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), atoCongelado, StringComparison.Ordinal));
-            if (mesmoAto is null)
-            {
-                continue;
-            }
+        SubstituirProdutos(reconciliados.Produtos);
 
-            disponiveis.Remove(mesmoAto);
-            mesmoAto.AtualizarPapel(congelado.Papel);
-            reconciliados[reconciliados.IndexOf(congelado)] = mesmoAto;
-            ancoraCongeladaParaViva[congelado.Id] = mesmoAto.Id;
-        }
+        return reconciliados.IdentidadeVivaPorIdentidadeChegada;
+    }
 
-        _produtos.Clear();
-        foreach (ProdutoDaEtapa produto in reconciliados)
-        {
-            produto.VincularEtapa(Id);
-            _produtos.Add(produto);
-        }
-
-        // Bancas pelo código, que é a chave do índice único da etapa — mesmo motivo do par
-        // acima. O tipo de origem é reposto na linha viva em vez de recriá-la.
-        List<BancaDaEtapa> bancasVivas = [.. _bancas];
-        List<BancaDaEtapa> bancasFinais = [];
+    /// <summary>
+    /// Bancas pelo código, que é a chave do índice único da etapa — mesmo motivo dos produtos. O
+    /// tipo de origem é reposto na linha viva em vez de recriá-la.
+    /// </summary>
+    private void ReporBancasDe(EtapaProcesso congelada)
+    {
+        List<BancaDaEtapa> vivas = [.. _bancas];
+        List<BancaDaEtapa> finais = [];
         foreach (BancaDaEtapa bancaCongelada in congelada.Bancas)
         {
-            string codigoCongelado = HashCanonicalComputer.NormalizeNfc(bancaCongelada.Codigo);
-            BancaDaEtapa? mesmoCodigo = bancasVivas.Find(
-                b => string.Equals(
-                    HashCanonicalComputer.NormalizeNfc(b.Codigo), codigoCongelado, StringComparison.Ordinal));
-            if (mesmoCodigo is null)
-            {
-                bancasFinais.Add(bancaCongelada);
-                continue;
-            }
-
-            bancasVivas.Remove(mesmoCodigo);
-            mesmoCodigo.ReporOrigem(bancaCongelada.TipoBancaOrigemId);
-            bancasFinais.Add(mesmoCodigo);
+            finais.Add(ReconciliarBancaPeloCodigo(vivas, bancaCongelada));
         }
 
         _bancas.Clear();
-        foreach (BancaDaEtapa banca in bancasFinais)
+        foreach (BancaDaEtapa banca in finais)
         {
             banca.VincularEtapa(Id);
             _bancas.Add(banca);
         }
+    }
 
-        // Recursos pelo Id, que o envelope congela: aqui não há índice único além da própria
-        // chave primária, e é ELA que colidiria se o mesmo recurso saísse e voltasse na mesma
-        // transação. A âncora é traduzida para o Id que o produto tem depois da reconciliação —
-        // sem isso ela apontaria para uma linha que esta mesma transação remove como órfã, e o
-        // sintoma só apareceria muito depois, ao resolver o recurso de um ato publicado.
-        List<RecursoDaEtapa> recursosVivos = [.. _recursos];
-        List<RecursoDaEtapa> recursosFinais = [];
-        foreach (RecursoDaEtapa congelado in congelada.Recursos)
+    private static BancaDaEtapa ReconciliarBancaPeloCodigo(List<BancaDaEtapa> vivas, BancaDaEtapa congelada)
+    {
+        string codigoCongelado = HashCanonicalComputer.NormalizeNfc(congelada.Codigo);
+        BancaDaEtapa? mesmoCodigo = vivas.Find(
+            b => string.Equals(
+                HashCanonicalComputer.NormalizeNfc(b.Codigo), codigoCongelado, StringComparison.Ordinal));
+        if (mesmoCodigo is null)
         {
-            Guid ancora = ancoraCongeladaParaViva.TryGetValue(congelado.ProdutoAncoraId, out Guid viva)
-                ? viva
-                : congelado.ProdutoAncoraId;
+            return congelada;
+        }
 
-            // Casa pela ÂNCORA, que é o que identifica a janela no negócio — o envelope não
-            // congela o id do recurso, e casar por ele nunca acertaria: a linha viva sairia e
-            // voltaria a cada restauração, trocando de identidade sem que nada tivesse mudado.
-            RecursoDaEtapa? mesmaAncora = recursosVivos.Find(
-                r => r.Ancora == congelado.Ancora && r.ProdutoAncoraId == ancora);
-            RecursoDaEtapa destino = mesmaAncora ?? congelado;
-            if (mesmaAncora is not null)
-            {
-                recursosVivos.Remove(mesmaAncora);
-            }
+        vivas.Remove(mesmoCodigo);
+        mesmoCodigo.ReporOrigem(congelada.TipoBancaOrigemId);
 
-            destino.ReporDadosCongelados(congelado.Ancora, congelado.Regra, congelado.Args, ancora);
-            recursosFinais.Add(destino);
+        return mesmoCodigo;
+    }
+
+    /// <summary>
+    /// Recursos pelo Id da âncora, traduzido para o Id que o produto tem depois da reconciliação:
+    /// sem isso a âncora apontaria para uma linha que esta mesma transação remove como órfã, e o
+    /// sintoma só apareceria muito depois, ao resolver o recurso de um ato publicado. Aqui não há
+    /// índice único além da própria chave primária, e é ELA que colidiria se o mesmo recurso saísse
+    /// e voltasse na mesma transação.
+    /// </summary>
+    private void ReporRecursosDe(EtapaProcesso congelada, IReadOnlyDictionary<Guid, Guid> produtoVivoPorCongelado)
+    {
+        List<RecursoDaEtapa> vivos = [.. _recursos];
+        List<RecursoDaEtapa> finais = [];
+        foreach (RecursoDaEtapa recursoCongelado in congelada.Recursos)
+        {
+            finais.Add(ReconciliarRecursoPelaAncora(vivos, recursoCongelado, produtoVivoPorCongelado));
         }
 
         _recursos.Clear();
-        foreach (RecursoDaEtapa recurso in recursosFinais)
+        foreach (RecursoDaEtapa recurso in finais)
         {
             recurso.VincularEtapa(Id);
             _recursos.Add(recurso);
         }
+    }
+
+    /// <summary>
+    /// Casa pela ÂNCORA, que é o que identifica a janela no negócio — o envelope não congela o id do
+    /// recurso, e casar por ele nunca acertaria: a linha viva sairia e voltaria a cada restauração,
+    /// trocando de identidade sem que nada tivesse mudado.
+    /// </summary>
+    private static RecursoDaEtapa ReconciliarRecursoPelaAncora(
+        List<RecursoDaEtapa> vivos,
+        RecursoDaEtapa congelado,
+        IReadOnlyDictionary<Guid, Guid> produtoVivoPorCongelado)
+    {
+        Guid ancora = produtoVivoPorCongelado.GetValueOrDefault(congelado.ProdutoAncoraId, congelado.ProdutoAncoraId);
+        RecursoDaEtapa? mesmaAncora = vivos.Find(
+            r => r.Ancora == congelado.Ancora && r.ProdutoAncoraId == ancora);
+        RecursoDaEtapa destino = mesmaAncora ?? congelado;
+        if (mesmaAncora is not null)
+        {
+            vivos.Remove(mesmaAncora);
+        }
+
+        destino.ReporDadosCongelados(congelado.Ancora, congelado.Regra, congelado.Args, ancora);
+
+        return destino;
     }
 
     /// <summary>
