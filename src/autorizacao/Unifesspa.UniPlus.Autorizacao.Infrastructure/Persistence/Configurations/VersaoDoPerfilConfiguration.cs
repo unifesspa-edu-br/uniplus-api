@@ -136,6 +136,7 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
         builder.HasOne<VersaoDoPerfil>()
             .WithMany()
             .HasForeignKey(v => new { v.PerfilId, v.VersaoDoDocumento })
+            .HasConstraintName("fk_versoes_do_perfil_versao_do_perfil_do_documento")
             .HasPrincipalKey(v => new { v.PerfilId, v.Id })
             .OnDelete(DeleteBehavior.Restrict);
     }

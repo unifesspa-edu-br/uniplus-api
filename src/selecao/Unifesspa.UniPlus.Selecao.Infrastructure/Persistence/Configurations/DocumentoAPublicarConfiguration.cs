@@ -36,6 +36,7 @@ public sealed class DocumentoAPublicarConfiguration : IEntityTypeConfiguration<D
         builder.HasOne<ProcessoSeletivo>()
             .WithMany()
             .HasForeignKey(d => d.ProcessoSeletivoId)
+            .HasConstraintName("fk_documentos_a_publicar_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         // Índice composto na ordem exata em que a leitura dos documentos de um

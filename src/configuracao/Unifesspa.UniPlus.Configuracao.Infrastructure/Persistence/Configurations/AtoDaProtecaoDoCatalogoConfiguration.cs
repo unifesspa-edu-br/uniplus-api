@@ -95,7 +95,7 @@ public sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfigurat
             "ck_atos_da_protecao_do_catalogo_diante_so_na_decisao",
             "ato IN ('APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO') OR NOT diante_de_manifestacao_desfavoravel");
         tabela.HasCheckConstraint(
-            "ck_atos_da_protecao_do_catalogo_justificativa_ante_desfavoravel",
+            "ck_atos_da_protecao_do_catalogo_justificativa_se_desfavoravel",
             "ato NOT IN ('APROVACAO', 'AJUSTE_RECOMENDADO') OR NOT diante_de_manifestacao_desfavoravel OR justificativa IS NOT NULL");
     }
 }

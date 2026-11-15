@@ -45,6 +45,7 @@ public sealed class RascunhoDePublicacaoConfiguration : IEntityTypeConfiguration
         builder.HasOne<ProcessoSeletivo>()
             .WithMany()
             .HasForeignKey(r => r.ProcessoSeletivoId)
+            .HasConstraintName("fk_rascunhos_publicacao_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         // Rascunho tem dono: um por operador por processo. É esta restrição que faz o debate

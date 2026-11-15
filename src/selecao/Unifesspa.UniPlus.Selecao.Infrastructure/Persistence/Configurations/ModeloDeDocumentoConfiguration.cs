@@ -32,6 +32,7 @@ public sealed class ModeloDeDocumentoConfiguration : IEntityTypeConfiguration<Mo
         builder.HasOne<ProcessoSeletivo>()
             .WithMany()
             .HasForeignKey(m => m.ProcessoSeletivoId)
+            .HasConstraintName("fk_modelos_de_documento_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(m => m.ProcessoSeletivoId).HasDatabaseName("ix_modelos_de_documento_processo");

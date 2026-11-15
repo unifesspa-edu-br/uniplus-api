@@ -60,6 +60,7 @@ internal sealed class ArquivoDaApresentacaoConfiguration : IEntityTypeConfigurat
         builder.HasOne<ApresentacaoDeDocumento>()
             .WithMany()
             .HasForeignKey(a => a.ApresentacaoId)
+            .HasConstraintName("fk_arquivos_da_apresentacao_apresentacao_de_documento")
             .OnDelete(DeleteBehavior.Cascade);
         builder.HasOne<InscricaoRecord>()
             .WithMany()

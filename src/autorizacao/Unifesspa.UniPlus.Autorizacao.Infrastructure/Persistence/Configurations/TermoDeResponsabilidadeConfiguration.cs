@@ -33,6 +33,7 @@ public sealed class TermoDeResponsabilidadeConfiguration : IEntityTypeConfigurat
         builder.HasOne<VersaoDoTermo>()
             .WithMany()
             .HasForeignKey(t => t.VersaoVigenteId)
+            .HasConstraintName("fk_termos_de_responsabilidade_versao_do_termo_vigente")
             .OnDelete(DeleteBehavior.Restrict);
 
         // Concorrência otimista pela coluna de sistema xmin (ADR-0119), além da trava pessimista da publicação.

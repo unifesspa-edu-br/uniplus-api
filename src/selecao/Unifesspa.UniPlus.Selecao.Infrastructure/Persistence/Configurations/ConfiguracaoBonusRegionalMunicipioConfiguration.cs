@@ -27,5 +27,8 @@ public sealed class ConfiguracaoBonusRegionalMunicipioConfiguration : IEntityTyp
         builder.Property(m => m.CodigoIbge).HasMaxLength(ReferenciaCidadeGeo.CodigoIbgeLength).IsRequired();
         builder.Property(m => m.Nome).HasMaxLength(ReferenciaCidadeGeo.NomeMaxLength).IsRequired();
         builder.Property(m => m.Uf).HasMaxLength(ReferenciaCidadeGeo.UfLength).IsRequired();
+
+        builder.HasIndex(m => m.ConfiguracaoBonusRegionalId)
+            .HasDatabaseName("ix_municipios_do_bonus_regional_configuracao_de_bonus_regional");
     }
 }

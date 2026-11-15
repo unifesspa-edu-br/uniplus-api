@@ -82,7 +82,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_atos_da_protecao_do_catalogo_cadastro", "cadastro IN ('TIPO_DOCUMENTO', 'FATO')");
                     table.CheckConstraint("ck_atos_da_protecao_do_catalogo_ciclo_positivo", "ciclo >= 1");
                     table.CheckConstraint("ck_atos_da_protecao_do_catalogo_diante_so_na_decisao", "ato IN ('APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO') OR NOT diante_de_manifestacao_desfavoravel");
-                    table.CheckConstraint("ck_atos_da_protecao_do_catalogo_justificativa_ante_desfavoravel", "ato NOT IN ('APROVACAO', 'AJUSTE_RECOMENDADO') OR NOT diante_de_manifestacao_desfavoravel OR justificativa IS NOT NULL");
+                    table.CheckConstraint("ck_atos_da_protecao_do_catalogo_justificativa_se_desfavoravel", "ato NOT IN ('APROVACAO', 'AJUSTE_RECOMENDADO') OR NOT diante_de_manifestacao_desfavoravel OR justificativa IS NOT NULL");
                     table.CheckConstraint("ck_atos_da_protecao_do_catalogo_reprovacao_com_justificativa", "ato <> 'REPROVACAO' OR justificativa IS NOT NULL");
                 });
 
@@ -1425,7 +1425,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_municipios_da_base_legal_bonus", x => new { x.base_legal_bonus_regional_id, x.id });
                     table.CheckConstraint("ck_municipios_da_base_legal_bonus_codigo_ibge", "codigo_ibge ~ '^[0-9]{7}$'");
                     table.ForeignKey(
-                        name: "fk_municipios_da_base_legal_bonus_bases_legais_do_bonus_region",
+                        name: "fk_municipios_da_base_legal_bonus_base_legal_do_bonus_regional",
                         column: x => x.base_legal_bonus_regional_id,
                         principalSchema: "configuracao",
                         principalTable: "bases_legais_do_bonus_regional",
@@ -1456,7 +1456,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_dias_nao_uteis_municipio_coerente", "(abrangencia = 'MUNICIPAL') = (municipio_ibge IS NOT NULL) AND (abrangencia = 'MUNICIPAL') = (municipio_nome IS NOT NULL) AND (abrangencia = 'MUNICIPAL') = (municipio_uf IS NOT NULL)");
                     table.CheckConstraint("ck_dias_nao_uteis_uf_coerente", "(abrangencia = 'ESTADUAL') = (uf IS NOT NULL)");
                     table.ForeignKey(
-                        name: "fk_dias_nao_uteis_calendarios_de_dias_uteis_calendario_dias_ut",
+                        name: "fk_dias_nao_uteis_calendario_de_dias_uteis",
                         column: x => x.calendario_dias_uteis_id,
                         principalSchema: "configuracao",
                         principalTable: "calendarios_de_dias_uteis",
@@ -1564,7 +1564,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_valores_de_dominio_do_fato", x => x.id);
                     table.ForeignKey(
-                        name: "fk_valores_de_dominio_do_fato_fatos_do_candidato_fato_candidat",
+                        name: "fk_valores_de_dominio_do_fato_fato_do_candidato",
                         column: x => x.fato_candidato_id,
                         principalSchema: "configuracao",
                         principalTable: "fatos_do_candidato",
@@ -2019,7 +2019,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_versoes_do_perfil_versoes_do_perfil_perfil_id_versao_do_doc",
+                        name: "fk_versoes_do_perfil_versao_do_perfil_do_documento",
                         columns: x => new { x.perfil_id, x.versao_do_documento },
                         principalSchema: "autorizacao",
                         principalTable: "versoes_do_perfil",
@@ -2045,7 +2045,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_areas_dos_pesos_do_enem_corte", "corte IS NULL OR (corte >= 0 AND corte <= 1000)");
                     table.CheckConstraint("ck_areas_dos_pesos_do_enem_peso", "peso >= 0");
                     table.ForeignKey(
-                        name: "fk_areas_dos_pesos_do_enem_pesos_por_area_do_enem_peso_area_en",
+                        name: "fk_areas_dos_pesos_do_enem_peso_por_area_do_enem",
                         column: x => x.peso_area_enem_id,
                         principalSchema: "configuracao",
                         principalTable: "pesos_por_area_do_enem",
@@ -2100,7 +2100,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_configuracoes_bonus_regional", x => x.id);
                     table.ForeignKey(
-                        name: "fk_configuracoes_bonus_regional_processo_seletivo_processo_sel",
+                        name: "fk_configuracoes_bonus_regional_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2135,7 +2135,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_configuracoes_classificacao", x => x.id);
                     table.ForeignKey(
-                        name: "fk_configuracoes_classificacao_processo_seletivo_processo_sele",
+                        name: "fk_configuracoes_classificacao_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2161,7 +2161,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_configuracoes_de_remanejamento", x => x.id);
                     table.ForeignKey(
-                        name: "fk_configuracoes_de_remanejamento_processo_seletivo_processo_s",
+                        name: "fk_configuracoes_de_remanejamento_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2209,7 +2209,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_configuracoes_de_vagas", x => x.id);
                     table.ForeignKey(
-                        name: "fk_configuracoes_de_vagas_processo_seletivo_processo_seletivo_",
+                        name: "fk_configuracoes_de_vagas_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2232,7 +2232,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_configuracoes_derivacao_fato", x => x.id);
                     table.ForeignKey(
-                        name: "fk_configuracoes_derivacao_fato_processo_seletivo_processo_sel",
+                        name: "fk_configuracoes_derivacao_fato_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2256,7 +2256,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_configuracoes_divulgacao", x => x.id);
                     table.ForeignKey(
-                        name: "fk_configuracoes_divulgacao_processo_seletivo_processo_seletiv",
+                        name: "fk_configuracoes_divulgacao_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2281,7 +2281,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_configuracoes_taxa_inscricao", x => x.id);
                     table.ForeignKey(
-                        name: "fk_configuracoes_taxa_inscricao_processo_seletivo_processo_sel",
+                        name: "fk_configuracoes_taxa_inscricao_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2341,7 +2341,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_documentos_a_publicar", x => x.id);
                     table.ForeignKey(
-                        name: "fk_documentos_a_publicar_processo_seletivo_processo_seletivo_id",
+                        name: "fk_documentos_a_publicar_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2452,7 +2452,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_formularios_processo", x => x.id);
                     table.ForeignKey(
-                        name: "fk_formularios_processo_processo_seletivo_processo_seletivo_id",
+                        name: "fk_formularios_processo_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2483,7 +2483,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_geracoes_de_envio_ao_inep_leiaute_hash", "leiaute_hash ~ '^[0-9a-f]{64}$'");
                     table.CheckConstraint("ck_geracoes_de_envio_ao_inep_total", "total_de_cpfs >= 0");
                     table.ForeignKey(
-                        name: "fk_geracoes_de_envio_ao_inep_processo_seletivo_processo_seleti",
+                        name: "fk_geracoes_de_envio_ao_inep_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2547,7 +2547,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_modelos_de_documento", x => x.id);
                     table.ForeignKey(
-                        name: "fk_modelos_de_documento_processo_seletivo_processo_seletivo_id",
+                        name: "fk_modelos_de_documento_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2573,7 +2573,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_opcoes_declaradas_fato", x => x.id);
                     table.ForeignKey(
-                        name: "fk_opcoes_declaradas_fato_processo_seletivo_processo_seletivo_",
+                        name: "fk_opcoes_declaradas_fato_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2599,7 +2599,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_rascunhos_publicacao", x => x.id);
                     table.ForeignKey(
-                        name: "fk_rascunhos_publicacao_processos_seletivos_processo_seletivo_",
+                        name: "fk_rascunhos_publicacao_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2629,7 +2629,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_rascunhos_retificacao", x => x.id);
                     table.ForeignKey(
-                        name: "fk_rascunhos_retificacao_processos_seletivos_processo_seletivo",
+                        name: "fk_rascunhos_retificacao_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2663,7 +2663,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_termos_exigidos_formulario", x => x.id);
                     table.ForeignKey(
-                        name: "fk_termos_exigidos_formulario_processos_seletivos_processo_sel",
+                        name: "fk_termos_exigidos_formulario_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -2727,7 +2727,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_versoes_do_termo_consentimento", x => x.id);
                     table.CheckConstraint("ck_versoes_do_termo_consentimento_forma_aceite", "forma_aceite IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
                     table.ForeignKey(
-                        name: "fk_versoes_do_termo_consentimento_termos_de_consentimento_term",
+                        name: "fk_versoes_do_termo_consentimento_termo_de_consentimento",
                         column: x => x.termo_consentimento_id,
                         principalSchema: "configuracao",
                         principalTable: "termos_de_consentimento",
@@ -2969,7 +2969,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_arquivos_da_apresentacao", x => x.id);
                     table.ForeignKey(
-                        name: "fk_arquivos_da_apresentacao_apresentacoes_de_documento_apresen",
+                        name: "fk_arquivos_da_apresentacao_apresentacao_de_documento",
                         column: x => x.apresentacao_id,
                         principalSchema: "selecao",
                         principalTable: "apresentacoes_de_documento",
@@ -3022,7 +3022,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "fk_enderecos_da_inscricao_ocorrencia_de_grupo_da_inscricao_rec",
+                        name: "fk_enderecos_da_inscricao_ocorrencia_de_grupo_da_inscricao",
                         column: x => x.ocorrencia_id,
                         principalSchema: "selecao",
                         principalTable: "grupos_da_inscricao",
@@ -3211,14 +3211,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_janelas_de_migracao_versao_do_perfil_perfil_id_versao_alvo_",
+                        name: "fk_janelas_de_migracao_versao_do_perfil_alvo",
                         columns: x => new { x.perfil_id, x.versao_alvo_id },
                         principalSchema: "autorizacao",
                         principalTable: "versoes_do_perfil",
                         principalColumns: new[] { "perfil_id", "id" },
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_janelas_de_migracao_versao_do_perfil_perfil_id_versao_nova_",
+                        name: "fk_janelas_de_migracao_versao_do_perfil_nova",
                         columns: x => new { x.perfil_id, x.versao_nova_id },
                         principalSchema: "autorizacao",
                         principalTable: "versoes_do_perfil",
@@ -3397,7 +3397,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_municipios_do_bonus_regional", x => x.id);
                     table.ForeignKey(
-                        name: "fk_municipios_do_bonus_regional_configuracoes_bonus_regional_c",
+                        name: "fk_municipios_do_bonus_regional_configuracao_de_bonus_regional",
                         column: x => x.configuracao_bonus_regional_id,
                         principalSchema: "selecao",
                         principalTable: "configuracoes_bonus_regional",
@@ -3422,7 +3422,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_grupos_do_quadro_de_pesos", x => x.id);
                     table.ForeignKey(
-                        name: "fk_grupos_do_quadro_de_pesos_configuracoes_classificacao_confi",
+                        name: "fk_grupos_do_quadro_de_pesos_configuracao_classificacao",
                         column: x => x.configuracao_classificacao_id,
                         principalSchema: "selecao",
                         principalTable: "configuracoes_classificacao",
@@ -3449,7 +3449,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_regras_eliminacao", x => x.id);
                     table.ForeignKey(
-                        name: "fk_regras_eliminacao_configuracoes_classificacao_configuracao_",
+                        name: "fk_regras_eliminacao_configuracao_classificacao",
                         column: x => x.configuracao_classificacao_id,
                         principalSchema: "selecao",
                         principalTable: "configuracoes_classificacao",
@@ -3476,7 +3476,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_destinos_remanejamento_ordem_positiva", "ordem >= 1");
                     table.CheckConstraint("ck_destinos_remanejamento_origem_diferente_destino", "modalidade_origem_codigo <> modalidade_destino_codigo");
                     table.ForeignKey(
-                        name: "fk_destinos_remanejamento_configuracoes_de_remanejamento_confi",
+                        name: "fk_destinos_remanejamento_configuracao_de_remanejamento",
                         column: x => x.configuracao_cascata_remanejamento_id,
                         principalSchema: "selecao",
                         principalTable: "configuracoes_de_remanejamento",
@@ -3512,7 +3512,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_modalidades_selecionadas", x => x.id);
                     table.ForeignKey(
-                        name: "fk_modalidades_selecionadas_configuracoes_de_vagas_configuraca",
+                        name: "fk_modalidades_selecionadas_configuracao_de_vagas",
                         column: x => x.configuracao_distribuicao_vagas_id,
                         principalSchema: "selecao",
                         principalTable: "configuracoes_de_vagas",
@@ -3537,7 +3537,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_vagas_ofertadas", x => x.id);
                     table.ForeignKey(
-                        name: "fk_vagas_ofertadas_configuracoes_de_vagas_configuracao_distrib",
+                        name: "fk_vagas_ofertadas_configuracao_de_vagas",
                         column: x => x.configuracao_distribuicao_vagas_id,
                         principalSchema: "selecao",
                         principalTable: "configuracoes_de_vagas",
@@ -3561,7 +3561,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_regras_derivacao_configuradas", x => x.id);
                     table.ForeignKey(
-                        name: "fk_regras_derivacao_configuradas_configuracoes_derivacao_fato_",
+                        name: "fk_regras_derivacao_configuradas_configuracao_derivacao_fato",
                         column: x => x.configuracao_derivacao_fato_id,
                         principalSchema: "selecao",
                         principalTable: "configuracoes_derivacao_fato",
@@ -3599,7 +3599,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_atos_do_processo", x => x.id);
                     table.ForeignKey(
-                        name: "fk_atos_do_processo_documento_a_publicar_documento_principal_id",
+                        name: "fk_atos_do_processo_documento_a_publicar_principal",
                         column: x => x.documento_principal_id,
                         principalSchema: "selecao",
                         principalTable: "documentos_a_publicar",
@@ -3664,7 +3664,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_itens_de_avaliacao_da_etapa", x => x.id);
                     table.CheckConstraint("ck_itens_de_avaliacao_da_etapa_pontuacao_positiva", "pontuacao_maxima > 0");
                     table.ForeignKey(
-                        name: "fk_itens_de_avaliacao_da_etapa_etapas_processo_etapa_processo_",
+                        name: "fk_itens_de_avaliacao_da_etapa_etapa_processo",
                         column: x => x.etapa_processo_id,
                         principalSchema: "selecao",
                         principalTable: "etapas_processo",
@@ -3906,7 +3906,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_etapas_formulario", x => x.id);
                     table.ForeignKey(
-                        name: "fk_etapas_formulario_formulario_processo_formulario_processo_id",
+                        name: "fk_etapas_formulario_formulario_processo",
                         column: x => x.formulario_processo_id,
                         principalSchema: "selecao",
                         principalTable: "formularios_processo",
@@ -3996,14 +3996,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_lotes_de_notas_do_enem_hashes", "arquivo_hash ~ '^[0-9a-f]{64}$' AND leiaute_hash ~ '^[0-9a-f]{64}$'");
                     table.CheckConstraint("ck_lotes_de_notas_do_enem_totais", "total_de_linhas >= 0 AND total_de_inscritos_com_nota >= 0 AND total_de_lancamentos >= 0 AND total_de_inscritos_sem_linha >= 0 AND total_de_linhas_sem_inscrito >= 0 AND total_de_inscritos_em_conflito >= 0");
                     table.ForeignKey(
-                        name: "fk_lotes_de_notas_do_enem_processo_seletivo_processo_seletivo_",
+                        name: "fk_lotes_de_notas_do_enem_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_lotes_de_notas_do_enem_versao_configuracao_versao_configura",
+                        name: "fk_lotes_de_notas_do_enem_versao_configuracao",
                         column: x => x.versao_configuracao_id,
                         principalSchema: "selecao",
                         principalTable: "versoes_configuracao",
@@ -4105,7 +4105,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_acessos_ao_documento_da_versao", x => x.id);
                     table.ForeignKey(
-                        name: "fk_acessos_ao_documento_da_versao_documentos_da_versao_documen",
+                        name: "fk_acessos_ao_documento_da_versao_documento_da_versao",
                         column: x => x.documento_id,
                         principalSchema: "autorizacao",
                         principalTable: "documentos_da_versao",
@@ -4152,7 +4152,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_concessoes_revogacao_completa", "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NULL AND revogada_pela_janela_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_conta_id IS NOT NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NOT NULL)");
                     table.CheckConstraint("ck_concessoes_validade_posterior", "valida_ate IS NULL OR valida_ate > concedida_em");
                     table.ForeignKey(
-                        name: "fk_concessoes_janela_de_migracao_revogada_pela_janela_id_perfi",
+                        name: "fk_concessoes_janela_de_migracao_que_revogou",
                         columns: x => new { x.revogada_pela_janela_id, x.perfil_id },
                         principalSchema: "autorizacao",
                         principalTable: "janelas_de_migracao",
@@ -4225,7 +4225,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_areas_do_quadro_de_pesos_corte", "corte IS NULL OR (corte >= 0 AND corte <= 1000)");
                     table.CheckConstraint("ck_areas_do_quadro_de_pesos_peso", "peso >= 0");
                     table.ForeignKey(
-                        name: "fk_areas_do_quadro_de_pesos_grupo_peso_area_enem_congelado_gru",
+                        name: "fk_areas_do_quadro_de_pesos_grupo_do_quadro_de_pesos",
                         column: x => x.grupo_peso_area_enem_congelado_id,
                         principalSchema: "selecao",
                         principalTable: "grupos_do_quadro_de_pesos",
@@ -4252,7 +4252,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_condicoes_regra_derivacao", x => x.id);
                     table.ForeignKey(
-                        name: "fk_condicoes_regra_derivacao_regra_derivacao_configurada_regra",
+                        name: "fk_condicoes_regra_derivacao_regra_derivacao_configurada",
                         column: x => x.regra_derivacao_configurada_id,
                         principalSchema: "selecao",
                         principalTable: "regras_derivacao_configuradas",
@@ -4277,14 +4277,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_anexos_do_ato_do_processo", x => x.id);
                     table.ForeignKey(
-                        name: "fk_anexos_do_ato_do_processo_ato_do_processo_ato_do_processo_id",
+                        name: "fk_anexos_do_ato_do_processo_ato_do_processo",
                         column: x => x.ato_do_processo_id,
                         principalSchema: "selecao",
                         principalTable: "atos_do_processo",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "fk_anexos_do_ato_do_processo_documento_a_publicar_documento_a_",
+                        name: "fk_anexos_do_ato_do_processo_documento_a_publicar",
                         column: x => x.documento_a_publicar_id,
                         principalSchema: "selecao",
                         principalTable: "documentos_a_publicar",
@@ -4360,7 +4360,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_documentos_exigidos_base_legal", x => x.id);
                     table.ForeignKey(
-                        name: "fk_documentos_exigidos_base_legal_documento_exigido_documento_",
+                        name: "fk_documentos_exigidos_base_legal_documento_exigido",
                         column: x => x.documento_exigido_id,
                         principalSchema: "selecao",
                         principalTable: "documentos_exigidos",
@@ -4397,21 +4397,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_nos_da_arvore_de_exigencias_quantidade_minima_positiva", "quantidade_minima IS NULL OR quantidade_minima >= 1");
                     table.CheckConstraint("ck_nos_da_arvore_de_exigencias_tipo_campos_coerentes", "(tipo = 1 AND documento_exigido_id IS NOT NULL AND quantidade_minima IS NOT NULL AND consequencia IS NULL) OR (tipo = 2 AND documento_exigido_id IS NULL AND quantidade_minima IS NULL AND consequencia IS NULL AND chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL) OR (tipo = 3 AND documento_exigido_id IS NULL AND quantidade_minima IS NOT NULL AND chave_distincao IS NULL AND data_referencia IS NULL AND ocorrencias_esperadas IS NULL)");
                     table.ForeignKey(
-                        name: "fk_nos_da_arvore_de_exigencias_documentos_exigidos_documento_e",
+                        name: "fk_nos_da_arvore_de_exigencias_documento_exigido",
                         column: x => x.documento_exigido_id,
                         principalSchema: "selecao",
                         principalTable: "documentos_exigidos",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_nos_da_arvore_de_exigencias_nos_da_arvore_de_exigencias_no_",
+                        name: "fk_nos_da_arvore_de_exigencias_no_pai",
                         column: x => x.no_pai_id,
                         principalSchema: "selecao",
                         principalTable: "nos_da_arvore_de_exigencias",
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_nos_da_arvore_de_exigencias_processo_seletivo_processo_sele",
+                        name: "fk_nos_da_arvore_de_exigencias_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -4465,7 +4465,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_avaliacoes_da_etapa_nota", "(situacao = 1) = (nota IS NOT NULL) AND (nota IS NULL OR nota BETWEEN 0 AND 1000)");
                     table.CheckConstraint("ck_avaliacoes_da_etapa_situacao", "situacao IN (1, 2, 3)");
                     table.ForeignKey(
-                        name: "fk_avaliacoes_da_etapa_lotes_de_notas_do_enem_lote_id_etapa_pr",
+                        name: "fk_avaliacoes_da_etapa_lote_de_notas_do_enem",
                         columns: x => new { x.lote_id, x.etapa_processo_id },
                         principalSchema: "selecao",
                         principalTable: "lotes_de_notas_do_enem",
@@ -4532,7 +4532,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalColumn: "id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_ocorrencias_do_lote_de_notas_lotes_de_notas_do_enem_lote_id",
+                        name: "fk_ocorrencias_do_lote_de_notas_lote_de_notas_do_enem",
                         column: x => x.lote_id,
                         principalSchema: "selecao",
                         principalTable: "lotes_de_notas_do_enem",
@@ -4562,7 +4562,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_bases_da_permissao_origem", "origem IN ('migracao', 'saida', 'liberacao', 'conciliacao')");
                     table.CheckConstraint("ck_bases_da_permissao_saida", "(origem = 'saida') = (classificacao IS NULL AND de_unidade IS NULL)");
                     table.ForeignKey(
-                        name: "fk_bases_da_permissao_concedida_concessao_perfil_id_concessao_",
+                        name: "fk_bases_da_permissao_concedida_concessao",
                         columns: x => new { x.perfil_id, x.concessao_id },
                         principalSchema: "autorizacao",
                         principalTable: "concessoes",
@@ -4634,14 +4634,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_liberacoes_da_reclassificacao_etapa", "etapa IN ('gestao_de_acessos', 'protecao_de_dados')");
                     table.CheckConstraint("ck_liberacoes_da_reclassificacao_motivo", "(resultado = 'mantida') = (motivo IS NOT NULL) AND resultado IN ('liberada', 'mantida')");
                     table.ForeignKey(
-                        name: "fk_liberacoes_da_reclassificacao_concessoes_perfil_id_concessa",
+                        name: "fk_liberacoes_da_reclassificacao_concessao",
                         columns: x => new { x.perfil_id, x.concessao_id },
                         principalSchema: "autorizacao",
                         principalTable: "concessoes",
                         principalColumns: new[] { "perfil_id", "id" },
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_liberacoes_da_reclassificacao_reclassificacao_da_permissao_",
+                        name: "fk_liberacoes_da_reclassificacao_reclassificacao_da_permissao",
                         column: x => x.reclassificacao_id,
                         principalSchema: "autorizacao",
                         principalTable: "reclassificacoes_da_permissao",
@@ -4677,7 +4677,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalColumns: new[] { "perfil_id", "id" },
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_migracoes_da_concessao_janelas_de_migracao_janela_id_perfil",
+                        name: "fk_migracoes_da_concessao_janela_de_migracao",
                         columns: x => new { x.janela_id, x.perfil_id },
                         principalSchema: "autorizacao",
                         principalTable: "janelas_de_migracao",
@@ -4767,28 +4767,28 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalColumns: new[] { "perfil_id", "id" },
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_decisoes_da_migracao_janelas_de_migracao_janela_id_perfil_id",
+                        name: "fk_decisoes_da_migracao_janela_de_migracao",
                         columns: x => new { x.janela_id, x.perfil_id },
                         principalSchema: "autorizacao",
                         principalTable: "janelas_de_migracao",
                         principalColumns: new[] { "id", "perfil_id" },
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_decisoes_da_migracao_lote_da_migracao_janela_id_envio_id_en",
+                        name: "fk_decisoes_da_migracao_lote_da_migracao_de_envio",
                         columns: x => new { x.janela_id, x.envio_id, x.envio_etapa },
                         principalSchema: "autorizacao",
                         principalTable: "lotes_da_migracao",
                         principalColumns: new[] { "janela_id", "id", "etapa" },
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_decisoes_da_migracao_lote_da_migracao_janela_id_lote_de_ori",
+                        name: "fk_decisoes_da_migracao_lote_da_migracao_de_origem",
                         columns: x => new { x.janela_id, x.lote_de_origem_id, x.lote_de_origem_etapa },
                         principalSchema: "autorizacao",
                         principalTable: "lotes_da_migracao",
                         principalColumns: new[] { "janela_id", "id", "etapa" },
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_decisoes_da_migracao_versao_do_perfil_perfil_id_versao_aval",
+                        name: "fk_decisoes_da_migracao_versao_do_perfil_avaliada",
                         columns: x => new { x.perfil_id, x.versao_avaliada_id },
                         principalSchema: "autorizacao",
                         principalTable: "versoes_do_perfil",
@@ -4841,14 +4841,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_lancamentos_de_nota_nota", "nota BETWEEN 0 AND 1000");
                     table.CheckConstraint("ck_lancamentos_de_nota_situacao", "situacao IN (1, 2)");
                     table.ForeignKey(
-                        name: "fk_lancamentos_de_nota_inscritos_do_lote_de_notas_lote_id_insc",
+                        name: "fk_lancamentos_de_nota_inscrito_do_lote_de_notas",
                         columns: x => new { x.lote_id, x.inscricao_id },
                         principalSchema: "selecao",
                         principalTable: "inscritos_do_lote_de_notas",
                         principalColumns: new[] { "lote_id", "inscricao_id" },
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "fk_lancamentos_de_nota_lotes_de_notas_do_enem_lote_id_etapa_pr",
+                        name: "fk_lancamentos_de_nota_lote_de_notas_do_enem",
                         columns: x => new { x.lote_id, x.etapa_processo_id },
                         principalSchema: "selecao",
                         principalTable: "lotes_de_notas_do_enem",
@@ -5638,7 +5638,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: new[] { "inscricao_id", "exigencia_id" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_areas_do_quadro_de_pesos_grupo_peso_area_enem_congelado_id_",
+                name: "ux_areas_do_quadro_de_pesos_grupo_do_quadro_codigo",
                 schema: "selecao",
                 table: "areas_do_quadro_de_pesos",
                 columns: new[] { "grupo_peso_area_enem_congelado_id", "codigo" },
@@ -6101,16 +6101,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: new[] { "janela_id", "envio_id", "envio_etapa" });
 
             migrationBuilder.CreateIndex(
-                name: "ix_decisoes_da_migracao_janela_id_lote_de_origem_id_lote_de_or",
-                schema: "autorizacao",
-                table: "decisoes_da_migracao",
-                columns: new[] { "janela_id", "lote_de_origem_id", "lote_de_origem_etapa" });
-
-            migrationBuilder.CreateIndex(
                 name: "ix_decisoes_da_migracao_janela_id_perfil_id",
                 schema: "autorizacao",
                 table: "decisoes_da_migracao",
                 columns: new[] { "janela_id", "perfil_id" });
+
+            migrationBuilder.CreateIndex(
+                name: "ix_decisoes_da_migracao_janela_lote_de_origem_e_etapa",
+                schema: "autorizacao",
+                table: "decisoes_da_migracao",
+                columns: new[] { "janela_id", "lote_de_origem_id", "lote_de_origem_etapa" });
 
             migrationBuilder.CreateIndex(
                 name: "ix_decisoes_da_migracao_perfil_id_concessao_id",
@@ -6713,7 +6713,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_modalidades_selecionadas_configuracao_distribuicao_vagas_id",
+                name: "ix_modalidades_selecionadas_configuracao_de_vagas",
                 schema: "selecao",
                 table: "modalidades_selecionadas",
                 column: "configuracao_distribuicao_vagas_id");
@@ -6758,7 +6758,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_municipios_do_bonus_regional_configuracao_bonus_regional_id",
+                name: "ix_municipios_do_bonus_regional_configuracao_de_bonus_regional",
                 schema: "selecao",
                 table: "municipios_do_bonus_regional",
                 column: "configuracao_bonus_regional_id");
@@ -7517,7 +7517,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 onDelete: ReferentialAction.Restrict);
 
             migrationBuilder.AddForeignKey(
-                name: "fk_termos_de_responsabilidade_versao_do_termo_versao_vigente_id",
+                name: "fk_termos_de_responsabilidade_versao_do_termo_vigente",
                 schema: "autorizacao",
                 table: "termos_de_responsabilidade",
                 column: "versao_vigente_id",
@@ -7531,7 +7531,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropForeignKey(
-                name: "fk_termos_de_responsabilidade_versao_do_termo_versao_vigente_id",
+                name: "fk_termos_de_responsabilidade_versao_do_termo_vigente",
                 schema: "autorizacao",
                 table: "termos_de_responsabilidade");
 

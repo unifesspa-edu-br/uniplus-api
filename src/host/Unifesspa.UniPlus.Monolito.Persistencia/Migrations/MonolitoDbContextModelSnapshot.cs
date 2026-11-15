@@ -530,7 +530,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ix_decisoes_da_migracao_janela_id_envio_id_envio_etapa");
 
                     b.HasIndex("JanelaId", "LoteDeOrigemId", "LoteDeOrigemEtapa")
-                        .HasDatabaseName("ix_decisoes_da_migracao_janela_id_lote_de_origem_id_lote_de_or");
+                        .HasDatabaseName("ix_decisoes_da_migracao_janela_lote_de_origem_e_etapa");
 
                     b.ToTable("decisoes_da_migracao", "autorizacao", t =>
                         {
@@ -3085,7 +3085,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_diante_so_na_decisao", "ato IN ('APROVACAO', 'AJUSTE_RECOMENDADO', 'REPROVACAO') OR NOT diante_de_manifestacao_desfavoravel");
 
-                            t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_justificativa_ante_desfavoravel", "ato NOT IN ('APROVACAO', 'AJUSTE_RECOMENDADO') OR NOT diante_de_manifestacao_desfavoravel OR justificativa IS NOT NULL");
+                            t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_justificativa_se_desfavoravel", "ato NOT IN ('APROVACAO', 'AJUSTE_RECOMENDADO') OR NOT diante_de_manifestacao_desfavoravel OR justificativa IS NOT NULL");
 
                             t.HasCheckConstraint("ck_atos_da_protecao_do_catalogo_reprovacao_com_justificativa", "ato <> 'REPROVACAO' OR justificativa IS NOT NULL");
                         });
@@ -10628,7 +10628,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasIndex("GrupoPesoAreaEnemCongeladoId", "Codigo")
                         .IsUnique()
-                        .HasDatabaseName("ix_areas_do_quadro_de_pesos_grupo_peso_area_enem_congelado_id_");
+                        .HasDatabaseName("ux_areas_do_quadro_de_pesos_grupo_do_quadro_codigo");
 
                     b.ToTable("areas_do_quadro_de_pesos", "selecao", t =>
                         {
@@ -11636,7 +11636,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasName("pk_municipios_do_bonus_regional");
 
                     b.HasIndex("ConfiguracaoBonusRegionalId")
-                        .HasDatabaseName("ix_municipios_do_bonus_regional_configuracao_bonus_regional_id");
+                        .HasDatabaseName("ix_municipios_do_bonus_regional_configuracao_de_bonus_regional");
 
                     b.ToTable("municipios_do_bonus_regional", "selecao");
                 });
@@ -13286,7 +13286,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasName("pk_modalidades_selecionadas");
 
                     b.HasIndex("ConfiguracaoDistribuicaoVagasId")
-                        .HasDatabaseName("ix_modalidades_selecionadas_configuracao_distribuicao_vagas_id");
+                        .HasDatabaseName("ix_modalidades_selecionadas_configuracao_de_vagas");
 
                     b.ToTable("modalidades_selecionadas", "selecao");
                 });
@@ -15491,7 +15491,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("PerfilId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_bases_da_permissao_concedida_concessao_perfil_id_concessao_");
+                        .HasConstraintName("fk_bases_da_permissao_concedida_concessao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Concessao", b =>
@@ -15515,7 +15515,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("RevogadaPelaJanelaId", "PerfilId")
                         .HasPrincipalKey("Id", "PerfilId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_concessoes_janela_de_migracao_revogada_pela_janela_id_perfi");
+                        .HasConstraintName("fk_concessoes_janela_de_migracao_que_revogou");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.DecisaoDaMigracao", b =>
@@ -15526,7 +15526,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("Id", "PerfilId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_decisoes_da_migracao_janelas_de_migracao_janela_id_perfil_id");
+                        .HasConstraintName("fk_decisoes_da_migracao_janela_de_migracao");
 
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Concessao", null)
                         .WithMany()
@@ -15542,21 +15542,21 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("PerfilId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_decisoes_da_migracao_versao_do_perfil_perfil_id_versao_aval");
+                        .HasConstraintName("fk_decisoes_da_migracao_versao_do_perfil_avaliada");
 
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.LoteDaMigracao", null)
                         .WithMany()
                         .HasForeignKey("JanelaId", "EnvioId", "EnvioEtapa")
                         .HasPrincipalKey("JanelaId", "Id", "Etapa")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_decisoes_da_migracao_lote_da_migracao_janela_id_envio_id_en");
+                        .HasConstraintName("fk_decisoes_da_migracao_lote_da_migracao_de_envio");
 
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.LoteDaMigracao", null)
                         .WithMany()
                         .HasForeignKey("JanelaId", "LoteDeOrigemId", "LoteDeOrigemEtapa")
                         .HasPrincipalKey("JanelaId", "Id", "Etapa")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_decisoes_da_migracao_lote_da_migracao_janela_id_lote_de_ori");
+                        .HasConstraintName("fk_decisoes_da_migracao_lote_da_migracao_de_origem");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.DecisaoDaRetomada", b =>
@@ -15740,7 +15740,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("PerfilId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_janelas_de_migracao_versao_do_perfil_perfil_id_versao_alvo_");
+                        .HasConstraintName("fk_janelas_de_migracao_versao_do_perfil_alvo");
 
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.VersaoDoPerfil", null)
                         .WithMany()
@@ -15748,7 +15748,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("PerfilId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_janelas_de_migracao_versao_do_perfil_perfil_id_versao_nova_");
+                        .HasConstraintName("fk_janelas_de_migracao_versao_do_perfil_nova");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.LeituraDoAnexoDoPedido", b =>
@@ -15775,7 +15775,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("DocumentoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_acessos_ao_documento_da_versao_documentos_da_versao_documen");
+                        .HasConstraintName("fk_acessos_ao_documento_da_versao_documento_da_versao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.LiberacaoDaReclassificacao", b =>
@@ -15785,7 +15785,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ReclassificacaoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_liberacoes_da_reclassificacao_reclassificacao_da_permissao_");
+                        .HasConstraintName("fk_liberacoes_da_reclassificacao_reclassificacao_da_permissao");
 
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Concessao", null)
                         .WithMany()
@@ -15793,7 +15793,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("PerfilId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_liberacoes_da_reclassificacao_concessoes_perfil_id_concessa");
+                        .HasConstraintName("fk_liberacoes_da_reclassificacao_concessao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.LoteDaMigracao", b =>
@@ -15815,7 +15815,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("Id", "PerfilId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_migracoes_da_concessao_janelas_de_migracao_janela_id_perfil");
+                        .HasConstraintName("fk_migracoes_da_concessao_janela_de_migracao");
 
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Concessao", null)
                         .WithMany()
@@ -16054,7 +16054,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .WithMany()
                         .HasForeignKey("VersaoVigenteId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_termos_de_responsabilidade_versao_do_termo_versao_vigente_id");
+                        .HasConstraintName("fk_termos_de_responsabilidade_versao_do_termo_vigente");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.TermoNaInstalacao", b =>
@@ -16097,7 +16097,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("PerfilId", "VersaoDoDocumento")
                         .HasPrincipalKey("PerfilId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_versoes_do_perfil_versoes_do_perfil_perfil_id_versao_do_doc");
+                        .HasConstraintName("fk_versoes_do_perfil_versao_do_perfil_do_documento");
 
                     b.OwnsMany("Unifesspa.UniPlus.Autorizacao.Domain.Entities.PermissaoDaVersao", "Permissoes", b1 =>
                         {
@@ -16204,7 +16204,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("BaseLegalBonusRegionalId")
-                                .HasConstraintName("fk_municipios_da_base_legal_bonus_bases_legais_do_bonus_region");
+                                .HasConstraintName("fk_municipios_da_base_legal_bonus_base_legal_do_bonus_regional");
                         });
 
                     b.Navigation("Municipios");
@@ -16315,7 +16315,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("CalendarioDiasUteisId")
                         .OnDelete(DeleteBehavior.ClientNoAction)
                         .IsRequired()
-                        .HasConstraintName("fk_dias_nao_uteis_calendarios_de_dias_uteis_calendario_dias_ut");
+                        .HasConstraintName("fk_dias_nao_uteis_calendario_de_dias_uteis");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.FatoCandidato", b =>
@@ -16871,7 +16871,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("FatoCandidatoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_valores_de_dominio_do_fato_fatos_do_candidato_fato_candidat");
+                        .HasConstraintName("fk_valores_de_dominio_do_fato_fato_do_candidato");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.LocalOferta", b =>
@@ -17094,7 +17094,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             b1.WithOwner()
                                 .HasForeignKey("PesoAreaEnemId")
-                                .HasConstraintName("fk_areas_dos_pesos_do_enem_pesos_por_area_do_enem_peso_area_en");
+                                .HasConstraintName("fk_areas_dos_pesos_do_enem_peso_por_area_do_enem");
                         });
 
                     b.Navigation("AreasDaLinha");
@@ -17107,7 +17107,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("TermoConsentimentoId")
                         .OnDelete(DeleteBehavior.ClientNoAction)
                         .IsRequired()
-                        .HasConstraintName("fk_versoes_do_termo_consentimento_termos_de_consentimento_term");
+                        .HasConstraintName("fk_versoes_do_termo_consentimento_termo_de_consentimento");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoConceito", b =>
@@ -18253,14 +18253,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("AtoDoProcessoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_anexos_do_ato_do_processo_ato_do_processo_ato_do_processo_id");
+                        .HasConstraintName("fk_anexos_do_ato_do_processo_ato_do_processo");
 
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoAPublicar", null)
                         .WithMany()
                         .HasForeignKey("DocumentoAPublicarId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_anexos_do_ato_do_processo_documento_a_publicar_documento_a_");
+                        .HasConstraintName("fk_anexos_do_ato_do_processo_documento_a_publicar");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ApresentacaoDeDocumento", b =>
@@ -18280,7 +18280,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("GrupoPesoAreaEnemCongeladoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_areas_do_quadro_de_pesos_grupo_peso_area_enem_congelado_gru");
+                        .HasConstraintName("fk_areas_do_quadro_de_pesos_grupo_do_quadro_de_pesos");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ArquivoDaApresentacao", b =>
@@ -18290,7 +18290,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ApresentacaoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_arquivos_da_apresentacao_apresentacoes_de_documento_apresen");
+                        .HasConstraintName("fk_arquivos_da_apresentacao_apresentacao_de_documento");
 
                     b.HasOne("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.InscricaoRecord", null)
                         .WithMany()
@@ -18317,7 +18317,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("DocumentoPrincipalId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_atos_do_processo_documento_a_publicar_documento_principal_id");
+                        .HasConstraintName("fk_atos_do_processo_documento_a_publicar_principal");
 
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
                         .WithMany()
@@ -18335,7 +18335,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("Id", "EtapaProcessoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_avaliacoes_da_etapa_lotes_de_notas_do_enem_lote_id_etapa_pr");
+                        .HasConstraintName("fk_avaliacoes_da_etapa_lote_de_notas_do_enem");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.BancaDaEtapa", b =>
@@ -18513,7 +18513,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("RegraDerivacaoConfiguradaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_condicoes_regra_derivacao_regra_derivacao_configurada_regra");
+                        .HasConstraintName("fk_condicoes_regra_derivacao_regra_derivacao_configurada");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", b =>
@@ -18523,7 +18523,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoBonusRegional", "ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_configuracoes_bonus_regional_processo_seletivo_processo_sel");
+                        .HasConstraintName("fk_configuracoes_bonus_regional_processo_seletivo");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "Regra", b1 =>
                         {
@@ -18570,7 +18570,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ConfiguracaoBonusRegionalId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_municipios_do_bonus_regional_configuracoes_bonus_regional_c");
+                        .HasConstraintName("fk_municipios_do_bonus_regional_configuracao_de_bonus_regional");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoCascataRemanejamento", b =>
@@ -18580,7 +18580,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoCascataRemanejamento", "ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_configuracoes_de_remanejamento_processo_seletivo_processo_s");
+                        .HasConstraintName("fk_configuracoes_de_remanejamento_processo_seletivo");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "Regra", b1 =>
                         {
@@ -18627,7 +18627,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoClassificacao", "ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_configuracoes_classificacao_processo_seletivo_processo_sele");
+                        .HasConstraintName("fk_configuracoes_classificacao_processo_seletivo");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "RegraArredondamento", b1 =>
                         {
@@ -18747,7 +18747,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_configuracoes_derivacao_fato_processo_seletivo_processo_sel");
+                        .HasConstraintName("fk_configuracoes_derivacao_fato_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDistribuicaoVagas", b =>
@@ -18757,7 +18757,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_configuracoes_de_vagas_processo_seletivo_processo_seletivo_");
+                        .HasConstraintName("fk_configuracoes_de_vagas_processo_seletivo");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.GrupoAreaEnemSnapshot", "GrupoAreaEnem", b1 =>
                         {
@@ -18963,7 +18963,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDivulgacao", "ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_configuracoes_divulgacao_processo_seletivo_processo_seletiv");
+                        .HasConstraintName("fk_configuracoes_divulgacao_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoTaxaInscricao", b =>
@@ -18973,7 +18973,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoTaxaInscricao", "ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_configuracoes_taxa_inscricao_processo_seletivo_processo_sel");
+                        .HasConstraintName("fk_configuracoes_taxa_inscricao_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CriterioDesempate", b =>
@@ -19040,7 +19040,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ConfiguracaoCascataRemanejamentoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_destinos_remanejamento_configuracoes_de_remanejamento_confi");
+                        .HasConstraintName("fk_destinos_remanejamento_configuracao_de_remanejamento");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoAPublicar", b =>
@@ -19050,7 +19050,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_documentos_a_publicar_processo_seletivo_processo_seletivo_id");
+                        .HasConstraintName("fk_documentos_a_publicar_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoExigido", b =>
@@ -19187,7 +19187,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("DocumentoExigidoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_documentos_exigidos_base_legal_documento_exigido_documento_");
+                        .HasConstraintName("fk_documentos_exigidos_base_legal_documento_exigido");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaFormulario", b =>
@@ -19197,7 +19197,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("FormularioProcessoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_etapas_formulario_formulario_processo_formulario_processo_id");
+                        .HasConstraintName("fk_etapas_formulario_formulario_processo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", b =>
@@ -19327,7 +19327,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_formularios_processo_processo_seletivo_processo_seletivo_id");
+                        .HasConstraintName("fk_formularios_processo_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GeracaoDeEnvioAoInep", b =>
@@ -19337,7 +19337,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_geracoes_de_envio_ao_inep_processo_seletivo_processo_seleti");
+                        .HasConstraintName("fk_geracoes_de_envio_ao_inep_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.GrupoColetado", b =>
@@ -19357,7 +19357,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ConfiguracaoClassificacaoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_grupos_do_quadro_de_pesos_configuracoes_classificacao_confi");
+                        .HasConstraintName("fk_grupos_do_quadro_de_pesos_configuracao_classificacao");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.GrupoAreaEnemSnapshot", "GrupoAreaEnem", b1 =>
                         {
@@ -19416,7 +19416,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("EtapaProcessoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_itens_de_avaliacao_da_etapa_etapas_processo_etapa_processo_");
+                        .HasConstraintName("fk_itens_de_avaliacao_da_etapa_etapa_processo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.LancamentoDeNota", b =>
@@ -19427,7 +19427,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("Id", "EtapaProcessoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_lancamentos_de_nota_lotes_de_notas_do_enem_lote_id_etapa_pr");
+                        .HasConstraintName("fk_lancamentos_de_nota_lote_de_notas_do_enem");
 
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.InscritoDoLoteDeNotas", null)
                         .WithMany()
@@ -19435,7 +19435,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasPrincipalKey("LoteId", "InscricaoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_lancamentos_de_nota_inscritos_do_lote_de_notas_lote_id_insc");
+                        .HasConstraintName("fk_lancamentos_de_nota_inscrito_do_lote_de_notas");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.LoteDeNotasDoEnem", b =>
@@ -19445,14 +19445,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_lotes_de_notas_do_enem_processo_seletivo_processo_seletivo_");
+                        .HasConstraintName("fk_lotes_de_notas_do_enem_processo_seletivo");
 
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.VersaoConfiguracao", null)
                         .WithMany()
                         .HasForeignKey("VersaoConfiguracaoId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_lotes_de_notas_do_enem_versao_configuracao_versao_configura");
+                        .HasConstraintName("fk_lotes_de_notas_do_enem_versao_configuracao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ModalidadeSelecionada", b =>
@@ -19462,7 +19462,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ConfiguracaoDistribuicaoVagasId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_modalidades_selecionadas_configuracoes_de_vagas_configuraca");
+                        .HasConstraintName("fk_modalidades_selecionadas_configuracao_de_vagas");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ModeloDeDocumento", b =>
@@ -19472,7 +19472,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_modelos_de_documento_processo_seletivo_processo_seletivo_id");
+                        .HasConstraintName("fk_modelos_de_documento_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigencia", b =>
@@ -19481,20 +19481,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .WithMany()
                         .HasForeignKey("DocumentoExigidoId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_nos_da_arvore_de_exigencias_documentos_exigidos_documento_e");
+                        .HasConstraintName("fk_nos_da_arvore_de_exigencias_documento_exigido");
 
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.NoExigencia", null)
                         .WithMany("Filhos")
                         .HasForeignKey("NoPaiId")
                         .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_nos_da_arvore_de_exigencias_nos_da_arvore_de_exigencias_no_");
+                        .HasConstraintName("fk_nos_da_arvore_de_exigencias_no_pai");
 
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
                         .WithMany("NosExigencia")
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_nos_da_arvore_de_exigencias_processo_seletivo_processo_sele");
+                        .HasConstraintName("fk_nos_da_arvore_de_exigencias_processo_seletivo");
 
                     b.Navigation("DocumentoExigido");
                 });
@@ -19532,7 +19532,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("LoteId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired()
-                        .HasConstraintName("fk_ocorrencias_do_lote_de_notas_lotes_de_notas_do_enem_lote_id");
+                        .HasConstraintName("fk_ocorrencias_do_lote_de_notas_lote_de_notas_do_enem");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OpcaoDeclaradaFato", b =>
@@ -19542,7 +19542,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_opcoes_declaradas_fato_processo_seletivo_processo_seletivo_");
+                        .HasConstraintName("fk_opcoes_declaradas_fato_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", b =>
@@ -19787,7 +19787,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_rascunhos_publicacao_processos_seletivos_processo_seletivo_");
+                        .HasConstraintName("fk_rascunhos_publicacao_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoRetificacao", b =>
@@ -19797,7 +19797,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoRetificacao", "ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_rascunhos_retificacao_processos_seletivos_processo_seletivo");
+                        .HasConstraintName("fk_rascunhos_retificacao_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RecursoDaEtapa", b =>
@@ -19913,7 +19913,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ConfiguracaoDerivacaoFatoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_regras_derivacao_configuradas_configuracoes_derivacao_fato_");
+                        .HasConstraintName("fk_regras_derivacao_configuradas_configuracao_derivacao_fato");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraEliminacao", b =>
@@ -19923,7 +19923,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ConfiguracaoClassificacaoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_regras_eliminacao_configuracoes_classificacao_configuracao_");
+                        .HasConstraintName("fk_regras_eliminacao_configuracao_classificacao");
 
                     b.OwnsOne("Unifesspa.UniPlus.Selecao.Domain.ValueObjects.ReferenciaRegra", "Regra", b1 =>
                         {
@@ -20066,7 +20066,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ProcessoSeletivoId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_termos_exigidos_formulario_processos_seletivos_processo_sel");
+                        .HasConstraintName("fk_termos_exigidos_formulario_processo_seletivo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.VagaOfertada", b =>
@@ -20076,7 +20076,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("ConfiguracaoDistribuicaoVagasId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("fk_vagas_ofertadas_configuracoes_de_vagas_configuracao_distrib");
+                        .HasConstraintName("fk_vagas_ofertadas_configuracao_de_vagas");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.VersaoConfiguracao", b =>
@@ -20112,7 +20112,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .WithMany()
                         .HasForeignKey("OcorrenciaId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .HasConstraintName("fk_enderecos_da_inscricao_ocorrencia_de_grupo_da_inscricao_rec");
+                        .HasConstraintName("fk_enderecos_da_inscricao_ocorrencia_de_grupo_da_inscricao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Records.OcorrenciaDeGrupoDaInscricaoRecord", b =>

@@ -51,6 +51,7 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
         builder.HasOne<DocumentoAPublicar>()
             .WithMany()
             .HasForeignKey(a => a.DocumentoPrincipalId)
+            .HasConstraintName("fk_atos_do_processo_documento_a_publicar_principal")
             .OnDelete(DeleteBehavior.Restrict);
 
         // Sem FK: o ato corrigido pode ser o que criou uma versão ou outro registro, e ele é do
@@ -81,6 +82,7 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
         builder.HasMany(a => a.Anexos)
             .WithOne()
             .HasForeignKey(x => x.AtoDoProcessoId)
+            .HasConstraintName("fk_anexos_do_ato_do_processo_ato_do_processo")
             .OnDelete(DeleteBehavior.Cascade);
         builder.Navigation(a => a.Anexos).UsePropertyAccessMode(PropertyAccessMode.Field);
     }

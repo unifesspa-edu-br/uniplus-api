@@ -31,6 +31,7 @@ public sealed class LeituraDoDocumentoDaVersaoConfiguration : IEntityTypeConfigu
         builder.HasOne<DocumentoDaVersao>()
             .WithMany()
             .HasForeignKey(l => l.DocumentoId)
+            .HasConstraintName("fk_acessos_ao_documento_da_versao_documento_da_versao")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasIndex(l => l.DocumentoId).HasDatabaseName("ix_acessos_ao_documento_da_versao_documento");

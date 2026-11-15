@@ -83,11 +83,13 @@ internal sealed class JanelaDeMigracaoConfiguration : IEntityTypeConfiguration<J
         builder.HasOne<VersaoDoPerfil>()
             .WithMany()
             .HasForeignKey(j => new { j.PerfilId, j.VersaoNovaId })
+            .HasConstraintName("fk_janelas_de_migracao_versao_do_perfil_nova")
             .HasPrincipalKey(v => new { v.PerfilId, v.Id })
             .OnDelete(DeleteBehavior.Restrict);
         builder.HasOne<VersaoDoPerfil>()
             .WithMany()
             .HasForeignKey(j => new { j.PerfilId, j.VersaoAlvoId })
+            .HasConstraintName("fk_janelas_de_migracao_versao_do_perfil_alvo")
             .HasPrincipalKey(v => new { v.PerfilId, v.Id })
             .OnDelete(DeleteBehavior.Restrict);
 
@@ -108,10 +110,12 @@ internal sealed class JanelaDeMigracaoConfiguration : IEntityTypeConfiguration<J
         builder.Navigation(j => j.Lotes).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasMany(j => j.Migracoes).WithOne().HasForeignKey(m => new { m.JanelaId, m.PerfilId })
+            .HasConstraintName("fk_migracoes_da_concessao_janela_de_migracao")
             .HasPrincipalKey(j => new { j.Id, j.PerfilId }).OnDelete(DeleteBehavior.Restrict);
         builder.Navigation(j => j.Migracoes).UsePropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasMany(j => j.Decisoes).WithOne().HasForeignKey(d => new { d.JanelaId, d.PerfilId })
+            .HasConstraintName("fk_decisoes_da_migracao_janela_de_migracao")
             .HasPrincipalKey(j => new { j.Id, j.PerfilId }).OnDelete(DeleteBehavior.Restrict);
         builder.Navigation(j => j.Decisoes).UsePropertyAccessMode(PropertyAccessMode.Field);
     }

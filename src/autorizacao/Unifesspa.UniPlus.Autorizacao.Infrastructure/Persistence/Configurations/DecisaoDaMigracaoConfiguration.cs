@@ -80,6 +80,7 @@ internal sealed class DecisaoDaMigracaoConfiguration : IEntityTypeConfiguration<
         builder.HasOne<VersaoDoPerfil>()
             .WithMany()
             .HasForeignKey(d => new { d.PerfilId, d.VersaoAvaliadaId })
+            .HasConstraintName("fk_decisoes_da_migracao_versao_do_perfil_avaliada")
             .HasPrincipalKey(v => new { v.PerfilId, v.Id })
             .OnDelete(DeleteBehavior.Restrict);
 
@@ -87,12 +88,17 @@ internal sealed class DecisaoDaMigracaoConfiguration : IEntityTypeConfiguration<
         builder.HasOne<LoteDaMigracao>()
             .WithMany()
             .HasForeignKey(d => new { d.JanelaId, d.LoteDeOrigemId, d.LoteDeOrigemEtapa })
+            .HasConstraintName("fk_decisoes_da_migracao_lote_da_migracao_de_origem")
             .HasPrincipalKey(l => new { l.JanelaId, l.Id, l.Etapa })
             .OnDelete(DeleteBehavior.Restrict);
+
+        builder.HasIndex(d => new { d.JanelaId, d.LoteDeOrigemId, d.LoteDeOrigemEtapa })
+            .HasDatabaseName("ix_decisoes_da_migracao_janela_lote_de_origem_e_etapa");
 
         builder.HasOne<LoteDaMigracao>()
             .WithMany()
             .HasForeignKey(d => new { d.JanelaId, d.EnvioId, d.EnvioEtapa })
+            .HasConstraintName("fk_decisoes_da_migracao_lote_da_migracao_de_envio")
             .HasPrincipalKey(l => new { l.JanelaId, l.Id, l.Etapa })
             .OnDelete(DeleteBehavior.Restrict);
     }

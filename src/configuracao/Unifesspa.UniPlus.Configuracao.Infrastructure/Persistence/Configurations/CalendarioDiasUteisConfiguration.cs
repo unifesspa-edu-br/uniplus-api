@@ -55,6 +55,7 @@ internal sealed class CalendarioDiasUteisConfiguration : IEntityTypeConfiguratio
         builder.HasMany(c => c.DiasNaoUteis)
             .WithOne()
             .HasForeignKey(d => d.CalendarioDiasUteisId)
+            .HasConstraintName("fk_dias_nao_uteis_calendario_de_dias_uteis")
             .OnDelete(DeleteBehavior.ClientNoAction);
         builder.Navigation(c => c.DiasNaoUteis)
             .UsePropertyAccessMode(PropertyAccessMode.Field);

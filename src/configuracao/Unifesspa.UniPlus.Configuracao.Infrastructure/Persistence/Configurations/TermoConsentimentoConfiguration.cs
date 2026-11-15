@@ -74,6 +74,7 @@ internal sealed class TermoConsentimentoConfiguration : IEntityTypeConfiguration
         builder.HasMany(t => t.Versoes)
             .WithOne()
             .HasForeignKey(v => v.TermoConsentimentoId)
+            .HasConstraintName("fk_versoes_do_termo_consentimento_termo_de_consentimento")
             .OnDelete(DeleteBehavior.ClientNoAction);
         builder.Navigation(t => t.Versoes)
             .UsePropertyAccessMode(PropertyAccessMode.Field);

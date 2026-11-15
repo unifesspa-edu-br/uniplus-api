@@ -125,6 +125,7 @@ public sealed class DocumentoExigidoConfiguration : IEntityTypeConfiguration<Doc
         builder.HasMany(d => d.BasesLegais)
             .WithOne()
             .HasForeignKey(b => b.DocumentoExigidoId)
+            .HasConstraintName("fk_documentos_exigidos_base_legal_documento_exigido")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(d => d.BasesLegais)

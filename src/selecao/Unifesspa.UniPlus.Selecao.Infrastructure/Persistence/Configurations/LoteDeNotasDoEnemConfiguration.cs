@@ -99,11 +99,13 @@ public sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<Lo
         builder.HasOne<ProcessoSeletivo>()
             .WithMany()
             .HasForeignKey(l => l.ProcessoSeletivoId)
+            .HasConstraintName("fk_lotes_de_notas_do_enem_processo_seletivo")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasOne<VersaoConfiguracao>()
             .WithMany()
             .HasForeignKey(l => l.VersaoConfiguracaoId)
+            .HasConstraintName("fk_lotes_de_notas_do_enem_versao_configuracao")
             .OnDelete(DeleteBehavior.Restrict);
 
         builder.HasMany(l => l.Inscritos)
@@ -115,6 +117,7 @@ public sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<Lo
         builder.HasMany(l => l.Lancamentos)
             .WithOne()
             .HasForeignKey(l => new { l.LoteId, l.EtapaProcessoId })
+            .HasConstraintName("fk_lancamentos_de_nota_lote_de_notas_do_enem")
             .HasPrincipalKey(l => new { l.Id, l.EtapaProcessoId })
             .OnDelete(DeleteBehavior.Restrict);
         builder.Navigation(l => l.Lancamentos).UsePropertyAccessMode(PropertyAccessMode.Field);
@@ -122,6 +125,7 @@ public sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<Lo
         builder.HasMany(l => l.Avaliacoes)
             .WithOne()
             .HasForeignKey(a => new { a.LoteId, a.EtapaProcessoId })
+            .HasConstraintName("fk_avaliacoes_da_etapa_lote_de_notas_do_enem")
             .HasPrincipalKey(l => new { l.Id, l.EtapaProcessoId })
             .OnDelete(DeleteBehavior.Restrict);
         builder.Navigation(l => l.Avaliacoes).UsePropertyAccessMode(PropertyAccessMode.Field);
@@ -129,6 +133,7 @@ public sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<Lo
         builder.HasMany(l => l.Ocorrencias)
             .WithOne()
             .HasForeignKey(o => o.LoteId)
+            .HasConstraintName("fk_ocorrencias_do_lote_de_notas_lote_de_notas_do_enem")
             .OnDelete(DeleteBehavior.Restrict);
         builder.Navigation(l => l.Ocorrencias).UsePropertyAccessMode(PropertyAccessMode.Field);
 

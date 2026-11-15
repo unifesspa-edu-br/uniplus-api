@@ -71,6 +71,7 @@ internal sealed class GrupoPesoAreaEnemCongeladoConfiguration : IEntityTypeConfi
         builder.HasMany(g => g.Areas)
             .WithOne()
             .HasForeignKey(a => a.GrupoPesoAreaEnemCongeladoId)
+            .HasConstraintName("fk_areas_do_quadro_de_pesos_grupo_do_quadro_de_pesos")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(g => g.Areas)

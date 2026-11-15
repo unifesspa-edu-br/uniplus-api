@@ -193,11 +193,13 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasMany(p => p.DistribuicaoVagas)
             .WithOne()
             .HasForeignKey(d => d.ProcessoSeletivoId)
+            .HasConstraintName("fk_configuracoes_de_vagas_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasOne(p => p.BonusRegional)
             .WithOne()
             .HasForeignKey<ConfiguracaoBonusRegional>(b => b.ProcessoSeletivoId)
+            .HasConstraintName("fk_configuracoes_bonus_regional_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         // Divulgação pública (UNI-REQ-0050, issue #563) — 1:1, mesmo padrão de BonusRegional
@@ -205,6 +207,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasOne(p => p.ConfiguracaoDivulgacao)
             .WithOne()
             .HasForeignKey<ConfiguracaoDivulgacao>(c => c.ProcessoSeletivoId)
+            .HasConstraintName("fk_configuracoes_divulgacao_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         // Taxa de inscrição e isenção (issue #1112) — 1:1, mesmo padrão de BonusRegional/
@@ -214,6 +217,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasOne(p => p.ConfiguracaoTaxaInscricao)
             .WithOne()
             .HasForeignKey<ConfiguracaoTaxaInscricao>(t => t.ProcessoSeletivoId)
+            .HasConstraintName("fk_configuracoes_taxa_inscricao_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(p => p.CriteriosDesempate)
@@ -224,6 +228,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasOne(p => p.Classificacao)
             .WithOne()
             .HasForeignKey<ConfiguracaoClassificacao>(c => c.ProcessoSeletivoId)
+            .HasConstraintName("fk_configuracoes_classificacao_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         // Cronograma de fases (Story #851) — 1..*, mesmo padrão de Etapas/DistribuicaoVagas.
@@ -244,6 +249,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasMany(p => p.NosExigencia)
             .WithOne()
             .HasForeignKey(n => n.ProcessoSeletivoId)
+            .HasConstraintName("fk_nos_da_arvore_de_exigencias_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         // Grafo de coleta de fatos (Story #926) — quais fatos o processo coleta, em que ordem e
@@ -275,6 +281,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasMany(p => p.Formularios)
             .WithOne()
             .HasForeignKey(f => f.ProcessoSeletivoId)
+            .HasConstraintName("fk_formularios_processo_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.Formularios)
@@ -284,6 +291,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasMany(p => p.TermosExigidos)
             .WithOne()
             .HasForeignKey(t => t.ProcessoSeletivoId)
+            .HasConstraintName("fk_termos_exigidos_formulario_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.TermosExigidos)
@@ -293,6 +301,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasMany(p => p.OpcoesDeclaradas)
             .WithOne()
             .HasForeignKey(o => o.ProcessoSeletivoId)
+            .HasConstraintName("fk_opcoes_declaradas_fato_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.OpcoesDeclaradas)
@@ -303,6 +312,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasMany(p => p.RegrasDerivacao)
             .WithOne()
             .HasForeignKey(c => c.ProcessoSeletivoId)
+            .HasConstraintName("fk_configuracoes_derivacao_fato_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.RegrasDerivacao)
@@ -328,6 +338,7 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
         builder.HasOne(p => p.Rascunho)
             .WithOne()
             .HasForeignKey<RascunhoRetificacao>(r => r.ProcessoSeletivoId)
+            .HasConstraintName("fk_rascunhos_retificacao_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(p => p.Etapas)

@@ -108,7 +108,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 
         builder.HasMany(e => e.ItensDeAvaliacao).WithOne()
-            .HasForeignKey(i => i.EtapaProcessoId).OnDelete(DeleteBehavior.Cascade);
+            .HasForeignKey(i => i.EtapaProcessoId).HasConstraintName("fk_itens_de_avaliacao_da_etapa_etapa_processo").OnDelete(DeleteBehavior.Cascade);
         builder.Metadata.FindNavigation(nameof(EtapaProcesso.ItensDeAvaliacao))!
             .SetPropertyAccessMode(PropertyAccessMode.Field);
 

@@ -93,7 +93,7 @@ internal sealed class PesoAreaEnemConfiguration
                         $"corte IS NULL OR (corte >= 0 AND corte <= {PesoAreaEnem.CorteMaximo.ToString(CultureInfo.InvariantCulture)})");
                 });
 
-            area.WithOwner().HasForeignKey("PesoAreaEnemId");
+            area.WithOwner().HasForeignKey("PesoAreaEnemId").HasConstraintName("fk_areas_dos_pesos_do_enem_peso_por_area_do_enem");
             area.HasKey("PesoAreaEnemId", nameof(PesoAreaEnemArea.Codigo));
 
             area.Property<Guid>("PesoAreaEnemId")

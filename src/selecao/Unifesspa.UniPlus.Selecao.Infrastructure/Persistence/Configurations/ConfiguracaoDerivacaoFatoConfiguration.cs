@@ -38,6 +38,7 @@ public sealed class ConfiguracaoDerivacaoFatoConfiguration : IEntityTypeConfigur
         builder.HasMany(c => c.Regras)
             .WithOne()
             .HasForeignKey(r => r.ConfiguracaoDerivacaoFatoId)
+            .HasConstraintName("fk_regras_derivacao_configuradas_configuracao_derivacao_fato")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(c => c.Regras)

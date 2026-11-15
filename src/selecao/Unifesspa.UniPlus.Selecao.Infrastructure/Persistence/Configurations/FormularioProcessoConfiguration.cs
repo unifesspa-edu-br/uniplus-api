@@ -37,6 +37,7 @@ public sealed class FormularioProcessoConfiguration : IEntityTypeConfiguration<F
         builder.HasMany(f => f.Etapas)
             .WithOne()
             .HasForeignKey(e => e.FormularioProcessoId)
+            .HasConstraintName("fk_etapas_formulario_formulario_processo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(f => f.Etapas).UsePropertyAccessMode(PropertyAccessMode.Field);
