@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -72,7 +73,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -81,7 +82,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
         // caminho REAL de produção, não uma query de teste (é justamente o Include deste
         // método que o achado de revisão apontou faltando).
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository readRepository = new(readContext, TimeProvider.System);
+        ProcessoSeletivoRepository readRepository = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
         ProcessoSeletivo? recarregado = await readRepository.ObterParaMutacaoAsync(processo.Id, CancellationToken.None);
 
         recarregado.Should().NotBeNull();
@@ -128,7 +129,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using UniPlusDbContext context = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(context);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await context.SaveChangesAsync(CancellationToken.None);
 

@@ -27,6 +27,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Retificação do processo já publicado: o atalho em um ato só e a sessão editorial de retificação, do abrir ao fechar.
 /// </summary>
 [ApiController]
+[EmiteEsperaEsgotadaPelaTrava]
 [Route("processos-seletivos")]
 [Tags("ProcessoSeletivo")]
 [Authorize]

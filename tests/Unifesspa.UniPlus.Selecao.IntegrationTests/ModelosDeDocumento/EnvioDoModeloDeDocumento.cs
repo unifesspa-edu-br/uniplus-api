@@ -32,7 +32,7 @@ internal sealed class EnvioDoModeloDeDocumento : IAsyncDisposable
         _context = context;
         Processo = processo;
         _modelos = new ModeloDeDocumentoRepository(context);
-        _processos = new ProcessoSeletivoRepository(context, TimeProvider.System);
+        _processos = ProcessoSeletivoRepositoryDeTeste.Criar(context);
         _storage = storage;
     }
 

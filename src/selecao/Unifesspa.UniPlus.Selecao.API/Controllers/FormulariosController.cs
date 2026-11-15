@@ -32,6 +32,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// omitir a anotação nasceria o endpoint anônimo por omissão.
 /// </summary>
 [ApiController]
+[EmiteEsperaEsgotadaPelaTrava]
 [SuppressMessage(
     "Performance",
     "CA1515:Consider making public types internal",

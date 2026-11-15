@@ -19,21 +19,16 @@ internal static class HeadersDeclaradosNoContrato
     internal static IReadOnlyCollection<string> Ler(IActionDescriptorCollectionProvider acoes) =>
         acoes.ActionDescriptors.Items
             .OfType<ControllerActionDescriptor>()
-            .Select(static acao => acao.MethodInfo)
-            .Distinct()
             .SelectMany(Declarados)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
-    private static IEnumerable<string> Declarados(MethodInfo metodo)
-    {
-        foreach (EmiteHeaderAttribute header in metodo.GetCustomAttributes<EmiteHeaderAttribute>(inherit: true))
-        {
-            yield return header.Nome;
-        }
+    private static IEnumerable<string> Declarados(ControllerActionDescriptor acao) =>
+        HeadersProprios(acao.MethodInfo)
+            .Concat(SeloDeEntidade(acao.MethodInfo));
 
-        if (metodo.GetCustomAttribute<EmiteETagAttribute>(inherit: true) is not null)
-        {
-            yield return NomeDoSelo;
-        }
-    }
+    private static IEnumerable<string> HeadersProprios(MethodInfo metodo) =>
+        metodo.GetCustomAttributes<EmiteHeaderAttribute>(inherit: true).Select(static header => header.Nome);
+
+    private static IEnumerable<string> SeloDeEntidade(MethodInfo metodo) =>
+        metodo.GetCustomAttribute<EmiteETagAttribute>(inherit: true) is null ? [] : [NomeDoSelo];
 }

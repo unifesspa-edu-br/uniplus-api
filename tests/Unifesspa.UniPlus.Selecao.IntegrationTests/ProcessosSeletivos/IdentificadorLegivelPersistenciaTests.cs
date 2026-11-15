@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -60,7 +61,7 @@ public sealed class IdentificadorLegivelPersistenciaTests : IClassFixture<Proces
         await PersistirAsync(excluido);
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(ctx, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(ctx);
 
         (await repository.IdentificadorLegivelEmUsoAsync(identificador, excluirId: null, CancellationToken.None))
             .Should().BeTrue("o endereço público de um certame excluído não pode ser herdado por outro");
@@ -77,7 +78,7 @@ public sealed class IdentificadorLegivelPersistenciaTests : IClassFixture<Proces
     private async Task PersistirAsync(ProcessoSeletivo processo)
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(ctx, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(ctx);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await ctx.SaveChangesAsync(CancellationToken.None);
     }

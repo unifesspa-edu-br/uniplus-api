@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 /// publicados, com os documentos de cada um.
 /// </summary>
 [ApiController]
+[EmiteEsperaEsgotadaPelaTrava]
 [Route("processos-seletivos/{processoSeletivoId:guid}/atos")]
 [Authorize]
 [SuppressMessage(

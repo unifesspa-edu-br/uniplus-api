@@ -173,7 +173,8 @@ public sealed class RespostaRecusadaLiberaAChaveTests
             services.GetRequiredService<IDomainErrorMapper>(),
             services.GetRequiredService<TimeProvider>(),
             userContext,
-            services.GetRequiredService<IOptions<IdempotencyOptions>>());
+            services.GetRequiredService<IOptions<IdempotencyOptions>>(),
+            services.GetRequiredService<IProblemTypeUriFactory>());
 
         ControllerActionDescriptor actionDescriptor = new()
         {

@@ -67,6 +67,31 @@ public sealed class HeadersDoContratoExpostosTests
         comDeclaracao.Headers.Should().BeEquivalentTo(semDeclaracao.Headers);
     }
 
+    [Fact(DisplayName = "Rota que declara a espera esgotada não expõe o Retry-After, que a resposta não traz")]
+    public void Politica_QuandoRotaDeclaraEsperaEsgotada_NaoDeveExporORetryAfter()
+    {
+        CorsPolicy policy = PoliticaCorsDeTeste.Construir(allowAnyHeader: false, typeof(ControllerSujeitoATrava));
+
+        policy.ExposedHeaders.Should().NotContain("Retry-After");
+        policy.ExposedHeaders.Should().Contain(HeadersComuns);
+    }
+
+    [Fact(DisplayName = "Controller sem a declaração da espera esgotada não expõe o Retry-After")]
+    public void Politica_QuandoNenhumaRotaDeclaraEsperaEsgotada_NaoDeveExporORetryAfter()
+    {
+        CorsPolicy policy = PoliticaCorsDeTeste.Construir(allowAnyHeader: false, typeof(ControllerQueNaoDeclaraNada));
+
+        policy.ExposedHeaders.Should().NotContain("Retry-After");
+    }
+
+    private sealed class ControllerSujeitoATrava
+    {
+        [EmiteEsperaEsgotadaPelaTrava]
+        public static void Alterar()
+        {
+        }
+    }
+
     private sealed class ControllerQueDeclaraLocation
     {
         [EmiteHeader("Location", "Endereço do recurso criado.", Status = "201")]

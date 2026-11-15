@@ -14,6 +14,7 @@ internal sealed class ErrosDaFronteiraHttpDomainErrorRegistration : IDomainError
             ErrosDaFronteiraHttp.CursorInvalido,
             ErrosDaFronteiraHttp.RegistroDeAcessoNaoGravado,
             ErrosDaFronteiraHttp.CatalogoDePermissoesDesatualizado,
+            ErrosDaFronteiraHttp.EsperaPelaTravaEsgotada,
             ErrosDaFronteiraHttp.ErroInesperado,
         }.Select(static definicao => new KeyValuePair<string, DomainErrorMapping>(definicao.Code, definicao));
 }

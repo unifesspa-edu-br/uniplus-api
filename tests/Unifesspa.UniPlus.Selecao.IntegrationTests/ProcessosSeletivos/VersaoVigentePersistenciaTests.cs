@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -129,7 +130,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.DocumentosAPublicar.AddAsync(docAbertura, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(publicar.Value!, CancellationToken.None);
@@ -142,7 +143,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         VersaoConfiguracao v2;
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
             VersaoConfiguracao versaoAtual = (await repository.ObterVersaoAtualAsync(processo.Id, CancellationToken.None))!;
             DadosEdital dadosRetificacao = NovosDados(docRetificacao.Id);
@@ -173,7 +174,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             nameof(ObterVersaoVigente_ResolveMaiorVigenciaAntesOuIgualAoInstante), clock, TimeSpan.FromDays(1));
 
         await using UniPlusDbContext context = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(context);
 
         // Instante posterior à retificação → a versão 2.
         VersaoConfiguracao? posterior = await repository
@@ -203,7 +204,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             nameof(ObterVersaoVigente_InstanteOffsetNaoUtc_ResolveOMesmo), clock, TimeSpan.FromDays(1));
 
         await using UniPlusDbContext context = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(context);
 
         // O MESMO instante de T0, expresso com offset -03:00 (ex.: um RFC 3339
         // vindo da query string) resolve a mesma versão.
@@ -229,7 +230,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             avancoAteRetificacao: TimeSpan.FromHours(-1));
 
         await using UniPlusDbContext context = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(context);
 
         v2.VigenteAPartirDe.Should().Be(v1.VigenteAPartirDe, "a vigência da sucessora é ancorada — nunca regride");
 
@@ -277,7 +278,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(versao, CancellationToken.None);
@@ -285,7 +286,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         }
 
         await using UniPlusDbContext context = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository leitura = new(context, TimeProvider.System);
+        ProcessoSeletivoRepository leitura = ProcessoSeletivoRepositoryDeTeste.Criar(context);
 
         // O instante do ato, tal como o evento o publica.
         VersaoConfiguracao? noInstanteDoAto = await leitura
@@ -314,7 +315,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             nameof(Handle_RelogioCorrenteAtrasDaVigencia_AfloraVigenteAusente), clock, TimeSpan.FromHours(-1));
 
         await using UniPlusDbContext context = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(context);
 
         // O relógio do host segue regredido (T0 − 1h) e o cliente não informa instante.
         Result<Application.DTOs.SnapshotVigenteDto> corrente = await ObterSnapshotVigenteQueryHandler.Handle(
@@ -368,7 +369,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
             .Options;
 
         await using MonolitoDbContext context = new(options);
-        ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(context);
 
         (await repository.ObterVersaoVigenteAsync(processoId, T0.AddDays(2), CancellationToken.None)).Should().NotBeNull();
 
@@ -406,7 +407,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         }
 
         await using UniPlusDbContext context = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(context);
 
         VersaoConfiguracao? vigente = await repository
             .ObterVersaoVigenteAsync(processo.Id, T0.AddDays(1), CancellationToken.None);
@@ -431,7 +432,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         }
 
         await using UniPlusDbContext context = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(context, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(context);
 
         // VersaoConfiguracao é forense (sem exclusão lógica própria), mas o EXISTS
         // através de ProcessosSeletivos herda o filtro global: um processo excluído
@@ -480,7 +481,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         Guid processoId = processo.Id;
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.DocumentosAPublicar.AddAsync(docAbertura, CancellationToken.None);
             await repository.AdicionarVersaoConfiguracaoAsync(publicar.Value!, CancellationToken.None);
@@ -497,7 +498,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         // Retificar só re-canonicaliza a configuração como está, sem editá-la.
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             ProcessoSeletivo carregado = (await repository.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
             VersaoConfiguracao versaoAtual = (await repository.ObterVersaoAtualAsync(processoId, CancellationToken.None))!;
 
@@ -525,7 +526,7 @@ public sealed class VersaoVigentePersistenciaTests : IClassFixture<ProcessoSelet
         }
 
         await using UniPlusDbContext context = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository leitura = new(context, TimeProvider.System);
+        ProcessoSeletivoRepository leitura = ProcessoSeletivoRepositoryDeTeste.Criar(context);
 
         // No instante T0 (antes da retificação) a vigente é a versão 1 — a matriz legal completa (8×7).
         VersaoConfiguracao? vigenteEmT0 = await leitura.ObterVersaoVigenteAsync(processoId, T0, CancellationToken.None);

@@ -100,6 +100,76 @@ public sealed class OpenApiEndpointTests
         headers.GetProperty("Location").GetProperty("description").GetString().Should().NotBeNullOrWhiteSpace();
     }
 
+    [Theory(DisplayName = "As mutações sujeitas à trava do processo, com Idempotency-Key, declaram o 503 guardado pela chave, sem o Retry-After")]
+    [InlineData("/api/selecao/processos-seletivos/{processoSeletivoId}/atos", "post")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/publicacao", "post")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/retificacoes", "post")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/retificacao-em-curso", "post")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/retificacao-em-curso", "put")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/retificacao-em-curso", "delete")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/retificacao-em-curso/fechamento", "post")]
+    [InlineData("/api/selecao/admin/processos-seletivos/{id}/formularios/aplicacoes-de-modelo", "post")]
+    [InlineData("/api/selecao/processos-seletivos/{processoSeletivoId}/produtos-previstos/{produtoId}/publicacoes", "post")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/motivos-de-decisao/{motivoDeDecisaoId}", "put")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/motivos-de-decisao/{motivoDeDecisaoId}", "delete")]
+    [InlineData("/api/selecao/admin/processos-seletivos/{id}/formularios/{finalidade}", "put")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/etapas", "put")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/classificacao", "put")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/cronograma-fases", "put")]
+    public async Task MutacaoComChave_DeclaraEsperaEsgotadaGuardadaSemRetryAfter(string rota, string metodo)
+    {
+        using JsonDocument spec = await LerSpecAsync();
+
+        JsonElement recusa = RecusaPorEsperaEsgotada(spec, rota, metodo);
+
+        recusa.GetProperty("description").GetString().Should().Contain("nova chave");
+        recusa.TryGetProperty("headers", out _).Should().BeFalse("a recusa guardada pela chave não traz prazo de nova tentativa");
+    }
+
+    [Theory(DisplayName = "O lote de notas e o envio ao INEP, sem Idempotency-Key, declaram o 503 sem Retry-After e sem falar em chave")]
+    [InlineData("/api/selecao/processos-seletivos/{processoSeletivoId}/etapas/{etapaId}/edicoes-do-enem/{edicao}/lotes-de-notas", "post")]
+    [InlineData("/api/selecao/processos-seletivos/{processoSeletivoId}/etapas/{etapaId}/edicoes-do-enem/{edicao}/envios-ao-inep", "post")]
+    public async Task MutacaoSemChave_DeclaraEsperaEsgotadaSemFalarEmChave(string rota, string metodo)
+    {
+        using JsonDocument spec = await LerSpecAsync();
+
+        JsonElement recusa = RecusaPorEsperaEsgotada(spec, rota, metodo);
+
+        recusa.GetProperty("description").GetString().Should().Contain("envie de novo").And.NotContain("chave");
+        recusa.TryGetProperty("headers", out _).Should().BeFalse();
+    }
+
+    [Fact(DisplayName = "Nenhuma operação do contrato declara o header Retry-After")]
+    public async Task Contrato_NaoDeclaraRetryAfter()
+    {
+        using JsonDocument spec = await LerSpecAsync();
+
+        spec.RootElement.GetRawText().Should().NotContain("Retry-After\":");
+    }
+
+    [Theory(DisplayName = "As consultas por POST, que não travam o processo, não declaram o 503 da espera esgotada")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/distribuicao-vagas/simulacao")]
+    [InlineData("/api/selecao/processos-seletivos/{id}/pre-visualizacao")]
+    public async Task ConsultaPorPost_NaoDeclaraEsperaEsgotada(string rota)
+    {
+        using JsonDocument spec = await LerSpecAsync();
+
+        JsonElement respostas = spec.RootElement.GetProperty("paths").GetProperty(rota).GetProperty("post").GetProperty("responses");
+
+        respostas.TryGetProperty("503", out _).Should().BeFalse();
+    }
+
+    private static JsonElement RecusaPorEsperaEsgotada(JsonDocument spec, string rota, string metodo)
+    {
+        JsonElement recusa = spec.RootElement.GetProperty("paths").GetProperty(rota)
+            .GetProperty(metodo).GetProperty("responses").GetProperty("503");
+
+        recusa.GetProperty("description").GetString().Should().Contain("uniplus.concorrencia.espera_esgotada");
+        recusa.GetProperty("content").GetProperty("application/problem+json").GetProperty("schema").GetProperty("$ref")
+            .GetString().Should().EndWith("/ProblemDetails");
+        return recusa;
+    }
+
     [Fact(DisplayName = "O documento do ato no certame explica que só entra na lista depois da cópia ao acervo")]
     public async Task DocumentoDoAtoDoCertame_ExplicaPorQueOEnderecoNuncaENulo()
     {

@@ -62,19 +62,36 @@ public static class UniPlusOpenApiServiceCollectionExtensions
 
     private static bool UriAbsoluta(string? url) => Uri.TryCreate(url, UriKind.Absolute, out _);
 
-    private static IServiceCollection AddTransformersDoOpenApi(this IServiceCollection services)
+    private static IServiceCollection AddTransformersDoOpenApi(this IServiceCollection services) =>
+        services
+            .AddSingletonsDosTransformersDeDocumento()
+            .AddSingletonsDosTransformersDeOperacao()
+            .AddSingletonsDosTransformersDeSchema();
+
+    private static IServiceCollection AddSingletonsDosTransformersDeDocumento(this IServiceCollection services)
     {
         services.TryAddSingleton<UniPlusInfoTransformer>();
+        services.TryAddSingleton<BearerSecuritySchemeDocumentTransformer>();
+        services.TryAddSingleton<PaginationOrphanSchemaDocumentTransformer>();
+        services.TryAddSingleton<ProblemDetailsExtensionsDocumentTransformer>();
+        return services;
+    }
+
+    private static IServiceCollection AddSingletonsDosTransformersDeOperacao(this IServiceCollection services)
+    {
         services.TryAddSingleton<UniPlusOperationTransformer>();
         services.TryAddSingleton<CursorPaginationOperationTransformer>();
         services.TryAddSingleton<PrecondicaoOperationTransformer>();
         services.TryAddSingleton<IdempotenciaOperationTransformer>();
+        services.TryAddSingleton<EsperaEsgotadaPelaTravaOperationTransformer>();
         services.TryAddSingleton<AuthorizationOperationTransformer>();
         services.TryAddSingleton<CorpoMultipartOperationTransformer>();
         services.TryAddSingleton<VendorMediaTypeOperationTransformer>();
-        services.TryAddSingleton<BearerSecuritySchemeDocumentTransformer>();
-        services.TryAddSingleton<PaginationOrphanSchemaDocumentTransformer>();
-        services.TryAddSingleton<ProblemDetailsExtensionsDocumentTransformer>();
+        return services;
+    }
+
+    private static IServiceCollection AddSingletonsDosTransformersDeSchema(this IServiceCollection services)
+    {
         services.TryAddSingleton<UniPlusSchemaTransformer>();
         services.TryAddSingleton<InstanteSchemaTransformer>();
         return services;
@@ -94,6 +111,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         options.AddOperationTransformer<CursorPaginationOperationTransformer>();
         options.AddOperationTransformer<PrecondicaoOperationTransformer>();
         options.AddOperationTransformer<IdempotenciaOperationTransformer>();
+        options.AddOperationTransformer<EsperaEsgotadaPelaTravaOperationTransformer>();
         options.AddOperationTransformer<AuthorizationOperationTransformer>();
         options.AddOperationTransformer<CorpoMultipartOperationTransformer>();
 

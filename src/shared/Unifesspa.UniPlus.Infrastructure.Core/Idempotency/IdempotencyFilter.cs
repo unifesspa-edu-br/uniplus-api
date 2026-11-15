@@ -26,39 +26,17 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 /// <para><b>Atomicidade vs ADR-0027:</b> reserva e conclusão rodam em transações separadas (limitação documentada na ADR-0027
 /// §"Negativas"). A janela de inconsistência é coberta pelo status Processing, que responde 409 a um retry concorrente.</para>
 /// </remarks>
-public sealed class IdempotencyFilter : IAsyncResourceFilter
+public sealed class IdempotencyFilter(
+    IIdempotencyStore store,
+    IUniPlusEncryptionService encryption,
+    IDomainErrorMapper errorMapper,
+    TimeProvider time,
+    IUserContext userContext,
+    IOptions<IdempotencyOptions> options,
+    IProblemTypeUriFactory problemTypeUriFactory) : IAsyncResourceFilter
 {
-    private readonly IIdempotencyStore _store;
-    private readonly IUniPlusEncryptionService _encryption;
-    private readonly IDomainErrorMapper _errorMapper;
-    private readonly TimeProvider _time;
-    private readonly IUserContext _userContext;
-    private readonly IdempotencyOptions _options;
-    private readonly IdempotentExecution _execution;
-
-    public IdempotencyFilter(
-        IIdempotencyStore store,
-        IUniPlusEncryptionService encryption,
-        IDomainErrorMapper errorMapper,
-        TimeProvider time,
-        IUserContext userContext,
-        IOptions<IdempotencyOptions> options)
-    {
-        ArgumentNullException.ThrowIfNull(store);
-        ArgumentNullException.ThrowIfNull(encryption);
-        ArgumentNullException.ThrowIfNull(errorMapper);
-        ArgumentNullException.ThrowIfNull(time);
-        ArgumentNullException.ThrowIfNull(userContext);
-        ArgumentNullException.ThrowIfNull(options);
-
-        _store = store;
-        _encryption = encryption;
-        _errorMapper = errorMapper;
-        _time = time;
-        _userContext = userContext;
-        _options = options.Value;
-        _execution = new IdempotentExecution(store, encryption);
-    }
+    private readonly IdempotencyOptions _options = options.Value;
+    private readonly IdempotentExecution _execution = new(store, encryption, problemTypeUriFactory);
 
     public async Task OnResourceExecutionAsync(ResourceExecutingContext context, ResourceExecutionDelegate next)
     {
@@ -79,7 +57,7 @@ public sealed class IdempotencyFilter : IAsyncResourceFilter
     private async Task ExecuteIdempotentAsync(ResourceExecutingContext context, ResourceExecutionDelegate next, RequiresIdempotencyKeyAttribute attribute)
     {
         Result<IdempotencyRequestKey> key = await IdempotencyRequestKeyReader
-            .ReadAsync(context.HttpContext, _userContext, _options.MaxBodyBytes)
+            .ReadAsync(context.HttpContext, userContext, _options.MaxBodyBytes)
             .ConfigureAwait(false);
         if (key.IsFailure)
         {
@@ -117,11 +95,11 @@ public sealed class IdempotencyFilter : IAsyncResourceFilter
     private Task<bool> TryReserveAsync(IdempotencyRequestKey key, RequiresIdempotencyKeyAttribute attribute, CancellationToken cancellationToken)
     {
         TimeSpan validity = attribute.TtlSeconds >= 0 ? TimeSpan.FromSeconds(attribute.TtlSeconds) : _options.Ttl;
-        return _store.TryReserveAsync(key.Scope, key.Endpoint, key.IdempotencyKey, key.BodyHash, _time.GetUtcNow().Add(validity), cancellationToken);
+        return store.TryReserveAsync(key.Scope, key.Endpoint, key.IdempotencyKey, key.BodyHash, time.GetUtcNow().Add(validity), cancellationToken);
     }
 
     private Task<IdempotencyLookupResult> LookupAsync(IdempotencyRequestKey key, CancellationToken cancellationToken) =>
-        _store.LookupAsync(key.Scope, key.Endpoint, key.IdempotencyKey, key.BodyHash, cancellationToken);
+        store.LookupAsync(key.Scope, key.Endpoint, key.IdempotencyKey, key.BodyHash, cancellationToken);
 
     private async Task RespondAfterRaceAsync(ResourceExecutingContext context, IdempotencyRequestKey key, CancellationToken cancellationToken)
     {
@@ -165,7 +143,7 @@ public sealed class IdempotencyFilter : IAsyncResourceFilter
     {
         byte[] encrypted = entry.EncryptedResponseBody
             ?? throw new InvalidOperationException("A entrada de idempotência não guarda o corpo da resposta.");
-        byte[] body = await _encryption.DecryptAsync(IdempotencyOptions.EncryptionKeyName, encrypted, cancellationToken).ConfigureAwait(false);
+        byte[] body = await encryption.DecryptAsync(IdempotencyOptions.EncryptionKeyName, encrypted, cancellationToken).ConfigureAwait(false);
 
         StoredResponse.Replay(context, entry, body);
     }
@@ -181,5 +159,5 @@ public sealed class IdempotencyFilter : IAsyncResourceFilter
         Refuse(context, new DomainError(code, detail));
 
     private void Refuse(ResourceExecutingContext context, DomainError error) =>
-        context.Result = Result.Failure(error).ToActionResult(_errorMapper);
+        context.Result = Result.Failure(error).ToActionResult(errorMapper);
 }

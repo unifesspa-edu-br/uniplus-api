@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -155,7 +156,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
         await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
         await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!, CancellationToken.None);
@@ -331,7 +332,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         byte[] bytesOriginais = versaoAbertura.ConfiguracaoCongeladaCanonica;
 
         await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
         await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
@@ -398,13 +399,13 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository leitura = new(readContext, TimeProvider.System);
+        ProcessoSeletivoRepository leitura = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
         ProcessoSeletivo relido = (await leitura.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
         relido.Cascata.Should().NotBeNull(
@@ -429,7 +430,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         Guid processoId = processo.Id;
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -443,14 +444,14 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         Guid idSegundaVersao = segundaVersao.Id;
         await using (UniPlusDbContext sessao = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(sessao, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(sessao);
             ProcessoSeletivo tracked = (await repository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
             tracked.DefinirCascataRemanejamento(segundaVersao, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
             await sessao.SaveChangesAsync(CancellationToken.None);
         }
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository leitura = new(readContext, TimeProvider.System);
+        ProcessoSeletivoRepository leitura = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
         ProcessoSeletivo relido = (await leitura.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
 
         relido.Cascata.Should().NotBeNull();
@@ -487,14 +488,14 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         Guid processoId = processo.Id;
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
             await repository.AdicionarAsync(processo, CancellationToken.None);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 
         await using (UniPlusDbContext sessao = _fixture.CreateDbContext())
         {
-            ProcessoSeletivoRepository repository = new(sessao, TimeProvider.System);
+            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(sessao);
             ProcessoSeletivo tracked = (await repository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
             tracked.Cascata.Should().NotBeNull("pré-condição: a cascata persistiu na sessão anterior");
             tracked.DefinirCascataRemanejamento(null, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
@@ -502,7 +503,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         }
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository leitura = new(readContext, TimeProvider.System);
+        ProcessoSeletivoRepository leitura = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
         ProcessoSeletivo relido = (await leitura.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
 
         relido.Cascata.Should().BeNull("DefinirCascataRemanejamento(null) remove a cascata — o toggle 'sem cascata' é a própria ausência da entidade");
@@ -602,7 +603,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         processo.DefinirCascataRemanejamento(cascata, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository repository = new(writeContext, TimeProvider.System);
+        ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
 

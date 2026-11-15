@@ -14,13 +14,15 @@ using Microsoft.Extensions.Logging;
 
 using Pagination;
 
+using Persistence;
+
 using Unifesspa.UniPlus.Authorization.Abstractions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed partial class GlobalExceptionMiddleware
 {
-    private static readonly JsonSerializerOptions WebJsonOptions = new(JsonSerializerDefaults.Web);
+    private static readonly JsonSerializerOptions WebJsonOptions = ProblemaNaResposta.OpcoesJson;
 
     private readonly RequestDelegate _next;
     private readonly ILogger<GlobalExceptionMiddleware> _logger;
@@ -126,14 +128,14 @@ public sealed partial class GlobalExceptionMiddleware
     }
 
     private static Task EscreverRespostaConflitoDeConcorrencia(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
-        EscreverProblemAsync(
+        ProblemaNaResposta.EscreverAsync(
             context,
             problemTypeUriFactory,
             ErrosDaFronteiraHttp.ConflitoDeConcorrencia,
             "Este recurso foi modificado por outra operação concorrente. Recarregue os dados e tente novamente.");
 
     private static Task EscreverRespostaCursorInvalido(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
-        EscreverProblemAsync(
+        ProblemaNaResposta.EscreverAsync(
             context,
             problemTypeUriFactory,
             ErrosDaFronteiraHttp.CursorInvalido,
@@ -142,7 +144,7 @@ public sealed partial class GlobalExceptionMiddleware
     // O registro de acesso é do shared e qualquer módulo pode lançar a falha, então a resposta não depende do registro
     // de erros de um módulo. A causa não vai à resposta.
     private static Task EscreverRespostaRegistroDeAcessoNaoGravado(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
-        EscreverProblemAsync(
+        ProblemaNaResposta.EscreverAsync(
             context,
             problemTypeUriFactory,
             ErrosDaFronteiraHttp.RegistroDeAcessoNaoGravado,
@@ -151,42 +153,23 @@ public sealed partial class GlobalExceptionMiddleware
     // O catálogo é do shared e qualquer módulo que decide acesso pode lançar a falha; a resposta não depende do registro de
     // erros de um módulo.
     private static Task EscreverRespostaCatalogoDesatualizado(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
-        EscreverProblemAsync(
+        ProblemaNaResposta.EscreverAsync(
             context,
             problemTypeUriFactory,
             ErrosDaFronteiraHttp.CatalogoDePermissoesDesatualizado,
             "O sistema está sendo atualizado e o acesso não pôde ser decidido. Tente novamente em instantes.");
 
+    // A trava é do banco compartilhado e qualquer módulo pode esperar por ela; a resposta não depende do registro de erros
+    // de um módulo.
+    private static Task EscreverRespostaEsperaPelaTravaEsgotada(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
+        RespostaDaEsperaEsgotadaPelaTrava.EscreverAsync(context, problemTypeUriFactory);
+
     private static Task EscreverRespostaErro(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
-        EscreverProblemAsync(
+        ProblemaNaResposta.EscreverAsync(
             context,
             problemTypeUriFactory,
             ErrosDaFronteiraHttp.ErroInesperado,
             "Ocorreu um erro inesperado. Tente novamente mais tarde.");
-
-    private static async Task EscreverProblemAsync(
-        HttpContext context,
-        IProblemTypeUriFactory problemTypeUriFactory,
-        DomainErrorMapping definicao,
-        string detail)
-    {
-        context.Response.StatusCode = definicao.Status;
-
-        Dictionary<string, object?> body = new()
-        {
-            ["type"] = problemTypeUriFactory.Build(definicao.Code),
-            ["title"] = definicao.Title,
-            ["status"] = definicao.Status,
-            ["detail"] = detail,
-            ["instance"] = $"urn:uuid:{Guid.CreateVersion7()}",
-            ["code"] = definicao.Code,
-            ["traceId"] = Activity.Current?.TraceId.ToHexString() ?? Guid.CreateVersion7().ToString("N"),
-        };
-
-        await context.Response
-            .WriteAsJsonAsync(body, WebJsonOptions, contentType: "application/problem+json")
-            .ConfigureAwait(false);
-    }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Erro de validação no request {Path}")]
     private static partial void LogValidationError(ILogger logger, PathString path, Exception ex);
@@ -202,6 +185,9 @@ public sealed partial class GlobalExceptionMiddleware
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Catálogo de permissões do banco diferente do desta instância no request {Path}")]
     private static partial void LogCatalogoDesatualizado(ILogger logger, PathString path, Exception ex);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Espera pela trava esgotada no request {Path}")]
+    private static partial void LogEsperaPelaTravaEsgotada(ILogger logger, PathString path, Exception ex);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Erro não tratado no request {Path}")]
     private static partial void LogUnhandledError(ILogger logger, PathString path, Exception ex);

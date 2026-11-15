@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -88,7 +89,7 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
     /// </summary>
     private static IProcessoSeletivoRepository RepositorioQueNaoVeAConcorrencia(UniPlusDbContext ctx)
     {
-        ProcessoSeletivoRepository real = new(ctx, TimeProvider.System);
+        ProcessoSeletivoRepository real = ProcessoSeletivoRepositoryDeTeste.Criar(ctx);
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.IdentificadorLegivelEmUsoAsync(default, default, default).ReturnsForAnyArgs(false);
         repository.AdicionarAsync(default!, default)

@@ -109,6 +109,12 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IArquivoDoCandidatoStorage, ArquivoDoCandidatoStorageService>();
     }
 
+    private static void AddOpcoesDoModulo(this IServiceCollection services)
+    {
+        services.AddOpcoesDosArquivosDoCandidato();
+        services.AddOpcoesDaTravaDoProcesso();
+    }
+
     private static void AddOpcoesDosArquivosDoCandidato(this IServiceCollection services) =>
         // Os nomes dos buckets são obrigatórios: sem eles o pod falha no startup, e não no primeiro envio.
         services.AddOptions<ArquivosDoCandidatoOptions>()
@@ -117,6 +123,15 @@ public static class SelecaoInfrastructureRegistration
                 static o => !string.IsNullOrWhiteSpace(o.BucketDeEnvio) && !string.IsNullOrWhiteSpace(o.BucketDefinitivo)
                     && !string.IsNullOrWhiteSpace(o.AccessKey) && !string.IsNullOrWhiteSpace(o.SecretKey),
                 "ArquivosDoCandidato:BucketDeEnvio, BucketDefinitivo, AccessKey e SecretKey são obrigatórios.")
+            .ValidateOnStart();
+
+    private static void AddOpcoesDaTravaDoProcesso(this IServiceCollection services) =>
+        // Limite zero desligaria o lock_timeout do banco e a espera voltaria a ser sem fim: o pod falha no startup.
+        services.AddOptions<TravaDoProcessoOptions>()
+            .BindConfiguration(TravaDoProcessoOptions.SectionName)
+            .Validate(
+                TravaDoProcessoOptions.EhValida,
+                "TravaDoProcesso:EsperaMaxima deve ser maior que zero e caber em milissegundos de 32 bits.")
             .ValidateOnStart();
 
     private static void AddIntegracoesExternasEAcervoPublico(this IServiceCollection services)
@@ -151,7 +166,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddServicosDeAplicacaoDaInscricao();
         services.AddPortasELeitoresDoModulo();
         services.AddArmazenamentoDosArquivos();
-        services.AddOpcoesDosArquivosDoCandidato();
+        services.AddOpcoesDoModulo();
         services.AddIntegracoesExternasEAcervoPublico();
 
         return services;

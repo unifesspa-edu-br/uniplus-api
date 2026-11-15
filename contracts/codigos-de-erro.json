@@ -837,6 +837,11 @@
       "titulo": "Conflito de concorrência"
     },
     {
+      "codigo": "uniplus.concorrencia.espera_esgotada",
+      "status": 503,
+      "titulo": "Processo ocupado por outra operação"
+    },
+    {
       "codigo": "uniplus.condicao_dnf.fato_obrigatorio",
       "status": 422,
       "titulo": "O fato da condição é obrigatório"
