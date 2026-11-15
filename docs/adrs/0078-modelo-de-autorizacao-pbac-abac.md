@@ -65,7 +65,7 @@ Task<AuthorizationDecision> DecideAsync(
 
 ### Sujeito explícito e concessões efetivas
 
-O sujeito é passado explicitamente como `AuthorizationSubject`, carregando: a identidade (`UsuarioRef`, com emissor + *subject* do token — nunca um `Guid` representando o *subject*), os grupos do token, as unidades administradas (derivadas no servidor), e a lista de **concessões efetivas** (`EffectiveGrant`).
+O sujeito é passado explicitamente como `AuthorizationSubject`, carregando: a identidade (`UsuarioRef`, com emissor + *contaId* do token — nunca um `Guid` representando o *contaId*), os grupos do token, as unidades administradas (derivadas no servidor), e a lista de **concessões efetivas** (`EffectiveGrant`).
 
 Uma concessão efetiva **unifica três fontes possíveis** — o token OIDC, o vínculo de grupo definido pela aplicação e a concessão excepcional — cada uma com **fonte rastreável**. A decisão pergunta apenas se o sujeito tem **ao menos uma** concessão aplicável ao recurso, considerando escopo e validade. Não exige que a permissão esteja no token *antes* de considerar uma concessão de outra fonte — uma concessão excepcional avaliada no servidor é uma concessão válida, apenas com origem distinta.
 

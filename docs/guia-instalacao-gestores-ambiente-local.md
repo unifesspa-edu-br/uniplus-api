@@ -75,7 +75,7 @@ há nenhum gestor ativo**. Ela acontece em quatro passos de uma única pessoa, o
 Regras que aparecem como recusa se não forem cumpridas:
 
 - o executor **não pode estar entre os dois gestores** (`instalacao.executor_entre_gestores`);
-- são exatamente **dois gestores**, cada um com `emissor`, `sub` e `email` institucional;
+- são exatamente **dois gestores**, cada um com `emissor`, `contaId` e `email` institucional;
 - o PDF tem até 10 MB; o número do documento, até 60 caracteres;
 - o código vai **só** para o e-mail do token do executor, que precisa estar verificado e em domínio
   institucional (`instalacao.email_nao_institucional`);
@@ -167,7 +167,7 @@ Use as **personas fictícias** do portal, nunca pessoas reais. O `setup-keycloak
 `unifesspa` (etapa 5b) com a senha `Uni+Teste26`. Para o ambiente local, a sugestão é `diogo.souza` e
 `leandro.viana`, mas qualquer par de personas serve, desde que diferente do executor.
 
-Pegue o `sub` (id do usuário no Keycloak) e o e-mail de cada uma:
+Pegue o `contaId` (o id do usuário no Keycloak) e o e-mail de cada uma:
 
 ```bash
 for u in diogo.souza leandro.viana; do
@@ -195,7 +195,7 @@ PDF=scripts/edital-de-teste.pdf
 TAM=$(stat -c%s "$PDF")
 ```
 
-Substitua `SUB_DIOGO`, `SUB_LEANDRO` e os e-mails pelos valores de 2.5. O `scripts/dev-instalar-gestores.sh` faz estes quatro passos sozinho.
+Substitua `CONTA_ID_DIOGO`, `CONTA_ID_LEANDRO` e os e-mails pelos valores de 2.5. O `scripts/dev-instalar-gestores.sh` faz estes quatro passos sozinho.
 
 ```bash
 # Passo 1 — inicia
@@ -204,8 +204,8 @@ INICIO=$(curl -s -X POST "$API/api/autorizacao/instalacao" \
   -H "Idempotency-Key: $(cat /proc/sys/kernel/random/uuid)" \
   -d "{
     \"gestores\": [
-      {\"emissor\": \"$ISS\", \"sub\": \"SUB_DIOGO\",   \"email\": \"EMAIL_DIOGO\",   \"nome\": \"Diogo Bruno Filipe Souza\"},
-      {\"emissor\": \"$ISS\", \"sub\": \"SUB_LEANDRO\", \"email\": \"EMAIL_LEANDRO\", \"nome\": \"Leandro Caleb Viana\"}
+      {\"emissor\": \"$ISS\", \"contaId\": \"CONTA_ID_DIOGO\",   \"email\": \"EMAIL_DIOGO\",   \"nome\": \"Diogo Bruno Filipe Souza\"},
+      {\"emissor\": \"$ISS\", \"contaId\": \"CONTA_ID_LEANDRO\", \"email\": \"EMAIL_LEANDRO\", \"nome\": \"Leandro Caleb Viana\"}
     ],
     \"numeroDoDocumento\": \"PORTARIA-LOCAL-0001/2026\",
     \"tamanhoDoPdf\": $TAM

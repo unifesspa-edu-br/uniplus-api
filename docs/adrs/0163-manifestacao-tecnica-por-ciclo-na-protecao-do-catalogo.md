@@ -46,7 +46,7 @@ O circuito de aprovação do item passa a ter um número de ciclo, que começa e
 
 - A manifestação só é registrada em item com aprovação solicitada, por quem tem `configuracao:protecao-do-catalogo:manifestar` (UNI-REQ-0373).
 - Quem se manifesta informa o ciclo que leu. Ciclo diferente do atual é recusado com conflito sem nova tentativa automática: o item foi reiniciado, e talvez solicitado de novo, depois de lido, e a manifestação falaria do que não foi visto.
-- Cada gravação é um evento só acrescentado, com o item, o ciclo, o parecer, o texto, quem se manifestou (emissor, `sub` e nome no instante) e o instante. A substituição é um evento novo que aponta para a manifestação vigente da mesma pessoa no mesmo ciclo; a anterior não é alterada. Vigente é a manifestação do ciclo atual que nenhum evento substituiu; a de ciclo encerrado é lida como encerrada.
+- Cada gravação é um evento só acrescentado, com o item, o ciclo, o parecer, o texto, quem se manifestou (emissor, `contaId` e nome no instante) e o instante. A substituição é um evento novo que aponta para a manifestação vigente da mesma pessoa no mesmo ciclo; a anterior não é alterada. Vigente é a manifestação do ciclo atual que nenhum evento substituiu; a de ciclo encerrado é lida como encerrada.
 - O texto tem até 2.000 caracteres, contados como caracteres Unicode e não como unidades UTF-16 (um emoji conta um), o mesmo limite e a mesma contagem da justificativa da decisão, e é obrigatório nos pareceres recomenda ajuste e inadequada.
 - O banco garante uma única cadeia por pessoa e ciclo: no máximo uma manifestação inicial (sem substituída) por item, ciclo e pessoa, e no máximo uma substituição de cada manifestação.
 

@@ -51,7 +51,7 @@ Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um p
 - O alvo (tipo de resource, identificador do pedido) e a sensibilidade são os mesmos que a leitura pela consulta dos pedidos gravaria; a sensibilidade é `pessoal`, como a de `autorizacao:pedidos:consultar`, porque a leitura devolve nome, texto livre ou anexo ([ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md)).
 - O campo `origem`, que é o canal da requisição, não muda. "Titularidade" é valor de `fonteGrant`, não de `origem`.
 
-**Solicitante e beneficiário não se distinguem no registro.** Há um único valor de fonte, `titularidade`. Quem leu está no ator (`atorEmissor` e `atorSubject`); o papel se deduz do pedido: o solicitante é sempre identificado pelo identificador do token, e qualquer outra parte que leu é o beneficiário. No pedido feito para si mesmo, o ator é as duas partes. Não há campo novo nem segundo valor de fonte.
+**Solicitante e beneficiário não se distinguem no registro.** Há um único valor de fonte, `titularidade`. Quem leu está no ator (`atorEmissor` e `atorContaId`); o papel se deduz do pedido: o solicitante é sempre identificado pelo identificador da conta, e qualquer outra parte que leu é o beneficiário. No pedido feito para si mesmo, o ator é as duas partes. Não há campo novo nem segundo valor de fonte.
 
 **Só o verificador cria a titularidade, e ela nunca entra no ponto de decisão.** A porta do verificador de acesso ganha uma operação que registra a leitura da parte para um conjunto de pedidos exibidos. A implementação monta a concessão efetiva de titularidade, sem unidade nem escopo, e a decisão permitida que a carrega, e reaproveita a política de registro por resource e a gravação em lote que as listagens já usam. A concessão de titularidade nunca está nas concessões efetivas do sujeito. Se estivesse, não satisfaria nada: a escolha da concessão aplicável recusa explicitamente a fonte `titularidade`, qualquer que seja o escopo, e também a concessão sem unidade nem escopo institucional, então a falha é fechada em duas camadas.
 
@@ -87,7 +87,7 @@ Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um p
 - Não há dado a migrar: o registro existe só no tópico, a leitura passada não é reconstituída, e a base de pré-produção é recriada.
 - Soft delete e retificação não se aplicam ao registro: ele é evidência só acrescentada, fora do soft delete, como a evidência forense da [ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md). O pedido de concessão não tem exclusão lógica: em qualquer situação, inclusive as terminais, ele continua listado à parte e cada leitura é registrada.
 - Concorrência: o registro reflete o pedido como foi lido. O aceite pelo beneficiário entre a leitura e a gravação não muda o registro, porque o papel se deduz do pedido e do ator, e o ator já era parte no instante da leitura.
-- O registro não leva dado pessoal novo: o ator continua pelo subject opaco, e nome, e-mail e justificativa nunca entram no registro nem nos cabeçalhos.
+- O registro não leva dado pessoal novo: o ator continua pelo identificador da conta, opaco, e nome, e-mail e justificativa nunca entram no registro nem nos cabeçalhos.
 
 ## Confirmação
 
@@ -129,3 +129,7 @@ Em 13/11/2026 o líder técnico decidiu que a leitura feita pelas partes de um p
 - **Emenda a [ADR-0078](0078-modelo-de-autorizacao-pbac-abac.md):** o vocabulário da fonte registrada ganha `titularidade`, que existe só no registro e não é fonte de concessão efetiva.
 - **[ADR-0162](0162-separacao-das-atribuicoes-de-governanca.md):** quando esta ADR for aceita, a regra "Leituras do Encarregado" deixa de remeter a fila dos próprios pedidos à issue #2389 e passa a dizer que a parte sem a consulta dos pedidos tem a leitura registrada por titularidade, como decidido aqui.
 - Contrato: `contracts/kafka/registro-de-acesso/v1.schema.json` e `contracts/README.md`.
+
+## Emenda (2026-11-14) — campo do ator no registro
+
+O campo obrigatório `atorSubject` do `v1` passa a se chamar `atorContaId`: é o identificador da conta de quem acessou, opaco e atribuído pelo emissor da identidade, e `sub` é só o nome da claim que o fornece. O `v1` é alterado no lugar, sem versão paralela, porque o registro ainda não tem consumidor em uso real; o registro de esquemas do ambiente precisa receber a versão atualizada antes do primeiro evento.
