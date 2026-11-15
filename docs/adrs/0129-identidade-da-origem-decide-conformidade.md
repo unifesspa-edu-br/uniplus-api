@@ -126,3 +126,7 @@ Os testes que acompanham cada ponto de decisão vêm em par, e ambos falham sem 
 - `unifesspa-edu-br/uniplus-api#1372` — a correção que originou o princípio, no predicado de documento por modalidade.
 - `unifesspa-edu-br/uniplus-api#1375` — extensão aos demais predicados.
 - `unifesspa-edu-br/uniplus-api#1335` — epic de integridade do código de cadastro.
+
+## Emenda (2026-11-15) — nome do atendimento especializado
+
+O texto cita `OfertaTipoDeficiencia.TipoDeficienciaOrigemId`. A entidade passou a se chamar `DeficienciaAtendida`, como a tabela `deficiencias_atendidas`; a propriedade `TipoDeficienciaOrigemId` segue com o mesmo nome. A decisão não muda; só o nome da entidade no código.
