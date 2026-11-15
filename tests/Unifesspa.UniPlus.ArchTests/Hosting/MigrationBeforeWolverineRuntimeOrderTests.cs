@@ -161,6 +161,12 @@ public sealed class MigrationOrderFixture : IDisposable
     /// </summary>
     static MigrationOrderFixture()
     {
+        DefinirConnectionStringsSinteticas();
+        DefinirIntegracoesExternas();
+    }
+
+    private static void DefinirConnectionStringsSinteticas()
+    {
         // Connection strings sintéticas — UseWolverineOutboxCascading e
         // AddDbContextMigrationsOnStartup registram services lazy; a conexão
         // só seria tentada no IHostedService.StartAsync, que este teste não
@@ -170,12 +176,18 @@ public sealed class MigrationOrderFixture : IDisposable
         const string fake = "Host=fitness-not-real;Database=fake;Username=u;Password=p";
         Environment.SetEnvironmentVariable("ConnectionStrings__UniPlusDb", fake);
         Environment.SetEnvironmentVariable("ConnectionStrings__PortalDb", fake);
+    }
 
+    private static void DefinirIntegracoesExternas()
+    {
         // Desliga Kafka — sem isto Wolverine tenta iniciar transporte.
         Environment.SetEnvironmentVariable("Kafka__BootstrapServers", " ");
 
         // O registro de acesso exige o próprio Kafka para o host subir; o produtor não conecta ao ser construído.
         Environment.SetEnvironmentVariable("RegistroDeAcesso__Kafka__BootstrapServers", "localhost:9092");
+
+        // O valor do registro de acesso é Avro, e o host exige o Schema Registry para subir; o cliente não conecta ao ser construído.
+        Environment.SetEnvironmentVariable("SchemaRegistry__Url", "http://localhost:8081/apis/ccompat/v7");
 
         // OpenTelemetry exporter em loop contra localhost:4317 polui logs do
         // CI mesmo sem afetar correção. Desliga consistente com ApiFactoryBase.

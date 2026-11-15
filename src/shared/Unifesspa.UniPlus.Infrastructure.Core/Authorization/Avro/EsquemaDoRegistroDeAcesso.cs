@@ -16,9 +16,6 @@ public static class EsquemaDoRegistroDeAcesso
     /// <summary>Nome do recurso embutido com o esquema do lote.</summary>
     public const string NomeDoRecurso = "Unifesspa.UniPlus.Authorization.Contracts.Schemas.LoteDoRegistroDeAcesso.avsc";
 
-    /// <summary>Subject do esquema no Schema Registry: o do tópico, com o sufixo do valor (ADR-0051).</summary>
-    public const string Subject = "autorizacao_registros_de_acesso-value";
-
     private static readonly Lazy<RecordSchema> EsquemaDoLote = new(Carregar);
 
     /// <summary>Assembly que embute o esquema.</summary>
@@ -32,6 +29,12 @@ public static class EsquemaDoRegistroDeAcesso
 
     /// <summary>Esquema do registro de acesso de uma entrada.</summary>
     public static RecordSchema Registro => (RecordSchema)Entrada.Fields[1].Schema;
+
+    /// <summary>
+    /// Subject do esquema no Schema Registry: o do tópico, com o sufixo do valor (ADR-0051). O serializador usa o mesmo
+    /// nome ao registrar o esquema, então o da subida precisa sair do tópico efetivamente configurado.
+    /// </summary>
+    public static string SubjectDoTopico(string topico) => $"{topico}-value";
 
     private static RecordSchema Carregar()
     {

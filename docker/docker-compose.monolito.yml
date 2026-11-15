@@ -1,9 +1,10 @@
 # Stack do MONÓLITO MODULAR: valida que o composition root boota como
 # UM serviço Docker contra o banco único `uniplus` (schema-por-módulo).
 #
-# Auto-contida e mínima — Postgres + Redis + Kafka + o monólito. O Kafka serve só ao
-# registro de acesso a dado pessoal, que o host exige para subir e publica de forma
-# síncrona; o transporte Kafka do Wolverine segue desligado. MinIO/Keycloak são
+# Auto-contida e mínima — Postgres + Redis + Kafka + Apicurio + o monólito. O Kafka serve só
+# ao registro de acesso a dado pessoal, que o host exige para subir e publica de forma
+# síncrona em Avro; o Apicurio guarda o esquema desse valor. O transporte Kafka do Wolverine
+# segue desligado. MinIO/Keycloak são
 # omitidos de propósito (storage/OIDC são lazy), e o smoke usa endpoints anônimos.
 # A stack completa (mensageria, storage, auth) é trabalho de rollout. Geo segue
 # deploy separado.
@@ -81,6 +82,23 @@ services:
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists
       --topic autorizacao_registros_de_acesso --partitions 1 --replication-factor 1
 
+  # Apicurio em modo Confluent-compat, sem autenticação e com armazenamento em memória (só dev local).
+  apicurio:
+    image: apicurio/apicurio-registry:3.2.4
+    restart: unless-stopped
+    environment:
+      QUARKUS_HTTP_PORT: "8081"
+      APICURIO_STORAGE_KIND: "sql"
+      APICURIO_STORAGE_SQL_KIND: "h2"
+      APICURIO_AUTH_ENABLED: "false"
+      QUARKUS_OIDC_ENABLED: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/localhost/8081 && echo -e 'GET /apis/registry/v3/system/info HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && timeout 1 cat <&3 | grep -q '200 OK'"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
   monolito-api:
     build:
       context: ..
@@ -101,6 +119,8 @@ services:
       Kafka__BootstrapServers: " "
       # Registro de acesso: Kafka próprio, independente do transporte do Wolverine acima.
       RegistroDeAcesso__Kafka__BootstrapServers: "kafka:29092"
+      # O valor do registro de acesso é Avro: o esquema é registrado no Apicurio na subida.
+      SchemaRegistry__Url: "http://apicurio:8081/apis/ccompat/v7"
       Auth__Authority: "http://localhost/realms/unifesspa"
       Auth__Audience: "uniplus"
       # Sem OTEL collector na stack mínima — desliga o exporter p/ evitar ruído de
@@ -115,6 +135,8 @@ services:
         condition: service_healthy
       kafka-init:
         condition: service_completed_successfully
+      apicurio:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health/live || exit 1"]
       interval: 10s

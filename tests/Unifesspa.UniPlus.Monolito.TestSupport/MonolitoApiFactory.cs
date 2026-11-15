@@ -60,22 +60,7 @@ public class MonolitoApiFactory : ApiFactoryBase<HostAssemblyMarker>
 
     protected sealed override IEnumerable<KeyValuePair<string, string?>> GetConfigurationOverrides()
     {
-        // Dicionário (não List) porque AddInMemoryCollection lança em chave duplicada:
-        // o MemoryConfigurationProvider faz Dictionary.Add por par. Coletar aqui com
-        // indexer garante chave única e semântica last-wins — overrides da subclasse
-        // (aplicados depois) vencem os defaults sem colidir.
-        Dictionary<string, string?> overrides = new(StringComparer.OrdinalIgnoreCase)
-        {
-            ["ConnectionStrings:UniPlusDb"] = _connectionString,
-            ["Autorizacao:EnderecoDaConfiguracao"] = EnderecoDaConfiguracao,
-            // Valor só para a validação da subida: o registro real não é construído, porque o de teste o substitui.
-            ["RegistroDeAcesso:Kafka:BootstrapServers"] = "localhost:9092",
-            ["ArquivosDoCandidato:AccessKey"] = "teste",
-            ["ArquivosDoCandidato:SecretKey"] = "teste",
-            ["RabbitMq:Uri"] = Environment.GetEnvironmentVariable("RabbitMq__Uri") is { Length: > 0 } uri ? uri : "amqp://guest:guest@localhost:5672",
-            ["Auth:Authority"] = "http://localhost/test-realm",
-            ["Auth:Audience"] = "uniplus",
-        };
+        Dictionary<string, string?> overrides = Padroes();
 
         // Hook para subclasses (ex.: OIDC real sobrescreve Auth:Authority/Audience).
         foreach (KeyValuePair<string, string?> over in OverridesAdicionais())
@@ -85,6 +70,25 @@ public class MonolitoApiFactory : ApiFactoryBase<HostAssemblyMarker>
 
         return overrides;
     }
+
+    // Dicionário (não List) porque AddInMemoryCollection lança em chave duplicada: o MemoryConfigurationProvider faz
+    // Dictionary.Add por par. Coletar com indexer garante chave única e semântica last-wins — overrides da subclasse
+    // (aplicados depois) vencem os defaults sem colidir. Kafka e Schema Registry do registro de acesso são valores só para
+    // a validação da subida: o registro real não é construído, porque o de teste o substitui, e o cliente do Schema
+    // Registry não conecta ao ser construído.
+    private Dictionary<string, string?> Padroes() =>
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["ConnectionStrings:UniPlusDb"] = _connectionString,
+            ["Autorizacao:EnderecoDaConfiguracao"] = EnderecoDaConfiguracao,
+            ["RegistroDeAcesso:Kafka:BootstrapServers"] = "localhost:9092",
+            ["SchemaRegistry:Url"] = "http://localhost:8081/apis/ccompat/v7",
+            ["ArquivosDoCandidato:AccessKey"] = "teste",
+            ["ArquivosDoCandidato:SecretKey"] = "teste",
+            ["RabbitMq:Uri"] = Environment.GetEnvironmentVariable("RabbitMq__Uri") is { Length: > 0 } uri ? uri : "amqp://guest:guest@localhost:5672",
+            ["Auth:Authority"] = "http://localhost/test-realm",
+            ["Auth:Audience"] = "uniplus",
+        };
 
     /// <summary>
     /// Overrides de configuração específicos da subclasse, aplicados após os

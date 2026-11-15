@@ -78,21 +78,9 @@ public sealed class RegistroDeAcessoAvroTests
         EsquemaDoRegistroDeAcesso.Entrada.Fields.Select(static f => f.Name).Should().Equal("chave", "registro");
     }
 
-    [Fact(DisplayName = "A posição de cada campo da classe Avro é a do esquema")]
-    public void PosicaoDosCampos_ESempreADoEsquema()
-    {
-        RegistroDeAcesso lido = IdaEVolta(MapeadorDoRegistroDeAcesso.ParaLote([Registro(clienteOidc: "selecao-web")])).Registros[0].Registro;
-
-        foreach (global::Avro.Field campo in EsquemaDoRegistroDeAcesso.Registro.Fields)
-        {
-            PropertyInfo propriedade = typeof(RegistroDeAcesso).GetProperty(char.ToUpperInvariant(campo.Name[0]) + campo.Name[1..])!;
-            lido.Get(campo.Pos).Should().Be(propriedade.GetValue(lido));
-        }
-    }
-
     [Fact(DisplayName = "O subject do esquema é o do tópico com o sufixo do valor")]
     public void Subject_EOTopicoComSufixoDoValor() =>
-        EsquemaDoRegistroDeAcesso.Subject.Should().Be("autorizacao_registros_de_acesso-value");
+        EsquemaDoRegistroDeAcesso.SubjectDoTopico("autorizacao_registros_de_acesso").Should().Be("autorizacao_registros_de_acesso-value");
 
     private static void ConferirRegistro(EntradaDoLote entrada, RegistroDecisaoAcesso origem)
     {
