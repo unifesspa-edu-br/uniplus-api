@@ -5892,11 +5892,6 @@
       "titulo": "A data informada fica fora dos limites que o campo admite"
     },
     {
-      "codigo": "uniplus.selecao.inscricao.data_nascimento_invalida",
-      "status": 422,
-      "titulo": "A data de nascimento não é uma data válida"
-    },
-    {
       "codigo": "uniplus.selecao.inscricao.descarte_so_de_rascunho",
       "status": 422,
       "titulo": "Só o rascunho da inscrição pode ser descartado"
@@ -5950,11 +5945,6 @@
       "codigo": "uniplus.selecao.inscricao.endereco_logradouro_obrigatorio",
       "status": 422,
       "titulo": "O logradouro é obrigatório quando o CEP não identifica a rua"
-    },
-    {
-      "codigo": "uniplus.selecao.inscricao.endereco_residencial_invalido",
-      "status": 422,
-      "titulo": "O endereço residencial não tem a cidade que a conferência no Geo exige"
     },
     {
       "codigo": "uniplus.selecao.inscricao.endereco_sem_cep",
