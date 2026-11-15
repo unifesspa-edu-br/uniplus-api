@@ -7670,6 +7670,108 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoConceito", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id")
+                        .HasComment("Identificador do tipo de conceito (UUIDv7).");
+
+                    b.Property<bool>("Ativo")
+                        .HasColumnType("boolean")
+                        .HasColumnName("ativo")
+                        .HasComment("Falso quando o tipo foi desativado: deixa de ser oferecido, e o código continua reservado.");
+
+                    b.Property<int?>("CasasDecimais")
+                        .HasColumnType("integer")
+                        .HasColumnName("casas_decimais")
+                        .HasComment("Número de casas decimais da escala, de 0 a 4. Só no tipo numérico.");
+
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("codigo")
+                        .HasComment("Chave natural do tipo, em NFC e imutável; único entre todos os tipos, inclusive os desativados.");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at")
+                        .HasComment("Instante em que o tipo foi criado.");
+
+                    b.Property<string>("CreatedBy")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("created_by")
+                        .HasComment("Quem criou o tipo.");
+
+                    b.Property<string>("Descricao")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("descricao")
+                        .HasComment("Descrição livre do tipo, em NFC. Nula quando não informada.");
+
+                    b.Property<decimal?>("EscalaMaxima")
+                        .HasColumnType("numeric")
+                        .HasColumnName("escala_maxima")
+                        .HasComment("Maior valor da escala, sempre acima do menor. Só no tipo numérico.");
+
+                    b.Property<decimal?>("EscalaMinima")
+                        .HasColumnType("numeric")
+                        .HasColumnName("escala_minima")
+                        .HasComment("Menor valor da escala. Só no tipo numérico.");
+
+                    b.Property<string>("Natureza")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)")
+                        .HasColumnName("natureza")
+                        .HasComment("Natureza do conceito: NUMERICO, medido na escala desta linha, ou CATEGORICO, escolhido entre os valores de valores_tipo_conceito.");
+
+                    b.Property<string>("Nome")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)")
+                        .HasColumnName("nome")
+                        .HasComment("Nome do tipo de conceito, em NFC.");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at")
+                        .HasComment("Instante da última alteração. Nulo enquanto o tipo não foi alterado.");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("updated_by")
+                        .HasComment("Quem fez a última alteração. Nulo enquanto o tipo não foi alterado.");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
+
+                    b.HasKey("Id")
+                        .HasName("pk_tipos_conceito");
+
+                    b.HasIndex("Ativo")
+                        .HasDatabaseName("ix_tipos_conceito_ativo");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_tipos_conceito_codigo");
+
+                    b.ToTable("tipos_conceito", "configuracao", t =>
+                        {
+                            t.HasComment("Tipos de conceito com que uma etapa avalia: numéricos, medidos numa escala, ou categóricos, escolhidos entre valores ordenados.");
+
+                            t.HasCheckConstraint("ck_tipos_conceito_natureza", "natureza IN ('NUMERICO', 'CATEGORICO')");
+
+                            t.HasCheckConstraint("ck_tipos_conceito_parametros_da_natureza", "(natureza = 'NUMERICO' AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) OR (natureza = 'CATEGORICO' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoDeficiencia", b =>
                 {
                     b.Property<Guid>("Id")
@@ -9045,6 +9147,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("updated_by");
+
+                    b.Property<uint>("Version")
+                        .IsConcurrencyToken()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("xid")
+                        .HasColumnName("xmin");
 
                     b.HasKey("Id")
                         .HasName("pk_tipos_etapa");
@@ -15324,6 +15432,30 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         });
                 });
 
+            modelBuilder.Entity("tipos_etapa_conceitos", b =>
+                {
+                    b.Property<Guid>("TipoEtapaId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tipo_etapa_id")
+                        .HasComment("Tipo de etapa que admite o conceito.");
+
+                    b.Property<Guid>("TipoConceitoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tipo_conceito_id")
+                        .HasComment("Tipo de conceito admitido pelo tipo de etapa.");
+
+                    b.HasKey("TipoEtapaId", "TipoConceitoId")
+                        .HasName("pk_tipos_etapa_conceitos");
+
+                    b.HasIndex("TipoConceitoId")
+                        .HasDatabaseName("ix_tipos_etapa_conceitos_tipo_conceito_id");
+
+                    b.ToTable("tipos_etapa_conceitos", "configuracao", t =>
+                        {
+                            t.HasComment("Tipos de conceito com que as etapas de um tipo de etapa podem ser avaliadas.");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.AceiteDoTermo", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.PedidoDeConcessao", null)
@@ -16976,6 +17108,79 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.ClientNoAction)
                         .IsRequired()
                         .HasConstraintName("fk_versoes_do_termo_consentimento_termos_de_consentimento_term");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoConceito", b =>
+                {
+                    b.OwnsMany("Unifesspa.UniPlus.Configuracao.Domain.Entities.ValorCategorico", "Valores", b1 =>
+                        {
+                            b1.Property<int>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("integer")
+                                .HasColumnName("id")
+                                .HasComment("Identificador técnico da linha; os valores são substituídos em bloco a cada edição.");
+
+                            NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b1.Property<int>("Id"));
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("codigo")
+                                .HasComment("Código do valor (maiúsculas, dígitos e sublinhado), único dentro do tipo.");
+
+                            b1.Property<bool>("ContaComoAprovacao")
+                                .HasColumnType("boolean")
+                                .HasColumnName("conta_como_aprovacao")
+                                .HasComment("Verdadeiro quando escolher este valor conta como aprovação. Um tipo pode não ter nenhum valor assim.");
+
+                            b1.Property<int>("Posicao")
+                                .HasColumnType("integer")
+                                .HasColumnName("posicao")
+                                .HasComment("Lugar do valor na lista do tipo, a partir de 1; é a única expressão da ordem.");
+
+                            b1.Property<string>("Rotulo")
+                                .IsRequired()
+                                .HasMaxLength(100)
+                                .HasColumnType("character varying(100)")
+                                .HasColumnName("rotulo")
+                                .HasComment("Rótulo exibido ao avaliador, único dentro do tipo.");
+
+                            b1.Property<Guid>("TipoConceitoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("tipo_conceito_id")
+                                .HasComment("Tipo de conceito categórico a que o valor pertence.");
+
+                            b1.HasKey("Id")
+                                .HasName("pk_valores_tipo_conceito");
+
+                            b1.HasIndex("TipoConceitoId", "Codigo")
+                                .IsUnique()
+                                .HasDatabaseName("ix_valores_tipo_conceito_codigo");
+
+                            b1.HasIndex("TipoConceitoId", "Posicao")
+                                .IsUnique()
+                                .HasDatabaseName("ix_valores_tipo_conceito_posicao");
+
+                            b1.HasIndex("TipoConceitoId", "Rotulo")
+                                .IsUnique()
+                                .HasDatabaseName("ix_valores_tipo_conceito_rotulo");
+
+                            b1.ToTable("valores_tipo_conceito", "configuracao", t =>
+                                {
+                                    t.HasComment("Valores de um tipo de conceito categórico, na ordem em que foram informados.");
+
+                                    t.HasCheckConstraint("ck_valores_tipo_conceito_codigo", "codigo ~ '^[A-Z][A-Z0-9_]*$'");
+
+                                    t.HasCheckConstraint("ck_valores_tipo_conceito_posicao", "posicao >= 1");
+                                });
+
+                            b1.WithOwner()
+                                .HasForeignKey("TipoConceitoId")
+                                .HasConstraintName("fk_valores_tipo_conceito_tipos_conceito_tipo_conceito_id");
+                        });
+
+                    b.Navigation("Valores");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoDocumento", b =>
@@ -19934,6 +20139,23 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasForeignKey("OcorrenciaId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .HasConstraintName("fk_respostas_da_inscricao_grupos_da_inscricao_ocorrencia_id");
+                });
+
+            modelBuilder.Entity("tipos_etapa_conceitos", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoConceito", null)
+                        .WithMany()
+                        .HasForeignKey("TipoConceitoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired()
+                        .HasConstraintName("fk_tipos_etapa_conceitos_tipos_conceito_tipo_conceito_id");
+
+                    b.HasOne("Unifesspa.UniPlus.Configuracao.Domain.Entities.TipoEtapa", null)
+                        .WithMany()
+                        .HasForeignKey("TipoEtapaId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_tipos_etapa_conceitos_tipos_etapa_tipo_etapa_id");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Concessao", b =>

@@ -1045,6 +1045,34 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "tipos_conceito",
+                schema: "configuracao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Identificador do tipo de conceito (UUIDv7)."),
+                    codigo = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: false, comment: "Chave natural do tipo, em NFC e imutável; único entre todos os tipos, inclusive os desativados."),
+                    nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false, comment: "Nome do tipo de conceito, em NFC."),
+                    descricao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true, comment: "Descrição livre do tipo, em NFC. Nula quando não informada."),
+                    ativo = table.Column<bool>(type: "boolean", nullable: false, comment: "Falso quando o tipo foi desativado: deixa de ser oferecido, e o código continua reservado."),
+                    natureza = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false, comment: "Natureza do conceito: NUMERICO, medido na escala desta linha, ou CATEGORICO, escolhido entre os valores de valores_tipo_conceito."),
+                    escala_minima = table.Column<decimal>(type: "numeric", nullable: true, comment: "Menor valor da escala. Só no tipo numérico."),
+                    escala_maxima = table.Column<decimal>(type: "numeric", nullable: true, comment: "Maior valor da escala, sempre acima do menor. Só no tipo numérico."),
+                    casas_decimais = table.Column<int>(type: "integer", nullable: true, comment: "Número de casas decimais da escala, de 0 a 4. Só no tipo numérico."),
+                    created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Quem criou o tipo."),
+                    updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "Quem fez a última alteração. Nulo enquanto o tipo não foi alterado."),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, comment: "Instante em que o tipo foi criado."),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "Instante da última alteração. Nulo enquanto o tipo não foi alterado.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_tipos_conceito", x => x.id);
+                    table.CheckConstraint("ck_tipos_conceito_natureza", "natureza IN ('NUMERICO', 'CATEGORICO')");
+                    table.CheckConstraint("ck_tipos_conceito_parametros_da_natureza", "(natureza = 'NUMERICO' AND escala_minima IS NOT NULL AND escala_maxima IS NOT NULL AND casas_decimais IS NOT NULL AND escala_minima < escala_maxima AND casas_decimais BETWEEN 0 AND 4) OR (natureza = 'CATEGORICO' AND escala_minima IS NULL AND escala_maxima IS NULL AND casas_decimais IS NULL)");
+                },
+                comment: "Tipos de conceito com que uma etapa avalia: numéricos, medidos numa escala, ou categóricos, escolhidos entre valores ordenados.");
+
+            migrationBuilder.CreateTable(
                 name: "tipos_de_ato_publicado",
                 schema: "publicacoes",
                 columns: table => new
@@ -1193,6 +1221,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     nota_de_origem_no_enem = table.Column<bool>(type: "boolean", nullable: false, comment: "Nota das etapas deste tipo vem do ENEM; definido só pela carga do cadastro, nunca pela API."),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
@@ -2704,6 +2733,62 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         principalTable: "termos_de_consentimento",
                         principalColumn: "id");
                 });
+
+            migrationBuilder.CreateTable(
+                name: "valores_tipo_conceito",
+                schema: "configuracao",
+                columns: table => new
+                {
+                    id = table.Column<int>(type: "integer", nullable: false, comment: "Identificador técnico da linha; os valores são substituídos em bloco a cada edição.")
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false, comment: "Código do valor (maiúsculas, dígitos e sublinhado), único dentro do tipo."),
+                    rotulo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false, comment: "Rótulo exibido ao avaliador, único dentro do tipo."),
+                    conta_como_aprovacao = table.Column<bool>(type: "boolean", nullable: false, comment: "Verdadeiro quando escolher este valor conta como aprovação. Um tipo pode não ter nenhum valor assim."),
+                    posicao = table.Column<int>(type: "integer", nullable: false, comment: "Lugar do valor na lista do tipo, a partir de 1; é a única expressão da ordem."),
+                    tipo_conceito_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Tipo de conceito categórico a que o valor pertence.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_valores_tipo_conceito", x => x.id);
+                    table.CheckConstraint("ck_valores_tipo_conceito_codigo", "codigo ~ '^[A-Z][A-Z0-9_]*$'");
+                    table.CheckConstraint("ck_valores_tipo_conceito_posicao", "posicao >= 1");
+                    table.ForeignKey(
+                        name: "fk_valores_tipo_conceito_tipos_conceito_tipo_conceito_id",
+                        column: x => x.tipo_conceito_id,
+                        principalSchema: "configuracao",
+                        principalTable: "tipos_conceito",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Valores de um tipo de conceito categórico, na ordem em que foram informados.");
+
+            migrationBuilder.CreateTable(
+                name: "tipos_etapa_conceitos",
+                schema: "configuracao",
+                columns: table => new
+                {
+                    tipo_etapa_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Tipo de etapa que admite o conceito."),
+                    tipo_conceito_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Tipo de conceito admitido pelo tipo de etapa.")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_tipos_etapa_conceitos", x => new { x.tipo_etapa_id, x.tipo_conceito_id });
+                    table.ForeignKey(
+                        name: "fk_tipos_etapa_conceitos_tipos_conceito_tipo_conceito_id",
+                        column: x => x.tipo_conceito_id,
+                        principalSchema: "configuracao",
+                        principalTable: "tipos_conceito",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "fk_tipos_etapa_conceitos_tipos_etapa_tipo_etapa_id",
+                        column: x => x.tipo_etapa_id,
+                        principalSchema: "configuracao",
+                        principalTable: "tipos_etapa",
+                        principalColumn: "id",
+                        onDelete: ReferentialAction.Cascade);
+                },
+                comment: "Tipos de conceito com que as etapas de um tipo de etapa podem ser avaliadas.");
 
             migrationBuilder.CreateTable(
                 name: "identificadores_da_unidade",
@@ -7085,6 +7170,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "ix_tipos_conceito_ativo",
+                schema: "configuracao",
+                table: "tipos_conceito",
+                column: "ativo");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_tipos_conceito_codigo",
+                schema: "configuracao",
+                table: "tipos_conceito",
+                column: "codigo",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "ix_tipos_de_ato_publicado_codigo_vivo",
                 schema: "publicacoes",
                 table: "tipos_de_ato_publicado",
@@ -7141,6 +7239,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 table: "tipos_etapa",
                 column: "codigo",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_tipos_etapa_conceitos_tipo_conceito_id",
+                schema: "configuracao",
+                table: "tipos_etapa_conceitos",
+                column: "tipo_conceito_id");
 
             migrationBuilder.CreateIndex(
                 name: "ix_tipos_processo_ativo",
@@ -7228,6 +7332,27 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "configuracao",
                 table: "valores_de_dominio_do_fato",
                 columns: new[] { "fato_candidato_id", "codigo" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_valores_tipo_conceito_codigo",
+                schema: "configuracao",
+                table: "valores_tipo_conceito",
+                columns: new[] { "tipo_conceito_id", "codigo" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_valores_tipo_conceito_posicao",
+                schema: "configuracao",
+                table: "valores_tipo_conceito",
+                columns: new[] { "tipo_conceito_id", "posicao" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_valores_tipo_conceito_rotulo",
+                schema: "configuracao",
+                table: "valores_tipo_conceito",
+                columns: new[] { "tipo_conceito_id", "rotulo" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -7779,7 +7904,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
-                name: "tipos_etapa",
+                name: "tipos_etapa_conceitos",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
@@ -7800,6 +7925,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
             migrationBuilder.DropTable(
                 name: "valores_de_dominio_do_fato",
+                schema: "configuracao");
+
+            migrationBuilder.DropTable(
+                name: "valores_tipo_conceito",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
@@ -7943,11 +8072,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "autorizacao");
 
             migrationBuilder.DropTable(
+                name: "tipos_etapa",
+                schema: "configuracao");
+
+            migrationBuilder.DropTable(
                 name: "configuracoes_de_vagas",
                 schema: "selecao");
 
             migrationBuilder.DropTable(
                 name: "fatos_do_candidato",
+                schema: "configuracao");
+
+            migrationBuilder.DropTable(
+                name: "tipos_conceito",
                 schema: "configuracao");
 
             migrationBuilder.DropTable(
