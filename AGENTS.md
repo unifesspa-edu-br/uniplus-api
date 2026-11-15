@@ -27,7 +27,9 @@ command rewrites every public test class to `internal` and breaks the build with
 Use Docker for PostgreSQL, Redis, Kafka, MinIO, and Keycloak. Use
 `dotnet restore UniPlus.slnx --force-evaluate` only when intentionally updating
 NuGet versions or lockfiles. Regenerate OpenAPI baselines with
-`UPDATE_OPENAPI_BASELINE=1 dotnet test --filter SpecRuntime`.
+`UPDATE_OPENAPI_BASELINE=1 dotnet test --filter SpecRuntime`. Regenerate
+`contracts/codigos-de-erro.json` with
+`UPDATE_CODIGOS_DE_ERRO_BASELINE=1 dotnet test tests/Unifesspa.UniPlus.ArchTests --filter "FullyQualifiedName~CodigosDeErroPublicados"`.
 
 ## Coding Style & Naming Conventions
 Follow `.editorconfig`: four spaces, LF, UTF-8, final newline, file-scoped
