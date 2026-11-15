@@ -71,7 +71,7 @@ public static class LerProcessoSeletivoQueryHandler
         processo.UnidadeAdministradora,
         localidade,
         Etapas: [],
-        OfertaAtendimento: null,
+        AtendimentoEspecializado: null,
         DistribuicaoVagas: [],
         BonusRegional: null,
         AplicaBonusRegional: null,

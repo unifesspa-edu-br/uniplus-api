@@ -43,13 +43,13 @@ public static class LimitesDoEnvelope
     public const int CondicaoCodigo = 50;
 
     /// <summary>
-    /// Código do tipo de deficiência congelado na oferta de atendimento — mesmo teto
+    /// Código do tipo de deficiência congelado no atendimento especializado — mesmo teto
     /// do value object <c>CodigoTipoDeficiencia</c> no cadastro de origem.
     /// </summary>
     public const int TipoDeficienciaCodigo = 50;
 
     /// <summary>
-    /// Código do recurso de acessibilidade congelado na oferta de atendimento — mesmo teto
+    /// Código do recurso de acessibilidade congelado no atendimento especializado — mesmo teto
     /// do value object <c>CodigoRecursoAcessibilidade</c> no cadastro de origem.
     /// </summary>
     public const int RecursoCodigo = 50;

@@ -50,7 +50,7 @@ internal static class CorpusFitness
                 unidadeResponsavel: UnidadesDeTeste.Ceps).Value!,
         ], [], PrecondicaoIfMatch.Ausente);
 
-        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
 
         processo.DefinirDistribuicaoVagas([
             ConfiguracaoDistribuicaoVagas.Criar(

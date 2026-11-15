@@ -182,7 +182,7 @@ public sealed class ProjecaoDoFormularioRenderizavelTests
             ProcessoSeletivo estrutura = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — SiSU");
             EnvelopeReidratado envelope = new(
                 new GrafoConfiguracao(
-                    [.. estrutura.Etapas], estrutura.OfertaAtendimento!, [.. estrutura.DistribuicaoVagas], estrutura.BonusRegional,
+                    [.. estrutura.Etapas], estrutura.AtendimentoEspecializado!, [.. estrutura.DistribuicaoVagas], estrutura.BonusRegional,
                     [.. estrutura.CriteriosDesempate], estrutura.Classificacao!, [.. estrutura.CronogramaFases], [.. estrutura.DocumentosExigidos], [], null,
                     fatosColetados: Fatos, formularios: Formularios, termosExigidos: Termos, gruposColetados: Grupos,
             numeroDeOpcoesDeCurso: 1),

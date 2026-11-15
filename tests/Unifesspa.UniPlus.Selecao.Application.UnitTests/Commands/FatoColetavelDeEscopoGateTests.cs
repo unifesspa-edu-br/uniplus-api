@@ -50,7 +50,7 @@ public sealed class FatoColetavelDeEscopoGateTests
         processo.Status.Should().Be(StatusProcesso.Rascunho, "a publicação recusada não transita o processo");
     }
 
-    // RetificarProcessoSeletivoCommandHandler não aceita novo FatoColetado/OfertaAtendimento
+    // RetificarProcessoSeletivoCommandHandler não aceita novo FatoColetado/AtendimentoEspecializado
     // como input — re-versiona o estado JÁ existente do agregado sob um novo ato, e exige
     // Rascunho nulo (abre e fecha uma sessão efêmera internamente). Como este gate é interno
     // ao agregado (sem leitura cross-módulo, ao contrário da coletabilidade de fatos), não há

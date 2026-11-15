@@ -215,7 +215,7 @@ public sealed partial class RestauradorDeConfiguracaoTests
             codigo, ordem, rotulo, tipo, obrigatoriedade, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal,
             finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
-    // Escopo-processo: os códigos batem com a oferta de atendimento do corpus rico
+    // Escopo-processo: os códigos batem com o atendimento especializado do corpus rico
     // (Pcd, LACTANTE), ordenados por CondicaoCodigo — "LACTANTE" antes de "PCD".
     private static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresComCondicaoDeAtendimento() =>
         new(CorpusEnvelope.ValoresSelecionaveisRicos())
@@ -223,7 +223,7 @@ public sealed partial class RestauradorDeConfiguracaoTests
             ["CONDICAO_ATENDIMENTO"] =
             [
                 new ValorDominioDeclaradoCongelado("LACTANTE", "Lactante", 0),
-                new ValorDominioDeclaradoCongelado(OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência", 1),
+                new ValorDominioDeclaradoCongelado(AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência", 1),
             ],
         };
 
@@ -277,6 +277,6 @@ public sealed partial class RestauradorDeConfiguracaoTests
         dicionario.Should().ContainKey("CONDICAO_ATENDIMENTO");
         dicionario["CONDICAO_ATENDIMENTO"].Should().NotBeNull("CONDICAO_ATENDIMENTO é escopo-processo, SELECAO_MULTIPLA");
         dicionario["CONDICAO_ATENDIMENTO"]!.Select(static v => v.Codigo).Should().Equal(
-            ["LACTANTE", OfertaAtendimentoEspecializado.CodigoCondicaoPcd]);
+            ["LACTANTE", AtendimentoEspecializado.CodigoCondicaoPcd]);
     }
 }

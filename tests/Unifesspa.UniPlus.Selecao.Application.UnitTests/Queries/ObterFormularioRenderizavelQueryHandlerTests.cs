@@ -156,7 +156,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — SiSU");
         return new EnvelopeReidratado(
             new GrafoConfiguracao(
-                [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas],
+                [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas],
                 processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
                 [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null, formularios: formularios,
             numeroDeOpcoesDeCurso: 1),

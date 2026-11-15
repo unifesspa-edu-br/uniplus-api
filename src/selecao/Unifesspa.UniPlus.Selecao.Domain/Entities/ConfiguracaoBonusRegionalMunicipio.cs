@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 /// depois não altera processos já configurados.
 /// </summary>
 /// <remarks>
-/// <see cref="EntityBase"/> puro (sem soft-delete), mesmo padrão de <see cref="OfertaCondicao"/>/
+/// <see cref="EntityBase"/> puro (sem soft-delete), mesmo padrão de <see cref="CondicaoOfertada"/>/
 /// <see cref="VagaOfertada"/>: filho substituível por inteiro junto com o bônus que o congelou.
 /// </remarks>
 public sealed class ConfiguracaoBonusRegionalMunicipio : EntityBase

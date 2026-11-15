@@ -55,14 +55,14 @@ internal static class ProjecaoDasVagas
         m.ComposicaoOrigemCodigo, m.RegraRemanejamento.ToCodigo(), m.RemanejamentoDestino, m.RemanejamentoPar, m.RemanejamentoFallback,
         m.RegraDeAplicabilidade.ToDto(), m.AcaoQuandoIndeferido, m.BaseLegal, m.QuantidadeDeclarada);
 
-    internal static OfertaAtendimentoEspecializadoDto? ProjetarAtendimento(OfertaAtendimentoEspecializado? oferta) =>
-        oferta is null
+    internal static AtendimentoEspecializadoDto? ProjetarAtendimento(AtendimentoEspecializado? atendimento) =>
+        atendimento is null
             ? null
-            : new OfertaAtendimentoEspecializadoDto(
-                oferta.Id,
-                [.. oferta.Condicoes.Select(c => new OfertaCondicaoDto(c.Id, c.CondicaoOrigemId, c.CondicaoCodigo, c.CondicaoNome))],
-                [.. oferta.Recursos.Select(r => new OfertaRecursoDto(r.Id, r.RecursoOrigemId, r.RecursoCodigo, r.RecursoNome))],
-                [.. oferta.TiposDeficiencia.Select(t => new OfertaTipoDeficienciaDto(t.Id, t.TipoDeficienciaOrigemId, t.TipoDeficienciaNome))]);
+            : new AtendimentoEspecializadoDto(
+                atendimento.Id,
+                [.. atendimento.Condicoes.Select(c => new CondicaoOfertadaDto(c.Id, c.CondicaoOrigemId, c.CondicaoCodigo, c.CondicaoNome))],
+                [.. atendimento.Recursos.Select(r => new RecursoOfertadoDto(r.Id, r.RecursoOrigemId, r.RecursoCodigo, r.RecursoNome))],
+                [.. atendimento.TiposDeficiencia.Select(t => new DeficienciaAtendidaDto(t.Id, t.TipoDeficienciaOrigemId, t.TipoDeficienciaNome))]);
 
     internal static ConfiguracaoBonusRegionalDto? ProjetarBonusRegional(ConfiguracaoBonusRegional? bonus) =>
         bonus is null

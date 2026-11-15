@@ -146,7 +146,7 @@ internal sealed class CenarioDeRetificacaoPublicada
     private EnvelopeReidratado EnvelopeDaVersaoComAFase(FaseCronograma fase)
     {
         GrafoConfiguracao grafo = new(
-            [.. Processo.Etapas], Processo.OfertaAtendimento!, [.. Processo.DistribuicaoVagas], Processo.BonusRegional,
+            [.. Processo.Etapas], Processo.AtendimentoEspecializado!, [.. Processo.DistribuicaoVagas], Processo.BonusRegional,
             [.. Processo.CriteriosDesempate], Processo.Classificacao!, [fase], [.. Processo.DocumentosExigidos], [], null,
             numeroDeOpcoesDeCurso: 1);
 

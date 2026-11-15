@@ -181,7 +181,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Lista");
         return new EnvelopeReidratado(
             new GrafoConfiguracao(
-                [.. processoBase.Etapas], processoBase.OfertaAtendimento!, distribuicao,
+                [.. processoBase.Etapas], processoBase.AtendimentoEspecializado!, distribuicao,
                 processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
                 [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null, numeroDeOpcoesDeCurso: 2),
             DadosEdital.Criar(

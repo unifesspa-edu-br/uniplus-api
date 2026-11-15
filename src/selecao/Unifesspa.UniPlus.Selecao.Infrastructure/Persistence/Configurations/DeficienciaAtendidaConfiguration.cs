@@ -8,9 +8,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-public sealed class OfertaTipoDeficienciaConfiguration : IEntityTypeConfiguration<OfertaTipoDeficiencia>
+public sealed class DeficienciaAtendidaConfiguration : IEntityTypeConfiguration<DeficienciaAtendida>
 {
-    public void Configure(EntityTypeBuilder<OfertaTipoDeficiencia> builder)
+    public void Configure(EntityTypeBuilder<DeficienciaAtendida> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -31,6 +31,7 @@ public sealed class OfertaTipoDeficienciaConfiguration : IEntityTypeConfiguratio
 
         builder.Property(t => t.TipoDeficienciaNome).HasMaxLength(300).IsRequired();
 
-        builder.HasIndex(t => new { t.OfertaAtendimentoEspecializadoId, t.TipoDeficienciaOrigemId }).IsUnique();
+        builder.HasIndex(t => new { t.AtendimentoEspecializadoId, t.TipoDeficienciaOrigemId }).IsUnique()
+            .HasDatabaseName("ux_deficiencias_atendidas_por_atendimento_origem");
     }
 }

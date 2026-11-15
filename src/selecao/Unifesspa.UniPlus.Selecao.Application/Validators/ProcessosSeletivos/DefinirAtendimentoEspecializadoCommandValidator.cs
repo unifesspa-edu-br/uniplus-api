@@ -4,9 +4,9 @@ using Commands.ProcessosSeletivos;
 
 using FluentValidation;
 
-public sealed class DefinirOfertaAtendimentoCommandValidator : AbstractValidator<DefinirOfertaAtendimentoCommand>
+public sealed class DefinirAtendimentoEspecializadoCommandValidator : AbstractValidator<DefinirAtendimentoEspecializadoCommand>
 {
-    public DefinirOfertaAtendimentoCommandValidator()
+    public DefinirAtendimentoEspecializadoCommandValidator()
     {
         RuleFor(x => x.ProcessoSeletivoId)
             .NotEmpty()

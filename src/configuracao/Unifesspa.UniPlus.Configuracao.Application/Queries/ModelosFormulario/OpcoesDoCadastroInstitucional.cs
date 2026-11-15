@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// As opções que o processo oferta, quando ainda não há processo. No processo, a condição de atendimento
-/// e o recurso de acessibilidade são os que a oferta de atendimento especializado dele declara, e os
+/// e o recurso de acessibilidade são os que o atendimento especializado dele declara, e os
 /// municípios do bônus, os da base legal que ele adota; no modelo, a simulação oferece o cadastro
 /// institucional vivo — os municípios de todas as bases legais, sem repetir —, na mesma ordem que o
 /// processo usa. O tipo de deficiência é o cadastro vivo também no processo.

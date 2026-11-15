@@ -15,7 +15,7 @@ public enum FonteValoresFato
 
     /// <summary>
     /// Os valores são as opções que cada processo declara, congeladas no edital (ex.:
-    /// CONDICAO_ATENDIMENTO e RECURSO_ACESSIBILIDADE, a partir da oferta de atendimento).
+    /// CONDICAO_ATENDIMENTO e RECURSO_ACESSIBILIDADE, a partir do atendimento especializado).
     /// </summary>
     Processo,
 
@@ -39,7 +39,7 @@ public enum FonteValoresFato
 
     /// <summary>
     /// Os tipos do cadastro de tipos de deficiência, pelo código: todos os vivos, em qualquer
-    /// processo, independentemente da oferta de atendimento especializado (UNI-REQ-0012).
+    /// processo, independentemente do atendimento especializado (UNI-REQ-0012).
     /// </summary>
     TiposDeficiencia,
 }

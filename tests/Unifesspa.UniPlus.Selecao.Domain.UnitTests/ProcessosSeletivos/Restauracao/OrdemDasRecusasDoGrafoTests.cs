@@ -82,7 +82,7 @@ public sealed class OrdemDasRecusasDoGrafoTests
 
         return new GrafoConfiguracao(
             etapas: etapas,
-            ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+            atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: distribuicao,
             bonusRegional: null,
             criteriosDesempate: desempate,

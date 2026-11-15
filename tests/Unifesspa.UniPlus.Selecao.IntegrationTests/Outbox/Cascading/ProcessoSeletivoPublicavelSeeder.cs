@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Monta e persiste um <see cref="ProcessoSeletivo"/> minimamente conforme
-/// (CA-07: etapas, oferta de atendimento, distribuição de vagas,
+/// (CA-07: etapas, atendimento especializado, distribuição de vagas,
 /// classificação) mais um <see cref="DocumentoAPublicar"/> já confirmado — o
 /// par exigido por <c>PublicarProcessoSeletivoCommand</c> para publicar com
 /// sucesso. Reusado pelos cenários de cascading (V8/V9) e pelos testes de
@@ -53,9 +53,9 @@ internal static class ProcessoSeletivoPublicavelSeeder
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, tipo ?? TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        Result ofertaResult = processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-        ofertaResult.IsSuccess.Should().BeTrue(ofertaResult.Error?.Message);
+        Result atendimentoResult = processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+        atendimentoResult.IsSuccess.Should().BeTrue(atendimentoResult.Error?.Message);
 
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(
             RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!;

@@ -410,7 +410,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         Guid produtoPreliminarId,
         Guid produtoFinalId) => new(
         etapas: [],
-        ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+        atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
         distribuicaoVagas: [Distribuicao()],
         bonusRegional: null,
         criteriosDesempate: [],
@@ -447,7 +447,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         Guid produtoPreliminarId,
         Guid produtoFinalId) => new(
         etapas: [],
-        ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+        atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
         distribuicaoVagas: [Distribuicao()],
         bonusRegional: null,
         criteriosDesempate: [],
@@ -476,8 +476,8 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas([Distribuicao()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(Classificacao(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -601,7 +601,7 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         await db.ProcessosSeletivos
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.Classificacao)
-            .Include(p => p.OfertaAtendimento)
+            .Include(p => p.AtendimentoEspecializado)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)

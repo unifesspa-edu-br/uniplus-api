@@ -135,7 +135,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     }
 
     /// <summary>
-    /// Igual à base, exceto que <c>DefinirOfertaAtendimento</c> nunca é chamado — vermelho em
+    /// Igual à base, exceto que <c>DefinirAtendimentoEspecializado</c> nunca é chamado — vermelho em
     /// "Atendimento especializado"; <c>Publicar</c> recusa com o gate agregador
     /// <c>ProcessoSeletivo.ConformidadeInsuficiente</c> (já funcionava antes da issue #1096 —
     /// serve de regressão).
@@ -150,7 +150,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearComCadastroProprioNaoConformeAsync(
         UniPlusDbContext db, string nome, bool documentoConfirmado = true)
     {
-        ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder, definirOfertaAtendimento: false);
+        ProcessoSeletivo processo = ProcessoBaseConforme(nome, out FaseCronogramaBuilder faseBuilder, definirAtendimentoEspecializado: false);
         DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
 
         return documentoConfirmado
@@ -266,18 +266,18 @@ internal static class ProcessoSeletivoPendenciasSeeder
     private static ProcessoSeletivo ProcessoBaseConforme(
         string nome,
         out FaseCronogramaBuilder faseBuilder,
-        bool definirOfertaAtendimento = true,
+        bool definirAtendimentoEspecializado = true,
         IReadOnlyList<ConfiguracaoDistribuicaoVagas>? distribuicao = null)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        if (definirOfertaAtendimento)
+        if (definirAtendimentoEspecializado)
         {
-            Result ofertaResult = processo.DefinirOfertaAtendimento(
-                OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-            ofertaResult.IsSuccess.Should().BeTrue(ofertaResult.Error?.Message);
+            Result atendimentoResult = processo.DefinirAtendimentoEspecializado(
+                AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+            atendimentoResult.IsSuccess.Should().BeTrue(atendimentoResult.Error?.Message);
         }
 
         IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoEfetiva = distribuicao ?? [DistribuicaoAmplaPadrao()];

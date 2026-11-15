@@ -1041,15 +1041,15 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "Redefinir oferta de atendimento removendo código de condição referenciado por gatilho vivo é recusado")]
-    public void DefinirOfertaAtendimento_RemoveCondicaoReferenciada_Recusa()
+    [Fact(DisplayName = "Redefinir atendimento especializado removendo código de condição referenciado por gatilho vivo é recusado")]
+    public void DefinirAtendimentoEspecializado_RemoveCondicaoReferenciada_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = Fase(1, "INSCRICAO");
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        OfertaCondicao condicaoPcd = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([condicaoPcd], [], []).Value!, PrecondicaoIfMatch.Ausente)
+        CondicaoOfertada condicaoPcd = CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([condicaoPcd], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
@@ -1058,22 +1058,22 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue("PCD é referenciada por uma condição de gatilho viva e deixaria de ser ofertada");
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.CondicaoAtendimentoReferenciadaPorExigenciaViva");
     }
 
-    [Fact(DisplayName = "Redefinir oferta de atendimento removendo código de recurso referenciado por condição viva é recusado")]
-    public void DefinirOfertaAtendimento_RemoveRecursoReferenciado_Recusa()
+    [Fact(DisplayName = "Redefinir atendimento especializado removendo código de recurso referenciado por condição viva é recusado")]
+    public void DefinirAtendimentoEspecializado_RemoveRecursoReferenciado_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = Fase(1, "INSCRICAO");
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        OfertaRecurso salaAmamentacao = OfertaRecurso.Criar(Guid.CreateVersion7(), "SALA_AMAMENTACAO", "Sala para amamentação");
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [salaAmamentacao], []).Value!, PrecondicaoIfMatch.Ausente)
+        RecursoOfertado salaAmamentacao = RecursoOfertado.Criar(Guid.CreateVersion7(), "SALA_AMAMENTACAO", "Sala para amamentação");
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [salaAmamentacao], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
@@ -1082,22 +1082,22 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             condicoes: [CondicaoDe("RECURSO_ACESSIBILIDADE", "SALA_AMAMENTACAO")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue("a sala para amamentação é citada por uma condição viva e deixaria de ser ofertada");
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RecursoAcessibilidadeReferenciadoPorCondicaoViva);
     }
 
-    [Fact(DisplayName = "Redefinir oferta de atendimento preservando o código de condição referenciado é aceito (contraprova)")]
-    public void DefinirOfertaAtendimento_PreservaCondicaoReferenciada_Aceita()
+    [Fact(DisplayName = "Redefinir atendimento especializado preservando o código de condição referenciado é aceito (contraprova)")]
+    public void DefinirAtendimentoEspecializado_PreservaCondicaoReferenciada_Aceita()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = Fase(1, "INSCRICAO");
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        OfertaCondicao condicaoPcd = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([condicaoPcd], [], []).Value!, PrecondicaoIfMatch.Ausente)
+        CondicaoOfertada condicaoPcd = CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([condicaoPcd], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         DocumentoExigido exigencia = DocumentoExigido.Criar(
@@ -1106,10 +1106,10 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             condicoes: [CondicaoDe("CONDICAO_ATENDIMENTO", "PCD")], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        OfertaCondicao condicaoPcdNova = OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
-        OfertaCondicao condicaoLactante = OfertaCondicao.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante");
-        Result resultado = processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([condicaoPcdNova, condicaoLactante], [], []).Value!, PrecondicaoIfMatch.Ausente);
+        CondicaoOfertada condicaoPcdNova = CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência");
+        CondicaoOfertada condicaoLactante = CondicaoOfertada.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante");
+        Result resultado = processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([condicaoPcdNova, condicaoLactante], [], []).Value!, PrecondicaoIfMatch.Ausente);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }

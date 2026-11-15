@@ -52,8 +52,8 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(),
@@ -286,7 +286,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
                 m => m.ModalidadeOrigemId),
             MapaDe(processo.Etapas, e => e.TipoEtapa.Codigo, e => e.TipoEtapa.OrigemId),
             MapaDe(
-                processo.OfertaAtendimento?.TiposDeficiencia ?? [],
+                processo.AtendimentoEspecializado?.TiposDeficiencia ?? [],
                 t => t.TipoDeficienciaCodigo,
                 t => t.TipoDeficienciaOrigemId));
 

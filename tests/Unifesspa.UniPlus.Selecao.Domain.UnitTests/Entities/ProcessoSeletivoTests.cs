@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// Cobertura das invariantes do agregado-raiz <see cref="ProcessoSeletivo"/>
 /// nas fatias F0 (fundação), F2 (distribuição de vagas), F3 (bônus regional e
 /// critérios de desempate) e F4 (classificação): criação em rascunho, etapas
-/// pontuadas + divisor da média, oferta de atendimento especializado
+/// pontuadas + divisor da média, atendimento especializado
 /// (ADR-0067), distribuição de vagas por oferta (Story #773), bônus/desempate
 /// (Story #774) e classificação — 15º bloco canônico (Story #775).
 /// </summary>
@@ -38,7 +38,7 @@ public sealed class ProcessoSeletivoTests
         processo.Nome.Should().Be("PS 2026 — SiSU");
         processo.TipoProcesso.Should().Be(TipoProcesso.SiSU);
         processo.Etapas.Should().BeEmpty();
-        processo.OfertaAtendimento.Should().BeNull();
+        processo.AtendimentoEspecializado.Should().BeNull();
     }
 
     [Fact(DisplayName = "Criar sem tipo lanca ArgumentException")]
@@ -168,10 +168,10 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "Tipo de deficiencia sob condicao PcD é aceito (CA-06, ADR-0067)")]
     public void Atendimento_TipoDeficienciaSobPcd_Aceito()
     {
-        Result<OfertaAtendimentoEspecializado> result = OfertaAtendimentoEspecializado.Criar(
-            condicoes: [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
-            recursos: [OfertaRecurso.Criar(Guid.CreateVersion7(), "LEDOR", "Ledor")],
-            tiposDeficiencia: [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
+        Result<AtendimentoEspecializado> result = AtendimentoEspecializado.Criar(
+            condicoes: [CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
+            recursos: [RecursoOfertado.Criar(Guid.CreateVersion7(), "LEDOR", "Ledor")],
+            tiposDeficiencia: [DeficienciaAtendida.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         result.IsSuccess.Should().BeTrue();
         result.Value!.TiposDeficiencia.Should().HaveCount(1);
@@ -180,13 +180,13 @@ public sealed class ProcessoSeletivoTests
     [Fact(DisplayName = "Tipo de deficiencia sem condicao PcD é recusado (CA-06, ADR-0067)")]
     public void Atendimento_TipoDeficiencia_SoSobPcd()
     {
-        Result<OfertaAtendimentoEspecializado> result = OfertaAtendimentoEspecializado.Criar(
-            condicoes: [OfertaCondicao.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante")],
+        Result<AtendimentoEspecializado> result = AtendimentoEspecializado.Criar(
+            condicoes: [CondicaoOfertada.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante")],
             recursos: [],
-            tiposDeficiencia: [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
+            tiposDeficiencia: [DeficienciaAtendida.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("OfertaAtendimento.TipoDeficienciaSemCondicaoPcd");
+        result.Error!.Code.Should().Be("AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd");
     }
 
     [Fact(DisplayName = "Condicao de atendimento duplicada é recusada")]
@@ -194,17 +194,17 @@ public sealed class ProcessoSeletivoTests
     {
         Guid condicaoId = Guid.CreateVersion7();
 
-        Result<OfertaAtendimentoEspecializado> result = OfertaAtendimentoEspecializado.Criar(
+        Result<AtendimentoEspecializado> result = AtendimentoEspecializado.Criar(
             condicoes:
             [
-                OfertaCondicao.Criar(condicaoId, "PCD", "Pessoa com deficiência"),
-                OfertaCondicao.Criar(condicaoId, "PCD", "Pessoa com deficiência"),
+                CondicaoOfertada.Criar(condicaoId, "PCD", "Pessoa com deficiência"),
+                CondicaoOfertada.Criar(condicaoId, "PCD", "Pessoa com deficiência"),
             ],
             recursos: [],
             tiposDeficiencia: []);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("OfertaAtendimento.CondicaoDuplicada");
+        result.Error!.Code.Should().Be("AtendimentoEspecializado.CondicaoDuplicada");
     }
 
     [Fact(DisplayName = "Recurso de acessibilidade duplicado é recusado")]
@@ -212,13 +212,13 @@ public sealed class ProcessoSeletivoTests
     {
         Guid recursoId = Guid.CreateVersion7();
 
-        Result<OfertaAtendimentoEspecializado> result = OfertaAtendimentoEspecializado.Criar(
+        Result<AtendimentoEspecializado> result = AtendimentoEspecializado.Criar(
             condicoes: [],
-            recursos: [OfertaRecurso.Criar(recursoId, "LEDOR", "Ledor"), OfertaRecurso.Criar(recursoId, "LEDOR", "Ledor")],
+            recursos: [RecursoOfertado.Criar(recursoId, "LEDOR", "Ledor"), RecursoOfertado.Criar(recursoId, "LEDOR", "Ledor")],
             tiposDeficiencia: []);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("OfertaAtendimento.RecursoDuplicado");
+        result.Error!.Code.Should().Be("AtendimentoEspecializado.RecursoDuplicado");
     }
 
     [Fact(DisplayName = "Tipo de deficiencia duplicado é recusado")]
@@ -226,35 +226,35 @@ public sealed class ProcessoSeletivoTests
     {
         Guid tipoId = Guid.CreateVersion7();
 
-        Result<OfertaAtendimentoEspecializado> result = OfertaAtendimentoEspecializado.Criar(
-            condicoes: [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
+        Result<AtendimentoEspecializado> result = AtendimentoEspecializado.Criar(
+            condicoes: [CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
             recursos: [],
             tiposDeficiencia:
             [
-                OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"),
-                OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"),
+                DeficienciaAtendida.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"),
+                DeficienciaAtendida.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"),
             ]);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("OfertaAtendimento.TipoDeficienciaDuplicado");
+        result.Error!.Code.Should().Be("AtendimentoEspecializado.TipoDeficienciaDuplicado");
     }
 
-    [Fact(DisplayName = "DefinirOfertaAtendimento vincula a oferta e as filhas à raiz")]
-    public void DefinirOfertaAtendimento_Vincula()
+    [Fact(DisplayName = "DefinirAtendimentoEspecializado vincula a oferta e as filhas à raiz")]
+    public void DefinirAtendimentoEspecializado_Vincula()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar(
-            condicoes: [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
-            recursos: [OfertaRecurso.Criar(Guid.CreateVersion7(), "PROVA_AMPLIADA", "Prova ampliada")],
+        AtendimentoEspecializado atendimento = AtendimentoEspecializado.Criar(
+            condicoes: [CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
+            recursos: [RecursoOfertado.Criar(Guid.CreateVersion7(), "PROVA_AMPLIADA", "Prova ampliada")],
             tiposDeficiencia: []).Value!;
 
-        Result result = processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirAtendimentoEspecializado(atendimento, PrecondicaoIfMatch.Ausente);
 
         result.IsSuccess.Should().BeTrue();
-        processo.OfertaAtendimento.Should().NotBeNull();
-        processo.OfertaAtendimento!.ProcessoSeletivoId.Should().Be(processo.Id);
-        processo.OfertaAtendimento.Condicoes.Single().OfertaAtendimentoEspecializadoId
-            .Should().Be(oferta.Id);
+        processo.AtendimentoEspecializado.Should().NotBeNull();
+        processo.AtendimentoEspecializado!.ProcessoSeletivoId.Should().Be(processo.Id);
+        processo.AtendimentoEspecializado.Condicoes.Single().AtendimentoEspecializadoId
+            .Should().Be(atendimento.Id);
     }
 
     private static ConfiguracaoDistribuicaoVagas NovaDistribuicao(Guid ofertaCursoId)

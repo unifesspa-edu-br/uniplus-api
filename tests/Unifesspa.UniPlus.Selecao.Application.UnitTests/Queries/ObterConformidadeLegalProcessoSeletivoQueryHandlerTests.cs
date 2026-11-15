@@ -436,7 +436,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
                 m => m.ModalidadeOrigemId),
             MapaDe(processo.Etapas, e => e.TipoEtapa.Codigo, e => e.TipoEtapa.OrigemId),
             MapaDe(
-                processo.OfertaAtendimento?.TiposDeficiencia ?? [],
+                processo.AtendimentoEspecializado?.TiposDeficiencia ?? [],
                 t => t.TipoDeficienciaCodigo,
                 t => t.TipoDeficienciaOrigemId));
 

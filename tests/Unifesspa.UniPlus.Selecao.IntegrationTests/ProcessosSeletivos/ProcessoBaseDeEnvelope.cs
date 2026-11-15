@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O processo mínimo que as provas de fidelidade do envelope compartilham: oferta de atendimento
+/// O processo mínimo que as provas de fidelidade do envelope compartilham: atendimento especializado
 /// vazia, uma distribuição de vagas, a classificação importada, uma fase única com uma etapa, o
 /// formulário, a cobrança de taxa declarada e as declarações obrigatórias.
 /// </summary>
@@ -19,8 +19,8 @@ internal static class ProcessoBaseDeEnvelope
     public static ProcessoSeletivo Montar(string titulo, FaseCronograma fase)
     {
         ProcessoSeletivo processo = ProcessoSemConfiguracao(titulo);
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         DefinirDistribuicaoDaModalidadeAmpla(processo);
         DefinirClassificacaoImportada(processo);
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

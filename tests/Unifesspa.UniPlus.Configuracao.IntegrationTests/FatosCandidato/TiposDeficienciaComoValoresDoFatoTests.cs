@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
 /// O tipo de deficiência da reserva de vagas oferece os tipos do cadastro de tipos de deficiência, em
-/// qualquer processo, sem depender da oferta de atendimento (UNI-REQ-0012): o leitor do catálogo os
+/// qualquer processo, sem depender do atendimento especializado (UNI-REQ-0012): o leitor do catálogo os
 /// entrega como valores do fato, contra Postgres real.
 /// </summary>
 [Collection(ConfiguracaoDbCollection.Name)]

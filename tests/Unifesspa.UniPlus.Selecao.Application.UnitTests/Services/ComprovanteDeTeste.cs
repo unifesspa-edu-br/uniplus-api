@@ -43,7 +43,7 @@ internal static class ComprovanteDeTeste
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Comprovante");
         processo.DefinirItens([.. itens ?? []], PrecondicaoIfMatch.Ausente, grupos: grupos).IsSuccess.Should().BeTrue();
         GrafoConfiguracao grafo = new(
-            [.. processo.Etapas], processo.OfertaAtendimento!, [.. ofertas ?? [.. processo.DistribuicaoVagas]],
+            [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. ofertas ?? [.. processo.DistribuicaoVagas]],
             processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
             [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
             fatosColetados: [.. processo.FatosColetados],

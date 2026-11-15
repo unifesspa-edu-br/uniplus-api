@@ -141,7 +141,7 @@ internal sealed class InscricaoAdministrativaDeTeste
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar(NomeDoProcesso);
         GrafoConfiguracao grafo = new(
-            [.. processo.Etapas], processo.OfertaAtendimento!, [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(ofertaCursoOrigemId: OfertaCursoId)], processo.BonusRegional,
+            [.. processo.Etapas], processo.AtendimentoEspecializado!, [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(ofertaCursoOrigemId: OfertaCursoId)], processo.BonusRegional,
             [.. processo.CriteriosDesempate], processo.Classificacao!, [], _exigencias, [], null,
             fatosColetados: _fatos, gruposColetados: _grupos, numeroDeOpcoesDeCurso: 1,
             formularios: [FormularioProcesso.Criar(FinalidadeFormulario.Inscricao, _faseId, null, FormularioDeTeste.Etapas()).Value!]);

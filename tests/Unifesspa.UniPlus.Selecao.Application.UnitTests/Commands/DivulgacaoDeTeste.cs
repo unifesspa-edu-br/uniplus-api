@@ -65,7 +65,7 @@ internal static class DivulgacaoDeTeste
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Inscrição");
         GrafoConfiguracao grafo = new(
-            [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas],
+            [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas],
             processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
             [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
             fatosColetados: [.. processo.FatosColetados],

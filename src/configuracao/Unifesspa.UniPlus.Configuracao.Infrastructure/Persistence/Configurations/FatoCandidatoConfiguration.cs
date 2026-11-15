@@ -147,7 +147,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
 
         // Coleção filha (ADR-0116): descrição por valor de um categórico estático.
         // Cascade porque o filho não tem sentido sem o pai (mesmo padrão de
-        // OfertaAtendimentoEspecializado.Condicoes).
+        // AtendimentoEspecializado.Condicoes).
         builder.HasMany(f => f.ValoresDominioDeclarados)
             .WithOne()
             .HasForeignKey(v => v.FatoCandidatoId)

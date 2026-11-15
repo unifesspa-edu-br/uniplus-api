@@ -40,9 +40,9 @@ public sealed class CondicaoGatilho : EntityBase
     /// checagem que qualquer outro consumidor de <c>PredicadoDnf</c> já usa — fato não
     /// vazio, operador reconhecido, valor coerente com o operador). A validação
     /// <b>semântica</b> (fato no vocabulário fechado, operador × domínio, valor × domínio,
-    /// integridade referencial contra a oferta do processo — CA-02/CA-03) é do
+    /// integridade referencial contra o atendimento especializado do processo — CA-02/CA-03) é do
     /// <c>Unifesspa.UniPlus.Regras.Services.PredicadoDnfValidador</c>, resolvido pela Application, que
-    /// tem acesso ao vocabulário cross-módulo e à oferta do processo — nunca aqui.
+    /// tem acesso ao vocabulário cross-módulo e ao atendimento especializado do processo — nunca aqui.
     /// </summary>
     public static Result<CondicaoGatilho> Criar(int clausula, string fato, Operador operador, JsonElement valor)
     {

@@ -133,12 +133,12 @@ public sealed partial class EnvelopeFechadoE2ETests
             3.5000m, "a Prova Objetiva nasce com este peso em EtapasIniciais — é o valor que a sessão editorial altera");
     }
 
-    // Passos 3, 4 e 4b — oferta de atendimento (listas vazias: o checklist só exige OfertaAtendimento
+    // Passos 3, 4 e 4b — atendimento especializado (listas vazias: o checklist só exige AtendimentoEspecializado
     // não nulo), distribuição de vagas (uma oferta Lei 12.711, as 8 modalidades federais + AC) e
     // número de opções de curso, conferido contra a única oferta da distribuição.
     private static async Task DeclararAtendimentoEVagasAsync(Cenario c)
     {
-        await ExecutarPassoAsync(() => c.Ctx.PutOfertaAtendimentoAsync([], [], []), HttpStatusCode.NoContent, "PUT oferta-atendimento", "/oferta-atendimento");
+        await ExecutarPassoAsync(() => c.Ctx.PutAtendimentoEspecializadoAsync([], [], []), HttpStatusCode.NoContent, "PUT atendimento-especializado", "/atendimento-especializado");
         HttpResponseMessage resposta = await ExecutarPassoAsync(
             () => c.Ctx.PutDistribuicaoVagasAsync(), HttpStatusCode.OK, "PUT distribuicao-vagas", "/distribuicao-vagas");
         IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> persistida =

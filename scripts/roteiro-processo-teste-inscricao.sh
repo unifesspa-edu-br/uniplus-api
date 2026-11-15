@@ -20,7 +20,7 @@
 #
 # Sequência:
 #   Setup (Publicações/Organização/Configuração) →
-#   Criar ProcessoSeletivo → Oferta de Atendimento → Distribuição de Vagas
+#   Criar ProcessoSeletivo → Atendimento Especializado → Distribuição de Vagas
 #   (Anexo II) → Cascata de Remanejamento (Quadro 3) → Bônus Regional (item
 #   1.6) → Critérios de Desempate (item 6.3) → Classificação e eliminação
 #   (itens 5.6 e 8.1) → Taxa de Inscrição (gratuita, item 2.2) → Cronograma de
@@ -333,7 +333,7 @@ setup_configuracao() {
     # do cadastro, em qualquer processo (UNI-REQ-0012).
     # As condições são as do atendimento especializado do INEP (Edital ENEM
     # 52/2025): atendimento especializado não é só de quem tem deficiência.
-    # "PCD" é o código reconhecido por OfertaAtendimentoEspecializado.CodigoCondicaoPcd
+    # "PCD" é o código reconhecido por AtendimentoEspecializado.CodigoCondicaoPcd
     # (ADR-0067) — tipo de deficiência só é aceito sob essa condição, por esse código.
     # "OUTRA_CONDICAO" é a condição cuja escolha o modelo de inscrição com prova cita
     # para pedir a descrição: aplicar esse modelo exige que o processo a oferte.
@@ -473,18 +473,18 @@ definir_algoritmo_contagem_prazo() {
     ok "algoritmo de contagem de prazo definido"
 }
 
-definir_oferta_atendimento() {
-    log "Definir Oferta de Atendimento"
+definir_atendimento_especializado() {
+    log "Definir Atendimento Especializado"
     # Sem prova não há atendimento especializado a ofertar (UNI-REQ-0012), mas a
     # publicação cobra a oferta declarada: o processo sem prova a declara vazia.
     local condicoes="$CONDICAO_ATENDIMENTO_IDS" recursos="$RECURSO_ACESSIBILIDADE_IDS" tipos="$TIPO_DEFICIENCIA_IDS"
     if [ "$MODELO_INSCRICAO_ID" != "$MODELO_COM_PROVA_ID" ]; then
         condicoes="[]" recursos="[]" tipos="[]"
     fi
-    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/oferta-atendimento" "{
+    api PUT "/api/selecao/processos-seletivos/$PROCESSO_ID/atendimento-especializado" "{
         \"condicaoIds\": $condicoes, \"recursoIds\": $recursos, \"tipoDeficienciaIds\": $tipos
     }" >/dev/null
-    ok "oferta de atendimento definida ($(jq length <<< "$condicoes") condições, $(jq length <<< "$recursos") recursos, $(jq length <<< "$tipos") tipos)"
+    ok "atendimento especializado definido ($(jq length <<< "$condicoes") condições, $(jq length <<< "$recursos") recursos, $(jq length <<< "$tipos") tipos)"
 }
 
 definir_distribuicao_vagas() {
@@ -886,7 +886,7 @@ main() {
     setup_configuracao
     criar_processo
     definir_algoritmo_contagem_prazo
-    definir_oferta_atendimento
+    definir_atendimento_especializado
     definir_distribuicao_vagas
     definir_opcoes_de_curso
     definir_cascata_remanejamento

@@ -1424,7 +1424,7 @@
           ]
         },
         {
-          "name": "Definir Oferta de Atendimento (condição PCD)",
+          "name": "Definir Atendimento Especializado (condição PCD)",
           "request": {
             "method": "PUT",
             "header": [
@@ -1440,7 +1440,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/oferta-atendimento",
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{processo_id}}/atendimento-especializado",
               "host": [
                 "{{base_url}}"
               ],
@@ -1449,7 +1449,7 @@
                 "selecao",
                 "processos-seletivos",
                 "{{processo_id}}",
-                "oferta-atendimento"
+                "atendimento-especializado"
               ]
             },
             "auth": {
@@ -1544,7 +1544,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('422 — as opções vêm da oferta de atendimento', () => pm.response.to.have.status(422));",
-                  "pm.test('code: opções geridas pela oferta', () => pm.expect(pm.response.json().code).to.eql('uniplus.selecao.opcao_declarada_fato.geridas_pela_oferta_de_atendimento'));"
+                  "pm.test('code: opções geridas pelo atendimento especializado', () => pm.expect(pm.response.json().code).to.eql('uniplus.selecao.opcao_declarada_fato.geridas_pelo_atendimento_especializado'));"
                 ]
               }
             }
@@ -4818,7 +4818,7 @@
           ]
         },
         {
-          "name": "Árvore p1 — Definir Oferta de Atendimento",
+          "name": "Árvore p1 — Definir Atendimento Especializado",
           "request": {
             "method": "PUT",
             "header": [
@@ -4834,7 +4834,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p1}}/oferta-atendimento",
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p1}}/atendimento-especializado",
               "host": [
                 "{{base_url}}"
               ],
@@ -4843,7 +4843,7 @@
                 "selecao",
                 "processos-seletivos",
                 "{{arvore_processo_id_p1}}",
-                "oferta-atendimento"
+                "atendimento-especializado"
               ]
             },
             "auth": {
@@ -5347,7 +5347,7 @@
           ]
         },
         {
-          "name": "Árvore p2 — Definir Oferta de Atendimento",
+          "name": "Árvore p2 — Definir Atendimento Especializado",
           "request": {
             "method": "PUT",
             "header": [
@@ -5363,7 +5363,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p2}}/oferta-atendimento",
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p2}}/atendimento-especializado",
               "host": [
                 "{{base_url}}"
               ],
@@ -5372,7 +5372,7 @@
                 "selecao",
                 "processos-seletivos",
                 "{{arvore_processo_id_p2}}",
-                "oferta-atendimento"
+                "atendimento-especializado"
               ]
             },
             "auth": {
@@ -5965,7 +5965,7 @@
           ]
         },
         {
-          "name": "Árvore p3 — Definir Oferta de Atendimento",
+          "name": "Árvore p3 — Definir Atendimento Especializado",
           "request": {
             "method": "PUT",
             "header": [
@@ -5981,7 +5981,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p3}}/oferta-atendimento",
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p3}}/atendimento-especializado",
               "host": [
                 "{{base_url}}"
               ],
@@ -5990,7 +5990,7 @@
                 "selecao",
                 "processos-seletivos",
                 "{{arvore_processo_id_p3}}",
-                "oferta-atendimento"
+                "atendimento-especializado"
               ]
             },
             "auth": {
@@ -6576,7 +6576,7 @@
           ]
         },
         {
-          "name": "Árvore p4 — Definir Oferta de Atendimento",
+          "name": "Árvore p4 — Definir Atendimento Especializado",
           "request": {
             "method": "PUT",
             "header": [
@@ -6592,7 +6592,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p4}}/oferta-atendimento",
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p4}}/atendimento-especializado",
               "host": [
                 "{{base_url}}"
               ],
@@ -6601,7 +6601,7 @@
                 "selecao",
                 "processos-seletivos",
                 "{{arvore_processo_id_p4}}",
-                "oferta-atendimento"
+                "atendimento-especializado"
               ]
             },
             "auth": {
@@ -7191,7 +7191,7 @@
           ]
         },
         {
-          "name": "Árvore p5 — Definir Oferta de Atendimento",
+          "name": "Árvore p5 — Definir Atendimento Especializado",
           "request": {
             "method": "PUT",
             "header": [
@@ -7207,7 +7207,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p5}}/oferta-atendimento",
+              "raw": "{{base_url}}/api/selecao/processos-seletivos/{{arvore_processo_id_p5}}/atendimento-especializado",
               "host": [
                 "{{base_url}}"
               ],
@@ -7216,7 +7216,7 @@
                 "selecao",
                 "processos-seletivos",
                 "{{arvore_processo_id_p5}}",
-                "oferta-atendimento"
+                "atendimento-especializado"
               ]
             },
             "auth": {

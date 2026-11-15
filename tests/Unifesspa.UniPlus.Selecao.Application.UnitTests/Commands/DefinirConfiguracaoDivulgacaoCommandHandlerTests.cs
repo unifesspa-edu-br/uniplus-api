@@ -122,8 +122,8 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         string hashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", hashFixo).Value!;

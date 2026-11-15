@@ -11,9 +11,9 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 /// <see cref="EntityBase"/> puro (sem soft-delete): ver justificativa em
 /// <see cref="EtapaProcesso"/>.
 /// </remarks>
-public sealed class OfertaRecurso : EntityBase
+public sealed class RecursoOfertado : EntityBase
 {
-    public Guid OfertaAtendimentoEspecializadoId { get; private set; }
+    public Guid AtendimentoEspecializadoId { get; private set; }
     public Guid RecursoOrigemId { get; private set; }
 
     /// <summary>
@@ -25,9 +25,9 @@ public sealed class OfertaRecurso : EntityBase
 
     public string RecursoNome { get; private set; } = string.Empty;
 
-    private OfertaRecurso() { }
+    private RecursoOfertado() { }
 
-    public static OfertaRecurso Criar(Guid recursoOrigemId, string recursoCodigo, string recursoNome)
+    public static RecursoOfertado Criar(Guid recursoOrigemId, string recursoCodigo, string recursoNome)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(recursoCodigo);
         ArgumentException.ThrowIfNullOrWhiteSpace(recursoNome);
@@ -36,7 +36,7 @@ public sealed class OfertaRecurso : EntityBase
             throw new ArgumentException("RecursoOrigemId não pode ser Guid vazio.", nameof(recursoOrigemId));
         }
 
-        return new OfertaRecurso
+        return new RecursoOfertado
         {
             RecursoOrigemId = recursoOrigemId,
             RecursoCodigo = recursoCodigo.Trim(),
@@ -44,6 +44,6 @@ public sealed class OfertaRecurso : EntityBase
         };
     }
 
-    internal void VincularOferta(Guid ofertaAtendimentoEspecializadoId) =>
-        OfertaAtendimentoEspecializadoId = ofertaAtendimentoEspecializadoId;
+    internal void VincularAtendimentoEspecializado(Guid atendimentoEspecializadoId) =>
+        AtendimentoEspecializadoId = atendimentoEspecializadoId;
 }

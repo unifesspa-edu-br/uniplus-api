@@ -62,7 +62,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 
         GrafoConfiguracao GrafoComClassificacaoEnem() => new(
             etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
-            ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+            atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
             bonusRegional: null,
             criteriosDesempate: [],

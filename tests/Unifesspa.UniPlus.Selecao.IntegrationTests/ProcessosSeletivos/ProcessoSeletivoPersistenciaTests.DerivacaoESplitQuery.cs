@@ -113,7 +113,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
     {
         GrafoDeTodasAsColecoes grafo = new(NovoProcessoDoSplitQuery(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
         EtapaProcesso etapa = DefinirEtapaDoSplitQuery(grafo.Processo);
-        DefinirOfertaDeAtendimentoDoSplitQuery(grafo);
+        DefinirAtendimentoEspecializadoDoSplitQuery(grafo);
         DefinirDistribuicaoDoSplitQuery(grafo);
         DefinirClassificacaoDoSplitQuery(grafo.Processo, etapa);
         DefinirCronogramaDoSplitQuery(grafo.Processo);
@@ -132,10 +132,10 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
         return etapa;
     }
 
-    private static void DefinirOfertaDeAtendimentoDoSplitQuery(GrafoDeTodasAsColecoes grafo) =>
-        grafo.Processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar(
-            condicoes: [OfertaCondicao.Criar(grafo.CondicaoOrigemId, "PCD", "Pessoa com deficiência")],
-            recursos: [OfertaRecurso.Criar(grafo.RecursoOrigemId, "LEDOR", "Ledor")],
+    private static void DefinirAtendimentoEspecializadoDoSplitQuery(GrafoDeTodasAsColecoes grafo) =>
+        grafo.Processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar(
+            condicoes: [CondicaoOfertada.Criar(grafo.CondicaoOrigemId, "PCD", "Pessoa com deficiência")],
+            recursos: [RecursoOfertado.Criar(grafo.RecursoOrigemId, "LEDOR", "Ledor")],
             tiposDeficiencia: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
     private static void DefinirDistribuicaoDoSplitQuery(GrafoDeTodasAsColecoes grafo)
@@ -212,8 +212,8 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
     private static void ConferirAsColecoesMaterializadas(ProcessoSeletivo recarregado, GrafoDeTodasAsColecoes grafo)
     {
         recarregado.Etapas.Should().ContainSingle();
-        recarregado.OfertaAtendimento!.Condicoes.Should().ContainSingle().Which.CondicaoOrigemId.Should().Be(grafo.CondicaoOrigemId);
-        recarregado.OfertaAtendimento.Recursos.Should().ContainSingle().Which.RecursoOrigemId.Should().Be(grafo.RecursoOrigemId);
+        recarregado.AtendimentoEspecializado!.Condicoes.Should().ContainSingle().Which.CondicaoOrigemId.Should().Be(grafo.CondicaoOrigemId);
+        recarregado.AtendimentoEspecializado.Recursos.Should().ContainSingle().Which.RecursoOrigemId.Should().Be(grafo.RecursoOrigemId);
         recarregado.DistribuicaoVagas.Should().ContainSingle();
         recarregado.DistribuicaoVagas.Single().Modalidades.Should().ContainSingle()
             .Which.ModalidadeOrigemId.Should().Be(grafo.ModalidadeOrigemId);

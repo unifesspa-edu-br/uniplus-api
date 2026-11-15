@@ -43,7 +43,7 @@ internal static class OfertasDeTeste
     private static GrafoConfiguracao Reconstruir(
         GrafoConfiguracao grafo, ConfiguracaoDistribuicaoVagas[] distribuicao, int? numeroDeOpcoesDeCurso) =>
         new(
-            grafo.Etapas, grafo.OfertaAtendimento, distribuicao,
+            grafo.Etapas, grafo.AtendimentoEspecializado, distribuicao,
             grafo.BonusRegional, grafo.CriteriosDesempate, grafo.Classificacao,
             grafo.CronogramaFases, grafo.DocumentosExigidos, grafo.NosExigencia, grafo.ReferenciaTemporalFatos,
             fatosColetados: grafo.FatosColetados,

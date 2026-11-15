@@ -8,8 +8,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// <summary>
 /// Opção que o processo declara para um fato cuja fonte dos valores é o processo — por exemplo,
 /// as edições do ENEM aceitas ou as cidades de prova —, congelada no edital (issue #1619). Os
-/// fatos de atendimento especializado não usam esta entidade: as suas opções vêm da oferta de
-/// atendimento (<see cref="OfertaAtendimentoEspecializado"/>).
+/// fatos de atendimento especializado não usam esta entidade: as suas opções vêm do
+/// atendimento especializado (<see cref="AtendimentoEspecializado"/>).
 /// </summary>
 /// <remarks>
 /// <see cref="EntityBase"/> puro (sem soft-delete): ver justificativa em <see cref="EtapaProcesso"/>.

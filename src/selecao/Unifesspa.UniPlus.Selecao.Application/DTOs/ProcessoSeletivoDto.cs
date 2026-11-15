@@ -27,7 +27,7 @@ public sealed record ProcessoSeletivoDto(
     // poderia reenviar valor divergente do salvo. Sempre presente — é NOT NULL desde a criação.
     LocalidadeRegenteDto Localidade,
     IReadOnlyList<EtapaProcessoDto> Etapas,
-    OfertaAtendimentoEspecializadoDto? OfertaAtendimento,
+    AtendimentoEspecializadoDto? AtendimentoEspecializado,
     IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> DistribuicaoVagas,
     ConfiguracaoBonusRegionalDto? BonusRegional,
     bool? AplicaBonusRegional,

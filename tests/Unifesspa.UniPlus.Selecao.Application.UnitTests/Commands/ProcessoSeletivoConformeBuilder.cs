@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Processo mínimo conforme às seis dimensões estruturais de
-/// <c>ProcessoSeletivo.ItensEstruturaisDeConformidade</c> (etapas, oferta de atendimento,
+/// <c>ProcessoSeletivo.ItensEstruturaisDeConformidade</c> (etapas, atendimento especializado,
 /// distribuição de vagas, classificação, cronograma de fases, taxa de inscrição — issue #1112)
 /// — compartilhado pelos testes dos handlers que congelam (Publicar/Retificar/FecharRetificacao),
 /// que precisam de um processo que passe pelo gate estrutural antes de exercitar o gate
@@ -28,8 +28,8 @@ internal static class ProcessoSeletivoConformeBuilder
             nome, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirDistribuicaoVagas([DistribuicaoAmplaConcorrencia()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)

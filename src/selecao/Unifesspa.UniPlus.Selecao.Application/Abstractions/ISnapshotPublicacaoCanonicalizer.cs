@@ -159,7 +159,7 @@ public sealed record FatoDerivadoCongelado(
 /// <param name="ValoresSelecionaveisCongelados">
 /// Os valores que o candidato pode escolher para cada <see cref="Domain.Entities.FatoColetado"/>
 /// do processo, por <c>FatoCodigo</c> — montado pelo handler via <c>IFatoCandidatoReader</c> e
-/// pela oferta de atendimento do próprio processo (o canonicalizador não injeta reader nem lê
+/// pelo atendimento especializado do próprio processo (o canonicalizador não injeta reader nem lê
 /// I/O, ADR-0042). Toda entrada é <c>IReadOnlyList</c> quando o fato é de seleção
 /// (<c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c>) — array possivelmente vazio, nunca ausente — e
 /// <see langword="null"/> quando não é; o handler garante essa totalidade ANTES de

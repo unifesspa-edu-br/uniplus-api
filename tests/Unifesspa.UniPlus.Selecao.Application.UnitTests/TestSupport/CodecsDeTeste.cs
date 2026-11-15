@@ -21,7 +21,7 @@ internal static class CodecsDeTeste
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS de teste");
         registro.Reidratar(Arg.Any<VersaoConfiguracao>()).Returns(_ => Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
             new GrafoConfiguracao(
-                [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas],
+                [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas],
                 processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
                 [], [.. processo.DocumentosExigidos], [], null, numeroDeOpcoesDeCurso: 1),
             DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,

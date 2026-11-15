@@ -30,7 +30,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
     public void Contraprova_FatoColetadoCondicaoAtendimentoComOferta_ChecklistVerde()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirOfertaAtendimento(OfertaComCondicaoPcd(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(OfertaComCondicaoPcd(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         FatoColetado fato = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
             TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;

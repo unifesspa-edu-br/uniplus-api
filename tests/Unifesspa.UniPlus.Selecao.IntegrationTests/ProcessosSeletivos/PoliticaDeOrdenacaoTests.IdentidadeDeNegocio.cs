@@ -83,17 +83,17 @@ public sealed partial class PoliticaDeOrdenacaoTests
     /// por isso a terceira condição, cujo Id de origem fica FORA do conflito Zeta/Alfa.
     /// </summary>
     [Fact(DisplayName = "atendimento.condicoes/recursos/tiposDeficiencia: identidade de origem governa sobre o conteúdo — oráculo de sequência exata para os três arrays")]
-    public void OfertaAtendimento_Condicoes_IdentidadeDeOrigemGovernaSobreConteudo()
+    public void AtendimentoEspecializado_Condicoes_IdentidadeDeOrigemGovernaSobreConteudo()
     {
-        OfertaCondicao condicaoComOrigemMenor = OfertaCondicao.Criar(IdFixo(1), "COD_ZETA", "Zeta Nome");
-        OfertaCondicao condicaoComOrigemMaior = OfertaCondicao.Criar(IdFixo(2), "COD_ALFA", "Alfa Nome");
-        OfertaCondicao condicaoPcd = OfertaCondicao.Criar(IdFixo(9), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Atendimento PCD");
+        CondicaoOfertada condicaoComOrigemMenor = CondicaoOfertada.Criar(IdFixo(1), "COD_ZETA", "Zeta Nome");
+        CondicaoOfertada condicaoComOrigemMaior = CondicaoOfertada.Criar(IdFixo(2), "COD_ALFA", "Alfa Nome");
+        CondicaoOfertada condicaoPcd = CondicaoOfertada.Criar(IdFixo(9), AtendimentoEspecializado.CodigoCondicaoPcd, "Atendimento PCD");
 
-        OfertaRecurso recursoComOrigemMenor = OfertaRecurso.Criar(IdFixo(1), "ZETA_RECURSO", "Zeta Recurso");
-        OfertaRecurso recursoComOrigemMaior = OfertaRecurso.Criar(IdFixo(2), "ALFA_RECURSO", "Alfa Recurso");
+        RecursoOfertado recursoComOrigemMenor = RecursoOfertado.Criar(IdFixo(1), "ZETA_RECURSO", "Zeta Recurso");
+        RecursoOfertado recursoComOrigemMaior = RecursoOfertado.Criar(IdFixo(2), "ALFA_RECURSO", "Alfa Recurso");
 
-        OfertaTipoDeficiencia tipoComOrigemMenor = OfertaTipoDeficiencia.Criar(IdFixo(1), "ZETA_TIPO", "Zeta Tipo");
-        OfertaTipoDeficiencia tipoComOrigemMaior = OfertaTipoDeficiencia.Criar(IdFixo(2), "ALFA_TIPO", "Alfa Tipo");
+        DeficienciaAtendida tipoComOrigemMenor = DeficienciaAtendida.Criar(IdFixo(1), "ZETA_TIPO", "Zeta Tipo");
+        DeficienciaAtendida tipoComOrigemMaior = DeficienciaAtendida.Criar(IdFixo(2), "ALFA_TIPO", "Alfa Tipo");
 
         new[] { condicaoComOrigemMenor, condicaoComOrigemMaior }.OrderBy(static c => c.CondicaoNome, StringComparer.Ordinal).Select(static c => c.CondicaoNome)
             .Should().Equal(["Alfa Nome", "Zeta Nome"], "pré-condição: ordenar pelo nome (proxy de conteúdo) dá o oposto do oráculo de identidade abaixo");
@@ -102,12 +102,12 @@ public sealed partial class PoliticaDeOrdenacaoTests
         new[] { tipoComOrigemMenor, tipoComOrigemMaior }.OrderBy(static t => t.TipoDeficienciaNome, StringComparer.Ordinal).Select(static t => t.TipoDeficienciaNome)
             .Should().Equal(["Alfa Tipo", "Zeta Tipo"], "pré-condição: ordenar pelo nome (proxy de conteúdo) dá o oposto do oráculo de identidade abaixo");
 
-        OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar(
+        AtendimentoEspecializado atendimento = AtendimentoEspecializado.Criar(
             condicoes: [condicaoComOrigemMaior, condicaoComOrigemMenor, condicaoPcd],
             recursos: [recursoComOrigemMaior, recursoComOrigemMenor],
             tiposDeficiencia: [tipoComOrigemMaior, tipoComOrigemMenor]).Value!;
 
-        ProcessoSeletivo processo = Montar(ofertaAtendimento: oferta);
+        ProcessoSeletivo processo = Montar(atendimentoEspecializado: atendimento);
 
         JsonObject atendimentoJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["atendimento"]!.AsObject();
 

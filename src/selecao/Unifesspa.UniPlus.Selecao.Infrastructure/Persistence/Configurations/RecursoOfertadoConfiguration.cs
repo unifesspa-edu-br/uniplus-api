@@ -8,9 +8,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-public sealed class OfertaRecursoConfiguration : IEntityTypeConfiguration<OfertaRecurso>
+public sealed class RecursoOfertadoConfiguration : IEntityTypeConfiguration<RecursoOfertado>
 {
-    public void Configure(EntityTypeBuilder<OfertaRecurso> builder)
+    public void Configure(EntityTypeBuilder<RecursoOfertado> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -27,6 +27,7 @@ public sealed class OfertaRecursoConfiguration : IEntityTypeConfiguration<Oferta
         builder.Property(r => r.RecursoCodigo).HasMaxLength(50).IsRequired();
         builder.Property(r => r.RecursoNome).HasMaxLength(300).IsRequired();
 
-        builder.HasIndex(r => new { r.OfertaAtendimentoEspecializadoId, r.RecursoOrigemId }).IsUnique();
+        builder.HasIndex(r => new { r.AtendimentoEspecializadoId, r.RecursoOrigemId }).IsUnique()
+            .HasDatabaseName("ux_recursos_ofertados_por_atendimento_origem");
     }
 }

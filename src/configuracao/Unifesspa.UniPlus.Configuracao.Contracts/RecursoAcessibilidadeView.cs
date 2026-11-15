@@ -8,7 +8,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// (snapshot-copy, ADR-0061).
 /// </summary>
 /// <param name="Id">Identificador único (Guid v7 — ADR-0032).</param>
-/// <param name="Codigo">Identidade semântica do recurso (UNI-REQ-0061), congelada na oferta e escolhida pelo candidato (ex.: <c>LEDOR</c>).</param>
+/// <param name="Codigo">Identidade semântica do recurso (UNI-REQ-0061), congelada no atendimento especializado e escolhida pelo candidato (ex.: <c>LEDOR</c>).</param>
 /// <param name="Nome">Rótulo legível do recurso (ex.: "Ledor").</param>
 public sealed record RecursoAcessibilidadeView(
     Guid Id,

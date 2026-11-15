@@ -228,7 +228,7 @@ internal static class ModelosDaSementePsrMedicina2027
 
     /// <summary>
     /// Um laudo por condição: o CEPS defere ou indefere cada comprovação por si, e quem declara mais de
-    /// uma condição apresenta o laudo de cada uma. As condições vêm da oferta do processo, e a que o
+    /// uma condição apresenta o laudo de cada uma. As condições vêm do atendimento especializado do processo, e a que o
     /// administrador cadastrar depois também pede o laudo.
     /// </summary>
     private static DocumentoExigidoDoModelo LaudoMedicoDeCadaCondicao() =>

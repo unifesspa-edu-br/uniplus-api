@@ -1308,12 +1308,12 @@ selecao.condicoes_gatilho.id: Interno
 selecao.condicoes_gatilho.operador: Interno
 selecao.condicoes_gatilho.updated_at: Interno
 selecao.condicoes_gatilho.valor: Interno
+selecao.condicoes_ofertadas.atendimento_especializado_id: Interno
 selecao.condicoes_ofertadas.condicao_codigo: Interno
 selecao.condicoes_ofertadas.condicao_nome: Interno
 selecao.condicoes_ofertadas.condicao_origem_id: Interno
 selecao.condicoes_ofertadas.created_at: Interno
 selecao.condicoes_ofertadas.id: Interno
-selecao.condicoes_ofertadas.oferta_atendimento_especializado_id: Interno
 selecao.condicoes_ofertadas.updated_at: Interno
 selecao.condicoes_precondicao_fato.clausula: Interno
 selecao.condicoes_precondicao_fato.created_at: Interno
@@ -1427,9 +1427,9 @@ selecao.criterios_desempate.regra_codigo: Interno
 selecao.criterios_desempate.regra_hash: Interno
 selecao.criterios_desempate.regra_versao: Interno
 selecao.criterios_desempate.updated_at: Interno
+selecao.deficiencias_atendidas.atendimento_especializado_id: Interno
 selecao.deficiencias_atendidas.created_at: Interno
 selecao.deficiencias_atendidas.id: Interno
-selecao.deficiencias_atendidas.oferta_atendimento_especializado_id: Interno
 selecao.deficiencias_atendidas.tipo_deficiencia_codigo: Interno
 selecao.deficiencias_atendidas.tipo_deficiencia_nome: Interno
 selecao.deficiencias_atendidas.tipo_deficiencia_origem_id: Interno
@@ -1890,9 +1890,9 @@ selecao.recursos_da_etapa.susp_1a_valor: Interno
 selecao.recursos_da_etapa.susp_2a_unidade: Interno
 selecao.recursos_da_etapa.susp_2a_valor: Interno
 selecao.recursos_da_etapa.updated_at: Interno
+selecao.recursos_ofertados.atendimento_especializado_id: Interno
 selecao.recursos_ofertados.created_at: Interno
 selecao.recursos_ofertados.id: Interno
-selecao.recursos_ofertados.oferta_atendimento_especializado_id: Interno
 selecao.recursos_ofertados.recurso_codigo: Interno
 selecao.recursos_ofertados.recurso_nome: Interno
 selecao.recursos_ofertados.recurso_origem_id: Interno

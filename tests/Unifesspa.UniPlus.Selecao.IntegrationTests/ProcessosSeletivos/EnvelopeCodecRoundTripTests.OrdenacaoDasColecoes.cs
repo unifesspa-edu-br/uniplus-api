@@ -221,7 +221,7 @@ public sealed partial class EnvelopeCodecRoundTripTests
         GrafoConfiguracao comIdRegenerado = new(
             etapas: [.. envelope.Grafo.Etapas.Select(e =>
                 EtapaProcesso.Criar(e.Nome, e.Carater, e.TipoEtapa, e.Peso, e.NotaMinima, e.Ordem).Value!)],
-            ofertaAtendimento: envelope.Grafo.OfertaAtendimento,
+            atendimentoEspecializado: envelope.Grafo.AtendimentoEspecializado,
             distribuicaoVagas: envelope.Grafo.DistribuicaoVagas,
             bonusRegional: envelope.Grafo.BonusRegional,
             criteriosDesempate: envelope.Grafo.CriteriosDesempate,

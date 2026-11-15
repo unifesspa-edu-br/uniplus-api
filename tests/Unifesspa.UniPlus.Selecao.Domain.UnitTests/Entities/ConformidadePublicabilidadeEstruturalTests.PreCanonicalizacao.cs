@@ -142,8 +142,8 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
     }
 
-    private static OfertaAtendimentoEspecializado OfertaComCondicaoPcd() => OfertaAtendimentoEspecializado.Criar(
-        [OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
+    private static AtendimentoEspecializado OfertaComCondicaoPcd() => AtendimentoEspecializado.Criar(
+        [CondicaoOfertada.Criar(Guid.CreateVersion7(), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
         [],
         []).Value!;
 
@@ -165,8 +165,8 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
     }
 
-    [Fact(DisplayName = "TIPO_DEFICIENCIA com os tipos do cadastro não depende da oferta de atendimento: sem tipo ofertado, o processo publica")]
-    public void FatoColetadoTipoDeficienciaDoCadastro_NaoDependeDaOfertaDeAtendimento()
+    [Fact(DisplayName = "TIPO_DEFICIENCIA com os tipos do cadastro não depende do atendimento especializado: sem tipo ofertado, o processo publica")]
+    public void FatoColetadoTipoDeficienciaDoCadastro_NaoDependeDoAtendimentoEspecializado()
     {
         ProcessoSeletivo processo = ProcessoConforme();
         FatoColetado fato = FatoColetado.Criar(
@@ -185,7 +185,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoConforme();
         // Condição PcD ofertada (pré-requisito da ADR-0067), mas nenhum TipoDeficiencia —
         // só o fato de tipo de deficiência fica sem valor para oferecer ao candidato.
-        processo.DefinirOfertaAtendimento(OfertaComCondicaoPcd(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(OfertaComCondicaoPcd(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         FatoColetado fato = FatoColetado.Criar(
             "TIPO_DEFICIENCIA", 0, "Qual o tipo de deficiência?",
             TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL",
@@ -201,7 +201,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
     }
 
     private static FatoColetado CampoRecursoAcessibilidade() => FatoColetado.Criar(
-        OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade, 0, "De qual recurso de acessibilidade você vai precisar?",
+        AtendimentoEspecializado.FatoRecursoAcessibilidade, 0, "De qual recurso de acessibilidade você vai precisar?",
         TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "SENSIVEL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
     [Fact(DisplayName = "Pré-canonicalização: fato coletável RECURSO_ACESSIBILIDADE sem nenhum recurso ofertado — item vermelho e Publicar recusa com FatoColetadoSemValoresOfertados")]
@@ -219,20 +219,20 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
     }
 
-    [Fact(DisplayName = "Fato coletável RECURSO_ACESSIBILIDADE oferece os recursos da oferta de atendimento, pelo código, e o processo publica")]
+    [Fact(DisplayName = "Fato coletável RECURSO_ACESSIBILIDADE oferece os recursos do atendimento especializado, pelo código, e o processo publica")]
     public void FatoColetadoRecursoAcessibilidade_OpcoesSaoOsRecursosOfertados()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar(
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar(
                 [],
-                [OfertaRecurso.Criar(Guid.CreateVersion7(), "SALA_AMAMENTACAO", "Sala para amamentação"),
-                 OfertaRecurso.Criar(Guid.CreateVersion7(), "LEDOR", "Ledor")],
+                [RecursoOfertado.Criar(Guid.CreateVersion7(), "SALA_AMAMENTACAO", "Sala para amamentação"),
+                 RecursoOfertado.Criar(Guid.CreateVersion7(), "LEDOR", "Ledor")],
                 []).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirItensComFaseDeInscricao([CampoRecursoAcessibilidade()]).IsSuccess.Should().BeTrue();
 
-        processo.OpcoesDoProcesso(OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade)
+        processo.OpcoesDoProcesso(AtendimentoEspecializado.FatoRecursoAcessibilidade)
             .Select(static o => (o.Codigo, o.Rotulo, o.Ordem))
             .Should().Equal(("LEDOR", "Ledor", 0), ("SALA_AMAMENTACAO", "Sala para amamentação", 1));
 

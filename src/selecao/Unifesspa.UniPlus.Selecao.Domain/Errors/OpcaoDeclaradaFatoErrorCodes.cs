@@ -7,7 +7,7 @@ public static class OpcaoDeclaradaFatoErrorCodes
     public const string RotuloInvalido = "OpcaoDeclaradaFato.RotuloInvalido";
     public const string ListaVazia = "OpcaoDeclaradaFato.ListaVazia";
     public const string CodigoRepetido = "OpcaoDeclaradaFato.CodigoRepetido";
-    public const string GeridasPelaOfertaDeAtendimento = "OpcaoDeclaradaFato.GeridasPelaOfertaDeAtendimento";
+    public const string GeridasPeloAtendimentoEspecializado = "OpcaoDeclaradaFato.GeridasPeloAtendimentoEspecializado";
     public const string ReferenciadaPorExigenciaViva = "OpcaoDeclaradaFato.ReferenciadaPorExigenciaViva";
     public const string FonteNaoEhDoProcesso = "OpcaoDeclaradaFato.FonteNaoEhDoProcesso";
     public const string EdicaoEnemForaDeProcessoEnem = "OpcaoDeclaradaFato.EdicaoEnemForaDeProcessoEnem";

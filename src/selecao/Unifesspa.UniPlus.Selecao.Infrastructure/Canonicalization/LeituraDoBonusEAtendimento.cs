@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class LeituraDoBonusEAtendimento
 {
-    internal static OfertaAtendimentoEspecializado? LerAtendimento(LeitorEnvelope leitor, JsonObject payload)
+    internal static AtendimentoEspecializado? LerAtendimento(LeitorEnvelope leitor, JsonObject payload)
     {
         JsonObject bloco = leitor.Objeto(payload, "atendimento", "$");
         leitor.ExigirChaves(bloco, "atendimento", "condicoes", "recursos", "tiposDeficiencia");
@@ -32,16 +32,16 @@ internal static class LeituraDoBonusEAtendimento
             return null;
         }
 
-        List<OfertaCondicao>? condicoes = LerItens(leitor, arrayCondicoes, "atendimento.condicoes", LerCondicao);
-        List<OfertaRecurso>? recursos = LerItens(leitor, arrayRecursos, "atendimento.recursos", LerRecurso);
-        List<OfertaTipoDeficiencia>? tipos = LerItens(leitor, arrayTipos, "atendimento.tiposDeficiencia", LerTipoDeDeficiencia);
+        List<CondicaoOfertada>? condicoes = LerItens(leitor, arrayCondicoes, "atendimento.condicoes", LerCondicao);
+        List<RecursoOfertado>? recursos = LerItens(leitor, arrayRecursos, "atendimento.recursos", LerRecurso);
+        List<DeficienciaAtendida>? tipos = LerItens(leitor, arrayTipos, "atendimento.tiposDeficiencia", LerTipoDeDeficiencia);
         if (condicoes is null || recursos is null || tipos is null)
         {
             return null;
         }
 
-        Result<OfertaAtendimentoEspecializado> oferta = OfertaAtendimentoEspecializado.Criar(condicoes, recursos, tipos);
-        return oferta.IsFailure ? leitor.Propagar<OfertaAtendimentoEspecializado>(oferta.Error!) : oferta.Value;
+        Result<AtendimentoEspecializado> atendimento = AtendimentoEspecializado.Criar(condicoes, recursos, tipos);
+        return atendimento.IsFailure ? leitor.Propagar<AtendimentoEspecializado>(atendimento.Error!) : atendimento.Value;
     }
 
     private static List<T>? LerItens<T>(LeitorEnvelope leitor, JsonArray array, string pathArray, Func<LeitorEnvelope, JsonObject, string, T?> lerItem)
@@ -62,7 +62,7 @@ internal static class LeituraDoBonusEAtendimento
         return itens;
     }
 
-    private static OfertaCondicao? LerCondicao(LeitorEnvelope leitor, JsonObject item, string path)
+    private static CondicaoOfertada? LerCondicao(LeitorEnvelope leitor, JsonObject item, string path)
     {
         leitor.ExigirChaves(item, path, "condicaoOrigemId", "condicaoCodigo", "condicaoNome");
 
@@ -73,33 +73,33 @@ internal static class LeituraDoBonusEAtendimento
         // Um código fora do formato do cadastro nunca é produzido por ele.
         if (!leitor.Falhou && !LeituraDasModalidades.FormatoCodigoCondicao.IsMatch(codigo))
         {
-            return leitor.Malformado<OfertaCondicao?>(
+            return leitor.Malformado<CondicaoOfertada?>(
                 path,
                 $"o código de condição '{codigo}' não tem o formato do cadastro (maiúscula inicial, depois maiúsculas, dígitos e underscore).");
         }
 
         string nome = leitor.TextoNaoVazio(item, "condicaoNome", path, LimitesDoEnvelope.NomeDeCadastro);
-        return leitor.Falhou ? null : OfertaCondicao.Criar(origemId, codigo, nome);
+        return leitor.Falhou ? null : CondicaoOfertada.Criar(origemId, codigo, nome);
     }
 
-    private static OfertaRecurso? LerRecurso(LeitorEnvelope leitor, JsonObject item, string path)
+    private static RecursoOfertado? LerRecurso(LeitorEnvelope leitor, JsonObject item, string path)
     {
         leitor.ExigirChaves(item, path, "recursoOrigemId", "recursoCodigo", "recursoNome");
 
         Guid origemId = leitor.Identificador(item, "recursoOrigemId", path);
         string codigo = leitor.TextoNaoVazio(item, "recursoCodigo", path, LimitesDoEnvelope.RecursoCodigo);
         string nome = leitor.TextoNaoVazio(item, "recursoNome", path, LimitesDoEnvelope.NomeDeCadastro);
-        return leitor.Falhou ? null : OfertaRecurso.Criar(origemId, codigo, nome);
+        return leitor.Falhou ? null : RecursoOfertado.Criar(origemId, codigo, nome);
     }
 
-    private static OfertaTipoDeficiencia? LerTipoDeDeficiencia(LeitorEnvelope leitor, JsonObject item, string path)
+    private static DeficienciaAtendida? LerTipoDeDeficiencia(LeitorEnvelope leitor, JsonObject item, string path)
     {
         leitor.ExigirChaves(item, path, "tipoDeficienciaOrigemId", "tipoDeficienciaCodigo", "tipoDeficienciaNome");
 
         Guid origemId = leitor.Identificador(item, "tipoDeficienciaOrigemId", path);
         string codigo = leitor.TextoNaoVazio(item, "tipoDeficienciaCodigo", path, LimitesDoEnvelope.TipoDeficienciaCodigo);
         string nome = leitor.TextoNaoVazio(item, "tipoDeficienciaNome", path, LimitesDoEnvelope.NomeDeCadastro);
-        return leitor.Falhou ? null : OfertaTipoDeficiencia.Criar(origemId, codigo, nome);
+        return leitor.Falhou ? null : DeficienciaAtendida.Criar(origemId, codigo, nome);
     }
 
     /// <summary>

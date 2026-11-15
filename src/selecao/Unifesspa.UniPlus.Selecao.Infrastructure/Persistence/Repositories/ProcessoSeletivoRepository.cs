@@ -105,9 +105,9 @@ public sealed partial class ProcessoSeletivoRepository : IProcessoSeletivoReposi
             .Include(p => p.Etapas).ThenInclude(e => e.Bancas)
             .Include(p => p.Etapas).ThenInclude(e => e.Recursos)
             .Include(p => p.Etapas).ThenInclude(e => e.ItensDeAvaliacao)
-            .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Condicoes)
-            .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Recursos)
-            .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.TiposDeficiencia)
+            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.Condicoes)
+            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.Recursos)
+            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.TiposDeficiencia)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.VagasOfertadas)
             // Bônus regional referencia Base Legal tipada (Story #1466) — MESMO raciocínio das

@@ -60,7 +60,7 @@ public sealed class DefinirCronogramaFasesResolucaoDosCadastrosTests
     public async Task Handle_FaseConforme_PersisteERetornaSucesso()
     {
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDaClassificacao());
-        cenario.Processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+        cenario.Processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         FaseCronogramaInput fase = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
 
         Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(fase);

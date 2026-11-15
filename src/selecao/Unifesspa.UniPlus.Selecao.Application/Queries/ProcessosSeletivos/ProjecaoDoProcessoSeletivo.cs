@@ -31,7 +31,7 @@ internal static class ProjecaoDoProcessoSeletivo
         ProjetarUnidadeAdministradora(processo),
         new LocalidadeRegenteDto(processo.Localidade.CodigoIbge, processo.Localidade.Nome, processo.Localidade.Uf),
         [.. processo.Etapas.OrderBy(e => e.Ordem).Select(ProjecaoDoCronogramaEEtapas.ProjetarEtapa)],
-        ProjecaoDasVagas.ProjetarAtendimento(processo.OfertaAtendimento),
+        ProjecaoDasVagas.ProjetarAtendimento(processo.AtendimentoEspecializado),
         [.. processo.DistribuicaoVagas.Select(ProjecaoDasVagas.ProjetarDistribuicao)],
         ProjecaoDasVagas.ProjetarBonusRegional(processo.BonusRegional),
         processo.AplicaBonusRegional,

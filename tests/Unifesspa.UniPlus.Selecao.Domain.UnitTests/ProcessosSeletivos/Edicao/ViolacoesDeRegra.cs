@@ -43,10 +43,10 @@ internal sealed record ViolacaoDeRegra(
             (p, pre) => p.DefinirEtapas([EtapaSoEliminatoria()], pre),
             "ProcessoSeletivo.NenhumaEtapaComponeNota",
             static p => [.. p.Etapas]),
-        [nameof(ProcessoSeletivo.DefinirOfertaAtendimento)] = new(
-            (p, pre) => p.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, pre),
+        [nameof(ProcessoSeletivo.DefinirAtendimentoEspecializado)] = new(
+            (p, pre) => p.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, pre),
             "ProcessoSeletivo.CondicaoAtendimentoReferenciadaPorExigenciaViva",
-            static p => [p.OfertaAtendimento],
+            static p => [p.AtendimentoEspecializado],
             Preparar: ExigenciaQueCitaACondicaoPcd),
         [nameof(ProcessoSeletivo.DefinirDistribuicaoVagas)] = new(
             (p, pre) => p.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo, pre),
@@ -160,8 +160,8 @@ internal sealed record ViolacaoDeRegra(
     // Uma exigência viva cita a condição de atendimento PCD: redefinir a oferta sem ela deixaria a condição sem como se satisfazer.
     private static void ExigenciaQueCitaACondicaoPcd(ProcessoSeletivo processo)
     {
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")], [], []).Value!,
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")], [], []).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         CondicaoGatilho condicao = CondicaoGatilho.Criar(0, "CONDICAO_ATENDIMENTO", Operador.Igual, JsonSerializer.SerializeToElement("PCD")).Value!;

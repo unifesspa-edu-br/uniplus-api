@@ -90,7 +90,7 @@ internal static class LeituraDosValoresDeDominio
     /// <summary>
     /// As opções que o processo declarou, reconstruídas dos valores selecionáveis
     /// congelados dos fatos coletados cuja fonte é o processo — o envelope não guarda uma segunda
-    /// cópia delas. As dos fatos de atendimento não entram: vêm da oferta, reposta à parte.
+    /// cópia delas. As dos fatos de atendimento não entram: vêm do atendimento especializado, reposto à parte.
     /// </summary>
     internal static Result<IReadOnlyList<OpcaoDeclaradaFato>> ReconstruirOpcoesDeclaradas(
         IReadOnlyList<FatoColetado> fatos,
@@ -99,7 +99,7 @@ internal static class LeituraDosValoresDeDominio
         List<OpcaoDeclaradaFato> opcoes = [];
         foreach (FatoColetado fato in fatos)
         {
-            if (!fato.OpcoesDoProcesso || OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo))
+            if (!fato.OpcoesDoProcesso || AtendimentoEspecializado.GereOpcoesDoFato(fato.FatoCodigo))
             {
                 continue;
             }

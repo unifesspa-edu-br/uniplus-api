@@ -8,9 +8,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-public sealed class OfertaCondicaoConfiguration : IEntityTypeConfiguration<OfertaCondicao>
+public sealed class CondicaoOfertadaConfiguration : IEntityTypeConfiguration<CondicaoOfertada>
 {
-    public void Configure(EntityTypeBuilder<OfertaCondicao> builder)
+    public void Configure(EntityTypeBuilder<CondicaoOfertada> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -27,6 +27,7 @@ public sealed class OfertaCondicaoConfiguration : IEntityTypeConfiguration<Ofert
         builder.Property(c => c.CondicaoCodigo).HasMaxLength(50).IsRequired();
         builder.Property(c => c.CondicaoNome).HasMaxLength(300).IsRequired();
 
-        builder.HasIndex(c => new { c.OfertaAtendimentoEspecializadoId, c.CondicaoOrigemId }).IsUnique();
+        builder.HasIndex(c => new { c.AtendimentoEspecializadoId, c.CondicaoOrigemId }).IsUnique()
+            .HasDatabaseName("ux_condicoes_ofertadas_por_atendimento_origem");
     }
 }

@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed class DefinirOfertaAtendimentoCommandHandlerTests
+public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
 {
     private static (
         IProcessoSeletivoRepository Repository,
@@ -46,14 +46,14 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
         mocks.TipoDeficienciaReader.ObterPorIdAsync(tipoDeficienciaId, Arg.Any<CancellationToken>())
             .Returns(new TipoDeficienciaView(tipoDeficienciaId, "DEFICIENCIA_VISUAL", "Deficiência visual", "Deficiência relacionada à visão", null));
 
-        DefinirOfertaAtendimentoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId], PrecondicaoIfMatch.Ausente);
+        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirOfertaAtendimentoCommandHandler.Handle(
+        Result<MutacaoAceita> result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
             command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        processo.OfertaAtendimento.Should().NotBeNull();
-        processo.OfertaAtendimento!.TiposDeficiencia.Should().ContainSingle();
+        processo.AtendimentoEspecializado.Should().NotBeNull();
+        processo.AtendimentoEspecializado!.TiposDeficiencia.Should().ContainSingle();
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -70,13 +70,13 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
         mocks.TipoDeficienciaReader.ObterPorIdAsync(tipoDeficienciaId, Arg.Any<CancellationToken>())
             .Returns(new TipoDeficienciaView(tipoDeficienciaId, "DEFICIENCIA_VISUAL", "Deficiência visual", "Deficiência relacionada à visão", null));
 
-        DefinirOfertaAtendimentoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId], PrecondicaoIfMatch.Ausente);
+        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirOfertaAtendimentoCommandHandler.Handle(
+        Result<MutacaoAceita> result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
             command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("OfertaAtendimento.TipoDeficienciaSemCondicaoPcd");
+        result.Error!.Code.Should().Be("AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd");
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -88,13 +88,13 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
 
         (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, IUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
 
-        DefinirOfertaAtendimentoCommand command = new(processo.Id, [condicaoId, condicaoId], [], [], PrecondicaoIfMatch.Ausente);
+        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId, condicaoId], [], [], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirOfertaAtendimentoCommandHandler.Handle(
+        Result<MutacaoAceita> result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
             command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("OfertaAtendimento.CondicaoDuplicada");
+        result.Error!.Code.Should().Be("AtendimentoEspecializado.CondicaoDuplicada");
         await mocks.CondicaoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default!, default!);
     }
 
@@ -108,13 +108,13 @@ public sealed class DefinirOfertaAtendimentoCommandHandlerTests
         mocks.CondicaoReader.ObterPorIdAsync(condicaoId, Arg.Any<CancellationToken>())
             .Returns((CondicaoAtendimentoView?)null);
 
-        DefinirOfertaAtendimentoCommand command = new(processo.Id, [condicaoId], [], [], PrecondicaoIfMatch.Ausente);
+        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [], PrecondicaoIfMatch.Ausente);
 
-        Result<MutacaoAceita> result = await DefinirOfertaAtendimentoCommandHandler.Handle(
+        Result<MutacaoAceita> result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
             command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Error!.Code.Should().Be("OfertaAtendimento.CondicaoNaoEncontrada");
+        result.Error!.Code.Should().Be("AtendimentoEspecializado.CondicaoNaoEncontrada");
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

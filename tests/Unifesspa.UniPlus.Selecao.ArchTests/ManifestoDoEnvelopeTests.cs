@@ -72,21 +72,21 @@ public sealed class ManifestoDoEnvelopeTests
 
         [typeof(NivelDeAtendimento)] = (["Rotulo", "Fracao"], []),
 
-        [typeof(OfertaAtendimentoEspecializado)] = (
+        [typeof(AtendimentoEspecializado)] = (
             ["Condicoes", "Recursos", "TiposDeficiencia"],
             [("ProcessoSeletivoId", "FK interna.")]),
 
-        [typeof(OfertaCondicao)] = (
+        [typeof(CondicaoOfertada)] = (
             ["CondicaoOrigemId", "CondicaoCodigo", "CondicaoNome"],
-            [("OfertaAtendimentoEspecializadoId", "FK interna.")]),
+            [("AtendimentoEspecializadoId", "FK interna.")]),
 
-        [typeof(OfertaRecurso)] = (
+        [typeof(RecursoOfertado)] = (
             ["RecursoOrigemId", "RecursoCodigo", "RecursoNome"],
-            [("OfertaAtendimentoEspecializadoId", "FK interna.")]),
+            [("AtendimentoEspecializadoId", "FK interna.")]),
 
-        [typeof(OfertaTipoDeficiencia)] = (
+        [typeof(DeficienciaAtendida)] = (
             ["TipoDeficienciaOrigemId", "TipoDeficienciaCodigo", "TipoDeficienciaNome"],
-            [("OfertaAtendimentoEspecializadoId", "FK interna.")]),
+            [("AtendimentoEspecializadoId", "FK interna.")]),
 
         [typeof(ConfiguracaoDistribuicaoVagas)] = (
             [

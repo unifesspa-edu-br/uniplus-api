@@ -162,7 +162,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// <summary>
     /// Os valores de um categórico de fonte global, com a descrição que orienta a escolha do
     /// candidato quando <see cref="Origem"/> é <see cref="OrigemFato.Declarado"/> (ADR-0116).
-    /// Não ordenada aqui (mesmo padrão de <c>OfertaAtendimentoEspecializado.Condicoes</c>)
+    /// Não ordenada aqui (mesmo padrão de <c>AtendimentoEspecializado.Condicoes</c>)
     /// — a ordenação por <c>Ordem</c>/<c>Codigo</c> é responsabilidade de quem
     /// projeta a leitura (<c>FatoCandidatoReader</c>), não do agregado.
     /// </summary>

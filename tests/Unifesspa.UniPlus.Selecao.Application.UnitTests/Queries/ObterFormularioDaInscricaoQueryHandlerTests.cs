@@ -56,7 +56,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
         EnvelopeReidratado envelope = new(
             new GrafoConfiguracao(
-                [.. processoBase.Etapas], processoBase.OfertaAtendimento!, [.. processoBase.DistribuicaoVagas],
+                [.. processoBase.Etapas], processoBase.AtendimentoEspecializado!, [.. processoBase.DistribuicaoVagas],
                 processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
                 [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null, formularios: [formulario],
             numeroDeOpcoesDeCurso: 1),

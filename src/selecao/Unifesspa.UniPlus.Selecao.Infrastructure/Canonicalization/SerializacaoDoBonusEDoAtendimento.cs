@@ -25,15 +25,15 @@ internal static class SerializacaoDoBonusEDoAtendimento
 {
     internal static JsonObject SerializarAtendimento(ProcessoSeletivo processo)
     {
-        if (processo.OfertaAtendimento is not { } oferta)
+        if (processo.AtendimentoEspecializado is not { } atendimento)
         {
             throw new InvalidOperationException(
-                "Canonicalização de processo sem oferta de atendimento especializado — o gate de conformidade deveria ter recusado a transição antes deste ponto.");
+                "Canonicalização de processo sem atendimento especializado — o gate de conformidade deveria ter recusado a transição antes deste ponto.");
         }
 
         return new JsonObject
         {
-            ["condicoes"] = new JsonArray([.. oferta.Condicoes
+            ["condicoes"] = new JsonArray([.. atendimento.Condicoes
                 .OrderBy(static c => c.CondicaoOrigemId)
                 .Select(static c => (JsonNode)new JsonObject
                 {
@@ -41,7 +41,7 @@ internal static class SerializacaoDoBonusEDoAtendimento
                     ["condicaoCodigo"] = HashCanonicalComputer.NormalizeNfc(c.CondicaoCodigo),
                     ["condicaoNome"] = HashCanonicalComputer.NormalizeNfc(c.CondicaoNome),
                 })]),
-            ["recursos"] = new JsonArray([.. oferta.Recursos
+            ["recursos"] = new JsonArray([.. atendimento.Recursos
                 .OrderBy(static r => r.RecursoOrigemId)
                 .Select(static r => (JsonNode)new JsonObject
                 {
@@ -49,7 +49,7 @@ internal static class SerializacaoDoBonusEDoAtendimento
                     ["recursoCodigo"] = r.RecursoCodigo,
                     ["recursoNome"] = HashCanonicalComputer.NormalizeNfc(r.RecursoNome),
                 })]),
-            ["tiposDeficiencia"] = new JsonArray([.. oferta.TiposDeficiencia
+            ["tiposDeficiencia"] = new JsonArray([.. atendimento.TiposDeficiencia
                 .OrderBy(static t => t.TipoDeficienciaOrigemId)
                 .Select(static t => (JsonNode)new JsonObject
                 {

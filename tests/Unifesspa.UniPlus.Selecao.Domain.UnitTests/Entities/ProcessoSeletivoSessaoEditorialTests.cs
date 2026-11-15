@@ -544,7 +544,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
     /// </summary>
     private static GrafoConfiguracao GrafoDoProcesso(ProcessoSeletivo processo) => new(
         [.. processo.Etapas],
-        processo.OfertaAtendimento!,
+        processo.AtendimentoEspecializado!,
         [.. processo.DistribuicaoVagas],
         processo.BonusRegional,
         [.. processo.CriteriosDesempate],
@@ -599,8 +599,8 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(

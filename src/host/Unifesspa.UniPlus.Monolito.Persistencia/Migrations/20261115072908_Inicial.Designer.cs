@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261115034749_Inicial")]
+    [Migration("20261115072908_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -10756,6 +10756,34 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AtendimentoEspecializado", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<Guid>("ProcessoSeletivoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("processo_seletivo_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_atendimentos_especializados");
+
+                    b.HasIndex("ProcessoSeletivoId")
+                        .IsUnique()
+                        .HasDatabaseName("ix_atendimentos_especializados_processo_seletivo_id");
+
+                    b.ToTable("atendimentos_especializados", "selecao");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AtoDoProcesso", b =>
                 {
                     b.Property<Guid>("Id")
@@ -11366,6 +11394,50 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("condicoes_gatilho", "selecao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CondicaoOfertada", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AtendimentoEspecializadoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("atendimento_especializado_id");
+
+                    b.Property<string>("CondicaoCodigo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("condicao_codigo");
+
+                    b.Property<string>("CondicaoNome")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("condicao_nome");
+
+                    b.Property<Guid>("CondicaoOrigemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("condicao_origem_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_condicoes_ofertadas");
+
+                    b.HasIndex("AtendimentoEspecializadoId", "CondicaoOrigemId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_condicoes_ofertadas_por_atendimento_origem");
+
+                    b.ToTable("condicoes_ofertadas", "selecao");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CondicaoPrecondicaoFato", b =>
                 {
                     b.Property<Guid>("Id")
@@ -11875,6 +11947,50 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ux_criterios_desempate_processo_ordem");
 
                     b.ToTable("criterios_desempate", "selecao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DeficienciaAtendida", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AtendimentoEspecializadoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("atendimento_especializado_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("TipoDeficienciaCodigo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("tipo_deficiencia_codigo");
+
+                    b.Property<string>("TipoDeficienciaNome")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("tipo_deficiencia_nome");
+
+                    b.Property<Guid>("TipoDeficienciaOrigemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("tipo_deficiencia_origem_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_deficiencias_atendidas");
+
+                    b.HasIndex("AtendimentoEspecializadoId", "TipoDeficienciaOrigemId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_deficiencias_atendidas_por_atendimento_origem");
+
+                    b.ToTable("deficiencias_atendidas", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DestinoRemanejamento", b =>
@@ -13765,166 +13881,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaAtendimentoEspecializado", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("ProcessoSeletivoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id")
-                        .HasName("pk_atendimentos_especializados");
-
-                    b.HasIndex("ProcessoSeletivoId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_atendimentos_especializados_processo_seletivo_id");
-
-                    b.ToTable("atendimentos_especializados", "selecao");
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaCondicao", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("CondicaoCodigo")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("condicao_codigo");
-
-                    b.Property<string>("CondicaoNome")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)")
-                        .HasColumnName("condicao_nome");
-
-                    b.Property<Guid>("CondicaoOrigemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("condicao_origem_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("OfertaAtendimentoEspecializadoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("oferta_atendimento_especializado_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id")
-                        .HasName("pk_condicoes_ofertadas");
-
-                    b.HasIndex("OfertaAtendimentoEspecializadoId", "CondicaoOrigemId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_condicoes_ofertadas_oferta_atendimento_especializado_id_con");
-
-                    b.ToTable("condicoes_ofertadas", "selecao");
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaRecurso", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("OfertaAtendimentoEspecializadoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("oferta_atendimento_especializado_id");
-
-                    b.Property<string>("RecursoCodigo")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("recurso_codigo");
-
-                    b.Property<string>("RecursoNome")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)")
-                        .HasColumnName("recurso_nome");
-
-                    b.Property<Guid>("RecursoOrigemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("recurso_origem_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id")
-                        .HasName("pk_recursos_ofertados");
-
-                    b.HasIndex("OfertaAtendimentoEspecializadoId", "RecursoOrigemId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_recursos_ofertados_oferta_atendimento_especializado_id_recu");
-
-                    b.ToTable("recursos_ofertados", "selecao");
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaTipoDeficiencia", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<Guid>("OfertaAtendimentoEspecializadoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("oferta_atendimento_especializado_id");
-
-                    b.Property<string>("TipoDeficienciaCodigo")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)")
-                        .HasColumnName("tipo_deficiencia_codigo");
-
-                    b.Property<string>("TipoDeficienciaNome")
-                        .IsRequired()
-                        .HasMaxLength(300)
-                        .HasColumnType("character varying(300)")
-                        .HasColumnName("tipo_deficiencia_nome");
-
-                    b.Property<Guid>("TipoDeficienciaOrigemId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("tipo_deficiencia_origem_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.HasKey("Id")
-                        .HasName("pk_deficiencias_atendidas");
-
-                    b.HasIndex("OfertaAtendimentoEspecializadoId", "TipoDeficienciaOrigemId")
-                        .IsUnique()
-                        .HasDatabaseName("ix_deficiencias_atendidas_oferta_atendimento_especializado_id_");
-
-                    b.ToTable("deficiencias_atendidas", "selecao");
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OpcaoDeclaradaFato", b =>
                 {
                     b.Property<Guid>("Id")
@@ -14280,6 +14236,50 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ix_recursos_da_etapa_etapa_processo_id");
 
                     b.ToTable("recursos_da_etapa", "selecao");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RecursoOfertado", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<Guid>("AtendimentoEspecializadoId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("atendimento_especializado_id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("RecursoCodigo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("recurso_codigo");
+
+                    b.Property<string>("RecursoNome")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("recurso_nome");
+
+                    b.Property<Guid>("RecursoOrigemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("recurso_origem_id");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_recursos_ofertados");
+
+                    b.HasIndex("AtendimentoEspecializadoId", "RecursoOrigemId")
+                        .IsUnique()
+                        .HasDatabaseName("ux_recursos_ofertados_por_atendimento_origem");
+
+                    b.ToTable("recursos_ofertados", "selecao");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraCatalogo", b =>
@@ -18303,6 +18303,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasConstraintName("fk_arquivos_da_apresentacao_inscricao_record_inscricao_id");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AtendimentoEspecializado", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
+                        .WithOne("AtendimentoEspecializado")
+                        .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.AtendimentoEspecializado", "ProcessoSeletivoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_atendimentos_especializados_processo_seletivo");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AtoDoProcesso", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.DocumentoAPublicar", null)
@@ -18477,6 +18487,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
                         .HasConstraintName("fk_condicoes_gatilho_documento_exigido_documento_exigido_id");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CondicaoOfertada", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.AtendimentoEspecializado", null)
+                        .WithMany("Condicoes")
+                        .HasForeignKey("AtendimentoEspecializadoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_condicoes_ofertadas_atendimento_especializado");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.CondicaoPrecondicaoFato", b =>
@@ -19006,6 +19026,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DeficienciaAtendida", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.AtendimentoEspecializado", null)
+                        .WithMany("TiposDeficiencia")
+                        .HasForeignKey("AtendimentoEspecializadoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_deficiencias_atendidas_atendimento_especializado");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.DestinoRemanejamento", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoCascataRemanejamento", null)
@@ -19508,46 +19538,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasConstraintName("fk_ocorrencias_do_lote_de_notas_lotes_de_notas_do_enem_lote_id");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaAtendimentoEspecializado", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
-                        .WithOne("OfertaAtendimento")
-                        .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaAtendimentoEspecializado", "ProcessoSeletivoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_atendimentos_especializados_processo_seletivo_processo_sele");
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaCondicao", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaAtendimentoEspecializado", null)
-                        .WithMany("Condicoes")
-                        .HasForeignKey("OfertaAtendimentoEspecializadoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_condicoes_ofertadas_atendimentos_especializados_oferta_aten");
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaRecurso", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaAtendimentoEspecializado", null)
-                        .WithMany("Recursos")
-                        .HasForeignKey("OfertaAtendimentoEspecializadoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_recursos_ofertados_atendimentos_especializados_oferta_atend");
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaTipoDeficiencia", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaAtendimentoEspecializado", null)
-                        .WithMany("TiposDeficiencia")
-                        .HasForeignKey("OfertaAtendimentoEspecializadoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_deficiencias_atendidas_atendimentos_especializados_oferta_a");
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OpcaoDeclaradaFato", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
@@ -19909,6 +19899,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RecursoOfertado", b =>
+                {
+                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.AtendimentoEspecializado", null)
+                        .WithMany("Recursos")
+                        .HasForeignKey("AtendimentoEspecializadoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("fk_recursos_ofertados_atendimento_especializado");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RegraDerivacaoConfigurada", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDerivacaoFato", null)
@@ -20260,6 +20260,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Navigation("Vinculos");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AtendimentoEspecializado", b =>
+                {
+                    b.Navigation("Condicoes");
+
+                    b.Navigation("Recursos");
+
+                    b.Navigation("TiposDeficiencia");
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.AtoDoProcesso", b =>
                 {
                     b.Navigation("Anexos");
@@ -20364,17 +20373,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Navigation("Filhos");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.OfertaAtendimentoEspecializado", b =>
-                {
-                    b.Navigation("Condicoes");
-
-                    b.Navigation("Recursos");
-
-                    b.Navigation("TiposDeficiencia");
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", b =>
                 {
+                    b.Navigation("AtendimentoEspecializado");
+
                     b.Navigation("BonusRegional");
 
                     b.Navigation("Campos");
@@ -20402,8 +20404,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Navigation("GruposColetados");
 
                     b.Navigation("NosExigencia");
-
-                    b.Navigation("OfertaAtendimento");
 
                     b.Navigation("OpcoesDeclaradas");
 

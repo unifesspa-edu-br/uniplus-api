@@ -128,7 +128,7 @@ internal static partial class CorpusEnvelope
                 peso: 9.9999m,
                 notaMinima: null,
                 ordem: 7, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
-            ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+            atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [DistribuicaoInstitucional()],
             bonusRegional: null,
             criteriosDesempate: [],
@@ -150,7 +150,7 @@ internal static partial class CorpusEnvelope
     /// <summary>Um grafo mínimo e conforme — a "sessão editorial" que o descarte terá de desfazer.</summary>
     internal static GrafoConfiguracao GrafoPobre(int variante = 0) => new(
         etapas: [EtapaProcesso.Reidratar(new Guid($"9999fff{variante:x}-0000-4000-8000-000000000001"), "Etapa Única", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), 1.0000m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
-        ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+        atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
         distribuicaoVagas: [DistribuicaoInstitucional()],
         bonusRegional: null,
         criteriosDesempate: [],

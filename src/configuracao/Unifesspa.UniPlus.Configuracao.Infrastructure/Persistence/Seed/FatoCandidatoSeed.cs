@@ -348,7 +348,7 @@ public static class FatoCandidatoSeed
             ClassificacaoDeProtecao.Interno, FinalidadeReservaDeVagas),
 
         // O recurso de que o candidato precisa nas etapas (sala para amamentação, ledor, intérprete de
-        // Libras…), escolhido entre os que a oferta de atendimento do processo declara (UNI-REQ-0026).
+        // Libras…), escolhido entre os que o atendimento especializado do processo declara (UNI-REQ-0026).
         new(SeedId(53), "RECURSO_ACESSIBILIDADE", "Recurso de acessibilidade", "Recursos de acessibilidade de que o candidato precisa nas etapas, entre os que o processo oferece.",
             DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Multivalorado, FonteValoresFato.Processo,
             PontoResolucaoInscricao, "CAMPO_FORMULARIO:RECURSO_ACESSIBILIDADE",
