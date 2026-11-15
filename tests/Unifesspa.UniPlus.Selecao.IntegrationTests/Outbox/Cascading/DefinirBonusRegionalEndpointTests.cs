@@ -70,6 +70,22 @@ public sealed class DefinirBonusRegionalEndpointTests
         (await DeclaracaoGravadaAsync(processoId)).Should().BeNull();
     }
 
+    [Theory(DisplayName = "Regra informada sem versão, sem fator ou sem base legal é recusada com 422 e código nomeado, sem consultar cadastro")]
+    [InlineData("""{ "aplica": true, "regraCodigo": "BONUS-MULTIPLICATIVO", "fator": 1.2, "baseLegalBonusRegionalId": "019fe8f8-1400-7000-8000-000000000001" }""")]
+    [InlineData("""{ "aplica": true, "regraCodigo": "BONUS-MULTIPLICATIVO", "regraVersao": "v1", "baseLegalBonusRegionalId": "019fe8f8-1400-7000-8000-000000000001" }""")]
+    [InlineData("""{ "aplica": true, "regraCodigo": "BONUS-MULTIPLICATIVO", "regraVersao": "v1", "fator": 1.2 }""")]
+    public async Task RegraSemCamposObrigatorios_422(string corpoJson)
+    {
+        (HttpClient client, Guid processoId) = await SemearRascunhoAsync(nameof(RegraSemCamposObrigatorios_422));
+
+        HttpResponseMessage resposta = await PutAsync(client, processoId, corpoJson);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+        problema.RootElement.GetProperty("code").GetString()
+            .Should().Be("uniplus.selecao.configuracao_bonus_regional.campos_obrigatorios");
+    }
+
     private async Task<bool?> DeclaracaoGravadaAsync(Guid processoId)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();

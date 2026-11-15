@@ -5,13 +5,12 @@ using Commands.ProcessosSeletivos;
 using FluentValidation;
 
 /// <summary>
-/// Quatro checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
-/// identificador de rota; <c>RegraVersao</c>/<c>Fator</c>/<c>BaseLegalBonusRegionalId</c>
-/// obrigatórios quando <c>RegraCodigo</c> é informado são coerência de wire anterior à
-/// resolução da regra e da Base Legal — <c>ConfiguracaoBonusRegional.Criar</c> só é chamado
-/// depois que o handler já resolveu as duas, então nunca recebe esses campos crus; a
-/// precisão/escala decimal de <c>Fator</c>/<c>Teto</c> é limite de forma de wire/coluna
-/// (<c>numeric(6,4)</c>), não regra de negócio.
+/// Duas checagens sem equivalente no agregado (ADR-0125): <c>ProcessoSeletivoId</c> é
+/// identificador de rota; a precisão/escala decimal de <c>Fator</c>/<c>Teto</c> é limite de forma
+/// de wire/coluna (<c>numeric(6,4)</c>), não regra de negócio. A presença de <c>RegraVersao</c>,
+/// <c>Fator</c> e <c>BaseLegalBonusRegionalId</c> quando <c>RegraCodigo</c> é informado é do
+/// handler, que a recusa com <c>ConfiguracaoBonusRegional.CamposObrigatorios</c> antes de
+/// resolver a regra e a base legal.
 /// </summary>
 public sealed class DefinirBonusRegionalCommandValidator : AbstractValidator<DefinirBonusRegionalCommand>
 {
@@ -21,27 +20,19 @@ public sealed class DefinirBonusRegionalCommandValidator : AbstractValidator<Def
             .NotEmpty()
             .WithMessage("ProcessoSeletivoId é obrigatório.");
 
-        // As demais regras só se aplicam quando a configuração do bônus é informada; a
-        // coerência entre Aplica e a configuração é do handler e do agregado.
-        RuleFor(x => x.RegraVersao)
-            .NotEmpty()
-            .When(x => x.RegraCodigo is not null)
-            .WithMessage("Versão da regra de bônus é obrigatória quando RegraCodigo é informado.");
+        PrecisaoDoFatorEDoTeto();
+    }
 
+    private void PrecisaoDoFatorEDoTeto()
+    {
         RuleFor(x => x.Fator)
-            .NotNull()
             .PrecisionScale(6, 4, ignoreTrailingZeros: false)
-            .When(x => x.RegraCodigo is not null)
-            .WithMessage("Fator do bônus, quando RegraCodigo é informado, é obrigatório e deve ter no máximo 4 casas decimais.");
+            .When(x => x.RegraCodigo is not null && x.Fator.HasValue)
+            .WithMessage("Fator do bônus, quando informado com a regra, deve ter no máximo 4 casas decimais.");
 
         RuleFor(x => x.Teto)
             .PrecisionScale(6, 4, ignoreTrailingZeros: false)
             .When(x => x.Teto.HasValue)
             .WithMessage("Teto do bônus, quando informado, deve ter no máximo 4 casas decimais.");
-
-        RuleFor(x => x.BaseLegalBonusRegionalId)
-            .NotEmpty()
-            .When(x => x.RegraCodigo is not null)
-            .WithMessage("Base legal de bônus regional é obrigatória quando RegraCodigo é informado.");
     }
 }
