@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -42,11 +43,11 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
     /// <param name="faseDoBloco">A fase do formulário, que ganha o bloco de comprovação documental; sem ela, o formulário só tem a revisão.</param>
     /// <param name="exigencias">As exigências congeladas, em JSON.</param>
     private static (VersaoConfiguracao Versao, EnvelopeReidratado Envelope) MontarVersaoComFormularioDeInscricao(
-        Guid? faseDoBloco = null, string exigencias = "")
+        Guid? faseDoBloco = null, string exigencias = "", FinalidadeFormulario finalidade = FinalidadeFormulario.Inscricao)
     {
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Formulário da inscrição");
         FormularioProcesso formulario = FormularioProcesso.Criar(
-            FinalidadeFormulario.Inscricao, faseDoBloco, null,
+            finalidade, faseDoBloco, null,
             [
                 .. faseDoBloco is null
                     ? Array.Empty<EtapaFormulario>()
@@ -157,6 +158,37 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.ComprovacaoDocumental.Should().BeNull("a lista do certame não diz o que se aplica ao candidato");
+    }
+
+    [Fact(DisplayName = "Inscrição enviada na versão fixada sem formulário de inscrição é defeito, não ausência: a versão já foi provada ao iniciar")]
+    public async Task Handle_VersaoFixadaSemFormularioDeInscricao_LancaDefeito()
+    {
+        Cpf cpf = PersonasDeTeste.KevinCarvalho;
+        (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao(finalidade: FinalidadeFormulario.Habilitacao);
+        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
+        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>())
+            .Returns(InscricaoEnviadaDeTeste.Enviar(Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!));
+        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
+        processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
+
+        Func<Task> leitura = () => ObterFormularioDaInscricaoQueryHandler.Handle(
+            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, DivulgacaoDeTeste.Certame(ProcessoId), processoRepository,
+            RegistroReidratando(envelope), UsuarioComCpf(cpf), CancellationToken.None);
+
+        await leitura.Should().ThrowAsync<InvalidOperationException>().WithMessage("*não tem o formulário de inscrição*");
+    }
+
+    [Fact(DisplayName = "A projeção da versão sem formulário da finalidade é sucesso sem formulário, não falha")]
+    public void Projetar_VersaoSemFormularioDaFinalidade_SucessoSemFormulario()
+    {
+        (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao(finalidade: FinalidadeFormulario.Habilitacao);
+
+        Result<FormularioRenderizavelDto?> projetado = ProjecaoDoFormularioDaVersao.Projetar(
+            versao, FinalidadeFormulario.Inscricao, RegistroReidratando(envelope), acervoDaComprovacao: null);
+
+        projetado.IsSuccess.Should().BeTrue(projetado.Error?.Message);
+        projetado.Value.Should().BeNull();
     }
 
     [Fact(DisplayName = "O formulário da inscrição diz a fase em que é respondido, que separa os documentos dela na avaliação")]
