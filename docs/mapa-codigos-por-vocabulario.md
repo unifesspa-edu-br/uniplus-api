@@ -178,8 +178,8 @@ A constante tem 16 usos: os dois de produção (linhas 12 e 13 da tabela acima) 
 
 | Arquivo (em `tests/`) | Linha | O que o código representa | Ação |
 |---|---|---|---|
-| `Unifesspa.UniPlus.Selecao.IntegrationTests/ProcessosSeletivos/FormularioRenderizavelPersistenciaTests.cs` | 462 | código da fase do cronograma de teste | manter; PA-1 |
-| idem | 464 | código de tipo de ato do produto da fase (dado de teste) | manter; PA-1 |
+| `Unifesspa.UniPlus.Selecao.IntegrationTests/ProcessosSeletivos/RegrasEPressupostosDoFormularioPublicadoTests.cs` | 126 | código da fase do cronograma de teste | manter; PA-1 |
+| idem | 128 | código de tipo de ato do produto da fase (dado de teste) | manter; PA-1 |
 | `Unifesspa.UniPlus.Selecao.IntegrationTests/ProcessosSeletivos/EnvelopeCodecRoundTripTests.cs` | 77 | código da fase do cronograma de teste | manter; PA-1 |
 | idem | 79 | código de tipo de ato do produto da fase (dado de teste) | manter; PA-1 |
 | `Unifesspa.UniPlus.Selecao.Application.UnitTests/Commands/FatoDeElegibilidadeGateTests.cs` | 164 | código da fase do cronograma de teste | manter; PA-1 |
