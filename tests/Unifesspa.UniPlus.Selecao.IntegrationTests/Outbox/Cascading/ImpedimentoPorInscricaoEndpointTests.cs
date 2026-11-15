@@ -91,8 +91,8 @@ public sealed class ImpedimentoPorInscricaoEndpointTests : IAsyncLifetime
         noOutro.StatusCode.Should().Be(HttpStatusCode.NoContent);
     }
 
-    [Fact(DisplayName = "Inscrição de outro emissor com o mesmo sub não impede: a identidade é o par emissor e sub")]
-    public async Task InscricaoDeOutroEmissorComOMesmoSub_NaoImpede()
+    [Fact(DisplayName = "Inscrição de outro emissor com a mesma conta não impede: a identidade é o par emissor e conta")]
+    public async Task InscricaoDeOutroEmissorComOMesmoContaId_NaoImpede()
     {
         Guid processo = await SemearProcessoAsync(SituacaoInscricao.Submetida, emissor: "https://outro-emissor.exemplo/realms/outro");
         await ConcederAsync(processo);

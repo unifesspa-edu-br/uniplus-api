@@ -29,7 +29,7 @@ public sealed class UltimoRepresentanteNoHostTests : UltimoRepresentanteNoHostTe
         await ConferirCodigoAsync(
             await RevogarAsync(g.Diogo, await DesignacaoAsync(Marlene), Motivo, Marlene.Email), HttpStatusCode.UnprocessableEntity, UltimoRepresentante);
 
-        (await VigentesAsync()).Should().Equal(Marlene.Sub.ToString());
+        (await VigentesAsync()).Should().Equal(Marlene.ContaId.ToString());
     }
 
     [Fact(DisplayName = "Com outra pessoa designada, a revogação é aceita e a outra designação segue vigente")]
@@ -40,7 +40,7 @@ public sealed class UltimoRepresentanteNoHostTests : UltimoRepresentanteNoHostTe
 
         (await RevogarAsync(g.Diogo, await DesignacaoAsync(Marlene), Motivo, Marlene.Email)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        (await VigentesAsync()).Should().Equal(Leandro.Sub.ToString());
+        (await VigentesAsync()).Should().Equal(Leandro.ContaId.ToString());
     }
 
     // As duas revogações correm de fato sobrepostas: a transação do teste segura a trava do papel até o banco registrar
@@ -70,7 +70,7 @@ public sealed class UltimoRepresentanteNoHostTests : UltimoRepresentanteNoHostTe
         (await EnviarAsync(g.Marlene, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
 
         (await RevogarAsync(g.Diogo, await DesignacaoAsync(Marlene), Motivo, Marlene.Email)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await VigentesAsync()).Should().Equal(Leandro.Sub.ToString());
+        (await VigentesAsync()).Should().Equal(Leandro.ContaId.ToString());
     }
 
     [Fact(DisplayName = "A designação anterior à regra conta enquanto vigente; vencida, a instituição fica sem Representante e a dispensa recupera")]
@@ -78,7 +78,7 @@ public sealed class UltimoRepresentanteNoHostTests : UltimoRepresentanteNoHostTe
     {
         Governanca g = await GovernancaAsync();
         Guid leandro = await EstadoAnteriorAoRepresentanteSemPrazo.DesignarComPrazoAsync(
-            Fixture.Factory.Services, Leandro.Sub.ToString(), DateTimeOffset.UtcNow.AddDays(10), Leandro.Email);
+            Fixture.Factory.Services, Leandro.ContaId.ToString(), DateTimeOffset.UtcNow.AddDays(10), Leandro.Email);
 
         (await RevogarAsync(g.Diogo, await DesignacaoAsync(Marlene), Motivo, Marlene.Email)).StatusCode.Should().Be(HttpStatusCode.NoContent);
         await EstadoAnteriorAoRepresentanteSemPrazo.GravarPrazoNaDesignacaoAsync(Fixture.Factory.Services, leandro, DateTimeOffset.UtcNow.AddMinutes(-1));
@@ -87,6 +87,6 @@ public sealed class UltimoRepresentanteNoHostTests : UltimoRepresentanteNoHostTe
         Guid pedido = await DesignacaoAceitaAsync(Isabella);
         (await EnviarAsync(g.Diogo, HttpMethod.Post, $"{Rota}/{pedido}/aprovacoes")).StatusCode.Should().Be(HttpStatusCode.OK);
         (await SituacaoAsync(g.Diogo, pedido)).Should().Be("aprovado");
-        (await VigentesAsync()).Should().Equal(Isabella.Sub.ToString());
+        (await VigentesAsync()).Should().Equal(Isabella.ContaId.ToString());
     }
 }

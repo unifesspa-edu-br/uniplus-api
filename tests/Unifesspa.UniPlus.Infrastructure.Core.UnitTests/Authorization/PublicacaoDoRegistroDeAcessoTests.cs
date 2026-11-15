@@ -120,7 +120,7 @@ public sealed class PublicacaoDoRegistroDeAcessoTests
                 || v.Contains("impedido_por", StringComparison.Ordinal), "o motivo da negativa não sai em cabeçalho");
     }
 
-    [Fact(DisplayName = "Nenhum cabeçalho leva o subject, o requestId nem o id da inscrição, ainda que o requestId traga dígitos de CPF")]
+    [Fact(DisplayName = "Nenhum cabeçalho leva o identificador da conta, o requestId nem o id da inscrição, ainda que o requestId traga dígitos de CPF")]
     public async Task Cabecalhos_NaoVazamDadoDoAtorNemDoResource()
     {
         Guid inscricao = Guid.CreateVersion7();

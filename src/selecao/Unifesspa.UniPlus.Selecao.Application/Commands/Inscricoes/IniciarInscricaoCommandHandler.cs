@@ -86,7 +86,7 @@ public static class IniciarInscricaoCommandHandler
             return await ComAvaliacaoAsync(existente).ConfigureAwait(false);
         }
 
-        // Sem inscrição ativa, a cancelada do mesmo CPF neste processo ainda diz quem é o dono: outro sub
+        // Sem inscrição ativa, a cancelada do mesmo CPF neste processo ainda diz quem é o dono: outra conta
         // não se inscreve por cima dela, como não se inscrevia por cima da ativa.
         IReadOnlyList<Inscricao> doCpf = await inscricaoRepository
             .ObterTodasPorCpfAsync(cpf, cancellationToken)
@@ -150,7 +150,7 @@ public static class IniciarInscricaoCommandHandler
         return await ComAvaliacaoAsync(inscricao).ConfigureAwait(false);
 
         // A inscrição existente, ou a relida depois da corrida no índice único, só volta ao dono: outro
-        // sub com o mesmo CPF não a recebe, como em toda leitura e escrita da inscrição.
+        // conta com o mesmo CPF não a recebe, como em toda leitura e escrita da inscrição.
         async Task<Result<InscricaoDto>> ComAvaliacaoAsync(Inscricao lida)
         {
             if (lida.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono)

@@ -77,7 +77,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
 
         (await diogo.GetAsync(new Uri("/api/autorizacao/concessoes", UriKind.Relative))).StatusCode.Should().Be(HttpStatusCode.Forbidden);
         JsonElement depois = ItemDe(await LerAsync(marlene, $"{RotaDasRevisoes}/{revisaoId}"), Diogo);
-        (depois.GetProperty("situacao").GetString(), depois.GetProperty("decididoPor").GetProperty("sub").GetString()).Should().Be(("revogada", Marlene.Sub.ToString()));
+        (depois.GetProperty("situacao").GetString(), depois.GetProperty("decididoPor").GetProperty("contaId").GetString()).Should().Be(("revogada", Marlene.ContaId.ToString()));
     }
 
     [Fact(DisplayName = "A revogação na revisão entra na trilha da concessão, e o item decidido não se decide de novo")]
@@ -158,7 +158,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
 
         (await EnviarAsync(diogo, HttpMethod.Post, RotaDasRevisoes)).StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
-        registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Diogo.Sub.ToString())
+        registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Diogo.ContaId.ToString())
             .Select(static r => (r.Permissao, r.Resultado))
             .Should().BeEquivalentTo([("autorizacao:revisoes:conduzir", ResultadoDoAcesso.Negado)]);
     }
@@ -176,7 +176,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
 
         await ConferirErroAsync(await EnviarAsync(marlene, HttpMethod.Post, rota), HttpStatusCode.UnprocessableEntity, "revisao.decisor_nao_decide_o_item");
 
-        registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Marlene.Sub.ToString())
+        registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Marlene.ContaId.ToString())
             .Select(r => (r.Permissao, r.Resultado, r.ResourceId))
             .Should().BeEquivalentTo([("autorizacao:revisoes:rever-protecao-de-dados", ResultadoDoAcesso.Negado, (Guid?)revisaoId)]);
     }
@@ -186,7 +186,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
     {
         await ResetarAsync();
         await ConcessoesDeTeste.ConcederAsync(
-            Fixture.Factory.Services, Marlene.Sub.ToString(), await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()));
+            Fixture.Factory.Services, Marlene.ContaId.ToString(), await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()));
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, AprovarFuncional);
         (Guid revisaoId, JsonElement revisao) = await AbrirAsync(marlene);
@@ -237,7 +237,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
     {
         await ResetarAsync();
         await ConcessoesDeTeste.ConcederAsync(
-            Fixture.Factory.Services, Leandro.Sub.ToString(), await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()));
+            Fixture.Factory.Services, Leandro.ContaId.ToString(), await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()));
         using HttpClient marlene = await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados);
         (Guid revisaoId, JsonElement revisao) = await AbrirAsync(marlene);
         JsonElement item = ItemDe(revisao, Leandro);
@@ -274,7 +274,7 @@ public sealed class RevisoesDeAcessosTests : PedidosDeConcessaoTestBase
 
     private static JsonElement[] ItensDe(JsonElement revisao, Persona persona) =>
         [.. revisao.GetProperty("itens").EnumerateArray()
-            .Where(i => i.GetProperty("beneficiario").GetProperty("sub").GetString() == persona.Sub.ToString())];
+            .Where(i => i.GetProperty("beneficiario").GetProperty("contaId").GetString() == persona.ContaId.ToString())];
 
     private static JsonElement ItemDe(JsonElement revisao, Persona persona) => ItensDe(revisao, persona).Single();
 

@@ -98,8 +98,8 @@ public sealed class AprovacaoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTestBa
         await AprovarAsync(marlene, versao, EtapaProtecao);
 
         (await TemVigenteComVersaoAsync(diogo, vigente.PerfilId, versao.VersaoId)).Should().BeTrue();
-        (await DecisoesAsync(versao.VersaoId)).Select(d => (d.Sub, d.Resultado))
-            .Should().Equal((Isabella.Sub.ToString(), "Aprovado"), (Marlene.Sub.ToString(), "Aprovado"));
+        (await DecisoesAsync(versao.VersaoId)).Select(d => (d.ContaId, d.Resultado))
+            .Should().Equal((Isabella.ContaId.ToString(), "Aprovado"), (Marlene.ContaId.ToString(), "Aprovado"));
     }
 
     [Fact(DisplayName = "A versão sem acréscimo protegido exige uma aprovação, a da gestão")]

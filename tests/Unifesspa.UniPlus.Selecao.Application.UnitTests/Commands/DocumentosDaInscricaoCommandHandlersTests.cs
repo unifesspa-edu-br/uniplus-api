@@ -95,7 +95,7 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
             [Grupo] = [.. dependentes.Select(id => new OcorrenciaDeGrupoInscricao(id, new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal)))],
         };
         Inscricao inscricao = Inscricao.Reidratar(
-            Guid.CreateVersion7(), ProcessoId, Dono, "sub-1", "https://issuer", SituacaoInscricao.Rascunho, _versaoId, null, null, null,
+            Guid.CreateVersion7(), ProcessoId, Dono, "conta-1", "https://issuer", SituacaoInscricao.Rascunho, _versaoId, null, null, null,
             null, null, null, new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal),
             new Dictionary<string, System.Text.Json.JsonElement>(StringComparer.Ordinal), grupos, [],
             new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal), revisao: 3, DateTimeOffset.UnixEpoch, null);
@@ -103,11 +103,11 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         return inscricao;
     }
 
-    private static IUserContext Usuario(string sub = "sub-1")
+    private static IUserContext Usuario(string contaId = "conta-1")
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(Dono.Valor);
-        contexto.UserId.Returns(sub);
+        contexto.UserId.Returns(contaId);
         return contexto;
     }
 

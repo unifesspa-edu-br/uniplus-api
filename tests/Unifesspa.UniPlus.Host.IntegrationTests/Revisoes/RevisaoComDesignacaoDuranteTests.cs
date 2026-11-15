@@ -79,7 +79,7 @@ public sealed class RevisaoComDesignacaoDuranteTests : PedidosDeConcessaoTestBas
     }
 
     private Task<Guid> DesignarLeandroAsync() =>
-        ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Leandro.Sub.ToString(), TipoDeGovernanca.RepresentanteDoControlador);
+        ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Leandro.ContaId.ToString(), TipoDeGovernanca.RepresentanteDoControlador);
 
     // A designação vencida não revogada é reaproveitada pelo apoio de teste; sem prazo, ela volta a ser vigente.
     private async Task TornarLeandroRepresentanteVigenteAsync() =>
@@ -107,7 +107,7 @@ public sealed class RevisaoComDesignacaoDuranteTests : PedidosDeConcessaoTestBas
 
     private static JsonElement ItemSensivelDeLeandro(JsonElement revisao, Guid perfil) =>
         revisao.GetProperty("itens").EnumerateArray().Single(i =>
-            i.GetProperty("beneficiario").GetProperty("sub").GetString() == Leandro.Sub.ToString()
+            i.GetProperty("beneficiario").GetProperty("contaId").GetString() == Leandro.ContaId.ToString()
             && i.GetProperty("perfil").GetProperty("id").GetGuid() == perfil);
 
     private static async Task<string?> DecideAsync(Revisao revisao) =>

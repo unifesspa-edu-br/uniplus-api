@@ -79,13 +79,13 @@ public sealed class BonusEDesempateObrigatoriosTests
         DateTimeOffset agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         VersaoConfiguracao versao = processo.Publicar(
-            ProcessoConformeFactory.Dados(), bytes, "1.1", "canonical-json/sha256@v1", hash, "user-sub-1",
+            ProcessoConformeFactory.Dados(), bytes, "1.1", "canonical-json/sha256@v1", hash, "user-conta-1",
             new RelogioFixo(agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Value!;
         // O estado de quem foi publicado antes de a declaração existir: a coluna volta nula.
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.AplicaBonusRegional))!.SetValue(processo, null);
         processo.AbrirRetificacao(
             "Declara o bônus", versao, processo.IdentificadorLegivel, VersoesPublicadasDeTeste.SoAVigente(processo),
-            "user-sub-1", agora).IsSuccess.Should().BeTrue("abrir a sessão não exige a declaração");
+            "user-conta-1", agora).IsSuccess.Should().BeTrue("abrir a sessão não exige a declaração");
 
         Result<VersaoConfiguracao> semDeclarar = FecharSessao(processo, versao, bytes, hash, agora);
         semDeclarar.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
@@ -98,7 +98,7 @@ public sealed class BonusEDesempateObrigatoriosTests
     private static Result<VersaoConfiguracao> FecharSessao(
         ProcessoSeletivo processo, VersaoConfiguracao versao, byte[] bytes, string hash, DateTimeOffset agora) =>
         processo.FecharRetificacao(
-            ProcessoConformeFactory.Dados(), versao, bytes, "1.1", "canonical-json/sha256@v1", hash, "user-sub-1",
+            ProcessoConformeFactory.Dados(), versao, bytes, "1.1", "canonical-json/sha256@v1", hash, "user-conta-1",
             PrecondicaoIfMatch.Curinga, new RelogioFixo(agora.AddMinutes(1)),
             ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 

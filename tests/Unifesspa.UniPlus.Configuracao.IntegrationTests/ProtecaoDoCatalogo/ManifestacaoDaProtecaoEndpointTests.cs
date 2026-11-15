@@ -107,7 +107,7 @@ public sealed class ManifestacaoDaProtecaoEndpointTests : ManifestacaoDaProtecao
             Content = JsonContent.Create(new { cadastro = "FATO", itemId = Guid.NewGuid(), ciclo = 1, parecer = "ADEQUADA" }),
         };
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, Kevin.Sub);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, Kevin.ContaId);
 
         (await client.SendAsync(request)).StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }

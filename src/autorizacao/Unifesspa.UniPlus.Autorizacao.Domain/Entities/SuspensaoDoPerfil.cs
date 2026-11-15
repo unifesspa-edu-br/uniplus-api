@@ -22,7 +22,7 @@ public sealed class SuspensaoDoPerfil : EntityBase, IRegistroDaTrilhaDeContencao
 
     public string SuspensaPorEmissor { get; private init; } = string.Empty;
 
-    public string SuspensaPorSub { get; private init; } = string.Empty;
+    public string SuspensaPorContaId { get; private init; } = string.Empty;
 
     public string? SuspensaPorNome { get; private init; }
 
@@ -42,7 +42,7 @@ public sealed class SuspensaoDoPerfil : EntityBase, IRegistroDaTrilhaDeContencao
 
     public bool Aberta => RetomadaEm is null;
 
-    public Identidade SuspensaPor => new(SuspensaPorEmissor, SuspensaPorSub, SuspensaPorNome);
+    public Identidade SuspensaPor => new(SuspensaPorEmissor, SuspensaPorContaId, SuspensaPorNome);
 
     // Construtor de materialização do EF Core.
     private SuspensaoDoPerfil()
@@ -60,7 +60,7 @@ public sealed class SuspensaoDoPerfil : EntityBase, IRegistroDaTrilhaDeContencao
             PerfilId = perfilId,
             SuspensaEm = instante,
             SuspensaPorEmissor = autor.Emissor,
-            SuspensaPorSub = autor.Sub,
+            SuspensaPorContaId = autor.ContaId,
             SuspensaPorNome = autor.Nome,
             Papel = papel,
             Motivo = motivo,

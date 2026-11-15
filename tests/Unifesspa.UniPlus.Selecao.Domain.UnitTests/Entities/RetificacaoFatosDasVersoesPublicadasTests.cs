@@ -263,9 +263,9 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
         VersaoConfiguracao versaoBase = VersaoConfiguracao.Abrir(
             processo.Id, Encoding.UTF8.GetBytes("{}"), "1.1", "canonical-json/sha256@v1",
-            Guid.CreateVersion7(), new string('a', 64), "user-sub-1", Agora);
+            Guid.CreateVersion7(), new string('a', 64), "user-conta-1", Agora);
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            "Correção da coleta", versaoBase, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SemEixosCongelados(versoes), "user-sub-1", Agora);
+            "Correção da coleta", versaoBase, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SemEixosCongelados(versoes), "user-conta-1", Agora);
         abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
     }
 

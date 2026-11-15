@@ -34,7 +34,7 @@ internal sealed record ProcessoDivulgadoConferido(string Orgao, CertameDivulgado
 /// <param name="AtoCorrigidoId">O ato que este corrige, quando é errata ou retificação.</param>
 /// <param name="MotivoDaCorrecao">Motivo da correção, junto com <paramref name="AtoCorrigidoId"/>.</param>
 /// <param name="ItemDoEdital">A identidade do item do edital que o ato cumpre; nula no documento avulso.</param>
-/// <param name="PoliticaConfirmadaPorSub">Quem confirmou a política de divulgação; nulo quando ela não foi pedida.</param>
+/// <param name="PoliticaConfirmadaPorContaId">Quem confirmou a política de divulgação; nulo quando ela não foi pedida.</param>
 internal sealed record AtoAPublicar(
     Guid ProcessoSeletivoId,
     ProcessoDivulgadoConferido Processo,
@@ -47,7 +47,7 @@ internal sealed record AtoAPublicar(
     Guid? AtoCorrigidoId,
     string? MotivoDaCorrecao,
     Domain.ValueObjects.IdentidadeDoItemDoEdital? ItemDoEdital = null,
-    string? PoliticaConfirmadaPorSub = null);
+    string? PoliticaConfirmadaPorContaId = null);
 
 /// <summary>
 /// O que o documento avulso e a publicação de um item do edital têm em comum: confere que o processo
@@ -202,7 +202,7 @@ internal static class PublicacaoDoAtoDoProcesso
             ItemDoEdital = ato.ItemDoEdital,
             AtoCorrigidoId = ato.AtoCorrigidoId,
             MotivoDaCorrecao = ato.MotivoDaCorrecao,
-            PoliticaDeDivulgacaoConfirmadaPorSub = ato.PoliticaConfirmadaPorSub,
+            PoliticaDeDivulgacaoConfirmadaPorContaId = ato.PoliticaConfirmadaPorContaId,
         };
 
     private static NovoAtoDoProcesso IdentidadeDoNovoAto(AtoAPublicar ato, AtoDoProcesso versaoDivulgada) =>

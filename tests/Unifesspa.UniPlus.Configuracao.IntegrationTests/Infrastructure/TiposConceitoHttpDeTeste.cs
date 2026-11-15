@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
 /// Requisições ao catálogo de tipos de conceito pela porta pública. Os corpos são dicionários para o teste
-/// trocar ou tirar um campo sem montar outro tipo anônimo; sem <c>sub</c>, o autor é o administrador dos testes.
+/// trocar ou tirar um campo sem montar outro tipo anônimo; sem <c>contaId</c>, o autor é o administrador dos testes.
 /// </summary>
 internal static class TiposConceitoHttpDeTeste
 {
@@ -54,41 +54,41 @@ internal static class TiposConceitoHttpDeTeste
         return corpo;
     }
 
-    public static HttpRequestMessage Autenticada(HttpMethod metodo, string rota, string? sub = null)
+    public static HttpRequestMessage Autenticada(HttpMethod metodo, string rota, string? contaId = null)
     {
         HttpRequestMessage requisicao = new(metodo, new Uri(rota, UriKind.Relative));
         requisicao.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
         requisicao.Headers.Add(TestAuthHandler.RolesHeader, "plataforma-admin");
-        if (sub is not null)
+        if (contaId is not null)
         {
-            requisicao.Headers.Add(TestAuthHandler.UserIdHeader, sub);
+            requisicao.Headers.Add(TestAuthHandler.UserIdHeader, contaId);
         }
 
         return requisicao;
     }
 
-    public static async Task<HttpResponseMessage> PostarAsync(HttpClient client, object corpo, string? sub = null, string? chave = null)
+    public static async Task<HttpResponseMessage> PostarAsync(HttpClient client, object corpo, string? contaId = null, string? chave = null)
     {
         ArgumentNullException.ThrowIfNull(client);
-        using HttpRequestMessage requisicao = Autenticada(HttpMethod.Post, Admin, sub);
+        using HttpRequestMessage requisicao = Autenticada(HttpMethod.Post, Admin, contaId);
         requisicao.Headers.Add("Idempotency-Key", chave ?? Guid.NewGuid().ToString());
         requisicao.Content = JsonContent.Create(corpo);
         return await client.SendAsync(requisicao);
     }
 
-    public static async Task<HttpResponseMessage> AtualizarAsync(HttpClient client, Guid id, object corpo, string? sub = null)
+    public static async Task<HttpResponseMessage> AtualizarAsync(HttpClient client, Guid id, object corpo, string? contaId = null)
     {
         ArgumentNullException.ThrowIfNull(client);
-        using HttpRequestMessage requisicao = Autenticada(HttpMethod.Put, $"{Admin}/{id}", sub);
+        using HttpRequestMessage requisicao = Autenticada(HttpMethod.Put, $"{Admin}/{id}", contaId);
         requisicao.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
         requisicao.Content = JsonContent.Create(corpo);
         return await client.SendAsync(requisicao);
     }
 
-    public static async Task<HttpResponseMessage> DesativarAsync(HttpClient client, Guid id, string? sub = null)
+    public static async Task<HttpResponseMessage> DesativarAsync(HttpClient client, Guid id, string? contaId = null)
     {
         ArgumentNullException.ThrowIfNull(client);
-        using HttpRequestMessage requisicao = Autenticada(HttpMethod.Delete, $"{Admin}/{id}", sub);
+        using HttpRequestMessage requisicao = Autenticada(HttpMethod.Delete, $"{Admin}/{id}", contaId);
         return await client.SendAsync(requisicao);
     }
 

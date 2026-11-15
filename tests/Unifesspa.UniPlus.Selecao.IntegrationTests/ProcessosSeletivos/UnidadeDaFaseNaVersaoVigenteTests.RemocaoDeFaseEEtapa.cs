@@ -192,7 +192,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
     {
         await using UniPlusDbContext semeadura = _fixture.CreateDbContext();
         semeadura.GeracoesDeEnvioAoInep.Add(GeracaoDeEnvioAoInep.Registrar(
-            processoId, etapaId, "2026", "INEP_ENEM_ENVIO", "v1", new string('d', 64), "sub-admin", DateTimeOffset.UtcNow, 0));
+            processoId, etapaId, "2026", "INEP_ENEM_ENVIO", "v1", new string('d', 64), "conta-admin", DateTimeOffset.UtcNow, 0));
         await semeadura.SaveChangesAsync();
     }
 }

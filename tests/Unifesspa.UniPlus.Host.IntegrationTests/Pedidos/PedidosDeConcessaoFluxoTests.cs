@@ -105,7 +105,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         JsonElement protecao = await CorpoAsync(await EnviarAsync(marlene, HttpMethod.Post, $"{Rota}/{id}/aprovacoes"), HttpStatusCode.OK);
 
         protecao.GetProperty("situacao").GetString().Should().Be("aprovado");
-        (await ConcessoesAsync(Leandro, perfil)).Should().ContainSingle().Which.ConcedidaPorSub.Should().Be(Marlene.Sub.ToString());
+        (await ConcessoesAsync(Leandro, perfil)).Should().ContainSingle().Which.ConcedidaPorContaId.Should().Be(Marlene.ContaId.ToString());
         JsonElement[] decisoes = [.. protecao.GetProperty("decisoes").EnumerateArray()];
         decisoes.Select(d => d.GetProperty("etapa").GetString()).Should().Equal("gestor", "protecao_de_dados");
         decisoes[0].GetProperty("sensibilidadeAvaliada").GetString().Should().Be("sensivel");
@@ -225,7 +225,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         JsonElement aceito = await CorpoAsync(await AceitarAsync(leandro, id), HttpStatusCode.OK);
         aceito.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
         aceito.GetProperty("beneficiario").GetProperty("nome").GetString().Should().Be(Leandro.Nome);
-        aceito.GetProperty("beneficiario").GetProperty("identidade").GetProperty("sub").GetString().Should().Be(Leandro.Sub.ToString());
+        aceito.GetProperty("beneficiario").GetProperty("identidade").GetProperty("contaId").GetString().Should().Be(Leandro.ContaId.ToString());
         (await ConcessoesAsync(Leandro, perfil)).Should().BeEmpty();
 
         return id;
@@ -236,7 +236,7 @@ public sealed class PedidosDeConcessaoFluxoTests : PedidosDeConcessaoTestBase
         concessao.OrigemTipo.Should().Be(Autorizacao.Domain.Enums.TipoDeOrigem.Pedido);
         concessao.OrigemId.Should().Be(pedidoId);
         concessao.UnidadeId.Should().Be(unidade);
-        concessao.ConcedidaPorSub.Should().Be(Diogo.Sub.ToString());
+        concessao.ConcedidaPorContaId.Should().Be(Diogo.ContaId.ToString());
         concessao.BeneficiarioNome.Should().Be(Leandro.Nome);
         concessao.ConcedidaPorNome.Should().Be(Diogo.Nome);
     }

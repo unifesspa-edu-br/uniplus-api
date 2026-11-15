@@ -71,7 +71,7 @@ public sealed class RascunhoSobreviveAoAtoRecusadoTests
         RascunhoDePublicacao sobrevivente = rascunhos.Should().ContainSingle(
             "a publicação foi recusada e o operador precisa reencontrar a transcrição que fez").Subject;
 
-        sobrevivente.UsuarioSub.Should().Be(Operador);
+        sobrevivente.UsuarioContaId.Should().Be(Operador);
         sobrevivente.Conteudo.Should().Contain(
             "Fulano de Tal",
             "o nome que o operador transcreveu do Diário Oficial é o que ele não pode ter de digitar de novo");
@@ -156,7 +156,7 @@ public sealed class RascunhoSobreviveAoAtoRecusadoTests
             algoritmoHash: "SHA-256",
             atoCriadorId: Guid.CreateVersion7(),
             atoCriadorHash: new string('a', 64),
-            atorUsuarioSub: "semeadura",
+            atorUsuarioContaId: "semeadura",
             instante: DateTimeOffset.UtcNow));
 
         await db.SaveChangesAsync();

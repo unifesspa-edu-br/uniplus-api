@@ -108,7 +108,7 @@ public sealed class AtoDaProtecaoDoCatalogoRepository : IAtoDaProtecaoDoCatalogo
 
     private static IQueryable<AtoDaProtecaoDoCatalogo> FiltrarPorAutor(
         IQueryable<AtoDaProtecaoDoCatalogo> query, FiltroDasDecisoesDaProtecao filtro) =>
-        filtro.Autor is { } autor ? query.Where(a => a.AtorEmissor == autor.Emissor && a.AtorSub == autor.Sub) : query;
+        filtro.Autor is { } autor ? query.Where(a => a.AtorEmissor == autor.Emissor && a.AtorContaId == autor.ContaId) : query;
 
     // A busca compara a forma normalizada, sem acento e em minúsculas, do nome e do código do item.
     private static IQueryable<AtoDaProtecaoDoCatalogo> FiltrarPorBusca(IQueryable<AtoDaProtecaoDoCatalogo> query, string? termo)
@@ -139,6 +139,6 @@ public sealed class AtoDaProtecaoDoCatalogoRepository : IAtoDaProtecaoDoCatalogo
         filtro.De?.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty,
         filtro.Ate?.ToString("O", CultureInfo.InvariantCulture) ?? string.Empty,
         termo ?? string.Empty,
-        filtro.Autor is { } autor ? $"{autor.Emissor}\u001f{autor.Sub}" : string.Empty,
+        filtro.Autor is { } autor ? $"{autor.Emissor}\u001f{autor.ContaId}" : string.Empty,
     ];
 }

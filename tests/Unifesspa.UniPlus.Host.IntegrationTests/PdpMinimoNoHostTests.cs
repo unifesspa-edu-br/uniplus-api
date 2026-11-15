@@ -71,9 +71,9 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
     // As personas compartilham o banco da coleção: cada teste começa sem concessão alguma.
     public async Task InitializeAsync()
     {
-        foreach (string sub in new[] { Leandro, Betina, Diogo })
+        foreach (string contaId in new[] { Leandro, Betina, Diogo })
         {
-            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, contaId);
         }
     }
 
@@ -214,7 +214,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
             .GetRequiredService<IConcessoesAtivasDoSujeito>()
             .ListarAsync(UsuarioRef.From(Emissor, Leandro).Value!, CancellationToken.None);
         Guid[] esperada = [.. (await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes
-            .Where(c => c.BeneficiarioSub == Leandro).ToListAsync())
+            .Where(c => c.BeneficiarioContaId == Leandro).ToListAsync())
             .OrderBy(c => c.ConcedidaEm).ThenBy(c => c.Id).Select(c => c.Id)];
 
         lidas.Select(c => c.ConcessaoId).Should().Equal(esperada);
@@ -224,7 +224,7 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
     public async Task Verificar_TokenSemJti_DaIdentidadeIncompleta()
     {
         using IServiceScope scope = _fixture.Factory.Services.CreateScope();
-        DefinirPrincipal(scope, new Claim("iss", Emissor), new Claim("sub", "sub-opaco-1"));
+        DefinirPrincipal(scope, new Claim("iss", Emissor), new Claim("sub", "conta-opaco-1"));
 
         ResultadoDoAcesso resultado = await scope.ServiceProvider
             .GetRequiredService<IVerificadorDeAcesso>()
@@ -242,21 +242,21 @@ public sealed class PdpMinimoNoHostTests : IAsyncLifetime
         Result<AuthorizationSubject> sujeito = await ResolverSujeito(
             scope,
             new Claim("iss", Emissor),
-            new Claim("sub", "sub-opaco-1"));
+            new Claim("sub", "conta-opaco-1"));
 
         sujeito.IsFailure.Should().BeTrue();
     }
 
     // A decisão sai do serviço real, e o registro é o que o verificador gravaria para ela. Cada decisão abre o próprio escopo, como cada requisição.
     private async Task<(AuthorizationDecision Decisao, RegistroDecisaoAcesso Registro)> Decidir(
-        string sub,
+        string contaId,
         PermissionRequirement requisito,
         ResourceContext resource,
         DateTimeOffset? dataAcesso = null)
     {
         using IServiceScope scope = _fixture.Factory.Services.CreateScope();
         Result<AuthorizationSubject> sujeito = await ResolverSujeito(
-            scope, new Claim("iss", Emissor), new Claim("sub", sub), new Claim("jti", "jti-1"));
+            scope, new Claim("iss", Emissor), new Claim("sub", contaId), new Claim("jti", "jti-1"));
         sujeito.IsSuccess.Should().BeTrue();
 
         DateTimeOffset instante = dataAcesso ?? Agora();

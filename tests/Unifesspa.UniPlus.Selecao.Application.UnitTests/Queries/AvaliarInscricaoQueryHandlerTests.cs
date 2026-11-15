@@ -53,7 +53,7 @@ public sealed class AvaliarInscricaoQueryHandlerTests
         (VersaoConfiguracao versao, GrafoConfiguracao grafoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
         GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
             grafoBase, OfertasDeTeste.Distribuicao(OfertaA, "AC"), OfertasDeTeste.Distribuicao(OfertaB, "AC", "AC_FEM"));
-        Inscricao inscricao = Inscricao.Iniciar(ProcessoId, cpf, "sub-1", "https://issuer", versao.Id).Value!;
+        Inscricao inscricao = Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
         if (gravada is { } oferta)
         {
             inscricao.Salvar(
@@ -68,7 +68,7 @@ public sealed class AvaliarInscricaoQueryHandlerTests
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
         IUserContext usuario = Substitute.For<IUserContext>();
         usuario.Cpf.Returns(cpf.Valor);
-        usuario.UserId.Returns("sub-1");
+        usuario.UserId.Returns("conta-1");
 
         AvaliacaoDaInscricaoRequest corpo = new(
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)

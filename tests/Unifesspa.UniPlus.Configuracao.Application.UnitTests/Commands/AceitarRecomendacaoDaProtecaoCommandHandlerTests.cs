@@ -144,7 +144,7 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
             && a.ItemId == laudo.Id
             && a.ClassificacaoProtecao == ClassificacaoDeProtecao.Sensivel
             && a.ClassificacaoRecomendada == null
-            && a.AtorSub == Isabella
+            && a.AtorContaId == Isabella
             && a.AtorNome == "Isabella Figueiredo"));
     }
 

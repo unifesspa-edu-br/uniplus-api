@@ -18,7 +18,7 @@ internal sealed class PapeisDeTeste(List<string> travas, params Identidade[] com
 
     public Task TravarAsync(IEnumerable<Identidade> pessoas, CancellationToken cancellationToken = default)
     {
-        travas.AddRange(pessoas.Select(static p => "pessoa:" + p.Sub));
+        travas.AddRange(pessoas.Select(static p => "pessoa:" + p.ContaId));
         return Task.CompletedTask;
     }
 

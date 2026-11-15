@@ -316,7 +316,7 @@ public sealed class SolicitarAprovacaoDaProtecaoCommandHandlerTests
             .Select(static c => (AtoDaProtecaoDoCatalogo)c.GetArguments()[0]!)];
 
     private static bool EhASolicitacaoDaIsabella(AtoDaProtecaoDoCatalogo ato) =>
-        (ato.Ato, ato.AtorSub, ato.AtorEmissor, ato.AtorNome, ato.Instante) == (AtoDaProtecao.Solicitacao, Isabella, Emissor, "Isabella Figueiredo", Agora)
+        (ato.Ato, ato.AtorContaId, ato.AtorEmissor, ato.AtorNome, ato.Instante) == (AtoDaProtecao.Solicitacao, Isabella, Emissor, "Isabella Figueiredo", Agora)
         && ato.Justificativa is null && ato.ClassificacaoRecomendada is null;
 
     [Fact(DisplayName = "A solicitação recusada não registra ato")]

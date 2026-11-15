@@ -61,7 +61,7 @@ public sealed class ConfirmacaoDaInstalacaoTests : InstalacaoTestBase
         await ConferirRecusaAsync(resposta, "codigo_invalido");
         JsonElement situacao = await LerAsync(paulo, $"{Rota}/{id}");
         (situacao.GetProperty("tentativasRestantes").GetInt32(), situacao.GetProperty("situacao").GetString()).Should().Be((Instalacao.MaximoDeTentativas, "aguardando_codigo"));
-        (await ListarTentativasSemPendenciaAsync()).Should().Contain(t => t.Autor == Manoel.Sub.ToString() && t.Resultado == "sem_pendencia");
+        (await ListarTentativasSemPendenciaAsync()).Should().Contain(t => t.Autor == Manoel.ContaId.ToString() && t.Resultado == "sem_pendencia");
         (await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/confirmacao", new { codigo = codigoDePaulo })).StatusCode
             .Should().Be(HttpStatusCode.NoContent, "o código de Paulo continua valendo");
     }
@@ -96,7 +96,7 @@ public sealed class ConfirmacaoDaInstalacaoTests : InstalacaoTestBase
 
         await ConferirRecusaAsync(await ConfirmarAsync(paulo, antigo), "codigo_invalido");
         (await ConfirmarAsync(paulo, novo)).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await ListarGestoresAtivosAsync()).Should().BeEquivalentTo(Diogo.Sub.ToString(), Isabella.Sub.ToString());
+        (await ListarGestoresAtivosAsync()).Should().BeEquivalentTo(Diogo.ContaId.ToString(), Isabella.ContaId.ToString());
     }
 
     [Fact(DisplayName = "Outra pessoa com o papel não reenvia o código da instalação alheia")]

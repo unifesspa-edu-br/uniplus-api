@@ -108,7 +108,7 @@ public sealed class AtendimentoDaProvidenciaTests
         await _cenario.Concessoes.DidNotReceiveWithAnyArgs().ObterParaAlterarAsync(default);
     }
 
-    [Fact(DisplayName = "Sem emissor e sub no token, o atendimento é recusado antes de ler a providência")]
+    [Fact(DisplayName = "Sem emissor e conta no token, o atendimento é recusado antes de ler a providência")]
     public async Task Atender_AutorNaoIdentificado()
     {
         (Result<ProvidenciaDto> resposta, _) = await ProvidenciaCommandHandler.Handle(

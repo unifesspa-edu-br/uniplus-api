@@ -56,7 +56,7 @@ public static class PerfisDeTeste
     {
         ArgumentNullException.ThrowIfNull(pessoa);
 
-        return new AutoriaDaVersao(pessoa, $"{pessoa.Sub}@unifesspa.edu.br", temConcessao);
+        return new AutoriaDaVersao(pessoa, $"{pessoa.ContaId}@unifesspa.edu.br", temConcessao);
     }
 
     public static ConteudoDaVersao Conteudo(

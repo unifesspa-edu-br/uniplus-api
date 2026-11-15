@@ -512,7 +512,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             "canonical-json/sha256@v1",
             Guid.CreateVersion7(),
             new string('a', 64),
-            "user-sub-123",
+            "user-conta-123",
             Relogio.GetUtcNow());
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();

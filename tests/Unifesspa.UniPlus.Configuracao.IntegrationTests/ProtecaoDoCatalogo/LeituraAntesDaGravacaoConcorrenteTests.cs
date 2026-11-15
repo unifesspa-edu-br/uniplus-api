@@ -124,9 +124,9 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
         trava.Contexto.Database.ExecuteSqlInterpolatedAsync(
             $"""
             INSERT INTO configuracao.manifestacoes_da_protecao
-                (id, cadastro, item_id, ciclo, parecer, texto, substitui_id, autor_emissor, autor_sub, autor_nome, instante)
+                (id, cadastro, item_id, ciclo, parecer, texto, substitui_id, autor_emissor, autor_conta_id, autor_nome, instante)
             VALUES ({Guid.CreateVersion7()}, {cadastro}, {id}, 1, 'INADEQUADA', 'O dado é sensível.', NULL,
-                    {TestAuthHandler.DefaultIssuer}, {Kevin.Sub}, {Kevin.Nome}, now())
+                    {TestAuthHandler.DefaultIssuer}, {Kevin.ContaId}, {Kevin.Nome}, now())
             """);
 
     private static Task<int> InserirAprovacao(TravaDaLinhaDoItem trava, string cadastro, Guid id) =>
@@ -134,10 +134,10 @@ public sealed class LeituraAntesDaGravacaoConcorrenteTests : ManifestacaoDaProte
             $"""
             INSERT INTO configuracao.atos_da_protecao_do_catalogo
                 (id, cadastro, item_id, item_codigo, item_nome, ato, classificacao_protecao, hipotese_legal, finalidade_tratamento,
-                 ciclo, classificacao_recomendada, justificativa, diante_de_manifestacao_desfavoravel, ator_emissor, ator_sub, ator_nome, instante)
+                 ciclo, classificacao_recomendada, justificativa, diante_de_manifestacao_desfavoravel, ator_emissor, ator_conta_id, ator_nome, instante)
             VALUES ({Guid.CreateVersion7()}, {cadastro}, {id}, 'CONTROLE', 'Controle', 'APROVACAO', {Classificacao(cadastro)},
                     'CUMPRIMENTO_OBRIGACAO_LEGAL', {Finalidade}, 1, NULL, NULL, false,
-                    {TestAuthHandler.DefaultIssuer}, {Betina.Sub}, {Betina.Nome}, now())
+                    {TestAuthHandler.DefaultIssuer}, {Betina.ContaId}, {Betina.Nome}, now())
             """);
 
     private static async Task DeveSerConflitoSemNovaTentativaAsync(HttpResponseMessage resposta, string codigo)

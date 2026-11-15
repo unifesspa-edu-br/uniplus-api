@@ -52,13 +52,13 @@ public sealed class ListarDecisoesDaProtecaoQueryHandlerTests
             null, null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Só as minhas restringe ao emissor e ao sub de quem consulta")]
+    [Fact(DisplayName = "Só as minhas restringe ao emissor e à conta de quem consulta")]
     public async Task Handle_Minhas_RestringeAoAutor()
     {
         await ListarAsync(Consulta(minhas: true));
 
         await _atos.Received(1).ListarDecisoesAsync(
-            Arg.Is<FiltroDasDecisoesDaProtecao>(f => f.Autor != null && f.Autor.Value.Emissor == Emissor && f.Autor.Value.Sub == Isabella),
+            Arg.Is<FiltroDasDecisoesDaProtecao>(f => f.Autor != null && f.Autor.Value.Emissor == Emissor && f.Autor.Value.ContaId == Isabella),
             null, null, 20, PaginationDirection.Next, Arg.Any<CancellationToken>());
     }
 
@@ -85,7 +85,7 @@ public sealed class ListarDecisoesDaProtecaoQueryHandlerTests
         resultado.Errors.Single(e => e.Field == "de").Error.Code.Should().Be(ProtecaoDoCatalogoErrorCodes.PeriodoInvalido);
     }
 
-    [Fact(DisplayName = "A decisão sai com o item e o nome de quem decidiu, sem o emissor nem o sub")]
+    [Fact(DisplayName = "A decisão sai com o item e o nome de quem decidiu, sem o emissor nem a conta")]
     public async Task Handle_MapeiaADecisao()
     {
         TipoDocumento tipo = NovoTipo();
@@ -101,6 +101,6 @@ public sealed class ListarDecisoesDaProtecaoQueryHandlerTests
             "TIPO_DOCUMENTO", tipo.Id, "LAUDO_MEDICO_COMPLEMENTAR", "Laudo médico complementar", "REPROVACAO", Agora, "Betina Marina Valentina das Neves", 1,
             "INTERNO", "CUMPRIMENTO_OBRIGACAO_LEGAL", Finalidade, null, "Dado desnecessário.", false));
         resultado.Value.Proximo.Should().Be(("proximo", ato.Id));
-        typeof(DecisaoDaProtecaoDto).GetProperties().Select(p => p.Name).Should().NotContain(["AtorSub", "AtorEmissor", "Sub", "Emissor"]);
+        typeof(DecisaoDaProtecaoDto).GetProperties().Select(p => p.Name).Should().NotContain(["AtorContaId", "AtorEmissor", "ContaId", "Emissor"]);
     }
 }

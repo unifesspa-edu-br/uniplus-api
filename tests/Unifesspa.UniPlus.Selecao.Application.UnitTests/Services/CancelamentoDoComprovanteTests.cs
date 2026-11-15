@@ -24,8 +24,8 @@ public sealed class CancelamentoDoComprovanteTests
     private static readonly DateTimeOffset CanceladaEm = new(2026, 11, 8, 1, 32, 5, TimeSpan.Zero);
 
     private static Inscricao Cancelada(string? motivo) => Inscricao.Reidratar(
-        Guid.CreateVersion7(), Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", SituacaoInscricao.Cancelada,
-        Guid.CreateVersion7(), null, null, "000123", CanceladaEm, "sub-1", motivo,
+        Guid.CreateVersion7(), Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", SituacaoInscricao.Cancelada,
+        Guid.CreateVersion7(), null, null, "000123", CanceladaEm, "conta-1", motivo,
         new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
         new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 2, CanceladaEm, null);
 

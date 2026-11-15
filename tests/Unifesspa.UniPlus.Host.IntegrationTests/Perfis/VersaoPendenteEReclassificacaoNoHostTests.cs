@@ -38,7 +38,7 @@ public sealed class VersaoPendenteEReclassificacaoNoHostTests : ReclassificacaoN
 
         (await ReclassificacoesAsync(vigente.PerfilId)).Should().Be(1);
         await ConcessoesDeTeste.ConcederAsync(
-            Fixture.Factory.Services, Betina.Sub.ToString(), vigente.PerfilId, EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()), email: Betina.Email);
+            Fixture.Factory.Services, Betina.ContaId.ToString(), vigente.PerfilId, EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()), email: Betina.Email);
         (await PermissoesAsync(Betina, vigente.PerfilId)).Should().Equal(Consultar);
         (await FilaDaProtecaoAsync()).Should().Contain((await ReclassificacaoAsync(vigente.PerfilId, Sensivel)).ToString());
     }

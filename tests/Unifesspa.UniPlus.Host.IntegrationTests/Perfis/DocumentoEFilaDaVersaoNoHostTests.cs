@@ -78,7 +78,7 @@ public sealed class DocumentoEFilaDaVersaoNoHostTests : AprovacaoDaVersaoNoHostT
         daFilaDeOutraPessoa.GetProperty("versao").GetProperty("propostaPorQuemLe").GetBoolean().Should().BeFalse();
         (await PerfilAsync(diogo, proposta.PerfilId)).GetProperty("versaoPendente").GetProperty("propostaPorQuemLe").GetBoolean().Should().BeTrue();
         (await PerfilAsync(isabella, proposta.PerfilId)).GetProperty("versaoPendente").GetProperty("propostaPorQuemLe").GetBoolean().Should().BeFalse();
-        daFilaDoAutor.GetRawText().Should().NotContain(Diogo.Sub.ToString());
+        daFilaDoAutor.GetRawText().Should().NotContain(Diogo.ContaId.ToString());
     }
 
     [Fact(DisplayName = "A fila recusa quem não tem a permissão da etapa e a etapa que não existe")]

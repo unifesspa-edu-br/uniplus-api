@@ -38,7 +38,7 @@ public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoH
     public async Task InitializeAsync()
     {
         await ResetarAsync();
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Leandro.Sub.ToString());
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Leandro.ContaId.ToString());
     }
 
     public Task DisposeAsync() => Task.CompletedTask;
@@ -82,7 +82,7 @@ public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoH
         using HttpClient gestor = await GestorAsync();
         Guid perfil = await PerfilComConcessaoAsync(gestor, Catalogo, Motivos);
         await ConcessoesDeTeste.ConcederAsync(
-            Fixture.Factory.Services, Betina.Sub.ToString(), perfil, EscopoDaConcessao.DaInstituicao(), email: Betina.Email);
+            Fixture.Factory.Services, Betina.ContaId.ToString(), perfil, EscopoDaConcessao.DaInstituicao(), email: Betina.Email);
         using HttpClient leandro = Cliente(Leandro);
 
         Envio versao2 = await CriarVersaoAsync(gestor, perfil, Nome(), Catalogo, Motivos);
@@ -118,7 +118,7 @@ public sealed class DecisaoPelaVersaoDaConcessaoNoHostTests : VersoesDoPerfilNoH
         Envio envio = await CriarPerfilAsync(gestor, permissoes);
         await EnviarEVerificarPelaFilaAsync(gestor, envio);
         await ConcessoesDeTeste.ConcederAsync(
-            Fixture.Factory.Services, Leandro.Sub.ToString(), envio.PerfilId, EscopoDaConcessao.DaInstituicao(), email: Leandro.Email);
+            Fixture.Factory.Services, Leandro.ContaId.ToString(), envio.PerfilId, EscopoDaConcessao.DaInstituicao(), email: Leandro.Email);
 
         return envio.PerfilId;
     }

@@ -48,7 +48,7 @@ public sealed class DevolucaoPorTermoExigidoNoHostTests : PedidosDeConcessaoTest
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
         IServiceProvider servicos = escopo.ServiceProvider;
         Perfil perfil = (await servicos.GetRequiredService<IConcessaoRepository>().ObterParaConcederAsync(perfilId))!;
-        PessoaNoToken betina = new(new Identidade(TestAuthHandler.DefaultIssuer, Betina.Sub.ToString(), Betina.Nome), Betina.Nome, Betina.Email, true);
+        PessoaNoToken betina = new(new Identidade(TestAuthHandler.DefaultIssuer, Betina.ContaId.ToString(), Betina.Nome), Betina.Nome, Betina.Email, true);
         PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
             new PartesDoPedido(betina, null), perfil, EscopoDaConcessao.DaUnidade(unidade), new DeclaracaoDoPedido(Justificativa),
             servicos.GetRequiredService<IDominiosInstitucionais>(), servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>(), DateTimeOffset.UtcNow).Value!;

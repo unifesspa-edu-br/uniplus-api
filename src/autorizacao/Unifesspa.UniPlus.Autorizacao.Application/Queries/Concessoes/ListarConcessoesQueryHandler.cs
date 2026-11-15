@@ -34,7 +34,7 @@ public static class ListarConcessoesQueryHandler
         ArgumentNullException.ThrowIfNull(timeProvider);
 
         DateTimeOffset agora = timeProvider.GetUtcNow();
-        FiltroDeConcessoes filtro = new(query.PessoaEmissor, query.PessoaSub, query.UnidadeId, query.PerfilId, query.Situacao, agora);
+        FiltroDeConcessoes filtro = new(query.PessoaEmissor, query.PessoaContaId, query.UnidadeId, query.PerfilId, query.Situacao, agora);
         (IReadOnlyList<ConcessaoComPerfil> itens, Guid? anterior, Guid? proximo) = await repository
             .ListarPaginadoAsync(filtro, query.AfterId, query.Limit, query.Direction, cancellationToken)
             .ConfigureAwait(false);

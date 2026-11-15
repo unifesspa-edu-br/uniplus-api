@@ -29,7 +29,7 @@ public sealed class ObterSnapshotVigenteQueryHandlerTests
             algoritmoHash: "canonical-json/sha256@v1",
             atoCriadorId: Guid.CreateVersion7(),
             atoCriadorHash: HashFixo,
-            atorUsuarioSub: "user-sub-123",
+            atorUsuarioContaId: "user-conta-123",
             instante: vigenteAPartirDe);
 
     [Fact(DisplayName = "Instante omitido usa o relógio injetado — o seletor jamais lê um relógio por dentro (ADR-0068)")]

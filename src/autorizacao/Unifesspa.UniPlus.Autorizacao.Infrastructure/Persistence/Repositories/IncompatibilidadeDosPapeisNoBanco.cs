@@ -8,11 +8,11 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
-/// A trava por pessoa como trava consultiva da transação, uma por par emissor e <c>sub</c>, e a conferência dos papéis
+/// A trava por pessoa como trava consultiva da transação, uma por par emissor e <c>contaId</c>, e a conferência dos papéis
 /// incompatíveis sobre as concessões vigentes da instituição.
 /// </summary>
 /// <remarks>
-/// A chave é o resumo de 64 bits do par, separado por quebra de linha, que nenhum emissor nem <c>sub</c> contém. Duas
+/// A chave é o resumo de 64 bits do par, separado por quebra de linha, que nenhum emissor nem <c>contaId</c> contém. Duas
 /// pessoas com o mesmo resumo só se serializam entre si, sem afetar a correção.
 /// </remarks>
 public sealed class IncompatibilidadeDosPapeisNoBanco : IIncompatibilidadeDosPapeis
@@ -29,11 +29,11 @@ public sealed class IncompatibilidadeDosPapeisNoBanco : IIncompatibilidadeDosPap
     {
         ArgumentNullException.ThrowIfNull(pessoas);
 
-        foreach (Identidade pessoa in pessoas.Distinct().OrderBy(static p => p.Emissor, StringComparer.Ordinal).ThenBy(static p => p.Sub, StringComparer.Ordinal))
+        foreach (Identidade pessoa in pessoas.Distinct().OrderBy(static p => p.Emissor, StringComparer.Ordinal).ThenBy(static p => p.ContaId, StringComparer.Ordinal))
         {
             await _context.Database.ExecuteSqlRawAsync(
                 "SELECT pg_advisory_xact_lock(hashtextextended('autorizacao.pessoa:' || {0} || chr(10) || {1}, 0))",
-                [pessoa.Emissor, pessoa.Sub],
+                [pessoa.Emissor, pessoa.ContaId],
                 cancellationToken).ConfigureAwait(false);
         }
     }
@@ -48,7 +48,7 @@ public sealed class IncompatibilidadeDosPapeisNoBanco : IIncompatibilidadeDosPap
                 .AsNoTracking()
                 .VigentesDaInstituicao(agora)
                 .AnyAsync(
-                    c => c.PerfilId == incompativel && c.BeneficiarioEmissor == pessoa.Emissor && c.BeneficiarioSub == pessoa.Sub,
+                    c => c.PerfilId == incompativel && c.BeneficiarioEmissor == pessoa.Emissor && c.BeneficiarioContaId == pessoa.ContaId,
                     cancellationToken)
             : Task.FromResult(false);
     }

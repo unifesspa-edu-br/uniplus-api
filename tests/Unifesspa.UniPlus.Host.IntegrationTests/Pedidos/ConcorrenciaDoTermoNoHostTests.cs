@@ -151,11 +151,11 @@ public sealed class ConcorrenciaDoTermoNoHostTests : TermoNoHostTestBase
         (TermoDeResponsabilidade termo, VersaoDoTermo? vigente) = await termos.ObterParaPublicarAsync();
         VersaoDoTermo nova = termo.Publicar(
             ConteudoDoTermo.Criar(TermoNoHostDeTeste.Texto("publicada na transação retida"), TermoNoHostDeTeste.Ato).Value!,
-            new Identidade(TestAuthHandler.DefaultIssuer, Diogo.Sub.ToString()), vigente, vigente?.Id, DateTimeOffset.UtcNow).Value!;
+            new Identidade(TestAuthHandler.DefaultIssuer, Diogo.ContaId.ToString()), vigente, vigente?.Id, DateTimeOffset.UtcNow).Value!;
         await termos.AdicionarVersaoAsync(nova);
         await servicos.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
     }
 
     private static PessoaNoToken PessoaDe(Persona persona) =>
-        new(new Identidade(TestAuthHandler.DefaultIssuer, persona.Sub.ToString(), persona.Nome), persona.Nome, persona.Email, true);
+        new(new Identidade(TestAuthHandler.DefaultIssuer, persona.ContaId.ToString(), persona.Nome), persona.Nome, persona.Email, true);
 }

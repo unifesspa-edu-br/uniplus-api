@@ -64,7 +64,7 @@ public sealed class HttpAuthorizationSubjectResolver : IAuthorizationSubjectReso
         if (string.IsNullOrWhiteSpace(userContext.UserId))
         {
             return Falha(
-                AuthorizationErrorCodes.SujeitoSubjectAusente,
+                AuthorizationErrorCodes.SujeitoContaIdAusente,
                 "Token autenticado sem o subject (sub) que identifica o sujeito.");
         }
 

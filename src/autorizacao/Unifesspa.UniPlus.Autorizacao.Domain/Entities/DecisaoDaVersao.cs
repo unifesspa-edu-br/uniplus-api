@@ -24,7 +24,7 @@ public sealed class DecisaoDaVersao : IForensicEntity
 
     public string DecisorEmissor { get; private set; } = string.Empty;
 
-    public string DecisorSub { get; private set; } = string.Empty;
+    public string DecisorContaId { get; private set; } = string.Empty;
 
     public string? DecisorNome { get; private set; }
 
@@ -43,7 +43,7 @@ public sealed class DecisaoDaVersao : IForensicEntity
 
     public DateTimeOffset Instante { get; private init; }
 
-    public Identidade Decisor => new(DecisorEmissor, DecisorSub, DecisorNome);
+    public Identidade Decisor => new(DecisorEmissor, DecisorContaId, DecisorNome);
 
     // Construtor de materialização do EF Core.
     private DecisaoDaVersao()
@@ -70,7 +70,7 @@ public sealed class DecisaoDaVersao : IForensicEntity
     private void AtribuirDecisor(AutoriaDaVersao autoria)
     {
         DecisorEmissor = autoria.Pessoa.Emissor;
-        DecisorSub = autoria.Pessoa.Sub;
+        DecisorContaId = autoria.Pessoa.ContaId;
         DecisorNome = autoria.Pessoa.Nome;
         DecisorEmail = autoria.Email;
         DecisorTemConcessao = autoria.TemConcessao;

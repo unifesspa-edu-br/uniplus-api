@@ -8,11 +8,11 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 /// <param name="De">A data inicial (inclusive), no fuso institucional (America/Belem).</param>
 /// <param name="Ate">A data final (inclusive), no fuso institucional (America/Belem).</param>
 /// <param name="Busca">O trecho do nome ou do código do item; sem distinguir maiúsculas nem acentos.</param>
-/// <param name="Autor">Quando informado, só as decisões de quem agiu com este emissor e sub.</param>
+/// <param name="Autor">Quando informado, só as decisões de quem agiu com este emissor e conta.</param>
 public sealed record FiltroDasDecisoesDaProtecao(
     IReadOnlyCollection<AtoDaProtecao> Atos,
     CadastroDoCatalogo? Cadastro,
     DateOnly? De,
     DateOnly? Ate,
     string? Busca,
-    (string Emissor, string Sub)? Autor);
+    (string Emissor, string ContaId)? Autor);

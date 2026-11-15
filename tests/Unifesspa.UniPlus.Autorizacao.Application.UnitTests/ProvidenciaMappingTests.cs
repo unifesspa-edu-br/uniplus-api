@@ -57,7 +57,7 @@ public sealed class ProvidenciaMappingTests
 
         eventos.Select(static e => (e.Tipo, e.Detalhe)).Should().Equal(
             ("providencia_solicitada", $"Revisão do acesso. Fundamento: {ProvidenciaBuilder.Fundamento}"), ("providencia_atendida", ProvidenciaBuilder.Motivo));
-        eventos.Select(static e => e.Autor!.Sub).Should().Equal(ProvidenciaBuilder.Cecilia.Identidade.Sub, ProvidenciaBuilder.Diogo.Sub);
+        eventos.Select(static e => e.Autor!.ContaId).Should().Equal(ProvidenciaBuilder.Cecilia.Identidade.ContaId, ProvidenciaBuilder.Diogo.ContaId);
     }
 
     [Fact(DisplayName = "A trilha da concessão mostra a resposta, e a aberta só a solicitação")]

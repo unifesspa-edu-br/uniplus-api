@@ -37,7 +37,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// rascunhou.
 /// </para>
 /// <para>
-/// <b>Um por operador</b> (<c>UNIQUE</c> com <see cref="UsuarioSub"/>): sem recurso
+/// <b>Um por operador</b> (<c>UNIQUE</c> com <see cref="UsuarioContaId"/>): sem recurso
 /// compartilhado não há concorrência a arbitrar. A consequência aceita é que o rascunho não se
 /// transfere — quem assume o trabalho de um colega não o vê, e transcreve do mesmo documento
 /// que ambos têm em mãos.
@@ -73,10 +73,10 @@ public sealed class RascunhoDePublicacao : EntityBase
     public Guid ProcessoSeletivoId { get; private set; }
 
     /// <summary>
-    /// Sub do usuário autenticado dono do rascunho (via <c>IUserContext</c>) — mesma origem de
-    /// <see cref="RascunhoRetificacao.AbertoPorSub"/>.
+    /// ContaId do usuário autenticado dono do rascunho (via <c>IUserContext</c>) — mesma origem de
+    /// <see cref="RascunhoRetificacao.AbertoPorContaId"/>.
     /// </summary>
-    public string UsuarioSub { get; private set; } = string.Empty;
+    public string UsuarioContaId { get; private set; } = string.Empty;
 
     /// <summary>
     /// O documento JSON como o cliente o enviou, guardado e devolvido <b>caractere a
@@ -112,20 +112,20 @@ public sealed class RascunhoDePublicacao : EntityBase
 
     public static Result<RascunhoDePublicacao> Criar(
         Guid processoSeletivoId,
-        string usuarioSub,
+        string usuarioContaId,
         string conteudo,
         int versao,
         DateTimeOffset agora,
         TimeSpan prazo)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(usuarioSub);
+        ArgumentException.ThrowIfNullOrWhiteSpace(usuarioContaId);
 
         return Recusar(conteudo, versao) is { } recusa
             ? Result<RascunhoDePublicacao>.Failure(recusa)
             : Result<RascunhoDePublicacao>.Success(new RascunhoDePublicacao
             {
                 ProcessoSeletivoId = processoSeletivoId,
-                UsuarioSub = usuarioSub,
+                UsuarioContaId = usuarioContaId,
                 Conteudo = conteudo,
                 Versao = versao,
                 ExpiraEm = VenceEm(agora, prazo),

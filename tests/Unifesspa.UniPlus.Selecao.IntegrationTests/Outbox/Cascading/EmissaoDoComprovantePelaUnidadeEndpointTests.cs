@@ -47,9 +47,9 @@ public sealed class EmissaoDoComprovantePelaUnidadeEndpointTests : IAsyncLifetim
 
     public async Task InitializeAsync()
     {
-        foreach (string sub in new[] { QuemEmite, QuemSoConsulta, QuemSoEmite })
+        foreach (string contaId in new[] { QuemEmite, QuemSoConsulta, QuemSoEmite })
         {
-            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, contaId);
         }
     }
 
@@ -190,18 +190,18 @@ public sealed class EmissaoDoComprovantePelaUnidadeEndpointTests : IAsyncLifetim
         JsonDocument.Parse(corpo).RootElement.GetProperty("numeroDoUltimoComprovante").GetInt32().Should().Be(1);
     }
 
-    private Task<HttpResponseMessage> EmitirAsync(string sub, Guid processoId, Guid inscricaoId, int numero = 1) =>
-        Requisitar(sub, $"/api/selecao/processos-seletivos/{processoId}/inscricoes/{inscricaoId}/comprovantes/{numero}", "comprovante-inscricao");
+    private Task<HttpResponseMessage> EmitirAsync(string contaId, Guid processoId, Guid inscricaoId, int numero = 1) =>
+        Requisitar(contaId, $"/api/selecao/processos-seletivos/{processoId}/inscricoes/{inscricaoId}/comprovantes/{numero}", "comprovante-inscricao");
 
     private Task<HttpResponseMessage> ComoTitularAsync(Guid inscricaoId) =>
         Requisitar(Titular, $"/api/selecao/inscricoes/{inscricaoId}/comprovantes/1", "comprovante-inscricao", PersonasDeTeste.FernandaDrumond.Valor);
 
-    private async Task<HttpResponseMessage> Requisitar(string sub, string rota, string recurso, string? cpf = null)
+    private async Task<HttpResponseMessage> Requisitar(string contaId, string rota, string recurso, string? cpf = null)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(HttpMethod.Get, new Uri(rota, UriKind.Relative));
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, sub);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, contaId);
         request.Headers.TryAddWithoutValidation("Accept", $"application/vnd.uniplus.{recurso}.v1+json");
         if (cpf is not null)
         {
@@ -211,10 +211,10 @@ public sealed class EmissaoDoComprovantePelaUnidadeEndpointTests : IAsyncLifetim
         return await client.SendAsync(request);
     }
 
-    private async Task ConcederAsync(string sub, Guid unidade, params PermissaoSelecao[] permissoes)
+    private async Task ConcederAsync(string contaId, Guid unidade, params PermissaoSelecao[] permissoes)
     {
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, [.. permissoes.Select(static p => p.Codigo)]);
-        await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, sub, perfil, EscopoDaConcessao.DaUnidade(unidade));
+        await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, contaId, perfil, EscopoDaConcessao.DaUnidade(unidade));
     }
 
     private async Task<Cenario> SemearAsync()

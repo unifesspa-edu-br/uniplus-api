@@ -68,10 +68,10 @@ public sealed class ProvidenciaConfiguration : IEntityTypeConfiguration<Providen
             $"char_length(fundamento) BETWEEN {SolicitacaoDaProvidencia.FundamentoMinLength} AND {SolicitacaoDaProvidencia.FundamentoMaxLength}");
         tabela.HasCheckConstraint(
             "ck_providencias_desfecho_completo",
-            "(estado = 'aberta' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_sub IS NULL"
+            "(estado = 'aberta' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_conta_id IS NULL"
             + " AND desfecho_por_nome IS NULL AND motivo_do_desfecho IS NULL)"
             + " OR (estado <> 'aberta' AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL"
-            + " AND desfecho_por_sub IS NOT NULL AND motivo_do_desfecho IS NOT NULL)");
+            + " AND desfecho_por_conta_id IS NOT NULL AND motivo_do_desfecho IS NOT NULL)");
     }
 
     private static void ConfigurarSolicitacao(EntityTypeBuilder<Providencia> builder)
@@ -81,7 +81,7 @@ public sealed class ProvidenciaConfiguration : IEntityTypeConfiguration<Providen
         builder.Property(p => p.Estado).HasConversion(EstadoConverter).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(p => p.AbertaEm).IsRequired();
         builder.Property(p => p.SolicitadaPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(p => p.SolicitadaPorSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(p => p.SolicitadaPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(p => p.SolicitadaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(p => p.SolicitadaPorEmail).HasMaxLength(PedidoDeConcessao.EmailMaxLength);
     }
@@ -89,7 +89,7 @@ public sealed class ProvidenciaConfiguration : IEntityTypeConfiguration<Providen
     private static void ConfigurarDesfecho(EntityTypeBuilder<Providencia> builder)
     {
         builder.Property(p => p.DesfechoPorEmissor).HasMaxLength(IdentidadeMaxLength);
-        builder.Property(p => p.DesfechoPorSub).HasMaxLength(IdentidadeMaxLength);
+        builder.Property(p => p.DesfechoPorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(p => p.DesfechoPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(p => p.MotivoDoDesfecho).HasMaxLength(Concessao.MotivoMaxLength);
     }

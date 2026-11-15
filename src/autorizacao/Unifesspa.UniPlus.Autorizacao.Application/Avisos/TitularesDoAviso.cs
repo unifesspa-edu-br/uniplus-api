@@ -9,5 +9,5 @@ internal static class TitularesDoAviso
     public static async Task<List<DestinatarioDoAviso>> ListarAsync(
         ITitularesDaPermissao titulares, string codigoDaPermissao, CancellationToken cancellationToken) =>
         [.. (await titulares.ListarTitularesComEmailAsync(codigoDaPermissao, cancellationToken).ConfigureAwait(false))
-            .Select(static t => new DestinatarioDoAviso(new Identidade(t.Emissor, t.Sub), t.Email))];
+            .Select(static t => new DestinatarioDoAviso(new Identidade(t.Emissor, t.ContaId), t.Email))];
 }

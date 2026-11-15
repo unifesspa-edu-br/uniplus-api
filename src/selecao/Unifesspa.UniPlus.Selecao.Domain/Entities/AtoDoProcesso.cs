@@ -46,7 +46,7 @@ public sealed class AtoDoProcesso : EntityBase
     public const int MotivoDaCorrecaoMaxLength = 1000;
     public const int SlugDaUnidadeAdministradoraMaxLength = 100;
     public const int IdentificadorLegivelMaxLength = 200;
-    public const int SubMaxLength = 255;
+    public const int ContaIdMaxLength = 255;
 
     private readonly List<AnexoDoAtoDoProcesso> _anexos = [];
 
@@ -91,8 +91,8 @@ public sealed class AtoDoProcesso : EntityBase
     /// <summary>Instante em que a política de divulgação foi confirmada; nulo quando não foi pedida.</summary>
     public DateTimeOffset? PoliticaDeDivulgacaoConfirmadaEm { get; private set; }
 
-    /// <summary>Sub do usuário que confirmou a política de divulgação; nulo quando não foi pedida.</summary>
-    public string? PoliticaDeDivulgacaoConfirmadaPorSub { get; private set; }
+    /// <summary>ContaId do usuário que confirmou a política de divulgação; nulo quando não foi pedida.</summary>
+    public string? PoliticaDeDivulgacaoConfirmadaPorContaId { get; private set; }
 
     public IReadOnlyList<AnexoDoAtoDoProcesso> Anexos => _anexos;
 
@@ -171,7 +171,7 @@ public sealed class AtoDoProcesso : EntityBase
     private static NovoAtoDoProcesso SemTextoOpcionalEmBranco(NovoAtoDoProcesso novo) => novo with
     {
         Numero = novo.Numero.EmBrancoViraNulo(),
-        PoliticaDeDivulgacaoConfirmadaPorSub = novo.PoliticaDeDivulgacaoConfirmadaPorSub.EmBrancoViraNulo(),
+        PoliticaDeDivulgacaoConfirmadaPorContaId = novo.PoliticaDeDivulgacaoConfirmadaPorContaId.EmBrancoViraNulo(),
         MotivoDaCorrecao = novo.MotivoDaCorrecao.EmBrancoViraNulo(),
     };
 
@@ -180,7 +180,7 @@ public sealed class AtoDoProcesso : EntityBase
         AtoDoProcesso ato = Declarar(declarado, publicadoEm);
         ato.VincularDocumentos(declarado);
         ato.VincularCorrecao(declarado);
-        ato.ConfirmarPoliticaDeDivulgacao(declarado.PoliticaDeDivulgacaoConfirmadaPorSub, publicadoEm);
+        ato.ConfirmarPoliticaDeDivulgacao(declarado.PoliticaDeDivulgacaoConfirmadaPorContaId, publicadoEm);
 
         return ato;
     }
@@ -215,10 +215,10 @@ public sealed class AtoDoProcesso : EntityBase
         MotivoDaCorrecao = declarado.MotivoDaCorrecao;
     }
 
-    private void ConfirmarPoliticaDeDivulgacao(string? confirmadaPorSub, DateTimeOffset publicadoEm)
+    private void ConfirmarPoliticaDeDivulgacao(string? confirmadaPorContaId, DateTimeOffset publicadoEm)
     {
-        PoliticaDeDivulgacaoConfirmadaPorSub = confirmadaPorSub;
-        PoliticaDeDivulgacaoConfirmadaEm = confirmadaPorSub is null ? null : publicadoEm;
+        PoliticaDeDivulgacaoConfirmadaPorContaId = confirmadaPorContaId;
+        PoliticaDeDivulgacaoConfirmadaEm = confirmadaPorContaId is null ? null : publicadoEm;
     }
 
     private static void GuardarTextosObrigatorios(NovoAtoDoProcesso novo)
@@ -233,7 +233,7 @@ public sealed class AtoDoProcesso : EntityBase
     private static void GuardarTextosOpcionais(NovoAtoDoProcesso novo)
     {
         GuardarTextoOpcional(novo.Numero, NumeroMaxLength, nameof(novo.Numero));
-        GuardarTextoOpcional(novo.PoliticaDeDivulgacaoConfirmadaPorSub, SubMaxLength, nameof(novo.PoliticaDeDivulgacaoConfirmadaPorSub));
+        GuardarTextoOpcional(novo.PoliticaDeDivulgacaoConfirmadaPorContaId, ContaIdMaxLength, nameof(novo.PoliticaDeDivulgacaoConfirmadaPorContaId));
     }
 
     private static void GuardarIdentidade(NovoAtoDoProcesso novo)

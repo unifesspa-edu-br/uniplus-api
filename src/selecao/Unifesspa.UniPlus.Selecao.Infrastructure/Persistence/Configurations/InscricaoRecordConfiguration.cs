@@ -41,11 +41,11 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
             .IsRequired()
             .HasComment("Índice cego (HMAC-SHA256) do CPF — sustenta a busca pelo dono e o índice único por processo, sem decifrar a tabela.");
 
-        builder.Property(i => i.Sub)
+        builder.Property(i => i.ContaId)
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(255)
             .IsRequired()
-            .HasComment("O sub do token de quem iniciou a inscrição — nunca troca de dono.");
+            .HasComment("A conta do token de quem iniciou a inscrição — nunca troca de dono.");
 
         builder.Property(i => i.EmissorToken)
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal)
@@ -76,7 +76,7 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
         builder.Property(i => i.CanceladaPor)
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(255)
-            .HasComment("O sub do token de quem cancelou; nulo se não foi cancelada.");
+            .HasComment("A conta do token de quem cancelou; nulo se não foi cancelada.");
 
         builder.Property(i => i.MotivoDoCancelamento)
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal)
@@ -110,7 +110,7 @@ internal sealed class InscricaoRecordConfiguration : IEntityTypeConfiguration<In
 
         // O impedimento do servidor inscrito pergunta, em toda decisão de acesso ao processo, se a pessoa tem nele uma
         // inscrição enviada: processo e identidade do candidato, sem o CPF.
-        builder.HasIndex(i => new { i.ProcessoSeletivoId, i.Sub })
-            .HasDatabaseName("ix_inscricoes_processo_sub");
+        builder.HasIndex(i => new { i.ProcessoSeletivoId, i.ContaId })
+            .HasDatabaseName("ix_inscricoes_processo_conta_id");
     }
 }

@@ -85,7 +85,7 @@ public sealed class RevogacaoDoItemDaRevisaoTests
             new RevogarItemDaRevisaoCommand(_revisao.Id, _revisao.Itens[0].Id, Motivo),
             preparo,
             new RevogacaoDaConcessao(_concessoes, _papel, _unidade),
-            new VerificadorDeTeste(Diogo.Sub, [ReverProtecaoDeDados]),
+            new VerificadorDeTeste(Diogo.ContaId, [ReverProtecaoDeDados]),
             _unidade,
             Usuarios.De(Diogo),
             CancellationToken.None);

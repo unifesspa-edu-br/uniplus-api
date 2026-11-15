@@ -65,7 +65,7 @@ public sealed class AtoDaProtecaoDoCatalogoConfiguration : IEntityTypeConfigurat
 
         builder.Property(a => a.AtorEmissor).HasMaxLength(AtorDoAto.IdentidadeMaxLength).IsRequired()
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal);
-        builder.Property(a => a.AtorSub).HasMaxLength(AtorDoAto.IdentidadeMaxLength).IsRequired()
+        builder.Property(a => a.AtorContaId).HasMaxLength(AtorDoAto.IdentidadeMaxLength).IsRequired()
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal);
         builder.Property(a => a.AtorNome).HasMaxLength(AtorDoAto.NomeMaxLength).ClassificaComo(ClassificacaoDeProtecao.Pessoal);
         builder.Property(a => a.Instante).IsRequired();

@@ -65,7 +65,7 @@ internal static class DublesDoCongelamentoDeTeste
     public static IUserContext UsuarioAutenticado()
     {
         IUserContext contexto = Substitute.For<IUserContext>();
-        contexto.UserId.Returns("user-sub-1");
+        contexto.UserId.Returns("user-conta-1");
         return contexto;
     }
 }

@@ -32,16 +32,16 @@ public sealed class CancelarInscricaoCommandHandlerTests
         "APELIDO", 0, "Apelido", TipoRenderizacao.Texto, Obrigatoriedade.Nunca, null,
         classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
-    private static IUserContext Usuario(string sub)
+    private static IUserContext Usuario(string contaId)
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(Dono.Valor);
-        contexto.UserId.Returns(sub);
+        contexto.UserId.Returns(contaId);
         return contexto;
     }
 
     private static async Task<(Result Resultado, Inscricao Inscricao, IUnitOfWork UnitOfWork)> Cancelar(
-        Func<Guid, Inscricao> inscricao, DateTimeOffset agora, string sub = "sub-1", string? motivo = null)
+        Func<Guid, Inscricao> inscricao, DateTimeOffset agora, string contaId = "conta-1", string? motivo = null)
     {
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
         Inscricao existente = inscricao(versao.Id);
@@ -58,7 +58,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
         Result resultado = await CancelarInscricaoCommandHandler.Handle(
             new CancelarInscricaoCommand(ProcessoId, motivo, PrecondicaoIfMatch.DeTags([existente.ETag])),
             repositorio, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(),
-            unitOfWork, Usuario(sub), new RelogioFixo(agora), CancellationToken.None);
+            unitOfWork, Usuario(contaId), new RelogioFixo(agora), CancellationToken.None);
         return (resultado, existente, unitOfWork);
     }
 
@@ -70,7 +70,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         inscricao.Situacao.Should().Be(SituacaoInscricao.Cancelada);
-        inscricao.CanceladaPor.Should().Be("sub-1");
+        inscricao.CanceladaPor.Should().Be("conta-1");
         inscricao.CanceladaEm.Should().Be(DivulgacaoDeTeste.DentroDoPeriodo);
         inscricao.MotivoDoCancelamento.Should().Be("Desisti");
         await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -91,7 +91,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
     public async Task Handle_RascunhoForaDoPeriodo_RecusaPeloPeriodo()
     {
         (Result resultado, _, _) = await Cancelar(
-            static versao => Inscricao.Iniciar(ProcessoId, Dono, "sub-1", "https://issuer", versao).Value!,
+            static versao => Inscricao.Iniciar(ProcessoId, Dono, "conta-1", "https://issuer", versao).Value!,
             DivulgacaoDeTeste.DentroDoPeriodo.AddMonths(1));
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ForaDoPeriodo);
@@ -101,7 +101,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
     public async Task Handle_Rascunho_RecusaOrientandoDescartar()
     {
         (Result resultado, _, IUnitOfWork unitOfWork) = await Cancelar(
-            static versao => Inscricao.Iniciar(ProcessoId, Dono, "sub-1", "https://issuer", versao).Value!,
+            static versao => Inscricao.Iniciar(ProcessoId, Dono, "conta-1", "https://issuer", versao).Value!,
             DivulgacaoDeTeste.DentroDoPeriodo);
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.CancelamentoSoDeEnviada);
@@ -112,7 +112,7 @@ public sealed class CancelarInscricaoCommandHandlerTests
     public async Task Handle_DeOutroCandidato_Recusa()
     {
         (Result resultado, Inscricao inscricao, _) = await Cancelar(
-            DescartarRascunhoDaInscricaoCommandHandlerTests.Enviada, DivulgacaoDeTeste.DentroDoPeriodo, sub: "sub-outro");
+            DescartarRascunhoDaInscricaoCommandHandlerTests.Enviada, DivulgacaoDeTeste.DentroDoPeriodo, contaId: "conta-outro");
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.DonoDivergente);
         inscricao.Situacao.Should().Be(SituacaoInscricao.Submetida);

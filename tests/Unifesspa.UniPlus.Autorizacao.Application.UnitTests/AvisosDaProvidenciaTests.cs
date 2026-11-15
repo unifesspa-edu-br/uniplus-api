@@ -69,8 +69,8 @@ public sealed class AvisosDaProvidenciaTests
 
         string[] proibidos =
         [
-            ProvidenciaBuilder.Cecilia.Nome!, ProvidenciaBuilder.Cecilia.Identidade.Sub, ProvidenciaBuilder.Cecilia.Email!,
-            ProvidenciaBuilder.Diogo.Nome!, ProvidenciaBuilder.Diogo.Sub, CenarioDaProvidencia.EmailDiogo,
+            ProvidenciaBuilder.Cecilia.Nome!, ProvidenciaBuilder.Cecilia.Identidade.ContaId, ProvidenciaBuilder.Cecilia.Email!,
+            ProvidenciaBuilder.Diogo.Nome!, ProvidenciaBuilder.Diogo.ContaId, CenarioDaProvidencia.EmailDiogo,
             ProvidenciaBuilder.Fundamento, ProvidenciaBuilder.Motivo, "providência", "Providência",
         ];
         new[] { aviso.Assunto, aviso.CorpoTexto, aviso.CorpoHtml }.Should().AllSatisfy(t => proibidos.Should().AllSatisfy(p => t.Should().NotContain(p)));
@@ -87,7 +87,7 @@ public sealed class AvisosDaProvidenciaTests
         await AvisarAsync(cenario, _ => aberta);
 
         _cenario.Logger.Mensagens.Should().ContainSingle(m => m.Contains(aberta.Id.ToString(), StringComparison.Ordinal))
-            .Which.Should().NotContain(naoVerificada.Identidade.Sub).And.NotContain(naoVerificada.Nome!);
+            .Which.Should().NotContain(naoVerificada.Identidade.ContaId).And.NotContain(naoVerificada.Nome!);
         (await AvisarAsync(new ProvidenciaBuilder().SolicitadaPor(naoVerificada), static b => b.Respondida())).Should().BeEmpty();
     }
 

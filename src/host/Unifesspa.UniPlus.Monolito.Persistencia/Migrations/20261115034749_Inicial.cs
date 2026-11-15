@@ -68,7 +68,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     justificativa = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: true),
                     diante_de_manifestacao_desfavoravel = table.Column<bool>(type: "boolean", nullable: false),
                     ator_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    ator_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    ator_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     ator_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     ordem_de_registro = table.Column<long>(type: "bigint", nullable: false)
@@ -536,7 +536,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "O processo seletivo desta inscrição."),
                     cpf_indice = table.Column<byte[]>(type: "bytea", nullable: false, comment: "Índice cego (HMAC-SHA256) do CPF — sustenta a busca pelo dono e o índice único por processo, sem decifrar a tabela."),
-                    sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false, comment: "O sub do token de quem iniciou a inscrição — nunca troca de dono."),
+                    conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false, comment: "A conta do token de quem iniciou a inscrição — nunca troca de dono."),
                     emissor_token = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false, comment: "O emissor (issuer) do token de quem iniciou a inscrição."),
                     situacao = table.Column<int>(type: "integer", nullable: false),
                     versao_formulario_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "A versão do formulário da inscrição (UNI-REQ-0084): a divulgada que o rascunho adotou por último; o primeiro envio a congela."),
@@ -544,7 +544,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     oferta_curso_segunda_opcao_id = table.Column<Guid>(type: "uuid", nullable: true),
                     numero_inscricao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true, comment: "Gerado na primeira submissão (sequência do banco, formatada); nulo em rascunho."),
                     cancelada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, comment: "O instante em que o candidato cancelou a inscrição enviada; nulo se não foi cancelada."),
-                    cancelada_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "O sub do token de quem cancelou; nulo se não foi cancelada."),
+                    cancelada_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "A conta do token de quem cancelou; nulo se não foi cancelada."),
                     motivo_do_cancelamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true, comment: "O motivo do cancelamento; 'a pedido do candidato' quando o candidato não o disse. Nulo se não foi cancelada."),
                     revisao = table.Column<int>(type: "integer", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -563,7 +563,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     executor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    executor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    executor_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     executor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     numero_do_documento = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     tamanho_do_pdf = table.Column<long>(type: "bigint", nullable: false),
@@ -603,9 +603,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     ordem_de_registro = table.Column<long>(type: "bigint", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityAlwaysColumn),
+                    autor_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     autor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     autor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    autor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     cadastro = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     item_id = table.Column<Guid>(type: "uuid", nullable: false)
                 },
@@ -982,7 +982,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     aberta_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     aberta_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    aberta_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    aberta_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     aberta_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -1713,14 +1713,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     instalacao_id = table.Column<Guid>(type: "uuid", nullable: false),
                     email = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: true),
                     nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("pk_gestores_da_instalacao", x => new { x.instalacao_id, x.emissor, x.sub });
+                    table.PrimaryKey("pk_gestores_da_instalacao", x => new { x.instalacao_id, x.emissor, x.conta_id });
                     table.ForeignKey(
                         name: "fk_gestores_da_instalacao_instalacoes_instalacao_id",
                         column: x => x.instalacao_id,
@@ -1738,7 +1738,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     instalacao_id = table.Column<Guid>(type: "uuid", nullable: true),
                     autor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    autor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    autor_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     resultado = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false)
                 },
@@ -1818,12 +1818,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     perfil_id = table.Column<Guid>(type: "uuid", nullable: false),
                     desativada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     desativada_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    desativada_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    desativada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     desativada_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     motivo = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     reativada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     reativada_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    reativada_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    reativada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     reativada_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     motivo_da_reativacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     ordem_na_trilha = table.Column<long>(type: "bigint", nullable: false),
@@ -1833,7 +1833,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_desativacoes_do_perfil", x => x.id);
-                    table.CheckConstraint("ck_desativacoes_do_perfil_reativacao", "(reativada_em IS NULL AND reativada_por_emissor IS NULL AND reativada_por_sub IS NULL AND reativada_por_nome IS NULL AND motivo_da_reativacao IS NULL) OR (reativada_em IS NOT NULL AND reativada_por_emissor IS NOT NULL AND reativada_por_sub IS NOT NULL AND motivo_da_reativacao IS NOT NULL)");
+                    table.CheckConstraint("ck_desativacoes_do_perfil_reativacao", "(reativada_em IS NULL AND reativada_por_emissor IS NULL AND reativada_por_conta_id IS NULL AND reativada_por_nome IS NULL AND motivo_da_reativacao IS NULL) OR (reativada_em IS NOT NULL AND reativada_por_emissor IS NOT NULL AND reativada_por_conta_id IS NOT NULL AND motivo_da_reativacao IS NOT NULL)");
                     table.ForeignKey(
                         name: "fk_desativacoes_do_perfil_perfil_perfil_id",
                         column: x => x.perfil_id,
@@ -1943,7 +1943,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     perfil_id = table.Column<Guid>(type: "uuid", nullable: false),
                     suspensa_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     suspensa_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    suspensa_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    suspensa_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     suspensa_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     papel_de_quem_suspendeu = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     motivo = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
@@ -1985,7 +1985,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     ciclo_de_aprovacao = table.Column<int>(type: "integer", nullable: false),
                     criador_tem_concessao = table.Column<bool>(type: "boolean", nullable: false),
                     criada_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    criada_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    criada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     criada_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     criada_por_email = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: true),
                     criada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -1995,7 +1995,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     forma_do_cancelamento = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
                     motivo_do_cancelamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     cancelada_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    cancelada_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    cancelada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     cancelada_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     cancelada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     expirada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -2472,7 +2472,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     leiaute_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     leiaute_versao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     leiaute_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
-                    gerado_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false, comment: "O sub do token de quem gerou."),
+                    gerado_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false, comment: "A conta do token de quem gerou."),
                     gerado_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "O nome de quem gerou, gravado no momento da ação."),
                     gerado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     total_de_cpfs = table.Column<int>(type: "integer", nullable: false)
@@ -2588,7 +2588,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    usuario_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    usuario_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     conteudo = table.Column<string>(type: "text", nullable: false),
                     versao = table.Column<int>(type: "integer", nullable: false),
                     expira_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
@@ -2620,7 +2620,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     versao_base_com_identificador_legivel = table.Column<bool>(type: "boolean", nullable: false),
                     fatos_das_versoes_publicadas = table.Column<string>(type: "jsonb", nullable: false),
                     aberto_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    aberto_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    aberto_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     revisao = table.Column<int>(type: "integer", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
@@ -2688,7 +2688,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     ato_criador_id = table.Column<Guid>(type: "uuid", nullable: false),
                     ato_criador_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     ato_criador_retifica_id = table.Column<Guid>(type: "uuid", nullable: true),
-                    ator_usuario_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false)
+                    ator_usuario_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false)
                 },
                 constraints: table =>
                 {
@@ -3082,7 +3082,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     suspensao_id = table.Column<Guid>(type: "uuid", nullable: false),
                     etapa = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     decisor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    decisor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    decisor_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     decisor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     decisor_tem_concessao = table.Column<bool>(type: "boolean", nullable: false),
                     motivo = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
@@ -3114,7 +3114,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     etapa = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     resultado = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     decisor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    decisor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    decisor_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     decisor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     decisor_email = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: true),
                     decisor_tem_concessao = table.Column<bool>(type: "boolean", nullable: false),
@@ -3187,7 +3187,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     forma_do_encerramento = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     motivo_do_encerramento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     encerrada_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    encerrada_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    encerrada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     encerrada_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     aviso_48h_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     aviso_24h_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -3201,7 +3201,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.UniqueConstraint("ak_janela_de_migracao_id_perfil_id", x => new { x.id, x.perfil_id });
                     table.CheckConstraint("ck_janelas_de_migracao_encerramento", "(encerrada_em IS NULL) = (forma_do_encerramento IS NULL)");
                     table.CheckConstraint("ck_janelas_de_migracao_forma", "forma_do_encerramento IS NULL OR forma_do_encerramento IN ('concluida', 'prazo', 'manual')");
-                    table.CheckConstraint("ck_janelas_de_migracao_manual", "COALESCE(forma_do_encerramento = 'manual', false) = (motivo_do_encerramento IS NOT NULL AND encerrada_por_sub IS NOT NULL)");
+                    table.CheckConstraint("ck_janelas_de_migracao_manual", "COALESCE(forma_do_encerramento = 'manual', false) = (motivo_do_encerramento IS NOT NULL AND encerrada_por_conta_id IS NOT NULL)");
                     table.CheckConstraint("ck_janelas_de_migracao_prazo", "prazo = aberta_em + interval '72 hours'");
                     table.ForeignKey(
                         name: "fk_janelas_de_migracao_perfil_perfil_id",
@@ -3591,7 +3591,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     ato_corrigido_id = table.Column<Guid>(type: "uuid", nullable: true),
                     motivo_da_correcao = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     politica_de_divulgacao_confirmada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    politica_de_divulgacao_confirmada_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    politica_de_divulgacao_confirmada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
@@ -3975,7 +3975,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     leiaute_versao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     leiaute_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "SHA-256 da definição do leiaute com que o arquivo foi lido."),
                     arquivo_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false, comment: "SHA-256 dos bytes do arquivo importado."),
-                    importado_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false, comment: "O sub do token de quem importou."),
+                    importado_por = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false, comment: "A conta do token de quem importou."),
                     importado_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true, comment: "O nome de quem importou, gravado no momento da ação."),
                     importado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     versao_configuracao_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "A versão divulgada do certame cujos pesos apuraram as avaliações do lote."),
@@ -4029,7 +4029,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     versao_que_entrou_id = table.Column<Guid>(type: "uuid", nullable: true),
                     permissao_codigo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: true),
                     ator_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    ator_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    ator_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     ator_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     papel = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
                     motivo = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
@@ -4040,10 +4040,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_eventos_da_contencao", x => x.id);
-                    table.CheckConstraint("ck_eventos_da_contencao_desativacao", "tipo <> 'desativacao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_sub IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
-                    table.CheckConstraint("ck_eventos_da_contencao_reativacao", "tipo <> 'reativacao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_sub IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
-                    table.CheckConstraint("ck_eventos_da_contencao_retomada", "tipo <> 'retomada' OR (ator = 'sistema' AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND ator_emissor IS NULL AND ator_sub IS NULL AND ator_nome IS NULL AND papel IS NULL AND motivo IS NULL AND origem IS NOT NULL AND ((origem = 'decisao_da_etapa' AND decisao_id IS NOT NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'troca_de_vigencia' AND versao_que_entrou_id IS NOT NULL AND decisao_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'reclassificacao' AND permissao_codigo IS NOT NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL)))");
-                    table.CheckConstraint("ck_eventos_da_contencao_suspensao", "tipo <> 'suspensao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_sub IS NOT NULL AND motivo IS NOT NULL AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND papel IS NOT NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
+                    table.CheckConstraint("ck_eventos_da_contencao_desativacao", "tipo <> 'desativacao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
+                    table.CheckConstraint("ck_eventos_da_contencao_reativacao", "tipo <> 'reativacao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
+                    table.CheckConstraint("ck_eventos_da_contencao_retomada", "tipo <> 'retomada' OR (ator = 'sistema' AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND ator_emissor IS NULL AND ator_conta_id IS NULL AND ator_nome IS NULL AND papel IS NULL AND motivo IS NULL AND origem IS NOT NULL AND ((origem = 'decisao_da_etapa' AND decisao_id IS NOT NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'troca_de_vigencia' AND versao_que_entrou_id IS NOT NULL AND decisao_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'reclassificacao' AND permissao_codigo IS NOT NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL)))");
+                    table.CheckConstraint("ck_eventos_da_contencao_suspensao", "tipo <> 'suspensao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND papel IS NOT NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
                     table.CheckConstraint("ck_eventos_da_contencao_tipo", "tipo IN ('suspensao', 'retomada', 'desativacao', 'reativacao')");
                     table.ForeignKey(
                         name: "fk_eventos_da_contencao_decisoes_da_retomada_decisao_id",
@@ -4097,7 +4097,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     documento_id = table.Column<Guid>(type: "uuid", nullable: false),
                     leitor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    leitor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    leitor_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     leitor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
@@ -4120,7 +4120,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     beneficiario_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    beneficiario_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    beneficiario_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     beneficiario_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     beneficiario_email = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: true),
                     perfil_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -4131,12 +4131,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     concedida_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     concedida_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    concedida_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    concedida_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     concedida_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     valida_ate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     revogada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     revogada_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    revogada_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    revogada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     revogada_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     motivo_revogacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     revogada_pela_janela_id = table.Column<Guid>(type: "uuid", nullable: true),
@@ -4149,7 +4149,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_concessoes", x => x.id);
                     table.UniqueConstraint("ak_concessao_perfil_id_id", x => new { x.perfil_id, x.id });
                     table.CheckConstraint("ck_concessoes_escopo_unidade", "(escopo_tipo = 'unidade') = (unidade_id IS NOT NULL)");
-                    table.CheckConstraint("ck_concessoes_revogacao_completa", "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_sub IS NULL AND motivo_revogacao IS NULL AND revogada_pela_janela_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_sub IS NOT NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_sub IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NOT NULL)");
+                    table.CheckConstraint("ck_concessoes_revogacao_completa", "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NULL AND revogada_pela_janela_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_conta_id IS NOT NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NOT NULL)");
                     table.CheckConstraint("ck_concessoes_validade_posterior", "valida_ate IS NULL OR valida_ate > concedida_em");
                     table.ForeignKey(
                         name: "fk_concessoes_janela_de_migracao_revogada_pela_janela_id_perfi",
@@ -4184,7 +4184,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     perfil_id = table.Column<Guid>(type: "uuid", nullable: false),
                     etapa = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     enviado_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    enviado_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    enviado_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     enviado_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     enviado_por_tem_concessao = table.Column<bool>(type: "boolean", nullable: false),
                     confirmou_exclusao = table.Column<bool>(type: "boolean", nullable: false),
@@ -4581,7 +4581,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     decidido_como = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
                     resultado = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: true),
                     decidido_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    decidido_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    decidido_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     decidido_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     decidido_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
@@ -4591,7 +4591,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_itens_da_revisao", x => x.id);
-                    table.CheckConstraint("ck_itens_da_revisao_decisao_completa", "(resultado IS NULL AND decidido_como IS NULL AND decidido_por_emissor IS NULL AND decidido_por_sub IS NULL AND decidido_em IS NULL) OR (resultado IS NOT NULL AND decidido_como IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_sub IS NOT NULL AND decidido_em IS NOT NULL)");
+                    table.CheckConstraint("ck_itens_da_revisao_decisao_completa", "(resultado IS NULL AND decidido_como IS NULL AND decidido_por_emissor IS NULL AND decidido_por_conta_id IS NULL AND decidido_em IS NULL) OR (resultado IS NOT NULL AND decidido_como IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_conta_id IS NOT NULL AND decidido_em IS NOT NULL)");
                     table.ForeignKey(
                         name: "fk_itens_da_revisao_concessoes_concessao_id",
                         column: x => x.concessao_id,
@@ -4621,7 +4621,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     resultado = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     motivo = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     decisor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    decisor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    decisor_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     decisor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     decisor_tem_concessao = table.Column<bool>(type: "boolean", nullable: false),
                     lote_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -4697,12 +4697,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     estado = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     aberta_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     solicitada_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    solicitada_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    solicitada_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     solicitada_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     solicitada_por_email = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: true),
                     desfecho_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     desfecho_por_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    desfecho_por_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    desfecho_por_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     desfecho_por_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     motivo_do_desfecho = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
@@ -4712,7 +4712,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_providencias", x => x.id);
-                    table.CheckConstraint("ck_providencias_desfecho_completo", "(estado = 'aberta' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_sub IS NULL AND desfecho_por_nome IS NULL AND motivo_do_desfecho IS NULL) OR (estado <> 'aberta' AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL AND desfecho_por_sub IS NOT NULL AND motivo_do_desfecho IS NOT NULL)");
+                    table.CheckConstraint("ck_providencias_desfecho_completo", "(estado = 'aberta' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_conta_id IS NULL AND desfecho_por_nome IS NULL AND motivo_do_desfecho IS NULL) OR (estado <> 'aberta' AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL AND desfecho_por_conta_id IS NOT NULL AND motivo_do_desfecho IS NOT NULL)");
                     table.CheckConstraint("ck_providencias_estado", "estado IN ('aberta', 'respondida', 'atendida')");
                     table.CheckConstraint("ck_providencias_fundamento", "char_length(fundamento) BETWEEN 10 AND 2000");
                     table.CheckConstraint("ck_providencias_tipo", "tipo IN ('retirada', 'revisao')");
@@ -4742,7 +4742,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     decisao = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     ator = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     decisor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    decisor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    decisor_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     decisor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     decisor_tem_concessao = table.Column<bool>(type: "boolean", nullable: true),
                     versao_avaliada_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -4758,7 +4758,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.PrimaryKey("pk_decisoes_da_migracao", x => x.id);
                     table.CheckConstraint("ck_decisoes_da_migracao_envio", "(envio_id IS NULL) = (envio_etapa IS NULL) AND (envio_etapa IS NULL OR envio_etapa IN ('gestao_de_acessos', 'protecao_de_dados'))");
                     table.CheckConstraint("ck_decisoes_da_migracao_lote_de_origem", "(lote_de_origem_id IS NULL) = (lote_de_origem_etapa IS NULL) AND (lote_de_origem_etapa IS NULL OR lote_de_origem_etapa = 'gestao_de_acessos')");
-                    table.CheckConstraint("ck_decisoes_da_migracao_ramo", "(ator = 'humano' AND etapa IN ('gestao_de_acessos', 'protecao_de_dados') AND decisao IN ('migrar', 'recusar') AND decisor_emissor IS NOT NULL AND decisor_sub IS NOT NULL AND decisor_tem_concessao IS NOT NULL AND lote_de_origem_id IS NOT NULL AND (envio_etapa IS NULL OR envio_etapa = etapa) AND (etapa <> 'protecao_de_dados' OR envio_id IS NOT NULL) AND (etapa <> 'gestao_de_acessos' OR envio_id IS NULL OR envio_id = lote_de_origem_id)) OR (ator = 'sistema' AND decisor_emissor IS NULL AND decisor_sub IS NULL AND decisor_nome IS NULL AND decisor_tem_concessao IS NULL AND envio_id IS NULL AND ((etapa = 'gestao_de_acessos' AND decisao = 'reter' AND lote_de_origem_id IS NOT NULL) OR (etapa = 'sistema' AND decisao IN ('nao_migrada', 'fora_da_lista'))))");
+                    table.CheckConstraint("ck_decisoes_da_migracao_ramo", "(ator = 'humano' AND etapa IN ('gestao_de_acessos', 'protecao_de_dados') AND decisao IN ('migrar', 'recusar') AND decisor_emissor IS NOT NULL AND decisor_conta_id IS NOT NULL AND decisor_tem_concessao IS NOT NULL AND lote_de_origem_id IS NOT NULL AND (envio_etapa IS NULL OR envio_etapa = etapa) AND (etapa <> 'protecao_de_dados' OR envio_id IS NOT NULL) AND (etapa <> 'gestao_de_acessos' OR envio_id IS NULL OR envio_id = lote_de_origem_id)) OR (ator = 'sistema' AND decisor_emissor IS NULL AND decisor_conta_id IS NULL AND decisor_nome IS NULL AND decisor_tem_concessao IS NULL AND envio_id IS NULL AND ((etapa = 'gestao_de_acessos' AND decisao = 'reter' AND lote_de_origem_id IS NOT NULL) OR (etapa = 'sistema' AND decisao IN ('nao_migrada', 'fora_da_lista'))))");
                     table.ForeignKey(
                         name: "fk_decisoes_da_migracao_concessoes_perfil_id_concessao_id",
                         columns: x => new { x.perfil_id, x.concessao_id },
@@ -4868,7 +4868,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     numero = table.Column<int>(type: "integer", nullable: false),
                     resumo = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     pessoa_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    pessoa_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    pessoa_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     pessoa_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     aceito_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
@@ -4909,7 +4909,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     pedido_id = table.Column<Guid>(type: "uuid", nullable: false),
                     etapa = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     decisor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    decisor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    decisor_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     decisor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     resultado = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     motivo = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
@@ -4935,7 +4935,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     pedido_id = table.Column<Guid>(type: "uuid", nullable: false),
                     anexo_id = table.Column<Guid>(type: "uuid", nullable: false),
                     leitor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    leitor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    leitor_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     leitor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     instante = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
@@ -4958,12 +4958,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     solicitante_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    solicitante_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    solicitante_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     solicitante_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     solicitante_email = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: true),
                     beneficiario_email = table.Column<string>(type: "character varying(254)", maxLength: 254, nullable: false),
                     beneficiario_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    beneficiario_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
+                    beneficiario_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     beneficiario_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     beneficiario_aceitou_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     perfil_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -4987,9 +4987,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_pedidos_de_concessao", x => x.id);
-                    table.CheckConstraint("ck_pedidos_beneficiario_completo", "(beneficiario_emissor IS NULL) = (beneficiario_sub IS NULL)");
+                    table.CheckConstraint("ck_pedidos_beneficiario_completo", "(beneficiario_emissor IS NULL) = (beneficiario_conta_id IS NULL)");
                     table.CheckConstraint("ck_pedidos_concessao_so_aprovado", "concessao_id IS NULL OR situacao = 'aprovado'");
-                    table.CheckConstraint("ck_pedidos_decisao_com_beneficiario", "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado', 'devolvido') OR beneficiario_sub IS NOT NULL");
+                    table.CheckConstraint("ck_pedidos_decisao_com_beneficiario", "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado', 'devolvido') OR beneficiario_conta_id IS NOT NULL");
                     table.CheckConstraint("ck_pedidos_encerramento", "(situacao IN ('aprovado', 'recusado', 'cancelado', 'devolvido')) = (encerrado_em IS NOT NULL)");
                     table.CheckConstraint("ck_pedidos_termo_completo", "(termo_versao_id IS NULL) = (termo_numero IS NULL) AND (termo_versao_id IS NULL) = (termo_resumo IS NULL)");
                     table.ForeignKey(
@@ -5062,7 +5062,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     resumo = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
                     ato = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     autor_emissor = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
-                    autor_sub = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
+                    autor_conta_id = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: false),
                     autor_nome = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     publicada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false)
                 },
@@ -5965,7 +5965,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ux_concessoes_ativa_unica",
                 schema: "autorizacao",
                 table: "concessoes",
-                columns: new[] { "beneficiario_emissor", "beneficiario_sub", "perfil_id", "escopo_tipo", "unidade_id" },
+                columns: new[] { "beneficiario_emissor", "beneficiario_conta_id", "perfil_id", "escopo_tipo", "unidade_id" },
                 unique: true,
                 filter: "revogada_em IS NULL")
                 .Annotation("Npgsql:NullsDistinct", false);
@@ -5974,7 +5974,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ux_concessoes_origem",
                 schema: "autorizacao",
                 table: "concessoes",
-                columns: new[] { "origem_tipo", "origem_id", "beneficiario_emissor", "beneficiario_sub" },
+                columns: new[] { "origem_tipo", "origem_id", "beneficiario_emissor", "beneficiario_conta_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6467,10 +6467,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "cpf_indice");
 
             migrationBuilder.CreateIndex(
-                name: "ix_inscricoes_processo_sub",
+                name: "ix_inscricoes_processo_conta_id",
                 schema: "selecao",
                 table: "inscricoes",
-                columns: new[] { "processo_seletivo_id", "sub" });
+                columns: new[] { "processo_seletivo_id", "conta_id" });
 
             migrationBuilder.CreateIndex(
                 name: "ux_inscricoes_processo_cpf_indice",
@@ -6490,7 +6490,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ux_instalacoes_executor_pendente",
                 schema: "autorizacao",
                 table: "instalacoes",
-                columns: new[] { "executor_emissor", "executor_sub" },
+                columns: new[] { "executor_emissor", "executor_conta_id" },
                 unique: true,
                 filter: "situacao IN ('aguardando_documento', 'documento_em_verificacao', 'documento_verificado', 'aguardando_codigo')");
 
@@ -6667,7 +6667,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ux_manifestacoes_da_protecao_inicial_do_autor",
                 schema: "configuracao",
                 table: "manifestacoes_da_protecao",
-                columns: new[] { "cadastro", "item_id", "ciclo", "autor_emissor", "autor_sub" },
+                columns: new[] { "cadastro", "item_id", "ciclo", "autor_emissor", "autor_conta_id" },
                 unique: true,
                 filter: "substitui_id IS NULL");
 
@@ -6852,7 +6852,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ix_pedidos_solicitante",
                 schema: "autorizacao",
                 table: "pedidos_de_concessao",
-                columns: new[] { "solicitante_emissor", "solicitante_sub" });
+                columns: new[] { "solicitante_emissor", "solicitante_conta_id" });
 
             migrationBuilder.CreateIndex(
                 name: "ux_pedidos_ativo_unico",
@@ -6947,7 +6947,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 name: "ux_rascunhos_publicacao_processo_operador",
                 schema: "selecao",
                 table: "rascunhos_publicacao",
-                columns: new[] { "processo_seletivo_id", "usuario_sub" },
+                columns: new[] { "processo_seletivo_id", "usuario_conta_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(

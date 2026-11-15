@@ -38,7 +38,7 @@ public sealed class ConcessaoTests
         Concessao concessao = resultado.Value!;
         concessao.EstaAtiva(Agora).Should().BeTrue();
         concessao.UnidadeId.Should().Be(unidade);
-        concessao.ConcedidaPorSub.Should().Be(Diogo.Sub);
+        concessao.ConcedidaPorContaId.Should().Be(Diogo.ContaId);
         concessao.ConcedidaEm.Should().Be(Agora);
     }
 
@@ -155,7 +155,7 @@ public sealed class ConcessaoTests
         resultado.IsSuccess.Should().BeTrue();
         concessao.EstaAtiva(depois).Should().BeFalse();
         concessao.RevogadaEm.Should().Be(depois);
-        concessao.RevogadaPorSub.Should().Be(Diogo.Sub);
+        concessao.RevogadaPorContaId.Should().Be(Diogo.ContaId);
         concessao.RevogadaPorEmissor.Should().Be(Emissor);
         concessao.MotivoRevogacao.Should().Be("Mudou de função.");
     }
@@ -169,7 +169,7 @@ public sealed class ConcessaoTests
         Result resultado = concessao.Revogar(new AtoDoAgente(Isabella, Agora.AddHours(2)), "Segundo motivo.");
 
         resultado.Errors.Single().Error.Code.Should().Be(ConcessaoErrorCodes.JaRevogada);
-        concessao.RevogadaPorSub.Should().Be(Diogo.Sub);
+        concessao.RevogadaPorContaId.Should().Be(Diogo.ContaId);
         concessao.MotivoRevogacao.Should().Be("Primeiro motivo.");
     }
 

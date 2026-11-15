@@ -18,7 +18,7 @@ public sealed class TentativaDeInstalacao : IForensicEntity
 
     public string AutorEmissor { get; private init; } = string.Empty;
 
-    public string AutorSub { get; private init; } = string.Empty;
+    public string AutorContaId { get; private init; } = string.Empty;
 
     public DateTimeOffset Instante { get; private init; }
 
@@ -41,7 +41,7 @@ public sealed class TentativaDeInstalacao : IForensicEntity
         {
             InstalacaoId = instalacaoId,
             AutorEmissor = autor.Emissor,
-            AutorSub = autor.Sub,
+            AutorContaId = autor.ContaId,
             Instante = instante,
             Resultado = resultado,
         };

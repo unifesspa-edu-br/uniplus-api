@@ -21,17 +21,17 @@ internal static class PerfisConcedidosDoUsuario
         StringComparer.Create(CultureInfo.GetCultureInfo("pt-BR"), ignoreCase: true);
 
     /// <summary>
-    /// Falha quando o token não traz emissor e <i>subject</i> válidos: sem eles não há de quem listar.
+    /// Falha quando o token não traz emissor e <i>contaId</i> válidos: sem eles não há de quem listar.
     /// </summary>
     internal static async Task<Result<IReadOnlyList<PerfilConcedidoResponse>>> ListarAsync(
         string? emissor,
-        string? subject,
+        string? contaId,
         IConcessoesAtivasDoSujeito concessoes,
         IUnidadeReader unidades,
         DateTimeOffset agora,
         CancellationToken cancellationToken)
     {
-        Result<UsuarioRef> pessoa = UsuarioRef.From(emissor, subject);
+        Result<UsuarioRef> pessoa = UsuarioRef.From(emissor, contaId);
         if (pessoa.IsFailure)
         {
             return Result<IReadOnlyList<PerfilConcedidoResponse>>.Failure(pessoa.Error!);

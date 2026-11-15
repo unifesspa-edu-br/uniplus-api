@@ -60,10 +60,10 @@ public abstract class PedidosDeConcessaoTestBase
 
     private protected MonolitoDaInstalacaoFixture Fixture { get; }
 
-    internal static Guid SubDe(string username) =>
+    internal static Guid ContaIdDe(string username) =>
         new(SHA256.HashData(Encoding.UTF8.GetBytes($"persona:{username}"))[..16]);
 
-    internal static Identidade IdentidadeDe(Persona p) => new(TestAuthHandler.DefaultIssuer, p.Sub.ToString());
+    internal static Identidade IdentidadeDe(Persona p) => new(TestAuthHandler.DefaultIssuer, p.ContaId.ToString());
 
     /// <summary>O cliente HTTP do host sob teste; as suítes que sobem uma variação do host o redefinem.</summary>
     private protected virtual HttpClient NovoCliente() => Fixture.Factory.CreateClient();
@@ -73,7 +73,7 @@ public abstract class PedidosDeConcessaoTestBase
         HttpClient client = NovoCliente();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, persona.Sub.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, persona.ContaId.ToString());
         client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, persona.Nome);
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, email ?? persona.Email);
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailVerifiedHeader, emailVerificado);
@@ -104,16 +104,16 @@ public abstract class PedidosDeConcessaoTestBase
 
     private async Task ConcederPermissoesDeGovernancaAsync(Persona persona, string[] permissoes)
     {
-        string sub = persona.Sub.ToString();
+        string contaId = persona.ContaId.ToString();
 
         if (permissoes.Any(static p => p is AprovarFuncional or Administrar))
         {
-            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.GestorDeAcessos, persona.Email);
+            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, contaId, TipoDeGovernanca.GestorDeAcessos, persona.Email);
         }
 
         if (permissoes.Contains(AprovarProtecaoDeDados))
         {
-            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.RepresentanteDoControlador, persona.Email);
+            await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, contaId, TipoDeGovernanca.RepresentanteDoControlador, persona.Email);
         }
     }
 
@@ -202,9 +202,9 @@ public abstract class PedidosDeConcessaoTestBase
     private protected async Task<Concessao[]> ConcessoesAsync(Persona beneficiario, Guid perfilId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        string sub = beneficiario.Sub.ToString();
+        string contaId = beneficiario.ContaId.ToString();
         return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes.AsNoTracking()
-            .Where(c => c.BeneficiarioSub == sub && c.PerfilId == perfilId)
+            .Where(c => c.BeneficiarioContaId == contaId && c.PerfilId == perfilId)
             .ToArrayAsync();
     }
 
@@ -502,6 +502,6 @@ public abstract class PedidosDeConcessaoTestBase
 
     internal sealed record Persona(string Username, string Nome, string Email)
     {
-        public Guid Sub { get; } = SubDe(Username);
+        public Guid ContaId { get; } = ContaIdDe(Username);
     }
 }

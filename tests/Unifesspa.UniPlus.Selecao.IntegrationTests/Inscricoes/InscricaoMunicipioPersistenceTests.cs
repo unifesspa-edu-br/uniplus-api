@@ -49,7 +49,7 @@ public sealed class InscricaoMunicipioPersistenceTests : IClassFixture<Inscricao
     {
         respostas["CPF"] = Json(PersonasDeTeste.ErickIsaacRamos.Valor);
         return Inscricao.Reidratar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), PersonasDeTeste.ErickIsaacRamos, "sub-erick", "https://issuer", situacao, Versao,
+            Guid.CreateVersion7(), Guid.CreateVersion7(), PersonasDeTeste.ErickIsaacRamos, "conta-erick", "https://issuer", situacao, Versao,
             ofertaCursoId: null, ofertaCursoSegundaOpcaoId: null,
             numeroInscricao: situacao == SituacaoInscricao.Rascunho ? null : "000900",
             canceladaEm: null, canceladaPor: null, motivoDoCancelamento: null,
@@ -214,7 +214,7 @@ public sealed class InscricaoMunicipioPersistenceTests : IClassFixture<Inscricao
             new Dictionary<string, IReadOnlySet<string>>(StringComparer.Ordinal) { ["LOCAIS"] = new HashSet<string>(StringComparer.Ordinal) { "NATURALIDADE_MUNICIPIO" } },
             new HashSet<Guid> { oferta },
             new Dictionary<string, TermoAdmitido>(StringComparer.Ordinal));
-        Inscricao inscricao = Inscricao.Iniciar(Guid.CreateVersion7(), PersonasDeTeste.ErickIsaacRamos, "sub-erick", "https://issuer", Versao).Value!;
+        Inscricao inscricao = Inscricao.Iniciar(Guid.CreateVersion7(), PersonasDeTeste.ErickIsaacRamos, "conta-erick", "https://issuer", Versao).Value!;
         Dictionary<string, DefinicaoDaResposta> derivados = new(StringComparer.Ordinal)
         {
             ["MUNICIPIO_RESIDENCIA"] = new(TipoDoValorDeResposta.Municipio, Multivalorado: false, Identificador: false),

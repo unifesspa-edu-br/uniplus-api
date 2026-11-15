@@ -28,7 +28,7 @@ public sealed class LeituraDoPerfilRecusadaTests
     public async Task Listar_SemPermissao_RecusaSemConsultarOsPerfis()
     {
         IPerfilRepository perfis = Substitute.For<IPerfilRepository>();
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Autor.Sub, []);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Autor.ContaId, []);
 
         Result<ListarPerfisResult> resultado = await ListarPerfisQueryHandler.Handle(
             new ListarPerfisQuery(null, 10, default), verificador, perfis, Catalogo, CancellationToken.None);
@@ -43,7 +43,7 @@ public sealed class LeituraDoPerfilRecusadaTests
     {
         IPerfilRepository perfis = Substitute.For<IPerfilRepository>();
         IJanelaDeMigracaoRepository janelasDoBanco = Substitute.For<IJanelaDeMigracaoRepository>();
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Autor.Sub, []);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Autor.ContaId, []);
         Guid perfilId = Guid.CreateVersion7();
 
         Result<PerfilDto> resultado = await ObterPerfilQueryHandler.Handle(new ObterPerfilQuery(perfilId), verificador, Detalhe(perfis, janelasDoBanco), CancellationToken.None);
@@ -55,7 +55,7 @@ public sealed class LeituraDoPerfilRecusadaTests
     }
 
     private static IEnumerable<TrilhaDeAcesso> Negativas(string resourceTipo, Guid? resourceId) =>
-        new[] { Manter, Gestao, Protecao, ConsultarVersoes }.Select(p => new TrilhaDeAcesso(PerfisDeTeste.Autor.Sub, p, resourceTipo, resourceId, ResultadoDoAcesso.Negado));
+        new[] { Manter, Gestao, Protecao, ConsultarVersoes }.Select(p => new TrilhaDeAcesso(PerfisDeTeste.Autor.ContaId, p, resourceTipo, resourceId, ResultadoDoAcesso.Negado));
 
     private static DetalheDoPerfil Detalhe(IPerfilRepository perfis, IJanelaDeMigracaoRepository janelasDoBanco)
     {

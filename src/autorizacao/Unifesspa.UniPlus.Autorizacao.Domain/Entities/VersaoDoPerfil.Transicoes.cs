@@ -14,7 +14,7 @@ public sealed partial class VersaoDoPerfil
 
     public string? CanceladaPorEmissor { get; private set; }
 
-    public string? CanceladaPorSub { get; private set; }
+    public string? CanceladaPorContaId { get; private set; }
 
     public string? CanceladaPorNome { get; private set; }
 
@@ -61,7 +61,7 @@ public sealed partial class VersaoDoPerfil
         FormaDoCancelamento = forma;
         MotivoDoCancelamento = motivo;
         CanceladaPorEmissor = autor.Emissor;
-        CanceladaPorSub = autor.Sub;
+        CanceladaPorContaId = autor.ContaId;
         CanceladaPorNome = autor.Nome;
         CanceladaEm = instante;
     }

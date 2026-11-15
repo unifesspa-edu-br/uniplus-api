@@ -22,7 +22,7 @@ public sealed class LoteDaMigracao : IForensicEntity
 
     public string EnviadoPorEmissor { get; private init; } = string.Empty;
 
-    public string EnviadoPorSub { get; private init; } = string.Empty;
+    public string EnviadoPorContaId { get; private init; } = string.Empty;
 
     public string? EnviadoPorNome { get; private init; }
 
@@ -48,7 +48,7 @@ public sealed class LoteDaMigracao : IForensicEntity
             PerfilId = janela.PerfilId,
             Etapa = etapa,
             EnviadoPorEmissor = autoria.Pessoa.Emissor,
-            EnviadoPorSub = autoria.Pessoa.Sub,
+            EnviadoPorContaId = autoria.Pessoa.ContaId,
             EnviadoPorNome = autoria.Pessoa.Nome,
             EnviadoPorTemConcessao = autoria.TemConcessao,
             ConfirmouExclusao = confirmouExclusao,

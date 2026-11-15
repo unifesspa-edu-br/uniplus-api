@@ -17,8 +17,8 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 /// inscrição. Decisão sem processo no resource não passa por ela.
 /// </para>
 /// <para>
-/// A identidade é o par (emissor, <c>sub</c>) do sujeito da decisão, o mesmo que a inscrição guarda do candidato: o
-/// <c>sub</c> sozinho só é único dentro do emissor que o expediu.
+/// A identidade é o par (emissor, <c>contaId</c>) do sujeito da decisão, o mesmo que a inscrição guarda do candidato: o
+/// <c>contaId</c> sozinho só é único dentro do emissor que o expediu.
 /// </para>
 /// </remarks>
 public sealed class ImpedimentoPorInscricaoCheck : IPermissaoCheck
@@ -56,7 +56,7 @@ public sealed class ImpedimentoPorInscricaoCheck : IPermissaoCheck
         }
 
         bool inscrito = await _inscricoes
-            .TemInscricaoEnviadaAsync(subject.Usuario.Emissor, subject.Usuario.Subject, processoId, cancellationToken)
+            .TemInscricaoEnviadaAsync(subject.Usuario.Emissor, subject.Usuario.ContaId, processoId, cancellationToken)
             .ConfigureAwait(false);
 
         return inscrito

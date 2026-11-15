@@ -50,9 +50,9 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
     // As personas compartilham o banco da coleção: cada teste começa sem concessão alguma.
     public async Task InitializeAsync()
     {
-        foreach (string sub in new[] { Leandro, Diogo, Paulo, Lucia })
+        foreach (string contaId in new[] { Leandro, Diogo, Paulo, Lucia })
         {
-            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, contaId);
         }
     }
 
@@ -410,20 +410,20 @@ public sealed class MotivoDeDecisaoAdminEndpointTests : IAsyncLifetime
         return ClienteAutenticado(Leandro);
     }
 
-    private HttpClient ClienteComPapeisDeRealm(string sub, params string[] papeis)
+    private HttpClient ClienteComPapeisDeRealm(string contaId, params string[] papeis)
     {
-        HttpClient client = ClienteAutenticado(sub);
+        HttpClient client = ClienteAutenticado(contaId);
         client.DefaultRequestHeaders.Add(TestAuthHandler.RolesHeader, string.Join(',', papeis));
         return client;
     }
 
-    private HttpClient ClienteAutenticado(string sub)
+    private HttpClient ClienteAutenticado(string contaId)
     {
         HttpClient client = _fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme,
             TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, sub);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, contaId);
         client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "Admin Test");
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "admin@unifesspa.edu.br");
         return client;

@@ -322,12 +322,12 @@ public sealed class AuthorizationDecisionServiceTests
         registro.FonteGrant.Should().BeNull();
     }
 
-    [Fact(DisplayName = "O registro identifica o ator por emissor e subject, e nunca pelo identificador do token")]
+    [Fact(DisplayName = "O registro identifica o ator por emissor e identificador da conta, e nunca pelo identificador do token")]
     public async Task Decide_Registro_IdentificaOAtorSemJti()
     {
         RegistroDecisaoAcesso registro = await RegistroDe(Sujeito(concessoes: Concessao()), RequisitoPessoal());
         registro.AtorEmissor.Should().Be("https://idp.exemplo/realms/unifesspa");
-        registro.AtorSubject.Should().Be("sub-opaco-123");
+        registro.AtorSubject.Should().Be("conta-opaco-123");
         typeof(RegistroDecisaoAcesso).GetProperties().Select(static p => p.Name)
             .Should().NotContain("Jti", "o jti identifica a sessão e não é do registro");
     }

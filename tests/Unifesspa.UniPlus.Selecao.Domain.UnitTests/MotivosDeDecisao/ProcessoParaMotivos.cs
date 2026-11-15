@@ -53,8 +53,8 @@ internal static class ProcessoParaMotivos
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
         VersaoConfiguracao versaoBase = VersaoConfiguracao.Abrir(
             processo.Id, Encoding.UTF8.GetBytes("{}"), "1.1", "canonical-json/sha256@v1",
-            Guid.CreateVersion7(), new string('a', 64), "user-sub-1", InicioDaInscricao.AddDays(-30));
-        processo.AbrirRetificacao("Inclusão de motivo", versaoBase, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SemEixosCongelados([publicada]), "user-sub-1", InicioDaInscricao.AddDays(-30))
+            Guid.CreateVersion7(), new string('a', 64), "user-conta-1", InicioDaInscricao.AddDays(-30));
+        processo.AbrirRetificacao("Inclusão de motivo", versaoBase, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SemEixosCongelados([publicada]), "user-conta-1", InicioDaInscricao.AddDays(-30))
             .IsSuccess.Should().BeTrue();
         return processo;
     }

@@ -90,7 +90,7 @@ public sealed class RevogacaoDaConcessao
             return false;
         }
 
-        Identidade beneficiario = new(concessao.BeneficiarioEmissor, concessao.BeneficiarioSub);
+        Identidade beneficiario = new(concessao.BeneficiarioEmissor, concessao.BeneficiarioContaId);
         bool haOutra = await _papel.HaOutroVigenteAsync(beneficiario, agora, cancellationToken).ConfigureAwait(false);
 
         return ContinuidadeDoRepresentante.RevogacaoDeixariaSemRepresentante(concessao, agora, haOutra);

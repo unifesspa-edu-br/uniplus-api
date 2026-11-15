@@ -39,7 +39,7 @@ public sealed class VersaoConfiguracaoTests
             algoritmoHash: "canonical-json/sha256@v1",
             atoCriadorId,
             atoCriadorHash: HashAto,
-            atorUsuarioSub: "user-sub-123",
+            atorUsuarioContaId: "user-conta-123",
             TimeProvider.System.GetUtcNow());
 
     [Fact(DisplayName = "Abrir — a versão 1 abre a cadeia e não retifica ato algum")]
@@ -82,7 +82,7 @@ public sealed class VersaoConfiguracaoTests
             "canonical-json/sha256@v1",
             Guid.CreateVersion7(),
             HashAto,
-            "user-sub-123",
+            "user-conta-123",
             TimeProvider.System.GetUtcNow());
 
         bytesDoCaller[0] = (byte)'X';
@@ -108,7 +108,7 @@ public sealed class VersaoConfiguracaoTests
             atoRetificador,
             OutroHashAto,
             atoCriadorRetificaId: atoAbertura,
-            "user-sub-123",
+            "user-conta-123",
             TimeProvider.System.GetUtcNow());
 
         versao2.NumeroVersao.Should().Be(2, "o número é derivado da versão anterior — buraco é impossível por construção");
@@ -130,7 +130,7 @@ public sealed class VersaoConfiguracaoTests
             "canonical-json/sha256@v1",
             atoAbertura,
             HashAto,
-            "user-sub-123",
+            "user-conta-123",
             clock.GetUtcNow());
 
         // Ajuste NTP em degrau: o relógio do host recua entre a abertura e a
@@ -147,7 +147,7 @@ public sealed class VersaoConfiguracaoTests
             Guid.CreateVersion7(),
             OutroHashAto,
             atoCriadorRetificaId: atoAbertura,
-            "user-sub-123",
+            "user-conta-123",
             clock.GetUtcNow());
 
         versao2.VigenteAPartirDe.Should().Be(
@@ -169,7 +169,7 @@ public sealed class VersaoConfiguracaoTests
             Guid.CreateVersion7(),
             OutroHashAto,
             atoCriadorRetificaId: Guid.CreateVersion7(),
-            "user-sub-123",
+            "user-conta-123",
             TimeProvider.System.GetUtcNow());
 
         sucederForaDaCadeia.Should().Throw<ArgumentException>()
@@ -190,7 +190,7 @@ public sealed class VersaoConfiguracaoTests
             atoAbertura,
             HashAto,
             atoCriadorRetificaId: atoAbertura,
-            "user-sub-123",
+            "user-conta-123",
             TimeProvider.System.GetUtcNow());
 
         sucederComOMesmoAto.Should().Throw<ArgumentException>()
@@ -216,7 +216,7 @@ public sealed class VersaoConfiguracaoTests
             "canonical-json/sha256@v1",
             Guid.CreateVersion7(),
             "NAO-E-UM-HASH",
-            "user-sub-123",
+            "user-conta-123",
             TimeProvider.System.GetUtcNow());
 
         abrirComHashInvalido.Should().Throw<ArgumentException>()
@@ -233,7 +233,7 @@ public sealed class VersaoConfiguracaoTests
             "canonical-json/sha256@v1",
             Guid.CreateVersion7(),
             HashAto,
-            "user-sub-123",
+            "user-conta-123",
             TimeProvider.System.GetUtcNow());
 
         abrirSemBytes.Should().Throw<ArgumentException>()

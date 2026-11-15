@@ -229,7 +229,7 @@ public sealed class OrdemDosPortoesDeCongelamentoTests
             {
                 Dados = dados,
                 Documento = new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", Hash),
-                AtorUsuarioSub = "user-sub-123",
+                AtorUsuarioContaId = "user-conta-123",
                 Instante = Agora,
                 Contexto = contexto,
                 FatosDeModalidade = FatosDeModalidadeDeTeste.DoCatalogo,
@@ -252,7 +252,7 @@ public sealed class OrdemDosPortoesDeCongelamentoTests
 
             processo.AbrirRetificacao(
                 "Correção do prazo", versao, identificadorDaVersaoBase: null,
-                VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora).IsSuccess.Should().BeTrue();
+                VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora).IsSuccess.Should().BeTrue();
             return new(processo, (contexto, tipos) => processo.FecharRetificacao(
                 Pedido(contexto, tipos), versao, PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!])));
         }

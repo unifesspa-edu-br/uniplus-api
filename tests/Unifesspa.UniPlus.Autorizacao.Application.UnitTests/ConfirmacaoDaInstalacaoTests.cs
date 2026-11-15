@@ -59,7 +59,7 @@ public sealed class ConfirmacaoDaInstalacaoTests
         Result resultado = await ConfirmarAsync(new RepositorioDaCorrida(AguardandoCodigo()), concessoes, new UnidadeDeTrabalho(), new PapeisDeTeste(travas));
 
         resultado.IsSuccess.Should().BeTrue();
-        travas.Should().Equal("perfil", "pessoa:" + Gestores()[0].Sub, "pessoa:" + Gestores()[1].Sub, "gestores");
+        travas.Should().Equal("perfil", "pessoa:" + Gestores()[0].ContaId, "pessoa:" + Gestores()[1].ContaId, "gestores");
         concessoes.Adicionadas.Should().HaveCount(2).And.OnlyContain(c => c.PerfilId == concessoes.Adicionadas[0].PerfilId);
     }
 

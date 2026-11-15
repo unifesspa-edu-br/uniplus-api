@@ -18,13 +18,13 @@ internal static class CongelamentoDeTeste
         string schemaVersion,
         string algoritmoHash,
         string hashDocumento,
-        string atorUsuarioSub,
+        string atorUsuarioContaId,
         TimeProvider clock,
         ContextoDeContagemDePrazos contexto,
         FatosDeModalidade fatosDeModalidade,
         TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos) =>
         processo.Publicar(Pedido(
-            dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioSub,
+            dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioContaId,
             clock, contexto, fatosDeModalidade, tiposDeAtoUnicos));
 
     public static Result<VersaoConfiguracao> Retificar(
@@ -35,7 +35,7 @@ internal static class CongelamentoDeTeste
         string schemaVersion,
         string algoritmoHash,
         string hashDocumento,
-        string atorUsuarioSub,
+        string atorUsuarioContaId,
         string motivo,
         TimeProvider clock,
         ContextoDeContagemDePrazos contexto,
@@ -43,7 +43,7 @@ internal static class CongelamentoDeTeste
         TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos) =>
         processo.Retificar(
             Pedido(
-                dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioSub,
+                dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioContaId,
                 clock, contexto, fatosDeModalidade, tiposDeAtoUnicos),
             versaoAtual,
             motivo);
@@ -56,7 +56,7 @@ internal static class CongelamentoDeTeste
         string schemaVersion,
         string algoritmoHash,
         string hashDocumento,
-        string atorUsuarioSub,
+        string atorUsuarioContaId,
         PrecondicaoIfMatch precondicao,
         TimeProvider clock,
         ContextoDeContagemDePrazos contexto,
@@ -64,7 +64,7 @@ internal static class CongelamentoDeTeste
         TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos) =>
         processo.FecharRetificacao(
             Pedido(
-                dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioSub,
+                dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioContaId,
                 clock, contexto, fatosDeModalidade, tiposDeAtoUnicos),
             versaoAtual,
             precondicao);
@@ -75,7 +75,7 @@ internal static class CongelamentoDeTeste
         string schemaVersion,
         string algoritmoHash,
         string hashDocumento,
-        string atorUsuarioSub,
+        string atorUsuarioContaId,
         TimeProvider clock,
         ContextoDeContagemDePrazos contexto,
         FatosDeModalidade fatosDeModalidade,
@@ -84,7 +84,7 @@ internal static class CongelamentoDeTeste
         {
             Dados = dados,
             Documento = new DocumentoCongelado(canonico, schemaVersion, algoritmoHash, hashDocumento),
-            AtorUsuarioSub = atorUsuarioSub,
+            AtorUsuarioContaId = atorUsuarioContaId,
             Instante = clock.GetUtcNow(),
             Contexto = contexto,
             FatosDeModalidade = fatosDeModalidade,

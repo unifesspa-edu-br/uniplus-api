@@ -107,7 +107,7 @@ public sealed class PreparoDaDecisaoDoItem
     private async Task<Result<DecisaoDoItem>> ConferirQuemDecideAsync(Pedido pedido, ItemCarregado carregado, CancellationToken cancellationToken)
     {
         DateTimeOffset agora = _clock.GetUtcNow();
-        Identidade beneficiario = new(carregado.Concessao.BeneficiarioEmissor, carregado.Concessao.BeneficiarioSub);
+        Identidade beneficiario = new(carregado.Concessao.BeneficiarioEmissor, carregado.Concessao.BeneficiarioContaId);
         bool representante = await _papel.EVigenteAsync(beneficiario, agora, cancellationToken).ConfigureAwait(false);
         DecisorDoItem decisor = new(pedido.Decisor, representante);
 

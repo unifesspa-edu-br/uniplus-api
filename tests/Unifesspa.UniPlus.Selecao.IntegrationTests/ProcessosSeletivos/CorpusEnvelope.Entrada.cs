@@ -74,7 +74,7 @@ internal static partial class CorpusEnvelope
             Codec.AlgoritmoHash,
             atoCriadorId: ato ?? AtoAbertura,
             atoCriadorHash: HashDocumento,
-            atorUsuarioSub: Ator,
+            atorUsuarioContaId: Ator,
             instante: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero));
 
     internal static VersaoConfiguracao VersaoDeRetificacao(VersaoConfiguracao anterior, byte[] bytes) =>
@@ -86,7 +86,7 @@ internal static partial class CorpusEnvelope
             atoCriadorId: AtoRetificador,
             atoCriadorHash: HashDocumento,
             atoCriadorRetificaId: anterior.AtoCriadorId,
-            atorUsuarioSub: Ator,
+            atorUsuarioContaId: Ator,
             instante: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero));
 
     /// <summary>

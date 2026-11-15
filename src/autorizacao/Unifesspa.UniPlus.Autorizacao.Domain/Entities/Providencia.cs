@@ -36,7 +36,7 @@ public sealed class Providencia : EntityBase
 
     public string SolicitadaPorEmissor { get; private set; } = string.Empty;
 
-    public string SolicitadaPorSub { get; private set; } = string.Empty;
+    public string SolicitadaPorContaId { get; private set; } = string.Empty;
 
     public string? SolicitadaPorNome { get; private set; }
 
@@ -51,17 +51,17 @@ public sealed class Providencia : EntityBase
 
     public string? DesfechoPorEmissor { get; private set; }
 
-    public string? DesfechoPorSub { get; private set; }
+    public string? DesfechoPorContaId { get; private set; }
 
     public string? DesfechoPorNome { get; private set; }
 
     public string? MotivoDoDesfecho { get; private set; }
 
-    public Identidade SolicitadaPor => new(SolicitadaPorEmissor, SolicitadaPorSub, SolicitadaPorNome);
+    public Identidade SolicitadaPor => new(SolicitadaPorEmissor, SolicitadaPorContaId, SolicitadaPorNome);
 
     /// <summary>Quem respondeu ou atendeu; nulo enquanto aberta.</summary>
     public Identidade? DesfechoPor =>
-        DesfechoPorEmissor is null || DesfechoPorSub is null ? null : new(DesfechoPorEmissor, DesfechoPorSub, DesfechoPorNome);
+        DesfechoPorEmissor is null || DesfechoPorContaId is null ? null : new(DesfechoPorEmissor, DesfechoPorContaId, DesfechoPorNome);
 
     // Construtor de materialização do EF Core.
     private Providencia()
@@ -218,7 +218,7 @@ public sealed class Providencia : EntityBase
         Estado = estado;
         DesfechoEm = ato.Instante;
         DesfechoPorEmissor = ato.Agente.Emissor;
-        DesfechoPorSub = ato.Agente.Sub;
+        DesfechoPorContaId = ato.Agente.ContaId;
         DesfechoPorNome = ato.Agente.Nome;
         MotivoDoDesfecho = motivo;
 
@@ -253,7 +253,7 @@ public sealed class Providencia : EntityBase
             Estado = EstadoDaProvidencia.Aberta,
             AbertaEm = instante,
             SolicitadaPorEmissor = solicitante.Identidade.Emissor,
-            SolicitadaPorSub = solicitante.Identidade.Sub,
+            SolicitadaPorContaId = solicitante.Identidade.ContaId,
             SolicitadaPorNome = solicitante.Nome,
             SolicitadaPorEmail = solicitante.EmailVerificado ? PedidoDeConcessao.EmailNormalizado(solicitante.Email) : null,
         };

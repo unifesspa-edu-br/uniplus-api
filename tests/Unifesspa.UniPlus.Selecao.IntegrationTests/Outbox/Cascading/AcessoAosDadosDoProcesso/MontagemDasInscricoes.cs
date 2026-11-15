@@ -38,7 +38,7 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
         IDocumentoDaInscricaoRepository documentos = sp.GetRequiredService<IDocumentoDaInscricaoRepository>();
         (Guid fernanda, ArquivosDaInscricao arquivos) = await AdicionarFernandaAsync(inscricoes, documentos, processo);
         RascunhoDeInscricao rascunho = await AdicionarRascunhoAsync(inscricoes, documentos, processo);
-        Guid erick = await AdicionarEnviadaAsync(inscricoes, processo, CpfDeErick, "sub-erick", FatosDoCenario.PassaporteDeErick);
+        Guid erick = await AdicionarEnviadaAsync(inscricoes, processo, CpfDeErick, "conta-erick", FatosDoCenario.PassaporteDeErick);
         Guid servidora = await AdicionarEnviadaAsync(inscricoes, processo, CpfDeHelena, PersonasDoAcesso.Caroline, null);
         Guid comGrupo = await AdicionarComGrupoAsync(inscricoes, processo);
         await sp.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();
@@ -52,7 +52,7 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
     private static async Task<(Guid Id, ArquivosDaInscricao Arquivos)> AdicionarFernandaAsync(
         IInscricaoRepository inscricoes, IDocumentoDaInscricaoRepository documentos, ProcessoPublicado processo)
     {
-        Inscricao inscricao = Inscricao.Iniciar(processo.Id, PersonasDeTeste.FernandaDrumond, "sub-fernanda", "https://idp.test", processo.VersaoId).Value!;
+        Inscricao inscricao = Inscricao.Iniciar(processo.Id, PersonasDeTeste.FernandaDrumond, "conta-fernanda", "https://idp.test", processo.VersaoId).Value!;
         Result<ComprovanteInscricao> submissao = Submeter(inscricao);
         submissao.IsSuccess.Should().BeTrue(string.Join("; ", submissao.Errors.Select(e => e.Error.Message)));
         await inscricoes.AdicionarAsync(inscricao);
@@ -80,7 +80,7 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
     private static async Task<RascunhoDeInscricao> AdicionarRascunhoAsync(
         IInscricaoRepository inscricoes, IDocumentoDaInscricaoRepository documentos, ProcessoPublicado processo)
     {
-        Inscricao rascunho = Inscricao.Iniciar(processo.Id, PersonasDeTeste.KevinCarvalho, "sub-kevin", "https://idp.test", processo.VersaoId).Value!;
+        Inscricao rascunho = Inscricao.Iniciar(processo.Id, PersonasDeTeste.KevinCarvalho, "conta-kevin", "https://idp.test", processo.VersaoId).Value!;
         await inscricoes.AdicionarAsync(rascunho);
         Guid arquivo = await AdicionarArquivoDoTipoAsync(documentos, rascunho.Id, processo, TiposDeDocumentoDoCenario.Pessoal);
         return new RascunhoDeInscricao(rascunho.Id, arquivo);
@@ -88,7 +88,7 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
 
     /// <summary>Uma inscrição enviada, na versão publicada, com o CPF e, se houver, o número do passaporte em claro para o repositório cifrar.</summary>
     private static async Task<Guid> AdicionarEnviadaAsync(
-        IInscricaoRepository inscricoes, ProcessoPublicado processo, Cpf cpf, string sub, string? passaporte)
+        IInscricaoRepository inscricoes, ProcessoPublicado processo, Cpf cpf, string contaId, string? passaporte)
     {
         Dictionary<string, JsonElement> respostas = RespostasDoCpf(cpf);
         Dictionary<string, DefinicaoDaResposta> definicoes = DefinicoesDoCpf();
@@ -98,7 +98,7 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
             definicoes[FatosDoCenario.Identificador] = IdentificadorEmTexto();
         }
 
-        Inscricao inscricao = Submetida(processo, cpf, sub, "000002", respostas, definicoes, SemGrupos());
+        Inscricao inscricao = Submetida(processo, cpf, contaId, "000002", respostas, definicoes, SemGrupos());
         await inscricoes.AdicionarAsync(inscricao);
         return inscricao.Id;
     }
@@ -110,16 +110,16 @@ internal sealed class MontagemDasInscricoes(CascadingFixture fixture)
         definicoes[processo.FatoDoGrupo] = IdentificadorEmTexto();
 
         Inscricao inscricao = Submetida(
-            processo, CpfDoResponsavel, "sub-helena", "000003", RespostasDoCpf(CpfDoResponsavel), definicoes, OcorrenciasDosResponsaveis(processo.FatoDoGrupo));
+            processo, CpfDoResponsavel, "conta-helena", "000003", RespostasDoCpf(CpfDoResponsavel), definicoes, OcorrenciasDosResponsaveis(processo.FatoDoGrupo));
         await inscricoes.AdicionarAsync(inscricao);
         return inscricao.Id;
     }
 
     private static Inscricao Submetida(
-        ProcessoPublicado processo, Cpf cpf, string sub, string numero, Dictionary<string, JsonElement> respostas,
+        ProcessoPublicado processo, Cpf cpf, string contaId, string numero, Dictionary<string, JsonElement> respostas,
         Dictionary<string, DefinicaoDaResposta> definicoes, Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos) =>
         Inscricao.Reidratar(
-            Guid.CreateVersion7(), processo.Id, cpf, sub, TestAuthHandler.DefaultIssuer, SituacaoInscricao.Submetida, processo.VersaoId, null, null,
+            Guid.CreateVersion7(), processo.Id, cpf, contaId, TestAuthHandler.DefaultIssuer, SituacaoInscricao.Submetida, processo.VersaoId, null, null,
             numero, null, null, null, respostas, new Dictionary<string, JsonElement>(StringComparer.Ordinal), grupos, [], definicoes,
             revisao: 1, DateTimeOffset.UtcNow, null);
 

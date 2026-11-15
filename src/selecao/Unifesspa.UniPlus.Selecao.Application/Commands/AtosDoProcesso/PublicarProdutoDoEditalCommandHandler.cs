@@ -160,7 +160,7 @@ public static class PublicarProdutoDoEditalCommandHandler
                     command.AtoCorrigidoId,
                     command.MotivoDaCorrecao,
                     ItemDoEdital: produto.Item,
-                    PoliticaConfirmadaPorSub: conferenciaDaPolitica.Value),
+                    PoliticaConfirmadaPorContaId: conferenciaDaPolitica.Value),
                 atoDoProcessoRepository,
                 registroCentralDeAtos,
                 unitOfWork,

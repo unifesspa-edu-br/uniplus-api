@@ -420,7 +420,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
             : throw new InvalidOperationException($"A inscrição {record.Id} não tem a resposta do CPF.");
 
         return Inscricao.Reidratar(
-            record.Id, record.ProcessoSeletivoId, cpf, record.Sub, record.EmissorToken, record.Situacao,
+            record.Id, record.ProcessoSeletivoId, cpf, record.ContaId, record.EmissorToken, record.Situacao,
             record.VersaoFormularioId, record.OfertaCursoId, record.OfertaCursoSegundaOpcaoId, record.NumeroInscricao,
             record.CanceladaEm, record.CanceladaPor, record.MotivoDoCancelamento,
             respostas, derivados, grupos, aceites, definicoes,
@@ -744,7 +744,7 @@ public sealed class InscricaoRepository : IInscricaoRepository
 
         record.ProcessoSeletivoId = entity.ProcessoSeletivoId;
         record.CpfIndice = cpfIndice;
-        record.Sub = entity.Sub;
+        record.ContaId = entity.ContaId;
         record.EmissorToken = entity.EmissorToken;
         record.Situacao = entity.Situacao;
         record.VersaoFormularioId = entity.VersaoFormularioId;

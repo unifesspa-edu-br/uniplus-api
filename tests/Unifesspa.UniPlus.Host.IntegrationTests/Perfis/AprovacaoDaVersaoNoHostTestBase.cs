@@ -94,8 +94,8 @@ public abstract class AprovacaoDaVersaoNoHostTestBase : VersoesDoPerfilNoHostTes
         List<DecisaoDaVersao> decisoes = await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>()
             .DecisoesDasVersoes.AsNoTracking().Where(d => d.VersaoId == versaoId).OrderBy(d => d.Instante).ToListAsync();
 
-        return [.. decisoes.Select(d => new DecisaoGravada(d.Etapa.ToString(), d.Resultado.ToString(), d.DecisorSub, d.DecisorTemConcessao))];
+        return [.. decisoes.Select(d => new DecisaoGravada(d.Etapa.ToString(), d.Resultado.ToString(), d.DecisorContaId, d.DecisorTemConcessao))];
     }
 
-    private protected sealed record DecisaoGravada(string Etapa, string Resultado, string Sub, bool TemConcessao);
+    private protected sealed record DecisaoGravada(string Etapa, string Resultado, string ContaId, bool TemConcessao);
 }

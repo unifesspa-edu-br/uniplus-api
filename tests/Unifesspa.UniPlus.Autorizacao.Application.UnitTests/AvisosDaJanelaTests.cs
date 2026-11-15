@@ -180,7 +180,7 @@ public sealed class AvisosDaJanelaTests
 
         private static TitularDaPermissao[] Padrao(string codigo) =>
             codigo == Gestao
-                ? [new(Emissor, Diogo.Sub, EmailDiogo), new(Emissor, Isabella.Sub, EmailIsabella)]
-                : [new(Emissor, "marlene.martins", EmailMarlene), new(Emissor, Isabella.Sub, EmailIsabella)];
+                ? [new(Emissor, Diogo.ContaId, EmailDiogo), new(Emissor, Isabella.ContaId, EmailIsabella)]
+                : [new(Emissor, "marlene.martins", EmailMarlene), new(Emissor, Isabella.ContaId, EmailIsabella)];
     }
 }

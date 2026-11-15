@@ -68,7 +68,7 @@ public sealed class AberturaDaProvidenciaTests
         _cenario.Unidade.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
-    [Fact(DisplayName = "Sem emissor e sub no token, a abertura é recusada antes de tocar a concessão")]
+    [Fact(DisplayName = "Sem emissor e conta no token, a abertura é recusada antes de tocar a concessão")]
     public async Task Abrir_AutorNaoIdentificado_Recusa()
     {
         IUserContext semAutor = Substitute.For<IUserContext>();
@@ -105,7 +105,7 @@ internal static class Usuarios
     {
         IUserContext usuario = Substitute.For<IUserContext>();
         usuario.Issuer.Returns(pessoa.Identidade.Emissor);
-        usuario.UserId.Returns(pessoa.Identidade.Sub);
+        usuario.UserId.Returns(pessoa.Identidade.ContaId);
         usuario.NomeCompleto.Returns(pessoa.Nome);
         usuario.Email.Returns(pessoa.Email);
         usuario.EmailVerificado.Returns(pessoa.EmailVerificado);

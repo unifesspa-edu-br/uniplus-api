@@ -37,7 +37,7 @@ public static class IdDoAviso
         return new Guid(bytes, bigEndian: true);
     }
 
-    // Cada componente em UTF-8, precedido do comprimento em 4 bytes: emissor e sub são texto opaco e podem conter
+    // Cada componente em UTF-8, precedido do comprimento em 4 bytes: emissor e conta são texto opaco e podem conter
     // qualquer separador, e a serialização não pode confundir dois conjuntos de componentes.
     private static byte[] Serializar(ChaveDoAviso chave)
     {
@@ -46,7 +46,7 @@ public static class IdDoAviso
 
         string[] componentes =
         [
-            chave.Tipo.ToCodigo(), chave.FatoId.ToString("N"), chave.Marco, chave.Destinatario.Emissor, chave.Destinatario.Sub,
+            chave.Tipo.ToCodigo(), chave.FatoId.ToString("N"), chave.Marco, chave.Destinatario.Emissor, chave.Destinatario.ContaId,
         ];
 
         foreach (byte[] texto in componentes.Select(Encoding.UTF8.GetBytes))

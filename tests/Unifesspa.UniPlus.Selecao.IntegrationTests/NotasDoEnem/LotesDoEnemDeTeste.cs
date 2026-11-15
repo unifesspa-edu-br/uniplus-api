@@ -47,7 +47,7 @@ internal static class LotesDoEnemDeTeste
         string leiaute = "INEP_ENEM_RETORNO",
         IReadOnlyList<AvaliacaoApurada>? avaliacoes = null) =>
         LoteDeNotasDoEnem.Registrar(
-            escopo.ProcessoId, escopo.EtapaId, Edicao, leiaute, "v1", Hash, arquivoHash, "sub-admin", em,
+            escopo.ProcessoId, escopo.EtapaId, Edicao, leiaute, "v1", Hash, arquivoHash, "conta-admin", em,
             cruzamento.ComNota.Count + cruzamento.LinhasSemInscrito.Count, escopo.VersaoId, cruzamento, avaliacoes ?? []);
 
     public static ResultadoDoCruzamento ComNota(params (Guid Inscricao, string NumeroEnem, decimal Nota)[] inscritos) =>

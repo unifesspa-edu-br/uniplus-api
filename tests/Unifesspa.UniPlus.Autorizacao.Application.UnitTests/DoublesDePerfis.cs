@@ -28,7 +28,7 @@ internal static class DoublesDePerfis
     internal sealed class Usuario(Identidade? identidade) : IUserContext
     {
         public bool IsAuthenticated => identidade is not null;
-        public string? UserId => identidade?.Sub;
+        public string? UserId => identidade?.ContaId;
         public string? Issuer => identidade?.Emissor;
         public string? Jti => null;
         public string? Name => null;

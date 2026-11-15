@@ -1,18 +1,18 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 /// <summary>
-/// Quem praticou um ato do circuito de aprovação da proteção de dados: o emissor e o <c>sub</c> do token
+/// Quem praticou um ato do circuito de aprovação da proteção de dados: o emissor e o <c>contaId</c> do token
 /// (ADR-0033), que identificam a pessoa, e o nome de exibição que o token trazia no instante do ato.
 /// </summary>
 /// <param name="Emissor">O emissor (<c>iss</c>) do token.</param>
-/// <param name="Sub">O identificador (<c>sub</c>) da pessoa no emissor.</param>
+/// <param name="ContaId">O identificador (<c>contaId</c>) da pessoa no emissor.</param>
 /// <param name="Nome">O nome de exibição no instante do ato; nulo quando o token não trazia nome.</param>
-public sealed record AtorDoAto(string Emissor, string Sub, string? Nome)
+public sealed record AtorDoAto(string Emissor, string ContaId, string? Nome)
 {
     /// <summary>Tamanho máximo do nome, também o da coluna que o guarda.</summary>
     public const int NomeMaxLength = 255;
 
-    /// <summary>Tamanho máximo do emissor e do sub, também o das colunas que os guardam.</summary>
+    /// <summary>Tamanho máximo do emissor e da conta, também o das colunas que os guardam.</summary>
     public const int IdentidadeMaxLength = 255;
 
     /// <summary>

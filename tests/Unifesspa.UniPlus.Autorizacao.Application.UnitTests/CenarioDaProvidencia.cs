@@ -48,8 +48,8 @@ internal sealed class CenarioDaProvidencia
         [
             new(ProvidenciaBuilder.Emissor, "diogo.souza", EmailDiogo),
             new(ProvidenciaBuilder.Emissor, "marlene.martins", EmailMarlene),
-            new(ProvidenciaBuilder.Emissor, ProvidenciaBuilder.Cecilia.Identidade.Sub, ProvidenciaBuilder.Cecilia.Email!),
-            new(ProvidenciaBuilder.Emissor, ProvidenciaBuilder.Leandro.Identidade.Sub, ProvidenciaBuilder.Leandro.Email!),
+            new(ProvidenciaBuilder.Emissor, ProvidenciaBuilder.Cecilia.Identidade.ContaId, ProvidenciaBuilder.Cecilia.Email!),
+            new(ProvidenciaBuilder.Emissor, ProvidenciaBuilder.Leandro.Identidade.ContaId, ProvidenciaBuilder.Leandro.Email!),
         ]);
     }
 

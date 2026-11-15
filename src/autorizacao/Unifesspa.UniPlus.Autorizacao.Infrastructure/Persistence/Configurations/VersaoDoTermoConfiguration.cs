@@ -38,7 +38,7 @@ public sealed class VersaoDoTermoConfiguration : IEntityTypeConfiguration<Versao
         builder.Property(v => v.Resumo).HasMaxLength(ConteudoDoTermo.ResumoLength).IsFixedLength().IsRequired();
         builder.Property(v => v.Ato).HasMaxLength(ConteudoDoTermo.AtoMaxLength).IsRequired();
         builder.Property(v => v.AutorEmissor).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(v => v.AutorSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(v => v.AutorContaId).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(v => v.AutorNome).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(v => v.PublicadaEm).IsRequired();
 

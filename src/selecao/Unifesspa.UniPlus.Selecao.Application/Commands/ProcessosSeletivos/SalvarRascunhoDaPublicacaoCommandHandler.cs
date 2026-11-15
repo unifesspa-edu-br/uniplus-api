@@ -42,7 +42,7 @@ public static class SalvarRascunhoDaPublicacaoCommandHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        if (DonoDoRascunho(userContext) is not { } usuarioSub)
+        if (DonoDoRascunho(userContext) is not { } usuarioContaId)
         {
             return Result.Failure(RascunhoDaPublicacao.SemDono);
         }
@@ -59,13 +59,13 @@ public static class SalvarRascunhoDaPublicacaoCommandHandler
         DateTimeOffset agora = timeProvider.GetUtcNow();
 
         RascunhoDePublicacao? existente = await rascunhoRepository
-            .ObterDoOperadorAsync(command.ProcessoSeletivoId, usuarioSub, cancellationToken)
+            .ObterDoOperadorAsync(command.ProcessoSeletivoId, usuarioContaId, cancellationToken)
             .ConfigureAwait(false);
 
         if (existente is null)
         {
             Result<RascunhoDePublicacao> criacao = RascunhoDePublicacao.Criar(
-                command.ProcessoSeletivoId, usuarioSub, conteudo, command.Versao, agora, RascunhoDePublicacao.Prazo);
+                command.ProcessoSeletivoId, usuarioContaId, conteudo, command.Versao, agora, RascunhoDePublicacao.Prazo);
             if (criacao.IsFailure)
             {
                 return Result.Failure(criacao.Error!);
@@ -123,7 +123,7 @@ public static class SalvarRascunhoDaPublicacaoCommandHandler
             unitOfWork.DescartarAlteracoesNaoSalvas();
 
             RascunhoDePublicacao? vencedor = await rascunhoRepository
-                .ObterDoOperadorAsync(command.ProcessoSeletivoId, usuarioSub, cancellationToken)
+                .ObterDoOperadorAsync(command.ProcessoSeletivoId, usuarioContaId, cancellationToken)
                 .ConfigureAwait(false);
             if (vencedor is null)
             {
@@ -168,13 +168,13 @@ public static class SalvarRascunhoDaPublicacaoCommandHandler
             // ao operador como falha de servidor, e a chave de idempotência da requisição
             // ficaria presa até o fim do prazo.
             RascunhoDePublicacao? atual = await rascunhoRepository
-                .ObterDoOperadorAsync(command.ProcessoSeletivoId, usuarioSub, cancellationToken)
+                .ObterDoOperadorAsync(command.ProcessoSeletivoId, usuarioContaId, cancellationToken)
                 .ConfigureAwait(false);
 
             if (atual is null)
             {
                 Result<RascunhoDePublicacao> recriacao = RascunhoDePublicacao.Criar(
-                    command.ProcessoSeletivoId, usuarioSub, conteudo, command.Versao, agora, RascunhoDePublicacao.Prazo);
+                    command.ProcessoSeletivoId, usuarioContaId, conteudo, command.Versao, agora, RascunhoDePublicacao.Prazo);
                 if (recriacao.IsFailure)
                 {
                     return Result.Failure(recriacao.Error!);

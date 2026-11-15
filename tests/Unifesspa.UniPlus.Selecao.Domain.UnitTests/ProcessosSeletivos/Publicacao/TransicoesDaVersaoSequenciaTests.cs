@@ -31,12 +31,12 @@ public sealed class TransicoesDaVersaoSequenciaTests
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) =>
         processo.Publicar(
-            Dados(), Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-sub-123", new RelogioFixo(Agora),
+            Dados(), Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-conta-123", new RelogioFixo(Agora),
             ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
     private static Result<VersaoConfiguracao> Retificar(ProcessoSeletivo processo, VersaoConfiguracao versao) =>
         processo.Retificar(
-            Dados(), versao, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-sub-123", "Correção do prazo",
+            Dados(), versao, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-conta-123", "Correção do prazo",
             new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo,
             TiposDeAtoUnicosDeTeste.Nenhum);
 
@@ -78,7 +78,7 @@ public sealed class TransicoesDaVersaoSequenciaTests
         ProcessoSeletivo rascunho = ProcessoConformeFactory.Criar();
 
         Action chamada = () => rascunho.Retificar(
-            Dados(), null!, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-sub-123", "Correção do prazo",
+            Dados(), null!, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-conta-123", "Correção do prazo",
             new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo,
             TiposDeAtoUnicosDeTeste.Nenhum);
 
@@ -130,9 +130,9 @@ public sealed class TransicoesDaVersaoSequenciaTests
 
     private static Result<VersaoConfiguracao> Fechar(ProcessoSeletivo p, VersaoConfiguracao versao, PrecondicaoIfMatch precondicao) =>
         p.FecharRetificacao(
-            Dados(), versao, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-sub-123", precondicao,
+            Dados(), versao, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-conta-123", precondicao,
             new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
     private static VersaoConfiguracao VersaoDe(ProcessoSeletivo processo) =>
-        VersaoConfiguracao.Abrir(processo.Id, Bytes, "1.1", "canonical-json/sha256@v1", Guid.CreateVersion7(), Hash, "user-sub-123", Agora);
+        VersaoConfiguracao.Abrir(processo.Id, Bytes, "1.1", "canonical-json/sha256@v1", Guid.CreateVersion7(), Hash, "user-conta-123", Agora);
 }

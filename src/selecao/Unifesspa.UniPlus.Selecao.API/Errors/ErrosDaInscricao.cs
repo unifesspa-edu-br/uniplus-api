@@ -22,7 +22,7 @@ internal static class ErrosDaInscricao
         new(OpcaoDeclaradaFatoErrorCodes.FonteNaoEhDoProcesso, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.fonte_nao_eh_do_processo", "Só se declaram opções para um fato cuja fonte dos valores é o processo")),
         new(OpcaoDeclaradaFatoErrorCodes.EdicaoEnemForaDeProcessoEnem, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.opcao_declarada_fato.edicao_enem_fora_de_processo_enem", "As edições do ENEM só podem ser declaradas quando a classificação do processo é baseada em ENEM")),
         // Inscrição do candidato.
-        new(InscricaoErrorCodes.SubObrigatorio, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.sub_obrigatorio", "O token precisa trazer o claim sub")),
+        new(InscricaoErrorCodes.ContaIdObrigatorio, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.conta_id_obrigatorio", "O token precisa trazer o claim sub")),
         new(InscricaoErrorCodes.EmissorObrigatorio, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.selecao.inscricao.emissor_obrigatorio", "O token precisa trazer o emissor")),
         new(InscricaoErrorCodes.DescarteSoDeRascunho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.descarte_so_de_rascunho", "Só o rascunho da inscrição pode ser descartado")),
         new(InscricaoErrorCodes.CancelamentoSoDeEnviada, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.inscricao.cancelamento_so_de_enviada", "Só a inscrição enviada pode ser cancelada")),

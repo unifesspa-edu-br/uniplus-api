@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 /// <summary>
-/// As requisições ao host de teste: da persona que o token identifica pelo <c>sub</c>, do administrador anônimo que
+/// As requisições ao host de teste: da persona que o token identifica pelo <c>contaId</c>, do administrador anônimo que
 /// monta o processo e da persona atendida por um host cujo registro de acesso está fora do ar. O corpo vai em JSON, e o
 /// verbo que muda estado leva a chave de idempotência.
 /// </summary>

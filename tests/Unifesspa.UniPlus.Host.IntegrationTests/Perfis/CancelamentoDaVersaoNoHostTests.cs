@@ -33,7 +33,7 @@ public sealed class CancelamentoDaVersaoNoHostTests : AprovacaoDaVersaoNoHostTes
         using HttpClient betina = await ClienteComPermissoesAsync(Betina, AprovarFuncional);
         Envio vigente = await PerfilVigenteAsync(diogo, Consultar);
         Envio versao = await CriarVersaoAsync(betina, vigente.PerfilId, Nome(), Consultar);
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Betina.Sub.ToString());
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Betina.ContaId.ToString());
         using HttpClient semPermissao = Cliente(Betina);
 
         using HttpResponseMessage resposta = await CancelarBrutoAsync(semPermissao, versao);

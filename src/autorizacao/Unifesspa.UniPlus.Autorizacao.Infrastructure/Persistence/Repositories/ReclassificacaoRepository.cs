@@ -136,7 +136,7 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
 
         Guid[] portadoras = [.. versoes.Select(static v => v.VersaoDoDocumento ?? v.Id).Distinct()];
         List<Guid> lidas = await _context.LeiturasDosDocumentosDasVersoes.AsNoTracking()
-            .Where(l => l.LeitorEmissor == leitor.Emissor && l.LeitorSub == leitor.Sub)
+            .Where(l => l.LeitorEmissor == leitor.Emissor && l.LeitorContaId == leitor.ContaId)
             .Join(_context.DocumentosDasVersoes, l => l.DocumentoId, d => d.Id, (l, d) => d.VersaoId)
             .Where(versaoId => portadoras.Contains(versaoId))
             .Distinct()

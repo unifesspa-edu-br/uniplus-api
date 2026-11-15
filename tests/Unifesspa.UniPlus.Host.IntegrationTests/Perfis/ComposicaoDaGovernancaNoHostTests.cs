@@ -105,11 +105,11 @@ public sealed class ComposicaoDaGovernancaNoHostTests
     [InlineData(TipoDeGovernanca.EncarregadoDeDados)]
     public async Task CatalogoDePermissoes_ConsultadoPelosTresPerfis(TipoDeGovernanca governanca)
     {
-        string sub = $"catalogo.{governanca}".ToLowerInvariant();
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
-        await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, sub, governanca);
+        string contaId = $"catalogo.{governanca}".ToLowerInvariant();
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, contaId);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(_fixture.Factory.Services, contaId, governanca);
 
-        using HttpClient cliente = Cliente(sub);
+        using HttpClient cliente = Cliente(contaId);
         using HttpResponseMessage resposta = await cliente.GetAsync(new Uri("/api/autorizacao/permissoes", UriKind.Relative));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.OK);
@@ -124,11 +124,11 @@ public sealed class ComposicaoDaGovernancaNoHostTests
         return new(definicao!.Codigo, definicao.Modulo, definicao.Requisito.Sensibilidade, definicao.DeUnidade, definicao.ReservadaAGovernanca);
     }
 
-    private HttpClient Cliente(string sub)
+    private HttpClient Cliente(string contaId)
     {
         HttpClient cliente = _fixture.Factory.CreateClient();
         cliente.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        cliente.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, sub);
+        cliente.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, contaId);
 
         return cliente;
     }

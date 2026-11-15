@@ -211,7 +211,7 @@ public sealed class JanelaVencidaNoHostTests : JanelaDeMigracaoNoHostTestBase
         using HttpClient betina = Cliente(Betina);
         Guid pedido = await CriarAsync(betina, perfilId, await SemearUnidadeAsync(), null);
         await ConcessoesDeTeste.ConcederAsync(
-            Fixture.Factory.Services, Leandro.Sub.ToString(), perfilId, EscopoDaConcessao.DaUnidade(Guid.CreateVersion7()), email: Leandro.Email);
+            Fixture.Factory.Services, Leandro.ContaId.ToString(), perfilId, EscopoDaConcessao.DaUnidade(Guid.CreateVersion7()), email: Leandro.Email);
         await TrocarComposicaoAsync(perfilId, Consultar, Sensivel);
 
         return (perfilId, pedido);

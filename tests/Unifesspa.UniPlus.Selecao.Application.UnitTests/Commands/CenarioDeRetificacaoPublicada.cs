@@ -65,7 +65,7 @@ internal sealed class CenarioDeRetificacaoPublicada
     public void AbrirSessao() =>
         Processo.AbrirRetificacao(
             "Correção do prazo", _versao, identificadorDaVersaoBase: null,
-            FatosDasVersoesPublicadas.De([_grafoPublicado], [_congelado]), "user-sub-1", Agora)
+            FatosDasVersoesPublicadas.De([_grafoPublicado], [_congelado]), "user-conta-1", Agora)
             .IsSuccess.Should().BeTrue();
 
     public Task<(Result Resposta, IEnumerable<object> Eventos)> RetificarAsync() => _handlers.RetificarAsync();

@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class PerfisConcedidosDoUsuarioTests
 {
     private const string Emissor = "https://idp.exemplo/realms/unifesspa";
-    private const string Sub = "leandro.viana";
+    private const string ContaId = "leandro.viana";
     private const string Gestor = "Gestor de processo seletivo";
 
     private static readonly DateTimeOffset Agora = new(2026, 10, 30, 12, 0, 0, TimeSpan.Zero);
@@ -85,7 +85,7 @@ public sealed class PerfisConcedidosDoUsuarioTests
         await ListarAsync();
 
         await _concessoes.Received(1).ListarAsync(
-            Arg.Is<UsuarioRef>(p => p.Emissor == Emissor && p.Subject == Sub),
+            Arg.Is<UsuarioRef>(p => p.Emissor == Emissor && p.ContaId == ContaId),
             Arg.Any<CancellationToken>());
     }
 
@@ -148,14 +148,14 @@ public sealed class PerfisConcedidosDoUsuarioTests
     }
 
     [Theory]
-    [InlineData(null, Sub)]
-    [InlineData("", Sub)]
+    [InlineData(null, ContaId)]
+    [InlineData("", ContaId)]
     [InlineData(Emissor, null)]
     [InlineData(Emissor, " ")]
-    public async Task TokenSemEmissorOuSubject_Falha(string? emissor, string? sub)
+    public async Task TokenSemEmissorOuContaId_Falha(string? emissor, string? contaId)
     {
         Result<IReadOnlyList<PerfilConcedidoResponse>> resultado = await PerfisConcedidosDoUsuario.ListarAsync(
-            emissor, sub, _concessoes, _unidades, Agora, CancellationToken.None);
+            emissor, contaId, _concessoes, _unidades, Agora, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         await _concessoes.DidNotReceiveWithAnyArgs().ListarAsync(default!, default);
@@ -173,7 +173,7 @@ public sealed class PerfisConcedidosDoUsuarioTests
     private async Task<IReadOnlyList<PerfilConcedidoResponse>> ListarAsync()
     {
         Result<IReadOnlyList<PerfilConcedidoResponse>> resultado = await PerfisConcedidosDoUsuario.ListarAsync(
-            Emissor, Sub, _concessoes, _unidades, Agora, CancellationToken.None);
+            Emissor, ContaId, _concessoes, _unidades, Agora, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
         return resultado.Value!;

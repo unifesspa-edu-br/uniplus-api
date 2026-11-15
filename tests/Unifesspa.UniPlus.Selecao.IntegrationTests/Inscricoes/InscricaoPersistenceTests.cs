@@ -80,7 +80,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
     public InscricaoPersistenceTests(InscricaoDbFixture fixture) => _fixture = fixture;
 
     private static Inscricao NovaInscricao(Cpf cpf, Guid processo) =>
-        Inscricao.Iniciar(processo, cpf, "sub-1", "https://issuer", VersaoFormulario).Value!;
+        Inscricao.Iniciar(processo, cpf, "conta-1", "https://issuer", VersaoFormulario).Value!;
 
     private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> SemGrupos() => new(StringComparer.Ordinal);
 
@@ -324,7 +324,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         IUserContext dono = Substitute.For<IUserContext>();
         dono.Cpf.Returns(PersonasDeTeste.FernandaDrumond.Valor);
         dono.NomeCompleto.Returns(PersonasDeTeste.NomeFernandaDrumond);
-        dono.UserId.Returns("sub-1");
+        dono.UserId.Returns("conta-1");
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
 
@@ -691,7 +691,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         IUserContext dono = Substitute.For<IUserContext>();
         dono.Cpf.Returns(PersonasDeTeste.FernandaDrumond.Valor);
         dono.NomeCompleto.Returns(PersonasDeTeste.NomeFernandaDrumond);
-        dono.UserId.Returns("sub-1");
+        dono.UserId.Returns("conta-1");
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         InscricaoRepository leitura = new(readContext, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
@@ -958,7 +958,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         {
             InscricaoRepository repositorio = new(context, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
             Inscricao lida = (await repositorio.ObterPorIdAsync(primeira.Id))!;
-            lida.Cancelar("Mudei de curso", "sub-1", canceladaEm, PrecondicaoIfMatch.DeTags([lida.ETag])).IsSuccess.Should().BeTrue();
+            lida.Cancelar("Mudei de curso", "conta-1", canceladaEm, PrecondicaoIfMatch.DeTags([lida.ETag])).IsSuccess.Should().BeTrue();
             await repositorio.AtualizarAsync(lida);
             await context.SaveChangesAsync();
         }
@@ -969,7 +969,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
             Inscricao cancelada = (await repositorio.ObterPorIdAsync(primeira.Id))!;
             cancelada.Situacao.Should().Be(SituacaoInscricao.Cancelada);
             cancelada.NumeroInscricao.Should().Be("000777");
-            cancelada.CanceladaPor.Should().Be("sub-1");
+            cancelada.CanceladaPor.Should().Be("conta-1");
             cancelada.MotivoDoCancelamento.Should().Be("Mudei de curso");
             cancelada.CanceladaEm.Should().BeCloseTo(canceladaEm, TimeSpan.FromMilliseconds(1));
             (await repositorio.ObterAtivaPorProcessoECpfAsync(processo, PersonasDeTeste.FernandaDrumond))
@@ -1015,7 +1015,7 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         InscricaoRepository inscricoes = new(leitura, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         Inscricao lida = (await inscricoes.ObterPorIdAsync(inscricao.Id))!;
-        lida.Cancelar(null, "sub-1", DateTimeOffset.UtcNow, PrecondicaoIfMatch.DeTags([lida.ETag])).IsSuccess.Should().BeTrue();
+        lida.Cancelar(null, "conta-1", DateTimeOffset.UtcNow, PrecondicaoIfMatch.DeTags([lida.ETag])).IsSuccess.Should().BeTrue();
         await inscricoes.AtualizarAsync(lida);
         await leitura.SaveChangesAsync();
 
@@ -1023,16 +1023,16 @@ public sealed class InscricaoPersistenceTests : IClassFixture<InscricaoDbFixture
         inscricoes = new(relida, _fixture.Encryption, _fixture.BlindIndex, TimeProvider.System);
         DocumentoDaInscricaoRepository repositorioDeDocumentos = new(relida);
 
-        Task<Result<ArquivoDaApresentacao>> Resolver(string sub)
+        Task<Result<ArquivoDaApresentacao>> Resolver(string contaId)
         {
             IUserContext usuario = Substitute.For<IUserContext>();
-            usuario.UserId.Returns(sub);
+            usuario.UserId.Returns(contaId);
             usuario.Cpf.Returns(PersonasDeTeste.FernandaDrumond.Valor);
             return AcessoAoDocumentoDaInscricao.ResolverArquivoDoDonoAsync(
                 processo, arquivo.Id, usuario, inscricoes, repositorioDeDocumentos, CancellationToken.None);
         }
 
-        (await Resolver("sub-1")).Value!.Id.Should().Be(arquivo.Id);
-        (await Resolver("sub-2")).Error.Should().Be(AcessoAoDocumentoDaInscricao.ArquivoNaoEncontrado);
+        (await Resolver("conta-1")).Value!.Id.Should().Be(arquivo.Id);
+        (await Resolver("conta-2")).Error.Should().Be(AcessoAoDocumentoDaInscricao.ArquivoNaoEncontrado);
     }
 }

@@ -74,7 +74,7 @@ public sealed class ContencaoDoPerfilNoHostTests : ContencaoDoPerfilNoHostTestBa
         using HttpClient isabella = await GestaoAsync();
         using HttpClient betina = Cliente(Betina);
 
-        await ConcessoesDeTeste.ConcederAsync(Fixture.Factory.Services, Betina.Sub.ToString(), perfilId, EscopoDaConcessao.DaInstituicao(), email: Betina.Email);
+        await ConcessoesDeTeste.ConcederAsync(Fixture.Factory.Services, Betina.ContaId.ToString(), perfilId, EscopoDaConcessao.DaInstituicao(), email: Betina.Email);
 
         (await ConsultarCatalogoAsync(betina)).Should().Be(HttpStatusCode.Forbidden);
         (await TitularesAsync(Catalogo)).Should().NotContain(Leandro.Email).And.NotContain(Betina.Email);
@@ -127,7 +127,7 @@ public sealed class ContencaoDoPerfilNoHostTests : ContencaoDoPerfilNoHostTestBa
 
         trilha.Select(r => r.GetProperty("tipo").GetString()).Should().Equal("suspensao", "decisao_da_retomada", "decisao_da_retomada", "retomada");
         trilha.Select(r => r.GetProperty("ordem").GetInt64()).Should().BeInAscendingOrder().And.OnlyHaveUniqueItems();
-        (trilha[0].GetProperty("pessoa").GetProperty("nome").GetString(), trilha[0].GetProperty("pessoa").GetProperty("sub").GetString()).Should().Be((Diogo.Nome, Diogo.Sub.ToString()));
+        (trilha[0].GetProperty("pessoa").GetProperty("nome").GetString(), trilha[0].GetProperty("pessoa").GetProperty("contaId").GetString()).Should().Be((Diogo.Nome, Diogo.ContaId.ToString()));
         trilha[1].GetProperty("etapa").GetString().Should().Be(EtapaProtecao);
         (trilha[3].GetProperty("ator").GetString(), trilha[3].GetProperty("origem").GetString(), trilha[3].GetProperty("pessoa").ValueKind).Should().Be(("sistema", "decisao_da_etapa", JsonValueKind.Null));
         trilha.Select(r => r.GetProperty("referenciaId").GetGuid()).Distinct().Should().ContainSingle();

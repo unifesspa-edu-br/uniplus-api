@@ -140,7 +140,7 @@ public sealed class DocumentosDasVersoesTests
         cenario.Armazenamento.ChavesDeLeitura.Should().Equal(documento.ChaveDefinitiva);
         LeituraDoDocumentoDaVersao leitura = cenario.Perfis.Leituras.Should().ContainSingle().Subject;
         leitura.DocumentoId.Should().Be(documento.Id);
-        leitura.LeitorSub.Should().Be(PerfisDeTeste.Autor.Sub);
+        leitura.LeitorContaId.Should().Be(PerfisDeTeste.Autor.ContaId);
         cenario.Unidade.Gravacoes.Should().Be(1);
     }
 
@@ -216,7 +216,7 @@ public sealed class DocumentosDasVersoesTests
     }
 
     private static TrilhaDeAcesso SobreOPerfil(string permissao, Guid perfilId, ResultadoDoAcesso resultado) =>
-        new(PerfisDeTeste.Autor.Sub, permissao, ResourceTiposAutorizacao.Perfil, perfilId, resultado);
+        new(PerfisDeTeste.Autor.ContaId, permissao, ResourceTiposAutorizacao.Perfil, perfilId, resultado);
 
     private sealed class Cenario
     {
@@ -225,7 +225,7 @@ public sealed class DocumentosDasVersoesTests
             Perfis = new PerfisNaMemoria(perfil);
             Unidade = new UnidadeDeTrabalho();
             Armazenamento = new Armazenamento();
-            Verificador = new VerificadorDeTeste(PerfisDeTeste.Autor.Sub, permitidas.Length == 0 ? [Manter] : permitidas);
+            Verificador = new VerificadorDeTeste(PerfisDeTeste.Autor.ContaId, permitidas.Length == 0 ? [Manter] : permitidas);
             Documentos = new DocumentosDasVersoes(
                 new OperacaoSobreOPerfil(Perfis, Unidade, new CenarioDaGovernancaDaVersao.RelogioFixo(PerfisDeTeste.Instante.AddHours(1))),
                 new EnvioDoDocumento(Armazenamento, TimeProvider.System),

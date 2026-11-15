@@ -24,5 +24,5 @@ public interface ITitularesDaPermissao
     Task<IReadOnlyList<TitularDaPermissao>> ListarTitularesComEmailAsync(string codigoDaPermissao, CancellationToken cancellationToken = default);
 }
 
-/// <summary>Quem tem uma permissão por concessão vigente: a identidade que o token traz (emissor e <c>sub</c>) e o e-mail da concessão.</summary>
-public sealed record TitularDaPermissao(string Emissor, string Sub, string Email);
+/// <summary>Quem tem uma permissão por concessão vigente: a identidade que o token traz (emissor e <c>contaId</c>) e o e-mail da concessão.</summary>
+public sealed record TitularDaPermissao(string Emissor, string ContaId, string Email);

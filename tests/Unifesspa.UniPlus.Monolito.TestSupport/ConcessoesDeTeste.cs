@@ -52,24 +52,24 @@ public static class ConcessoesDeTeste
     /// instituição. Concessão igual já ativa é reaproveitada.
     /// </summary>
     /// <param name="services">Provedor de serviços do host de teste.</param>
-    /// <param name="sub">Valor do <c>sub</c> que a persona envia no token.</param>
+    /// <param name="contaId">Valor do <c>contaId</c> que a persona envia no token.</param>
     /// <param name="perfilId">Perfil a conceder.</param>
     /// <param name="escopo">Escopo da concessão; a instituição quando omitido.</param>
     /// <param name="validaAte">Fim da vigência, quando a concessão é por prazo.</param>
     /// <param name="email">E-mail que a concessão guarda do titular; <see cref="EmailDeTeste"/> quando omitido.</param>
     public static async Task<Guid> ConcederAsync(
         IServiceProvider services,
-        string sub,
+        string contaId,
         Guid perfilId,
         EscopoDaConcessao? escopo = null,
         DateTimeOffset? validaAte = null,
         string? email = null)
     {
         ArgumentNullException.ThrowIfNull(services);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sub);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contaId);
 
         EscopoDaConcessao alcance = escopo ?? EscopoDaConcessao.DaInstituicao();
-        Identidade beneficiario = new(TestAuthHandler.DefaultIssuer, sub);
+        Identidade beneficiario = new(TestAuthHandler.DefaultIssuer, contaId);
 
         await using AsyncServiceScope scope = services.CreateAsyncScope();
         IConcessaoRepository concessoes = scope.ServiceProvider.GetRequiredService<IConcessaoRepository>();
@@ -106,29 +106,29 @@ public static class ConcessoesDeTeste
     /// Apaga todas as concessões da pessoa, para o teste começar de uma pessoa sem acesso algum, e antes as providências
     /// solicitadas sobre elas, que a chave estrangeira não deixa para trás.
     /// </summary>
-    public static async Task RemoverDaPessoaAsync(IServiceProvider services, string sub)
+    public static async Task RemoverDaPessoaAsync(IServiceProvider services, string contaId)
     {
         ArgumentNullException.ThrowIfNull(services);
-        ArgumentException.ThrowIfNullOrWhiteSpace(sub);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contaId);
 
         await using AsyncServiceScope scope = services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        IQueryable<Concessao> daPessoa = db.Concessoes.Where(c => c.BeneficiarioEmissor == TestAuthHandler.DefaultIssuer && c.BeneficiarioSub == sub);
+        IQueryable<Concessao> daPessoa = db.Concessoes.Where(c => c.BeneficiarioEmissor == TestAuthHandler.DefaultIssuer && c.BeneficiarioContaId == contaId);
         await db.Providencias.Where(p => daPessoa.Any(c => c.Id == p.ConcessaoId)).ExecuteDeleteAsync();
         await daPessoa.ExecuteDeleteAsync();
     }
 
     /// <summary>Concede à pessoa um perfil novo que reúne as permissões, no escopo da instituição.</summary>
-    public static async Task<Guid> ConcederPermissoesAsync(IServiceProvider services, string sub, params string[] permissoes) =>
-        await ConcederAsync(services, sub, await CriarPerfilAsync(services, permissoes));
+    public static async Task<Guid> ConcederPermissoesAsync(IServiceProvider services, string contaId, params string[] permissoes) =>
+        await ConcederAsync(services, contaId, await CriarPerfilAsync(services, permissoes));
 
     /// <summary>
     /// Concede à pessoa o perfil de governança da carga inicial: o do gestor de acessos, o do
     /// Representante do controlador ou o do Encarregado de dados.
     /// </summary>
     public static Task<Guid> ConcederGovernancaAsync(
-        IServiceProvider services, string sub, TipoDeGovernanca governanca, string? email = null) =>
-        ConcederAsync(services, sub, PerfilDe(governanca), email: email);
+        IServiceProvider services, string contaId, TipoDeGovernanca governanca, string? email = null) =>
+        ConcederAsync(services, contaId, PerfilDe(governanca), email: email);
 
     private static Guid PerfilDe(TipoDeGovernanca governanca) => governanca switch
     {

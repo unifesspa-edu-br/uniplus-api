@@ -63,10 +63,10 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
     private Task<List<LinhaDoAcesso>> LerLinhasAsync(UsuarioRef pessoa, CancellationToken cancellationToken)
     {
         string emissor = pessoa.Emissor;
-        string sub = pessoa.Subject;
+        string contaId = pessoa.ContaId;
 
         IQueryable<Concessao> daPessoa = _context.Concessoes.AsNoTracking()
-            .Where(c => c.BeneficiarioEmissor == emissor && c.BeneficiarioSub == sub && c.RevogadaEm == null);
+            .Where(c => c.BeneficiarioEmissor == emissor && c.BeneficiarioContaId == contaId && c.RevogadaEm == null);
 
         return _context.LinhasDeAcessoComImpressao(daPessoa, _relogio.GetUtcNow()).ToListAsync(cancellationToken);
     }

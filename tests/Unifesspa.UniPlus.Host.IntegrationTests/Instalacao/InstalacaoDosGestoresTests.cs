@@ -54,7 +54,7 @@ public sealed class InstalacaoDosGestoresTests : InstalacaoTestBase
         using HttpResponseMessage confirmada = await EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/confirmacao", new { codigo = await UltimoCodigoAsync(Paulo) });
 
         confirmada.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        (await ListarGestoresAtivosAsync()).Should().BeEquivalentTo(Diogo.Sub.ToString(), Isabella.Sub.ToString());
+        (await ListarGestoresAtivosAsync()).Should().BeEquivalentTo(Diogo.ContaId.ToString(), Isabella.ContaId.ToString());
         (await TiposDaTrilhaDaInstalacaoAsync(id)).Should().Equal("instalacao_iniciada", "documento_verificado", "codigo_enviado", "tentativas", "instalacao_confirmada", "termo_excecao_da_instalacao");
         (await TiposDaTrilhaDaConcessaoAsync(id, Diogo)).Should().Contain(["concedida", "instalacao_iniciada", "documento_verificado", "codigo_enviado", "instalacao_confirmada"]);
     }
@@ -186,6 +186,6 @@ public sealed class InstalacaoDosGestoresTests : InstalacaoTestBase
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
         return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes
-            .AsNoTracking().SingleAsync(c => c.PerfilId == PerfisDeSistema.GestorDeAcessosId && c.BeneficiarioSub == gestor.Sub.ToString());
+            .AsNoTracking().SingleAsync(c => c.PerfilId == PerfisDeSistema.GestorDeAcessosId && c.BeneficiarioContaId == gestor.ContaId.ToString());
     }
 }

@@ -119,11 +119,11 @@ public sealed class RevisaoDeAcessosRepository : IRevisaoDeAcessosRepository
                 && c.RevogadaEm == null
                 && (c.ValidaAte == null || c.ValidaAte > agora))
             .OrderBy(c => c.Id)
-            .Select(c => new { ConcessaoId = c.Id, c.PerfilId, c.BeneficiarioEmissor, c.BeneficiarioSub })
+            .Select(c => new { ConcessaoId = c.Id, c.PerfilId, c.BeneficiarioEmissor, c.BeneficiarioContaId })
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return [.. concessoes.Select(c => (c.ConcessaoId, c.PerfilId, new Identidade(c.BeneficiarioEmissor, c.BeneficiarioSub)))];
+        return [.. concessoes.Select(c => (c.ConcessaoId, c.PerfilId, new Identidade(c.BeneficiarioEmissor, c.BeneficiarioContaId)))];
     }
 
     public async Task<IReadOnlyList<ItemDaRevisao>> ListarDecisoesDaConcessaoAsync(

@@ -41,7 +41,7 @@ public sealed class HistoricoDaProtecaoEndpointTests : HistoricoDaProtecaoTestBa
         (atos[1].GetProperty("justificativa").GetString(), atos[1].GetProperty("finalidadeTratamento").GetString())
             .Should().Be(("A renda bruta é desnecessária para a finalidade.", Finalidade));
         atos.Should().OnlyContain(a => a.GetProperty("instante").GetDateTimeOffset() > DateTimeOffset.UtcNow.AddMinutes(-5));
-        atos.SelectMany(a => a.EnumerateObject().Select(p => p.Name)).Should().NotContain(["sub", "atorSub", "emissor", "atorEmissor"]);
+        atos.SelectMany(a => a.EnumerateObject().Select(p => p.Name)).Should().NotContain(["contaId", "atorContaId", "emissor", "atorEmissor"]);
     }
 
     [Fact(DisplayName = "O detalhe do item, lido pelo Representante do controlador, traz os atos registrados mesmo depois da correção")]

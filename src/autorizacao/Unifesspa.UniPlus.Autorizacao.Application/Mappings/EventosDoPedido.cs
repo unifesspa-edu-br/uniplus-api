@@ -58,7 +58,7 @@ public sealed class EventosDoPedido : IEventosDaOrigem
 
     private static IEnumerable<EventoDaTrilhaDto> DoSolicitante(PedidoDeConcessao pedido)
     {
-        IdentidadeDto solicitante = Dto(pedido.SolicitanteEmissor, pedido.SolicitanteSub, pedido.SolicitanteNome);
+        IdentidadeDto solicitante = Dto(pedido.SolicitanteEmissor, pedido.SolicitanteContaId, pedido.SolicitanteNome);
 
         return
         [
@@ -72,13 +72,13 @@ public sealed class EventosDoPedido : IEventosDaOrigem
     {
         if (pedido.BeneficiarioAceitouEm is { } aceitouEm && pedido.Beneficiario is { } beneficiario)
         {
-            yield return new("beneficiario_aceitou", aceitouEm, Dto(beneficiario.Emissor, beneficiario.Sub, beneficiario.Nome), null);
+            yield return new("beneficiario_aceitou", aceitouEm, Dto(beneficiario.Emissor, beneficiario.ContaId, beneficiario.Nome), null);
         }
 
         if (pedido.AceiteDoTermo is { } aceite)
         {
             yield return new(
-                "termo_aceito", aceite.AceitoEm, Dto(aceite.PessoaEmissor, aceite.PessoaSub, aceite.PessoaNome), $"Versão {aceite.Numero}, resumo {aceite.Resumo}.");
+                "termo_aceito", aceite.AceitoEm, Dto(aceite.PessoaEmissor, aceite.PessoaContaId, aceite.PessoaNome), $"Versão {aceite.Numero}, resumo {aceite.Resumo}.");
         }
     }
 
@@ -101,11 +101,11 @@ public sealed class EventosDoPedido : IEventosDaOrigem
     }
 
     private static EventoDaTrilhaDto DaLeitura(LeituraDoAnexoDoPedido l) =>
-        new("anexo_lido", l.Instante, Dto(l.LeitorEmissor, l.LeitorSub, l.LeitorNome), $"Anexo {l.AnexoId}.");
+        new("anexo_lido", l.Instante, Dto(l.LeitorEmissor, l.LeitorContaId, l.LeitorNome), $"Anexo {l.AnexoId}.");
 
     private static EventoDaTrilhaDto[] DaDecisao(DecisaoDoPedido decisao)
     {
-        IdentidadeDto decisor = Dto(decisao.DecisorEmissor, decisao.DecisorSub, decisao.DecisorNome);
+        IdentidadeDto decisor = Dto(decisao.DecisorEmissor, decisao.DecisorContaId, decisao.DecisorNome);
         string etapa = $"Etapa: {decisao.Etapa.ToCodigo()}.";
         if (SemDecisao(decisao.Resultado) is { } semDecisao)
         {
@@ -140,5 +140,5 @@ public sealed class EventosDoPedido : IEventosDaOrigem
         }
     }
 
-    private static IdentidadeDto Dto(string emissor, string sub, string? nome) => new(emissor, sub, nome);
+    private static IdentidadeDto Dto(string emissor, string contaId, string? nome) => new(emissor, contaId, nome);
 }

@@ -43,7 +43,7 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
 
     public ImportarNotasDoEnemCommandHandlerTests()
     {
-        _usuario.UserId.Returns("sub-admin");
+        _usuario.UserId.Returns("conta-admin");
         _indices.CalcularAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
             .Returns(chamada => (IReadOnlyDictionary<string, IndiceCegoDoCpf>)chamada.Arg<IReadOnlyCollection<string>>()
                 .ToDictionary(c => c, Indice));
@@ -189,7 +189,7 @@ public sealed class ImportarNotasDoEnemCommandHandlerTests
         resultado.Value.Lote.TotalDeLinhas.Should().Be(3);
         resultado.Value.Lote.TotalDeInscritosComNota.Should().Be(2);
         resultado.Value.Lote.TotalDeLinhasSemInscrito.Should().Be(1);
-        resultado.Value.Lote.ImportadoPor.Should().Be("sub-admin");
+        resultado.Value.Lote.ImportadoPor.Should().Be("conta-admin");
         await _lotes.Received(1).AdicionarAsync(Arg.Any<LoteDeNotasDoEnem>(), Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }

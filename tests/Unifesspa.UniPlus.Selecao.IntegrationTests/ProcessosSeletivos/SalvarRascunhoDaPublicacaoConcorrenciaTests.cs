@@ -101,7 +101,7 @@ public sealed class SalvarRascunhoDaPublicacaoConcorrenciaTests
 
         unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
         await rascunhoRepository.Received(1).AdicionarAsync(
-            Arg.Is<RascunhoDePublicacao>(r => r.UsuarioSub == Operador && r.Conteudo.Contains("de agora")),
+            Arg.Is<RascunhoDePublicacao>(r => r.UsuarioContaId == Operador && r.Conteudo.Contains("de agora")),
             Arg.Any<CancellationToken>());
         await unitOfWork.Received(2).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }

@@ -110,13 +110,13 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
     private static void ConfigurarAutoria(EntityTypeBuilder<VersaoDoPerfil> builder)
     {
         builder.Property(v => v.CriadaPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(v => v.CriadaPorSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(v => v.CriadaPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(v => v.CriadaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(v => v.CriadaPorEmail).HasMaxLength(PedidoDeConcessao.EmailMaxLength).ClassificaComo(ClassificacaoDeProtecao.Pessoal);
         builder.Property(v => v.CriadorTemConcessao).IsRequired();
         builder.Ignore(v => v.CriadaPor);
         builder.Property(v => v.CanceladaPorEmissor).HasMaxLength(IdentidadeMaxLength);
-        builder.Property(v => v.CanceladaPorSub).HasMaxLength(IdentidadeMaxLength);
+        builder.Property(v => v.CanceladaPorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(v => v.CanceladaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
     }
 

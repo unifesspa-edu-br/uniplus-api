@@ -53,7 +53,7 @@ public sealed class RascunhoRetificacaoConfiguration : IEntityTypeConfiguration<
             .HasColumnType("jsonb")
             .IsRequired();
         builder.Property(r => r.AbertoEm).IsRequired();
-        builder.Property(r => r.AbertoPorSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(255).IsRequired();
+        builder.Property(r => r.AbertoPorContaId).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(255).IsRequired();
         builder.Property(r => r.Revisao).IsRequired();
 
         // UNIQUE simples, não parcial: o rascunho é APAGADO no fechamento e no descarte —

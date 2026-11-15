@@ -50,7 +50,7 @@ public sealed class DefinirCronogramaFasesRemocaoIniciadaTests
     {
         (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicado();
         processo.AbrirRetificacao(
-            "Correção do prazo", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora)
+            "Correção do prazo", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora)
             .IsSuccess.Should().BeTrue();
         return (processo, Guid.CreateVersion7());
     }

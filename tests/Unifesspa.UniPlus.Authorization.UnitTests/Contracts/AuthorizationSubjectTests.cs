@@ -13,7 +13,7 @@ public sealed class AuthorizationSubjectTests
     private const string Emissor = "https://sso.gov.br";
     private const string Permissao = "selecao.editais.publicar";
 
-    private static UsuarioRef Usuario() => UsuarioRef.From(Emissor, "sub-123").Value!;
+    private static UsuarioRef Usuario() => UsuarioRef.From(Emissor, "conta-123").Value!;
 
     // ─── CA-03: grants de fontes distintas convivem numa única lista ───────
 

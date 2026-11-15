@@ -31,7 +31,7 @@ public static class RevogarConcessaoCommandHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        // O ponto de decisão já exige emissor e sub, mas o handler não presume: sem autor
+        // O ponto de decisão já exige emissor e conta, mas o handler não presume: sem autor
         // identificado a revogação não é gravada, e a recusa não vira 500.
         if (IdentidadeDoToken.De(userContext) is not { } revogadaPor)
         {

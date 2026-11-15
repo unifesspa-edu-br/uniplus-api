@@ -28,7 +28,7 @@ internal static class ProcessoEmEdicaoDeTeste
                 new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
                 Guid.CreateVersion7()).Value!,
             Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString()), "1.1", "canonical-json/sha256@v1",
-            new string('a', 64), "user-sub-123", new RelogioFixo(Agora),
+            new string('a', 64), "user-conta-123", new RelogioFixo(Agora),
             ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         processo.DequeueDomainEvents();
@@ -41,7 +41,7 @@ internal static class ProcessoEmEdicaoDeTeste
         ProcessoSeletivo processo = PublicadoSemSessao(out VersaoConfiguracao versao);
         processo.AbrirRetificacao(
             "Correção do prazo", versao, identificadorDaVersaoBase: null,
-            VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora).IsSuccess.Should().BeTrue();
+            VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora).IsSuccess.Should().BeTrue();
         return processo;
     }
 }

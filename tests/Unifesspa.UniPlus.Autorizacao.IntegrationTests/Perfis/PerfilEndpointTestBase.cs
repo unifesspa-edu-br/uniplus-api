@@ -92,7 +92,7 @@ public abstract class PerfilEndpointTestBase
         ExecutarAsync(
             """
             INSERT INTO autorizacao.versoes_do_perfil
-                (id, perfil_id, numero, nome, descricao, protocolo, situacao, origem, alcance, ciclo_de_aprovacao, criador_tem_concessao, exige_protecao_de_dados, expira_em, criada_por_emissor, criada_por_sub, criada_em, created_at)
+                (id, perfil_id, numero, nome, descricao, protocolo, situacao, origem, alcance, ciclo_de_aprovacao, criador_tem_concessao, exige_protecao_de_dados, expira_em, criada_por_emissor, criada_por_conta_id, criada_em, created_at)
             VALUES ({0}, {1}, {2}, {3}, 'Descrição de teste.', 'P-1', {4}, 'proposta', '', 0, false, false, now() + interval '15 days', 'emissor', 'diogo.souza', now(), now())
             """,
             Guid.CreateVersion7(), perfilId, numero, Nome(), situacao);
@@ -191,19 +191,19 @@ public abstract class PerfilEndpointTestBase
         return Cliente(OutroGestor);
     }
 
-    internal async Task<HttpClient> ClienteComPermissoesAsync(string sub, params string[] permissoes)
+    internal async Task<HttpClient> ClienteComPermissoesAsync(string contaId, params string[] permissoes)
     {
-        await ConcessoesDeTeste.ConcederPermissoesAsync(Fixture.Factory.Services, sub, permissoes);
-        return Cliente(sub);
+        await ConcessoesDeTeste.ConcederPermissoesAsync(Fixture.Factory.Services, contaId, permissoes);
+        return Cliente(contaId);
     }
 
-    internal HttpClient Cliente(string sub)
+    internal HttpClient Cliente(string contaId)
     {
         HttpClient client = Fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, sub);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, sub);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, contaId);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, contaId);
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "teste@unifesspa.edu.br");
         return client;
     }

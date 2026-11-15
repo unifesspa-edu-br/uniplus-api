@@ -3,11 +3,11 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
-/// <summary>A identidade (emissor e sub) de quem executa a operação, tirada do token.</summary>
+/// <summary>A identidade (emissor e conta) de quem executa a operação, tirada do token.</summary>
 internal static class IdentidadeDoToken
 {
     /// <summary>
-    /// A identidade do token, com o nome de exibição, ou nulo quando faltam emissor ou sub: sem autor identificado nada é
+    /// A identidade do token, com o nome de exibição, ou nulo quando faltam emissor ou conta: sem autor identificado nada é
     /// gravado.
     /// </summary>
     public static Identidade? De(IUserContext userContext)
@@ -20,7 +20,7 @@ internal static class IdentidadeDoToken
     }
 
     /// <summary>
-    /// A pessoa do token, com o nome e o e-mail que ele traz, ou nulo quando faltam emissor ou sub. O nome é o social
+    /// A pessoa do token, com o nome e o e-mail que ele traz, ou nulo quando faltam emissor ou conta. O nome é o social
     /// quando há, senão o civil (<see cref="NomeDe"/>).
     /// </summary>
     public static PessoaNoToken? PessoaDe(IUserContext userContext) =>

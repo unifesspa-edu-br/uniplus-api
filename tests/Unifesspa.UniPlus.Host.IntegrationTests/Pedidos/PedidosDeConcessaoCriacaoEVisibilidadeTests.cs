@@ -50,8 +50,8 @@ public sealed class PedidosDeConcessaoCriacaoEVisibilidadeTests : PedidosDeConce
 
         JsonElement corpo = await CorpoAsync(resposta, HttpStatusCode.Created);
         corpo.GetProperty("situacao").GetString().Should().Be("aguardando_gestor");
-        corpo.GetProperty("beneficiario").GetProperty("identidade").GetProperty("sub").GetString().Should().Be(Leandro.Sub.ToString());
-        corpo.GetProperty("solicitante").GetProperty("sub").GetString().Should().Be(Leandro.Sub.ToString());
+        corpo.GetProperty("beneficiario").GetProperty("identidade").GetProperty("contaId").GetString().Should().Be(Leandro.ContaId.ToString());
+        corpo.GetProperty("solicitante").GetProperty("contaId").GetString().Should().Be(Leandro.ContaId.ToString());
     }
 
     [Fact(DisplayName = "Pedido igual ao ativo é recusado como duplicado, e volta a valer depois do cancelamento")]

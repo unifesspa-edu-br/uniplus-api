@@ -31,21 +31,21 @@ public sealed class ObterContencaoDoPerfilQueryHandlerTests
         resultado.Value!.Select(r => r.Tipo).Should().BeEquivalentTo("suspensao", "retomada", ContencaoMapping.TipoDaDecisao);
         resultado.Value!.Single(r => r.Tipo == ContencaoMapping.TipoDaDecisao).Should().Match<RegistroDaContencaoDto>(d =>
             d.Etapa == "gestao_de_acessos" && d.DecisorTemConcessao == true
-            && d.Pessoa == new IdentidadeDto(PerfisDeTeste.ProtecaoDeDados.Emissor, PerfisDeTeste.ProtecaoDeDados.Sub, PerfisDeTeste.ProtecaoDeDados.Nome));
+            && d.Pessoa == new IdentidadeDto(PerfisDeTeste.ProtecaoDeDados.Emissor, PerfisDeTeste.ProtecaoDeDados.ContaId, PerfisDeTeste.ProtecaoDeDados.Nome));
         resultado.Value!.Single(r => r.Tipo == "retomada").Should().Match<RegistroDaContencaoDto>(r =>
             r.Ator == "sistema" && r.Origem == "decisao_da_etapa" && r.Pessoa == null);
         cenario.Verificador.Gravados.Should().ContainSingle();
     }
 
-    [Fact(DisplayName = "A suspensão por token sem nome traz o emissor e o sub de quem agiu, com o nome nulo")]
-    public async Task Obter_SuspensaoSemNome_TrazEmissorESub()
+    [Fact(DisplayName = "A suspensão por token sem nome traz o emissor e a conta de quem agiu, com o nome nulo")]
+    public async Task Obter_SuspensaoSemNome_TrazEmissorEContaId()
     {
-        Perfil perfil = Suspenso(new Identidade(PerfisDeTeste.Gestor.Emissor, PerfisDeTeste.Gestor.Sub, null));
+        Perfil perfil = Suspenso(new Identidade(PerfisDeTeste.Gestor.Emissor, PerfisDeTeste.Gestor.ContaId, null));
         CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, [Manter]);
 
         Result<IReadOnlyList<RegistroDaContencaoDto>> resultado = await Obter(cenario, perfil.Id);
 
-        resultado.Value!.Single().Pessoa.Should().Be(new IdentidadeDto(PerfisDeTeste.Gestor.Emissor, PerfisDeTeste.Gestor.Sub, null));
+        resultado.Value!.Single().Pessoa.Should().Be(new IdentidadeDto(PerfisDeTeste.Gestor.Emissor, PerfisDeTeste.Gestor.ContaId, null));
     }
 
     [Fact(DisplayName = "Quem aprova pela proteção de dados também lê a trilha")]

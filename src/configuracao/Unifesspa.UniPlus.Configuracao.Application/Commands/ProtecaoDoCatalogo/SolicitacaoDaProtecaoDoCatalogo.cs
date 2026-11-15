@@ -157,7 +157,7 @@ public sealed class SolicitacaoDaProtecaoDoCatalogo
     private async Task<Result> EnviarAsync(IReadOnlyList<IItemSobAprovacao> itens, AtorDoAto ator, CancellationToken cancellationToken)
     {
         DateTimeOffset agora = _relogio.GetUtcNow();
-        Result? recusada = itens.Select(i => i.Solicitar(ator.Sub, agora)).FirstOrDefault(static t => t.IsFailure);
+        Result? recusada = itens.Select(i => i.Solicitar(ator.ContaId, agora)).FirstOrDefault(static t => t.IsFailure);
         if (recusada is not null)
         {
             _unitOfWork.DescartarAlteracoesNaoSalvas();

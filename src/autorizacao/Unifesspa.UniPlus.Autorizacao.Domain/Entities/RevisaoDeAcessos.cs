@@ -33,13 +33,13 @@ public sealed class RevisaoDeAcessos : EntityBase
 
     public string AbertaPorEmissor { get; private set; } = string.Empty;
 
-    public string AbertaPorSub { get; private set; } = string.Empty;
+    public string AbertaPorContaId { get; private set; } = string.Empty;
 
     public string? AbertaPorNome { get; private set; }
 
     public IReadOnlyList<ItemDaRevisao> Itens => _itens;
 
-    public Identidade AbertaPor => new(AbertaPorEmissor, AbertaPorSub, AbertaPorNome);
+    public Identidade AbertaPor => new(AbertaPorEmissor, AbertaPorContaId, AbertaPorNome);
 
     // Construtor de materialização do EF Core.
     private RevisaoDeAcessos()
@@ -56,7 +56,7 @@ public sealed class RevisaoDeAcessos : EntityBase
         {
             AbertaEm = instante,
             AbertaPorEmissor = abertaPor.Emissor,
-            AbertaPorSub = abertaPor.Sub,
+            AbertaPorContaId = abertaPor.ContaId,
             AbertaPorNome = abertaPor.Nome,
         };
 
@@ -130,7 +130,7 @@ public sealed class RevisaoDeAcessos : EntityBase
             return new DomainError(RevisaoErrorCodes.ConcessaoNaoAtiva, "A concessão deste item já não está ativa: foi revogada ou venceu fora da revisão.");
         }
 
-        return decisor.Equals(new Identidade(concessao.BeneficiarioEmissor, concessao.BeneficiarioSub))
+        return decisor.Equals(new Identidade(concessao.BeneficiarioEmissor, concessao.BeneficiarioContaId))
             ? new DomainError(RevisaoErrorCodes.DecisorEBeneficiario, "Ninguém decide o item da própria concessão.")
             : null;
     }

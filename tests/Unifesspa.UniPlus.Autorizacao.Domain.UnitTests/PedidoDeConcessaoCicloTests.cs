@@ -29,7 +29,7 @@ public sealed class PedidoDeConcessaoCicloTests : PedidoDeConcessaoTestBase
         pedido.Decisoes.Select(d => d.Resultado).Should().Equal(ResultadoDaDecisao.Aprovado, ResultadoDaDecisao.PerfilAlterado);
         DecisaoDoPedido tentativa = pedido.Decisoes[1];
         tentativa.Etapa.Should().Be(EtapaDoPedido.ProtecaoDeDados);
-        tentativa.DecisorSub.Should().Be(Marlene.Identidade.Sub);
+        tentativa.DecisorContaId.Should().Be(Marlene.Identidade.ContaId);
         tentativa.PermissoesAvaliadas.Should().Equal(Ampliado.Permissoes);
     }
 

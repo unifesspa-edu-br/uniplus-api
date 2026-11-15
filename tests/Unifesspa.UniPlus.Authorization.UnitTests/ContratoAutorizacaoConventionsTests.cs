@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 ///   <item>CA-10 — campo canônico omitido/renomeado, opcionalidade trocada ou
 ///   snapshot acoplado à entidade persistida;</item>
 ///   <item>CA-07 — nome de provedor de identidade embutido (em qualquer membro
-///   público) ou subject do token tipado como <see cref="Guid"/>.</item>
+///   público) ou contaId do token tipado como <see cref="Guid"/>.</item>
 /// </list>
 /// </summary>
 /// <remarks>
@@ -166,7 +166,7 @@ public sealed class ContratoAutorizacaoConventionsTests
             "CA-10: AtuacaoAtiva é o VO de contrato (snapshot), não a entidade persistida.");
     }
 
-    [Fact(DisplayName = "CA-07: nenhum tipo embute provedor de identidade e o subject do token é string opaca, nunca Guid")]
+    [Fact(DisplayName = "CA-07: nenhum tipo embute provedor de identidade e o contaId do token é string opaca, nunca Guid")]
     public void TiposFormais_NaoEmbutemProvedorDeIdentidade()
     {
         IReadOnlyList<Type> contrato = LocalizarTiposDeContrato();
@@ -190,17 +190,17 @@ public sealed class ContratoAutorizacaoConventionsTests
             "CA-07 (ADR-0078): nenhum tipo nomeia um provedor de identidade específico — "
             + "o emissor é genérico do token, sem amarração a produto.");
 
-        // (2) Subject e emissor do token são string opaca OBRIGATÓRIA, jamais
+        // (2) ContaId e emissor do token são string opaca OBRIGATÓRIA, jamais
         // Guid: identificadores de provedores externos não têm forma de GUID, e
         // tipá-los como Guid (ou torná-los anuláveis) rejeitaria/enfraqueceria
         // sujeitos válidos (ADR-0032 mantém OIDC/token como strings).
         NullabilityInfoContext nulabilidade = new();
 
-        PropertyInfo subject = PropriedadeObrigatoria(typeof(UsuarioRef), nameof(UsuarioRef.Subject));
-        subject.PropertyType.Should().Be<string>(
-            "CA-07: o subject do token é string opaca — tratá-lo como Guid quebraria sujeitos válidos.");
-        nulabilidade.Create(subject).ReadState.Should().Be(
-            NullabilityState.NotNull, "CA-07: o subject do token é obrigatório, não anulável.");
+        PropertyInfo contaId = PropriedadeObrigatoria(typeof(UsuarioRef), nameof(UsuarioRef.ContaId));
+        contaId.PropertyType.Should().Be<string>(
+            "CA-07: o contaId do token é string opaca — tratá-lo como Guid quebraria sujeitos válidos.");
+        nulabilidade.Create(contaId).ReadState.Should().Be(
+            NullabilityState.NotNull, "CA-07: o contaId do token é obrigatório, não anulável.");
 
         PropertyInfo emissor = PropriedadeObrigatoria(typeof(UsuarioRef), nameof(UsuarioRef.Emissor));
         emissor.PropertyType.Should().Be<string>("CA-07: o emissor é string genérica do token.");
@@ -208,30 +208,28 @@ public sealed class ContratoAutorizacaoConventionsTests
             NullabilityState.NotNull, "CA-07: o emissor do token é obrigatório, não anulável.");
 
         // (3) Nenhum membro de dados (propriedade ou campo) do contrato expõe o
-        // subject do token tipado como Guid — o sujeito é explícito e
+        // contaId do token tipado como Guid — o sujeito é explícito e
         // não-falsificável (OWASP API 2023, BFLA).
-        List<string> subjectComoGuid = [];
+        List<string> contaIdComoGuid = [];
         foreach (Type tipo in contrato)
         {
             foreach ((string nome, Type tipoMembro) in MembrosDeDados(tipo))
             {
-                bool pareceSubjectDoToken =
-                    nome.Contains("subject", StringComparison.OrdinalIgnoreCase)
-                    || nome.Equals("Sub", StringComparison.OrdinalIgnoreCase);
+                bool pareceContaIdDoToken = nome.Contains("contaId", StringComparison.OrdinalIgnoreCase);
 
-                // Recorre em coleções/arrays: IReadOnlySet<Guid> Subjects também
-                // expõe o subject do token como Guid interno.
-                bool exporSubjectComoGuid = TiposContidos(tipoMembro).Any(t => TipoSubjacente(t) == typeof(Guid));
+                // Recorre em coleções/arrays: IReadOnlySet<Guid> ContaIds também
+                // expõe o contaId do token como Guid interno.
+                bool exporContaIdComoGuid = TiposContidos(tipoMembro).Any(t => TipoSubjacente(t) == typeof(Guid));
 
-                if (pareceSubjectDoToken && exporSubjectComoGuid)
+                if (pareceContaIdDoToken && exporContaIdComoGuid)
                 {
-                    subjectComoGuid.Add($"{tipo.Name}.{nome}");
+                    contaIdComoGuid.Add($"{tipo.Name}.{nome}");
                 }
             }
         }
 
-        subjectComoGuid.Should().BeEmpty(
-            "CA-07: o subject do token nunca é tratado como chave interna (Guid).");
+        contaIdComoGuid.Should().BeEmpty(
+            "CA-07: o contaId do token nunca é tratado como chave interna (Guid).");
     }
 
     // Tipos do contrato = todos os records públicos do assembly de autorização
@@ -310,7 +308,7 @@ public sealed class ContratoAutorizacaoConventionsTests
     // O tipo e, recursivamente, os tipos que ele contém — argumentos genéricos e
     // elemento de array. Garante que um provedor de identidade embutido atrás de
     // um genérico (ex.: IReadOnlyList<KeycloakGroup>) ou de array não escape à
-    // varredura, e que um subject tipado como Guid dentro de coleção seja visto.
+    // varredura, e que um contaId tipado como Guid dentro de coleção seja visto.
     private static IEnumerable<Type> TiposContidos(Type tipo)
     {
         yield return tipo;

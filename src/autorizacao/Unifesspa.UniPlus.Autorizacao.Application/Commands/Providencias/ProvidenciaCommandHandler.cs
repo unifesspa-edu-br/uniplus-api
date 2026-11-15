@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Os handlers dos atos da providência. Quem age é o sujeito autenticado: sem emissor e sub nada é gravado, e a recusa não
+/// Os handlers dos atos da providência. Quem age é o sujeito autenticado: sem emissor e conta nada é gravado, e a recusa não
 /// vira 500. Os casos de uso vivem em <see cref="AberturaDaProvidencia"/>, <see cref="RespostaDaProvidencia"/> e
 /// <see cref="AtendimentoDaProvidencia"/>; os avisos saem como mensagens de saída, no outbox da mesma transação.
 /// </summary>

@@ -42,8 +42,8 @@ public sealed class ManifestacaoDaProtecaoDoCatalogoTests
         ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, CicloDaAprovacao.Primeiro, Adequada(), Kevin with { Nome = nome }, null, Instante)
             .Autor.Nome.Should().Be(esperado);
 
-    [Fact(DisplayName = "A mesma pessoa é reconhecida pelo emissor e pelo sub, e não pelo nome")]
-    public void DaMesmaPessoa_PeloEmissorEPeloSub()
+    [Fact(DisplayName = "A mesma pessoa é reconhecida pelo emissor e pela conta, e não pelo nome")]
+    public void DaMesmaPessoa_PeloEmissorEPeloContaId()
     {
         ManifestacaoDaProtecaoDoCatalogo evento = ManifestacaoDaProtecaoDoCatalogo.Registrar(Item, CicloDaAprovacao.Primeiro, Adequada(), Kevin, null, Instante);
 

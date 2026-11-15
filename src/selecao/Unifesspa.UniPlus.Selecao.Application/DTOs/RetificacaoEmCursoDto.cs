@@ -17,7 +17,7 @@ public sealed record RetificacaoEmCursoDto(
     Guid VersaoBaseId,
     int NumeroVersaoBase,
     DateTimeOffset AbertoEm,
-    string AbertoPorSub,
+    string AbertoPorContaId,
     int Revisao,
     string ETag)
 {
@@ -32,7 +32,7 @@ public sealed record RetificacaoEmCursoDto(
             rascunho.VersaoBaseId,
             rascunho.NumeroVersaoBase,
             rascunho.AbertoEm,
-            rascunho.AbertoPorSub,
+            rascunho.AbertoPorContaId,
             rascunho.Revisao,
             rascunho.ETag);
     }

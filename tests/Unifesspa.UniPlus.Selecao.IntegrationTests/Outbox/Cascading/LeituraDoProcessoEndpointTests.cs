@@ -43,9 +43,9 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        foreach (string sub in new[] { Betina, Leandro, Diogo })
+        foreach (string contaId in new[] { Betina, Leandro, Diogo })
         {
-            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, contaId);
         }
     }
 
@@ -297,13 +297,13 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
     /// Percorre a listagem inteira pelo cursor (header <c>Link</c> com <c>rel="next"</c>): o banco é
     /// compartilhado pela coleção, e o processo recém-criado pode estar além da primeira página.
     /// </summary>
-    private async Task<List<Guid>> TodosOsIdsAsync(string? sub)
+    private async Task<List<Guid>> TodosOsIdsAsync(string? contaId)
     {
         List<Guid> ids = [];
         string? proxima = $"{Rota}?limit=100";
         while (proxima is not null)
         {
-            using HttpResponseMessage pagina = await EnviarAsync(sub, HttpMethod.Get, proxima);
+            using HttpResponseMessage pagina = await EnviarAsync(contaId, HttpMethod.Get, proxima);
             ids.AddRange(await IdsAsync(pagina));
             proxima = ProximaPagina(pagina);
         }
@@ -338,10 +338,10 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
         return [.. json.RootElement.EnumerateArray().Select(static i => i.GetProperty("id").GetGuid())];
     }
 
-    private async Task ConcederConfigurarAsync(string sub, Guid unidade)
+    private async Task ConcederConfigurarAsync(string contaId, Guid unidade)
     {
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, PermissaoSelecao.ProcessosConfigurar.Codigo);
-        await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, sub, perfil, EscopoDaConcessao.DaUnidade(unidade));
+        await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, contaId, perfil, EscopoDaConcessao.DaUnidade(unidade));
     }
 
     private async Task<Guid> SemearRascunhoAsync(string nome)
@@ -393,10 +393,10 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
             .Where(p => p.Id == processoId).Select(p => p.UnidadeAdministradoraOrigemId).SingleAsync();
     }
 
-    private Task<HttpResponseMessage> EnviarAsync(string? sub, HttpMethod metodo, string rota, string? papel = null, object? corpo = null, string? ifMatch = null) =>
-        EnviarCompletoAsync(sub, metodo, rota, papel, corpo, ifMatch);
+    private Task<HttpResponseMessage> EnviarAsync(string? contaId, HttpMethod metodo, string rota, string? papel = null, object? corpo = null, string? ifMatch = null) =>
+        EnviarCompletoAsync(contaId, metodo, rota, papel, corpo, ifMatch);
 
-    private async Task<HttpResponseMessage> EnviarCompletoAsync(string? sub, HttpMethod metodo, string rota, string? papel, object? corpo, string? ifMatch)
+    private async Task<HttpResponseMessage> EnviarCompletoAsync(string? contaId, HttpMethod metodo, string rota, string? papel, object? corpo, string? ifMatch)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(metodo, new Uri(rota, UriKind.Relative));
@@ -405,14 +405,14 @@ public sealed class LeituraDoProcessoEndpointTests : IAsyncLifetime
             request.Content = JsonContent.Create(corpo);
         }
 
-        if (sub is not null || papel is not null)
+        if (contaId is not null || papel is not null)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         }
 
-        if (sub is not null)
+        if (contaId is not null)
         {
-            request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, sub);
+            request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, contaId);
         }
 
         if (papel is not null)

@@ -139,12 +139,12 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
     private static Expression<Func<PedidoDeConcessao, bool>> EnvolvendoAPessoa(FiltroDePedidos filtro)
     {
         string emissor = filtro.Pessoa.Emissor;
-        string sub = filtro.Pessoa.Sub;
+        string contaId = filtro.Pessoa.ContaId;
         string? email = filtro.EmailVerificado;
 
-        return p => (p.SolicitanteEmissor == emissor && p.SolicitanteSub == sub)
-            || (p.BeneficiarioEmissor == emissor && p.BeneficiarioSub == sub)
-            || (p.BeneficiarioSub == null && email != null && p.BeneficiarioEmail == email);
+        return p => (p.SolicitanteEmissor == emissor && p.SolicitanteContaId == contaId)
+            || (p.BeneficiarioEmissor == emissor && p.BeneficiarioContaId == contaId)
+            || (p.BeneficiarioContaId == null && email != null && p.BeneficiarioEmail == email);
     }
 
     private static IQueryable<PedidoDeConcessao> FiltrarPorSituacao(IQueryable<PedidoDeConcessao> consulta, SituacaoDoPedido? situacao) =>

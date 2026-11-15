@@ -46,7 +46,7 @@ public sealed class ObrigatoriedadeLegalHistorico : IForensicEntity
 
     /// <summary>
     /// Cria uma linha do histórico. Invocado pelo interceptor com o JSON
-    /// canônico, hash recomputado e o <c>sub</c> do JWT do usuário responsável
+    /// canônico, hash recomputado e o <c>contaId</c> do JWT do usuário responsável
     /// pela mutação (fallback <c>"system"</c> em jobs).
     /// </summary>
     public static ObrigatoriedadeLegalHistorico Snapshot(

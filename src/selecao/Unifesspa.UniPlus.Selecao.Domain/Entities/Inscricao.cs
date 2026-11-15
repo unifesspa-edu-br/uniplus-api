@@ -44,8 +44,8 @@ public sealed class Inscricao : EntityBase
 
     public Cpf Cpf { get; private set; } = null!;
 
-    /// <summary>O <c>sub</c> do token de quem iniciou — a inscrição nunca troca de dono.</summary>
-    public string Sub { get; private set; } = string.Empty;
+    /// <summary>O <c>contaId</c> do token de quem iniciou — a inscrição nunca troca de dono.</summary>
+    public string ContaId { get; private set; } = string.Empty;
 
     public string EmissorToken { get; private set; } = string.Empty;
 
@@ -72,7 +72,7 @@ public sealed class Inscricao : EntityBase
     /// <summary>O instante do cancelamento; nulo enquanto a inscrição não foi cancelada.</summary>
     public DateTimeOffset? CanceladaEm { get; private set; }
 
-    /// <summary>O <c>sub</c> de quem cancelou; nulo enquanto a inscrição não foi cancelada.</summary>
+    /// <summary>O <c>contaId</c> de quem cancelou; nulo enquanto a inscrição não foi cancelada.</summary>
     public string? CanceladaPor { get; private set; }
 
     /// <summary>O motivo do cancelamento, ou <see cref="MotivoPadraoDoCancelamento"/> quando o candidato não o disse.</summary>
@@ -131,16 +131,16 @@ public sealed class Inscricao : EntityBase
     public static Result<Inscricao> Iniciar(
         Guid processoSeletivoId,
         Cpf cpf,
-        string sub,
+        string contaId,
         string emissorToken,
         Guid versaoFormularioId)
     {
         ArgumentNullException.ThrowIfNull(cpf);
 
-        if (string.IsNullOrWhiteSpace(sub))
+        if (string.IsNullOrWhiteSpace(contaId))
         {
             return Result<Inscricao>.Failure(new DomainError(
-                InscricaoErrorCodes.SubObrigatorio,
+                InscricaoErrorCodes.ContaIdObrigatorio,
                 "O token precisa trazer o claim sub para iniciar a inscrição."));
         }
 
@@ -155,7 +155,7 @@ public sealed class Inscricao : EntityBase
         {
             ProcessoSeletivoId = processoSeletivoId,
             Cpf = cpf,
-            Sub = sub,
+            ContaId = contaId,
             EmissorToken = emissorToken,
             Situacao = SituacaoInscricao.Rascunho,
             VersaoFormularioId = versaoFormularioId,
@@ -201,7 +201,7 @@ public sealed class Inscricao : EntityBase
         Guid id,
         Guid processoSeletivoId,
         Cpf cpf,
-        string sub,
+        string contaId,
         string emissorToken,
         SituacaoInscricao situacao,
         Guid versaoFormularioId,
@@ -232,7 +232,7 @@ public sealed class Inscricao : EntityBase
             Id = id,
             ProcessoSeletivoId = processoSeletivoId,
             Cpf = cpf,
-            Sub = sub,
+            ContaId = contaId,
             EmissorToken = emissorToken,
             Situacao = situacao,
             VersaoFormularioId = versaoFormularioId,
@@ -391,18 +391,18 @@ public sealed class Inscricao : EntityBase
         PodeDescartar: Situacao == SituacaoInscricao.Rascunho && inscricoesAbertas);
 
     /// <summary>
-    /// O token tem de pertencer a quem abriu a inscrição — <c>sub</c> diferente do gravado para o
-    /// mesmo CPF nunca é "outra inscrição", é identidade trocada. Sem <c>sub</c>, não há dono a
+    /// O token tem de pertencer a quem abriu a inscrição — <c>contaId</c> diferente do gravado para o
+    /// mesmo CPF nunca é "outra inscrição", é identidade trocada. Sem <c>contaId</c>, não há dono a
     /// conferir: a recusa é a mesma do iniciar.
     /// </summary>
-    public DomainError? ConferirDono(string? sub)
+    public DomainError? ConferirDono(string? contaId)
     {
-        if (string.IsNullOrWhiteSpace(sub))
+        if (string.IsNullOrWhiteSpace(contaId))
         {
-            return new DomainError(InscricaoErrorCodes.SubObrigatorio, "O token precisa trazer o claim sub para acessar a inscrição.");
+            return new DomainError(InscricaoErrorCodes.ContaIdObrigatorio, "O token precisa trazer o claim sub para acessar a inscrição.");
         }
 
-        return string.Equals(Sub, sub, StringComparison.Ordinal)
+        return string.Equals(ContaId, contaId, StringComparison.Ordinal)
             ? null
             : new DomainError(InscricaoErrorCodes.DonoDivergente, "Esta inscrição pertence a outro candidato.");
     }

@@ -47,7 +47,7 @@ public sealed class EventosDaInstalacao : IEventosDaOrigem
     private static IReadOnlyList<EventoDaTrilhaDto> Montar(
         Instalacao instalacao, IReadOnlyList<TentativaDeInstalacao> tentativas, TermoNaInstalacao? termo)
     {
-        IdentidadeDto executor = new(instalacao.ExecutorEmissor, instalacao.ExecutorSub, instalacao.ExecutorNome);
+        IdentidadeDto executor = new(instalacao.ExecutorEmissor, instalacao.ExecutorContaId, instalacao.ExecutorNome);
         IEnumerable<EventoDaTrilhaDto> eventos =
         [
             new("instalacao_iniciada", instalacao.IniciadaEm, executor, $"Documento de designação nº {instalacao.NumeroDoDocumento}."),

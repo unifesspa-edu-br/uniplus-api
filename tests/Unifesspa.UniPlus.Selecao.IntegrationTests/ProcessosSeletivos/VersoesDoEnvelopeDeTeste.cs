@@ -86,6 +86,6 @@ internal static class VersoesDoEnvelopeDeTeste
             algoritmoHash,
             atoCriadorId: CorpusEnvelope.AtoAbertura,
             atoCriadorHash: atoCriadorHash,
-            atorUsuarioSub: CorpusEnvelope.Ator,
+            atorUsuarioContaId: CorpusEnvelope.Ator,
             instante: DateTimeOffset.UnixEpoch);
 }

@@ -59,7 +59,7 @@ public sealed class AtoDaProtecaoDoCatalogo : IForensicEntity
 
     public string AtorEmissor { get; private init; } = string.Empty;
 
-    public string AtorSub { get; private init; } = string.Empty;
+    public string AtorContaId { get; private init; } = string.Empty;
 
     public string? AtorNome { get; private init; }
 
@@ -139,7 +139,7 @@ public sealed class AtoDaProtecaoDoCatalogo : IForensicEntity
         {
             Ato = ato,
             AtorEmissor = ator.Emissor,
-            AtorSub = ator.Sub,
+            AtorContaId = ator.ContaId,
             AtorNome = AtorDoAto.NormalizarNome(ator.Nome),
             Instante = instante,
         };

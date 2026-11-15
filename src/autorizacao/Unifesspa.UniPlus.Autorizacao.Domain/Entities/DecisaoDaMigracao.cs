@@ -37,7 +37,7 @@ public sealed class DecisaoDaMigracao : IForensicEntity
 
     public string? DecisorEmissor { get; private set; }
 
-    public string? DecisorSub { get; private set; }
+    public string? DecisorContaId { get; private set; }
 
     public string? DecisorNome { get; private set; }
 
@@ -60,7 +60,7 @@ public sealed class DecisaoDaMigracao : IForensicEntity
     public long OrdemDeRegistro { get; private set; }
 
     public Identidade? Decisor =>
-        DecisorEmissor is null || DecisorSub is null ? null : new Identidade(DecisorEmissor, DecisorSub, DecisorNome);
+        DecisorEmissor is null || DecisorContaId is null ? null : new Identidade(DecisorEmissor, DecisorContaId, DecisorNome);
 
     // Construtor de materialização do EF Core.
     private DecisaoDaMigracao()
@@ -75,7 +75,7 @@ public sealed class DecisaoDaMigracao : IForensicEntity
         nova.Resultado = decisao.Resultado;
         nova.Ator = AtorDaMigracao.Humano;
         nova.DecisorEmissor = decisao.Autoria.Pessoa.Emissor;
-        nova.DecisorSub = decisao.Autoria.Pessoa.Sub;
+        nova.DecisorContaId = decisao.Autoria.Pessoa.ContaId;
         nova.DecisorNome = decisao.Autoria.Pessoa.Nome;
         nova.DecisorTemConcessao = decisao.Autoria.TemConcessao;
         nova.EnvioId = decisao.Envio?.Id;

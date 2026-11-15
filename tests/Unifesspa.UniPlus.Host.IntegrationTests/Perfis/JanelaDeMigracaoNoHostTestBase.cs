@@ -80,7 +80,7 @@ public abstract class JanelaDeMigracaoNoHostTestBase : AprovacaoDaVersaoNoHostTe
         {
             concessoes[pessoa] = await ConcessoesDeTeste.ConcederAsync(
                 Fixture.Factory.Services,
-                pessoa.Sub.ToString(),
+                pessoa.ContaId.ToString(),
                 vigente.PerfilId,
                 EscopoDaConcessao.DaUnidade(Guid.CreateVersion7()),
                 email: pessoa.Email);
@@ -211,7 +211,7 @@ public abstract class JanelaDeMigracaoNoHostTestBase : AprovacaoDaVersaoNoHostTe
     {
         await using AsyncServiceScope escopo = Host.Services.CreateAsyncScope();
         IReadOnlyList<ConcessaoAtiva> ativas = await escopo.ServiceProvider.GetRequiredService<IConcessoesAtivasDoSujeito>()
-            .ListarAsync(UsuarioRef.From(TestAuthHandler.DefaultIssuer, pessoa.Sub.ToString()).Value!, CancellationToken.None);
+            .ListarAsync(UsuarioRef.From(TestAuthHandler.DefaultIssuer, pessoa.ContaId.ToString()).Value!, CancellationToken.None);
 
         return ativas.Any(c => c.PerfilId == perfilId && c.Permissoes.Count > 0);
     }

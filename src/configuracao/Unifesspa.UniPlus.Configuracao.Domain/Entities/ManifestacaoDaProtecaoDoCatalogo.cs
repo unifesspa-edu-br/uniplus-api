@@ -21,7 +21,7 @@ public sealed class ManifestacaoDaProtecaoDoCatalogo : IForensicEntity
     private readonly CadastroDoCatalogo _cadastro;
     private readonly Guid _itemId;
     private readonly string _autorEmissor = string.Empty;
-    private readonly string _autorSub = string.Empty;
+    private readonly string _autorContaId = string.Empty;
     private readonly string? _autorNome;
 
     // Construtor de materialização do EF Core.
@@ -35,7 +35,7 @@ public sealed class ManifestacaoDaProtecaoDoCatalogo : IForensicEntity
         _cadastro = item.Cadastro;
         _itemId = item.ItemId;
         _autorEmissor = autor.Emissor;
-        _autorSub = autor.Sub;
+        _autorContaId = autor.ContaId;
         _autorNome = AtorDoAto.NormalizarNome(autor.Nome);
     }
 
@@ -53,8 +53,8 @@ public sealed class ManifestacaoDaProtecaoDoCatalogo : IForensicEntity
     /// <summary>A manifestação vigente da mesma pessoa, no mesmo ciclo, que esta substitui; nulo no registro inicial.</summary>
     public Guid? SubstituiId { get; private init; }
 
-    /// <summary>Quem se manifestou: o emissor e o <c>sub</c> do token e o nome no instante da manifestação.</summary>
-    public AtorDoAto Autor => new(_autorEmissor, _autorSub, _autorNome);
+    /// <summary>Quem se manifestou: o emissor e o <c>contaId</c> do token e o nome no instante da manifestação.</summary>
+    public AtorDoAto Autor => new(_autorEmissor, _autorContaId, _autorNome);
 
     public DateTimeOffset Instante { get; private init; }
 
@@ -74,12 +74,12 @@ public sealed class ManifestacaoDaProtecaoDoCatalogo : IForensicEntity
     /// <summary>Recomenda ajuste ou inadequada.</summary>
     public bool Desfavoravel => PareceresDaManifestacao.EhDesfavoravel(Parecer);
 
-    /// <summary>Se a manifestação é da pessoa que <paramref name="outro"/> identifica, pelo emissor e pelo <c>sub</c>.</summary>
+    /// <summary>Se a manifestação é da pessoa que <paramref name="outro"/> identifica, pelo emissor e pelo <c>contaId</c>.</summary>
     public bool DaMesmaPessoa(AtorDoAto outro)
     {
         ArgumentNullException.ThrowIfNull(outro);
         return string.Equals(_autorEmissor, outro.Emissor, StringComparison.Ordinal)
-            && string.Equals(_autorSub, outro.Sub, StringComparison.Ordinal);
+            && string.Equals(_autorContaId, outro.ContaId, StringComparison.Ordinal);
     }
 
     /// <summary>

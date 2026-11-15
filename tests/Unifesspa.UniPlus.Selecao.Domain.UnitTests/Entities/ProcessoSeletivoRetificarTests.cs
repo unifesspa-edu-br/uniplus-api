@@ -60,7 +60,7 @@ public sealed class ProcessoSeletivoRetificarTests
         "canonical-json/sha256@v1",
         Guid.CreateVersion7(),
         HashFixo,
-        "user-sub-123",
+        "user-conta-123",
         Relogio().GetUtcNow());
 
     private static ProcessoSeletivo NovoProcessoConforme()
@@ -143,7 +143,7 @@ public sealed class ProcessoSeletivoRetificarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         versaoAbertura = publicacao.Value!;
         processo.DequeueDomainEvents();
@@ -158,7 +158,7 @@ public sealed class ProcessoSeletivoRetificarTests
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             motivo: "Correção do prazo de inscrição", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -180,7 +180,7 @@ public sealed class ProcessoSeletivoRetificarTests
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             motivo: "Correção do anexo II", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -207,7 +207,7 @@ public sealed class ProcessoSeletivoRetificarTests
         ProcessoSeletivo processo = NovoProcessoConforme();
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
-            NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             motivo: "qualquer", clock: Relogio(), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         resultado.IsFailure.Should().BeTrue();
@@ -223,7 +223,7 @@ public sealed class ProcessoSeletivoRetificarTests
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             motivo: "   ", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         resultado.IsFailure.Should().BeTrue();
@@ -239,7 +239,7 @@ public sealed class ProcessoSeletivoRetificarTests
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         Result<VersaoConfiguracao> primeira = processo.Retificar(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             motivo: "primeira retificação", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
         clock.Avancar(TimeSpan.FromMinutes(1));
@@ -248,7 +248,7 @@ public sealed class ProcessoSeletivoRetificarTests
         // é o que a prática faz — o aviso que prorroga um prazo já prorrogado cita o aviso
         // anterior, não o edital original (ADR-0103).
         Result<VersaoConfiguracao> segunda = processo.Retificar(
-            NovosDados(), primeira.Value!, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), primeira.Value!, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             motivo: "segunda retificação", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         segunda.IsSuccess.Should().BeTrue(segunda.Error?.Message);
@@ -267,7 +267,7 @@ public sealed class ProcessoSeletivoRetificarTests
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
-            NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             motivo: "Correção de datas", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         resultado.IsFailure.Should().BeTrue();
@@ -287,7 +287,7 @@ public sealed class ProcessoSeletivoRetificarTests
         clock.Avancar(TimeSpan.FromMinutes(-10));
 
         Result<VersaoConfiguracao> retificacao = processo.Retificar(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             motivo: "retificação sob relógio regredido", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         retificacao.IsSuccess.Should().BeTrue(retificacao.Error?.Message);
@@ -338,7 +338,7 @@ public sealed class ProcessoSeletivoRetificarTests
         // a cadeia: quem ordena as versões é a vigência, e ela nunca precede a da anterior.
         clock.Avancar(TimeSpan.FromMinutes(-10));
         Result<VersaoConfiguracao> primeira = processo.Retificar(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             motivo: "primeira retificação", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
         primeira.Value!.VigenteAPartirDe.Should().Be(
@@ -349,7 +349,7 @@ public sealed class ProcessoSeletivoRetificarTests
         // corrente. Ordenar o alvo pelo tempo tornaria uma cadeia perfeitamente linear
         // irretificável.
         Result<VersaoConfiguracao> segunda = processo.Retificar(
-            NovosDados(), primeira.Value!, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), primeira.Value!, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             motivo: "segunda retificação", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         segunda.IsSuccess.Should().BeTrue(segunda.Error?.Message);
@@ -369,7 +369,7 @@ public sealed class ProcessoSeletivoRetificarTests
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            "Incluir exigência documental", versaoAbertura, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-123", clock.GetUtcNow());
+            "Incluir exigência documental", versaoAbertura, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-123", clock.GetUtcNow());
         abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
         Guid faseId = processo.CronogramaFases.Single().Id;
@@ -392,7 +392,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         clock.Avancar(TimeSpan.FromMinutes(1));
         Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             PrecondicaoIfMatch.Curinga, clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         resultado.IsSuccess.Should().BeTrue(
@@ -409,7 +409,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         processo.AbrirRetificacao(
             "Trocar a unidade responsável pela matrícula", versaoAbertura, identificadorDaVersaoBase: null,
-            VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-123", clock.GetUtcNow())
+            VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-123", clock.GetUtcNow())
             .IsSuccess.Should().BeTrue();
 
         // Trocar a unidade depois de publicar é retificação, e a sessão aceita o rascunho sem ela:
@@ -425,7 +425,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         clock.Avancar(TimeSpan.FromMinutes(1));
         Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             PrecondicaoIfMatch.Curinga, clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         resultado.IsFailure.Should().BeTrue();
@@ -544,7 +544,7 @@ public sealed class ProcessoSeletivoRetificarTests
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123", clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(
             publicacao.Error?.Message ?? "AC não declara AcaoQuandoIndeferido — nada com que a exigência seja incoerente");
         VersaoConfiguracao versaoAbertura = publicacao.Value!;
@@ -552,7 +552,7 @@ public sealed class ProcessoSeletivoRetificarTests
         clock.Avancar(TimeSpan.FromMinutes(1));
 
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            "Estender exigência de heteroidentificação para a cota PPI", versaoAbertura, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-123", clock.GetUtcNow());
+            "Estender exigência de heteroidentificação para a cota PPI", versaoAbertura, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-123", clock.GetUtcNow());
         abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
         // Mesma consequência ELIMINA — só o gatilho muda, de AC (ação null, coerente) para
@@ -563,7 +563,7 @@ public sealed class ProcessoSeletivoRetificarTests
 
         clock.Avancar(TimeSpan.FromMinutes(1));
         Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-sub-123",
+            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             PrecondicaoIfMatch.Curinga, clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         resultado.IsFailure.Should().BeTrue(

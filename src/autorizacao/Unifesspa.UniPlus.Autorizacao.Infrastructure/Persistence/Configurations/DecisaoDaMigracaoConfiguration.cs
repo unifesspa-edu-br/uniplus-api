@@ -59,7 +59,7 @@ internal sealed class DecisaoDaMigracaoConfiguration : IEntityTypeConfiguration<
         builder.Property(d => d.Resultado).HasColumnName("decisao").HasConversion(ResultadoConverter).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(d => d.Ator).HasConversion(AtorConverter).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(d => d.DecisorEmissor).HasMaxLength(IdentidadeMaxLength);
-        builder.Property(d => d.DecisorSub).HasMaxLength(IdentidadeMaxLength);
+        builder.Property(d => d.DecisorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(d => d.DecisorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(d => d.ComposicaoAvaliada).IsRequired();
         builder.Property(d => d.AcrescimoAvaliado).IsRequired();
@@ -112,7 +112,7 @@ internal sealed class DecisaoDaMigracaoConfiguration : IEntityTypeConfiguration<
         $"ator = '{AtorDaMigracaoCodigo.Humano}'"
         + $" AND etapa IN ('{Gestao}', '{Protecao}')"
         + $" AND decisao IN ('{ResultadoDaMigracaoCodigo.Migrar}', '{ResultadoDaMigracaoCodigo.Recusar}')"
-        + " AND decisor_emissor IS NOT NULL AND decisor_sub IS NOT NULL AND decisor_tem_concessao IS NOT NULL"
+        + " AND decisor_emissor IS NOT NULL AND decisor_conta_id IS NOT NULL AND decisor_tem_concessao IS NOT NULL"
         + " AND lote_de_origem_id IS NOT NULL"
         + " AND (envio_etapa IS NULL OR envio_etapa = etapa)"
         + $" AND (etapa <> '{Protecao}' OR envio_id IS NOT NULL)"
@@ -120,7 +120,7 @@ internal sealed class DecisaoDaMigracaoConfiguration : IEntityTypeConfiguration<
 
     private static string RamoDoSistema() =>
         $"ator = '{AtorDaMigracaoCodigo.Sistema}'"
-        + " AND decisor_emissor IS NULL AND decisor_sub IS NULL AND decisor_nome IS NULL AND decisor_tem_concessao IS NULL"
+        + " AND decisor_emissor IS NULL AND decisor_conta_id IS NULL AND decisor_nome IS NULL AND decisor_tem_concessao IS NULL"
         + " AND envio_id IS NULL"
         + $" AND ((etapa = '{Gestao}' AND decisao = '{ResultadoDaMigracaoCodigo.Reter}' AND lote_de_origem_id IS NOT NULL)"
         + $" OR (etapa = '{EtapaDaMigracaoCodigo.Sistema}' AND decisao IN ('{ResultadoDaMigracaoCodigo.NaoMigrada}', '{ResultadoDaMigracaoCodigo.ForaDaLista}')))";

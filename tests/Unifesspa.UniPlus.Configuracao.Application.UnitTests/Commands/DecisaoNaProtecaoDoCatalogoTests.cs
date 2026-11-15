@@ -47,7 +47,7 @@ public sealed class DecisaoNaProtecaoDoCatalogoTests
             .Should().Be((SituacaoDaAprovacao.AjusteRecomendado, "Traz dado de saúde.", Isabella));
         AtoRegistrado().Should().Match<AtoDaProtecaoDoCatalogo>(a =>
             a.Ato == AtoDaProtecao.AjusteRecomendado && a.ClassificacaoRecomendada == ClassificacaoDeProtecao.Sensivel
-            && a.Justificativa == "Traz dado de saúde." && a.AtorSub == Isabella && a.Instante == Agora && !a.DianteDeManifestacaoDesfavoravel);
+            && a.Justificativa == "Traz dado de saúde." && a.AtorContaId == Isabella && a.Instante == Agora && !a.DianteDeManifestacaoDesfavoravel);
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

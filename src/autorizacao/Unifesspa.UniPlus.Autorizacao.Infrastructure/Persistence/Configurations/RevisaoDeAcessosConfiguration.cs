@@ -42,7 +42,7 @@ internal sealed class RevisaoDeAcessosConfiguration : IEntityTypeConfiguration<R
 
         builder.Property(r => r.AbertaEm).IsRequired();
         builder.Property(r => r.AbertaPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(r => r.AbertaPorSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(r => r.AbertaPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(r => r.AbertaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
 
         builder.Ignore(r => r.AbertaPor);
@@ -66,15 +66,15 @@ internal sealed class RevisaoDeAcessosConfiguration : IEntityTypeConfiguration<R
         // O banco confere o que o agregado já garante: a decisão, com a governança que a tomou, é gravada inteira ou não é.
         builder.ToTable("itens_da_revisao", tabela => tabela.HasCheckConstraint(
             "ck_itens_da_revisao_decisao_completa",
-            "(resultado IS NULL AND decidido_como IS NULL AND decidido_por_emissor IS NULL AND decidido_por_sub IS NULL AND decidido_em IS NULL)"
-            + " OR (resultado IS NOT NULL AND decidido_como IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_sub IS NOT NULL AND decidido_em IS NOT NULL)"));
+            "(resultado IS NULL AND decidido_como IS NULL AND decidido_por_emissor IS NULL AND decidido_por_conta_id IS NULL AND decidido_em IS NULL)"
+            + " OR (resultado IS NOT NULL AND decidido_como IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_conta_id IS NOT NULL AND decidido_em IS NOT NULL)"));
         builder.HasKey(i => i.Id);
         builder.Property(i => i.Id).ValueGeneratedNever();
 
         builder.Property(i => i.DecididoComo).HasConversion(GovernancaConverter).HasMaxLength(CodigoMaxLength);
         builder.Property(i => i.Resultado).HasConversion(ResultadoConverter).HasMaxLength(CodigoMaxLength);
         builder.Property(i => i.DecididoPorEmissor).HasMaxLength(IdentidadeMaxLength);
-        builder.Property(i => i.DecididoPorSub).HasMaxLength(IdentidadeMaxLength);
+        builder.Property(i => i.DecididoPorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(i => i.DecididoPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
 
         builder.Ignore(i => i.Pendente);

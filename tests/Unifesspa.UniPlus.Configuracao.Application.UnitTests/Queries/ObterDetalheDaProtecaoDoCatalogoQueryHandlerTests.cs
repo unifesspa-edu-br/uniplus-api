@@ -73,7 +73,7 @@ public sealed class ObterDetalheDaProtecaoDoCatalogoQueryHandlerTests
         detalhe!.Atos.Select(a => (a.Ato, a.AtorNome, a.ClassificacaoRecomendada, a.Justificativa, a.Ciclo)).Should().Equal(
             ("SOLICITACAO", "Isabella Priscila Figueiredo", null, null, 1),
             ("AJUSTE_RECOMENDADO", "Lúcia Bruna Maya Almeida", "SENSIVEL", "Traz dado de saúde.", 1));
-        typeof(AtoDaProtecaoDto).GetProperties().Select(p => p.Name).Should().NotContain(["AtorSub", "AtorEmissor", "Sub", "Emissor"]);
+        typeof(AtoDaProtecaoDto).GetProperties().Select(p => p.Name).Should().NotContain(["AtorContaId", "AtorEmissor", "ContaId", "Emissor"]);
     }
 
     [Fact(DisplayName = "O detalhe traz o ciclo, o estado das manifestações e as vigentes do ciclo corrente")]

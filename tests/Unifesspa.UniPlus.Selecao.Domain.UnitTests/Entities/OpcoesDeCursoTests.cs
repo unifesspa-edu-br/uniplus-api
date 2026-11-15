@@ -162,7 +162,7 @@ public sealed class OpcoesDeCursoTests
         ProcessoSeletivo processo = ProcessoPublicadoComDuasOpcoes(out VersaoConfiguracao versaoAbertura);
         processo.AbrirRetificacao(
             "Reduzir cursos", versaoAbertura, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo),
-            "user-sub-123", DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+            "user-conta-123", DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
 
         // A sessão não deixa chegar aí pelas operações do agregado: a distribuição de 1 oferta é recusada.
         processo.DefinirDistribuicaoVagas(
@@ -174,7 +174,7 @@ public sealed class OpcoesDeCursoTests
 
         Result<VersaoConfiguracao> fechamento = processo.FecharRetificacao(
             DadosEdital.Criar("001/2026", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
-            versaoAbertura, Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64), "user-sub-123",
+            versaoAbertura, Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64), "user-conta-123",
             PrecondicaoIfMatch.Curinga, TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         fechamento.IsFailure.Should().BeTrue();
@@ -189,7 +189,7 @@ public sealed class OpcoesDeCursoTests
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             DadosEdital.Criar("001/2026", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
-            Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64), "user-sub-123",
+            Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64), "user-conta-123",
             TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         versaoAbertura = publicacao.Value!;

@@ -96,7 +96,7 @@ public static class PaginationControllerExtensions
         TimeProvider timeProvider = services.GetRequiredService<TimeProvider>();
 
         // User-binding (ADR-0026 §"User-binding em cursores user-scoped"):
-        // recurso user-scoped vincula o sub do principal corrente ao cursor —
+        // recurso user-scoped vincula a conta do principal corrente ao cursor —
         // emissão e decode validam o mesmo binding. Resolução de IUserContext só
         // acontece quando há ALGUM cursor a emitir (prev ou next); página única
         // sem navegação não toca o DI, evitando friction em testes slice-level

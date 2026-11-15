@@ -125,7 +125,7 @@ public sealed partial class JanelaDeMigracao
         Forma = forma;
         MotivoDoEncerramento = manual?.Motivo;
         EncerradaPorEmissor = manual?.Autoria.Pessoa.Emissor;
-        EncerradaPorSub = manual?.Autoria.Pessoa.Sub;
+        EncerradaPorContaId = manual?.Autoria.Pessoa.ContaId;
         EncerradaPorNome = manual?.Autoria.Pessoa.Nome;
     }
 }

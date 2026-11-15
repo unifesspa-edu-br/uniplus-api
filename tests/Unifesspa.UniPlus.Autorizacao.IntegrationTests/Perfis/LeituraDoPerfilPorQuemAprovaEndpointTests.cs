@@ -22,11 +22,11 @@ public sealed class LeituraDoPerfilPorQuemAprovaEndpointTests : PerfilEndpointTe
     }
 
     // O perfil de governança da proteção de dados aprova versões de perfil e não mantém perfis.
-    private async Task<HttpClient> ClienteDaProtecaoDeDadosAsync(string sub)
+    private async Task<HttpClient> ClienteDaProtecaoDeDadosAsync(string contaId)
     {
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, sub, TipoDeGovernanca.RepresentanteDoControlador);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, contaId, TipoDeGovernanca.RepresentanteDoControlador);
 
-        return Cliente(sub);
+        return Cliente(contaId);
     }
 
     [Fact(DisplayName = "Quem só aprova pela proteção de dados lê a listagem e o detalhe do perfil")]

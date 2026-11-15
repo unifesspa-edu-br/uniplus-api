@@ -27,7 +27,7 @@ public sealed class InscricaoRecord : IIdentificavel
 
     public byte[] CpfIndice { get; set; } = null!;
 
-    public string Sub { get; set; } = null!;
+    public string ContaId { get; set; } = null!;
 
     public string EmissorToken { get; set; } = null!;
 

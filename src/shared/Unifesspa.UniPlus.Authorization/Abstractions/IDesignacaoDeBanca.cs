@@ -14,13 +14,13 @@ public interface IDesignacaoDeBanca
     /// designação a outra banca, ou a uma banca que não é do lugar pedido, não vale. A porta é quem conhece o lugar de
     /// cada banca, então o vínculo é conferido aqui, e nunca presumido pelo chamador.
     /// </summary>
-    /// <param name="emissor">O emissor do token. O <c>sub</c> só identifica a pessoa dentro do emissor que o expediu.</param>
-    /// <param name="subject">O <c>sub</c> do token.</param>
+    /// <param name="emissor">O emissor do token. O <c>contaId</c> só identifica a pessoa dentro do emissor que o expediu.</param>
+    /// <param name="contaId">O <c>contaId</c> do token.</param>
     /// <param name="processoId">O processo seletivo a que o ato pertence.</param>
     /// <param name="banca">A banca e o lugar dela: a fase e, quando o ato é de uma etapa, a etapa.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
     Task<bool> TemDesignacaoVigenteAsync(
-        string emissor, string subject, Guid processoId, VinculosDaBanca banca, CancellationToken cancellationToken);
+        string emissor, string contaId, Guid processoId, VinculosDaBanca banca, CancellationToken cancellationToken);
 
     /// <summary>Se alguém, quem quer que seja, está designado, e a designação vigente, à banca.</summary>
     /// <param name="bancaId">A banca.</param>

@@ -23,7 +23,7 @@ public enum FilaDePedidos
 }
 
 /// <summary>
-/// Filtros da lista de pedidos. A pessoa é o par emissor e <c>sub</c>; o e-mail só vale quando verificado,
+/// Filtros da lista de pedidos. A pessoa é o par emissor e <c>contaId</c>; o e-mail só vale quando verificado,
 /// para achar o pedido que a nomeou antes de ela aceitar.
 /// </summary>
 public sealed record FiltroDePedidos(

@@ -31,7 +31,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
 {
     private const string Materia = "RESULTADO_HOMOLOGACAO";
     private const string Versao = "0.0.10";
-    private const string Sub = "sub-do-administrador";
+    private const string ContaId = "conta-do-administrador";
     private static readonly DateTimeOffset Agora = new(2027, 1, 20, 12, 0, 0, TimeSpan.Zero);
     private static readonly DateOnly DataDoAto = new(2027, 1, 20);
     private static readonly Guid ProcessoDosDocumentos = Guid.CreateVersion7();
@@ -71,7 +71,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         _documentos.ListarDoProcessoAsync(_processoId, Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
             .Returns(call => ((IReadOnlyCollection<Guid>)call[1]).Where(id => id == _principal.Id).Select(_ => _principal).ToList());
         _codecs.Capacidades.Returns([new CapacidadeCodec(Versao, TemEncoder: true, TemDecoder: true, MotivoDaRecusa: null)]);
-        _usuario.UserId.Returns(Sub);
+        _usuario.UserId.Returns(ContaId);
         Tipo(Materia, resultado: true);
     }
 
@@ -92,7 +92,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         gravado!.ItemDoEdital.Should().Be(_itensDoCronograma[preliminar.Id].Chave);
         gravado.TipoCodigo.Should().Be(Materia, "o tipo vem do item que o edital congelou");
         gravado.AtoCorrigidoId.Should().BeNull();
-        gravado.PoliticaDeDivulgacaoConfirmadaPorSub.Should().Be(Sub);
+        gravado.PoliticaDeDivulgacaoConfirmadaPorContaId.Should().Be(ContaId);
         gravado.PoliticaDeDivulgacaoConfirmadaEm.Should().Be(Agora);
         mensagens.Should().ContainSingle().Which.Should().Be(new CopiarDocumentosDoAtoAoAcervo(_processoId, gravado.Id));
         entregue!.AtoId.Should().Be(gravado.Id);
@@ -200,7 +200,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(preliminar.Id, politica: false));
 
         resposta.IsSuccess.Should().BeTrue();
-        gravado!.PoliticaDeDivulgacaoConfirmadaPorSub.Should().BeNull();
+        gravado!.PoliticaDeDivulgacaoConfirmadaPorContaId.Should().BeNull();
     }
 
     [Fact(DisplayName = "A errata de uma lista publicada é aceita, leva o item e a política confirmada, e a porta recebe o ato corrigido")]
@@ -217,7 +217,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         resposta.IsSuccess.Should().BeTrue();
         gravado!.ItemDoEdital.Should().Be(_itensDoCronograma[preliminar.Id].Chave);
         gravado.AtoCorrigidoId.Should().Be(original.Id);
-        gravado.PoliticaDeDivulgacaoConfirmadaPorSub.Should().Be(Sub);
+        gravado.PoliticaDeDivulgacaoConfirmadaPorContaId.Should().Be(ContaId);
         await _registro.Received(1).RegistrarAsync(
             Arg.Is<AtoNormativoPublicado>(a => a.Retificacao != null && a.Retificacao.AtoRetificadoId == original.Id), Arg.Any<CancellationToken>());
     }

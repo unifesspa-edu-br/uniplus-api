@@ -28,7 +28,7 @@ public sealed class FromCursorAttribute : ModelBinderAttribute
 
     /// <summary>
     /// Quando <c>true</c>, o binder popula <see cref="CursorPayload.UserId"/>
-    /// com o sub claim do principal autenticado na emissão do cursor e valida
+    /// com a conta do principal autenticado na emissão do cursor e valida
     /// igualdade no decode — cursor de Alice não é navegável por Bob mesmo
     /// que decoda corretamente (gap LGPD em metadata de recursos user-scoped,
     /// ADR-0026). Default <c>false</c> (recurso público).

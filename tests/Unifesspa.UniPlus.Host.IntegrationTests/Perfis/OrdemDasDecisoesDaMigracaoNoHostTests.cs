@@ -39,8 +39,8 @@ public sealed class OrdemDasDecisoesDaMigracaoNoHostTests : JanelaDeMigracaoNoHo
         JsonElement trilha = await LerAsync(diogo, $"/api/autorizacao/concessoes/{concessao}/trilha");
 
         trilha.EnumerateArray().Where(static e => e.GetProperty("tipo").GetString() == "migracao_migrar")
-            .Select(static e => e.GetProperty("autor").GetProperty("sub").GetString())
-            .Should().Equal(Isabella.Sub.ToString(), Marlene.Sub.ToString());
+            .Select(static e => e.GetProperty("autor").GetProperty("contaId").GetString())
+            .Should().Equal(Isabella.ContaId.ToString(), Marlene.ContaId.ToString());
     }
 
     private async Task DecidirEmDuasEtapasAsync(Guid perfilId, Guid concessao)

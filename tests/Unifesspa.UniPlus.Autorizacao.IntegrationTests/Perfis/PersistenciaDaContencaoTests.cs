@@ -75,7 +75,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         await outraDesativacao.Should().ThrowAsync<Npgsql.PostgresException>();
         await ExecutarAsync("UPDATE autorizacao.suspensoes_do_perfil SET retomada_em = now() WHERE id = {0}", suspensao);
         await ExecutarAsync(
-            "UPDATE autorizacao.desativacoes_do_perfil SET reativada_em = now(), reativada_por_emissor = 'e', reativada_por_sub = 's', motivo_da_reativacao = 'm' WHERE id = {0}",
+            "UPDATE autorizacao.desativacoes_do_perfil SET reativada_em = now(), reativada_por_emissor = 'e', reativada_por_conta_id = 's', motivo_da_reativacao = 'm' WHERE id = {0}",
             desativacao);
         await InserirSuspensaoAsync(perfil);
         await InserirDesativacaoAsync(perfil);
@@ -100,8 +100,8 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
 
     [Theory(DisplayName = "O banco barra a reativação incoerente: campos de quem reativou sem data, ou data sem eles")]
     [InlineData("reativada_em = now()")]
-    [InlineData("reativada_por_sub = 's', motivo_da_reativacao = 'm'")]
-    [InlineData("reativada_em = now(), reativada_por_emissor = 'e', reativada_por_sub = 's'")]
+    [InlineData("reativada_por_conta_id = 's', motivo_da_reativacao = 'm'")]
+    [InlineData("reativada_em = now(), reativada_por_emissor = 'e', reativada_por_conta_id = 's'")]
     public async Task Banco_BarraReativacaoIncoerente(string alteracao)
     {
         Guid perfil = await SemearPerfilVigenteAsync(ConsultarCatalogo);
@@ -126,7 +126,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         Func<Task> acao = () => ExecutarAsync(
             $$"""
             INSERT INTO autorizacao.eventos_da_contencao
-                (id, perfil_id, instante, tipo, suspensao_id, ator, origem, permissao_codigo, ator_emissor, ator_sub, papel, motivo, perfil_protegido, ordem_na_trilha)
+                (id, perfil_id, instante, tipo, suspensao_id, ator, origem, permissao_codigo, ator_emissor, ator_conta_id, papel, motivo, perfil_protegido, ordem_na_trilha)
             VALUES ({0}, {1}, now(), {2}, {3}, {4}, {{Literal(origem)}}, {{Literal(permissao)}}, 'e', 's', 'gestao_de_acessos', 'm', false, nextval('autorizacao.ordem_da_trilha_de_contencao'))
             """,
             Guid.CreateVersion7(), perfil, tipo, suspensao, ator);
@@ -228,7 +228,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         await ExecutarAsync(
             """
             INSERT INTO autorizacao.suspensoes_do_perfil
-                (id, perfil_id, suspensa_em, suspensa_por_emissor, suspensa_por_sub, papel_de_quem_suspendeu, motivo, ordem_na_trilha, created_at)
+                (id, perfil_id, suspensa_em, suspensa_por_emissor, suspensa_por_conta_id, papel_de_quem_suspendeu, motivo, ordem_na_trilha, created_at)
             VALUES ({0}, {1}, now(), 'emissor', 'diogo.souza', {2}, 'm', nextval('autorizacao.ordem_da_trilha_de_contencao'), now())
             """,
             id, perfilId, papel);
@@ -242,7 +242,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         await ExecutarAsync(
             """
             INSERT INTO autorizacao.desativacoes_do_perfil
-                (id, perfil_id, desativada_em, desativada_por_emissor, desativada_por_sub, motivo, ordem_na_trilha, created_at)
+                (id, perfil_id, desativada_em, desativada_por_emissor, desativada_por_conta_id, motivo, ordem_na_trilha, created_at)
             VALUES ({0}, {1}, now(), 'emissor', 'diogo.souza', 'm', nextval('autorizacao.ordem_da_trilha_de_contencao'), now())
             """,
             id, perfilId);
@@ -254,7 +254,7 @@ public sealed class PersistenciaDaContencaoTests : PerfilEndpointTestBase
         ExecutarAsync(
             """
             INSERT INTO autorizacao.decisoes_da_retomada
-                (id, suspensao_id, etapa, decisor_emissor, decisor_sub, decisor_tem_concessao, motivo, perfil_protegido_na_decisao, instante, ordem_na_trilha)
+                (id, suspensao_id, etapa, decisor_emissor, decisor_conta_id, decisor_tem_concessao, motivo, perfil_protegido_na_decisao, instante, ordem_na_trilha)
             VALUES ({0}, {1}, {2}, 'emissor', 'isabella.figueiredo', false, 'm', false, now(), nextval('autorizacao.ordem_da_trilha_de_contencao'))
             """,
             Guid.CreateVersion7(), suspensaoId, etapa);

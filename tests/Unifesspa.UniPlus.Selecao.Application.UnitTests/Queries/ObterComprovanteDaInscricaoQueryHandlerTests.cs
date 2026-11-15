@@ -51,20 +51,20 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
         return new Cenario(inscricoes, processos, registro, new MontadorDoComprovante(processos, registro, prazo, new CancelamentoDoComprovante(DivulgacaoDeTeste.Fuso())));
     }
 
-    private static IUserContext Usuario(Cpf cpf, string sub = "sub-1")
+    private static IUserContext Usuario(Cpf cpf, string contaId = "conta-1")
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(cpf.Valor);
-        contexto.UserId.Returns(sub);
+        contexto.UserId.Returns(contaId);
         return contexto;
     }
 
-    private static Inscricao Iniciar(Cpf cpf, string sub, Guid versaoId) =>
-        Inscricao.Iniciar(ProcessoId, cpf, sub, "https://issuer", versaoId).Value!;
+    private static Inscricao Iniciar(Cpf cpf, string contaId, Guid versaoId) =>
+        Inscricao.Iniciar(ProcessoId, cpf, contaId, "https://issuer", versaoId).Value!;
 
     private static Inscricao Cancelada(Cpf cpf) => Inscricao.Reidratar(
-        Guid.CreateVersion7(), ProcessoId, cpf, "sub-1", "https://issuer", SituacaoInscricao.Cancelada, Guid.CreateVersion7(), null, null,
-        "000123", Instante, "sub-1", "a pedido do candidato",
+        Guid.CreateVersion7(), ProcessoId, cpf, "conta-1", "https://issuer", SituacaoInscricao.Cancelada, Guid.CreateVersion7(), null, null,
+        "000123", Instante, "conta-1", "a pedido do candidato",
         new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
         new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 2, Instante, null);
 
@@ -81,7 +81,7 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
     [Fact(DisplayName = "Sem o claim cpf no token, recusa sem consultar repositório nenhum")]
     public async Task Handle_SemCpfNoToken_Recusa()
     {
-        Cenario cenario = Novo(Iniciar(PersonasDeTeste.KevinCarvalho, "sub-1", Guid.CreateVersion7()));
+        Cenario cenario = Novo(Iniciar(PersonasDeTeste.KevinCarvalho, "conta-1", Guid.CreateVersion7()));
         IUserContext semCpf = Substitute.For<IUserContext>();
         semCpf.Cpf.Returns((string?)null);
 
@@ -94,7 +94,7 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
     [Fact(DisplayName = "A inscrição de outro CPF responde como inexistente, sem confirmar que o id existe")]
     public async Task Handle_InscricaoDeOutroCpf_NaoEncontrada()
     {
-        Inscricao deOutro = Iniciar(PersonasDeTeste.KevinCarvalho, "sub-1", Guid.CreateVersion7());
+        Inscricao deOutro = Iniciar(PersonasDeTeste.KevinCarvalho, "conta-1", Guid.CreateVersion7());
         Cenario cenario = Novo(deOutro);
 
         Result<ComprovanteDaInscricaoDto> resultado = await Ler(cenario, deOutro.Id, 1, Usuario(PersonasDeTeste.FernandaDrumond));
@@ -103,13 +103,13 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
         await cenario.Inscricoes.DidNotReceiveWithAnyArgs().ObterComprovanteAsync(default, default, default);
     }
 
-    [Fact(DisplayName = "O mesmo CPF com outro sub é recusado como dono divergente")]
-    public async Task Handle_SubDivergente_DonoDivergente()
+    [Fact(DisplayName = "O mesmo CPF com outra conta é recusado como dono divergente")]
+    public async Task Handle_ContaIdDivergente_DonoDivergente()
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
-        Inscricao inscricao = Iniciar(cpf, "sub-original", Guid.CreateVersion7());
+        Inscricao inscricao = Iniciar(cpf, "conta-original", Guid.CreateVersion7());
 
-        Result<ComprovanteDaInscricaoDto> resultado = await Ler(Novo(inscricao), inscricao.Id, 1, Usuario(cpf, "sub-outro"));
+        Result<ComprovanteDaInscricaoDto> resultado = await Ler(Novo(inscricao), inscricao.Id, 1, Usuario(cpf, "conta-outro"));
 
         resultado.Error!.Code.Should().Be("Inscricao.DonoDivergente");
     }
@@ -142,7 +142,7 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
     public async Task Handle_NumeroInexistente_ComprovanteNaoEncontrado()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        Inscricao inscricao = Iniciar(cpf, "sub-1", Guid.CreateVersion7());
+        Inscricao inscricao = Iniciar(cpf, "conta-1", Guid.CreateVersion7());
         Cenario cenario = Novo(inscricao);
         cenario.Inscricoes.ObterComprovanteAsync(inscricao.Id, 9, Arg.Any<CancellationToken>()).Returns((ComprovanteNaPosicao?)null);
 
@@ -156,7 +156,7 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
-        Inscricao inscricao = Iniciar(cpf, "sub-1", versao.Id);
+        Inscricao inscricao = Iniciar(cpf, "conta-1", versao.Id);
         Cenario cenario = Novo(inscricao, versao, grafo);
         cenario.Inscricoes.ObterComprovanteAsync(inscricao.Id, 2, Arg.Any<CancellationToken>()).Returns(Posicao(inscricao, 2, 2));
 
@@ -174,7 +174,7 @@ public sealed class ObterComprovanteDaInscricaoQueryHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
-        Inscricao inscricao = Iniciar(cpf, "sub-1", versao.Id);
+        Inscricao inscricao = Iniciar(cpf, "conta-1", versao.Id);
         Cenario cenario = Novo(inscricao, versao, grafo);
         cenario.Inscricoes.ObterComprovanteAsync(inscricao.Id, 1, Arg.Any<CancellationToken>()).Returns(Posicao(inscricao, 1, 2));
 

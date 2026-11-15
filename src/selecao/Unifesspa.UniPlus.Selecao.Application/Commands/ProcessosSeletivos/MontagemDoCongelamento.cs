@@ -30,7 +30,7 @@ public sealed class MontagemDoCongelamento(
         {
             Dados = entrada.Dados,
             Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, entrada.HashDocumento),
-            AtorUsuarioSub = userContext.UserId ?? "system",
+            AtorUsuarioContaId = userContext.UserId ?? "system",
             Instante = instante,
             Contexto = contexto,
             FatosDeModalidade = conferida.FatosDeModalidade,

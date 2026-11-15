@@ -50,9 +50,9 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        foreach (string sub in new[] { Leandro, Diogo })
+        foreach (string contaId in new[] { Leandro, Diogo })
         {
-            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, contaId);
         }
     }
 
@@ -124,7 +124,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized, permissao.Codigo);
     }
 
-    private async Task<HttpResponseMessage> EnviarAsync(string? sub, PermissaoConfiguracao permissao, string? papel = null)
+    private async Task<HttpResponseMessage> EnviarAsync(string? contaId, PermissaoConfiguracao permissao, string? papel = null)
     {
         bool consulta = permissao.Acao == "consultar";
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -132,9 +132,9 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         {
             Content = consulta ? null : JsonContent.Create(new { }),
         };
-        if (sub is not null)
+        if (contaId is not null)
         {
-            Autenticar(request, sub, papel);
+            Autenticar(request, contaId, papel);
         }
 
         return await client.SendAsync(request);
@@ -145,10 +145,10 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         permissao.Acao == "manifestar" ? $"/api/configuracao/admin/{permissao.Resource}/manifestacoes" : $"/api/configuracao/admin/{permissao.Resource}",
         UriKind.Relative);
 
-    private static void Autenticar(HttpRequestMessage request, string sub, string? papel)
+    private static void Autenticar(HttpRequestMessage request, string contaId, string? papel)
     {
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, sub);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, contaId);
         if (papel is not null)
         {
             request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);

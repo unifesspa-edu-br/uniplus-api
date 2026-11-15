@@ -128,7 +128,7 @@ public sealed class RevogacaoSobATravaDoPapelTests
     {
         IUserContext autor = Substitute.For<IUserContext>();
         autor.Issuer.Returns(Emissor);
-        autor.UserId.Returns(Diogo.Sub);
+        autor.UserId.Returns(Diogo.ContaId);
         return autor;
     }
 }

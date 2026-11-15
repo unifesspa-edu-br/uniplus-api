@@ -39,10 +39,10 @@ public sealed class VersaoNosContratosDoHostTests : PedidosDeConcessaoTestBase
         Guid perfil = await SemearPerfilAsync("Análise de atendimento", Analisar);
         Guid unidade = await SemearUnidadeAsync();
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, Administrar);
-        Guid antiga = await ConcessoesDeTeste.ConcederAsync(Fixture.Factory.Services, Leandro.Sub.ToString(), perfil, EscopoDaConcessao.DaUnidade(unidade));
+        Guid antiga = await ConcessoesDeTeste.ConcederAsync(Fixture.Factory.Services, Leandro.ContaId.ToString(), perfil, EscopoDaConcessao.DaUnidade(unidade));
 
         await TrocarComposicaoAsync(perfil, Analisar, Laudos);
-        Guid nova = await ConcessoesDeTeste.ConcederAsync(Fixture.Factory.Services, Betina.Sub.ToString(), perfil, EscopoDaConcessao.DaUnidade(unidade));
+        Guid nova = await ConcessoesDeTeste.ConcederAsync(Fixture.Factory.Services, Betina.ContaId.ToString(), perfil, EscopoDaConcessao.DaUnidade(unidade));
 
         (await LerAsync(diogo, $"{RotaDasConcessoes}/{antiga}")).GetProperty("versao").GetInt32().Should().Be(1);
         (await LerAsync(diogo, $"{RotaDasConcessoes}/{nova}")).GetProperty("versao").GetInt32().Should().Be(2);
@@ -92,7 +92,7 @@ public sealed class VersaoNosContratosDoHostTests : PedidosDeConcessaoTestBase
     {
         await ResetarAsync();
         using HttpClient diogo = await ClienteComPermissoesAsync(Diogo, Administrar);
-        Guid concessao = await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Leandro.Sub.ToString(), TipoDeGovernanca.RepresentanteDoControlador);
+        Guid concessao = await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Leandro.ContaId.ToString(), TipoDeGovernanca.RepresentanteDoControlador);
 
         JsonElement lida = await LerAsync(diogo, $"{RotaDasConcessoes}/{concessao}");
 

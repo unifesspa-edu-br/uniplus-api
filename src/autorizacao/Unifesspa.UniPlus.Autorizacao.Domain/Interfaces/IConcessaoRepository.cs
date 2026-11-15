@@ -18,10 +18,10 @@ public enum SituacaoDaConcessao
     Todas = 4,
 }
 
-/// <summary>Filtros da lista de concessões. A pessoa é o par emissor e <c>sub</c>, nunca CPF.</summary>
+/// <summary>Filtros da lista de concessões. A pessoa é o par emissor e <c>contaId</c>, nunca CPF.</summary>
 public sealed record FiltroDeConcessoes(
     string? PessoaEmissor,
-    string? PessoaSub,
+    string? PessoaContaId,
     Guid? UnidadeId,
     Guid? PerfilId,
     SituacaoDaConcessao Situacao,

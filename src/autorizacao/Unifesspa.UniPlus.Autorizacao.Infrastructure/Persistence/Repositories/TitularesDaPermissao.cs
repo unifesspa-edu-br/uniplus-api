@@ -39,7 +39,7 @@ internal sealed class TitularesDaPermissao : ITitularesDaPermissao
             from c in _context.Concessoes.AsNoTracking().VigentesDaInstituicao(agora)
             where c.BeneficiarioEmail != null
                 && _context.ConcessoesComPermissaoEmVigor(codigoDaPermissao, agora).Contains(c.Id)
-            select new TitularDaPermissao(c.BeneficiarioEmissor, c.BeneficiarioSub, c.BeneficiarioEmail!))
+            select new TitularDaPermissao(c.BeneficiarioEmissor, c.BeneficiarioContaId, c.BeneficiarioEmail!))
             .Distinct()
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

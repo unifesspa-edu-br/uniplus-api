@@ -273,7 +273,7 @@ public sealed partial class RestauradorDeConfiguracaoTests
             CorpusEnvelope.Codec.AlgoritmoHash,
             atoCriadorId: CorpusEnvelope.AtoAbertura,
             atoCriadorHash: CorpusEnvelope.HashDocumento,
-            atorUsuarioSub: CorpusEnvelope.Ator,
+            atorUsuarioContaId: CorpusEnvelope.Ator,
             instante: DateTimeOffset.UnixEpoch);
 
         byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;

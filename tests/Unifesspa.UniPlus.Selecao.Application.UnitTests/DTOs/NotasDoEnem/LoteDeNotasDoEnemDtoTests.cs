@@ -17,7 +17,7 @@ public sealed class LoteDeNotasDoEnemDtoTests
     private static LoteDeNotasDoEnem LoteVazio() =>
         LoteDeNotasDoEnem.Registrar(
             Guid.CreateVersion7(), Guid.CreateVersion7(), "2025", "INEP_ENEM_RETORNO", "v1", new string('a', 64),
-            new string('b', 64), "sub-admin", DateTimeOffset.UtcNow, 0, Guid.CreateVersion7(),
+            new string('b', 64), "conta-admin", DateTimeOffset.UtcNow, 0, Guid.CreateVersion7(),
             new ResultadoDoCruzamento([], [], [], []), [], "Operador de Teste");
 
     [Fact(DisplayName = "ausente parcial traz só a área em que faltou e ausente total traz as cinco, em ordem de inscrição")]

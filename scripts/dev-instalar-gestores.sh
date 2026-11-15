@@ -179,7 +179,7 @@ instalar() {
     for gestor in "${LISTA_DE_GESTORES[@]}"; do
         gestor_json=$(usuario_do_realm "$gestor")
         gestores_json+=("$(jq -c --arg iss "$emissor" \
-            '{emissor: $iss, sub: .id, email: .email, nome: ((.firstName // "") + " " + (.lastName // "") | gsub("^ +| +$"; ""))}' <<< "$gestor_json")")
+            '{emissor: $iss, contaId: .id, email: .email, nome: ((.firstName // "") + " " + (.lastName // "") | gsub("^ +| +$"; ""))}' <<< "$gestor_json")")
     done
     tamanho=$(stat -c%s "$PDF_DE_DESIGNACAO")
     corpo=$(jq -nc --argjson gestores "$(printf '%s\n' "${gestores_json[@]}" | jq -sc .)" --argjson tamanho "$tamanho" \

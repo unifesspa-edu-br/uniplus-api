@@ -19,8 +19,8 @@ public sealed class PersistenciaDaProvidenciaTests : ProvidenciaEndpointTestBase
 {
     private const string Inserir = """
         INSERT INTO autorizacao.providencias
-            (id, concessao_id, tipo, fundamento, estado, aberta_em, solicitada_por_emissor, solicitada_por_sub, created_at,
-             desfecho_em, desfecho_por_emissor, desfecho_por_sub, motivo_do_desfecho)
+            (id, concessao_id, tipo, fundamento, estado, aberta_em, solicitada_por_emissor, solicitada_por_conta_id, created_at,
+             desfecho_em, desfecho_por_emissor, desfecho_por_conta_id, motivo_do_desfecho)
         VALUES ({0}, {1}, {2}, {3}, {4}, now(), 'https://idp.test', 'cecilia.moura', now(), {5}, {6}, {7}, {8})
         """;
 

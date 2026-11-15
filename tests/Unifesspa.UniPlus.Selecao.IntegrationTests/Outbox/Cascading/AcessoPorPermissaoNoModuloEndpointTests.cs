@@ -58,9 +58,9 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        foreach (string sub in new[] { Leandro, Diogo })
+        foreach (string contaId in new[] { Leandro, Diogo })
         {
-            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, contaId);
         }
     }
 
@@ -168,13 +168,13 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         return (processo.Id, unidade);
     }
 
-    private async Task ConcederNaUnidadeAsync(string sub, Guid unidade, params PermissaoSelecao[] permissoes)
+    private async Task ConcederNaUnidadeAsync(string contaId, Guid unidade, params PermissaoSelecao[] permissoes)
     {
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, [.. permissoes.Select(static p => p.Codigo)]);
-        await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, sub, perfil, EscopoDaConcessao.DaUnidade(unidade));
+        await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, contaId, perfil, EscopoDaConcessao.DaUnidade(unidade));
     }
 
-    private async Task<HttpResponseMessage> EnviarAsync(string? sub, string metodo, string rota, string? papel = null)
+    private async Task<HttpResponseMessage> EnviarAsync(string? contaId, string metodo, string rota, string? papel = null)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(new HttpMethod(metodo), new Uri(rota, UriKind.Relative));
@@ -183,10 +183,10 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
             request.Content = JsonContent.Create(new { });
         }
 
-        if (sub is not null)
+        if (contaId is not null)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-            request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, sub);
+            request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, contaId);
             if (papel is not null)
             {
                 request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);

@@ -17,13 +17,13 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 /// </summary>
 /// <remarks>
 /// Só vale para a requisição que traz o papel <c>plataforma-admin</c> e nenhuma identidade nomeada: as personas dos
-/// cenários de acesso (que enviam o seu <c>sub</c>) e quem não traz o papel ficam como o token as descreve, sem
+/// cenários de acesso (que enviam o seu <c>contaId</c>) e quem não traz o papel ficam como o token as descreve, sem
 /// concessão alguma.
 /// </remarks>
 public static class AdministradorInstitucionalDeTeste
 {
     private const string PapelDeAdministrador = "plataforma-admin";
-    private const string SubDoAdministradorAnonimo = "test-user-id";
+    private const string ContaIdDoAdministradorAnonimo = "test-user-id";
 
     public static IServiceCollection AdicionarAdministradorInstitucionalDeTeste<TPermissao>(this IServiceCollection services)
         where TPermissao : struct, Enum
@@ -73,10 +73,10 @@ public static class AdministradorInstitucionalDeTeste
         {
             DefinicaoDePermissao[] todas = [.. CatalogoDePermissoes<TPermissao>.Todas()];
             await ConcessoesDeTeste.ConcederPermissoesAsync(
-                services, SubDoAdministradorAnonimo, [.. todas.Where(static d => !d.ReservadaAGovernanca).Select(static d => d.Codigo)]);
+                services, ContaIdDoAdministradorAnonimo, [.. todas.Where(static d => !d.ReservadaAGovernanca).Select(static d => d.Codigo)]);
             if (todas.Any(static d => d.ReservadaAGovernanca))
             {
-                await ConcessoesDeTeste.ConcederGovernancaAsync(services, SubDoAdministradorAnonimo, TipoDeGovernanca.RepresentanteDoControlador);
+                await ConcessoesDeTeste.ConcederGovernancaAsync(services, ContaIdDoAdministradorAnonimo, TipoDeGovernanca.RepresentanteDoControlador);
             }
         }
     }

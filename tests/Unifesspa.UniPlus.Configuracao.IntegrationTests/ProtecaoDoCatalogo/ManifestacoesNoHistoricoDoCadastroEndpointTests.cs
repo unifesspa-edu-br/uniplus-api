@@ -79,7 +79,7 @@ public sealed class ManifestacoesNoHistoricoDoCadastroEndpointTests : Manifestac
         await LerAsync(client, Lucia, $"{Tipos}/{tipo}/protecao/manifestacoes");
         await LerAsync(client, Lucia, $"{Fatos}/{fato}/protecao/manifestacoes");
 
-        Registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Lucia.Sub && r.Permitido)
+        Registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Lucia.ContaId && r.Permitido)
             .Select(static r => r.Permissao).Should().HaveCount(2).And.OnlyContain(static p => p == "configuracao:protecao-do-catalogo:consultar");
     }
 
@@ -108,8 +108,8 @@ public sealed class ManifestacoesNoHistoricoDoCadastroEndpointTests : Manifestac
 
     private async Task ConcederAsync(Persona quem, PermissaoConfiguracao permissao)
     {
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, quem.Sub);
-        await ConcessoesDeTeste.ConcederPermissoesAsync(Fixture.Factory.Services, quem.Sub, permissao.Codigo);
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, quem.ContaId);
+        await ConcessoesDeTeste.ConcederPermissoesAsync(Fixture.Factory.Services, quem.ContaId, permissao.Codigo);
     }
 
     private static async Task<List<JsonElement>> LerAsync(HttpClient client, Persona quem, string rota)

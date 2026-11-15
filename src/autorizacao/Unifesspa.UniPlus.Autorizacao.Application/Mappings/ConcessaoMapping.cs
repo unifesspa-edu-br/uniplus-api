@@ -19,7 +19,7 @@ public static class ConcessaoMapping
     private static ConcessaoDto ToDto(Concessao c, string perfilNome, int? versao, DateTimeOffset agora) =>
         new(
             c.Id,
-            new IdentidadeDto(c.BeneficiarioEmissor, c.BeneficiarioSub, c.BeneficiarioNome),
+            new IdentidadeDto(c.BeneficiarioEmissor, c.BeneficiarioContaId, c.BeneficiarioNome),
             new PerfilResumoDto(c.PerfilId, perfilNome),
             versao,
             new EscopoDto(c.EscopoTipo.ToCodigo(), c.UnidadeId),
@@ -43,7 +43,7 @@ public static class ConcessaoMapping
         yield return new EventoDaTrilhaDto(
             "concedida",
             c.ConcedidaEm,
-            new IdentidadeDto(c.ConcedidaPorEmissor, c.ConcedidaPorSub, c.ConcedidaPorNome),
+            new IdentidadeDto(c.ConcedidaPorEmissor, c.ConcedidaPorContaId, c.ConcedidaPorNome),
             $"Origem: {c.OrigemTipo.ToCodigo()} {c.OrigemId}.");
 
         foreach (EventoDaTrilhaDto fim in DoFim(c, agora))
@@ -71,5 +71,5 @@ public static class ConcessaoMapping
     private static IdentidadeDto? RevogadaPorPessoa(Concessao c) =>
         c.RevogadaEm is null || c.RevogadaPelaJanelaId is not null
             ? null
-            : new IdentidadeDto(c.RevogadaPorEmissor!, c.RevogadaPorSub!, c.RevogadaPorNome);
+            : new IdentidadeDto(c.RevogadaPorEmissor!, c.RevogadaPorContaId!, c.RevogadaPorNome);
 }

@@ -13,7 +13,7 @@ public sealed class RascunhoDePublicacaoTests
     private const string ConteudoValido = """{"ato":{"orgao":"REITORIA"}}""";
 
     private static RascunhoDePublicacao Novo(string conteudo = ConteudoValido, int versao = 1) =>
-        RascunhoDePublicacao.Criar(Guid.CreateVersion7(), "sub-123", conteudo, versao, Agora, RascunhoDePublicacao.Prazo).Value!;
+        RascunhoDePublicacao.Criar(Guid.CreateVersion7(), "conta-123", conteudo, versao, Agora, RascunhoDePublicacao.Prazo).Value!;
 
     [Fact]
     public void Criar_GuardaOConteudoSemInterpretar()
@@ -32,7 +32,7 @@ public sealed class RascunhoDePublicacaoTests
         // uso, não o desvio. Recusá-lo travaria o operador justamente quando ele apagou tudo
         // para recomeçar e quer que o servidor esqueça o que havia.
         Result<RascunhoDePublicacao> resultado = RascunhoDePublicacao.Criar(
-            Guid.CreateVersion7(), "sub-123", "{}", 1, Agora, RascunhoDePublicacao.Prazo);
+            Guid.CreateVersion7(), "conta-123", "{}", 1, Agora, RascunhoDePublicacao.Prazo);
 
         resultado.IsSuccess.Should().BeTrue();
     }
@@ -43,7 +43,7 @@ public sealed class RascunhoDePublicacaoTests
     public void Criar_RecusaVersaoNaoPositiva(int versao)
     {
         Result<RascunhoDePublicacao> resultado = RascunhoDePublicacao.Criar(
-            Guid.CreateVersion7(), "sub-123", ConteudoValido, versao, Agora, RascunhoDePublicacao.Prazo);
+            Guid.CreateVersion7(), "conta-123", ConteudoValido, versao, Agora, RascunhoDePublicacao.Prazo);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RascunhoDePublicacao.VersaoInvalida");
@@ -62,7 +62,7 @@ public sealed class RascunhoDePublicacaoTests
         Encoding.UTF8.GetByteCount(conteudo).Should().BeGreaterThan(RascunhoDePublicacao.ConteudoMaxBytes);
 
         Result<RascunhoDePublicacao> resultado = RascunhoDePublicacao.Criar(
-            Guid.CreateVersion7(), "sub-123", conteudo, 1, Agora, RascunhoDePublicacao.Prazo);
+            Guid.CreateVersion7(), "conta-123", conteudo, 1, Agora, RascunhoDePublicacao.Prazo);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("RascunhoDePublicacao.ConteudoMuitoGrande");
@@ -107,9 +107,9 @@ public sealed class RascunhoDePublicacaoTests
     [Fact]
     public void Criar_ExigeDono()
     {
-        Action semSub = () => RascunhoDePublicacao.Criar(
+        Action semContaId = () => RascunhoDePublicacao.Criar(
             Guid.CreateVersion7(), "  ", ConteudoValido, 1, Agora, RascunhoDePublicacao.Prazo);
 
-        semSub.Should().Throw<ArgumentException>();
+        semContaId.Should().Throw<ArgumentException>();
     }
 }

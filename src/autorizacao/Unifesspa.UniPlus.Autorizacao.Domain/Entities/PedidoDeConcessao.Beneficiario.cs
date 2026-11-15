@@ -83,7 +83,7 @@ public sealed partial class PedidoDeConcessao
     private void DefinirBeneficiario(Identidade identidade, string? nome)
     {
         BeneficiarioEmissor = identidade.Emissor;
-        BeneficiarioSub = identidade.Sub;
+        BeneficiarioContaId = identidade.ContaId;
         BeneficiarioNome = nome;
     }
 

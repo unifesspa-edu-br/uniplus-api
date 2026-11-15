@@ -17,7 +17,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed record AuthorizationSubject
 {
-    /// <summary>Identidade do sujeito (emissor + subject do token).</summary>
+    /// <summary>Identidade do sujeito (emissor + identificador da conta do token).</summary>
     public UsuarioRef Usuario { get; }
 
     /// <summary>Grupos do token (strings de grupo, sem amarração a provedor).</summary>

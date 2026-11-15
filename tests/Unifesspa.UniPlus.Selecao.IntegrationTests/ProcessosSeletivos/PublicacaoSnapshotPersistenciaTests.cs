@@ -150,7 +150,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             canonico.SchemaVersion,
             canonico.AlgoritmoHash,
             documento.HashSha256!,
-            atorUsuarioSub: "integration-test-user",
+            atorUsuarioContaId: "integration-test-user",
             TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
@@ -323,7 +323,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
             canonico.SchemaVersion,
             canonico.AlgoritmoHash,
             documento.HashSha256!,
-            atorUsuarioSub: "integration-test-user",
+            atorUsuarioContaId: "integration-test-user",
             TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
         VersaoConfiguracao versaoAbertura = publicarResult.Value!;
@@ -341,7 +341,7 @@ public sealed class PublicacaoSnapshotPersistenciaTests : IClassFixture<Processo
         // retificação que redefine a exigência com um TipoDocumento diferente e persiste a
         // mudança no MESMO DbContext que já gravou a versão anterior.
         Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            "Corrigir código do tipo de documento exigido", versaoAbertura, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-123", TimeProvider.System.GetUtcNow());
+            "Corrigir código do tipo de documento exigido", versaoAbertura, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-123", TimeProvider.System.GetUtcNow());
         abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
 
         DocumentoExigido exigenciaEditada = DocumentoExigido.Criar(

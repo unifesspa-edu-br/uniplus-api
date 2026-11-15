@@ -75,8 +75,8 @@ public sealed class RascunhoRetificacao : EntityBase
 
     public DateTimeOffset AbertoEm { get; private set; }
 
-    /// <summary>Sub do usuário autenticado que abriu a sessão (via <c>IUserContext</c>).</summary>
-    public string AbertoPorSub { get; private set; } = string.Empty;
+    /// <summary>ContaId do usuário autenticado que abriu a sessão (via <c>IUserContext</c>).</summary>
+    public string AbertoPorContaId { get; private set; } = string.Empty;
 
     /// <summary>
     /// Nasce em <b>1</b> e é incrementada por <b>toda mutação aceita</b> — os seis
@@ -92,12 +92,12 @@ public sealed class RascunhoRetificacao : EntityBase
         VersaoConfiguracao versaoBase,
         bool versaoBaseComIdentificadorLegivel,
         FatosDasVersoesPublicadas fatosDasVersoesPublicadas,
-        string abertoPorSub,
+        string abertoPorContaId,
         DateTimeOffset abertoEm)
     {
         ArgumentNullException.ThrowIfNull(versaoBase);
         ArgumentNullException.ThrowIfNull(fatosDasVersoesPublicadas);
-        ArgumentException.ThrowIfNullOrWhiteSpace(abertoPorSub);
+        ArgumentException.ThrowIfNullOrWhiteSpace(abertoPorContaId);
 
         Result<string> motivoNormalizado = NormalizarMotivo(motivo);
         if (motivoNormalizado.IsFailure)
@@ -113,7 +113,7 @@ public sealed class RascunhoRetificacao : EntityBase
             NumeroVersaoBase = versaoBase.NumeroVersao,
             VersaoBaseComIdentificadorLegivel = versaoBaseComIdentificadorLegivel,
             FatosDasVersoesPublicadas = fatosDasVersoesPublicadas,
-            AbertoPorSub = abertoPorSub,
+            AbertoPorContaId = abertoPorContaId,
             AbertoEm = abertoEm,
             Revisao = 1,
         });

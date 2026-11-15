@@ -50,9 +50,9 @@ public sealed class AcessoAFaseDoProcessoEndpointTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        foreach (string sub in new[] { Leandro, Betina, Caroline })
+        foreach (string contaId in new[] { Leandro, Betina, Caroline })
         {
-            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, contaId);
         }
     }
 
@@ -151,10 +151,10 @@ public sealed class AcessoAFaseDoProcessoEndpointTests : IAsyncLifetime
         public string Rota(string acao) => $"/api/selecao/_teste/processos-seletivos/{ProcessoId}/fases/{FaseId}/{acao}";
     }
 
-    private async Task ConcederAsync(string sub, Guid unidade)
+    private async Task ConcederAsync(string contaId, Guid unidade)
     {
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, PermissaoSelecao.DocumentosDaFasePublicar.Codigo);
-        await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, sub, perfil, EscopoDaConcessao.DaUnidade(unidade));
+        await ConcessoesDeTeste.ConcederAsync(_fixture.Factory.Services, contaId, perfil, EscopoDaConcessao.DaUnidade(unidade));
     }
 
     // O processo é publicado de verdade, com a fase única sob a unidade da fase, que não é a dona do processo.
@@ -189,12 +189,12 @@ public sealed class AcessoAFaseDoProcessoEndpointTests : IAsyncLifetime
             .Where(v => v.ProcessoSeletivoId == processoId).OrderByDescending(v => v.NumeroVersao).Select(v => v.Id).FirstAsync();
     }
 
-    private async Task InscreverAsync(Publicado publicado, string sub)
+    private async Task InscreverAsync(Publicado publicado, string contaId)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         Cpf cpf = Cpf.Criar(PersonasDeTeste.Candidatas.First(static c => c.Nome.StartsWith("Helena", StringComparison.Ordinal)).Cpf).Value!;
         Inscricao inscricao = Inscricao.Reidratar(
-            Guid.CreateVersion7(), publicado.ProcessoId, cpf, sub, TestAuthHandler.DefaultIssuer, SituacaoInscricao.Submetida, publicado.VersaoId, null, null,
+            Guid.CreateVersion7(), publicado.ProcessoId, cpf, contaId, TestAuthHandler.DefaultIssuer, SituacaoInscricao.Submetida, publicado.VersaoId, null, null,
             "000002", null, null, null, new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             new Dictionary<string, JsonElement>(StringComparer.Ordinal),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
@@ -203,10 +203,10 @@ public sealed class AcessoAFaseDoProcessoEndpointTests : IAsyncLifetime
         await scope.ServiceProvider.GetRequiredService<IUnitOfWork>().SalvarAlteracoesAsync();
     }
 
-    private async Task<string> ResultadoAsync(string sub, string rota)
+    private async Task<string> ResultadoAsync(string contaId, string rota)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpResponseMessage resposta = await client.SendAsync(Requisicao(sub, rota));
+        using HttpResponseMessage resposta = await client.SendAsync(Requisicao(contaId, rota));
         string corpo = await resposta.Content.ReadAsStringAsync();
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
         using JsonDocument json = JsonDocument.Parse(corpo);
@@ -214,7 +214,7 @@ public sealed class AcessoAFaseDoProcessoEndpointTests : IAsyncLifetime
         return json.RootElement.GetProperty("resultado").GetString()!;
     }
 
-    private async Task<HttpResponseMessage> GetComRegistroIndisponivelAsync(string sub, string rota)
+    private async Task<HttpResponseMessage> GetComRegistroIndisponivelAsync(string contaId, string rota)
     {
         await using WebApplicationFactory<HostAssemblyMarker> comFalha = _fixture.Factory.WithWebHostBuilder(builder =>
             builder.ConfigureServices(services =>
@@ -224,7 +224,7 @@ public sealed class AcessoAFaseDoProcessoEndpointTests : IAsyncLifetime
             }));
         using HttpClient client = comFalha.CreateClient();
 
-        return await client.SendAsync(Requisicao(sub, rota));
+        return await client.SendAsync(Requisicao(contaId, rota));
     }
 
     private sealed class RegistroQueFalha : IRegistroOperacionalRestrito
@@ -233,11 +233,11 @@ public sealed class AcessoAFaseDoProcessoEndpointTests : IAsyncLifetime
             throw new RegistroDeAcessoNaoGravadoException(new InvalidOperationException("broker fora"));
     }
 
-    private static HttpRequestMessage Requisicao(string sub, string rota)
+    private static HttpRequestMessage Requisicao(string contaId, string rota)
     {
         HttpRequestMessage request = new(HttpMethod.Get, new Uri(rota, UriKind.Relative));
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, sub);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, contaId);
 
         return request;
     }

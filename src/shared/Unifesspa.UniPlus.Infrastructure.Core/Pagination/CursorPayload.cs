@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// legados sem o campo a preservar.
 /// </param>
 /// <param name="UserId">
-/// Sub claim do JWT de quem emitiu o cursor. <c>null</c> em recursos públicos
+/// Identificador da conta (claim do JWT) de quem emitiu o cursor. <c>null</c> em recursos públicos
 /// (ex.: <c>/api/editais</c>); obrigatório em recursos user-scoped
 /// (<c>/api/inscricoes/minhas</c>) — <see cref="FromCursorAttribute.RequireUserBinding"/>
 /// fixa a invariante. Previne metadata leak entre clientes diferentes:

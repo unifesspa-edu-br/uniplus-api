@@ -40,7 +40,7 @@ public sealed class LeituraDoPedidoInexistenteTests
     [Fact(DisplayName = "Com o token identificado e sem permissão, o pedido inexistente responde não encontrado e grava as negativas")]
     public async Task Identificado_Inexistente_NaoEncontradoComAsNegativas()
     {
-        VerificadorDeTeste verificador = new(Paulo.Identidade.Sub, permitidas: []);
+        VerificadorDeTeste verificador = new(Paulo.Identidade.ContaId, permitidas: []);
 
         Result<PedidoDeConcessao> resultado = await LerAsync(pedido: null, verificador);
 

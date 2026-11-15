@@ -61,7 +61,7 @@ public sealed partial class JanelaDeMigracao : EntityBase
 
     public string? EncerradaPorEmissor { get; private set; }
 
-    public string? EncerradaPorSub { get; private set; }
+    public string? EncerradaPorContaId { get; private set; }
 
     public string? EncerradaPorNome { get; private set; }
 

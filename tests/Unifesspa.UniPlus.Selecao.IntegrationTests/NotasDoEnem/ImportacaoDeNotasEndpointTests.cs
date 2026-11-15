@@ -544,7 +544,7 @@ public sealed class ImportacaoDeNotasEndpointTests
             db.VersoesConfiguracao.Add(outra);
             db.LotesDeNotasDoEnem.Add(LoteDeNotasDoEnem.Registrar(
                 cenario.Processo.ProcessoId, cenario.Processo.EtapaDoEnemId, Edicao, "INEP_ENEM_RETORNO", "v1", new string('b', 64),
-                Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(arquivo)), "sub-admin", DateTimeOffset.UtcNow, 0,
+                Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData(arquivo)), "conta-admin", DateTimeOffset.UtcNow, 0,
                 outra.Id, new Unifesspa.UniPlus.Selecao.Domain.Services.ResultadoDoCruzamento([], [], [], []), []));
             await db.SaveChangesAsync();
         }

@@ -252,7 +252,7 @@ public sealed class ValoresSelecionaveisResolverTests
     private static ServicosDoCongelamentoDeTeste ServicosDoHandler(Mocks mocks)
     {
         IUserContext userContext = Substitute.For<IUserContext>();
-        userContext.UserId.Returns("user-sub-1");
+        userContext.UserId.Returns("user-conta-1");
 
         return new ServicosDoCongelamentoDeTeste()
             .ComRepositorio(mocks.ProcessoRepository)

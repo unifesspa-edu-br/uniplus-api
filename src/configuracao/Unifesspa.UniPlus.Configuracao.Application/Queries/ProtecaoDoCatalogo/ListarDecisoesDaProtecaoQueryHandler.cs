@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Lê o registro das decisões da proteção do catálogo: o Representante do controlador vê todas e restringe às próprias com
-/// <c>minhas</c>, que compara o emissor e o <c>sub</c> do token. Os critérios são conferidos antes de qualquer leitura (ADR-0125).
+/// <c>minhas</c>, que compara o emissor e o <c>contaId</c> do token. Os critérios são conferidos antes de qualquer leitura (ADR-0125).
 /// </summary>
 public static class ListarDecisoesDaProtecaoQueryHandler
 {
@@ -61,7 +61,7 @@ public static class ListarDecisoesDaProtecaoQueryHandler
         }
 
         return new FiltroDasDecisoesDaProtecao(
-            decisoes, cadastro, query.De, query.Ate, busca.Value, query.Minhas ? (quemConsulta.Emissor, quemConsulta.Sub) : null);
+            decisoes, cadastro, query.De, query.Ate, busca.Value, query.Minhas ? (quemConsulta.Emissor, quemConsulta.ContaId) : null);
     }
 
     private static List<AtoDaProtecao> Decisoes(IEnumerable<string> tokens, List<FieldError> erros)

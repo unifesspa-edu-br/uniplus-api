@@ -46,7 +46,7 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
         builder.HasKey(i => i.Id);
 
         builder.Property(i => i.ExecutorEmissor).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(i => i.ExecutorSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(i => i.ExecutorContaId).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(i => i.ExecutorNome).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(i => i.NumeroDoDocumento).HasMaxLength(Instalacao.NumeroDoDocumentoMaxLength).IsRequired();
         builder.Property(i => i.TamanhoDoPdf).IsRequired();
@@ -74,15 +74,15 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
             gestor.WithOwner().HasForeignKey("InstalacaoId");
             gestor.Property<Guid>("InstalacaoId");
             gestor.Property(g => g.Emissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-            gestor.Property(g => g.Sub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+            gestor.Property(g => g.ContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
             gestor.Property(g => g.Email).HasMaxLength(PedidoDeConcessao.EmailMaxLength);
             gestor.Property(g => g.Nome).HasMaxLength(NomeDeExibicao.MaxLength);
-            gestor.HasKey("InstalacaoId", nameof(GestorDaInstalacao.Emissor), nameof(GestorDaInstalacao.Sub));
+            gestor.HasKey("InstalacaoId", nameof(GestorDaInstalacao.Emissor), nameof(GestorDaInstalacao.ContaId));
         });
 
         // Uma instalação pendente por executor: iniciar de novo cancela a anterior antes de gravar
         // a nova, e este índice barra a corrida entre duas iniciações simultâneas.
-        builder.HasIndex(i => new { i.ExecutorEmissor, i.ExecutorSub })
+        builder.HasIndex(i => new { i.ExecutorEmissor, i.ExecutorContaId })
             .IsUnique()
             .HasFilter(
                 "situacao IN ("

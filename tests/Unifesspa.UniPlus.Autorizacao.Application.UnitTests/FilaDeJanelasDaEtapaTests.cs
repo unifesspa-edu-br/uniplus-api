@@ -31,7 +31,7 @@ public sealed class FilaDeJanelasDaEtapaTests
 
         Result<IReadOnlyList<ItemDaFilaDeJanelasDto>> fila = await ListarFilaDeJanelasQueryHandler.Handle(
             new ListarFilaDeJanelasQuery(etapa),
-            new VerificadorDeTeste(PerfisDeTeste.Gestor.Sub, [permissaoDeOutraEtapa]),
+            new VerificadorDeTeste(PerfisDeTeste.Gestor.ContaId, [permissaoDeOutraEtapa]),
             new FilaDeJanelasDaEtapa(janelas, perfis, new RelogioFixo(PerfisDeTeste.Instante)),
             new DoublesDePerfis.Usuario(PerfisDeTeste.Gestor),
             CancellationToken.None);
@@ -48,7 +48,7 @@ public sealed class FilaDeJanelasDaEtapaTests
 
         Result<IReadOnlyList<ItemDaFilaDeJanelasDto>> fila = await ListarFilaDeJanelasQueryHandler.Handle(
             new ListarFilaDeJanelasQuery("outra"),
-            new VerificadorDeTeste(PerfisDeTeste.Gestor.Sub, [Gestao]),
+            new VerificadorDeTeste(PerfisDeTeste.Gestor.ContaId, [Gestao]),
             new FilaDeJanelasDaEtapa(janelas, new DoublesDePerfis.PerfisNaMemoria(), new RelogioFixo(PerfisDeTeste.Instante)),
             new DoublesDePerfis.Usuario(PerfisDeTeste.Gestor),
             CancellationToken.None);
@@ -62,7 +62,7 @@ public sealed class FilaDeJanelasDaEtapaTests
     [InlineData(EtapaProtecao, Protecao, Gestao)]
     public async Task SemPermissaoDaEtapa_RegistraANegativaDaEtapa(string etapa, string permissaoDaEtapa, string deOutraEtapa)
     {
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [deOutraEtapa]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.ContaId, [deOutraEtapa]);
 
         Result<IReadOnlyList<ItemDaFilaDeJanelasDto>> fila = await Listar(etapa, verificador);
 
@@ -75,7 +75,7 @@ public sealed class FilaDeJanelasDaEtapaTests
     [InlineData(EtapaProtecao, Protecao)]
     public async Task ComPermissaoDaEtapa_RegistraAPermitida(string etapa, string permissaoDaEtapa)
     {
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [permissaoDaEtapa]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.ContaId, [permissaoDaEtapa]);
 
         Result<IReadOnlyList<ItemDaFilaDeJanelasDto>> fila = await Listar(etapa, verificador);
 
@@ -117,7 +117,7 @@ public sealed class FilaDeJanelasDaEtapaTests
             CancellationToken.None);
 
     private static TrilhaDeAcesso NaOperacao(string permissao, ResultadoDoAcesso resultado) =>
-        new(PerfisDeTeste.Gestor.Sub, permissao, ResourceTipos.Operacao, null, resultado);
+        new(PerfisDeTeste.Gestor.ContaId, permissao, ResourceTipos.Operacao, null, resultado);
 
     private static Task<Result<IReadOnlyList<ItemDaFilaDeJanelasDto>>> Listar(string etapa, VerificadorDeTeste verificador) =>
         ListarFilaDeJanelasQueryHandler.Handle(

@@ -153,8 +153,8 @@ public sealed class DestinatariosPorPapelTests
             [Codigo(PermissaoAutorizacao.PerfisManter)] =
             [
                 new(Emissor, "isabella.figueiredo", EmailIsabella),
-                new(Emissor, PerfisDeTeste.Gestor.Sub, "betina-dasneves81@uniplus-test.local"),
-                new(Emissor, PerfisDeTeste.Autor.Sub, EmailDoAutor),
+                new(Emissor, PerfisDeTeste.Gestor.ContaId, "betina-dasneves81@uniplus-test.local"),
+                new(Emissor, PerfisDeTeste.Autor.ContaId, EmailDoAutor),
             ],
             [Codigo(PermissaoAutorizacao.PerfisAprovarProtecaoDeDados)] = [new(Emissor, "marlene.martins", EmailMarlene)],
             [Codigo(PermissaoAutorizacao.PerfisConsultarVersoes)] = [new(Emissor, "leandro.viana", EmailLeandro)],
@@ -165,7 +165,7 @@ public sealed class DestinatariosPorPapelTests
 
         public Task<IReadOnlyList<TitularDaPermissao>> ListarTitularesComEmailAsync(
             string codigoDaPermissao, CancellationToken cancellationToken = default) =>
-            Task.FromResult<IReadOnlyList<TitularDaPermissao>>([.. Titulares(codigoDaPermissao).Where(t => autorNosGrupos || t.Sub != PerfisDeTeste.Autor.Sub)]);
+            Task.FromResult<IReadOnlyList<TitularDaPermissao>>([.. Titulares(codigoDaPermissao).Where(t => autorNosGrupos || t.ContaId != PerfisDeTeste.Autor.ContaId)]);
 
         private TitularDaPermissao[] Titulares(string codigo) =>
             semRepresentante && codigo == AprovarPelaProtecao ? [] : PorPermissao.GetValueOrDefault(codigo, []);

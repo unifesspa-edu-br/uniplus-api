@@ -76,7 +76,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
         schemaVersion: "1.1",
         algoritmoHash: "canonical-json/sha256@v1",
         hashDocumento: HashFixo,
-        atorUsuarioSub: "teste",
+        atorUsuarioContaId: "teste",
         TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
     /// <summary>
@@ -126,7 +126,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
             schemaVersion: "1.1",
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
-            atorUsuarioSub: "teste",
+            atorUsuarioContaId: "teste",
             motivo: "Correção do prazo",
             TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
@@ -152,7 +152,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
             schemaVersion: "1.1",
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
-            atorUsuarioSub: "teste",
+            atorUsuarioContaId: "teste",
             PrecondicaoIfMatch.Curinga,
             TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 

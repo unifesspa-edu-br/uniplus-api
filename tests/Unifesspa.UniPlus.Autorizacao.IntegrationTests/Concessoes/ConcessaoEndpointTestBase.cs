@@ -47,7 +47,7 @@ public abstract class ConcessaoEndpointTestBase
 
     private protected AutorizacaoEndpointFixture Fixture { get; }
 
-    private protected static Identidade Pessoa(string sub) => new(TestAuthHandler.DefaultIssuer, sub);
+    private protected static Identidade Pessoa(string contaId) => new(TestAuthHandler.DefaultIssuer, contaId);
 
     private protected static async Task<HttpResponseMessage> EnviarAsync(
         HttpClient client, HttpMethod metodo, string url, object? corpo = null)
@@ -152,13 +152,13 @@ public abstract class ConcessaoEndpointTestBase
 
     private protected async Task<HttpClient> ClienteDeGovernancaAsync(Identidade pessoa, TipoDeGovernanca governanca)
     {
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, pessoa.Sub, governanca);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, pessoa.ContaId, governanca);
         return Cliente(pessoa);
     }
 
     private protected async Task<HttpClient> ClienteComPermissoesAsync(Identidade pessoa, params string[] permissoes)
     {
-        await ConcessoesDeTeste.ConcederPermissoesAsync(Fixture.Factory.Services, pessoa.Sub, permissoes);
+        await ConcessoesDeTeste.ConcederPermissoesAsync(Fixture.Factory.Services, pessoa.ContaId, permissoes);
         return Cliente(pessoa);
     }
 
@@ -167,8 +167,8 @@ public abstract class ConcessaoEndpointTestBase
         HttpClient client = Fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, pessoa.Sub);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, pessoa.Sub);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, pessoa.ContaId);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, pessoa.ContaId);
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "teste@unifesspa.edu.br");
         return client;
     }

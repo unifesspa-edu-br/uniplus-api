@@ -29,7 +29,7 @@ public sealed class PrazoDaCorrecaoDoComprovanteTests
     private static Inscricao Enviada()
     {
         return Inscricao.Reidratar(
-            Guid.CreateVersion7(), ProcessoId, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", SituacaoInscricao.Submetida, Guid.CreateVersion7(), null, null,
+            Guid.CreateVersion7(), ProcessoId, PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", SituacaoInscricao.Submetida, Guid.CreateVersion7(), null, null,
             "000123", null, null, null,
             new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 1, DateTimeOffset.UtcNow, null);
@@ -61,8 +61,8 @@ public sealed class PrazoDaCorrecaoDoComprovanteTests
     public async Task Ler_InscricaoCancelada_Nulo()
     {
         Inscricao cancelada = Inscricao.Reidratar(
-            Guid.CreateVersion7(), ProcessoId, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", SituacaoInscricao.Cancelada, Guid.CreateVersion7(), null, null,
-            "000123", DivulgacaoDeTeste.DentroDoPeriodo, "sub-1", null,
+            Guid.CreateVersion7(), ProcessoId, PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", SituacaoInscricao.Cancelada, Guid.CreateVersion7(), null, null,
+            "000123", DivulgacaoDeTeste.DentroDoPeriodo, "conta-1", null,
             new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 2, DateTimeOffset.UtcNow, null);
 

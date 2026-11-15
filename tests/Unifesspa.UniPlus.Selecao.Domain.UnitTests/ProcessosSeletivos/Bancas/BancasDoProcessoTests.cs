@@ -233,7 +233,7 @@ public sealed class BancasDoProcessoTests
     {
         Dados = ProcessoConformeFactory.Dados(),
         Documento = new DocumentoCongelado([], "1.1", "canonical-json/sha256@v1", new string('a', 64)),
-        AtorUsuarioSub = "teste",
+        AtorUsuarioContaId = "teste",
         Instante = TimeProvider.System.GetUtcNow(),
         Contexto = new ContextoDeContagemDePrazos(null, FusoInstitucional: TimeZoneInfo.Utc),
         FatosDeModalidade = FatosDeModalidadeDeTeste.DoCatalogo,

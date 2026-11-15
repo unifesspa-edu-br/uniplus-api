@@ -26,7 +26,7 @@ public sealed class AceiteDoTermoConfiguration : IEntityTypeConfiguration<Aceite
         builder.Property(a => a.Numero).IsRequired();
         builder.Property(a => a.Resumo).HasMaxLength(ConteudoDoTermo.ResumoLength).IsFixedLength().IsRequired();
         builder.Property(a => a.PessoaEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(a => a.PessoaSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(a => a.PessoaContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(a => a.PessoaNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(a => a.AceitoEm).IsRequired();
         builder.Ignore(a => a.Pessoa);

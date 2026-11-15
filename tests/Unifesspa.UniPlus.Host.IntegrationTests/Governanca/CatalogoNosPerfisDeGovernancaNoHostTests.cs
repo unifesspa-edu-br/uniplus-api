@@ -29,8 +29,8 @@ public sealed class CatalogoNosPerfisDeGovernancaNoHostTests : PedidosDeConcessa
     [InlineData(TipoDeGovernanca.EncarregadoDeDados)]
     public async Task PerfilDeGovernancaIsolado_LeOCatalogo(TipoDeGovernanca governanca)
     {
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Cecilia.Sub.ToString());
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.Sub.ToString(), governanca, Cecilia.Email);
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString());
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), governanca, Cecilia.Email);
 
         using HttpClient cecilia = Cliente(Cecilia);
         using HttpResponseMessage resposta = await cecilia.GetAsync(new Uri("/api/autorizacao/permissoes", UriKind.Relative));

@@ -23,8 +23,8 @@ public sealed class ProvidenciaAtendimentoTests
         p.Atender(cenario.Concessao, ProvidenciaBuilder.AtoDeDiogo(), Declaracao()).IsSuccess.Should().BeTrue();
 
         (p.Estado, p.DesfechoPor, p.MotivoDoDesfecho).Should().Be((EstadoDaProvidencia.Atendida, ProvidenciaBuilder.Diogo, ProvidenciaBuilder.Motivo));
-        (cenario.Concessao.RevogadaEm, cenario.Concessao.MotivoRevogacao, cenario.Concessao.RevogadaPorSub)
-            .Should().Be((Agora, ProvidenciaBuilder.Motivo, ProvidenciaBuilder.Diogo.Sub));
+        (cenario.Concessao.RevogadaEm, cenario.Concessao.MotivoRevogacao, cenario.Concessao.RevogadaPorContaId)
+            .Should().Be((Agora, ProvidenciaBuilder.Motivo, ProvidenciaBuilder.Diogo.ContaId));
     }
 
     [Fact(DisplayName = "O e-mail do beneficiário confere sem diferenciar maiúsculas nem espaços nas pontas")]

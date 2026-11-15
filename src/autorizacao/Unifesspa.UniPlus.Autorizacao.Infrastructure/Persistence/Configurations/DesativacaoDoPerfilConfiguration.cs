@@ -31,11 +31,11 @@ internal sealed class DesativacaoDoPerfilConfiguration : IEntityTypeConfiguratio
 
         builder.Property(d => d.DesativadaEm).IsRequired();
         builder.Property(d => d.DesativadaPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(d => d.DesativadaPorSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(d => d.DesativadaPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(d => d.DesativadaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(d => d.Motivo).HasMaxLength(MotivosDaVersao.MaxLength).IsRequired();
         builder.Property(d => d.ReativadaPorEmissor).HasMaxLength(IdentidadeMaxLength);
-        builder.Property(d => d.ReativadaPorSub).HasMaxLength(IdentidadeMaxLength);
+        builder.Property(d => d.ReativadaPorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(d => d.ReativadaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(d => d.MotivoDaReativacao).HasMaxLength(MotivosDaVersao.MaxLength);
         builder.Property(d => d.OrdemNaTrilha).IsRequired();
@@ -52,8 +52,8 @@ internal sealed class DesativacaoDoPerfilConfiguration : IEntityTypeConfiguratio
     private static void ConfigurarRestricoes(TableBuilder<DesativacaoDoPerfil> tabela) =>
         tabela.HasCheckConstraint(
             "ck_desativacoes_do_perfil_reativacao",
-            "(reativada_em IS NULL AND reativada_por_emissor IS NULL AND reativada_por_sub IS NULL"
+            "(reativada_em IS NULL AND reativada_por_emissor IS NULL AND reativada_por_conta_id IS NULL"
             + " AND reativada_por_nome IS NULL AND motivo_da_reativacao IS NULL)"
-            + " OR (reativada_em IS NOT NULL AND reativada_por_emissor IS NOT NULL AND reativada_por_sub IS NOT NULL"
+            + " OR (reativada_em IS NOT NULL AND reativada_por_emissor IS NOT NULL AND reativada_por_conta_id IS NOT NULL"
             + " AND motivo_da_reativacao IS NOT NULL)");
 }
