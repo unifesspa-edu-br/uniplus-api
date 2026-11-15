@@ -49,6 +49,29 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.RegraDesconhecida);
     }
 
+    [Fact(DisplayName = "Componente de exibição fora do vocabulário é recusado com o erro do domínio, e não com recusa genérica do decoder")]
+    public void ComponenteDeExibicaoForaDoVocabulario_RecusaComOErroDoDominio()
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["fatosColetados"]!.AsArray()[0]!.AsObject()["componenteExibicao"] = "COMPONENTE-XPTO");
+
+        resultado.IsFailure.Should().BeTrue("o componente tem de pertencer ao vocabulário fechado de componentes de exibição");
+        resultado.Error!.Code.Should().Be("FatoColetado.ComponenteExibicaoInvalido");
+    }
+
+    [Theory(DisplayName = "Componente de exibição fora da forma canônica é recusado como envelope malformado, e não normalizado em silêncio")]
+    [InlineData("")]
+    [InlineData(" ")]
+    [InlineData(" MOEDA ")]
+    public void ComponenteDeExibicaoForaDaFormaCanonica_Recusa(string componente)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["fatosColetados"]!.AsArray()[0]!.AsObject()["componenteExibicao"] = componente);
+
+        resultado.IsFailure.Should().BeTrue("a reidratação normalizaria o valor e devolveria um grafo diferente do congelado");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     // ── Coerência natureza × remanejamento: a regra é do CADASTRO, e o snapshot a traz por valor ──
 
     /// <summary>
