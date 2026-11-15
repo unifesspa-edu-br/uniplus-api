@@ -191,9 +191,9 @@ internal static class LeituraDosFatos
             return $"'{path}.hipoteseLegal' fora do vocabulário de hipóteses legais.";
         }
 
-        if (d.ComponenteExibicao is not null && !DominioDoCatalogo.ComponentesDeExibicao.Contains(d.ComponenteExibicao))
+        if (d.ComponenteExibicao is { } componente && (string.IsNullOrWhiteSpace(componente) || componente != componente.Trim()))
         {
-            return $"'{path}.componenteExibicao' fora do vocabulário de componentes de exibição.";
+            return $"'{path}.componenteExibicao' não está na forma canônica: sem espaço nas pontas e não vazio.";
         }
 
         if (d.Finalidade == FinalidadeFormulario.Nenhuma)
