@@ -176,6 +176,20 @@ public sealed class EnvelopeCodecRecusaRegraDeRecursoTests
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.RegraDesconhecida);
     }
 
+    [Theory(DisplayName = "Convenção de contagem com hash fora da forma SHA-256 é recusada como envelope malformado")]
+    [InlineData("")]
+    [InlineData("abc")]
+    [InlineData("ZZZZ0000000000000000000000000000000000000000000000000000000000ZZ")]
+    public void AlgoritmoContagemPrazoComHashForaDeForma_Recusa(string hash)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["algoritmoContagemPrazo"]!.AsObject()["hash"] = hash);
+
+        resultado.IsFailure.Should().BeTrue("o hash que não tem a forma de um SHA-256 não identifica regra nenhuma");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+        resultado.Error.Message.Should().Contain("hash");
+    }
+
     /// <summary>
     /// O erro oposto, e o mais caro: rol estreito demais torna irreidratável um certame
     /// legitimamente publicado.

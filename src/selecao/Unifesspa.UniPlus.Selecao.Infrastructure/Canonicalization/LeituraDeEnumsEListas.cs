@@ -230,24 +230,28 @@ internal static class LeituraDeEnumsEListas
         string versao = leitor.TextoNaoVazio(objeto, "versao", path, LimitesDoEnvelope.RegraVersao);
         string hash = leitor.Texto(objeto, "hash", path);
 
-        if (leitor.Falhou)
-        {
-            return default!;
-        }
+        return leitor.Falhou ? default! : ReferenciaDoRol(leitor, path, rol, codigo, versao, hash);
+    }
 
-        if (!rol.Contains(codigo, StringComparer.Ordinal))
-        {
-            return leitor.Registrar<ReferenciaRegra>(
+    private static ReferenciaRegra ReferenciaDoRol(
+        LeitorEnvelope leitor, string path, string[] rol, string codigo, string versao, string hash) =>
+        rol.Contains(codigo, StringComparer.Ordinal)
+            ? ReferenciaComHashEmForma(leitor, path, codigo, versao, hash)
+            : leitor.Registrar<ReferenciaRegra>(
                 ErrosCodecEnvelope.RegraDesconhecida,
                 $"O código de regra '{codigo}' em '{path}' não pertence ao rol conhecido ({string.Join(", ", rol)}).");
+
+    private static ReferenciaRegra ReferenciaComHashEmForma(
+        LeitorEnvelope leitor, string path, string codigo, string versao, string hash)
+    {
+        if (!HashCanonicalComputer.IsValidHashShape(hash))
+        {
+            return leitor.Registrar<ReferenciaRegra>(
+                ErrosCodecEnvelope.EnvelopeMalformado,
+                $"O hash em '{path}' não é um SHA-256 em hexadecimal minúsculo (64 caracteres).");
         }
 
         Result<ReferenciaRegra> referencia = ReferenciaRegra.Criar(codigo, versao, hash);
-        if (referencia.IsFailure)
-        {
-            return leitor.Propagar<ReferenciaRegra>(referencia.Error!);
-        }
-
-        return referencia.Value!;
+        return referencia.IsFailure ? leitor.Propagar<ReferenciaRegra>(referencia.Error!) : referencia.Value!;
     }
 }
