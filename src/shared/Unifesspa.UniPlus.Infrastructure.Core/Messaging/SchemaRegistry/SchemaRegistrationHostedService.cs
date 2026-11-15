@@ -91,50 +91,46 @@ public sealed partial class SchemaRegistrationHostedService : IHostedService
         foreach (SchemaRegistration registration in _registrations)
         {
             cancellationToken.ThrowIfCancellationRequested();
+            await RegistrarSchemaAsync(registration).ConfigureAwait(false);
+        }
+    }
 
-            try
-            {
-                string schemaContent = registration.ReadSchemaContent();
-                Schema schema = new(schemaContent, SchemaType.Avro);
+    // Fail-graceful **apenas** para indisponibilidade do Schema Registry: Apicurio offline (ConnectionError), DNS que
+    // não resolveu (NameResolutionError) ou tempo esgotado. O cliente Confluent reembrulha a falha de conexão numa
+    // HttpRequestException sem o código do erro, então a causa é procurada na cadeia de exceções. O Confluent serdes
+    // registra de novo em runtime quando o Registry voltar.
+    //
+    // Demais variantes (SecureConnectionError de TLS chain inválida, HttpProtocolError, UserAuthenticationError de
+    // cliente cert ausente, InvalidResponse, ProxyTunnelError) são determinísticas — propagam e travam StartAsync.
+    // Release com config TLS/proxy/cert ruim não pode rodar silenciosamente em modo "degraded but accepting traffic".
+    // O mesmo vale para SchemaRegistryException (auth/conflict/malformed), InvalidOperationException (embedded resource
+    // ausente) e AvroException (schema sintaticamente inválido).
+    private async Task RegistrarSchemaAsync(SchemaRegistration registration)
+    {
+        try
+        {
+            Schema schema = new(registration.ReadSchemaContent(), SchemaType.Avro);
+            int schemaId = await _schemaRegistryClient
+                .RegisterSchemaAsync(registration.Subject, schema, normalize: true)
+                .ConfigureAwait(false);
 
-                int schemaId = await _schemaRegistryClient
-                    .RegisterSchemaAsync(registration.Subject, schema, normalize: true)
-                    .ConfigureAwait(false);
-
-                LogSchemaRegistered(_logger, registration.Subject, schemaId);
-            }
-            // Fail-graceful **apenas** para falhas transientes via inspeção do
-            // HttpRequestError — Apicurio offline (ConnectionError) ou DNS não
-            // resolveu (NameResolutionError). Confluent serdes faz retry em runtime
-            // quando o Registry voltar.
-            //
-            // Demais variantes (SecureConnectionError de TLS chain inválida,
-            // HttpProtocolError, UserAuthenticationError de cliente cert ausente,
-            // InvalidResponse, ProxyTunnelError) são determinísticas — propagam e
-            // travam StartAsync. Release com config TLS/proxy/cert ruim não pode
-            // rodar silenciosamente em modo "degraded but accepting traffic".
-            catch (HttpRequestException ex) when (
-                ex.HttpRequestError == HttpRequestError.ConnectionError
-                || ex.HttpRequestError == HttpRequestError.NameResolutionError)
-            {
-                LogSchemaRegistrationTransientFailure(_logger, registration.Subject, ex);
-            }
-            catch (SocketException ex)
-            {
-                LogSchemaRegistrationTransientFailure(_logger, registration.Subject, ex);
-            }
-            catch (TaskCanceledException ex) when (ex.InnerException is TimeoutException || ex.CancellationToken == default)
-            {
-                LogSchemaRegistrationTransientFailure(_logger, registration.Subject, ex);
-            }
-            // Falhas determinísticas (SchemaRegistryException = auth/conflict/malformed,
-            // HttpRequestException com error codes não-recuperáveis, InvalidOperationException
-            // = embedded resource ausente, AvroException = schema sintaticamente inválido)
-            // propagam e travam StartAsync.
+            LogSchemaRegistered(_logger, registration.Subject, schemaId);
+        }
+        catch (Exception ex) when (EhIndisponibilidadeDoRegistry(ex))
+        {
+            LogSchemaRegistrationTransientFailure(_logger, registration.Subject, ex);
         }
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    private static bool EhIndisponibilidadeDoRegistry(Exception falha) => falha switch
+    {
+        HttpRequestException { HttpRequestError: HttpRequestError.ConnectionError or HttpRequestError.NameResolutionError } => true,
+        SocketException => true,
+        TaskCanceledException cancelada => cancelada.InnerException is TimeoutException || cancelada.CancellationToken == default,
+        _ => falha.InnerException is { } causa && EhIndisponibilidadeDoRegistry(causa),
+    };
 
     [LoggerMessage(
         Level = LogLevel.Information,

@@ -181,6 +181,35 @@ public sealed class SchemaRegistrationHostedServiceTests
         await act.Should().NotThrowAsync();
     }
 
+    [Fact(DisplayName = "Conexão recusada reembrulhada pelo cliente, sem o código do erro, é silenciada (transient)")]
+    public async Task ConexaoRecusadaReembrulhada_DeveSerSilenciada()
+    {
+        ISchemaRegistryClient client = Substitute.For<ISchemaRegistryClient>();
+        HttpRequestException reembrulhada = new(
+            "[http://registry/] HttpRequestException: Connection refused", new SocketException((int)SocketError.ConnectionRefused));
+        client.RegisterSchemaAsync(Arg.Any<string>(), Arg.Any<SrSchema>(), normalize: true).Throws(reembrulhada);
+
+        SchemaRegistrationHostedService sut = CreateSut(client, ValidRegistration(SubjectFoo));
+
+        Func<Task> act = () => sut.StartAsync(CancellationToken.None);
+
+        await act.Should().NotThrowAsync();
+    }
+
+    [Fact(DisplayName = "Falha determinística reembrulhada, sem indisponibilidade na cadeia, propaga")]
+    public async Task FalhaDeterministicaReembrulhada_DevePropagar()
+    {
+        ISchemaRegistryClient client = Substitute.For<ISchemaRegistryClient>();
+        HttpRequestException reembrulhada = new("[http://registry/] falha", new InvalidOperationException("certificado inválido"));
+        client.RegisterSchemaAsync(Arg.Any<string>(), Arg.Any<SrSchema>(), normalize: true).Throws(reembrulhada);
+
+        SchemaRegistrationHostedService sut = CreateSut(client, ValidRegistration(SubjectFoo));
+
+        Func<Task> act = () => sut.StartAsync(CancellationToken.None);
+
+        await act.Should().ThrowAsync<HttpRequestException>();
+    }
+
     [Fact(DisplayName = "TaskCanceledException com TimeoutException inner é silenciada (timeout HttpClient)")]
     public async Task TaskCanceled_TimeoutInner_DeveSerSilenciada()
     {
