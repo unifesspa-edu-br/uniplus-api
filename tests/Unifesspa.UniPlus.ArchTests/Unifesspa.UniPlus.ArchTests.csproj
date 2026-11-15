@@ -63,6 +63,7 @@
 
   <ItemGroup>
     <Compile Include="../Shared/RegraDeNomeDeTabela.cs" Link="RegraDeNomeDeTabela.cs" />
+    <Compile Include="../Shared/RegraDeTamanhoDeIdentificador.cs" Link="RegraDeTamanhoDeIdentificador.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 

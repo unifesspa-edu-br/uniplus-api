@@ -447,6 +447,7 @@ Essas regras são aplicadas automaticamente via GitHub aos colaboradores sem per
 | Variáveis locais, parâmetros | camelCase (inglês) | `candidatoId`, `notaFinal` |
 | Interfaces | `I` + PascalCase | `ICandidatoRepository` |
 | Tabelas (EF Core) | `snake_case`, núcleo no plural, até 30 caracteres ([guia do banco](docs/guia-banco-de-dados.md#2-naming-convention), [ADR-0054](docs/adrs/0054-naming-convention-e-strategy-migrations.md)) | `candidatos`, `inscricoes`, `aceites_do_termo` |
+| Identificadores de banco (FK, índice, restrição) | até 63 bytes; o nome que o EF deriva e passa disso ganha nome explícito, por extenso, e o ArchTest reprova o que faltar ([guia do banco](docs/guia-banco-de-dados.md#2-naming-convention)) | `fk_rascunhos_publicacao_processo_seletivo` |
 | Strings user-facing | pt-BR | `"Inscrição realizada com sucesso"` |
 | Mensagens de erro da API | pt-BR | `"CPF já cadastrado neste processo"` |
 
