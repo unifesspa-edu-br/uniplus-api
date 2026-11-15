@@ -225,7 +225,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
 
     private const string HashFixoTeste = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
-    /// <summary>Captura o SQL emitido — mesmo padrão de <c>VersaoVigentePersistenciaTests.CapturadorDeSql</c>.</summary>
+    /// <summary>Captura o SQL emitido — mesmo padrão de <c>FronteiraDoSeletorDaVersaoVigentePersistenciaTests.CapturadorDeSql</c>.</summary>
     private sealed class CapturadorDeSql : DbCommandInterceptor
     {
         public List<string> Comandos { get; } = [];
