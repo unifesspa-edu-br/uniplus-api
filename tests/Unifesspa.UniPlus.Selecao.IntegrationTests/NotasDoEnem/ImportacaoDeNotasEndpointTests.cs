@@ -1,20 +1,15 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.NotasDoEnem;
 
 using System.Net;
-using System.Net.Http.Headers;
 using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 
 using Outbox.Cascading;
 
-using Unifesspa.UniPlus.Host;
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
@@ -22,109 +17,32 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
-using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.NotasDoEnem.ApoioDaImportacaoDeNotasDeTeste;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.NotasDoEnem.ProcessoDoEnemPublicadoDeTeste;
 using static Unifesspa.UniPlus.Testes.Compartilhado.ArquivoDoInepSintetico;
 
 /// <summary>
 /// A importação do retorno do INEP pela API, sobre um certame publicado de verdade e inscrições
 /// reais gravadas: os lotes, a substituição por inteiro, a recusa do arquivo fora do leiaute sem
-/// gravar nada, os três 413 e a ausência de CPF, nota e número de inscrição em log.
+/// gravar nada, a recusa sem autorização e os três 413.
 /// </summary>
 [Collection(CascadingCollection.Name)]
 public sealed class ImportacaoDeNotasEndpointTests
 {
-    private static readonly IReadOnlyList<PersonasDeTeste.PessoaFicticia> Pessoas = PersonasDeTeste.Candidatas;
-
     private readonly CascadingFixture _fixture;
+    private readonly ApoioDaImportacaoDeNotasDeTeste _apoio;
 
-    public ImportacaoDeNotasEndpointTests(CascadingFixture fixture) => _fixture = fixture;
-
-    private sealed record Cenario(Publicado Processo, IReadOnlyDictionary<int, Guid> Inscricoes)
+    public ImportacaoDeNotasEndpointTests(CascadingFixture fixture)
     {
-        public string Base => $"/api/selecao/processos-seletivos/{Processo.ProcessoId}/etapas/{Processo.EtapaDoEnemId}/edicoes-do-enem/{Edicao}/lotes-de-notas";
-    }
-
-    private Task<Cenario> NovoCenarioAsync(params int[] inscritas) => NovoCenarioAsync(inscritas, semSegundaOpcao: []);
-
-    private async Task<Cenario> NovoCenarioAsync(int[] inscritas, int[] semSegundaOpcao, DateTimeOffset? fimDasInscricoes = null)
-    {
-        Publicado publicado = await SemearEPublicarAsync(_fixture, fimDasInscricoes);
-        Dictionary<int, Guid> inscricoes = [];
-        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        Guid versaoId = await db.VersoesConfiguracao.AsNoTracking()
-            .Where(v => v.ProcessoSeletivoId == publicado.ProcessoId)
-            .Select(v => v.Id)
-            .SingleAsync();
-        foreach (int i in inscritas)
-        {
-            inscricoes[i] = await InscricoesDoEnemDeTeste.NovaInscricaoAsync(
-                db,
-                scope.ServiceProvider.GetRequiredService<IUniPlusEncryptionService>(),
-                scope.ServiceProvider.GetRequiredService<IUniPlusBlindIndexService>(),
-                publicado.ProcessoId, Pessoas[i], SituacaoInscricao.Submetida, Edicao,
-                ofertaCursoId: publicado.OfertaTecnologicaId,
-                ofertaCursoSegundaOpcaoId: semSegundaOpcao.Contains(i) ? null : publicado.OfertaHumanisticaId,
-                versaoFormularioId: versaoId,
-                nome: Pessoas[i].Nome);
-        }
-
-        return new Cenario(publicado, inscricoes);
-    }
-
-    private static MultipartFormDataContent Formulario(
-        byte[] arquivo, string tipo = "text/plain", string leiaute = "INEP_ENEM_RETORNO", string versao = "v1")
-    {
-        MultipartFormDataContent formulario = new();
-        ByteArrayContent conteudo = new(arquivo);
-        conteudo.Headers.ContentType = new MediaTypeHeaderValue(tipo);
-        formulario.Add(conteudo, "arquivo", "retorno.txt");
-        formulario.Add(new StringContent(leiaute), "leiauteCodigo");
-        formulario.Add(new StringContent(versao), "leiauteVersao");
-        return formulario;
-    }
-
-    private static HttpRequestMessage Requisicao(HttpMethod metodo, string url, HttpContent? corpo = null, string? papel = "plataforma-admin")
-    {
-        HttpRequestMessage request = new(metodo, new Uri(url, UriKind.Relative)) { Content = corpo };
-        if (papel is not null)
-        {
-            request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-            request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);
-        }
-
-        return request;
-    }
-
-    private static async Task<HttpResponseMessage> ImportarAsync(HttpClient client, Cenario cenario, byte[] arquivo, string tipo = "text/plain")
-    {
-        using MultipartFormDataContent formulario = Formulario(arquivo, tipo);
-        using HttpRequestMessage request = Requisicao(HttpMethod.Post, cenario.Base, formulario);
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<JsonDocument> LerAsync(HttpResponseMessage resposta) =>
-        JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
-
-    private static async Task<string?> CodigoAsync(HttpResponseMessage resposta)
-    {
-        using JsonDocument doc = await LerAsync(resposta);
-        return doc.RootElement.GetProperty("code").GetString();
-    }
-
-    private static async Task<int> QuantidadeDeLotesAsync(HttpClient client, Cenario cenario)
-    {
-        using HttpRequestMessage request = Requisicao(HttpMethod.Get, cenario.Base);
-        using JsonDocument doc = await LerAsync(await client.SendAsync(request));
-        return doc.RootElement.GetArrayLength();
+        _fixture = fixture;
+        _apoio = new ApoioDaImportacaoDeNotasDeTeste(fixture);
     }
 
     [Fact(DisplayName = "sem token é 401 e o administrador da plataforma sem concessão é 404")]
     public async Task Importar_SemAutorizacao_Recusa()
     {
-        Cenario cenario = await NovoCenarioAsync(0);
+        Cenario cenario = await _apoio.NovoCenarioAsync(0);
         using HttpClient client = _fixture.Factory.CreateClient();
 
         using MultipartFormDataContent a = Formulario(Arquivo(0));
@@ -137,12 +55,10 @@ public sealed class ImportacaoDeNotasEndpointTests
         (await client.SendAsync(semConcessao)).StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
 
-    private static byte[] Arquivo(int pessoa) => Bytes([Linha(Pessoas[pessoa], pessoa + 1)]);
-
     [Fact(DisplayName = "fluxo completo: importa, consulta, reimporta o vigente, substitui por inteiro e volta a um arquivo substituído")]
     public async Task Importar_FluxoCompleto()
     {
-        Cenario cenario = await NovoCenarioAsync(0, 1, 2, 3);
+        Cenario cenario = await _apoio.NovoCenarioAsync(0, 1, 2, 3);
         using HttpClient client = _fixture.Factory.CreateClient();
         string[] outraNota = ["100", "722.2", "833.3", "544.4", "960"];
         byte[] primeiro = Bytes(
@@ -225,102 +141,10 @@ public sealed class ImportacaoDeNotasEndpointTests
         (await QuantidadeDeLotesAsync(client, cenario)).Should().Be(3);
     }
 
-    private static string Mascara(PersonasDeTeste.PessoaFicticia pessoa) =>
-        $"***.{pessoa.Cpf[3..6]}.{pessoa.Cpf[6..9]}-**";
-
-    [Fact(DisplayName = "o lote identifica cada inscrito, a linha sem inscrito e os ausentes, e nenhuma coluna guarda CPF completo")]
-    public async Task Obter_IdentificaInscritosLinhasEAusentes_SemCpfCompleto()
-    {
-        // 0: ausente em Matemática; 1: ausente total; 2: com nota; 3: sem linha; 4: conflito e sem 2ª opção; 5: não inscrito na edição.
-        Cenario cenario = await NovoCenarioAsync([0, 1, 2, 3, 4], semSegundaOpcao: [4]);
-        using HttpClient client = _fixture.Factory.CreateClient();
-        string[] outraNota = ["100", "722.2", "833.3", "544.4", "960"];
-        byte[] arquivo = Bytes(
-        [
-            LinhaComMatematicaAusente(Pessoas[0], 1),
-            LinhaDeAusente(Pessoas[1], 2),
-            Linha(Pessoas[2], 3),
-            Linha(Pessoas[4], 4),
-            Linha(Pessoas[4], 4, outraNota),
-            Linha(Pessoas[5], 6),
-        ]);
-
-        HttpResponseMessage importado = await ImportarAsync(client, cenario, arquivo);
-        importado.StatusCode.Should().Be(HttpStatusCode.Created, await importado.Content.ReadAsStringAsync());
-        Guid loteId = await IdDoLoteAsync(importado);
-
-        using HttpRequestMessage consulta = Requisicao(HttpMethod.Get, $"{cenario.Base}/{loteId}");
-        string corpo = await (await client.SendAsync(consulta)).Content.ReadAsStringAsync();
-        corpo.Should().NotContain(Pessoas[5].Cpf);
-        using JsonDocument doc = JsonDocument.Parse(corpo);
-        JsonElement raiz = doc.RootElement;
-        raiz.GetProperty("importadoPorNome").GetString().Should().Be("Test User");
-
-        JsonElement[] ocorrencias = [.. raiz.GetProperty("ocorrencias").EnumerateArray()];
-        JsonElement semLinha = ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "INSCRITO_SEM_LINHA");
-        semLinha.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[3].Nome);
-        semLinha.GetProperty("cpfMascarado").GetString().Should().Be(Mascara(Pessoas[3]));
-        OpcoesDe(semLinha).Should().Equal(
-            "1:Medicina (Bacharelado) — Campus Universitário de Marabá — Matutino e Vespertino",
-            "2:Pedagogia (Licenciatura) — Campus Universitário de Marabá — Noturno");
-
-        JsonElement conflito = ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "CONFLITO");
-        conflito.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[4].Nome);
-        OpcoesDe(conflito).Should().Equal("1:Medicina (Bacharelado) — Campus Universitário de Marabá — Matutino e Vespertino");
-
-        JsonElement semInscrito = ocorrencias.Single(o => o.GetProperty("tipo").GetString() == "LINHA_SEM_INSCRITO");
-        semInscrito.GetProperty("cpfMascarado").GetString().Should().Be(Mascara(Pessoas[5]));
-        semInscrito.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[5].Nome);
-        semInscrito.GetProperty("sexo").GetString().Should().Be(Pessoas[5].Sexo[..1]);
-        semInscrito.GetProperty("ofertas").ValueKind.Should().Be(JsonValueKind.Null);
-
-        raiz.GetProperty("totalDeInscritosAusentes").GetInt32().Should().Be(2);
-        JsonElement[] ausentes = [.. raiz.GetProperty("ausentes").EnumerateArray()];
-        JsonElement parcial = ausentes.Single(a => a.GetProperty("inscricaoId").GetGuid() == cenario.Inscricoes[0]);
-        parcial.GetProperty("nomeDoCandidato").GetString().Should().Be(Pessoas[0].Nome);
-        parcial.GetProperty("cpfMascarado").GetString().Should().Be(Mascara(Pessoas[0]));
-        parcial.GetProperty("areas").EnumerateArray().Select(a => a.GetString()).Should().Equal("MATEMATICA");
-        OpcoesDe(parcial).Should().HaveCount(2);
-        JsonElement total = ausentes.Single(a => a.GetProperty("inscricaoId").GetGuid() == cenario.Inscricoes[1]);
-        total.GetProperty("areas").EnumerateArray().Select(a => a.GetString()).Should().HaveCount(5);
-
-        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        string[] linhasGravadas = await db.Database
-            .SqlQuery<string>($"""
-                SELECT o::text AS "Value" FROM selecao.ocorrencias_do_lote_de_notas o WHERE o.lote_id = {loteId}
-                UNION ALL
-                SELECT l::text AS "Value" FROM selecao.lotes_de_notas_do_enem l WHERE l.id = {loteId}
-                """)
-            .ToArrayAsync();
-        linhasGravadas.Should().NotBeEmpty();
-        foreach (string gravada in linhasGravadas)
-        {
-            gravada.Should().NotContain(Pessoas[5].Cpf).And.NotContain(Pessoas[4].Cpf);
-        }
-    }
-
-    private static string[] OpcoesDe(JsonElement elemento) =>
-        [.. elemento.GetProperty("ofertas").EnumerateArray()
-            .Select(o => $"{o.GetProperty("ordem").GetInt32()}:{o.GetProperty("nome").GetString()}")];
-
-    [Fact(DisplayName = "lote inexistente da edição é 404")]
-    public async Task Obter_LoteInexistente_NaoEncontrado()
-    {
-        Cenario cenario = await NovoCenarioAsync(0);
-        using HttpClient client = _fixture.Factory.CreateClient();
-        using HttpRequestMessage request = Requisicao(HttpMethod.Get, $"{cenario.Base}/{Guid.CreateVersion7()}");
-
-        HttpResponseMessage resposta = await client.SendAsync(request);
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.NotFound);
-        (await CodigoAsync(resposta)).Should().Be("uniplus.selecao.notas_do_enem.lote_nao_encontrado");
-    }
-
     [Fact(DisplayName = "arquivo fora do leiaute, com situação desconhecida, vazio ou de outro tipo é recusado e nenhum lote é criado")]
     public async Task Importar_ArquivoInvalido_NaoCriaLote()
     {
-        Cenario cenario = await NovoCenarioAsync(0);
+        Cenario cenario = await _apoio.NovoCenarioAsync(0);
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage foraDoLeiaute = await ImportarAsync(client, cenario, Bytes([LinhaDe23Campos(Pessoas[0], 1)]));
@@ -344,7 +168,7 @@ public sealed class ImportacaoDeNotasEndpointTests
     [Fact(DisplayName = "com as inscrições abertas a importação é 422 e nenhum lote é criado")]
     public async Task Importar_InscricoesAbertas_NaoCriaLote()
     {
-        Cenario cenario = await NovoCenarioAsync([0], semSegundaOpcao: [], fimDasInscricoes: new DateTimeOffset(2099, 12, 20, 15, 0, 0, TimeSpan.Zero));
+        Cenario cenario = await _apoio.NovoCenarioAsync([0], semSegundaOpcao: [], fimDasInscricoes: new DateTimeOffset(2099, 12, 20, 15, 0, 0, TimeSpan.Zero));
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage resposta = await ImportarAsync(client, cenario, Arquivo(0));
@@ -358,7 +182,7 @@ public sealed class ImportacaoDeNotasEndpointTests
     [Fact(DisplayName = "arquivo com BOM e fim de linha CRLF é aceito")]
     public async Task Importar_BomECrlf_Aceito()
     {
-        Cenario cenario = await NovoCenarioAsync(0, 1);
+        Cenario cenario = await _apoio.NovoCenarioAsync(0, 1);
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage resposta = await ImportarAsync(
@@ -372,7 +196,7 @@ public sealed class ImportacaoDeNotasEndpointTests
     [Fact(DisplayName = "duas importações simultâneas do mesmo arquivo resultam em um só lote")]
     public async Task Importar_Concorrente_UmSoLote()
     {
-        Cenario cenario = await NovoCenarioAsync(0, 1);
+        Cenario cenario = await _apoio.NovoCenarioAsync(0, 1);
         using HttpClient client = _fixture.Factory.CreateClient();
         byte[] arquivo = Bytes([Linha(Pessoas[0], 1), Linha(Pessoas[1], 2)]);
 
@@ -398,7 +222,7 @@ public sealed class ImportacaoDeNotasEndpointTests
     [Fact(DisplayName = "413 em três tamanhos: logo acima do limite, o dobro com Content-Length e o dobro sem Content-Length")]
     public async Task Importar_AcimaDoLimite_413EmTresTamanhos()
     {
-        Cenario cenario = await NovoCenarioAsync(0);
+        Cenario cenario = await _apoio.NovoCenarioAsync(0);
         using HttpClient client = _fixture.Factory.CreateClient();
         const int Limite = 10 * 1024 * 1024;
 
@@ -423,113 +247,10 @@ public sealed class ImportacaoDeNotasEndpointTests
         (await QuantidadeDeLotesAsync(client, cenario)).Should().Be(0);
     }
 
-    private async Task<IReadOnlyList<AvaliacaoDaEtapa>> AvaliacoesDoLoteAsync(Guid loteId)
-    {
-        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        return await db.AvaliacoesDaEtapa.AsNoTracking().Where(a => a.LoteId == loteId).ToListAsync();
-    }
-
-    private static async Task<Guid> IdDoLoteAsync(HttpResponseMessage resposta)
-    {
-        using JsonDocument doc = await LerAsync(resposta);
-        return doc.RootElement.GetProperty("id").GetGuid();
-    }
-
-    // Notas do arquivo sintético por área: CN 611.1, CH 722.2, LC 833.3, MT 544.4, Redação 960. Os
-    // pesos são os do quadro de teste: Redação 2, CN 1,5, CH 2,5, MT 1,5 e Linguagens 1 (Tecnológica) ou 3 (Humanística I).
-    private const decimal SomaPonderadaSemLinguagens = (960m * 2m) + (611.1m * 1.5m) + (722.2m * 2.5m) + (544.4m * 1.5m);
-    private static readonly decimal NotaDeFernandaNaTecnologica = (SomaPonderadaSemLinguagens + (833.3m * 1m)) / 8.5m;
-    private static readonly decimal NotaDeFernandaNaHumanistica = (SomaPonderadaSemLinguagens + (833.3m * 3m)) / 10.5m;
-
-    [Fact(DisplayName = "a importação grava uma avaliação por oferta concorrida, com a nota exata de cada grupo, e sem nota para quem não tem linha")]
-    public async Task Importar_GravaAvaliacaoPorOfertaConcorrida()
-    {
-        Cenario cenario = await NovoCenarioAsync(0, 1);
-        using HttpClient client = _fixture.Factory.CreateClient();
-
-        HttpResponseMessage resposta = await ImportarAsync(client, cenario, Bytes([Linha(Pessoas[0], 1)]));
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
-        IReadOnlyList<AvaliacaoDaEtapa> avaliacoes = await AvaliacoesDoLoteAsync(await IdDoLoteAsync(resposta));
-        avaliacoes.Should().HaveCount(4);
-        AvaliacaoDaEtapa naTecnologica = avaliacoes.Single(a => a.InscricaoId == cenario.Inscricoes[0] && a.OfertaCursoId == cenario.Processo.OfertaTecnologicaId);
-        AvaliacaoDaEtapa naHumanistica = avaliacoes.Single(a => a.InscricaoId == cenario.Inscricoes[0] && a.OfertaCursoId == cenario.Processo.OfertaHumanisticaId);
-        naTecnologica.Situacao.Should().Be(SituacaoDaAvaliacao.Apurada);
-        naTecnologica.GrupoAreaEnemCodigo.Should().Be("TECNOLOGICA");
-        naTecnologica.Nota.Should().Be(NotaDeFernandaNaTecnologica);
-        naHumanistica.GrupoAreaEnemCodigo.Should().Be("HUMANISTICA_I");
-        naHumanistica.Nota.Should().Be(NotaDeFernandaNaHumanistica);
-        avaliacoes.Where(a => a.InscricaoId == cenario.Inscricoes[1]).Should().HaveCount(2)
-            .And.OnlyContain(a => a.Situacao == SituacaoDaAvaliacao.InscritoSemLinha && a.Nota == null);
-    }
-
-    [Fact(DisplayName = "a leitura das avaliações vigentes traz só o lote vigente e esconde a inscrição que trocou de edição ou de oferta depois da importação")]
-    public async Task Leitor_AvaliacoesVigentes_EscondeOQueNaoBate()
-    {
-        Cenario cenario = await NovoCenarioAsync(0, 1, 2);
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage resposta = await ImportarAsync(client, cenario, Bytes([Linha(Pessoas[0], 1), LinhaDeAusente(Pessoas[1], 2), Linha(Pessoas[2], 3)]));
-        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
-        Guid lote = await IdDoLoteAsync(resposta);
-
-        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        await db.RespostasDaInscricao
-            .Where(r => r.InscricaoId == cenario.Inscricoes[2] && r.FatoCodigo == Unifesspa.UniPlus.Regras.Services.EdicaoDoEnem.Fato)
-            .ExecuteUpdateAsync(s => s.SetProperty(r => r.ValorCodigo, "2024"));
-        await db.Inscricoes.Where(i => i.Id == cenario.Inscricoes[1])
-            .ExecuteUpdateAsync(s => s.SetProperty(i => i.OfertaCursoSegundaOpcaoId, (Guid?)null));
-        IAvaliacoesDaEtapaReader leitor = scope.ServiceProvider.GetRequiredService<IAvaliacoesDaEtapaReader>();
-
-        IReadOnlyList<AvaliacaoVigente> vigentes = await leitor.ListarVigentesAsync(
-            cenario.Processo.EtapaDoEnemId, [.. cenario.Inscricoes.Values]);
-
-        vigentes.Should().OnlyContain(a => a.LoteId == lote && a.InscricaoId != cenario.Inscricoes[2]);
-        vigentes.Where(a => a.InscricaoId == cenario.Inscricoes[0]).Should().HaveCount(2).And.OnlyContain(a => a.Nota != null);
-        vigentes.Where(a => a.InscricaoId == cenario.Inscricoes[1]).Should().ContainSingle()
-            .Which.OfertaCursoId.Should().Be(cenario.Processo.OfertaTecnologicaId);
-    }
-
-    [Fact(DisplayName = "duas linhas diferentes do mesmo CPF deixam a inscrição sem nota, em conflito")]
-    public async Task Importar_Conflito_SemNota()
-    {
-        Cenario cenario = await NovoCenarioAsync(0);
-        using HttpClient client = _fixture.Factory.CreateClient();
-        byte[] arquivo = Bytes([Linha(Pessoas[0], 1), Linha(Pessoas[0], 1, ["100", "722.2", "833.3", "544.4", "960"])]);
-
-        HttpResponseMessage resposta = await ImportarAsync(client, cenario, arquivo);
-
-        resposta.StatusCode.Should().Be(HttpStatusCode.Created, await resposta.Content.ReadAsStringAsync());
-        IReadOnlyList<AvaliacaoDaEtapa> avaliacoes = await AvaliacoesDoLoteAsync(await IdDoLoteAsync(resposta));
-        avaliacoes.Should().HaveCount(2).And.OnlyContain(a => a.Situacao == SituacaoDaAvaliacao.EmConflito && a.Nota == null);
-    }
-
-    [Fact(DisplayName = "o lote novo traz as avaliações dele: quem não está no arquivo novo fica sem nota nele, e o lote anterior segue intacto")]
-    public async Task Importar_LoteNovoSemAInscricao_FicaSemNotaNele()
-    {
-        Cenario cenario = await NovoCenarioAsync(0, 1);
-        using HttpClient client = _fixture.Factory.CreateClient();
-        byte[] comFernanda = Bytes([Linha(Pessoas[0], 1), Linha(Pessoas[1], 2)]);
-        byte[] semFernanda = Bytes([Linha(Pessoas[1], 2)]);
-
-        Guid loteA = await IdDoLoteAsync(await ImportarAsync(client, cenario, comFernanda));
-        Guid loteB = await IdDoLoteAsync(await ImportarAsync(client, cenario, semFernanda));
-        Guid loteDeNovoA = await IdDoLoteAsync(await ImportarAsync(client, cenario, comFernanda));
-
-        loteDeNovoA.Should().NotBe(loteA, "o arquivo de um lote substituído cria lote novo");
-        (await AvaliacoesDoLoteAsync(loteB)).Where(a => a.InscricaoId == cenario.Inscricoes[0])
-            .Should().HaveCount(2).And.OnlyContain(a => a.Situacao == SituacaoDaAvaliacao.InscritoSemLinha && a.Nota == null);
-        (await AvaliacoesDoLoteAsync(loteA)).Where(a => a.InscricaoId == cenario.Inscricoes[0])
-            .Should().HaveCount(2).And.OnlyContain(a => a.Situacao == SituacaoDaAvaliacao.Apurada && a.Nota != null);
-        (await AvaliacoesDoLoteAsync(loteDeNovoA)).Where(a => a.InscricaoId == cenario.Inscricoes[0])
-            .Should().OnlyContain(a => a.Situacao == SituacaoDaAvaliacao.Apurada);
-    }
-
     [Fact(DisplayName = "o mesmo arquivo sob outra versão do edital cria lote novo com a versão divulgada; sob a mesma, devolve o existente")]
     public async Task Importar_MesmoArquivoSobOutraVersao_CriaLoteNovo()
     {
-        Cenario cenario = await NovoCenarioAsync(0);
+        Cenario cenario = await _apoio.NovoCenarioAsync(0);
         using HttpClient client = _fixture.Factory.CreateClient();
         byte[] arquivo = Bytes([Linha(Pessoas[0], 1)]);
         Guid versaoDivulgada;
@@ -564,7 +285,7 @@ public sealed class ImportacaoDeNotasEndpointTests
     [Fact(DisplayName = "inscrição que concorre a curso fora do edital divulgado recusa o lote inteiro, sem gravar nada")]
     public async Task Importar_OfertaForaDoEdital_RecusaOLote()
     {
-        Cenario cenario = await NovoCenarioAsync(0);
+        Cenario cenario = await _apoio.NovoCenarioAsync(0);
         await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
         {
             await InscricoesDoEnemDeTeste.NovaInscricaoAsync(
@@ -587,7 +308,7 @@ public sealed class ImportacaoDeNotasEndpointTests
     [Fact(DisplayName = "arquivo com prova ausente e nota diferente de zero é recusado e nenhum lote é criado")]
     public async Task Importar_AusenteComNota_NaoCriaLote()
     {
-        Cenario cenario = await NovoCenarioAsync(0);
+        Cenario cenario = await _apoio.NovoCenarioAsync(0);
         using HttpClient client = _fixture.Factory.CreateClient();
 
         HttpResponseMessage resposta = await ImportarAsync(client, cenario, Bytes([LinhaComMatematicaAusenteEComNota(Pessoas[0], 1)]));
@@ -595,89 +316,5 @@ public sealed class ImportacaoDeNotasEndpointTests
         resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await CodigoAsync(resposta)).Should().Be("uniplus.selecao.notas_do_enem.arquivo_fora_do_leiaute");
         (await QuantidadeDeLotesAsync(client, cenario)).Should().Be(0);
-    }
-
-    /// <summary>Substitui a fábrica de loggers do host para que todo log, de qualquer categoria, passe pela captura.</summary>
-    private sealed class FabricaCapturadora(ILoggerProvider provedor) : ILoggerFactory
-    {
-        public void AddProvider(ILoggerProvider provider)
-        {
-        }
-
-        public ILogger CreateLogger(string categoryName) => provedor.CreateLogger(categoryName);
-
-        public void Dispose()
-        {
-        }
-    }
-
-    private sealed class LogsCapturados : ILoggerProvider
-    {
-        private readonly System.Collections.Concurrent.ConcurrentQueue<string> _mensagens = new();
-
-        public IReadOnlyCollection<string> Mensagens => _mensagens;
-
-        public ILogger CreateLogger(string categoryName) => new Registrador(_mensagens);
-
-        public void Dispose()
-        {
-        }
-
-        private sealed class Registrador(System.Collections.Concurrent.ConcurrentQueue<string> destino) : ILogger
-        {
-            public IDisposable? BeginScope<TState>(TState state)
-                where TState : notnull => null;
-
-            public bool IsEnabled(LogLevel logLevel) => true;
-
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception, Func<TState, Exception?, string> formatter)
-            {
-                destino.Enqueue(formatter(state, exception));
-                if (state is IEnumerable<KeyValuePair<string, object?>> pares)
-                {
-                    foreach (KeyValuePair<string, object?> par in pares)
-                    {
-                        destino.Enqueue($"{par.Key}={par.Value}");
-                    }
-                }
-            }
-        }
-    }
-
-    [Fact(DisplayName = "nenhum log da importação contém CPF, nota ou número de inscrição do INEP")]
-    public async Task Importar_NaoVazaPiiEmLog()
-    {
-        Cenario cenario = await NovoCenarioAsync(0, 1);
-        LogsCapturados logs = new();
-        await using WebApplicationFactory<HostAssemblyMarker> comLogs = _fixture.Factory
-            .WithWebHostBuilder(b => b.ConfigureTestServices(servicos => servicos.AddSingleton<ILoggerFactory>(new FabricaCapturadora(logs))));
-        using HttpClient client = comLogs.CreateClient();
-        byte[] arquivo = Bytes(
-        [
-            Linha(Pessoas[0], 1),
-            Linha(Pessoas[1], 2),
-            Linha(Pessoas[5], 3),
-            Linha(Pessoas[6], 4).Replace("960", "96x", StringComparison.Ordinal),
-        ]);
-
-        HttpResponseMessage invalido = await ImportarAsync(client, cenario, arquivo);
-        HttpResponseMessage valido = await ImportarAsync(client, cenario, Bytes([Linha(Pessoas[0], 1), Linha(Pessoas[1], 2), Linha(Pessoas[5], 3)]));
-
-        invalido.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        valido.StatusCode.Should().Be(HttpStatusCode.Created);
-        string todos = string.Join('\n', logs.Mensagens);
-        todos.Should().Contain("de notas do ENEM importado", "a captura precisa ter alcançado o log da importação");
-        foreach (int i in new[] { 0, 1, 5, 6 })
-        {
-            todos.Should().NotContain(Pessoas[i].Cpf).And.NotContain(NumeroDeInscricao(i + 1));
-            string cpf = Pessoas[i].Cpf;
-            todos.Should().NotContain($"{cpf[..3]}.{cpf[3..6]}.{cpf[6..9]}-{cpf[9..]}");
-        }
-
-        // A nota vale como número inteiro: "960" dentro de "39.9608" (tempo de resposta) não é vazamento.
-        foreach (string nota in NotasPadrao.Where(n => n.Length > 2))
-        {
-            todos.Should().NotMatchRegex($@"(?<!\d){System.Text.RegularExpressions.Regex.Escape(nota)}(?!\d)");
-        }
     }
 }
