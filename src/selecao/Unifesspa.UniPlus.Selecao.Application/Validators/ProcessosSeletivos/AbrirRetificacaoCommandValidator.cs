@@ -68,19 +68,24 @@ public sealed class FecharRetificacaoCommandValidator : AbstractValidator<Fechar
 
     public FecharRetificacaoCommandValidator()
     {
+        RegrasDoProcesso();
+        RegrasDoAto();
+        RegrasDoEdital();
+    }
+
+    private void RegrasDoProcesso() =>
         RuleFor(x => x.ProcessoSeletivoId)
             .NotEmpty()
             .WithMessage("Id do processo seletivo é obrigatório.");
 
+    private void RegrasDoAto() =>
         RuleFor(x => x.Ato)
             .NotNull()
             .WithMessage("Dados do ato normativo são obrigatórios.")
             .SetValidator(new DadosDoAtoValidator()!);
 
-        RuleFor(x => x.DocumentoEditalId)
-            .NotEmpty()
-            .WithMessage("Referência ao documento do Edital é obrigatória.");
-
+    private void RegrasDoEdital()
+    {
         RuleFor(x => x.Numero)
             .MaximumLength(NumeroMaxLength)
             .WithMessage($"Número do Edital deve ter no máximo {NumeroMaxLength} caracteres.");

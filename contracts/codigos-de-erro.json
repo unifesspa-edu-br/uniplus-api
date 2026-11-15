@@ -5067,11 +5067,6 @@
       "titulo": "Fase ou etapa com recurso exige banca de análise de recursos"
     },
     {
-      "codigo": "uniplus.selecao.dados_edital.documento_edital_id_obrigatorio",
-      "status": 422,
-      "titulo": "Referência ao documento do Edital é obrigatória"
-    },
-    {
       "codigo": "uniplus.selecao.dados_edital.periodo_inscricao_invalido",
       "status": 422,
       "titulo": "O fim do período de inscrição não pode anteceder o início"

@@ -40,6 +40,17 @@ public sealed class ConferenciaDoDocumentoDoEditalTests
         (await ConferirAsync(documento, Guid.CreateVersion7())).Error!.Code.Should().Be(ConferenciaDoDocumentoDoEdital.NaoEncontrado);
     }
 
+    [Fact(DisplayName = "Id de documento vazio é recusado como documento inexistente, sem recusa própria")]
+    public async Task Confere_IdVazio_RecusaComoInexistente()
+    {
+        IDocumentoAPublicarRepository repositorio = Substitute.For<IDocumentoAPublicarRepository>();
+
+        Result<DocumentoAPublicar> resultado = await ConferenciaDoDocumentoDoEdital.ConferirAsync(
+            repositorio, ProcessoId, Guid.Empty, "na publicação", CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(ConferenciaDoDocumentoDoEdital.NaoEncontrado);
+    }
+
     [Fact(DisplayName = "Documento pendente é recusado, com o uso na mensagem")]
     public async Task Confere_Pendente_Recusa()
     {
