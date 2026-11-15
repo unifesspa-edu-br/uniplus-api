@@ -230,29 +230,31 @@ public sealed class OrdenacaoAlfabeticaEndpointTests
     [Fact(DisplayName = "Cursor cuja chave de ordenação não corresponde à ordenação da rota devolve 400")]
     public async Task Cursor_ComChaveDeOrdenacaoIncompativel_Retorna400()
     {
-        // Cursor legítimo — cifrado pela chave do próprio host, com a etiqueta e a
-        // direção certas — mas cuja chave de ordenação tem um número de colunas
-        // diferente do que esta listagem ordena. É o que um cliente veria ao
-        // reapresentar, sob uma ordenação, o cursor emitido por outra.
-        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
-        CursorEncoder encoder = escopo.ServiceProvider.GetRequiredService<CursorEncoder>();
-
-        string cursor = await encoder.EncodeAsync(new CursorPayload(
-            After: Guid.CreateVersion7().ToString(),
-            Limit: 20,
-            ResourceTag: "cursos",
-            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
-            Direction: PaginationDirection.Next,
-            SortKey: CompositeSortKey.Serialize("uma", "chave", "de tres colunas")));
+        string cursor = await CursorDeOutraOrdenacaoAsync();
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage resposta = await client.GetAsync(
             new Uri($"{Cursos}?cursor={Uri.EscapeDataString(cursor)}", UriKind.Relative));
 
         resposta.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await resposta.Content.ReadAsStringAsync()).Should().Contain("uniplus.paginacao.cursor_invalido");
+    }
 
-        string corpo = await resposta.Content.ReadAsStringAsync();
-        corpo.Should().Contain("uniplus.paginacao.cursor-invalido");
+    // Cursor legítimo — cifrado pela chave do próprio host, com a etiqueta e a direção certas — mas cuja chave de
+    // ordenação tem um número de colunas diferente do que esta listagem ordena. É o que um cliente veria ao
+    // reapresentar, sob uma ordenação, o cursor emitido por outra.
+    private async Task<string> CursorDeOutraOrdenacaoAsync()
+    {
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        CursorEncoder encoder = escopo.ServiceProvider.GetRequiredService<CursorEncoder>();
+
+        return await encoder.EncodeAsync(new CursorPayload(
+            After: Guid.CreateVersion7().ToString(),
+            Limit: 20,
+            ResourceTag: "cursos",
+            ExpiresAt: DateTimeOffset.UtcNow.AddMinutes(10),
+            Direction: PaginationDirection.Next,
+            SortKey: CompositeSortKey.Serialize("uma", "chave", "de tres colunas")));
     }
 
     /// <summary>

@@ -30,7 +30,7 @@ public static class ErrosDaFronteiraHttp
         StatusCodes.Status409Conflict, "uniplus.concorrencia.conflito", "Conflito de concorrência");
 
     public static readonly DomainErrorMapping CursorInvalido = new(
-        StatusCodes.Status400BadRequest, "uniplus.paginacao.cursor-invalido", "Cursor inválido");
+        StatusCodes.Status400BadRequest, "uniplus.paginacao.cursor_invalido", "Cursor inválido");
 
     public static readonly DomainErrorMapping RegistroDeAcessoNaoGravado = new(
         StatusCodes.Status503ServiceUnavailable,
