@@ -3792,7 +3792,7 @@
       "titulo": "Data de encerramento de vigência não pode ser anterior à data de início"
     },
     {
-      "codigo": "uniplus.paginacao.cursor-invalido",
+      "codigo": "uniplus.paginacao.cursor_invalido",
       "status": 400,
       "titulo": "Cursor inválido"
     },
