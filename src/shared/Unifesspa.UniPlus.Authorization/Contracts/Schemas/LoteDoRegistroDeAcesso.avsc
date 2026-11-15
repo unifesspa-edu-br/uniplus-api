@@ -1,0 +1,156 @@
+{
+  "type": "record",
+  "namespace": "unifesspa.uniplus.autorizacao.registrodeacesso",
+  "name": "LoteDoRegistroDeAcesso",
+  "doc": "Valor da mensagem do tópico autorizacao_registros_de_acesso, versão 1: um lote de registros de acesso, cada um com a chave de deduplicação. Subject Confluent SR: autorizacao_registros_de_acesso-value. Compatibilidade default: BACKWARD; só entra campo opcional novo, com default null.",
+  "fields": [
+    {
+      "name": "registros",
+      "doc": "Entradas do lote, na ordem em que foram decididas. Nunca vazio.",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "EntradaDoLote",
+          "doc": "Um registro de acesso com a chave pela qual o consumidor deduplica.",
+          "fields": [
+            {
+              "name": "chave",
+              "type": "string",
+              "doc": "Chave do acesso: resumo SHA-256 em hexadecimal minúsculo. O consumidor deduplica por ela."
+            },
+            {
+              "name": "registro",
+              "type": {
+                "type": "record",
+                "name": "RegistroDeAcesso",
+                "doc": "O que ficou gravado sobre um uso de permissão: quem, quando, em que resource, com que desfecho. Nunca leva o dado acessado, só o código do fato revelado.",
+                "fields": [
+                  {
+                    "name": "instante",
+                    "type": { "type": "long", "logicalType": "timestamp-micros" },
+                    "doc": "Instante do acesso, em UTC, em microssegundos desde a epoch Unix (ADR-0165)."
+                  },
+                  { "name": "atorEmissor", "type": "string", "doc": "Emissor do token de quem acessou." },
+                  {
+                    "name": "atorContaId",
+                    "type": "string",
+                    "doc": "Identificador da conta, opaco, atribuído pelo emissor da identidade, de quem acessou."
+                  },
+                  { "name": "requestId", "type": "string", "doc": "Correlação enviada pelo cliente; não identifica o acesso." },
+                  {
+                    "name": "execucaoId",
+                    "type": "string",
+                    "doc": "UUID da execução do servidor, a mesma para todo acesso da mesma requisição. É a chave da mensagem."
+                  },
+                  {
+                    "name": "permissao",
+                    "type": "string",
+                    "doc": "Código da permissão exigida, do catálogo de permissões. Na leitura que a parte faz do que é seu, com fonteGrant `titularidade`, é o código fixo da operação do titular, fora do catálogo e não concedível, como `autorizacao:pedidos:ler-proprios`."
+                  },
+                  { "name": "resourceTipo", "type": "string", "doc": "Tipo do resource alvo, em kebab-case." },
+                  {
+                    "name": "sensibilidade",
+                    "type": "string",
+                    "doc": "Sensibilidade efetiva do dado alcançado: publico, interno, pessoal, identificador ou sensivel."
+                  },
+                  {
+                    "name": "unidadeProprietariaId",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "UUID da unidade proprietária do resource, quando o escopo se aplica."
+                  },
+                  {
+                    "name": "processoId",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "UUID do processo seletivo do resource, quando o escopo se aplica."
+                  },
+                  {
+                    "name": "chamadaId",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "UUID da chamada do resource, quando o escopo se aplica."
+                  },
+                  {
+                    "name": "resourceId",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "UUID do registro alvo da operação; ausente quando a decisão recai sobre um resource que não existe."
+                  },
+                  {
+                    "name": "inscricaoId",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "UUID da inscrição a que o acesso se refere."
+                  },
+                  {
+                    "name": "fatoCodigo",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "Código do fato revelado; nunca o valor."
+                  },
+                  {
+                    "name": "ocorrencia",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "Ocorrência do fato revelado, quando o campo está num grupo que se repete."
+                  },
+                  { "name": "origem", "type": "string", "doc": "Canal pelo qual a requisição chegou." },
+                  {
+                    "name": "clienteOidc",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "Client OIDC que obteve o token do acesso; nulo quando o token não o traz."
+                  },
+                  {
+                    "name": "resultado",
+                    "type": "string",
+                    "doc": "Desfecho da decisão: permitido, negado ou impedido. O impedido é uma negativa com motivo próprio."
+                  },
+                  { "name": "permitido", "type": "boolean", "doc": "Veredito derivado do resultado." },
+                  {
+                    "name": "motivoNegativa",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "Motivo canônico da negativa, do vocabulário de motivos; presente se, e somente se, o acesso foi negado. Motivo novo no vocabulário não muda o esquema."
+                  },
+                  {
+                    "name": "fonteGrant",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "Fonte canônica do acesso; presente se, e somente se, o acesso foi permitido: `concessao`, `oidc_group_binding`, `permissao_excecional` ou `titularidade`. A titularidade só aparece no registro e não representa concessão; grantId, perfilId, versaoId e escopoUnidadeId ficam nulos."
+                  },
+                  {
+                    "name": "grantId",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "UUID da concessão usada, quando ela o possui."
+                  },
+                  {
+                    "name": "perfilId",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "UUID do perfil de acesso da concessão usada, quando ela é de perfil."
+                  },
+                  {
+                    "name": "versaoId",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "UUID da versão do perfil a que a concessão usada está presa; nulo quando a concessão não é de perfil comum."
+                  },
+                  {
+                    "name": "escopoUnidadeId",
+                    "type": ["null", "string"],
+                    "default": null,
+                    "doc": "UUID da unidade do escopo da concessão usada; nulo quando o escopo é a instituição."
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
