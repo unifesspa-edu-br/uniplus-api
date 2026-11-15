@@ -52,7 +52,7 @@ public sealed class InstalacaoRepository : IInstalacaoRepository
         ArgumentNullException.ThrowIfNull(executor);
 
         return await _context.Instalacoes
-            .Where(i => i.ExecutorEmissor == executor.Emissor && i.ExecutorSub == executor.Sub && Instalacao.SituacoesPendentes.Contains(i.Situacao))
+            .Where(i => i.ExecutorEmissor == executor.Emissor && i.ExecutorContaId == executor.ContaId && Instalacao.SituacoesPendentes.Contains(i.Situacao))
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
     }
@@ -64,7 +64,7 @@ public sealed class InstalacaoRepository : IInstalacaoRepository
         Guid? id = await _context.Instalacoes
             .AsNoTracking()
             .Where(i => i.ExecutorEmissor == executor.Emissor
-                && i.ExecutorSub == executor.Sub
+                && i.ExecutorContaId == executor.ContaId
                 && i.Situacao == SituacaoDaInstalacao.AguardandoCodigo)
             .Select(i => (Guid?)i.Id)
             .FirstOrDefaultAsync(cancellationToken)
@@ -93,7 +93,7 @@ public sealed class InstalacaoRepository : IInstalacaoRepository
         ArgumentNullException.ThrowIfNull(executor);
 
         return await _context.Instalacoes
-            .Where(i => i.Id == id && i.ExecutorEmissor == executor.Emissor && i.ExecutorSub == executor.Sub)
+            .Where(i => i.Id == id && i.ExecutorEmissor == executor.Emissor && i.ExecutorContaId == executor.ContaId)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
     }

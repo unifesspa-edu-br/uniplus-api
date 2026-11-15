@@ -31,8 +31,8 @@ public sealed class AuthorizationRequestContextTests
     {
         DateTimeOffset agora = DateTimeOffset.UtcNow;
         DualApprovalGrant grant = DualApprovalGrant.From(
-            UsuarioRef.From("https://sso.gov.br", "sub-1").Value!,
-            UsuarioRef.From("https://sso.gov.br", "sub-2").Value!,
+            UsuarioRef.From("https://sso.gov.br", "conta-1").Value!,
+            UsuarioRef.From("https://sso.gov.br", "conta-2").Value!,
             "sha256:abc",
             "selecao.resultado.homologar",
             agora,

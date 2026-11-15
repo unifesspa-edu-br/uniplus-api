@@ -19,7 +19,7 @@ public sealed class TermoDeResponsabilidadeTests
         versao.Numero.Should().Be(1);
         termo.VersaoVigenteId.Should().Be(versao.Id);
         termo.UltimoNumero.Should().Be(1);
-        versao.AutorSub.Should().Be("diogo.souza");
+        versao.AutorContaId.Should().Be("diogo.souza");
         versao.Resumo.Should().Be(TermosDeTeste.Conteudo().Resumo);
     }
 

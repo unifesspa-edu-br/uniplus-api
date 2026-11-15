@@ -195,7 +195,7 @@ public sealed record RegistroDecisaoAcesso
 
         return new RegistroDecisaoAcesso(
             subject.Usuario.Emissor,
-            subject.Usuario.Subject,
+            subject.Usuario.ContaId,
             request.DataAcesso,
             request.RequestId,
             request.ExecucaoId,

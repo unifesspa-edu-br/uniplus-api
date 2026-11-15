@@ -23,7 +23,7 @@ internal static class EmissaoDeVersao
             documento.AlgoritmoHash,
             atoCriadorId: NovoIdDeAto(instante),
             atoCriadorHash: documento.HashDocumento,
-            pedido.AtorUsuarioSub,
+            pedido.AtorUsuarioContaId,
             instante);
 
         return (versao, EventoDe(processoId, versao));
@@ -48,7 +48,7 @@ internal static class EmissaoDeVersao
             atoCriadorId: NovoIdDeAto(instante),
             atoCriadorHash: documento.HashDocumento,
             atoCriadorRetificaId: versaoAtual.AtoCriadorId,
-            pedido.AtorUsuarioSub,
+            pedido.AtorUsuarioContaId,
             instante);
 
         return (versao, EventoDe(processoId, versao));

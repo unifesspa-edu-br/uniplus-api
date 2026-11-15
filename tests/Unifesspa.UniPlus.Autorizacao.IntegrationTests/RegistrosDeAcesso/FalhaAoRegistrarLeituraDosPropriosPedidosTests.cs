@@ -112,21 +112,21 @@ public sealed class FalhaAoRegistrarLeituraDosPropriosPedidosTests
 
     // O pedido sai antes e depois, para não sobrar aos outros testes da coleção.
     private async Task<(HttpStatusCode Status, string Corpo, Guid Pedido)> LerOProprioPedidoAsync(
-        string sub, LeituraDoPedido leitura, IRegistroOperacionalRestrito registro)
+        string contaId, LeituraDoPedido leitura, IRegistroOperacionalRestrito registro)
     {
-        await DescartarPedidosAsync(sub);
+        await DescartarPedidosAsync(contaId);
         try
         {
-            Guid pedido = await PedirParaSiMesmoAsync(sub);
+            Guid pedido = await PedirParaSiMesmoAsync(contaId);
             await using WebApplicationFactory<HostAssemblyMarker> fabrica = ComRegistro(registro);
-            using HttpClient cliente = Cliente(fabrica, sub);
+            using HttpClient cliente = Cliente(fabrica, contaId);
             using HttpResponseMessage resposta = await cliente.GetAsync(RotaDa(leitura, pedido));
 
             return (resposta.StatusCode, await resposta.Content.ReadAsStringAsync(), pedido);
         }
         finally
         {
-            await DescartarPedidosAsync(sub);
+            await DescartarPedidosAsync(contaId);
         }
     }
 
@@ -140,10 +140,10 @@ public sealed class FalhaAoRegistrarLeituraDosPropriosPedidosTests
         },
         UriKind.Relative);
 
-    private async Task<Guid> PedirParaSiMesmoAsync(string sub)
+    private async Task<Guid> PedirParaSiMesmoAsync(string contaId)
     {
         Guid perfil = await ConcessoesDeTeste.CriarPerfilAsync(_fixture.Factory.Services, "configuracao:tipos-processo:consultar");
-        using HttpClient cliente = Cliente(_fixture.Factory, sub);
+        using HttpClient cliente = Cliente(_fixture.Factory, contaId);
         using HttpRequestMessage pedido = new(HttpMethod.Post, new Uri(Rota, UriKind.Relative))
         {
             Content = JsonContent.Create(new { perfilId = perfil, justificativa = "Acompanha os tipos de processo seletivo." }),
@@ -157,11 +157,11 @@ public sealed class FalhaAoRegistrarLeituraDosPropriosPedidosTests
         return documento.RootElement.GetProperty("id").GetGuid();
     }
 
-    private async Task DescartarPedidosAsync(string sub)
+    private async Task DescartarPedidosAsync(string contaId)
     {
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database
-            .ExecuteSqlRawAsync("DELETE FROM autorizacao.pedidos_de_concessao WHERE solicitante_sub = {0}", sub);
+            .ExecuteSqlRawAsync("DELETE FROM autorizacao.pedidos_de_concessao WHERE solicitante_conta_id = {0}", contaId);
     }
 
     private WebApplicationFactory<HostAssemblyMarker> ComRegistro(IRegistroOperacionalRestrito registro) =>
@@ -172,13 +172,13 @@ public sealed class FalhaAoRegistrarLeituraDosPropriosPedidosTests
                 services.AddSingleton<IRegistroOperacionalRestrito>(registro);
             }));
 
-    private static HttpClient Cliente(WebApplicationFactory<HostAssemblyMarker> fabrica, string sub)
+    private static HttpClient Cliente(WebApplicationFactory<HostAssemblyMarker> fabrica, string contaId)
     {
         HttpClient client = fabrica.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, sub);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, sub);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, $"{sub}@unifesspa.edu.br");
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, contaId);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, contaId);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, $"{contaId}@unifesspa.edu.br");
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailVerifiedHeader, "true");
 
         return client;

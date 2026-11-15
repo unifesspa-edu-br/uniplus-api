@@ -169,7 +169,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
             schemaVersion: "1.1",
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: new string('a', 64),
-            atorUsuarioSub: "testes",
+            atorUsuarioContaId: "testes",
             clock: TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
 
         processo.ClearDomainEvents();
@@ -188,7 +188,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         algoritmoHash: "canonical-json/sha256@v1",
         atoCriadorId: Guid.CreateVersion7(),
         atoCriadorHash: new string('a', 64),
-        atorUsuarioSub: "testes",
+        atorUsuarioContaId: "testes",
         instante: DateTimeOffset.UnixEpoch);
 
     private static GrafoConfiguracao GrafoComBonus(ConfiguracaoBonusRegional bonus) => new(

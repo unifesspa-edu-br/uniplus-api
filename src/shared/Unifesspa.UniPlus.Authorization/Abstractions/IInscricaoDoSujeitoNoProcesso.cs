@@ -12,9 +12,9 @@ public interface IInscricaoDoSujeitoNoProcesso
     /// Lê o estado atual a cada chamada, sem cache entre requisições: o envio e o cancelamento valem na requisição
     /// seguinte.
     /// </summary>
-    /// <param name="emissor">O emissor do token. O <c>sub</c> só identifica a pessoa dentro do emissor que o expediu.</param>
-    /// <param name="subject">O <c>sub</c> do token; com o emissor, a identidade que a inscrição guarda do candidato.</param>
+    /// <param name="emissor">O emissor do token. O <c>contaId</c> só identifica a pessoa dentro do emissor que o expediu.</param>
+    /// <param name="contaId">O <c>contaId</c> do token; com o emissor, a identidade que a inscrição guarda do candidato.</param>
     /// <param name="processoId">O processo seletivo.</param>
     /// <param name="cancellationToken">Token de cancelamento.</param>
-    Task<bool> TemInscricaoEnviadaAsync(string emissor, string subject, Guid processoId, CancellationToken cancellationToken);
+    Task<bool> TemInscricaoEnviadaAsync(string emissor, string contaId, Guid processoId, CancellationToken cancellationToken);
 }

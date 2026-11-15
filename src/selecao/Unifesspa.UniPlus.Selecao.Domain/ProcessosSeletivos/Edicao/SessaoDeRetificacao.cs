@@ -19,7 +19,7 @@ internal static class SessaoDeRetificacao
     /// (a raiz não conhece a cadeia), e a sessão nasce com os fatos que as versões publicadas coletaram.
     /// </summary>
     /// <param name="identificadorDaVersaoBase">O identificador legível constante da versão-base, quando ela o tem.</param>
-    /// <param name="abertoPorSub">Sub do usuário autenticado (via <c>IUserContext</c>, nunca input do comando).</param>
+    /// <param name="abertoPorContaId">ContaId do usuário autenticado (via <c>IUserContext</c>, nunca input do comando).</param>
     /// <param name="abertoEm">Instante lido do relógio injetado (ADR-0068).</param>
     internal static Result<RascunhoRetificacao> Abrir(
         EstadoDaConfiguracao estado,
@@ -27,7 +27,7 @@ internal static class SessaoDeRetificacao
         VersaoConfiguracao versaoBase,
         IdentificadorLegivel? identificadorDaVersaoBase,
         FatosDasVersoesPublicadas fatosDasVersoesPublicadas,
-        string abertoPorSub,
+        string abertoPorContaId,
         DateTimeOffset abertoEm)
     {
         ArgumentNullException.ThrowIfNull(estado);
@@ -44,7 +44,7 @@ internal static class SessaoDeRetificacao
         return recusa is not null
             ? Result<RascunhoRetificacao>.Failure(recusa)
             : RascunhoRetificacao.Criar(
-                estado.ProcessoId, motivo, versaoBase, identificadorDaVersaoBase is not null, fatosDasVersoesPublicadas, abertoPorSub, abertoEm);
+                estado.ProcessoId, motivo, versaoBase, identificadorDaVersaoBase is not null, fatosDasVersoesPublicadas, abertoPorContaId, abertoEm);
     }
 
     /// <summary>

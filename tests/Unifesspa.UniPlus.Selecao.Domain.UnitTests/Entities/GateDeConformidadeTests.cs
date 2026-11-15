@@ -41,7 +41,7 @@ public sealed class GateDeConformidadeTests
             schemaVersion: "1.1",
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
-            atorUsuarioSub: "teste",
+            atorUsuarioContaId: "teste",
             TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
@@ -100,7 +100,7 @@ public sealed class GateDeConformidadeTests
             schemaVersion: "1.1",
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
-            atorUsuarioSub: "teste",
+            atorUsuarioContaId: "teste",
             motivo: "Correção do prazo",
             TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
@@ -125,7 +125,7 @@ public sealed class GateDeConformidadeTests
             schemaVersion: "1.1",
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
-            atorUsuarioSub: "teste",
+            atorUsuarioContaId: "teste",
             TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         publicar.IsFailure.Should().BeTrue();
@@ -153,7 +153,7 @@ public sealed class GateDeConformidadeTests
             schemaVersion: "1.1",
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
-            atorUsuarioSub: "teste",
+            atorUsuarioContaId: "teste",
             motivo: "Correção do prazo",
             TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
@@ -172,7 +172,7 @@ public sealed class GateDeConformidadeTests
             schemaVersion: "1.1",
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
-            atorUsuarioSub: "teste",
+            atorUsuarioContaId: "teste",
             TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         publicar.IsFailure.Should().BeTrue();
@@ -204,7 +204,7 @@ public sealed class GateDeConformidadeTests
             schemaVersion: "1.1",
             algoritmoHash: "canonical-json/sha256@v1",
             hashDocumento: HashFixo,
-            atorUsuarioSub: "teste",
+            atorUsuarioContaId: "teste",
             TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
         publicar.IsFailure.Should().BeTrue(

@@ -19,7 +19,7 @@ public sealed class DecisaoDoPedido : IForensicEntity
 
     public string DecisorEmissor { get; private init; } = string.Empty;
 
-    public string DecisorSub { get; private init; } = string.Empty;
+    public string DecisorContaId { get; private init; } = string.Empty;
 
     public string? DecisorNome { get; private init; }
 
@@ -50,7 +50,7 @@ public sealed class DecisaoDoPedido : IForensicEntity
     /// <summary>Motivo da dispensa da segunda aprovação, quando a decisão a dispensou (<see cref="MotivosDeDispensa"/>).</summary>
     public string? Dispensa { get; private init; }
 
-    public Identidade Decisor => new(DecisorEmissor, DecisorSub, DecisorNome);
+    public Identidade Decisor => new(DecisorEmissor, DecisorContaId, DecisorNome);
 
     // Construtor de materialização do EF Core.
     private DecisaoDoPedido()
@@ -71,7 +71,7 @@ public sealed class DecisaoDoPedido : IForensicEntity
             PedidoId = pedidoId,
             Etapa = etapa,
             DecisorEmissor = ato.Agente.Emissor,
-            DecisorSub = ato.Agente.Sub,
+            DecisorContaId = ato.Agente.ContaId,
             DecisorNome = ato.Agente.Nome,
             Resultado = resultado,
             Motivo = motivo,

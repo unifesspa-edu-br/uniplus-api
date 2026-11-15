@@ -92,8 +92,8 @@ public sealed class PapeisIncompativeisNasDuasOrdensNoHostTests : PedidosDeConce
     {
         await SemearConcessaoAsync(pessoa, perfilId, EscopoDaConcessao.DaInstituicao());
         await ExecutarSqlAsync(
-            "UPDATE autorizacao.concessoes SET concedida_em = now() - interval '3 days', valida_ate = now() - interval '1 minute' WHERE beneficiario_sub = {0} AND perfil_id = {1}",
-            pessoa.Sub.ToString(),
+            "UPDATE autorizacao.concessoes SET concedida_em = now() - interval '3 days', valida_ate = now() - interval '1 minute' WHERE beneficiario_conta_id = {0} AND perfil_id = {1}",
+            pessoa.ContaId.ToString(),
             perfilId);
     }
 }

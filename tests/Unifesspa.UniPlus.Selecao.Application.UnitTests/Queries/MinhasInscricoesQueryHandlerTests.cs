@@ -30,18 +30,18 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class MinhasInscricoesQueryHandlerTests
 {
-    private static IUserContext UsuarioComCpf(Cpf cpf, string sub = "sub-1")
+    private static IUserContext UsuarioComCpf(Cpf cpf, string contaId = "conta-1")
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(cpf.Valor);
-        contexto.UserId.Returns(sub);
+        contexto.UserId.Returns(contaId);
         return contexto;
     }
 
-    private static Inscricao ComRespostas(Cpf cpf, string sub, Guid processoId, Dictionary<string, JsonElement> respostas)
+    private static Inscricao ComRespostas(Cpf cpf, string contaId, Guid processoId, Dictionary<string, JsonElement> respostas)
     {
         Inscricao inscricao = Inscricao.Iniciar(
-            processoId, cpf, sub, "https://issuer", Guid.CreateVersion7()).Value!;
+            processoId, cpf, contaId, "https://issuer", Guid.CreateVersion7()).Value!;
         inscricao.Salvar(
             null, null, respostas, new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(StringComparer.Ordinal), [],
             TestSupport.DefinicoesDeTeste.Das(respostas) with { NomeCivilDoLogin = cpf.Valor == PersonasDeTeste.KevinCarvalho.Valor ? PersonasDeTeste.NomeKevinCarvalho : PersonasDeTeste.NomeFernandaDrumond, NomeSocialDoLogin = respostas.TryGetValue("NOME_SOCIAL", out JsonElement nomeSocial) ? nomeSocial.GetString() : null },
@@ -71,19 +71,19 @@ public sealed class MinhasInscricoesQueryHandlerTests
         await inscricaoRepository.DidNotReceive().ObterTodasPorCpfAsync(Arg.Any<Cpf>(), Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Sem o claim sub no token, recusa com SubObrigatorio em vez de listar vazio")]
-    public async Task Handle_SemSubNoToken_Recusa()
+    [Fact(DisplayName = "Sem o claim sub no token, recusa com ContaIdObrigatorio em vez de listar vazio")]
+    public async Task Handle_SemContaIdNoToken_Recusa()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>())
-            .Returns((IReadOnlyList<Inscricao>)[Inscricao.Iniciar(Guid.CreateVersion7(), cpf, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!]);
+            .Returns((IReadOnlyList<Inscricao>)[Inscricao.Iniciar(Guid.CreateVersion7(), cpf, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!]);
 
         Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
-            new MinhasInscricoesQuery(), inscricaoRepository, Processos(CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>()), UsuarioComCpf(cpf, sub: ""), CancellationToken.None);
+            new MinhasInscricoesQuery(), inscricaoRepository, Processos(CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>()), UsuarioComCpf(cpf, contaId: ""), CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.SubObrigatorio);
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ContaIdObrigatorio);
     }
 
     [Fact(DisplayName = "Nenhuma inscrição do CPF devolve lista vazia, não falha")]
@@ -100,18 +100,18 @@ public sealed class MinhasInscricoesQueryHandlerTests
         resultado.Value!.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Inscrição de outro sub para o mesmo CPF não aparece na lista")]
-    public async Task Handle_InscricaoDeOutroSub_NaoAparece()
+    [Fact(DisplayName = "Inscrição de outra conta para o mesmo CPF não aparece na lista")]
+    public async Task Handle_InscricaoDeOutroContaId_NaoAparece()
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
-        Inscricao deOutroSub = Inscricao.Iniciar(
-            Guid.CreateVersion7(), cpf, "sub-outro", "https://issuer", Guid.CreateVersion7()).Value!;
+        Inscricao deOutroContaId = Inscricao.Iniciar(
+            Guid.CreateVersion7(), cpf, "conta-outro", "https://issuer", Guid.CreateVersion7()).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[deOutroSub]);
+        inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[deOutroContaId]);
 
         Result<IReadOnlyList<MinhaInscricaoDto>> resultado = await MinhasInscricoesQueryHandler.Handle(
-            new MinhasInscricoesQuery(), inscricaoRepository, Processos(CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>()), UsuarioComCpf(cpf, sub: "sub-1"), CancellationToken.None);
+            new MinhasInscricoesQuery(), inscricaoRepository, Processos(CertamesDivulgados(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>()), UsuarioComCpf(cpf, contaId: "conta-1"), CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Should().BeEmpty();
@@ -123,7 +123,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         Guid processoId = Guid.CreateVersion7();
         DateTimeOffset instante = new(2026, 12, 10, 9, 0, 0, TimeSpan.Zero);
-        Inscricao inscricao = ComRespostas(cpf, "sub-1", processoId, new Dictionary<string, JsonElement>(StringComparer.Ordinal)
+        Inscricao inscricao = ComRespostas(cpf, "conta-1", processoId, new Dictionary<string, JsonElement>(StringComparer.Ordinal)
         {
             ["NOME"] = JsonSerializer.SerializeToElement(PersonasDeTeste.NomeFernandaDrumond),
         });
@@ -152,11 +152,11 @@ public sealed class MinhasInscricoesQueryHandlerTests
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         Guid processoId = Guid.CreateVersion7();
         Inscricao cancelada = Inscricao.Reidratar(
-            Guid.CreateVersion7(), processoId, cpf, "sub-1", "https://issuer", SituacaoInscricao.Cancelada, Guid.CreateVersion7(), null, null,
-            "000123", DateTimeOffset.UtcNow, "sub-1", "a pedido do candidato",
+            Guid.CreateVersion7(), processoId, cpf, "conta-1", "https://issuer", SituacaoInscricao.Cancelada, Guid.CreateVersion7(), null, null,
+            "000123", DateTimeOffset.UtcNow, "conta-1", "a pedido do candidato",
             new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 2, DateTimeOffset.UtcNow, null);
-        Inscricao nova = Inscricao.Iniciar(processoId, cpf, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
+        Inscricao nova = Inscricao.Iniciar(processoId, cpf, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!;
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[cancelada, nova]);
         inscricaoRepository.ObterEmissoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
@@ -192,7 +192,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
     private static VersaoConfiguracao NovaVersao(Guid processoId) =>
         VersaoConfiguracao.Abrir(
             processoId, Encoding.UTF8.GetBytes("{}"), SchemaVersion, "canonical-json/sha256@v1",
-            Guid.CreateVersion7(), new string('a', 64), "user-sub-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
+            Guid.CreateVersion7(), new string('a', 64), "user-conta-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
 
     /// <summary>Um registro de codecs que reidrata cada versão no envelope dela.</summary>
     private static IRegistroCodecsEnvelope RegistroDas(params (VersaoConfiguracao Versao, EnvelopeReidratado Envelope)[] versoes)
@@ -206,7 +206,7 @@ public sealed class MinhasInscricoesQueryHandlerTests
 
     private static Inscricao ComOpcoes(Cpf cpf, Guid processoId, Guid versaoId, Guid? primeira, Guid? segunda) =>
         Inscricao.Reidratar(
-            Guid.CreateVersion7(), processoId, cpf, "sub-1", "https://issuer", SituacaoInscricao.Rascunho, versaoId, primeira, segunda,
+            Guid.CreateVersion7(), processoId, cpf, "conta-1", "https://issuer", SituacaoInscricao.Rascunho, versaoId, primeira, segunda,
             null, null, null, null,
             new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 1, DateTimeOffset.UtcNow, null);

@@ -24,13 +24,13 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// </summary>
 /// <remarks>
 /// Só vale para a requisição que traz o papel <c>plataforma-admin</c> e nenhuma identidade nomeada: as personas dos
-/// cenários de acesso (que enviam o seu <c>sub</c>) e quem não traz o papel ficam como o token as descreve, sem
+/// cenários de acesso (que enviam o seu <c>contaId</c>) e quem não traz o papel ficam como o token as descreve, sem
 /// concessão alguma.
 /// </remarks>
 internal static partial class AdministradorDeProcessosDeTeste
 {
     private const string PapelDeAdministrador = "plataforma-admin";
-    private const string SubDoAdministradorAnonimo = "test-user-id";
+    private const string ContaIdDoAdministradorAnonimo = "test-user-id";
 
     public static IServiceCollection AdicionarAdministradorDeProcessosDeTeste(this IServiceCollection services)
     {
@@ -73,7 +73,7 @@ internal static partial class AdministradorDeProcessosDeTeste
                     Guid perfil = await contexto.RequestServices.GetRequiredService<PerfilDoAdministrador>()
                         .ObterAsync(contexto.RequestServices);
                     await ConcessoesDeTeste.ConcederAsync(
-                        contexto.RequestServices, SubDoAdministradorAnonimo, perfil, EscopoDaConcessao.DaUnidade(unidade));
+                        contexto.RequestServices, ContaIdDoAdministradorAnonimo, perfil, EscopoDaConcessao.DaUnidade(unidade));
                 }
 
                 await proximo();

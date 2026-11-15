@@ -62,7 +62,7 @@ public sealed class TermoNaLeituraTests
         EventoDaTrilhaDto evento = EventosDoPedido.Montar(pedido, []).Single(e => e.Tipo == "termo_aceito");
 
         evento.Detalhe.Should().Be($"Versão 1, resumo {cenario.Vigente.Resumo}.");
-        evento.Autor!.Sub.Should().Be("betina.neves");
+        evento.Autor!.ContaId.Should().Be("betina.neves");
         PedidoMapping.ToDto(pedido, null).Termo!.Aceite!.Resumo.Should().Be(cenario.Vigente.Resumo);
     }
 

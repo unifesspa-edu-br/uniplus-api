@@ -154,9 +154,9 @@ public sealed class PedidosDeConcessaoAnexoTests : PedidosDeConcessaoTestBase
         JsonElement trilha = await LerAsync(diogo, $"{Rota}/{id}/trilha");
 
         JsonElement verificado = trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "anexo_verificado");
-        verificado.GetProperty("autor").GetProperty("sub").GetString().Should().Be("verificador");
+        verificado.GetProperty("autor").GetProperty("contaId").GetString().Should().Be("verificador");
         trilha.EnumerateArray().Single(e => e.GetProperty("tipo").GetString() == "anexo_enviado")
-            .GetProperty("autor").GetProperty("sub").GetString().Should().Be(Betina.Sub.ToString());
+            .GetProperty("autor").GetProperty("contaId").GetString().Should().Be(Betina.ContaId.ToString());
     }
 
     [Fact(DisplayName = "Anexar e decidir o pedido não correm juntos: quem leu antes da aprovação não grava o anexo depois dela")]

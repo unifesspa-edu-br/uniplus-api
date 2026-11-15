@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
 /// A inscrição de que o token é dono, pelo id: a de outro CPF responde como inexistente, porque o id não confirma a existência da
-/// inscrição de ninguém, e o mesmo CPF com outro <c>sub</c> é identidade trocada (<see cref="Inscricao.ConferirDono"/>).
+/// inscrição de ninguém, e o mesmo CPF com outro <c>contaId</c> é identidade trocada (<see cref="Inscricao.ConferirDono"/>).
 /// </summary>
 internal static class InscricaoDoDono
 {

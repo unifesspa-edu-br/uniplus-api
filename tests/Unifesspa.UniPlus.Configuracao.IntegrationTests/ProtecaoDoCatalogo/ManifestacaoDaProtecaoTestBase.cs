@@ -36,9 +36,9 @@ public abstract class ManifestacaoDaProtecaoTestBase : HistoricoDaProtecaoTestBa
         await PrepararPersonasAsync();
         foreach (Persona encarregado in new[] { Kevin, Lucia })
         {
-            await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, encarregado.Sub);
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, encarregado.ContaId);
             await ConcessoesDeTeste.ConcederGovernancaAsync(
-                Fixture.Factory.Services, encarregado.Sub, TipoDeGovernanca.EncarregadoDeDados, $"{encarregado.Sub}@unifesspa.edu.br");
+                Fixture.Factory.Services, encarregado.ContaId, TipoDeGovernanca.EncarregadoDeDados, $"{encarregado.ContaId}@unifesspa.edu.br");
         }
     }
 

@@ -71,7 +71,7 @@ public sealed class RespostaDaProvidenciaTests
         await _cenario.Providencias.DidNotReceiveWithAnyArgs().ObterConcessaoSobTravaCompartilhadaAsync(default);
     }
 
-    [Fact(DisplayName = "Sem emissor e sub no token, a resposta é recusada antes de ler a providência")]
+    [Fact(DisplayName = "Sem emissor e conta no token, a resposta é recusada antes de ler a providência")]
     public async Task Responder_AutorNaoIdentificado()
     {
         (Result<ProvidenciaDto> resposta, _) = await ProvidenciaCommandHandler.Handle(

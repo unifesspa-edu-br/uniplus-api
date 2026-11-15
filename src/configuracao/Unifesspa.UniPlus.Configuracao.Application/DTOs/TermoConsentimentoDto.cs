@@ -11,7 +11,7 @@ using System.Text.Json.Serialization;
 /// Sem <c>RevisadoPor</c> (nem <see cref="TermoConsentimentoVersaoDto.PromovidaPor"/>
 /// na versão): o endpoint de leitura é anônimo (<c>GET</c> público, mesmo padrão dos
 /// demais cadastros do módulo), e esses campos carregam o identificador de
-/// autenticação do operador (<c>sub</c> do Keycloak) — expô-los deixaria qualquer
+/// autenticação do operador (<c>contaId</c> do Keycloak) — expô-los deixaria qualquer
 /// chamador não autenticado colher identificadores estáveis de administradores. O
 /// ator continua gravado no domínio/banco para rastreabilidade; só não sai na
 /// representação pública.

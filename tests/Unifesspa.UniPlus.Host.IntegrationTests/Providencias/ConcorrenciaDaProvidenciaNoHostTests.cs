@@ -89,9 +89,9 @@ public sealed class ConcorrenciaDaProvidenciaNoHostTests : ProvidenciasNoHostTes
     public async Task AtendimentoDoPenultimoGestor_MinimoDeGestores()
     {
         await ResetarAsync();
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.Sub.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
         using HttpClient isabella = await ClienteComPermissoesAsync(Isabella, Administrar);
-        Guid concessaoDeDiogo = await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Diogo.Sub.ToString(), TipoDeGovernanca.GestorDeAcessos, Diogo.Email);
+        Guid concessaoDeDiogo = await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Diogo.ContaId.ToString(), TipoDeGovernanca.GestorDeAcessos, Diogo.Email);
         Guid providencia = await SolicitarAsync(Cliente(Cecilia), concessaoDeDiogo);
 
         await ConferirCodigoAsync(await AtenderAsync(isabella, providencia, Diogo.Email), HttpStatusCode.UnprocessableEntity, "uniplus.autorizacao.concessao.minimo_de_gestores");

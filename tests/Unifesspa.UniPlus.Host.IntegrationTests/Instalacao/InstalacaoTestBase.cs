@@ -59,7 +59,7 @@ public abstract partial class InstalacaoTestBase
 
     private protected MonolitoDaInstalacaoFixture Fixture { get; }
 
-    private protected static Guid SubDe(string username) =>
+    private protected static Guid ContaIdDe(string username) =>
         new(SHA256.HashData(Encoding.UTF8.GetBytes($"persona:{username}"))[..16]);
 
     // Quem lê a trilha administra concessões por concessão gravada. A proteção de dados serve: a instalação só conta e
@@ -67,7 +67,7 @@ public abstract partial class InstalacaoTestBase
     private protected async Task<HttpClient> ClienteQueLeATrilhaAsync()
     {
         await ConcessoesDeTeste.ConcederGovernancaAsync(
-            Fixture.Factory.Services, Isabella.Sub.ToString(), TipoDeGovernanca.RepresentanteDoControlador);
+            Fixture.Factory.Services, Isabella.ContaId.ToString(), TipoDeGovernanca.RepresentanteDoControlador);
         return Cliente(Isabella, papel: false);
     }
 
@@ -76,7 +76,7 @@ public abstract partial class InstalacaoTestBase
         HttpClient client = Fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, persona.Sub.ToString());
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, persona.ContaId.ToString());
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, email ?? persona.Email);
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailVerifiedHeader, emailVerificado);
         if (papel)
@@ -119,7 +119,7 @@ public abstract partial class InstalacaoTestBase
             tamanhoDoPdf = tamanho ?? Pdf.Length,
         });
 
-    private protected static object Identidade(Persona p) => new { emissor = TestAuthHandler.DefaultIssuer, sub = p.Sub.ToString(), email = p.Email, nome = p.Username };
+    private protected static object Identidade(Persona p) => new { emissor = TestAuthHandler.DefaultIssuer, contaId = p.ContaId.ToString(), email = p.Email, nome = p.Username };
 
     private protected static async Task<(Guid Id, Uri UrlDeEnvio)> IniciarAsync(HttpClient client, Persona primeiro, Persona segundo, long? tamanho = null)
     {
@@ -259,7 +259,7 @@ public abstract partial class InstalacaoTestBase
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         return await db.Concessoes.AsNoTracking()
             .Where(c => c.PerfilId == PerfisDeSistema.GestorDeAcessosId && c.RevogadaEm == null)
-            .Select(c => c.BeneficiarioSub)
+            .Select(c => c.BeneficiarioContaId)
             .ToArrayAsync();
     }
 
@@ -300,7 +300,7 @@ public abstract partial class InstalacaoTestBase
         Concessao concessao = (await ConcessaoDeGestorAsync(scope, gestor))
             .DaOrigem(new OrigemDaConcessao(TipoDeOrigem.Instalacao, instalacaoId))
             .Construir();
-        AtoDoAgente revogacao = new(new Identidade(TestAuthHandler.DefaultIssuer, Diogo.Sub.ToString()), DateTimeOffset.UtcNow);
+        AtoDoAgente revogacao = new(new Identidade(TestAuthHandler.DefaultIssuer, Diogo.ContaId.ToString()), DateTimeOffset.UtcNow);
         concessao.Revogar(revogacao, "Semente do teste.").IsSuccess.Should().BeTrue();
         await scope.ServiceProvider.GetRequiredService<IConcessaoRepository>().AdicionarAsync(concessao);
         await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
@@ -313,9 +313,9 @@ public abstract partial class InstalacaoTestBase
         Perfil perfil = (await repositorio.ObterParaConcederAsync(PerfisDeSistema.GestorDeAcessosId))!;
 
         return ConcessaoBuilder.DoPerfil(perfil, scope.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>())
-            .Para(new Identidade(TestAuthHandler.DefaultIssuer, gestor.Sub.ToString()))
+            .Para(new Identidade(TestAuthHandler.DefaultIssuer, gestor.ContaId.ToString()))
             .NaInstituicao()
-            .ConcedidaPor(new Identidade(TestAuthHandler.DefaultIssuer, Paulo.Sub.ToString()))
+            .ConcedidaPor(new Identidade(TestAuthHandler.DefaultIssuer, Paulo.ContaId.ToString()))
             .Em(DateTimeOffset.UtcNow);
     }
 
@@ -336,9 +336,9 @@ public abstract partial class InstalacaoTestBase
     private protected async Task<string[]> TiposDaTrilhaDaConcessaoAsync(Guid instalacaoId, Persona beneficiario)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        string sub = beneficiario.Sub.ToString();
+        string contaId = beneficiario.ContaId.ToString();
         Guid concessao = await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes.AsNoTracking()
-            .Where(c => c.OrigemId == instalacaoId && c.BeneficiarioSub == sub)
+            .Where(c => c.OrigemId == instalacaoId && c.BeneficiarioContaId == contaId)
             .Select(c => c.Id)
             .SingleAsync();
 
@@ -353,7 +353,7 @@ public abstract partial class InstalacaoTestBase
         JsonElement pagina = await LerAsync(gestor, "/api/autorizacao/instalacoes/tentativas-sem-pendencia");
         JsonElement itens = pagina.ValueKind == JsonValueKind.Array ? pagina : pagina.GetProperty("items");
         return [.. itens.EnumerateArray().Select(t => (
-            t.GetProperty("autor").GetProperty("sub").GetString()!,
+            t.GetProperty("autor").GetProperty("contaId").GetString()!,
             t.GetProperty("resultado").GetString()!))];
     }
 
@@ -376,6 +376,6 @@ public abstract partial class InstalacaoTestBase
 
     private protected sealed record Persona(string Username, string Email)
     {
-        public Guid Sub { get; } = SubDe(Username);
+        public Guid ContaId { get; } = ContaIdDe(Username);
     }
 }

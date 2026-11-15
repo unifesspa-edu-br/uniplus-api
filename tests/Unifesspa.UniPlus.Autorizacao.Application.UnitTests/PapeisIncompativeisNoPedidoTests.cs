@@ -61,7 +61,7 @@ public sealed class PapeisIncompativeisNoPedidoTests
             .ConcederAsync(Decisao(PerfisDeSistema.EncarregadoDeDadosId), DateTimeOffset.UtcNow, CancellationToken.None);
 
         concedida.Error!.Code.Should().Be(PedidoErrorCodes.PapeisIncompativeis);
-        travas.Should().Equal("pessoa:" + Betina.Identidade.Sub);
+        travas.Should().Equal("pessoa:" + Betina.Identidade.ContaId);
         await concessoes.DidNotReceiveWithAnyArgs().AdicionarAsync(default!, default);
     }
 

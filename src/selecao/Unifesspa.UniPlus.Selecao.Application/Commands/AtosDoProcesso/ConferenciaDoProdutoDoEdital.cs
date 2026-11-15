@@ -142,13 +142,13 @@ internal static class ConferenciaDoProdutoDoEdital
     }
 
     /// <summary>
-    /// A confirmação da política de divulgação, exigida quando o tipo é resultado. Devolve o sub de quem
+    /// A confirmação da política de divulgação, exigida quando o tipo é resultado. Devolve o contaId de quem
     /// confirmou, para ficar no registro, ou nulo quando a confirmação não foi pedida.
     /// </summary>
     public static Result<string?> Politica(
         TipoAtoPublicadoView tipo,
         bool confirmada,
-        string? sub,
+        string? contaId,
         GrafoConfiguracao grafo)
     {
         ArgumentNullException.ThrowIfNull(tipo);
@@ -171,11 +171,11 @@ internal static class ConferenciaDoProdutoDoEdital
                 $"O tipo de ato '{tipo.Codigo}' é um resultado, e publicá-lo exige confirmar que o PDF segue a política de divulgação do certame, a da versão vigente: campos públicos — {campos}. O sistema não confere o conteúdo do PDF."));
         }
 
-        return string.IsNullOrWhiteSpace(sub)
+        return string.IsNullOrWhiteSpace(contaId)
             ? Result<string?>.Failure(new DomainError(
                 AtoDoProcessoErrorCodes.UsuarioNaoIdentificado,
                 "O token não traz o claim sub, e a confirmação da política de divulgação precisa registrar quem a fez."))
-            : Result<string?>.Success(sub);
+            : Result<string?>.Success(contaId);
     }
 
     private static string CodigoDoImpedimento(ImpedimentoDoProduto motivo) =>

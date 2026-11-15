@@ -15,19 +15,19 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 public sealed class RevogarConcessaoCommandHandlerTests
 {
-    [Theory(DisplayName = "Sem emissor ou sub do autor, a revogação é recusada antes de tocar a concessão")]
+    [Theory(DisplayName = "Sem emissor ou conta do autor, a revogação é recusada antes de tocar a concessão")]
     [InlineData(null, "diogo.souza")]
     [InlineData("", "diogo.souza")]
     [InlineData("https://idp.test/realms/unifesspa", null)]
     [InlineData("https://idp.test/realms/unifesspa", "  ")]
-    public async Task Handle_AutorNaoIdentificado_Recusa(string? emissor, string? sub)
+    public async Task Handle_AutorNaoIdentificado_Recusa(string? emissor, string? contaId)
     {
         Result resultado = await RevogarConcessaoCommandHandler.Handle(
             new RevogarConcessaoCommand(Guid.NewGuid(), "Mudou de função."),
             new RevogacaoDaConcessao(new RepositorioIntocavel(), new PapelIntocavel(), new UnidadeDeTrabalhoIntocavel()),
             new TravasDaRevogacao(new RepositorioIntocavel(), new PapelIntocavel(), new PapeisDeTeste()),
             new UnidadeDeTrabalhoIntocavel(),
-            new Usuario(emissor, sub),
+            new Usuario(emissor, contaId),
             TimeProvider.System,
             CancellationToken.None);
 

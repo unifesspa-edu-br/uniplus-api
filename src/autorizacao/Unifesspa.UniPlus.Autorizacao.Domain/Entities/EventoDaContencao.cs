@@ -37,7 +37,7 @@ public sealed class EventoDaContencao : IForensicEntity, IRegistroDaTrilhaDeCont
 
     public string? AtorEmissor { get; private set; }
 
-    public string? AtorSub { get; private set; }
+    public string? AtorContaId { get; private set; }
 
     public string? AtorNome { get; private set; }
 
@@ -99,7 +99,7 @@ public sealed class EventoDaContencao : IForensicEntity, IRegistroDaTrilhaDeCont
     {
         Ator = AtorDoEventoDaContencao.Humano;
         AtorEmissor = autor.Emissor;
-        AtorSub = autor.Sub;
+        AtorContaId = autor.ContaId;
         AtorNome = autor.Nome;
         Motivo = motivo;
 

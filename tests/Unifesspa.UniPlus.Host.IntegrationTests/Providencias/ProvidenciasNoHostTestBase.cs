@@ -44,7 +44,7 @@ public abstract class ProvidenciasNoHostTestBase : PedidosDeConcessaoTestBase
     private protected async Task<Governanca> GovernancaAsync()
     {
         await ResetarAsync();
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.Sub.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
         return new Governanca(
             await ClienteComPermissoesAsync(Diogo, Administrar), await ClienteComPermissoesAsync(Isabella, Administrar),
             await ClienteComPermissoesAsync(Betina, Administrar), await ClienteComPermissoesAsync(Marlene, AprovarProtecaoDeDados), Cliente(Cecilia));
@@ -53,7 +53,7 @@ public abstract class ProvidenciasNoHostTestBase : PedidosDeConcessaoTestBase
     /// <summary>A concessão de Leandro num perfil sensível novo, com o e-mail dele e o fim da vigência informado.</summary>
     private protected async Task<Guid> ConcessaoDeLeandroAsync(DateTimeOffset? validaAte = null) =>
         await ConcessoesDeTeste.ConcederAsync(
-            Fixture.Factory.Services, Leandro.Sub.ToString(), await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()), validaAte, Leandro.Email);
+            Fixture.Factory.Services, Leandro.ContaId.ToString(), await SemearPerfilSensivelAsync(), EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()), validaAte, Leandro.Email);
 
     private protected static async Task<Guid> SolicitarAsync(HttpClient encarregada, Guid concessaoId)
     {

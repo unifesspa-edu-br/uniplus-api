@@ -168,7 +168,7 @@ public sealed class CorridasDaTrocaDeVersaoNoHostTests : PedidosDeConcessaoTestB
         await ResetarAsync();
         Guid perfil = await SemearPerfilAsync("Análise de atendimento", Analisar, Laudos);
         Guid concessao = await ConcessoesDeTeste.ConcederAsync(
-            Fixture.Factory.Services, Leandro.Sub.ToString(), perfil, EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()));
+            Fixture.Factory.Services, Leandro.ContaId.ToString(), perfil, EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()));
 
         return (perfil, concessao);
     }

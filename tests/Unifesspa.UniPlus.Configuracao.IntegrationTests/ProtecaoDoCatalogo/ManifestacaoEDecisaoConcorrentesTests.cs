@@ -184,8 +184,8 @@ public sealed class ManifestacaoEDecisaoConcorrentesTests : ManifestacaoDaProtec
         trava.Contexto.Database.ExecuteSqlInterpolatedAsync(
             $"""
             INSERT INTO configuracao.manifestacoes_da_protecao
-                (id, cadastro, item_id, ciclo, parecer, texto, substitui_id, autor_emissor, autor_sub, autor_nome, instante)
+                (id, cadastro, item_id, ciclo, parecer, texto, substitui_id, autor_emissor, autor_conta_id, autor_nome, instante)
             VALUES ({Guid.CreateVersion7()}, {cadastro}, {id}, 1, 'INADEQUADA', 'O dado é sensível.', NULL,
-                    {TestAuthHandler.DefaultIssuer}, {Kevin.Sub}, {Kevin.Nome}, now())
+                    {TestAuthHandler.DefaultIssuer}, {Kevin.ContaId}, {Kevin.Nome}, now())
             """);
 }

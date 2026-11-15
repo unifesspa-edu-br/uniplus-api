@@ -96,7 +96,7 @@ public sealed class ConcessaoEndpointTests : ConcessaoEndpointTestBase
         (await EnviarAsync(diogo, HttpMethod.Post, $"{Rota}/{revogada}/revogacao", new { motivo = Motivo, confirmacaoEmail = EmailDoBeneficiario }))
             .StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        string filtro = $"?pessoa={Leandro.Sub}&emissor={Uri.EscapeDataString(Leandro.Emissor)}&perfil={perfil}";
+        string filtro = $"?contaId={Leandro.ContaId}&emissor={Uri.EscapeDataString(Leandro.Emissor)}&perfil={perfil}";
 
         (await IdsAsync(diogo, filtro)).Should().Equal(ativa);
         (await IdsAsync(diogo, filtro + "&situacao=revogada")).Should().Equal(revogada);
@@ -112,7 +112,7 @@ public sealed class ConcessaoEndpointTests : ConcessaoEndpointTestBase
         await ConcederAsync(perfil, Leandro, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), validaAteDaquiAMinutos: 600);
         await EnvelhecerAsync(vencida);
         using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
-        string filtro = $"?pessoa={Leandro.Sub}&emissor={Uri.EscapeDataString(Leandro.Emissor)}&perfil={perfil}";
+        string filtro = $"?contaId={Leandro.ContaId}&emissor={Uri.EscapeDataString(Leandro.Emissor)}&perfil={perfil}";
 
         (await IdsAsync(diogo, filtro + "&situacao=VENCIDA")).Should().Equal(vencida);
         (await IdsAsync(diogo, filtro)).Should().HaveCount(1).And.NotContain(vencida);
@@ -135,7 +135,7 @@ public sealed class ConcessaoEndpointTests : ConcessaoEndpointTestBase
     {
         using HttpClient diogo = await ClienteDoGestorAsync(Diogo);
 
-        using HttpResponseMessage semEmissor = await diogo.GetAsync(new Uri($"{Rota}?pessoa={Leandro.Sub}", UriKind.Relative));
+        using HttpResponseMessage semEmissor = await diogo.GetAsync(new Uri($"{Rota}?contaId={Leandro.ContaId}", UriKind.Relative));
         semEmissor.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         (await semEmissor.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.concessao.filtro_de_pessoa_invalido");
         (await diogo.GetAsync(new Uri($"{Rota}?emissor={Uri.EscapeDataString(Leandro.Emissor)}", UriKind.Relative)))
@@ -163,8 +163,8 @@ public sealed class ConcessaoEndpointTests : ConcessaoEndpointTestBase
         using JsonDocument concessao = await LerAsync(diogo, $"{Rota}/{id}");
 
         JsonElement raiz = concessao.RootElement;
-        (raiz.GetProperty("beneficiario").GetProperty("sub").GetString(), raiz.GetProperty("perfil").GetProperty("id").GetGuid(), raiz.GetProperty("origem").GetProperty("tipo").GetString())
-            .Should().Be((Leandro.Sub, perfil, "pedido"));
+        (raiz.GetProperty("beneficiario").GetProperty("contaId").GetString(), raiz.GetProperty("perfil").GetProperty("id").GetGuid(), raiz.GetProperty("origem").GetProperty("tipo").GetString())
+            .Should().Be((Leandro.ContaId, perfil, "pedido"));
         (raiz.GetProperty("escopo").GetProperty("tipo").GetString(), raiz.GetProperty("escopo").GetProperty("unidadeId").GetGuid()).Should().Be(("unidade", unidade));
         raiz.GetProperty("ativa").GetBoolean().Should().BeTrue();
         raiz.GetProperty("revogadaEm").ValueKind.Should().Be(JsonValueKind.Null);

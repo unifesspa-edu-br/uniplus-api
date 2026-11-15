@@ -14,7 +14,7 @@ public enum ResultadoDoAcesso
     Negado = 1,
 
     /// <summary>
-    /// O token não traz o que identifica o solicitante (emissor, <i>subject</i> ou
+    /// O token não traz o que identifica o solicitante (emissor, <i>contaId</i> ou
     /// <c>jti</c>), então não houve decisão de acesso a tomar. A borda responde
     /// <c>401</c>: dizer <c>403</c> afirmaria uma decisão que não foi tomada.
     /// </summary>

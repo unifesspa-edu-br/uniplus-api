@@ -51,7 +51,7 @@ public static class ProfileEndpointsExtensions
             .ListarAsync(userContext.Issuer, userContext.UserId, concessoes, unidades, agora, cancellationToken)
             .ConfigureAwait(false);
 
-        // Sem emissor ou subject a identidade do token é incompleta: é falha de autenticação, não de acesso.
+        // Sem emissor ou contaId a identidade do token é incompleta: é falha de autenticação, não de acesso.
         if (perfis.IsFailure)
         {
             return Results.Challenge();

@@ -94,7 +94,7 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
     public async Task Lote_BeneficiarioRepresentante_AguardaAProtecaoDeDados()
     {
         JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Leandro.Sub.ToString(), TipoDeGovernanca.RepresentanteDoControlador, Leandro.Email);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Leandro.ContaId.ToString(), TipoDeGovernanca.RepresentanteDoControlador, Leandro.Email);
         using HttpClient gestao = await GestaoAsync();
 
         using HttpResponseMessage resposta = await Lote(gestao, cenario);

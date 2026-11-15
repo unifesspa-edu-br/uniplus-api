@@ -91,7 +91,7 @@ public sealed class JanelaDeMigracaoPrazoNoHostTests : JanelaDeMigracaoNoHostTes
         await TrocarComposicaoAsync(cenario.PerfilId, Consultar);
         Guid posterior = await ConcessoesDeTeste.ConcederAsync(
             Fixture.Factory.Services,
-            Betina.Sub.ToString(),
+            Betina.ContaId.ToString(),
             cenario.PerfilId,
             EscopoDaConcessao.DaUnidade(Guid.CreateVersion7()),
             email: Betina.Email);

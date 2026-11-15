@@ -9,7 +9,7 @@ namespace Unifesspa.UniPlus.Authorization.Errors;
 public static class AuthorizationErrorCodes
 {
     public const string UsuarioRefEmissorObrigatorio = "Authorization.UsuarioRef.EmissorObrigatorio";
-    public const string UsuarioRefSubjectObrigatorio = "Authorization.UsuarioRef.SubjectObrigatorio";
+    public const string UsuarioRefContaIdObrigatorio = "Authorization.UsuarioRef.ContaIdObrigatorio";
     public const string UsuarioRefUsuarioIdInvalido = "Authorization.UsuarioRef.UsuarioIdInvalido";
 
     public const string EffectiveGrantPermissaoObrigatoria = "Authorization.EffectiveGrant.PermissaoObrigatoria";
@@ -53,6 +53,6 @@ public static class AuthorizationErrorCodes
     // responde 401), não negativas de autorização — não houve decisão de acesso.
     public const string SujeitoNaoAutenticado = "Authorization.Sujeito.NaoAutenticado";
     public const string SujeitoIssuerAusente = "Authorization.Sujeito.IssuerAusente";
-    public const string SujeitoSubjectAusente = "Authorization.Sujeito.SubjectAusente";
+    public const string SujeitoContaIdAusente = "Authorization.Sujeito.ContaIdAusente";
     public const string SujeitoJtiAusente = "Authorization.Sujeito.JtiAusente";
 }

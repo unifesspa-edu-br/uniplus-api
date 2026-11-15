@@ -44,7 +44,7 @@ public sealed class InstalacaoConcorrenteComARevogacaoTests : InstalacaoTestBase
             () => EnviarAsync(paulo, HttpMethod.Post, $"{Rota}/confirmacao", new { codigo }));
 
         await ConferirDesfechoAsync(revogacao, confirmacao);
-        (await ListarGestoresAtivosAsync()).Should().BeEquivalentTo([Betina.Sub.ToString(), Manoel.Sub.ToString()]);
+        (await ListarGestoresAtivosAsync()).Should().BeEquivalentTo([Betina.ContaId.ToString(), Manoel.ContaId.ToString()]);
     }
 
     private static Task<HttpResponseMessage> RevogarAsync(HttpClient administrador, Guid concessao, Persona beneficiario) =>
@@ -85,7 +85,7 @@ public sealed class InstalacaoConcorrenteComARevogacaoTests : InstalacaoTestBase
         await using TransacaoRetidaDeTeste retida = await TransacaoRetidaDeTeste.AbrirAsync(Fixture.Factory.Services);
         await retida.Servicos.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(
             "SELECT pg_advisory_xact_lock(hashtextextended('autorizacao.pessoa:' || {0} || chr(10) || {1}, 0))",
-            TestAuthHandler.DefaultIssuer, Diogo.Sub.ToString());
+            TestAuthHandler.DefaultIssuer, Diogo.ContaId.ToString());
 
         Task<HttpResponseMessage> tarefaDaPrimeira = primeira();
         await retida.AguardarBloqueioAsync(1);
@@ -101,7 +101,7 @@ public sealed class InstalacaoConcorrenteComARevogacaoTests : InstalacaoTestBase
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         // Com o e-mail do beneficiário, que a revogação exige como confirmação.
         Concessao concessao = (await ConcessaoDeGestorAsync(scope, gestor))
-            .Para(new Identidade(TestAuthHandler.DefaultIssuer, gestor.Sub.ToString(), gestor.Username), gestor.Email)
+            .Para(new Identidade(TestAuthHandler.DefaultIssuer, gestor.ContaId.ToString(), gestor.Username), gestor.Email)
             .Construir();
         await scope.ServiceProvider.GetRequiredService<IConcessaoRepository>().AdicionarAsync(concessao);
         await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().SaveChangesAsync();
@@ -110,9 +110,9 @@ public sealed class InstalacaoConcorrenteComARevogacaoTests : InstalacaoTestBase
     private async Task<Guid> ConcessaoDeGestorAsync(Persona gestor)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        string sub = gestor.Sub.ToString();
+        string contaId = gestor.ContaId.ToString();
         return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes.AsNoTracking()
-            .Where(c => c.PerfilId == PerfisDeSistema.GestorDeAcessosId && c.BeneficiarioSub == sub && c.RevogadaEm == null)
+            .Where(c => c.PerfilId == PerfisDeSistema.GestorDeAcessosId && c.BeneficiarioContaId == contaId && c.RevogadaEm == null)
             .Select(c => c.Id)
             .SingleAsync();
     }

@@ -224,7 +224,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     private static IUserContext UsuarioDoHandler()
     {
         IUserContext userContext = Substitute.For<IUserContext>();
-        userContext.UserId.Returns("user-sub-1");
+        userContext.UserId.Returns("user-conta-1");
         return userContext;
     }
 

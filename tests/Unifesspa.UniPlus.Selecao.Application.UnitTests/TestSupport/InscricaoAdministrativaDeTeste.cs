@@ -166,8 +166,8 @@ internal sealed class InscricaoAdministrativaDeTeste
         codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(envelope));
 
         Inscricao inscricao = Inscricao.Reidratar(
-            InscricaoId, ProcessoId, _cpf, "sub-candidato", "https://idp.test", Situacao, versao.Id, OfertaCursoId, null,
-            Situacao == SituacaoInscricao.Rascunho ? null : "000001", _cancelamento?.Em, _cancelamento is null ? null : "sub-candidato", _cancelamento?.Motivo,
+            InscricaoId, ProcessoId, _cpf, "conta-candidato", "https://idp.test", Situacao, versao.Id, OfertaCursoId, null,
+            Situacao == SituacaoInscricao.Rascunho ? null : "000001", _cancelamento?.Em, _cancelamento is null ? null : "conta-candidato", _cancelamento?.Motivo,
             _respostas, _derivadas, _ocorrencias, [], new Dictionary<string, DefinicaoDaResposta>(StringComparer.Ordinal),
             revisao: 1, DateTimeOffset.UtcNow, null);
 

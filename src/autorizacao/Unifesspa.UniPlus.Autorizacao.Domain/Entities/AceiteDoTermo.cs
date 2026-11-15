@@ -23,13 +23,13 @@ public sealed class AceiteDoTermo : IForensicEntity
 
     public string PessoaEmissor { get; private init; } = string.Empty;
 
-    public string PessoaSub { get; private init; } = string.Empty;
+    public string PessoaContaId { get; private init; } = string.Empty;
 
     public string? PessoaNome { get; private init; }
 
     public DateTimeOffset AceitoEm { get; private init; }
 
-    public Identidade Pessoa => new(PessoaEmissor, PessoaSub, PessoaNome);
+    public Identidade Pessoa => new(PessoaEmissor, PessoaContaId, PessoaNome);
 
     // Construtor de materialização do EF Core.
     private AceiteDoTermo()
@@ -44,7 +44,7 @@ public sealed class AceiteDoTermo : IForensicEntity
             Numero = termo.Numero,
             Resumo = termo.Resumo,
             PessoaEmissor = pessoa.Emissor,
-            PessoaSub = pessoa.Sub,
+            PessoaContaId = pessoa.ContaId,
             PessoaNome = pessoa.Nome,
             AceitoEm = instante,
         };

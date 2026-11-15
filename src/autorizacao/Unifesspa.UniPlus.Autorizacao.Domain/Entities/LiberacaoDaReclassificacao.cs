@@ -29,7 +29,7 @@ public sealed class LiberacaoDaReclassificacao : IForensicEntity, IRegistroDaTri
 
     public string DecisorEmissor { get; private set; } = string.Empty;
 
-    public string DecisorSub { get; private set; } = string.Empty;
+    public string DecisorContaId { get; private set; } = string.Empty;
 
     public string? DecisorNome { get; private set; }
 
@@ -43,7 +43,7 @@ public sealed class LiberacaoDaReclassificacao : IForensicEntity, IRegistroDaTri
 
     public long OrdemNaTrilha { get; private set; }
 
-    public Identidade Decisor => new(DecisorEmissor, DecisorSub, DecisorNome);
+    public Identidade Decisor => new(DecisorEmissor, DecisorContaId, DecisorNome);
 
     // Construtor de materialização do EF Core.
     private LiberacaoDaReclassificacao()
@@ -68,7 +68,7 @@ public sealed class LiberacaoDaReclassificacao : IForensicEntity, IRegistroDaTri
     private LiberacaoDaReclassificacao PorDecisor(PedidoDeDecisaoDaReclassificacao pedido)
     {
         DecisorEmissor = pedido.Decisor.Emissor;
-        DecisorSub = pedido.Decisor.Sub;
+        DecisorContaId = pedido.Decisor.ContaId;
         DecisorNome = pedido.Decisor.Nome;
         DecisorTemConcessao = pedido.DecisorTemConcessao;
 

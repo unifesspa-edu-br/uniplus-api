@@ -47,7 +47,7 @@ internal sealed class LiberacaoDaReclassificacaoConfiguration : IEntityTypeConfi
         builder.Property(l => l.Resultado).HasConversion(ResultadoConverter).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(l => l.Motivo).HasMaxLength(MotivosDaVersao.MaxLength);
         builder.Property(l => l.DecisorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(l => l.DecisorSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(l => l.DecisorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(l => l.DecisorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(l => l.DecisorTemConcessao).IsRequired();
         builder.Property(l => l.LoteId).IsRequired();

@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// da requisição a partir do que já está em mãos e devolve o veredito.
 /// </summary>
 /// <remarks>
-/// Sujeito que não se resolve — token sem emissor, sem <i>subject</i> ou sem
+/// Sujeito que não se resolve — token sem emissor, sem <i>contaId</i> ou sem
 /// <c>jti</c> — não vira negativa de autorização: não houve decisão a tomar, e o
 /// desfecho é <see cref="ResultadoDoAcesso.IdentidadeIncompleta"/>, que a borda
 /// responde como <c>401</c>.
@@ -154,7 +154,7 @@ internal sealed class VerificadorDeAcessoHttp : IVerificadorDeAcesso
     private Task GravarAsync(IReadOnlyList<RegistroDecisaoAcesso> registros, CancellationToken cancellationToken) =>
         registros.Count == 0 ? Task.CompletedTask : _registro.RegistrarAsync(registros, cancellationToken);
 
-    // Sem emissor, subject ou jti não há sujeito sobre o qual decidir. A falha é de autenticação, e devolvê-la como
+    // Sem emissor, contaId ou jti não há sujeito sobre o qual decidir. A falha é de autenticação, e devolvê-la como
     // negativa faria a borda responder 403 — afirmando uma decisão de acesso que não foi tomada.
     private async Task<(AuthorizationSubject Sujeito, AuthorizationRequestContext Contexto)?> ResolverAsync(
         CancellationToken cancellationToken)

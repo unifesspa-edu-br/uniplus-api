@@ -17,7 +17,7 @@ public static class InstalacaoMapping
             i.Id,
             i.Situacao.ToCodigo(),
             i.NumeroDoDocumento,
-            [.. i.Gestores.Select(g => new IdentidadeDto(g.Emissor, g.Sub))],
+            [.. i.Gestores.Select(g => new IdentidadeDto(g.Emissor, g.ContaId))],
             i.IniciadaEm,
             aguardandoCodigo ? i.CodigoExpiraEm : null,
             aguardandoCodigo ? Instalacao.MaximoDeTentativas - i.Tentativas : null);
@@ -28,6 +28,6 @@ public static class InstalacaoMapping
         ArgumentNullException.ThrowIfNull(t);
 
         return new TentativaDeInstalacaoDto(
-            t.Id, t.InstalacaoId, new IdentidadeDto(t.AutorEmissor, t.AutorSub), t.Instante, t.Resultado.ToCodigo());
+            t.Id, t.InstalacaoId, new IdentidadeDto(t.AutorEmissor, t.AutorContaId), t.Instante, t.Resultado.ToCodigo());
     }
 }

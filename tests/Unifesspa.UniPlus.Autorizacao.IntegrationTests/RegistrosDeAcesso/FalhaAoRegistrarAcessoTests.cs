@@ -92,12 +92,12 @@ public sealed class FalhaAoRegistrarAcessoTests
                 services.AddSingleton<IRegistroOperacionalRestrito, RegistroQueFalha>();
             }));
 
-    private static HttpClient Cliente(WebApplicationFactory<HostAssemblyMarker> fabrica, string sub)
+    private static HttpClient Cliente(WebApplicationFactory<HostAssemblyMarker> fabrica, string contaId)
     {
         HttpClient client = fabrica.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, sub);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, sub);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, contaId);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, contaId);
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "teste@unifesspa.edu.br");
 
         return client;

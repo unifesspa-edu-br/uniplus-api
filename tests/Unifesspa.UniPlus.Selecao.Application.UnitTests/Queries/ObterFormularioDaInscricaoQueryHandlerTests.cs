@@ -31,11 +31,11 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
     private static readonly Guid ProcessoId = Guid.CreateVersion7();
     private const string SchemaVersion = "0.0.22";
 
-    private static IUserContext UsuarioComCpf(Cpf cpf, string sub = "sub-1")
+    private static IUserContext UsuarioComCpf(Cpf cpf, string contaId = "conta-1")
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(cpf.Valor);
-        contexto.UserId.Returns(sub);
+        contexto.UserId.Returns(contaId);
         return contexto;
     }
 
@@ -66,7 +66,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
 
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             ProcessoId, Encoding.UTF8.GetBytes($$$"""{"documentosExigidos": {"dataReferenciaFatos": null, "exigencias": [{{{exigencias}}}]}}"""), SchemaVersion, "canonical-json/sha256@v1",
-            Guid.CreateVersion7(), new string('a', 64), "user-sub-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
+            Guid.CreateVersion7(), new string('a', 64), "user-conta-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
 
         return (versao, envelope);
     }
@@ -116,7 +116,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao();
         Inscricao existente = Inscricao.Iniciar(
-            ProcessoId, cpf, "sub-1", "https://issuer", versao.Id).Value!;
+            ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -146,7 +146,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
             """);
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>())
-            .Returns(Inscricao.Iniciar(ProcessoId, cpf, "sub-1", "https://issuer", versao.Id).Value!);
+            .Returns(Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
         processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
@@ -167,7 +167,7 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao(fase);
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>())
-            .Returns(Inscricao.Iniciar(ProcessoId, cpf, "sub-1", "https://issuer", versao.Id).Value!);
+            .Returns(Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
         processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
         processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);

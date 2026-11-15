@@ -35,7 +35,7 @@ internal sealed class TentativaDeInstalacaoConfiguration : IEntityTypeConfigurat
         builder.HasKey(t => t.Id);
 
         builder.Property(t => t.AutorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(t => t.AutorSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(t => t.AutorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(t => t.Resultado).HasConversion(ResultadoConverter).HasMaxLength(ResultadoMaxLength).IsRequired();
         builder.Property(t => t.Instante).IsRequired();
 

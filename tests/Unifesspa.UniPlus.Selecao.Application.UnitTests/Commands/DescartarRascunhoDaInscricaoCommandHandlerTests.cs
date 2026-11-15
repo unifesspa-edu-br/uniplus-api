@@ -35,19 +35,19 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         classificacaoProtecao: "PESSOAL", formato: "LIVRE", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
     private static Inscricao NovoRascunho(Guid versaoFormularioId) =>
-        Inscricao.Iniciar(ProcessoId, Dono, "sub-1", "https://issuer", versaoFormularioId).Value!;
+        Inscricao.Iniciar(ProcessoId, Dono, "conta-1", "https://issuer", versaoFormularioId).Value!;
 
-    private static IUserContext Usuario(string sub)
+    private static IUserContext Usuario(string contaId)
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(Dono.Valor);
-        contexto.UserId.Returns(sub);
+        contexto.UserId.Returns(contaId);
         return contexto;
     }
 
     /// <summary>A divulgação aponta para <paramref name="divulgada"/>; o rascunho nasce na versão <paramref name="fixada"/>, que é a mesma quando a retificação não mudou nada.</summary>
     private static async Task<(Result Resultado, IInscricaoRepository Repositorio, IUnitOfWork UnitOfWork)> Descartar(
-        Func<Inscricao, string> precondicao, Inscricao rascunho, VersaoConfiguracao fixada, VersaoConfiguracao divulgada, GrafoConfiguracao grafo, string sub = "sub-1", DateTimeOffset? agora = null,
+        Func<Inscricao, string> precondicao, Inscricao rascunho, VersaoConfiguracao fixada, VersaoConfiguracao divulgada, GrafoConfiguracao grafo, string contaId = "conta-1", DateTimeOffset? agora = null,
         IDocumentoDaInscricaoRepository? documentos = null)
     {
         IInscricaoRepository repositorio = Substitute.For<IInscricaoRepository>();
@@ -62,17 +62,17 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
 
         Result resultado = await DescartarRascunhoDaInscricaoCommandHandler.Handle(
             new DescartarRascunhoDaInscricaoCommand(ProcessoId, PrecondicaoIfMatch.DeTags([precondicao(rascunho)])),
-            repositorio, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), new RelogioFixo(agora ?? DivulgacaoDeTeste.DentroDoPeriodo), unitOfWork, Usuario(sub),
+            repositorio, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), new RelogioFixo(agora ?? DivulgacaoDeTeste.DentroDoPeriodo), unitOfWork, Usuario(contaId),
             documentos ?? Substitute.For<IDocumentoDaInscricaoRepository>(), CancellationToken.None);
         return (resultado, repositorio, unitOfWork);
     }
 
     private static Task<(Result Resultado, IInscricaoRepository Repositorio, IUnitOfWork UnitOfWork)> DescartarNaVersaoDivulgada(
-        Func<Inscricao, string> precondicao, Func<Guid, Inscricao>? rascunho = null, string sub = "sub-1", DateTimeOffset? agora = null,
+        Func<Inscricao, string> precondicao, Func<Guid, Inscricao>? rascunho = null, string contaId = "conta-1", DateTimeOffset? agora = null,
         IDocumentoDaInscricaoRepository? documentos = null)
     {
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
-        return Descartar(precondicao, (rascunho ?? NovoRascunho)(versao.Id), versao, versao, grafo, sub, agora, documentos);
+        return Descartar(precondicao, (rascunho ?? NovoRascunho)(versao.Id), versao, versao, grafo, contaId, agora, documentos);
     }
 
     [Fact(DisplayName = "Descartar o próprio rascunho com o If-Match corrente remove a inscrição e grava")]
@@ -149,7 +149,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
     [Fact(DisplayName = "Rascunho de outro candidato é recusado e não é removido")]
     public async Task Handle_RascunhoDeOutroCandidato_Recusa()
     {
-        (Result resultado, IInscricaoRepository repositorio, _) = await DescartarNaVersaoDivulgada(static r => r.ETag, sub: "sub-outro");
+        (Result resultado, IInscricaoRepository repositorio, _) = await DescartarNaVersaoDivulgada(static r => r.ETag, contaId: "conta-outro");
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.DonoDivergente);
         await repositorio.DidNotReceive().RemoverAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());

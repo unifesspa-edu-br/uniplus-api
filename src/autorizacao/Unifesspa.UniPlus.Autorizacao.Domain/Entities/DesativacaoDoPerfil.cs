@@ -17,7 +17,7 @@ public sealed class DesativacaoDoPerfil : EntityBase, IRegistroDaTrilhaDeContenc
 
     public string DesativadaPorEmissor { get; private init; } = string.Empty;
 
-    public string DesativadaPorSub { get; private init; } = string.Empty;
+    public string DesativadaPorContaId { get; private init; } = string.Empty;
 
     public string? DesativadaPorNome { get; private init; }
 
@@ -27,7 +27,7 @@ public sealed class DesativacaoDoPerfil : EntityBase, IRegistroDaTrilhaDeContenc
 
     public string? ReativadaPorEmissor { get; private set; }
 
-    public string? ReativadaPorSub { get; private set; }
+    public string? ReativadaPorContaId { get; private set; }
 
     public string? ReativadaPorNome { get; private set; }
 
@@ -39,7 +39,7 @@ public sealed class DesativacaoDoPerfil : EntityBase, IRegistroDaTrilhaDeContenc
 
     public bool Aberta => ReativadaEm is null;
 
-    public Identidade DesativadaPor => new(DesativadaPorEmissor, DesativadaPorSub, DesativadaPorNome);
+    public Identidade DesativadaPor => new(DesativadaPorEmissor, DesativadaPorContaId, DesativadaPorNome);
 
     // Construtor de materialização do EF Core.
     private DesativacaoDoPerfil()
@@ -52,7 +52,7 @@ public sealed class DesativacaoDoPerfil : EntityBase, IRegistroDaTrilhaDeContenc
             PerfilId = perfilId,
             DesativadaEm = instante,
             DesativadaPorEmissor = autor.Emissor,
-            DesativadaPorSub = autor.Sub,
+            DesativadaPorContaId = autor.ContaId,
             DesativadaPorNome = autor.Nome,
             Motivo = motivo,
             OrdinalLocal = ordinal,
@@ -62,7 +62,7 @@ public sealed class DesativacaoDoPerfil : EntityBase, IRegistroDaTrilhaDeContenc
     {
         ReativadaEm = instante;
         ReativadaPorEmissor = autor.Emissor;
-        ReativadaPorSub = autor.Sub;
+        ReativadaPorContaId = autor.ContaId;
         ReativadaPorNome = autor.Nome;
         MotivoDaReativacao = motivo;
     }

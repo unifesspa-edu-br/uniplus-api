@@ -77,8 +77,8 @@ public sealed class ProvidenciaBuilder
 
     public static AtoDoAgente AtoDeDiogo(DateTimeOffset? instante = null) => new(Diogo, instante ?? Agora);
 
-    public static PessoaNoToken Pessoa(string sub, string nome, string email, bool verificado = true) =>
-        new(new Identidade(Emissor, sub, nome), nome, email, verificado);
+    public static PessoaNoToken Pessoa(string contaId, string nome, string email, bool verificado = true) =>
+        new(new Identidade(Emissor, contaId, nome), nome, email, verificado);
 
     private static Perfil Perfil() =>
         PerfisDeTeste.Vigente("Banca de heteroidentificação", "Analisa os documentos da banca.", ["selecao:inscricoes:operar"], Catalogo);

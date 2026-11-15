@@ -28,8 +28,8 @@ internal sealed class TitularesDaGovernanca : ITitularesDaPermissao
         string codigoDaPermissao, CancellationToken cancellationToken = default)
     {
         TitularDaPermissao[] titulares = codigoDaPermissao == Gestao
-            ? [new(Emissor, Diogo.Sub, EmailDiogo), new(Emissor, Isabella.Sub, EmailIsabella)]
-            : [new(Emissor, Marlene.Sub, EmailMarlene), new(Emissor, Isabella.Sub, EmailIsabella)];
+            ? [new(Emissor, Diogo.ContaId, EmailDiogo), new(Emissor, Isabella.ContaId, EmailIsabella)]
+            : [new(Emissor, Marlene.ContaId, EmailMarlene), new(Emissor, Isabella.ContaId, EmailIsabella)];
 
         return Task.FromResult<IReadOnlyList<TitularDaPermissao>>(titulares);
     }

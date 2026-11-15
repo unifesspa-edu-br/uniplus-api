@@ -39,7 +39,7 @@ internal sealed class CenarioDaGovernancaDaVersao
         ConcessoesNaMemoria concessoes = Concessoes;
         Perfis = new PerfisNaMemoria([perfil, .. outrosPerfis ?? []]);
         Unidade = new UnidadeDeTrabalho();
-        Verificador = new VerificadorDeTeste(ator?.Sub ?? "sem-autor", permitidas);
+        Verificador = new VerificadorDeTeste(ator?.ContaId ?? "sem-autor", permitidas);
         OperacaoSobreOPerfil operacao = new(Perfis, Unidade, tempo);
         AutoriaDaOperacao autoria = new(new Usuario(ator), tempo, concessoes);
         ConferenciaDoCatalogoNaVersao conferencia = new(new ReclassificacoesNaMemoria(), new CatalogoDaAplicacao([]), tempo);

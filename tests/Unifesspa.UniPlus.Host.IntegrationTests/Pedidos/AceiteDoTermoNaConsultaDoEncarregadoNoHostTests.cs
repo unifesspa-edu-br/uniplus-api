@@ -43,15 +43,15 @@ public sealed class AceiteDoTermoNaConsultaDoEncarregadoNoHostTests : TermoNoHos
 
         aceite.GetProperty("pessoa").GetProperty("nome").GetString().Should().Be(Betina.Nome);
         aceite.GetProperty("resumo").GetString().Should().Be(Vigente.Resumo);
-        Registro.Registrados.Skip(antes).Should().Contain(r => r.AtorSubject == Cecilia.Sub.ToString()
+        Registro.Registrados.Skip(antes).Should().Contain(r => r.AtorSubject == Cecilia.ContaId.ToString()
             && r.Permissao == "autorizacao:pedidos:consultar" && r.ResourceId == id && r.Resultado == ResultadoDoAcesso.Permitido);
     }
 
     // Cecília só com o perfil de Encarregado de dados, recém-concedido e vigente.
     private async Task<HttpClient> EncarregadoDeDadosAsync()
     {
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Cecilia.Sub.ToString());
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.Sub.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString());
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
         return Cliente(Cecilia);
     }
 }

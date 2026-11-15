@@ -27,17 +27,17 @@ public sealed class PapelDoRepresentante : IPapelDoRepresentante
     public Task<bool> HaOutroVigenteAsync(Identidade? exceto, DateTimeOffset agora, CancellationToken cancellationToken = default) =>
         exceto is null
             ? Vigentes(agora).AnyAsync(cancellationToken)
-            : Vigentes(agora).AnyAsync(c => c.BeneficiarioEmissor != exceto.Emissor || c.BeneficiarioSub != exceto.Sub, cancellationToken);
+            : Vigentes(agora).AnyAsync(c => c.BeneficiarioEmissor != exceto.Emissor || c.BeneficiarioContaId != exceto.ContaId, cancellationToken);
 
     public async Task<IReadOnlySet<Identidade>> ListarVigentesAsync(DateTimeOffset agora, CancellationToken cancellationToken = default)
     {
         var vigentes = await Vigentes(agora)
-            .Select(c => new { c.BeneficiarioEmissor, c.BeneficiarioSub })
+            .Select(c => new { c.BeneficiarioEmissor, c.BeneficiarioContaId })
             .Distinct()
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return vigentes.Select(static v => new Identidade(v.BeneficiarioEmissor, v.BeneficiarioSub)).ToHashSet();
+        return vigentes.Select(static v => new Identidade(v.BeneficiarioEmissor, v.BeneficiarioContaId)).ToHashSet();
     }
 
     public Task<bool> EVigenteAsync(Identidade pessoa, DateTimeOffset agora, CancellationToken cancellationToken = default)
@@ -45,7 +45,7 @@ public sealed class PapelDoRepresentante : IPapelDoRepresentante
         ArgumentNullException.ThrowIfNull(pessoa);
 
         return Vigentes(agora)
-            .AnyAsync(c => c.BeneficiarioEmissor == pessoa.Emissor && c.BeneficiarioSub == pessoa.Sub, cancellationToken);
+            .AnyAsync(c => c.BeneficiarioEmissor == pessoa.Emissor && c.BeneficiarioContaId == pessoa.ContaId, cancellationToken);
     }
 
     private IQueryable<Concessao> Vigentes(DateTimeOffset agora) =>

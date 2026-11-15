@@ -119,7 +119,7 @@ public sealed class ConcessaoPresaAVersaoNoHostTests : PedidosDeConcessaoTestBas
     [Fact(DisplayName = "A concessão de governança dá as permissões do perfil e não tem versão")]
     public async Task Governanca_DaAsPermissoesDoPerfilSemVersao()
     {
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Leandro.Sub.ToString(), TipoDeGovernanca.GestorDeAcessos);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Leandro.ContaId.ToString(), TipoDeGovernanca.GestorDeAcessos);
 
         ConcessaoAtiva concessao = (await ListarAsync()).Single(c => c.PerfilId == PerfisDeSistema.GestorDeAcessosId);
 
@@ -155,7 +155,7 @@ public sealed class ConcessaoPresaAVersaoNoHostTests : PedidosDeConcessaoTestBas
     private Task<Guid> ConcederAsync(Guid perfil, bool institucional = false) =>
         ConcessoesDeTeste.ConcederAsync(
             Fixture.Factory.Services,
-            Leandro.Sub.ToString(),
+            Leandro.ContaId.ToString(),
             perfil,
             institucional ? EscopoDaConcessao.DaInstituicao() : EscopoDaConcessao.DaUnidade(Guid.CreateVersion7()),
             email: EmailDe(perfil));
@@ -165,7 +165,7 @@ public sealed class ConcessaoPresaAVersaoNoHostTests : PedidosDeConcessaoTestBas
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
 
         return await scope.ServiceProvider.GetRequiredService<IConcessoesAtivasDoSujeito>()
-            .ListarAsync(UsuarioRef.From(TestAuthHandler.DefaultIssuer, Leandro.Sub.ToString()).Value!, CancellationToken.None);
+            .ListarAsync(UsuarioRef.From(TestAuthHandler.DefaultIssuer, Leandro.ContaId.ToString()).Value!, CancellationToken.None);
     }
 
     private async Task<string[]> PermissoesDaConcessaoAsync(Guid perfil) =>

@@ -21,14 +21,14 @@ internal static class RegistroDeAcessoDeTeste
         string? clienteOidc = null,
         string requestId = "req-1",
         Guid? resourceId = null,
-        string subject = "leandro.viana")
+        string contaId = "leandro.viana")
     {
         PermissionRequirement requisito = PermissionRequirement.From("selecao:inscricoes:consultar", sensibilidade, BaseLegal).Value!;
         ResourceContext resource = ResourceContext.From("inscricao", sensibilidade, resourceId: resourceId, inscricaoId: resourceId).Value!;
         AuthorizationRequestContext requisicao = AuthorizationRequestContext.From(
             requestId, Instante, OrigemRequisicao.Api, execucaoId: execucaoId ?? Execucao, clienteOidc: clienteOidc).Value!;
 
-        return RegistroDecisaoAcesso.De(Sujeito(subject), requisito, resource, requisicao, Decisao(requisito, resultado));
+        return RegistroDecisaoAcesso.De(Sujeito(contaId), requisito, resource, requisicao, Decisao(requisito, resultado));
     }
 
     /// <summary>O registro da leitura que a parte faz do próprio pedido, sem concessão, como o verificador de acesso o monta.</summary>
@@ -44,8 +44,8 @@ internal static class RegistroDeAcessoDeTeste
 
     private static DateTimeOffset Instante => new(2026, 11, 1, 12, 0, 0, TimeSpan.Zero);
 
-    private static AuthorizationSubject Sujeito(string subject) =>
-        AuthorizationSubject.From(UsuarioRef.From("https://idp.exemplo/realms/unifesspa", subject).Value!, "jti-teste").Value!;
+    private static AuthorizationSubject Sujeito(string contaId) =>
+        AuthorizationSubject.From(UsuarioRef.From("https://idp.exemplo/realms/unifesspa", contaId).Value!, "jti-teste").Value!;
 
     private static AuthorizationDecision Decisao(PermissionRequirement requisito, ResultadoDoAcesso resultado) => resultado switch
     {

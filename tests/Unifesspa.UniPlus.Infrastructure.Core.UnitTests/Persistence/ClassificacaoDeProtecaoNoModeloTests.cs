@@ -34,7 +34,7 @@ public sealed class ClassificacaoDeProtecaoNoModeloTests
 
     private sealed class Gestor
     {
-        public string Sub { get; set; } = string.Empty;
+        public string ContaId { get; set; } = string.Empty;
     }
 
     private sealed class Composto
@@ -287,7 +287,7 @@ public sealed class ClassificacaoDeProtecaoNoModeloTests
         Dictionary<string, ClassificacaoDeProtecao?> colunas = Colunas<ContextoComOwnedSemDeclaracao>(o => new(o));
 
         colunas["donos.id"].Should().Be(ClassificacaoDeProtecao.Interno);
-        colunas["gestores.sub"].Should().BeNull();
+        colunas["gestores.conta_id"].Should().BeNull();
     }
 
     [Fact(DisplayName = "Membros de auditoria resolvem Pessoal pela interface e pela base, sem anotação")]

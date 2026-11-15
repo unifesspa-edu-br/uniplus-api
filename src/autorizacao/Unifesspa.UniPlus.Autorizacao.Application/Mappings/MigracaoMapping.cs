@@ -12,7 +12,7 @@ public static class MigracaoMapping
         ArgumentNullException.ThrowIfNull(decisao);
 
         bool humano = decisao.Ator == AtorDaMigracao.Humano;
-        IdentidadeDto? autor = humano ? new IdentidadeDto(decisao.DecisorEmissor!, decisao.DecisorSub!, decisao.DecisorNome) : null;
+        IdentidadeDto? autor = humano ? new IdentidadeDto(decisao.DecisorEmissor!, decisao.DecisorContaId!, decisao.DecisorNome) : null;
 
         return new EventoDaTrilhaDto(
             $"migracao_{decisao.Resultado.ToCodigo()}",

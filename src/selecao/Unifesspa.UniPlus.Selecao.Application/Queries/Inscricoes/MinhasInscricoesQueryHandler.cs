@@ -14,8 +14,8 @@ using Services;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>
-/// Lista as inscrições do dono do token — nunca de outro CPF, mesmo que o <c>sub</c> coincida por
-/// engano de emissor (<see cref="Inscricao.ConferirDono"/> confere o <c>sub</c> gravado em cada
+/// Lista as inscrições do dono do token — nunca de outro CPF, mesmo que o <c>contaId</c> coincida por
+/// engano de emissor (<see cref="Inscricao.ConferirDono"/> confere o <c>contaId</c> gravado em cada
 /// uma).
 /// </summary>
 public static class MinhasInscricoesQueryHandler
@@ -41,9 +41,9 @@ public static class MinhasInscricoesQueryHandler
     }
 
     /// <summary>
-    /// As inscrições do CPF do token cujo <c>sub</c> é o do token. O mesmo CPF cifrado pode pertencer a um sub diferente do gravado
+    /// As inscrições do CPF do token cujo <c>contaId</c> é o do token. O mesmo CPF cifrado pode pertencer a uma conta diferente do gravado
     /// (engano de emissor, ver <see cref="Inscricao.ConferirDono"/>): uma inscrição assim não é do dono, e listá-la vazaria estado
-    /// de outro candidato. Sem sub não há dono a conferir, e a recusa é a das demais rotas, e não a lista vazia, que diria ao
+    /// de outro candidato. Sem conta não há dono a conferir, e a recusa é a das demais rotas, e não a lista vazia, que diria ao
     /// candidato que ele não tem inscrição.
     /// </summary>
     private static async Task<Result<IReadOnlyList<Inscricao>>> InscricoesDoDonoAsync(
@@ -58,7 +58,7 @@ public static class MinhasInscricoesQueryHandler
         if (string.IsNullOrWhiteSpace(userContext.UserId))
         {
             return Result<IReadOnlyList<Inscricao>>.Failure(new DomainError(
-                InscricaoErrorCodes.SubObrigatorio, "O token precisa trazer o claim sub para listar as inscrições."));
+                InscricaoErrorCodes.ContaIdObrigatorio, "O token precisa trazer o claim sub para listar as inscrições."));
         }
 
         IReadOnlyList<Inscricao> inscricoes = await inscricaoRepository.ObterTodasPorCpfAsync(cpf.Value!, cancellationToken).ConfigureAwait(false);

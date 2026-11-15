@@ -13,7 +13,7 @@ public sealed class IdempotencyEntry
     public Guid Id { get; set; } = Guid.CreateVersion7();
 
     /// <summary>
-    /// Escopo: combina principal autenticado (sub do JWT) + tenant futuro.
+    /// Escopo: combina principal autenticado (conta do JWT) + tenant futuro.
     /// Previne colisão entre clientes que escolham keys idênticas.
     /// </summary>
     public string Scope { get; set; } = string.Empty;

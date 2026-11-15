@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 public interface IIncompatibilidadeDosPapeis
 {
     /// <summary>
-    /// Trava cada pessoa até o fim da transação, em ordem de emissor e <c>sub</c>, para que duas designações cruzadas da
+    /// Trava cada pessoa até o fim da transação, em ordem de emissor e <c>contaId</c>, para que duas designações cruzadas da
     /// mesma pessoa não leiam ambas que ela não tem o outro papel.
     /// </summary>
     Task TravarAsync(IEnumerable<Identidade> pessoas, CancellationToken cancellationToken = default);

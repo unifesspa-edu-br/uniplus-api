@@ -135,7 +135,7 @@ internal static partial class CorpusEnvelope
     private static readonly Guid ReferenciaDemografica = new("dddd0000-0000-4000-8000-000000000001");
     private static readonly Guid UnidadeAdministradora = new("eeee0000-0000-4000-8000-000000000001");
 
-    /// <summary>Sub do publicador — evidência forense, não input de negócio.</summary>
+    /// <summary>ContaId do publicador — evidência forense, não input de negócio.</summary>
     internal const string Ator = "corpus-tests";
 
     internal static ReferenciaRegra Regra(string codigo, char semente) =>

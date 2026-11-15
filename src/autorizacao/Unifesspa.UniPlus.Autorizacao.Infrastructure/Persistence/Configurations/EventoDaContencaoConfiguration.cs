@@ -29,7 +29,7 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
     private const string SemOrigem = "origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL";
 
     private const string DeUmaPessoa =
-        $"ator = '{AtorDoEventoDaContencaoCodigo.Humano}' AND ator_emissor IS NOT NULL AND ator_sub IS NOT NULL AND motivo IS NOT NULL";
+        $"ator = '{AtorDoEventoDaContencaoCodigo.Humano}' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL";
 
     private static readonly ValueConverter<TipoDoEventoDaContencao, string> TipoConverter = new(
         tipo => tipo.ToCodigo(),
@@ -63,7 +63,7 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
         builder.Property(e => e.Origem).HasConversion(OrigemConverter).HasMaxLength(CodigoMaxLength);
         builder.Property(e => e.PermissaoCodigo).HasMaxLength(PermissaoMaxLength);
         builder.Property(e => e.AtorEmissor).HasMaxLength(IdentidadeMaxLength);
-        builder.Property(e => e.AtorSub).HasMaxLength(IdentidadeMaxLength);
+        builder.Property(e => e.AtorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(e => e.AtorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(e => e.Papel).HasConversion(PapelConverter).HasMaxLength(CodigoMaxLength);
         builder.Property(e => e.Motivo).HasMaxLength(MotivosDaVersao.MaxLength);
@@ -108,7 +108,7 @@ internal sealed class EventoDaContencaoConfiguration : IEntityTypeConfiguration<
 
     private static string RamoDaRetomada() =>
         $"tipo <> '{TipoDoEventoDaContencaoCodigo.Retomada}' OR (ator = '{AtorDoEventoDaContencaoCodigo.Sistema}'"
-        + " AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND ator_emissor IS NULL AND ator_sub IS NULL"
+        + " AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND ator_emissor IS NULL AND ator_conta_id IS NULL"
         + " AND ator_nome IS NULL AND papel IS NULL AND motivo IS NULL AND origem IS NOT NULL"
         + $" AND (({OrigemDe(OrigemDaRetomadaCodigo.DecisaoDaEtapa, "decisao_id", "versao_que_entrou_id", "permissao_codigo")})"
         + $" OR ({OrigemDe(OrigemDaRetomadaCodigo.TrocaDeVigencia, "versao_que_entrou_id", "decisao_id", "permissao_codigo")})"

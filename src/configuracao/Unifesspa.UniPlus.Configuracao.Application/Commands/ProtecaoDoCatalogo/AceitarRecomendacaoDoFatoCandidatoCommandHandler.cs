@@ -42,7 +42,7 @@ public static class AceitarRecomendacaoDoFatoCandidatoCommandHandler
             command.Id,
             (fato, catalogo) =>
             {
-                Result aceita = fato.AceitarRecomendacaoDaProtecao(ator.Sub, agora, catalogo);
+                Result aceita = fato.AceitarRecomendacaoDaProtecao(ator.ContaId, agora, catalogo);
                 if (aceita.IsSuccess)
                 {
                     aceito = (fato.Nome, fato.Codigo, fato.ClassificacaoProtecao);

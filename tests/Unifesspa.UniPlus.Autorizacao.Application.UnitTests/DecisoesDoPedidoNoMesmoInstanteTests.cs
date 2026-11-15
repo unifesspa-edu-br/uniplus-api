@@ -26,11 +26,11 @@ public sealed class DecisoesDoPedidoNoMesmoInstanteTests
         PedidoDeConcessao pedido = PedidoDeConcessaoBuilder.Pedido().Protegido().AguardandoGestor();
         pedido.Aprovar(Primeiro, new(["a"], "sensivel", true, null), new(false), Instante);
         pedido.Aprovar(Segundo, new(["a", "b"], "sensivel", true, null), new(false), Instante);
-        Numerar(pedido.Decisoes.First(d => d.DecisorSub == Primeiro.Sub), 7);
+        Numerar(pedido.Decisoes.First(d => d.DecisorContaId == Primeiro.ContaId), 7);
 
-        string[] decisores = [.. PedidoMapping.ToDto(pedido, null).Decisoes.Select(d => d.Decisor.Sub)];
+        string[] decisores = [.. PedidoMapping.ToDto(pedido, null).Decisoes.Select(d => d.Decisor.ContaId)];
 
-        decisores.Should().Equal(Primeiro.Sub, Segundo.Sub);
+        decisores.Should().Equal(Primeiro.ContaId, Segundo.ContaId);
     }
 
     // A ordem de registro é do banco: o teste simula a decisão relida com o número que o banco lhe deu.

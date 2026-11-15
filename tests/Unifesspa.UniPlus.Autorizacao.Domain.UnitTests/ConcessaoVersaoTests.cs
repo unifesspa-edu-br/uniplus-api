@@ -42,7 +42,7 @@ public sealed class ConcessaoVersaoTests
         concessao.MigrarParaVersao(perfil.Versoes.First(v => v.Id == versao1), perfil.VersaoVigente);
 
         concessao.VersaoId.Should().Be(versao2);
-        concessao.BeneficiarioSub.Should().Be(Isabella.Sub);
+        concessao.BeneficiarioContaId.Should().Be(Isabella.ContaId);
         concessao.ValidaAte.Should().Be(Agora.AddDays(30));
         concessao.OrigemId.Should().Be(Origem.Id);
         concessao.UnidadeId.Should().NotBeNull();

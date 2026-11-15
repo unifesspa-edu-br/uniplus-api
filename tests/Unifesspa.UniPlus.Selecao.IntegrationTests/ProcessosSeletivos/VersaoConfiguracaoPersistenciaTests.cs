@@ -50,7 +50,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
         Publicacao publicada = await PublicarAsync(nameof(Update_Cru_Bloqueado));
 
         Func<Task> update = () => ExecutarAsync(
-            "UPDATE selecao.versoes_configuracao SET ator_usuario_sub = 'outro' WHERE id = @id",
+            "UPDATE selecao.versoes_configuracao SET ator_usuario_conta_id = 'outro' WHERE id = @id",
             ("id", publicada.VersaoId));
 
         (await update.Should().ThrowAsync<PostgresException>())
@@ -370,7 +370,7 @@ public sealed class VersaoConfiguracaoPersistenciaTests : IClassFixture<Processo
                 id, processo_seletivo_id, numero_versao, vigente_a_partir_de,
                 schema_version, algoritmo_hash,
                 configuracao_congelada_canonica, configuracao_congelada, hash_configuracao,
-                ato_criador_id, ato_criador_hash, ato_criador_retifica_id, ator_usuario_sub)
+                ato_criador_id, ato_criador_hash, ato_criador_retifica_id, ator_usuario_conta_id)
             VALUES (
                 '{{Guid.CreateVersion7()}}', '{{processoId}}', {{numeroVersao.ToString(CultureInfo.InvariantCulture)}}, {{vigencia}},
                 '1.0', 'canonical-json/sha256@v1',

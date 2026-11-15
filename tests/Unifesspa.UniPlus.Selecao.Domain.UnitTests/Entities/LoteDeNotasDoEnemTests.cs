@@ -30,7 +30,7 @@ public sealed class LoteDeNotasDoEnemTests
     private static LoteDeNotasDoEnem Registrar(ResultadoDoCruzamento cruzamento, int totalDeLinhas = 20, DateTimeOffset? em = null, string arquivoHash = "", IReadOnlyList<AvaliacaoApurada>? avaliacoes = null) =>
         LoteDeNotasDoEnem.Registrar(
             Guid.CreateVersion7(), Guid.CreateVersion7(), "2025", "INEP_ENEM_RETORNO", "v1", Hash,
-            arquivoHash.Length == 0 ? Hash : arquivoHash, "sub-admin", em ?? DateTimeOffset.UtcNow, totalDeLinhas,
+            arquivoHash.Length == 0 ? Hash : arquivoHash, "conta-admin", em ?? DateTimeOffset.UtcNow, totalDeLinhas,
             Guid.CreateVersion7(), cruzamento, avaliacoes ?? []);
 
     [Fact(DisplayName = "os totais saem do cruzamento e cada inscrito com nota gera cinco lançamentos")]

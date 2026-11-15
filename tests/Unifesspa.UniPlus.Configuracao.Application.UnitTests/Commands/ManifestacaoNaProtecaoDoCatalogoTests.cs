@@ -38,7 +38,7 @@ public sealed class ManifestacaoNaProtecaoDoCatalogoTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         EventoGravado().Should().Match<ManifestacaoDaProtecaoDoCatalogo>(m =>
-            m.Parecer == ParecerDaManifestacao.Inadequada && m.Autor.Sub == Isabella && m.Instante == Agora && m.SubstituiId == null);
+            m.Parecer == ParecerDaManifestacao.Inadequada && m.Autor.ContaId == Isabella && m.Instante == Agora && m.SubstituiId == null);
         (laudo.Aprovacao.Situacao, laudo.Aprovacao.ManifestacaoDesfavoravelVigente, laudo.Aprovacao.ManifestadaEm)
             .Should().Be((SituacaoDaAprovacao.Solicitada, true, Agora));
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());

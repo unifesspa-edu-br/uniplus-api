@@ -17,7 +17,7 @@ public sealed class LeituraDoAnexoDoPedido : IForensicEntity
 
     public string LeitorEmissor { get; private init; } = string.Empty;
 
-    public string LeitorSub { get; private init; } = string.Empty;
+    public string LeitorContaId { get; private init; } = string.Empty;
 
     public string? LeitorNome { get; private init; }
 
@@ -37,7 +37,7 @@ public sealed class LeituraDoAnexoDoPedido : IForensicEntity
             PedidoId = pedidoId,
             AnexoId = anexoId,
             LeitorEmissor = leitor.Emissor,
-            LeitorSub = leitor.Sub,
+            LeitorContaId = leitor.ContaId,
             LeitorNome = leitor.Nome,
             Instante = instante,
         };

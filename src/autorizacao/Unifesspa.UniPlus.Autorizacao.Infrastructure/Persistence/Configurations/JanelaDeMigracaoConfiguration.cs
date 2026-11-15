@@ -53,7 +53,7 @@ internal sealed class JanelaDeMigracaoConfiguration : IEntityTypeConfiguration<J
             $"forma_do_encerramento IS NULL OR forma_do_encerramento IN ('{FormaDoEncerramentoCodigo.Concluida}', '{FormaDoEncerramentoCodigo.Prazo}', '{FormaDoEncerramentoCodigo.Manual}')");
         tabela.HasCheckConstraint(
             "ck_janelas_de_migracao_manual",
-            $"COALESCE(forma_do_encerramento = '{FormaDoEncerramentoCodigo.Manual}', false) = (motivo_do_encerramento IS NOT NULL AND encerrada_por_sub IS NOT NULL)");
+            $"COALESCE(forma_do_encerramento = '{FormaDoEncerramentoCodigo.Manual}', false) = (motivo_do_encerramento IS NOT NULL AND encerrada_por_conta_id IS NOT NULL)");
         tabela.HasCheckConstraint(
             "ck_janelas_de_migracao_prazo",
             "prazo = aberta_em + interval '72 hours'");
@@ -69,7 +69,7 @@ internal sealed class JanelaDeMigracaoConfiguration : IEntityTypeConfiguration<J
         builder.Property(j => j.Forma).HasColumnName("forma_do_encerramento").HasConversion(FormaConverter).HasMaxLength(FormaMaxLength);
         builder.Property(j => j.MotivoDoEncerramento).HasMaxLength(JanelaDeMigracao.MotivoMaxLength);
         builder.Property(j => j.EncerradaPorEmissor).HasMaxLength(IdentidadeMaxLength);
-        builder.Property(j => j.EncerradaPorSub).HasMaxLength(IdentidadeMaxLength);
+        builder.Property(j => j.EncerradaPorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(j => j.EncerradaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(j => j.Aviso48hEm).HasColumnName("aviso_48h_em");
         builder.Property(j => j.Aviso24hEm).HasColumnName("aviso_24h_em");

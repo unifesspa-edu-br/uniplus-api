@@ -37,7 +37,7 @@ public sealed record TentativaDeInstalacaoDto(
 /// </summary>
 /// <param name="Email">E-mail institucional do gestor, obrigatório: a revogação da concessão o pede de volta.</param>
 /// <param name="Nome">Nome de exibição do gestor, opcional; a trilha o mostra.</param>
-public sealed record IdentidadeInformadaDto(string? Emissor, string? Sub, string? Email = null, string? Nome = null);
+public sealed record IdentidadeInformadaDto(string? Emissor, string? ContaId, string? Email = null, string? Nome = null);
 
 /// <summary>Corpo do <c>POST /api/autorizacao/instalacao</c>.</summary>
 public sealed record IniciarInstalacaoRequest(

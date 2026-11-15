@@ -131,7 +131,7 @@ public sealed class EmissaoDeAvisosNoHostTests
         (await RegistrosAsync(fato)).Should().Be(3);
     }
 
-    private static DestinatarioDoAviso Destinatario(string sub, string email) => new(new Identidade(Emissor, sub), email);
+    private static DestinatarioDoAviso Destinatario(string contaId, string email) => new(new Identidade(Emissor, contaId), email);
 
     private static Task<IReadOnlyList<EnviarEmail>> EmitirAsync(
         TransacaoRetidaDeTeste transacao, Guid fato, IReadOnlyList<DestinatarioDoAviso> destinatarios)

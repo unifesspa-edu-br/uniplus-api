@@ -75,7 +75,7 @@ public sealed class LoteDeNotasDoEnemConfiguration : IEntityTypeConfiguration<Lo
         builder.Property(l => l.ImportadoPor).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(ImportadoPorMaxLength)
             .IsRequired()
-            .HasComment("O sub do token de quem importou.");
+            .HasComment("A conta do token de quem importou.");
 
         builder.Property(l => l.ImportadoPorNome).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(ImportadoPorMaxLength)

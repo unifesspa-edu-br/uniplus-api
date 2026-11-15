@@ -14,8 +14,8 @@ public sealed record PedidoDeCongelamento
 
     public required DocumentoCongelado Documento { get; init; }
 
-    /// <summary>Sub do usuário autenticado (via <c>IUserContext</c>), nunca input do comando.</summary>
-    public required string AtorUsuarioSub { get; init; }
+    /// <summary>ContaId do usuário autenticado (via <c>IUserContext</c>), nunca input do comando.</summary>
+    public required string AtorUsuarioContaId { get; init; }
 
     /// <summary>
     /// O instante em que o comando publica, lido uma só vez do relógio injetado (ADR-0068) e nunca relido pelo

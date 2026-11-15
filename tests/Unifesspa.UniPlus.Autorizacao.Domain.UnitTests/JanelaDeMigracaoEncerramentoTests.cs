@@ -26,7 +26,7 @@ public sealed class JanelaDeMigracaoEncerramentoTests
         deDiogo.RevogadaEm.Should().Be(janela.Prazo);
         deDiogo.MotivoRevogacao.Should().Be("não migrado para a versão 2");
         deDiogo.RevogadaPelaJanelaId.Should().Be(janela.Id);
-        deDiogo.RevogadaPorSub.Should().BeNull();
+        deDiogo.RevogadaPorContaId.Should().BeNull();
         janela.LinhaDe(deDiogo.Id)!.Situacao.Should().Be(SituacaoDaMigracao.NaoMigrada);
     }
 
@@ -81,7 +81,7 @@ public sealed class JanelaDeMigracaoEncerramentoTests
         janela.Materializar(cenario.Contexto(Abertura.AddHours(100)), FormaDoEncerramento.Prazo);
 
         janela.LinhaDe(revogadaDepois.Id)!.Situacao.Should().Be(SituacaoDaMigracao.NaoMigrada);
-        revogadaDepois.RevogadaPorSub.Should().Be(Betina.Sub);
+        revogadaDepois.RevogadaPorContaId.Should().Be(Betina.ContaId);
         revogadaDepois.RevogadaPelaJanelaId.Should().BeNull();
     }
 
@@ -162,7 +162,7 @@ public sealed class JanelaDeMigracaoEncerramentoTests
 
         janela.Forma.Should().Be(FormaDoEncerramento.Manual);
         janela.MotivoDoEncerramento.Should().Be("Versão antiga descontinuada.");
-        janela.EncerradaPorSub.Should().Be(Betina.Sub);
+        janela.EncerradaPorContaId.Should().Be(Betina.ContaId);
         janela.EncerradaEm.Should().Be(agora);
         deLeandro.RevogadaEm.Should().Be(agora);
         deLeandro.MotivoRevogacao.Should().Be("não migrado para a versão 2");
@@ -208,7 +208,7 @@ public sealed class JanelaDeMigracaoEncerramentoTests
         concessao.RevogarPelaMigracao(janela, "recusado na migração", Abertura);
 
         concessao.RevogadaPelaJanelaId.Should().Be(janela);
-        concessao.RevogadaPorSub.Should().BeNull();
+        concessao.RevogadaPorContaId.Should().BeNull();
         concessao.EstavaAtivaEm(Abertura.AddMinutes(-1)).Should().BeTrue();
         concessao.EstavaAtivaEm(Abertura).Should().BeFalse();
         FluentActions.Invoking(() => concessao.RevogarPelaMigracao(janela, "de novo", Abertura))

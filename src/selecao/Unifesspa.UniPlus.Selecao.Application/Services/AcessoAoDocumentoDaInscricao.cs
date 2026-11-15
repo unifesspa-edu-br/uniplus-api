@@ -93,7 +93,7 @@ public static class AcessoAoDocumentoDaInscricao
     /// <summary>
     /// O arquivo do dono do token, em qualquer situação da inscrição: ler o que já foi enviado não depende do
     /// período nem de a inscrição estar ativa — o candidato que cancelou continua podendo baixar o que enviou.
-    /// O dono é o <c>sub</c> e o CPF do token juntos, como nas demais leituras. O arquivo inexistente, o de outro
+    /// O dono é o <c>contaId</c> e o CPF do token juntos, como nas demais leituras. O arquivo inexistente, o de outro
     /// processo e o de outra pessoa recebem a mesma recusa.
     /// </summary>
     public static async Task<Result<ArquivoDaApresentacao>> ResolverArquivoDoDonoAsync(

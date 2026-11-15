@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261114235314_Inicial")]
+    [Migration("20261115034749_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -48,6 +48,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("pedido_id");
 
+                    b.Property<string>("PessoaContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("pessoa_conta_id");
+
                     b.Property<string>("PessoaEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -58,12 +64,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("pessoa_nome");
-
-                    b.Property<string>("PessoaSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("pessoa_sub");
 
                     b.Property<string>("Resumo")
                         .IsRequired()
@@ -256,6 +256,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("BeneficiarioContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("beneficiario_conta_id");
+
                     b.Property<string>("BeneficiarioEmail")
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)")
@@ -272,15 +278,15 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(255)")
                         .HasColumnName("beneficiario_nome");
 
-                    b.Property<string>("BeneficiarioSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("beneficiario_sub");
-
                     b.Property<DateTimeOffset>("ConcedidaEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("concedida_em");
+
+                    b.Property<string>("ConcedidaPorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("concedida_por_conta_id");
 
                     b.Property<string>("ConcedidaPorEmissor")
                         .IsRequired()
@@ -292,12 +298,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("concedida_por_nome");
-
-                    b.Property<string>("ConcedidaPorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("concedida_por_sub");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -336,6 +336,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("revogada_pela_janela_id");
 
+                    b.Property<string>("RevogadaPorContaId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("revogada_por_conta_id");
+
                     b.Property<string>("RevogadaPorEmissor")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
@@ -345,11 +350,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("revogada_por_nome");
-
-                    b.Property<string>("RevogadaPorSub")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("revogada_por_sub");
 
                     b.Property<Guid?>("UnidadeId")
                         .HasColumnType("uuid")
@@ -390,22 +390,22 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("RevogadaPelaJanelaId", "PerfilId")
                         .HasDatabaseName("ix_concessoes_revogada_pela_janela_id_perfil_id");
 
-                    b.HasIndex("OrigemTipo", "OrigemId", "BeneficiarioEmissor", "BeneficiarioSub")
+                    b.HasIndex("OrigemTipo", "OrigemId", "BeneficiarioEmissor", "BeneficiarioContaId")
                         .IsUnique()
                         .HasDatabaseName("ux_concessoes_origem");
 
-                    b.HasIndex("BeneficiarioEmissor", "BeneficiarioSub", "PerfilId", "EscopoTipo", "UnidadeId")
+                    b.HasIndex("BeneficiarioEmissor", "BeneficiarioContaId", "PerfilId", "EscopoTipo", "UnidadeId")
                         .IsUnique()
                         .HasDatabaseName("ux_concessoes_ativa_unica")
                         .HasFilter("revogada_em IS NULL");
 
-                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("BeneficiarioEmissor", "BeneficiarioSub", "PerfilId", "EscopoTipo", "UnidadeId"), false);
+                    NpgsqlIndexBuilderExtensions.AreNullsDistinct(b.HasIndex("BeneficiarioEmissor", "BeneficiarioContaId", "PerfilId", "EscopoTipo", "UnidadeId"), false);
 
                     b.ToTable("concessoes", "autorizacao", t =>
                         {
                             t.HasCheckConstraint("ck_concessoes_escopo_unidade", "(escopo_tipo = 'unidade') = (unidade_id IS NOT NULL)");
 
-                            t.HasCheckConstraint("ck_concessoes_revogacao_completa", "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_sub IS NULL AND motivo_revogacao IS NULL AND revogada_pela_janela_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_sub IS NOT NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_sub IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NOT NULL)");
+                            t.HasCheckConstraint("ck_concessoes_revogacao_completa", "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NULL AND revogada_pela_janela_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_conta_id IS NOT NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NULL) OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_concessoes_validade_posterior", "valida_ate IS NULL OR valida_ate > concedida_em");
                         });
@@ -437,6 +437,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("concessao_id");
 
+                    b.Property<string>("DecisorContaId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("decisor_conta_id");
+
                     b.Property<string>("DecisorEmissor")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
@@ -446,11 +451,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("decisor_nome");
-
-                    b.Property<string>("DecisorSub")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("decisor_sub");
 
                     b.Property<bool?>("DecisorTemConcessao")
                         .HasColumnType("boolean")
@@ -541,7 +541,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_decisoes_da_migracao_lote_de_origem", "(lote_de_origem_id IS NULL) = (lote_de_origem_etapa IS NULL) AND (lote_de_origem_etapa IS NULL OR lote_de_origem_etapa = 'gestao_de_acessos')");
 
-                            t.HasCheckConstraint("ck_decisoes_da_migracao_ramo", "(ator = 'humano' AND etapa IN ('gestao_de_acessos', 'protecao_de_dados') AND decisao IN ('migrar', 'recusar') AND decisor_emissor IS NOT NULL AND decisor_sub IS NOT NULL AND decisor_tem_concessao IS NOT NULL AND lote_de_origem_id IS NOT NULL AND (envio_etapa IS NULL OR envio_etapa = etapa) AND (etapa <> 'protecao_de_dados' OR envio_id IS NOT NULL) AND (etapa <> 'gestao_de_acessos' OR envio_id IS NULL OR envio_id = lote_de_origem_id)) OR (ator = 'sistema' AND decisor_emissor IS NULL AND decisor_sub IS NULL AND decisor_nome IS NULL AND decisor_tem_concessao IS NULL AND envio_id IS NULL AND ((etapa = 'gestao_de_acessos' AND decisao = 'reter' AND lote_de_origem_id IS NOT NULL) OR (etapa = 'sistema' AND decisao IN ('nao_migrada', 'fora_da_lista'))))");
+                            t.HasCheckConstraint("ck_decisoes_da_migracao_ramo", "(ator = 'humano' AND etapa IN ('gestao_de_acessos', 'protecao_de_dados') AND decisao IN ('migrar', 'recusar') AND decisor_emissor IS NOT NULL AND decisor_conta_id IS NOT NULL AND decisor_tem_concessao IS NOT NULL AND lote_de_origem_id IS NOT NULL AND (envio_etapa IS NULL OR envio_etapa = etapa) AND (etapa <> 'protecao_de_dados' OR envio_id IS NOT NULL) AND (etapa <> 'gestao_de_acessos' OR envio_id IS NULL OR envio_id = lote_de_origem_id)) OR (ator = 'sistema' AND decisor_emissor IS NULL AND decisor_conta_id IS NULL AND decisor_nome IS NULL AND decisor_tem_concessao IS NULL AND envio_id IS NULL AND ((etapa = 'gestao_de_acessos' AND decisao = 'reter' AND lote_de_origem_id IS NOT NULL) OR (etapa = 'sistema' AND decisao IN ('nao_migrada', 'fora_da_lista'))))");
                         });
                 });
 
@@ -550,6 +550,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<string>("DecisorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("decisor_conta_id");
 
                     b.Property<string>("DecisorEmissor")
                         .IsRequired()
@@ -561,12 +567,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("decisor_nome");
-
-                    b.Property<string>("DecisorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("decisor_sub");
 
                     b.Property<bool>("DecisorTemConcessao")
                         .HasColumnType("boolean")
@@ -632,6 +632,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("ciclo");
 
+                    b.Property<string>("DecisorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("decisor_conta_id");
+
                     b.Property<string>("DecisorEmail")
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)")
@@ -647,12 +653,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("decisor_nome");
-
-                    b.Property<string>("DecisorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("decisor_sub");
 
                     b.Property<bool>("DecisorTemConcessao")
                         .HasColumnType("boolean")
@@ -710,6 +710,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("DecisorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("decisor_conta_id");
+
                     b.Property<string>("DecisorEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -720,12 +726,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("decisor_nome");
-
-                    b.Property<string>("DecisorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("decisor_sub");
 
                     b.Property<string>("Dispensa")
                         .HasMaxLength(40)
@@ -805,6 +805,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("desativada_em");
 
+                    b.Property<string>("DesativadaPorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("desativada_por_conta_id");
+
                     b.Property<string>("DesativadaPorEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -815,12 +821,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("desativada_por_nome");
-
-                    b.Property<string>("DesativadaPorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("desativada_por_sub");
 
                     b.Property<string>("Motivo")
                         .IsRequired()
@@ -845,6 +845,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("reativada_em");
 
+                    b.Property<string>("ReativadaPorContaId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("reativada_por_conta_id");
+
                     b.Property<string>("ReativadaPorEmissor")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
@@ -854,11 +859,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("reativada_por_nome");
-
-                    b.Property<string>("ReativadaPorSub")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("reativada_por_sub");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -878,7 +878,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("desativacoes_do_perfil", "autorizacao", t =>
                         {
-                            t.HasCheckConstraint("ck_desativacoes_do_perfil_reativacao", "(reativada_em IS NULL AND reativada_por_emissor IS NULL AND reativada_por_sub IS NULL AND reativada_por_nome IS NULL AND motivo_da_reativacao IS NULL) OR (reativada_em IS NOT NULL AND reativada_por_emissor IS NOT NULL AND reativada_por_sub IS NOT NULL AND motivo_da_reativacao IS NOT NULL)");
+                            t.HasCheckConstraint("ck_desativacoes_do_perfil_reativacao", "(reativada_em IS NULL AND reativada_por_emissor IS NULL AND reativada_por_conta_id IS NULL AND reativada_por_nome IS NULL AND motivo_da_reativacao IS NULL) OR (reativada_em IS NOT NULL AND reativada_por_emissor IS NOT NULL AND reativada_por_conta_id IS NOT NULL AND motivo_da_reativacao IS NOT NULL)");
                         });
                 });
 
@@ -1031,6 +1031,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(40)")
                         .HasColumnName("ator");
 
+                    b.Property<string>("AtorContaId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("ator_conta_id");
+
                     b.Property<string>("AtorEmissor")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
@@ -1040,11 +1045,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("ator_nome");
-
-                    b.Property<string>("AtorSub")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("ator_sub");
 
                     b.Property<Guid?>("DecisaoId")
                         .HasColumnType("uuid")
@@ -1135,13 +1135,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("eventos_da_contencao", "autorizacao", t =>
                         {
-                            t.HasCheckConstraint("ck_eventos_da_contencao_desativacao", "tipo <> 'desativacao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_sub IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
+                            t.HasCheckConstraint("ck_eventos_da_contencao_desativacao", "tipo <> 'desativacao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
 
-                            t.HasCheckConstraint("ck_eventos_da_contencao_reativacao", "tipo <> 'reativacao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_sub IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
+                            t.HasCheckConstraint("ck_eventos_da_contencao_reativacao", "tipo <> 'reativacao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND desativacao_id IS NOT NULL AND suspensao_id IS NULL AND papel IS NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
 
-                            t.HasCheckConstraint("ck_eventos_da_contencao_retomada", "tipo <> 'retomada' OR (ator = 'sistema' AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND ator_emissor IS NULL AND ator_sub IS NULL AND ator_nome IS NULL AND papel IS NULL AND motivo IS NULL AND origem IS NOT NULL AND ((origem = 'decisao_da_etapa' AND decisao_id IS NOT NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'troca_de_vigencia' AND versao_que_entrou_id IS NOT NULL AND decisao_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'reclassificacao' AND permissao_codigo IS NOT NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL)))");
+                            t.HasCheckConstraint("ck_eventos_da_contencao_retomada", "tipo <> 'retomada' OR (ator = 'sistema' AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND ator_emissor IS NULL AND ator_conta_id IS NULL AND ator_nome IS NULL AND papel IS NULL AND motivo IS NULL AND origem IS NOT NULL AND ((origem = 'decisao_da_etapa' AND decisao_id IS NOT NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'troca_de_vigencia' AND versao_que_entrou_id IS NOT NULL AND decisao_id IS NULL AND permissao_codigo IS NULL) OR (origem = 'reclassificacao' AND permissao_codigo IS NOT NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL)))");
 
-                            t.HasCheckConstraint("ck_eventos_da_contencao_suspensao", "tipo <> 'suspensao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_sub IS NOT NULL AND motivo IS NOT NULL AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND papel IS NOT NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
+                            t.HasCheckConstraint("ck_eventos_da_contencao_suspensao", "tipo <> 'suspensao' OR (ator = 'humano' AND ator_emissor IS NOT NULL AND ator_conta_id IS NOT NULL AND motivo IS NOT NULL AND suspensao_id IS NOT NULL AND desativacao_id IS NULL AND papel IS NOT NULL AND origem IS NULL AND decisao_id IS NULL AND versao_que_entrou_id IS NULL AND permissao_codigo IS NULL)");
 
                             t.HasCheckConstraint("ck_eventos_da_contencao_tipo", "tipo IN ('suspensao', 'retomada', 'desativacao', 'reativacao')");
                         });
@@ -1231,6 +1231,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("documento_verificado_em");
 
+                    b.Property<string>("ExecutorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("executor_conta_id");
+
                     b.Property<string>("ExecutorEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -1241,12 +1247,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("executor_nome");
-
-                    b.Property<string>("ExecutorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("executor_sub");
 
                     b.Property<DateTimeOffset>("IniciadaEm")
                         .HasColumnType("timestamp with time zone")
@@ -1285,7 +1285,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_instalacoes");
 
-                    b.HasIndex("ExecutorEmissor", "ExecutorSub")
+                    b.HasIndex("ExecutorEmissor", "ExecutorContaId")
                         .IsUnique()
                         .HasDatabaseName("ux_instalacoes_executor_pendente")
                         .HasFilter("situacao IN ('aguardando_documento', 'documento_em_verificacao', 'documento_verificado', 'aguardando_codigo')");
@@ -1321,6 +1321,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("decidido_em");
 
+                    b.Property<string>("DecididoPorContaId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("decidido_por_conta_id");
+
                     b.Property<string>("DecididoPorEmissor")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
@@ -1330,11 +1335,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("decidido_por_nome");
-
-                    b.Property<string>("DecididoPorSub")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("decidido_por_sub");
 
                     b.Property<string>("Resultado")
                         .HasMaxLength(40)
@@ -1367,7 +1367,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("itens_da_revisao", "autorizacao", t =>
                         {
-                            t.HasCheckConstraint("ck_itens_da_revisao_decisao_completa", "(resultado IS NULL AND decidido_como IS NULL AND decidido_por_emissor IS NULL AND decidido_por_sub IS NULL AND decidido_em IS NULL) OR (resultado IS NOT NULL AND decidido_como IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_sub IS NOT NULL AND decidido_em IS NOT NULL)");
+                            t.HasCheckConstraint("ck_itens_da_revisao_decisao_completa", "(resultado IS NULL AND decidido_como IS NULL AND decidido_por_emissor IS NULL AND decidido_por_conta_id IS NULL AND decidido_em IS NULL) OR (resultado IS NOT NULL AND decidido_como IS NOT NULL AND decidido_por_emissor IS NOT NULL AND decidido_por_conta_id IS NOT NULL AND decidido_em IS NOT NULL)");
                         });
                 });
 
@@ -1397,6 +1397,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("encerrada_em");
 
+                    b.Property<string>("EncerradaPorContaId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("encerrada_por_conta_id");
+
                     b.Property<string>("EncerradaPorEmissor")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
@@ -1406,11 +1411,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("encerrada_por_nome");
-
-                    b.Property<string>("EncerradaPorSub")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("encerrada_por_sub");
 
                     b.Property<string>("Forma")
                         .HasMaxLength(20)
@@ -1486,7 +1486,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_janelas_de_migracao_forma", "forma_do_encerramento IS NULL OR forma_do_encerramento IN ('concluida', 'prazo', 'manual')");
 
-                            t.HasCheckConstraint("ck_janelas_de_migracao_manual", "COALESCE(forma_do_encerramento = 'manual', false) = (motivo_do_encerramento IS NOT NULL AND encerrada_por_sub IS NOT NULL)");
+                            t.HasCheckConstraint("ck_janelas_de_migracao_manual", "COALESCE(forma_do_encerramento = 'manual', false) = (motivo_do_encerramento IS NOT NULL AND encerrada_por_conta_id IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_janelas_de_migracao_prazo", "prazo = aberta_em + interval '72 hours'");
                         });
@@ -1506,6 +1506,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("instante");
 
+                    b.Property<string>("LeitorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("leitor_conta_id");
+
                     b.Property<string>("LeitorEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -1516,12 +1522,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("leitor_nome");
-
-                    b.Property<string>("LeitorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("leitor_sub");
 
                     b.Property<Guid>("PedidoId")
                         .HasColumnType("uuid")
@@ -1553,6 +1553,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("instante");
 
+                    b.Property<string>("LeitorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("leitor_conta_id");
+
                     b.Property<string>("LeitorEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -1563,12 +1569,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("leitor_nome");
-
-                    b.Property<string>("LeitorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("leitor_sub");
 
                     b.HasKey("Id")
                         .HasName("pk_acessos_ao_documento_da_versao");
@@ -1589,6 +1589,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("concessao_id");
 
+                    b.Property<string>("DecisorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("decisor_conta_id");
+
                     b.Property<string>("DecisorEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -1599,12 +1605,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("decisor_nome");
-
-                    b.Property<string>("DecisorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("decisor_sub");
 
                     b.Property<bool>("DecisorTemConcessao")
                         .HasColumnType("boolean")
@@ -1679,6 +1679,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("confirmou_exclusao");
 
+                    b.Property<string>("EnviadoPorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("enviado_por_conta_id");
+
                     b.Property<string>("EnviadoPorEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -1689,12 +1695,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("enviado_por_nome");
-
-                    b.Property<string>("EnviadoPorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("enviado_por_sub");
 
                     b.Property<bool>("EnviadoPorTemConcessao")
                         .HasColumnType("boolean")
@@ -1821,6 +1821,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("beneficiario_aceitou_em");
 
+                    b.Property<string>("BeneficiarioContaId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("beneficiario_conta_id");
+
                     b.Property<string>("BeneficiarioEmail")
                         .IsRequired()
                         .HasMaxLength(254)
@@ -1836,11 +1841,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("beneficiario_nome");
-
-                    b.Property<string>("BeneficiarioSub")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("beneficiario_sub");
 
                     b.Property<Guid?>("ConcessaoId")
                         .HasColumnType("uuid")
@@ -1874,6 +1874,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(40)")
                         .HasColumnName("situacao");
 
+                    b.Property<string>("SolicitanteContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("solicitante_conta_id");
+
                     b.Property<string>("SolicitanteEmail")
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)")
@@ -1889,12 +1895,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("solicitante_nome");
-
-                    b.Property<string>("SolicitanteSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("solicitante_sub");
 
                     b.Property<int?>("TermoNumero")
                         .HasColumnType("integer")
@@ -1948,7 +1948,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("PerfilId", "VersaoId")
                         .HasDatabaseName("ix_pedidos_de_concessao_perfil_id_versao_id");
 
-                    b.HasIndex("SolicitanteEmissor", "SolicitanteSub")
+                    b.HasIndex("SolicitanteEmissor", "SolicitanteContaId")
                         .HasDatabaseName("ix_pedidos_solicitante");
 
                     b.HasIndex("BeneficiarioEmail", "PerfilId", "UnidadeId")
@@ -1960,11 +1960,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("pedidos_de_concessao", "autorizacao", t =>
                         {
-                            t.HasCheckConstraint("ck_pedidos_beneficiario_completo", "(beneficiario_emissor IS NULL) = (beneficiario_sub IS NULL)");
+                            t.HasCheckConstraint("ck_pedidos_beneficiario_completo", "(beneficiario_emissor IS NULL) = (beneficiario_conta_id IS NULL)");
 
                             t.HasCheckConstraint("ck_pedidos_concessao_so_aprovado", "concessao_id IS NULL OR situacao = 'aprovado'");
 
-                            t.HasCheckConstraint("ck_pedidos_decisao_com_beneficiario", "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado', 'devolvido') OR beneficiario_sub IS NOT NULL");
+                            t.HasCheckConstraint("ck_pedidos_decisao_com_beneficiario", "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado', 'devolvido') OR beneficiario_conta_id IS NOT NULL");
 
                             t.HasCheckConstraint("ck_pedidos_encerramento", "(situacao IN ('aprovado', 'recusado', 'cancelado', 'devolvido')) = (encerrado_em IS NOT NULL)");
 
@@ -2123,6 +2123,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("desfecho_em");
 
+                    b.Property<string>("DesfechoPorContaId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("desfecho_por_conta_id");
+
                     b.Property<string>("DesfechoPorEmissor")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
@@ -2132,11 +2137,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("desfecho_por_nome");
-
-                    b.Property<string>("DesfechoPorSub")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("desfecho_por_sub");
 
                     b.Property<string>("Estado")
                         .IsRequired()
@@ -2155,6 +2155,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("motivo_do_desfecho");
 
+                    b.Property<string>("SolicitadaPorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("solicitada_por_conta_id");
+
                     b.Property<string>("SolicitadaPorEmail")
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)")
@@ -2170,12 +2176,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("solicitada_por_nome");
-
-                    b.Property<string>("SolicitadaPorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("solicitada_por_sub");
 
                     b.Property<string>("Tipo")
                         .IsRequired()
@@ -2209,7 +2209,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.ToTable("providencias", "autorizacao", t =>
                         {
-                            t.HasCheckConstraint("ck_providencias_desfecho_completo", "(estado = 'aberta' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_sub IS NULL AND desfecho_por_nome IS NULL AND motivo_do_desfecho IS NULL) OR (estado <> 'aberta' AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL AND desfecho_por_sub IS NOT NULL AND motivo_do_desfecho IS NOT NULL)");
+                            t.HasCheckConstraint("ck_providencias_desfecho_completo", "(estado = 'aberta' AND desfecho_em IS NULL AND desfecho_por_emissor IS NULL AND desfecho_por_conta_id IS NULL AND desfecho_por_nome IS NULL AND motivo_do_desfecho IS NULL) OR (estado <> 'aberta' AND desfecho_em IS NOT NULL AND desfecho_por_emissor IS NOT NULL AND desfecho_por_conta_id IS NOT NULL AND motivo_do_desfecho IS NOT NULL)");
 
                             t.HasCheckConstraint("ck_providencias_estado", "estado IN ('aberta', 'respondida', 'atendida')");
 
@@ -2333,6 +2333,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("aberta_em");
 
+                    b.Property<string>("AbertaPorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("aberta_por_conta_id");
+
                     b.Property<string>("AbertaPorEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -2343,12 +2349,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("aberta_por_nome");
-
-                    b.Property<string>("AbertaPorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("aberta_por_sub");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2408,6 +2408,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("suspensa_em");
 
+                    b.Property<string>("SuspensaPorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("suspensa_por_conta_id");
+
                     b.Property<string>("SuspensaPorEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -2418,12 +2424,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("suspensa_por_nome");
-
-                    b.Property<string>("SuspensaPorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("suspensa_por_sub");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -2460,17 +2460,17 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("AutorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("autor_conta_id");
+
                     b.Property<string>("AutorEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("autor_emissor");
-
-                    b.Property<string>("AutorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("autor_sub");
 
                     b.Property<Guid?>("InstalacaoId")
                         .HasColumnType("uuid")
@@ -2640,6 +2640,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("cancelada_em");
 
+                    b.Property<string>("CanceladaPorContaId")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("cancelada_por_conta_id");
+
                     b.Property<string>("CanceladaPorEmissor")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
@@ -2649,11 +2654,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("cancelada_por_nome");
-
-                    b.Property<string>("CanceladaPorSub")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("cancelada_por_sub");
 
                     b.Property<string>("CategoriaDaRemocao")
                         .HasMaxLength(40)
@@ -2672,6 +2672,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("criada_em");
 
+                    b.Property<string>("CriadaPorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("criada_por_conta_id");
+
                     b.Property<string>("CriadaPorEmail")
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)")
@@ -2687,12 +2693,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("criada_por_nome");
-
-                    b.Property<string>("CriadaPorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("criada_por_sub");
 
                     b.Property<bool>("CriadorTemConcessao")
                         .HasColumnType("boolean")
@@ -2819,6 +2819,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("ato");
 
+                    b.Property<string>("AutorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("autor_conta_id");
+
                     b.Property<string>("AutorEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -2829,12 +2835,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("autor_nome");
-
-                    b.Property<string>("AutorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("autor_sub");
 
                     b.Property<int>("Numero")
                         .HasColumnType("integer")
@@ -2974,6 +2974,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(20)")
                         .HasColumnName("ato");
 
+                    b.Property<string>("AtorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("ator_conta_id");
+
                     b.Property<string>("AtorEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -2984,12 +2990,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("ator_nome");
-
-                    b.Property<string>("AtorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("ator_sub");
 
                     b.Property<string>("Cadastro")
                         .IsRequired()
@@ -6528,6 +6528,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(2000)")
                         .HasColumnName("texto");
 
+                    b.Property<string>("_autorContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("autor_conta_id");
+
                     b.Property<string>("_autorEmissor")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -6538,12 +6544,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("autor_nome");
-
-                    b.Property<string>("_autorSub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("autor_sub");
 
                     b.Property<string>("_cadastro")
                         .IsRequired()
@@ -6569,7 +6569,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("_cadastro", "_itemId", "Ciclo", "Instante")
                         .HasDatabaseName("ix_manifestacoes_da_protecao_item_ciclo");
 
-                    b.HasIndex("_cadastro", "_itemId", "Ciclo", "_autorEmissor", "_autorSub")
+                    b.HasIndex("_cadastro", "_itemId", "Ciclo", "_autorEmissor", "_autorContaId")
                         .IsUnique()
                         .HasDatabaseName("ux_manifestacoes_da_protecao_inicial_do_autor")
                         .HasFilter("substitui_id IS NULL");
@@ -10816,10 +10816,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("politica_de_divulgacao_confirmada_em");
 
-                    b.Property<string>("PoliticaDeDivulgacaoConfirmadaPorSub")
+                    b.Property<string>("PoliticaDeDivulgacaoConfirmadaPorContaId")
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("politica_de_divulgacao_confirmada_por_sub");
+                        .HasColumnName("politica_de_divulgacao_confirmada_por_conta_id");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
@@ -12638,7 +12638,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("gerado_por")
-                        .HasComment("O sub do token de quem gerou.");
+                        .HasComment("A conta do token de quem gerou.");
 
                     b.Property<string>("GeradoPorNome")
                         .HasMaxLength(255)
@@ -12981,7 +12981,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("importado_por")
-                        .HasComment("O sub do token de quem importou.");
+                        .HasComment("A conta do token de quem importou.");
 
                     b.Property<string>("ImportadoPorNome")
                         .HasMaxLength(255)
@@ -14159,11 +14159,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<string>("UsuarioSub")
+                    b.Property<string>("UsuarioContaId")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("usuario_sub");
+                        .HasColumnName("usuario_conta_id");
 
                     b.Property<int>("Versao")
                         .HasColumnType("integer")
@@ -14175,7 +14175,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("ExpiraEm")
                         .HasDatabaseName("ix_rascunhos_publicacao_expira_em");
 
-                    b.HasIndex("ProcessoSeletivoId", "UsuarioSub")
+                    b.HasIndex("ProcessoSeletivoId", "UsuarioContaId")
                         .IsUnique()
                         .HasDatabaseName("ux_rascunhos_publicacao_processo_operador");
 
@@ -14192,11 +14192,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("aberto_em");
 
-                    b.Property<string>("AbertoPorSub")
+                    b.Property<string>("AbertoPorContaId")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("aberto_por_sub");
+                        .HasColumnName("aberto_por_conta_id");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -14976,11 +14976,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("ato_criador_retifica_id");
 
-                    b.Property<string>("AtorUsuarioSub")
+                    b.Property<string>("AtorUsuarioContaId")
                         .IsRequired()
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
-                        .HasColumnName("ator_usuario_sub");
+                        .HasColumnName("ator_usuario_conta_id");
 
                     b.Property<string>("ConfiguracaoCongelada")
                         .IsRequired()
@@ -15206,7 +15206,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)")
                         .HasColumnName("cancelada_por")
-                        .HasComment("O sub do token de quem cancelou; nulo se não foi cancelada.");
+                        .HasComment("A conta do token de quem cancelou; nulo se não foi cancelada.");
+
+                    b.Property<string>("ContaId")
+                        .IsRequired()
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)")
+                        .HasColumnName("conta_id")
+                        .HasComment("A conta do token de quem iniciou a inscrição — nunca troca de dono.");
 
                     b.Property<byte[]>("CpfIndice")
                         .IsRequired()
@@ -15259,13 +15266,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("integer")
                         .HasColumnName("situacao");
 
-                    b.Property<string>("Sub")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("sub")
-                        .HasComment("O sub do token de quem iniciou a inscrição — nunca troca de dono.");
-
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
@@ -15281,13 +15281,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasIndex("CpfIndice")
                         .HasDatabaseName("ix_inscricoes_cpf_indice");
 
+                    b.HasIndex("ProcessoSeletivoId", "ContaId")
+                        .HasDatabaseName("ix_inscricoes_processo_conta_id");
+
                     b.HasIndex("ProcessoSeletivoId", "CpfIndice")
                         .IsUnique()
                         .HasDatabaseName("ux_inscricoes_processo_cpf_indice")
                         .HasFilter("situacao <> 3");
-
-                    b.HasIndex("ProcessoSeletivoId", "Sub")
-                        .HasDatabaseName("ix_inscricoes_processo_sub");
 
                     b.ToTable("inscricoes", "selecao", t =>
                         {
@@ -15683,10 +15683,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("character varying(255)")
                                 .HasColumnName("emissor");
 
-                            b1.Property<string>("Sub")
+                            b1.Property<string>("ContaId")
                                 .HasMaxLength(255)
                                 .HasColumnType("character varying(255)")
-                                .HasColumnName("sub");
+                                .HasColumnName("conta_id");
 
                             b1.Property<string>("Email")
                                 .HasMaxLength(254)
@@ -15698,7 +15698,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("character varying(255)")
                                 .HasColumnName("nome");
 
-                            b1.HasKey("InstalacaoId", "Emissor", "Sub")
+                            b1.HasKey("InstalacaoId", "Emissor", "ContaId")
                                 .HasName("pk_gestores_da_instalacao");
 
                             b1.ToTable("gestores_da_instalacao", "autorizacao");

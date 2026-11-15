@@ -70,7 +70,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         Cenario cenario = MontarCriacao(cpf);
         Inscricao existente = Inscricao.Iniciar(
-            ProcessoId, cpf, "sub-1", "https://issuer", cenario.Versao.Id).Value!;
+            ProcessoId, cpf, "conta-1", "https://issuer", cenario.Versao.Id).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -96,13 +96,13 @@ public sealed class IniciarInscricaoCommandHandlerTests
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Inscrição existente de outro sub com o mesmo CPF: recusa como dono divergente, sem devolvê-la")]
-    public async Task Handle_InscricaoDeOutroSub_RecusaComoDonoDivergente()
+    [Fact(DisplayName = "Inscrição existente de outra conta com o mesmo CPF: recusa como dono divergente, sem devolvê-la")]
+    public async Task Handle_InscricaoDeOutroContaId_RecusaComoDonoDivergente()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         Cenario cenario = MontarCriacao(cpf);
         Inscricao existente = Inscricao.Iniciar(
-            ProcessoId, cpf, "sub-original", "https://issuer", cenario.Versao.Id).Value!;
+            ProcessoId, cpf, "conta-original", "https://issuer", cenario.Versao.Id).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -117,21 +117,21 @@ public sealed class IniciarInscricaoCommandHandlerTests
             Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(),
             new RelogioFixo(DentroDoPeriodo),
             Substitute.For<IUnitOfWork>(),
-            UsuarioComCpf(cpf, sub: "sub-outro"),
+            UsuarioComCpf(cpf, contaId: "conta-outro"),
             CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.DonoDivergente");
     }
 
-    [Fact(DisplayName = "Inscrição cancelada de outro sub com o mesmo CPF: iniciar é recusado como dono divergente, e o mesmo sub se inscreve de novo")]
-    public async Task Handle_CanceladaDeOutroSub_RecusaEMesmoSubInscreveDeNovo()
+    [Fact(DisplayName = "Inscrição cancelada de outra conta com o mesmo CPF: iniciar é recusado como dono divergente, e a mesma conta se inscreve de novo")]
+    public async Task Handle_CanceladaDeOutroContaId_RecusaEMesmoContaIdInscreveDeNovo()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         Cenario cenario = MontarCriacao(cpf);
         Inscricao cancelada = Inscricao.Reidratar(
-            Guid.CreateVersion7(), ProcessoId, cpf, "sub-1", "https://issuer", SituacaoInscricao.Cancelada, cenario.Versao.Id, null, null,
-            "000123", DataHoraFixa, "sub-1", "a pedido do candidato",
+            Guid.CreateVersion7(), ProcessoId, cpf, "conta-1", "https://issuer", SituacaoInscricao.Cancelada, cenario.Versao.Id, null, null,
+            "000123", DataHoraFixa, "conta-1", "a pedido do candidato",
             new Dictionary<string, JsonElement>(), new Dictionary<string, JsonElement>(),
             new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [], new Dictionary<string, DefinicaoDaResposta>(), 2, DataHoraFixa, null);
         cenario.Inscricoes.ObterTodasPorCpfAsync(cpf, Arg.Any<CancellationToken>()).Returns((IReadOnlyList<Inscricao>)[cancelada]);
@@ -139,7 +139,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
         Result<InscricaoDto> deOutro = await IniciarInscricaoCommandHandler.Handle(
             new IniciarInscricaoCommand(ProcessoId), cenario.Inscricoes, cenario.Divulgados, cenario.Processos, Substitute.For<IDocumentoDaInscricaoRepository>(), cenario.Codecs, Fuso(),
             Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), new RelogioFixo(DentroDoPeriodo),
-            Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf, "sub-outro"), CancellationToken.None);
+            Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf, "conta-outro"), CancellationToken.None);
         deOutro.Error!.Code.Should().Be(InscricaoErrorCodes.DonoDivergente);
         await cenario.Inscricoes.DidNotReceive().AdicionarAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());
 
@@ -239,7 +239,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
 
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             ProcessoId, Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":null}}"""), "0.0.22", "canonical-json/sha256@v1",
-            Guid.CreateVersion7(), new string('a', 64), "user-sub-1", DataHoraFixa);
+            Guid.CreateVersion7(), new string('a', 64), "user-conta-1", DataHoraFixa);
 
         CertameDivulgado divulgado = CertameDivulgado.Criar(
             ProcessoId, numeroVersao: 1, AtoDaDivulgacao, new string('a', 64), versaoProjecao: "1",
@@ -290,11 +290,11 @@ public sealed class IniciarInscricaoCommandHandlerTests
         return fuso;
     }
 
-    private static IUserContext UsuarioComCpf(Cpf cpf, string sub = "sub-1")
+    private static IUserContext UsuarioComCpf(Cpf cpf, string contaId = "conta-1")
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(cpf.Valor);
-        contexto.UserId.Returns(sub);
+        contexto.UserId.Returns(contaId);
         contexto.Issuer.Returns("https://issuer");
         return contexto;
     }

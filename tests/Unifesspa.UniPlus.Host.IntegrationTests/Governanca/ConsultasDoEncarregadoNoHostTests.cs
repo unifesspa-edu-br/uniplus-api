@@ -98,7 +98,7 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
         using HttpClient cecilia = await EncarregadaAsync();
         using HttpResponseMessage semAPermissao = await cecilia.GetAsync(new Uri("/api/configuracao/admin/tipos-processo", UriKind.Relative));
 
-        await ConcessoesDeTeste.ConcederPermissoesAsync(Fixture.Factory.Services, Cecilia.Sub.ToString(), "configuracao:tipos-processo:consultar");
+        await ConcessoesDeTeste.ConcederPermissoesAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), "configuracao:tipos-processo:consultar");
         using HttpResponseMessage comAPermissao = await cecilia.GetAsync(new Uri("/api/configuracao/admin/tipos-processo", UriKind.Relative));
 
         (semAPermissao.StatusCode, comAPermissao.StatusCode).Should().Be((HttpStatusCode.Forbidden, HttpStatusCode.OK));
@@ -109,8 +109,8 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
     {
         using HttpClient cecilia = await EncarregadaAsync();
         await ExecutarSqlAsync(
-            "UPDATE autorizacao.concessoes SET concedida_em = now() - interval '3 days', valida_ate = now() - interval '1 minute' WHERE beneficiario_sub = {0} AND perfil_id = {1}",
-            Cecilia.Sub.ToString(),
+            "UPDATE autorizacao.concessoes SET concedida_em = now() - interval '3 days', valida_ate = now() - interval '1 minute' WHERE beneficiario_conta_id = {0} AND perfil_id = {1}",
+            Cecilia.ContaId.ToString(),
             PerfisDeSistema.EncarregadoDeDadosId);
         int antes = Registro.Registrados.Count;
 
@@ -190,13 +190,13 @@ public sealed class ConsultasDoEncarregadoNoHostTests : PedidosDeConcessaoTestBa
     private RegistroDeDecisoesDeTeste Registro => Fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>();
 
     private IEnumerable<RegistroDecisaoAcesso> DaCecilia(int antes) =>
-        Registro.Registrados.Skip(antes).Where(static r => r.AtorSubject == Cecilia.Sub.ToString());
+        Registro.Registrados.Skip(antes).Where(static r => r.AtorSubject == Cecilia.ContaId.ToString());
 
     // Cecília só com o perfil de Encarregado de dados, recém-concedido e vigente.
     private async Task<HttpClient> EncarregadaAsync()
     {
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Cecilia.Sub.ToString());
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.Sub.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString());
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
         return Cliente(Cecilia);
     }
 }

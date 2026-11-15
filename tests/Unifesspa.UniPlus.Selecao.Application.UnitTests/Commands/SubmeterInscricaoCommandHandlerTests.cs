@@ -39,16 +39,16 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 {
     private static readonly Guid ProcessoId = Guid.CreateVersion7();
 
-    private static Inscricao NovaInscricao(Cpf cpf, string sub, Guid versaoFormularioId) =>
-        Inscricao.Iniciar(ProcessoId, cpf, sub, "https://issuer", versaoFormularioId).Value!;
+    private static Inscricao NovaInscricao(Cpf cpf, string contaId, Guid versaoFormularioId) =>
+        Inscricao.Iniciar(ProcessoId, cpf, contaId, "https://issuer", versaoFormularioId).Value!;
 
-    private static IUserContext UsuarioComCpf(Cpf cpf, string sub = "sub-1", string? nomeSocial = null)
+    private static IUserContext UsuarioComCpf(Cpf cpf, string contaId = "conta-1", string? nomeSocial = null)
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(cpf.Valor);
         contexto.NomeCompleto.Returns(PersonasDeTeste.NomeFernandaDrumond);
         contexto.NomeSocial.Returns(nomeSocial);
-        contexto.UserId.Returns(sub);
+        contexto.UserId.Returns(contaId);
         contexto.Issuer.Returns("https://issuer");
         return contexto;
     }
@@ -178,11 +178,11 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
     }
 
-    [Fact(DisplayName = "Sub diferente do gravado para o mesmo CPF é recusado como dono divergente, sem tentar gravar")]
-    public async Task Handle_SubDivergente_RecusaComoDonoDivergente()
+    [Fact(DisplayName = "ContaId diferente do gravado para o mesmo CPF é recusado como dono divergente, sem tentar gravar")]
+    public async Task Handle_ContaIdDivergente_RecusaComoDonoDivergente()
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
-        Inscricao existente = NovaInscricao(cpf, "sub-original", Guid.CreateVersion7());
+        Inscricao existente = NovaInscricao(cpf, "conta-original", Guid.CreateVersion7());
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -191,7 +191,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         Result<ReciboDaInscricaoDto> resultado = await SubmeterAsync(
             new SubmeterInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(),
-            unitOfWork, UsuarioComCpf(cpf, sub: "sub-outro"));
+            unitOfWork, UsuarioComCpf(cpf, contaId: "conta-outro"));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.DonoDivergente");
@@ -202,7 +202,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     public async Task Handle_VersaoFixadaInexistente_AfloraComoCorrupcao()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        Inscricao existente = NovaInscricao(cpf, "sub-1", Guid.CreateVersion7());
+        Inscricao existente = NovaInscricao(cpf, "conta-1", Guid.CreateVersion7());
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -231,7 +231,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, _) = MontarVersaoComItemObrigatorioETermo();
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -257,8 +257,8 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         (VersaoConfiguracao fixada, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
         VersaoConfiguracao divulgada = VersaoConfiguracao.Abrir(
             ProcessoId, Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":"2026-12-10"}}"""), "0.0.22", "canonical-json/sha256@v1",
-            Guid.CreateVersion7(), new string('c', 64), "user-sub-1", new DateTimeOffset(2026, 10, 11, 12, 0, 0, TimeSpan.Zero));
-        Inscricao existente = NovaInscricao(cpf, "sub-1", fixada.Id);
+            Guid.CreateVersion7(), new string('c', 64), "user-conta-1", new DateTimeOffset(2026, 10, 11, 12, 0, 0, TimeSpan.Zero));
+        Inscricao existente = NovaInscricao(cpf, "conta-1", fixada.Id);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -319,7 +319,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         // que FAIXA_ETARIA apura contra esta data, nunca a de hoje.
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             ProcessoId, Encoding.UTF8.GetBytes("""{"documentosExigidos":{"dataReferenciaFatos":"2026-12-10"}}"""), "0.0.22", "canonical-json/sha256@v1",
-            Guid.CreateVersion7(), new string('a', 64), "user-sub-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
+            Guid.CreateVersion7(), new string('a', 64), "user-conta-1", new DateTimeOffset(2026, 10, 10, 12, 0, 0, TimeSpan.Zero));
 
         return (versao, grafo, versaoDoTermo);
     }
@@ -343,7 +343,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         Guid ofertaB = Guid.CreateVersion7();
         GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
             grafoBase, OfertasDeTeste.Distribuicao(ofertaA, "AC"), OfertasDeTeste.Distribuicao(ofertaB, "AC", "AC_FEM"));
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
         existente.Salvar(
             ofertaB, null, new Dictionary<string, JsonElement>(), new Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>(), [],
             Unifesspa.UniPlus.Selecao.Application.Services.ContextoDaVersaoFixadaResolver.Admitidas(grafo) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([existente.ETag])).IsSuccess.Should().BeTrue();
@@ -366,7 +366,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
             grafoBase, OfertasDeTeste.Distribuicao(ofertaA, "AC"), OfertasDeTeste.Distribuicao(ofertaB, "AC", "AC_FEM"));
 
-        Inscricao inscricao = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao inscricao = NovaInscricao(cpf, "conta-1", versao.Id);
         Result<ReciboDaInscricaoDto> daOfertaB = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, inscricao, ofertaB);
 
         daOfertaB.IsSuccess.Should().BeTrue(daOfertaB.Error?.Message);
@@ -384,7 +384,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             OfertasDeTeste.ComDistribuicao(grafoBase, OfertasDeTeste.Distribuicao(direito, "AC", "AC_FEM"), OfertasDeTeste.Distribuicao(computacao, "AC")),
             numeroDeOpcoesDeCurso: 2);
 
-        Inscricao inscricao = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao inscricao = NovaInscricao(cpf, "conta-1", versao.Id);
         Result<ReciboDaInscricaoDto> resultado = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, inscricao, direito, computacao);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -405,7 +405,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
             grafoBase, OfertasDeTeste.Distribuicao(direito, "AC"), OfertasDeTeste.Distribuicao(computacao, "AC"));
 
-        Inscricao inscricao = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao inscricao = NovaInscricao(cpf, "conta-1", versao.Id);
         Result<ReciboDaInscricaoDto> resultado = await SubmeterNaOfertaAsync(cpf, versao, grafo, termo, inscricao, direito, computacao);
 
         resultado.Errors.Should().ContainSingle().Which.Should().Match<FieldError>(
@@ -453,7 +453,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
 
         async Task<(Result<ReciboDaInscricaoDto> Resultado, IDocumentoDaInscricaoRepository Repositorio, ArquivoDaApresentacao Fixado, ArquivoDaApresentacao Orfao, Inscricao Inscricao)> EnviarAsync(bool comLaudo, bool semApelido = false, bool laudoEmVerificacao = false)
         {
-            Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+            Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
             IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
             inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
             IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
@@ -524,7 +524,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -562,7 +562,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -597,7 +597,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, _) = MontarVersaoComItemObrigatorioETermo();
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -678,7 +678,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -706,7 +706,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -746,7 +746,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
         Dictionary<string, JsonElement> respostasDoRascunho = RespostasDoConjuntoBasico(cpf);
         respostasDoRascunho["APELIDO"] = JsonSerializer.SerializeToElement("Nanda");
         Result salvo = existente.Salvar(
@@ -801,7 +801,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo(itens, grupos, ajustar);
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -1050,7 +1050,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -1092,7 +1092,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo([DataAteOEnvio]);
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -1117,7 +1117,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo([DataAteOEnvio]);
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -1139,7 +1139,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo([DataAteOEnvio]);
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
@@ -1418,7 +1418,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             [GrupoMunicipal().Subitens.First(), soEmBelem], FinalidadeFormulario.Inscricao).Value!;
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo(grupos: [locais]);
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
@@ -1466,7 +1466,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
                 FormatosPermitidos.Criar(true, null).Value!, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
             return ([regional], [NoExigencia.CriarFolha(regional, 0).Value!]);
         });
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
@@ -1510,7 +1510,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             deBelem = Doc("DeBelem", "MUNICIPIO_RESIDENCIA", JsonSerializer.SerializeToElement(Belem));
             return ([aos26, aos16, deBelem], [NoExigencia.CriarFolha(aos26, 0).Value!, NoExigencia.CriarFolha(aos16, 1).Value!, NoExigencia.CriarFolha(deBelem, 2).Value!]);
         });
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
@@ -1542,7 +1542,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo, VersaoTermoEscolhida termo) = MontarVersaoComItemObrigatorioETermo();
-        Inscricao existente = NovaInscricao(cpf, "sub-1", versao.Id);
+        Inscricao existente = NovaInscricao(cpf, "conta-1", versao.Id);
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
         IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();

@@ -83,7 +83,7 @@ public sealed class ConcessaoRepository : IConcessaoRepository
 
         return await _context.Concessoes
             .Where(c => c.BeneficiarioEmissor == beneficiario.Emissor
-                && c.BeneficiarioSub == beneficiario.Sub
+                && c.BeneficiarioContaId == beneficiario.ContaId
                 && c.PerfilId == perfilId
                 && c.EscopoTipo == escopo.Tipo
                 && c.UnidadeId == escopo.UnidadeId
@@ -119,7 +119,7 @@ public sealed class ConcessaoRepository : IConcessaoRepository
             .AsNoTracking()
             .AnyAsync(
                 c => c.BeneficiarioEmissor == pessoa.Emissor
-                    && c.BeneficiarioSub == pessoa.Sub
+                    && c.BeneficiarioContaId == pessoa.ContaId
                     && c.PerfilId == perfilId
                     && c.EscopoTipo == TipoDeEscopo.Instituicao
                     && c.RevogadaEm == null
@@ -144,11 +144,11 @@ public sealed class ConcessaoRepository : IConcessaoRepository
 
         IQueryable<Concessao> consulta = _context.Concessoes.AsNoTracking();
 
-        if (filtro.PessoaEmissor is not null && filtro.PessoaSub is not null)
+        if (filtro.PessoaEmissor is not null && filtro.PessoaContaId is not null)
         {
             string emissor = filtro.PessoaEmissor;
-            string sub = filtro.PessoaSub;
-            consulta = consulta.Where(c => c.BeneficiarioEmissor == emissor && c.BeneficiarioSub == sub);
+            string contaId = filtro.PessoaContaId;
+            consulta = consulta.Where(c => c.BeneficiarioEmissor == emissor && c.BeneficiarioContaId == contaId);
         }
 
         if (filtro.UnidadeId is { } unidadeId)
@@ -199,7 +199,7 @@ public sealed class ConcessaoRepository : IConcessaoRepository
             .AsNoTracking()
             .VigentesDaInstituicao(agora)
             .Where(c => c.PerfilId == perfilId && c.Id != exceto)
-            .Select(c => new { c.BeneficiarioEmissor, c.BeneficiarioSub })
+            .Select(c => new { c.BeneficiarioEmissor, c.BeneficiarioContaId })
             .Distinct()
             .CountAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -211,12 +211,12 @@ public sealed class ConcessaoRepository : IConcessaoRepository
             .AsNoTracking()
             .VigentesDaInstituicao(agora)
             .Where(c => c.PerfilId == perfilId && c.BeneficiarioEmail != null)
-            .Select(c => new { c.BeneficiarioEmissor, c.BeneficiarioSub, c.BeneficiarioEmail })
+            .Select(c => new { c.BeneficiarioEmissor, c.BeneficiarioContaId, c.BeneficiarioEmail })
             .Distinct()
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
-        return [.. titulares.Select(t => new TitularComEmail(new Identidade(t.BeneficiarioEmissor, t.BeneficiarioSub), t.BeneficiarioEmail!))];
+        return [.. titulares.Select(t => new TitularComEmail(new Identidade(t.BeneficiarioEmissor, t.BeneficiarioContaId), t.BeneficiarioEmail!))];
     }
 
     // Uma só consulta traz a concessão, o nome do perfil e o número da versão da própria concessão, nunca o da vigente: o

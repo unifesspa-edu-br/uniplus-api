@@ -20,7 +20,7 @@ public sealed class AcessoAFilaTests
     [InlineData(EtapaDaVersao.ProtecaoDeDados, Protecao, Gestao)]
     public async Task Negado_SemPermissaoDaEtapa_RecusaERegistraANegativa(EtapaDaVersao etapa, string permissaoDaEtapa, string deOutraEtapa)
     {
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [deOutraEtapa]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.ContaId, [deOutraEtapa]);
 
         DomainError? recusa = await AcessoAFila.NegadoAsync(verificador, etapa, CancellationToken.None);
 
@@ -33,7 +33,7 @@ public sealed class AcessoAFilaTests
     [InlineData(EtapaDaVersao.ProtecaoDeDados, Protecao)]
     public async Task Negado_ComPermissaoDaEtapa_NaoRecusaERegistraAPermitida(EtapaDaVersao etapa, string permissaoDaEtapa)
     {
-        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.Sub, [permissaoDaEtapa]);
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.ContaId, [permissaoDaEtapa]);
 
         DomainError? recusa = await AcessoAFila.NegadoAsync(verificador, etapa, CancellationToken.None);
 
@@ -56,5 +56,5 @@ public sealed class AcessoAFilaTests
     }
 
     private static TrilhaDeAcesso NaOperacao(string permissao, ResultadoDoAcesso resultado) =>
-        new(PerfisDeTeste.Gestor.Sub, permissao, ResourceTipos.Operacao, null, resultado);
+        new(PerfisDeTeste.Gestor.ContaId, permissao, ResourceTipos.Operacao, null, resultado);
 }

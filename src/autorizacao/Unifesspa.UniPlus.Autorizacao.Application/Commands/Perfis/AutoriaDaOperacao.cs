@@ -23,7 +23,7 @@ public sealed class AutoriaDaOperacao
         _concessoes = concessoes;
     }
 
-    /// <summary>A identidade do token; nulo quando faltam emissor ou sub, e então nada se grava.</summary>
+    /// <summary>A identidade do token; nulo quando faltam emissor ou conta, e então nada se grava.</summary>
     public Identidade? Autor => IdentidadeDoToken.De(_userContext);
 
     public DateTimeOffset Agora => _timeProvider.GetUtcNow();

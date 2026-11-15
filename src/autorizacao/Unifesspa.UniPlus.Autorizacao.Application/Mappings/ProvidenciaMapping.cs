@@ -76,7 +76,7 @@ public static class ProvidenciaMapping
 
     private static bool Impedido(Providencia p, Concessao c, Identidade? leitor) => leitor is not null && p.ImpedeResposta(leitor, c);
 
-    private static IdentidadeDto Pessoa(Identidade pessoa) => new(pessoa.Emissor, pessoa.Sub, pessoa.Nome);
+    private static IdentidadeDto Pessoa(Identidade pessoa) => new(pessoa.Emissor, pessoa.ContaId, pessoa.Nome);
 
     private static string Rotulo(TipoDaProvidencia tipo) =>
         tipo == TipoDaProvidencia.Retirada ? "Retirada do acesso" : "Revisão do acesso";

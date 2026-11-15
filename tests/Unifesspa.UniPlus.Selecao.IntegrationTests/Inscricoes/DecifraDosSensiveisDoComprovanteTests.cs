@@ -31,7 +31,7 @@ public sealed class DecifraDosSensiveisDoComprovanteTests : IClassFixture<Inscri
     public async Task DecifraSoOComprovantePedido()
     {
         Inscricao inscricao = Inscricao.Iniciar(
-            Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
+            Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!;
         ComprovanteInscricao envio = Emitir(inscricao, Primeiro, "CIS", "HETEROSSEXUAL");
         ComprovanteInscricao correcao = Emitir(inscricao, Primeiro.AddMinutes(5), "TRANSGENERO", "BISSEXUAL");
         await GravarAsync(inscricao, envio, correcao);

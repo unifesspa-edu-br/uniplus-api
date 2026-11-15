@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 /// <remarks>
 /// A ordem de travas é a única de todo caminho que concede ou revoga concessão de governança: o perfil de gestor, a
-/// vigência do termo de responsabilidade (compartilhada), as pessoas dos gestores, em ordem de emissor e <c>sub</c>, e por
+/// vigência do termo de responsabilidade (compartilhada), as pessoas dos gestores, em ordem de emissor e <c>contaId</c>, e por
 /// último a trava dos gestores, que a revogação também toma depois da pessoa. O gestor acumula com qualquer outro papel, e
 /// a instalação nunca recusa por incompatibilidade. Os gestores instalados não aceitam o termo: a exceção fica registrada
 /// com a vigência lida, e a instalação segue (ADR-0162).
@@ -71,7 +71,7 @@ public sealed class ConcessaoDosGestores
             ?? throw new InvalidOperationException("O perfil de sistema do gestor de acessos não existe: a carga inicial não rodou.");
         VersaoDoTermo? vigente = await _termos.ObterVigenteSobTravaCompartilhadaAsync(cancellationToken).ConfigureAwait(false);
 
-        await _papeis.TravarAsync(instalacao.Gestores.Select(static g => new Identidade(g.Emissor, g.Sub)), cancellationToken).ConfigureAwait(false);
+        await _papeis.TravarAsync(instalacao.Gestores.Select(static g => new Identidade(g.Emissor, g.ContaId)), cancellationToken).ConfigureAwait(false);
         await _concessoes.TravarGovernancaParaEscritaAsync(cancellationToken).ConfigureAwait(false);
 
         return (perfil, vigente);
@@ -115,7 +115,7 @@ public sealed class ConcessaoDosGestores
         Result<Concessao>[] concedidas =
         [
             .. instalacao.Gestores.Select(g => Concessao.Conceder(
-                new TitularDaConcessao(new Identidade(g.Emissor, g.Sub, g.Nome), g.Email), perfil, EscopoDaConcessao.DaInstituicao(), origem, ato, _catalogo)),
+                new TitularDaConcessao(new Identidade(g.Emissor, g.ContaId, g.Nome), g.Email), perfil, EscopoDaConcessao.DaInstituicao(), origem, ato, _catalogo)),
         ];
         FieldError[] erros = [.. concedidas.Where(static c => c.IsFailure).SelectMany(static c => c.Errors)];
 

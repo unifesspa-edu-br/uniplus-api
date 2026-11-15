@@ -34,7 +34,7 @@ internal sealed class VersaoConfiguracaoConfiguration : IEntityTypeConfiguration
     private const int HashLength = 64;
     private const int SchemaVersionMaxLength = 20;
     private const int AlgoritmoHashMaxLength = 60;
-    private const int AtorUsuarioSubMaxLength = 255;
+    private const int AtorUsuarioContaIdMaxLength = 255;
 
     public void Configure(EntityTypeBuilder<VersaoConfiguracao> builder)
     {
@@ -118,8 +118,8 @@ internal sealed class VersaoConfiguracaoConfiguration : IEntityTypeConfiguration
 
         builder.Property(v => v.AtoCriadorRetificaId);
 
-        builder.Property(v => v.AtorUsuarioSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
-            .HasMaxLength(AtorUsuarioSubMaxLength)
+        builder.Property(v => v.AtorUsuarioContaId).ClassificaComo(ClassificacaoDeProtecao.Pessoal)
+            .HasMaxLength(AtorUsuarioContaIdMaxLength)
             .IsRequired();
 
         // Única FK da tabela — intra-módulo, para a raiz do certame. Sem nav

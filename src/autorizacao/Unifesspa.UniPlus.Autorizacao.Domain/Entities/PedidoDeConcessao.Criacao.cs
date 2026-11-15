@@ -80,7 +80,7 @@ public sealed partial class PedidoDeConcessao
     {
         BeneficiarioEmail = beneficiario.Email;
         SolicitanteEmissor = solicitante.Identidade.Emissor;
-        SolicitanteSub = solicitante.Identidade.Sub;
+        SolicitanteContaId = solicitante.Identidade.ContaId;
         SolicitanteNome = NomeDeExibicao.Normalizar(solicitante.Nome);
         SolicitanteEmail = solicitante.EmailVerificado ? EmailNormalizado(solicitante.Email) : null;
 

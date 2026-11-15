@@ -28,7 +28,7 @@ public sealed class TestAuthHandler : AuthenticationHandler<AuthenticationScheme
     public const string EmailVerifiedHeader = "X-Test-Email-Verified";
     public const string RolesHeader = "X-Test-Roles";
 
-    /// <summary>Emissor do token. O sujeito da decisão é o par emissor + subject.</summary>
+    /// <summary>Emissor do token. O sujeito da decisão é o par emissor + contaId.</summary>
     public const string DefaultIssuer = "https://idp.test/realms/unifesspa";
 
     /// <summary>

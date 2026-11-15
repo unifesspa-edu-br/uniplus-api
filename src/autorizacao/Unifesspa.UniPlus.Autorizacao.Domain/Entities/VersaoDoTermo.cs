@@ -27,7 +27,7 @@ public sealed class VersaoDoTermo : IForensicEntity
 
     public string AutorEmissor { get; private init; } = string.Empty;
 
-    public string AutorSub { get; private init; } = string.Empty;
+    public string AutorContaId { get; private init; } = string.Empty;
 
     public string? AutorNome { get; private init; }
 
@@ -47,7 +47,7 @@ public sealed class VersaoDoTermo : IForensicEntity
             Resumo = conteudo.Resumo,
             Ato = conteudo.Ato,
             AutorEmissor = autor.Emissor,
-            AutorSub = autor.Sub,
+            AutorContaId = autor.ContaId,
             AutorNome = autor.Nome,
             PublicadaEm = instante,
         };

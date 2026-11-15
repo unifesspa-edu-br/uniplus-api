@@ -36,7 +36,7 @@ public sealed class LeituraDosPropriosPedidosTests
     public async Task FilaMeus_ComAConsulta_UmRegistroPorPedido()
     {
         PedidoDeConcessao[] pedidos = [Pedido(Cecilia), Pedido(Cecilia)];
-        VerificadorDeTeste verificador = new(Cecilia.Identidade.Sub, permitidas: [Consultar]);
+        VerificadorDeTeste verificador = new(Cecilia.Identidade.ContaId, permitidas: [Consultar]);
 
         Result<ListarPedidosDeConcessaoResult> pagina = await ListarMeusAsync(Cecilia, pedidos, verificador);
 
@@ -50,7 +50,7 @@ public sealed class LeituraDosPropriosPedidosTests
     public async Task FilaMeus_SemAConsulta_UmRegistroPorPedidoPorTitularidade()
     {
         PedidoDeConcessao[] pedidos = [Pedido(Betina), Pedido(Betina)];
-        VerificadorDeTeste verificador = new(Betina.Identidade.Sub, permitidas: []);
+        VerificadorDeTeste verificador = new(Betina.Identidade.ContaId, permitidas: []);
 
         Result<ListarPedidosDeConcessaoResult> pagina = await ListarMeusAsync(Betina, pedidos, verificador);
 
@@ -65,7 +65,7 @@ public sealed class LeituraDosPropriosPedidosTests
     [InlineData(false)]
     public async Task FilaMeus_PaginaVazia_NaoGrava(bool comAConsulta)
     {
-        VerificadorDeTeste verificador = new(Betina.Identidade.Sub, permitidas: comAConsulta ? [Consultar] : []);
+        VerificadorDeTeste verificador = new(Betina.Identidade.ContaId, permitidas: comAConsulta ? [Consultar] : []);
 
         Result<ListarPedidosDeConcessaoResult> pagina = await ListarMeusAsync(Betina, [], verificador);
 
@@ -77,20 +77,20 @@ public sealed class LeituraDosPropriosPedidosTests
     public async Task Parte_ComAConsulta_VeERegistraPelaConsulta()
     {
         PedidoDeConcessao pedido = Pedido(Cecilia);
-        VerificadorDeTeste verificador = new(Cecilia.Identidade.Sub, permitidas: [Consultar]);
+        VerificadorDeTeste verificador = new(Cecilia.Identidade.ContaId, permitidas: [Consultar]);
 
         DomainError? recusa = await VisibilidadeDoPedido.ConferirAsync(pedido, Cecilia, verificador, CancellationToken.None);
 
         recusa.Should().BeNull();
         TrilhaDeAcesso.Do(verificador).Should().Equal(
-            new TrilhaDeAcesso(Cecilia.Identidade.Sub, Consultar, ResourceTiposAutorizacao.Pedido, pedido.Id, ResultadoDoAcesso.Permitido));
+            new TrilhaDeAcesso(Cecilia.Identidade.ContaId, Consultar, ResourceTiposAutorizacao.Pedido, pedido.Id, ResultadoDoAcesso.Permitido));
     }
 
     [Fact(DisplayName = "No pedido em que é parte, quem não tem a consulta vê o pedido e grava a leitura dele por titularidade")]
     public async Task Parte_SemAConsulta_VeERegistraPorTitularidade()
     {
         PedidoDeConcessao pedido = Pedido(Betina);
-        VerificadorDeTeste verificador = new(Betina.Identidade.Sub, permitidas: []);
+        VerificadorDeTeste verificador = new(Betina.Identidade.ContaId, permitidas: []);
 
         DomainError? recusa = await VisibilidadeDoPedido.ConferirAsync(pedido, Betina, verificador, CancellationToken.None);
 
@@ -104,7 +104,7 @@ public sealed class LeituraDosPropriosPedidosTests
     public async Task BeneficiarioPeloEmail_SemAConsulta_RegistraPorTitularidade()
     {
         PedidoDeConcessao pedido = Pedido(Cecilia, Betina.Email);
-        VerificadorDeTeste verificador = new(Betina.Identidade.Sub, permitidas: []);
+        VerificadorDeTeste verificador = new(Betina.Identidade.ContaId, permitidas: []);
 
         DomainError? recusa = await VisibilidadeDoPedido.ConferirAsync(pedido, Betina, verificador, CancellationToken.None);
 
@@ -150,11 +150,11 @@ public sealed class LeituraDosPropriosPedidosTests
     private static void DeveSerPorTitularidade(RegistroDecisaoAcesso registro, PessoaNoToken leitor)
     {
         (registro.AtorSubject, registro.Permissao, registro.FonteGrant, registro.ResourceTipo, registro.Sensibilidade, registro.Resultado)
-            .Should().Be((leitor.Identidade.Sub, AcessoDoAprovador.CodigoDaLeituraPorTitularidade, "titularidade", ResourceTiposAutorizacao.Pedido, "pessoal", ResultadoDoAcesso.Permitido));
+            .Should().Be((leitor.Identidade.ContaId, AcessoDoAprovador.CodigoDaLeituraPorTitularidade, "titularidade", ResourceTiposAutorizacao.Pedido, "pessoal", ResultadoDoAcesso.Permitido));
         (registro.GrantId, registro.PerfilId, registro.VersaoId, registro.EscopoUnidadeId).Should().Be(((Guid?)null, (Guid?)null, (Guid?)null, (Guid?)null));
     }
 
-    // O token identifica a pessoa (emissor e sub), mas a decisão não tem sujeito, como no token sem jti.
+    // O token identifica a pessoa (emissor e conta), mas a decisão não tem sujeito, como no token sem jti.
     private static IVerificadorDeAcesso SemSujeitoNaDecisao()
     {
         IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
@@ -166,7 +166,7 @@ public sealed class LeituraDosPropriosPedidosTests
     // A consulta dos pedidos é negada, e o token deixa de identificar a pessoa quando a leitura vai ser gravada.
     private static IVerificadorDeAcesso SemIdentidadeAoGravarPorTitularidade()
     {
-        VerificadorDeTeste semAConsulta = new(Betina.Identidade.Sub, permitidas: []);
+        VerificadorDeTeste semAConsulta = new(Betina.Identidade.ContaId, permitidas: []);
         IVerificadorDeAcesso verificador = Substitute.For<IVerificadorDeAcesso>();
         verificador.AvaliarAsync(default!, default, default)
             .ReturnsForAnyArgs(chamada => semAConsulta.AvaliarAsync(chamada.ArgAt<PermissionRequirement>(0), chamada.ArgAt<ResourceContext?>(1)));

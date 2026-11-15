@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Authorization.Contracts;
 internal sealed class SemDesignacaoDeBanca : IDesignacaoDeBanca
 {
     public Task<bool> TemDesignacaoVigenteAsync(
-        string emissor, string subject, Guid processoId, VinculosDaBanca banca, CancellationToken cancellationToken) =>
+        string emissor, string contaId, Guid processoId, VinculosDaBanca banca, CancellationToken cancellationToken) =>
         Task.FromResult(false);
 
     public Task<bool> ExisteDesignacaoVigenteAsync(Guid bancaId, CancellationToken cancellationToken) =>

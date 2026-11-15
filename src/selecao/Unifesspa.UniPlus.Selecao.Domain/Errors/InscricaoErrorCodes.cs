@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// <summary>Códigos de erro da inscrição do candidato.</summary>
 public static class InscricaoErrorCodes
 {
-    public const string SubObrigatorio = "Inscricao.SubObrigatorio";
+    public const string ContaIdObrigatorio = "Inscricao.ContaIdObrigatorio";
     public const string EmissorObrigatorio = "Inscricao.EmissorObrigatorio";
     public const string PrecondicaoRequerida = "Inscricao.PrecondicaoRequerida";
     public const string PrecondicaoFalhou = "Inscricao.PrecondicaoFalhou";

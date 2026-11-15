@@ -15,7 +15,7 @@ public sealed class LeituraDoDocumentoDaVersao : IForensicEntity
 
     public string LeitorEmissor { get; private init; } = string.Empty;
 
-    public string LeitorSub { get; private init; } = string.Empty;
+    public string LeitorContaId { get; private init; } = string.Empty;
 
     public string? LeitorNome { get; private init; }
 
@@ -34,7 +34,7 @@ public sealed class LeituraDoDocumentoDaVersao : IForensicEntity
         {
             DocumentoId = documentoId,
             LeitorEmissor = leitor.Emissor,
-            LeitorSub = leitor.Sub,
+            LeitorContaId = leitor.ContaId,
             LeitorNome = leitor.Nome,
             Instante = instante,
         };

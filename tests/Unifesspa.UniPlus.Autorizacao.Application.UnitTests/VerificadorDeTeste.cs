@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 /// O verificador de acesso dos testes: a identidade informada tem as permissões listadas e nenhuma outra. Guarda o que o
 /// verificador real gravaria como desfecho.
 /// </summary>
-internal sealed class VerificadorDeTeste(string sub, string[] permitidas) : IVerificadorDeAcesso
+internal sealed class VerificadorDeTeste(string contaId, string[] permitidas) : IVerificadorDeAcesso
 {
     public List<IReadOnlyCollection<RegistroDecisaoAcesso>> Gravados { get; } = [];
 
@@ -69,7 +69,7 @@ internal sealed class VerificadorDeTeste(string sub, string[] permitidas) : IVer
 
     private RegistroDecisaoAcesso Registro(PermissionRequirement requisito, ResourceContext alvo, AuthorizationDecision decisao) =>
         RegistroDecisaoAcesso.De(
-            AuthorizationSubject.From(UsuarioRef.From("https://idp.exemplo/realms/unifesspa", sub).Value!, "jti-teste").Value!,
+            AuthorizationSubject.From(UsuarioRef.From("https://idp.exemplo/realms/unifesspa", contaId).Value!, "jti-teste").Value!,
             requisito,
             alvo,
             AuthorizationRequestContext.From("req-1", DateTimeOffset.UtcNow, OrigemRequisicao.Api).Value!,

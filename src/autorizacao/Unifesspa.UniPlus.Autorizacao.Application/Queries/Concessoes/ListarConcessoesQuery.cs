@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// <summary>Lista as concessões paginadas por cursor opaco bidirecional (ADR-0026 + ADR-0089).</summary>
 public sealed record ListarConcessoesQuery(
     string? PessoaEmissor,
-    string? PessoaSub,
+    string? PessoaContaId,
     Guid? UnidadeId,
     Guid? PerfilId,
     SituacaoDaConcessao Situacao,

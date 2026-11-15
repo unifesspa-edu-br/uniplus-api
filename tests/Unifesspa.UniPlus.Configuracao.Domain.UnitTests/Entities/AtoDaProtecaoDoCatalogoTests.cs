@@ -42,7 +42,7 @@ public sealed class AtoDaProtecaoDoCatalogoTests
     {
         AtoDaProtecaoDoCatalogo ato = AtoDaProtecaoDoCatalogo.Registrar(Retrato(), AtoDaProtecao.Solicitacao, Betina, Segunda);
 
-        (ato.Ato, ato.AtorEmissor, ato.AtorSub, ato.AtorNome, ato.Instante).Should().Be(
+        (ato.Ato, ato.AtorEmissor, ato.AtorContaId, ato.AtorNome, ato.Instante).Should().Be(
             (AtoDaProtecao.Solicitacao, Betina.Emissor, "betina.neves", "Betina Marina Valentina das Neves", Segunda));
         (ato.ClassificacaoRecomendada, ato.Justificativa, ato.DianteDeManifestacaoDesfavoravel).Should().Be(((ClassificacaoDeProtecao?)null, (string?)null, false));
     }

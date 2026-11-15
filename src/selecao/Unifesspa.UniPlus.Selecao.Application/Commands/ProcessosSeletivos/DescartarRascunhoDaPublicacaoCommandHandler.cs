@@ -26,7 +26,7 @@ public static class DescartarRascunhoDaPublicacaoCommandHandler
         ArgumentNullException.ThrowIfNull(rascunhoRepository);
         ArgumentNullException.ThrowIfNull(userContext);
 
-        if (SalvarRascunhoDaPublicacaoCommandHandler.DonoDoRascunho(userContext) is not { } usuarioSub)
+        if (SalvarRascunhoDaPublicacaoCommandHandler.DonoDoRascunho(userContext) is not { } usuarioContaId)
         {
             return Result.Failure(RascunhoDaPublicacao.SemDono);
         }
@@ -34,7 +34,7 @@ public static class DescartarRascunhoDaPublicacaoCommandHandler
         // Apagar o que não existe afeta zero linhas e continua sendo sucesso — o pedido era
         // que não houvesse rascunho.
         await rascunhoRepository
-            .ApagarDoOperadorAsync(command.ProcessoSeletivoId, usuarioSub, cancellationToken)
+            .ApagarDoOperadorAsync(command.ProcessoSeletivoId, usuarioContaId, cancellationToken)
             .ConfigureAwait(false);
 
         return Result.Success();

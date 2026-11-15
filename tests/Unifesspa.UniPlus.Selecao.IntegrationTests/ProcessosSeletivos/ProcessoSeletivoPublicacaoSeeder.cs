@@ -275,7 +275,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
 
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
             dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!,
-            atorUsuarioSub: "integration-test-user",
+            atorUsuarioContaId: "integration-test-user",
             TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 

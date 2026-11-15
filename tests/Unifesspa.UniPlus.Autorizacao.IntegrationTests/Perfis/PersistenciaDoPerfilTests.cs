@@ -154,7 +154,7 @@ public sealed class PersistenciaDoPerfilTests : PerfilEndpointTestBase
         ExecutarAsync(
             """
             INSERT INTO autorizacao.decisoes_da_versao
-                (id, versao_id, ciclo, etapa, resultado, decisor_emissor, decisor_sub, decisor_tem_concessao, acrescimo_avaliado, exigia_protecao_de_dados, instante)
+                (id, versao_id, ciclo, etapa, resultado, decisor_emissor, decisor_conta_id, decisor_tem_concessao, acrescimo_avaliado, exigia_protecao_de_dados, instante)
             VALUES ({0}, {1}, {2}, {3}, 'aprovado', 'emissor', 'isabella.figueiredo', false, ARRAY[]::text[], false, now())
             """,
             Guid.CreateVersion7(), versaoId, ciclo, etapa);

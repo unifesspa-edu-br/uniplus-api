@@ -20,7 +20,7 @@ public sealed class DecisaoDaRetomada : IForensicEntity, IRegistroDaTrilhaDeCont
 
     public string DecisorEmissor { get; private init; } = string.Empty;
 
-    public string DecisorSub { get; private init; } = string.Empty;
+    public string DecisorContaId { get; private init; } = string.Empty;
 
     public string? DecisorNome { get; private init; }
 
@@ -36,7 +36,7 @@ public sealed class DecisaoDaRetomada : IForensicEntity, IRegistroDaTrilhaDeCont
 
     public long OrdemNaTrilha { get; private set; }
 
-    public Identidade Decisor => new(DecisorEmissor, DecisorSub, DecisorNome);
+    public Identidade Decisor => new(DecisorEmissor, DecisorContaId, DecisorNome);
 
     // Construtor de materialização do EF Core.
     private DecisaoDaRetomada()
@@ -49,7 +49,7 @@ public sealed class DecisaoDaRetomada : IForensicEntity, IRegistroDaTrilhaDeCont
             SuspensaoId = suspensaoId,
             Etapa = contexto.Etapa,
             DecisorEmissor = contexto.Decisor.Emissor,
-            DecisorSub = contexto.Decisor.Sub,
+            DecisorContaId = contexto.Decisor.ContaId,
             DecisorNome = contexto.Decisor.Nome,
             DecisorTemConcessao = contexto.DecisorTemConcessao,
             Motivo = motivo,

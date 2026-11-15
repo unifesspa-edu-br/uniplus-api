@@ -33,7 +33,7 @@ public sealed class UltimoRepresentanteNosOutrosCaminhosNoHostTests : UltimoRepr
         await ConferirCodigoAsync(await AtenderAsync(g.Diogo, providencia, Marlene.Email), HttpStatusCode.UnprocessableEntity, UltimoRepresentante);
 
         (await LinhaAsync(providencia)).Estado.Should().Be("aberta");
-        (await VigentesAsync()).Should().Equal(Marlene.Sub.ToString());
+        (await VigentesAsync()).Should().Equal(Marlene.ContaId.ToString());
     }
 
     [Fact(DisplayName = "A revogação do item da revisão sobre a única designação de Representante é recusada, e o item segue pendente")]
@@ -48,7 +48,7 @@ public sealed class UltimoRepresentanteNosOutrosCaminhosNoHostTests : UltimoRepr
             UltimoRepresentante);
 
         ItemDe(await LerAsync(g.Marlene, $"{RotaDasRevisoes}/{revisaoId}"), itemId).GetProperty("situacao").GetString().Should().Be("pendente");
-        (await VigentesAsync()).Should().Equal(Marlene.Sub.ToString());
+        (await VigentesAsync()).Should().Equal(Marlene.ContaId.ToString());
     }
 
     [Fact(DisplayName = "A revogação direta e o atendimento simultâneos dos dois últimos Representantes: um passa, o outro é recusado")]
@@ -71,7 +71,7 @@ public sealed class UltimoRepresentanteNosOutrosCaminhosNoHostTests : UltimoRepr
     {
         JsonElement revisao = await CorpoAsync(await EnviarAsync(marlene, HttpMethod.Post, RotaDasRevisoes), HttpStatusCode.Created);
         JsonElement item = revisao.GetProperty("itens").EnumerateArray()
-            .Single(i => i.GetProperty("beneficiario").GetProperty("sub").GetString() == Marlene.Sub.ToString());
+            .Single(i => i.GetProperty("beneficiario").GetProperty("contaId").GetString() == Marlene.ContaId.ToString());
 
         return (revisao.GetProperty("id").GetGuid(), item.GetProperty("id").GetGuid());
     }

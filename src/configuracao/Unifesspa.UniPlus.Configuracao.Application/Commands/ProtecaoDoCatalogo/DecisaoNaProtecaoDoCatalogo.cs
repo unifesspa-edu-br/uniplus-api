@@ -69,7 +69,7 @@ public sealed class DecisaoNaProtecaoDoCatalogo
         }
 
         DateTimeOffset agora = _relogio.GetUtcNow();
-        Result decidida = item.Decidir(pedido.Decisao, ator.Sub, agora);
+        Result decidida = item.Decidir(pedido.Decisao, ator.ContaId, agora);
         if (decidida.IsSuccess)
         {
             _atos.Adicionar(AtoDaProtecaoDoCatalogo.RegistrarDecisao(item.Retrato(), pedido.Decisao, ator, agora));

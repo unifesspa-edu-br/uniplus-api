@@ -18,17 +18,17 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Ler a inscrição (issue #1859, <c>GET .../inscricao</c>): devolve a do dono do token, pelo CPF do
-/// claim, e confere o <c>sub</c> gravado — nunca por id na rota.
+/// claim, e confere o <c>contaId</c> gravado — nunca por id na rota.
 /// </summary>
 public sealed class ObterInscricaoQueryHandlerTests
 {
     private static readonly Guid ProcessoId = Guid.CreateVersion7();
 
-    private static IUserContext UsuarioComCpf(Cpf cpf, string sub = "sub-1")
+    private static IUserContext UsuarioComCpf(Cpf cpf, string contaId = "conta-1")
     {
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(cpf.Valor);
-        contexto.UserId.Returns(sub);
+        contexto.UserId.Returns(contaId);
         return contexto;
     }
 
@@ -62,18 +62,18 @@ public sealed class ObterInscricaoQueryHandlerTests
         resultado.Error.Message.Should().NotContain(cpf.Valor).And.NotContain(ProcessoId.ToString());
     }
 
-    [Fact(DisplayName = "Sub diferente do gravado para o mesmo CPF é recusado como dono divergente")]
-    public async Task Handle_SubDivergente_RecusaComoDonoDivergente()
+    [Fact(DisplayName = "ContaId diferente do gravado para o mesmo CPF é recusado como dono divergente")]
+    public async Task Handle_ContaIdDivergente_RecusaComoDonoDivergente()
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         Inscricao existente = Inscricao.Iniciar(
-            ProcessoId, cpf, "sub-original", "https://issuer", Guid.CreateVersion7()).Value!;
+            ProcessoId, cpf, "conta-original", "https://issuer", Guid.CreateVersion7()).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
 
         Result<InscricaoDto> resultado = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IDocumentoDaInscricaoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), UsuarioComCpf(cpf, sub: "sub-outro"), DivulgacaoDeTeste.Relogio, CancellationToken.None);
+            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IDocumentoDaInscricaoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), UsuarioComCpf(cpf, contaId: "conta-outro"), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.DonoDivergente");
@@ -84,7 +84,7 @@ public sealed class ObterInscricaoQueryHandlerTests
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
-        Inscricao existente = Inscricao.Iniciar(ProcessoId, cpf, "sub-1", "https://issuer", versao.Id).Value!;
+        Inscricao existente = Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);

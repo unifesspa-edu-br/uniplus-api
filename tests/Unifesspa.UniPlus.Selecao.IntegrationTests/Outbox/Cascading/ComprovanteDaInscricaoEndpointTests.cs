@@ -136,7 +136,7 @@ public sealed class ComprovanteDaInscricaoEndpointTests
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(HttpMethod.Get, new Uri($"/api/selecao/inscricoes/{inscricaoId}/comprovantes/{numero}", UriKind.Relative));
         request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, cpf == PersonasDeTeste.FernandaDrumond ? Dono : "sub-outro");
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, cpf == PersonasDeTeste.FernandaDrumond ? Dono : "conta-outro");
         request.Headers.TryAddWithoutValidation(TestAuthHandler.CpfHeader, cpf.Valor);
         request.Headers.TryAddWithoutValidation("Accept", accept);
 

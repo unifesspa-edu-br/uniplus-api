@@ -75,7 +75,7 @@ public sealed class ConciliacaoDosDocumentosIntegrationTests : IClassFixture<Ins
     {
         UniPlusDbContext context = _db.CreateDbContext();
         InscricaoRepository inscricoes = new(context, _db.Encryption, _db.BlindIndex, TimeProvider.System);
-        Inscricao inscricao = Inscricao.Iniciar(Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
+        Inscricao inscricao = Inscricao.Iniciar(Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!;
         await inscricoes.AdicionarAsync(inscricao);
         await context.SaveChangesAsync();
 

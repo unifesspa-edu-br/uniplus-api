@@ -17,7 +17,7 @@ internal static class TravaDoBeneficiario
         ArgumentNullException.ThrowIfNull(concessao);
 
         return PerfisDeSistema.EhDeGovernanca(concessao.PerfilId)
-            ? papeis.TravarAsync([new Identidade(concessao.BeneficiarioEmissor, concessao.BeneficiarioSub)], cancellationToken)
+            ? papeis.TravarAsync([new Identidade(concessao.BeneficiarioEmissor, concessao.BeneficiarioContaId)], cancellationToken)
             : Task.CompletedTask;
     }
 }

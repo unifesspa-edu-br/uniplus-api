@@ -43,12 +43,12 @@ public sealed class HttpAuthorizationSubjectResolverTests
                 new ConcessaoAtiva(concessaoId, perfilId, null, "Perfil", Unidade, false, validade, [Permissao, "selecao:outra-coisa:ler"]),
             ],
             new Claim("iss", Emissor),
-            new Claim("sub", "sub-opaco-1"),
+            new Claim("sub", "conta-opaco-1"),
             new Claim("jti", "jti-1"));
 
         AuthorizationSubject sujeito = resultado.Value!;
         sujeito.Usuario.Emissor.Should().Be(Emissor);
-        sujeito.Usuario.Subject.Should().Be("sub-opaco-1");
+        sujeito.Usuario.ContaId.Should().Be("conta-opaco-1");
         sujeito.Jti.Should().Be("jti-1");
         sujeito.ConcessoesEfetivas.Select(c => c.PermissaoCodigo).Should().Equal(Permissao, "selecao:outra-coisa:ler");
         sujeito.ConcessoesEfetivas.Should().AllSatisfy(concessao =>
@@ -68,7 +68,7 @@ public sealed class HttpAuthorizationSubjectResolverTests
         Result<AuthorizationSubject> resultado = await Resolver(
             [new ConcessaoAtiva(Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Perfil", null, true, null, [Permissao])],
             new Claim("iss", Emissor),
-            new Claim("sub", "sub-opaco-1"),
+            new Claim("sub", "conta-opaco-1"),
             new Claim("jti", "jti-1"));
 
         EffectiveGrant concessao = resultado.Value!.ConcessoesEfetivas.Should().ContainSingle().Subject;
@@ -85,7 +85,7 @@ public sealed class HttpAuthorizationSubjectResolverTests
         Result<AuthorizationSubject> resultado = await Resolver(
             [new ConcessaoAtiva(Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Perfil", null, true, vencida, [Permissao])],
             new Claim("iss", Emissor),
-            new Claim("sub", "sub-opaco-1"),
+            new Claim("sub", "conta-opaco-1"),
             new Claim("jti", "jti-1"));
 
         resultado.Value!.ConcessoesEfetivas.Should().ContainSingle().Which.ValidoAte.Should().Be(vencida);
@@ -97,7 +97,7 @@ public sealed class HttpAuthorizationSubjectResolverTests
         Result<AuthorizationSubject> resultado = await Resolver(
             [new ConcessaoAtiva(Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Perfil", null, true, null, [" ", Permissao])],
             new Claim("iss", Emissor),
-            new Claim("sub", "sub-opaco-1"),
+            new Claim("sub", "conta-opaco-1"),
             new Claim("jti", "jti-1"));
 
         resultado.Value!.ConcessoesEfetivas.Should().ContainSingle().Which.PermissaoCodigo.Should().Be(Permissao);
@@ -111,7 +111,7 @@ public sealed class HttpAuthorizationSubjectResolverTests
         Result<AuthorizationSubject> resultado = await Resolver(
             [],
             new Claim("iss", Emissor),
-            new Claim("sub", "sub-opaco-1"),
+            new Claim("sub", "conta-opaco-1"),
             new Claim("jti", "jti-1"),
             new Claim("resource_access", JsonSerializer.Serialize(new Dictionary<string, object>
             {
@@ -131,11 +131,11 @@ public sealed class HttpAuthorizationSubjectResolverTests
         await Resolver(
             concessoes,
             new Claim("iss", Emissor),
-            new Claim("sub", "sub-opaco-1"),
+            new Claim("sub", "conta-opaco-1"),
             new Claim("jti", "jti-1"));
 
         await concessoes.Received(1).ListarAsync(
-            Arg.Is<UsuarioRef>(u => u.Emissor == Emissor && u.Subject == "sub-opaco-1"),
+            Arg.Is<UsuarioRef>(u => u.Emissor == Emissor && u.ContaId == "conta-opaco-1"),
             Arg.Any<CancellationToken>());
     }
 
@@ -144,7 +144,7 @@ public sealed class HttpAuthorizationSubjectResolverTests
     {
         Result<AuthorizationSubject> resultado = await Resolver(
             new Claim("iss", Emissor),
-            new Claim("sub", "sub-opaco-1"));
+            new Claim("sub", "conta-opaco-1"));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.SujeitoJtiAusente);
@@ -154,7 +154,7 @@ public sealed class HttpAuthorizationSubjectResolverTests
     public async Task Resolve_SemIssuer_Falha()
     {
         Result<AuthorizationSubject> resultado = await Resolver(
-            new Claim("sub", "sub-opaco-1"),
+            new Claim("sub", "conta-opaco-1"),
             new Claim("jti", "jti-1"));
 
         resultado.IsFailure.Should().BeTrue();
@@ -162,14 +162,14 @@ public sealed class HttpAuthorizationSubjectResolverTests
     }
 
     [Fact]
-    public async Task Resolve_SemSubject_Falha()
+    public async Task Resolve_SemContaId_Falha()
     {
         Result<AuthorizationSubject> resultado = await Resolver(
             new Claim("iss", Emissor),
             new Claim("jti", "jti-1"));
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.SujeitoSubjectAusente);
+        resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.SujeitoContaIdAusente);
     }
 
     [Fact]

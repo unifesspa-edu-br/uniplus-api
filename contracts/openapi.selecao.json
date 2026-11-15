@@ -22722,7 +22722,7 @@
           "versaoBaseId",
           "numeroVersaoBase",
           "abertoEm",
-          "abertoPorSub",
+          "abertoPorContaId",
           "revisao",
           "eTag"
         ],
@@ -22751,7 +22751,7 @@
             "type": "string",
             "format": "date-time"
           },
-          "abertoPorSub": {
+          "abertoPorContaId": {
             "type": "string"
           },
           "revisao": {

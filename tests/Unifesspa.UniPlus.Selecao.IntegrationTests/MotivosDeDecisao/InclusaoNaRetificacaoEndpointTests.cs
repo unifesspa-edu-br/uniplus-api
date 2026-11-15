@@ -106,10 +106,10 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         const string justificativa = "Justificativa interna da administração";
         (await IncluirAsync(processoId, homologacao.Id, justificativa, etag)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        using HttpResponseMessage anonimo = await LerAsync($"{Rota}/{processoId}/motivos-de-decisao", sub: null, papel: null);
-        using HttpResponseMessage candidata = await LerAsync($"{Rota}/{processoId}/motivos-de-decisao", sub: "marlene.martins", papel: null);
-        using HttpResponseMessage processoPublico = await LerAsync($"{Rota}/{processoId}", sub: null, papel: null);
-        using HttpResponseMessage quemConfigura = await LerAsync($"{Rota}/{processoId}/motivos-de-decisao", sub: null, papel: "plataforma-admin");
+        using HttpResponseMessage anonimo = await LerAsync($"{Rota}/{processoId}/motivos-de-decisao", contaId: null, papel: null);
+        using HttpResponseMessage candidata = await LerAsync($"{Rota}/{processoId}/motivos-de-decisao", contaId: "marlene.martins", papel: null);
+        using HttpResponseMessage processoPublico = await LerAsync($"{Rota}/{processoId}", contaId: null, papel: null);
+        using HttpResponseMessage quemConfigura = await LerAsync($"{Rota}/{processoId}/motivos-de-decisao", contaId: null, papel: "plataforma-admin");
 
         anonimo.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
         candidata.StatusCode.Should().BeOneOf(HttpStatusCode.Forbidden, HttpStatusCode.NotFound);
@@ -211,18 +211,18 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
         return resposta;
     }
 
-    private async Task<HttpResponseMessage> LerAsync(string url, string? sub, string? papel)
+    private async Task<HttpResponseMessage> LerAsync(string url, string? contaId, string? papel)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(HttpMethod.Get, new Uri(url, UriKind.Relative));
-        if (sub is not null || papel is not null)
+        if (contaId is not null || papel is not null)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
         }
 
-        if (sub is not null)
+        if (contaId is not null)
         {
-            request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, sub);
+            request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, contaId);
         }
 
         if (papel is not null)
@@ -237,7 +237,7 @@ public sealed class InclusaoNaRetificacaoEndpointTests : IAsyncLifetime
 
     private async Task<IReadOnlyList<JsonElement>> EscolhidosAsync(Guid processoId)
     {
-        using HttpResponseMessage leitura = await LerAsync($"{Rota}/{processoId}/motivos-de-decisao", sub: null, papel: "plataforma-admin");
+        using HttpResponseMessage leitura = await LerAsync($"{Rota}/{processoId}/motivos-de-decisao", contaId: null, papel: "plataforma-admin");
         leitura.StatusCode.Should().Be(HttpStatusCode.OK, await leitura.Content.ReadAsStringAsync());
         return [.. (await leitura.Content.ReadFromJsonAsync<JsonElement>()).EnumerateArray()];
     }

@@ -40,7 +40,7 @@ internal sealed class LoteDaMigracaoConfiguration : IEntityTypeConfiguration<Lot
 
         builder.Property(l => l.Etapa).HasConversion(EtapaConverter).HasMaxLength(EtapaMaxLength).IsRequired();
         builder.Property(l => l.EnviadoPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(l => l.EnviadoPorSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(l => l.EnviadoPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(l => l.EnviadoPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(l => l.EnviadoPorTemConcessao).IsRequired();
         builder.Property(l => l.ConfirmouExclusao).IsRequired();

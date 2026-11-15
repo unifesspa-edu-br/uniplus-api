@@ -110,7 +110,7 @@ public sealed class PedidosDeConcessaoGovernancaTests : PedidosDeConcessaoTestBa
         Concessao[] concessoes = await ConcessoesAsync(Leandro, perfil);
         concessoes.Should().HaveCount(2);
         Concessao antiga = concessoes.Single(c => c.RevogadaEm is not null);
-        (antiga.MotivoRevogacao, antiga.RevogadaPorSub).Should().Be(($"Renovação pelo pedido {id}.", Diogo.Sub.ToString()));
+        (antiga.MotivoRevogacao, antiga.RevogadaPorContaId).Should().Be(($"Renovação pelo pedido {id}.", Diogo.ContaId.ToString()));
         Concessao nova = concessoes.Single(c => c.RevogadaEm is null);
         nova.OrigemId.Should().Be(id);
         nova.EstaAtiva(DateTimeOffset.UtcNow).Should().BeTrue();

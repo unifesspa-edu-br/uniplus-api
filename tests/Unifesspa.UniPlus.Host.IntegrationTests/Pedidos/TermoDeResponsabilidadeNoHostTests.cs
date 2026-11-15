@@ -37,7 +37,7 @@ public sealed class TermoDeResponsabilidadeNoHostTests : TermoNoHostTestBase
         versao.GetProperty("numero").GetInt32().Should().Be(2);
         versao.GetProperty("vigente").GetBoolean().Should().BeTrue();
         versao.GetProperty("resumo").GetString().Should().Be(Sha256(versao.GetProperty("texto").GetString()!));
-        versao.TryGetProperty("autorSub", out _).Should().BeFalse("o autor fica gravado para auditoria e não é exposto");
+        versao.TryGetProperty("autorContaId", out _).Should().BeFalse("o autor fica gravado para auditoria e não é exposto");
     }
 
     [Fact(DisplayName = "Quem pede lê a vigente e a versão pelo id; o histórico é de quem publica")]

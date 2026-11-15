@@ -21,7 +21,7 @@ public sealed class RascunhoDePublicacaoConfiguration : IEntityTypeConfiguration
         // Guid v7 gerado no domínio (EntityBase) — mesma convenção das demais entidades.
         builder.Property(r => r.Id).ValueGeneratedNever();
 
-        builder.Property(r => r.UsuarioSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(255).IsRequired();
+        builder.Property(r => r.UsuarioContaId).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(255).IsRequired();
 
         // `text`, e não `jsonb`: o documento precisa voltar EXATAMENTE como foi enviado, e o
         // `jsonb` não faz isso — ele parseia, reordena as chaves e renormaliza os números, que
@@ -55,7 +55,7 @@ public sealed class RascunhoDePublicacaoConfiguration : IEntityTypeConfiguration
         builder.HasIndex(r => r.ExpiraEm)
             .HasDatabaseName("ix_rascunhos_publicacao_expira_em");
 
-        builder.HasIndex(r => new { r.ProcessoSeletivoId, r.UsuarioSub })
+        builder.HasIndex(r => new { r.ProcessoSeletivoId, r.UsuarioContaId })
             .IsUnique()
             .HasDatabaseName("ux_rascunhos_publicacao_processo_operador");
     }

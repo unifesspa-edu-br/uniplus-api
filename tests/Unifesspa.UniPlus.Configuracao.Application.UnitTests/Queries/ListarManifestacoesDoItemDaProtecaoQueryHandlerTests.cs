@@ -32,7 +32,7 @@ public sealed class ListarManifestacoesDoItemDaProtecaoQueryHandlerTests
         historico!.Select(m => (m.Parecer, m.Situacao, m.AutorNome, m.Ciclo)).Should().Equal(
             ("INADEQUADA", "SUBSTITUIDA", "Kevin Anderson Carvalho", 1),
             ("RECOMENDA_AJUSTE", "VIGENTE", "Kevin Anderson Carvalho", 1));
-        typeof(ManifestacaoDaProtecaoDto).GetProperties().Select(p => p.Name).Should().NotContain(["AutorSub", "AutorEmissor", "Sub", "Emissor"]);
+        typeof(ManifestacaoDaProtecaoDto).GetProperties().Select(p => p.Name).Should().NotContain(["AutorContaId", "AutorEmissor", "ContaId", "Emissor"]);
     }
 
     [Fact(DisplayName = "A manifestação de ciclo anterior ao corrente sai encerrada")]

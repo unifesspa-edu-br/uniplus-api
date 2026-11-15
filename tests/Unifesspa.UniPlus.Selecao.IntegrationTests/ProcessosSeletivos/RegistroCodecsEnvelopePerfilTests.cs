@@ -136,7 +136,7 @@ public sealed class RegistroCodecsEnvelopePerfilTests
             algoritmoHash: perfil.Algoritmo,
             atoCriadorId: Guid.CreateVersion7(),
             atoCriadorHash: new string('a', 64),
-            atorUsuarioSub: "user-sub-1",
+            atorUsuarioContaId: "user-conta-1",
             instante: DateTimeOffset.UnixEpoch);
 
     private static RegistroCodecsEnvelope RegistroCom(IPerfilCanonico perfil) =>

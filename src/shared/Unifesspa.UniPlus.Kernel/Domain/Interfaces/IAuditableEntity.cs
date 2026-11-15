@@ -36,9 +36,9 @@ public interface IAuditableEntity
     /// <summary>Instante da última modificação do registro (UTC), ou <see langword="null"/> se nunca foi modificado.</summary>
     DateTimeOffset? UpdatedAt { get; }
 
-    /// <summary>Identificador (<c>sub</c> do JWT) do usuário responsável pela criação, ou <c>"system"</c> em fluxos sem principal autenticado.</summary>
+    /// <summary>Identificador (<c>contaId</c> do JWT) do usuário responsável pela criação, ou <c>"system"</c> em fluxos sem principal autenticado.</summary>
     string? CreatedBy { get; }
 
-    /// <summary>Identificador (<c>sub</c> do JWT) do usuário responsável pela última modificação, ou <c>"system"</c> em fluxos sem principal autenticado.</summary>
+    /// <summary>Identificador (<c>contaId</c> do JWT) do usuário responsável pela última modificação, ou <c>"system"</c> em fluxos sem principal autenticado.</summary>
     string? UpdatedBy { get; }
 }

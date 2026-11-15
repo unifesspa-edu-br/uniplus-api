@@ -77,8 +77,8 @@ public sealed class VersaoConfiguracao : IForensicEntity
     /// </summary>
     public Guid? AtoCriadorRetificaId { get; private init; }
 
-    /// <summary>Sub do usuário que publicou — evidência forense de autoria.</summary>
-    public string AtorUsuarioSub { get; private init; } = null!;
+    /// <summary>ContaId do usuário que publicou — evidência forense de autoria.</summary>
+    public string AtorUsuarioContaId { get; private init; } = null!;
 
     // Construtor de materialização do EF Core.
     private VersaoConfiguracao()
@@ -97,7 +97,7 @@ public sealed class VersaoConfiguracao : IForensicEntity
         string algoritmoHash,
         Guid atoCriadorId,
         string atoCriadorHash,
-        string atorUsuarioSub,
+        string atorUsuarioContaId,
         DateTimeOffset instante)
     {
         GuardarFormato(
@@ -107,7 +107,7 @@ public sealed class VersaoConfiguracao : IForensicEntity
             algoritmoHash,
             atoCriadorId,
             atoCriadorHash,
-            atorUsuarioSub);
+            atorUsuarioContaId);
 
         return Congelar(
             processoSeletivoId,
@@ -118,7 +118,7 @@ public sealed class VersaoConfiguracao : IForensicEntity
             atoCriadorId,
             atoCriadorHash,
             atoCriadorRetificaId: null,
-            atorUsuarioSub,
+            atorUsuarioContaId,
             instante);
     }
 
@@ -146,7 +146,7 @@ public sealed class VersaoConfiguracao : IForensicEntity
         Guid atoCriadorId,
         string atoCriadorHash,
         Guid atoCriadorRetificaId,
-        string atorUsuarioSub,
+        string atorUsuarioContaId,
         DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(anterior);
@@ -157,7 +157,7 @@ public sealed class VersaoConfiguracao : IForensicEntity
             algoritmoHash,
             atoCriadorId,
             atoCriadorHash,
-            atorUsuarioSub);
+            atorUsuarioContaId);
 
         if (atoCriadorRetificaId != anterior.AtoCriadorId)
         {
@@ -193,7 +193,7 @@ public sealed class VersaoConfiguracao : IForensicEntity
             atoCriadorId,
             atoCriadorHash,
             atoCriadorRetificaId,
-            atorUsuarioSub,
+            atorUsuarioContaId,
             vigenteAPartirDe);
     }
 
@@ -206,7 +206,7 @@ public sealed class VersaoConfiguracao : IForensicEntity
         Guid atoCriadorId,
         string atoCriadorHash,
         Guid? atoCriadorRetificaId,
-        string atorUsuarioSub,
+        string atorUsuarioContaId,
         DateTimeOffset vigenteAPartirDe)
     {
         // Cópia defensiva: os bytes são a base do hash e do jsonb derivados logo
@@ -228,7 +228,7 @@ public sealed class VersaoConfiguracao : IForensicEntity
             AtoCriadorId = atoCriadorId,
             AtoCriadorHash = atoCriadorHash,
             AtoCriadorRetificaId = atoCriadorRetificaId,
-            AtorUsuarioSub = atorUsuarioSub,
+            AtorUsuarioContaId = atorUsuarioContaId,
         };
     }
 
@@ -250,12 +250,12 @@ public sealed class VersaoConfiguracao : IForensicEntity
         string algoritmoHash,
         Guid atoCriadorId,
         string atoCriadorHash,
-        string atorUsuarioSub)
+        string atorUsuarioContaId)
     {
         ArgumentNullException.ThrowIfNull(configuracaoCongeladaCanonica);
         ArgumentException.ThrowIfNullOrWhiteSpace(schemaVersion);
         ArgumentException.ThrowIfNullOrWhiteSpace(algoritmoHash);
-        ArgumentException.ThrowIfNullOrWhiteSpace(atorUsuarioSub);
+        ArgumentException.ThrowIfNullOrWhiteSpace(atorUsuarioContaId);
 
         if (processoSeletivoId == Guid.Empty)
         {

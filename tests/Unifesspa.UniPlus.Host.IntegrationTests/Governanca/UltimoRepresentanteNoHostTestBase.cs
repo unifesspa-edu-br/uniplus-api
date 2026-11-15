@@ -36,7 +36,7 @@ public abstract class UltimoRepresentanteNoHostTestBase : ProvidenciasNoHostTest
 
     /// <summary>A concessão de Representante da pessoa, com o e-mail dela; a já existente é reaproveitada.</summary>
     private protected Task<Guid> DesignacaoAsync(Persona pessoa) =>
-        ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, pessoa.Sub.ToString(), TipoDeGovernanca.RepresentanteDoControlador, pessoa.Email);
+        ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, pessoa.ContaId.ToString(), TipoDeGovernanca.RepresentanteDoControlador, pessoa.Email);
 
     /// <summary>Quem tem concessão vigente de Representante agora, lido direto do banco.</summary>
     private protected async Task<string[]> VigentesAsync()
@@ -46,7 +46,7 @@ public abstract class UltimoRepresentanteNoHostTestBase : ProvidenciasNoHostTest
 
         return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes.AsNoTracking()
             .Where(c => c.PerfilId == Representante && c.RevogadaEm == null && (c.ValidaAte == null || c.ValidaAte > agora))
-            .Select(c => c.BeneficiarioSub)
+            .Select(c => c.BeneficiarioContaId)
             .ToArrayAsync();
     }
 

@@ -50,7 +50,7 @@ public sealed class DesignacaoNaBancaCheck : IPermissaoCheck
         }
 
         bool designado = await _designacoes
-            .TemDesignacaoVigenteAsync(subject.Usuario.Emissor, subject.Usuario.Subject, processoId, banca, cancellationToken)
+            .TemDesignacaoVigenteAsync(subject.Usuario.Emissor, subject.Usuario.ContaId, processoId, banca, cancellationToken)
             .ConfigureAwait(false);
 
         return designado

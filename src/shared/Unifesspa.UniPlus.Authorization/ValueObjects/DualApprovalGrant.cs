@@ -143,10 +143,10 @@ public sealed record DualApprovalGrant
             usadoPor));
     }
 
-    // Dois aprovadores são a mesma pessoa quando compartilham emissor + subject
+    // Dois aprovadores são a mesma pessoa quando compartilham emissor + contaId
     // do token (par único de identidade OIDC) — não o UsuarioId interno, que
     // pode estar ausente em um dos lados.
     private static bool MesmaIdentidade(UsuarioRef a, UsuarioRef b) =>
         string.Equals(a.Emissor, b.Emissor, StringComparison.Ordinal)
-        && string.Equals(a.Subject, b.Subject, StringComparison.Ordinal);
+        && string.Equals(a.ContaId, b.ContaId, StringComparison.Ordinal);
 }

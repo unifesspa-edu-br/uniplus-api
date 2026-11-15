@@ -7,6 +7,6 @@ using Unifesspa.UniPlus.Authorization.Abstractions;
 /// </summary>
 internal sealed class SemInscricaoNoProcesso : IInscricaoDoSujeitoNoProcesso
 {
-    public Task<bool> TemInscricaoEnviadaAsync(string emissor, string subject, Guid processoId, CancellationToken cancellationToken) =>
+    public Task<bool> TemInscricaoEnviadaAsync(string emissor, string contaId, Guid processoId, CancellationToken cancellationToken) =>
         Task.FromResult(false);
 }

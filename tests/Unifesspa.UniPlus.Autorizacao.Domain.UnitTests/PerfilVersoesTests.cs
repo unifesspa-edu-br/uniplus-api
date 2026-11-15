@@ -138,7 +138,7 @@ public sealed class PerfilVersoesTests
         Cancelar(perfil, pendente.Id).Concluida.Should().BeTrue();
 
         pendente.Situacao.Should().Be(SituacaoDaVersao.Cancelada);
-        pendente.CanceladaPorSub.Should().Be(PerfisDeTeste.Autor.Sub);
+        pendente.CanceladaPorContaId.Should().Be(PerfisDeTeste.Autor.ContaId);
         pendente.FormaDoCancelamento.Should().Be(FormaDoCancelamento.Pessoa);
         pendente.MotivoDoCancelamento.Should().Be(Motivo);
         pendente.CanceladaEm.Should().Be(PerfisDeTeste.Instante);

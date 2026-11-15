@@ -304,7 +304,7 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
     private Task LerODocumentoDaVersaoAsync(Guid perfil, string leitor) =>
         ExecutarAsync(
             """
-            INSERT INTO autorizacao.acessos_ao_documento_da_versao (id, documento_id, leitor_emissor, leitor_sub, instante)
+            INSERT INTO autorizacao.acessos_ao_documento_da_versao (id, documento_id, leitor_emissor, leitor_conta_id, instante)
             SELECT {0}, d.id, {1}, {2}, now() FROM autorizacao.documentos_da_versao d WHERE d.perfil_id = {3}
             """,
             Guid.CreateVersion7(), TestAuthHandler.DefaultIssuer, leitor, perfil);
@@ -368,10 +368,10 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
         await scope.ServiceProvider.GetRequiredService<ProcessamentoDosAvisosDaReclassificacao>().ExecutarAsync(CancellationToken.None);
     }
 
-    private async Task<IReadOnlyList<string>> PermissoesDaPessoaAsync(string sub)
+    private async Task<IReadOnlyList<string>> PermissoesDaPessoaAsync(string contaId)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        UsuarioRef pessoa = UsuarioRef.From(TestAuthHandler.DefaultIssuer, sub).Value!;
+        UsuarioRef pessoa = UsuarioRef.From(TestAuthHandler.DefaultIssuer, contaId).Value!;
         IReadOnlyList<ConcessaoAtiva> concessoes = await scope.ServiceProvider
             .GetRequiredService<IConcessoesAtivasDoSujeito>().ListarAsync(pessoa, CancellationToken.None);
 

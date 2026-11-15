@@ -55,7 +55,7 @@ public sealed class InstantesDeExpiracaoEmMicrossegundosTests
     public void RascunhoDePublicacao_Criar_VenceEmMicrossegundos()
     {
         RascunhoDePublicacao rascunho = RascunhoDePublicacao.Criar(
-            Guid.CreateVersion7(), "sub-123", "{}", 1, AgoraComSetimaCasa, PrazoComResto).Value!;
+            Guid.CreateVersion7(), "conta-123", "{}", 1, AgoraComSetimaCasa, PrazoComResto).Value!;
 
         rascunho.ExpiraEm.Should().Be(VencimentoEsperado);
     }
@@ -64,7 +64,7 @@ public sealed class InstantesDeExpiracaoEmMicrossegundosTests
     public void RascunhoDePublicacao_Substituir_VenceEmMicrossegundos()
     {
         RascunhoDePublicacao rascunho = RascunhoDePublicacao.Criar(
-            Guid.CreateVersion7(), "sub-123", "{}", 1, Meio, TimeSpan.FromDays(1)).Value!;
+            Guid.CreateVersion7(), "conta-123", "{}", 1, Meio, TimeSpan.FromDays(1)).Value!;
 
         rascunho.Substituir("{}", 1, AgoraComSetimaCasa, PrazoComResto).IsSuccess.Should().BeTrue();
 

@@ -47,7 +47,7 @@ public sealed class GovernancaDaVersaoTests
         gravacao.Resultado.IsSuccess.Should().BeTrue();
         perfil.VersaoVigente.Should().NotBeNull();
         cenario.Unidade.Gravacoes.Should().Be(1);
-        TrilhaDeAcesso.Do(cenario.Verificador).Should().Equal(SobreOPerfil(PerfisDeTeste.Gestor.Sub, Gestao, perfil.Id, ResultadoDoAcesso.Permitido));
+        TrilhaDeAcesso.Do(cenario.Verificador).Should().Equal(SobreOPerfil(PerfisDeTeste.Gestor.ContaId, Gestao, perfil.Id, ResultadoDoAcesso.Permitido));
     }
 
     [Fact(DisplayName = "Sem nenhuma das permissões da aprovação a decisão é recusada e nada é gravado")]
@@ -61,8 +61,8 @@ public sealed class GovernancaDaVersaoTests
         gravacao.Resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.SemPermissaoNaEtapa);
         cenario.Unidade.Gravacoes.Should().Be(0);
         TrilhaDeAcesso.Do(cenario.Verificador).Should().Equal(
-            SobreOPerfil(PerfisDeTeste.Gestor.Sub, Gestao, perfil.Id, ResultadoDoAcesso.Negado),
-            SobreOPerfil(PerfisDeTeste.Gestor.Sub, Protecao, perfil.Id, ResultadoDoAcesso.Negado));
+            SobreOPerfil(PerfisDeTeste.Gestor.ContaId, Gestao, perfil.Id, ResultadoDoAcesso.Negado),
+            SobreOPerfil(PerfisDeTeste.Gestor.ContaId, Protecao, perfil.Id, ResultadoDoAcesso.Negado));
         cenario.Concessoes.ConsultasDeConcessaoAtiva.Should().Be(0, "a recusa de acesso vem antes de qualquer leitura de concessão");
     }
 
@@ -340,7 +340,7 @@ public sealed class GovernancaDaVersaoTests
         new(ator, permissao, ResourceTiposAutorizacao.Perfil, perfilId, resultado);
 
     private static TrilhaDeAcesso NaOperacao(string permissao, ResultadoDoAcesso resultado) =>
-        new(PerfisDeTeste.Gestor.Sub, permissao, ResourceTipos.Operacao, null, resultado);
+        new(PerfisDeTeste.Gestor.ContaId, permissao, ResourceTipos.Operacao, null, resultado);
 
     [Fact(DisplayName = "Os handlers devolvem a resposta e os avisos para a cascata do Wolverine")]
     public async Task Handlers_DevolvemRespostaEAvisos()
@@ -381,7 +381,7 @@ public sealed class GovernancaDaVersaoTests
             CancellationToken.None);
 
     private static TitularDaPermissao Titular(Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects.Identidade pessoa) =>
-        new(pessoa.Emissor, pessoa.Sub, $"{pessoa.Sub}@uniplus-test.local");
+        new(pessoa.Emissor, pessoa.ContaId, $"{pessoa.ContaId}@uniplus-test.local");
 
     private static MaterializacaoPrevia SemJanelaPorMaterializar()
     {

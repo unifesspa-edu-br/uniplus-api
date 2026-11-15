@@ -34,7 +34,7 @@ public sealed class GerarEnvioAoInepCommandHandlerTests
 
     public GerarEnvioAoInepCommandHandlerTests()
     {
-        _usuario.UserId.Returns("sub-admin");
+        _usuario.UserId.Returns("conta-admin");
     }
 
     private Task<Result<EnvioAoInepGeradoDto>> Gerar(
@@ -60,7 +60,7 @@ public sealed class GerarEnvioAoInepCommandHandlerTests
         Encoding.UTF8.GetString(resultado.Value!.Conteudo).Should().Be(string.Concat(ordenados.Select(c => c + "\n")));
         resultado.Value.NomeSugerido.Should().Be("envio-inep-enem-2025.txt");
         await _geracoes.Received(1).AdicionarAsync(
-            Arg.Is<GeracaoDeEnvioAoInep>(g => g.TotalDeCpfs == 3 && g.EdicaoCodigo == Edicao && g.GeradoPor == "sub-admin"),
+            Arg.Is<GeracaoDeEnvioAoInep>(g => g.TotalDeCpfs == 3 && g.EdicaoCodigo == Edicao && g.GeradoPor == "conta-admin"),
             Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
         _cenario.ProcessoVivoNaoFoiConsultado();

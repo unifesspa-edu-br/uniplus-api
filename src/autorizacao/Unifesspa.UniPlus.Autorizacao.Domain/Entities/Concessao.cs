@@ -37,7 +37,7 @@ public sealed class Concessao : EntityBase
 
     public string BeneficiarioEmissor { get; private set; } = string.Empty;
 
-    public string BeneficiarioSub { get; private set; } = string.Empty;
+    public string BeneficiarioContaId { get; private set; } = string.Empty;
 
     /// <summary>Nome do beneficiário no instante da concessão; nulo quando a origem não o tinha.</summary>
     public string? BeneficiarioNome { get; private set; }
@@ -69,7 +69,7 @@ public sealed class Concessao : EntityBase
 
     public string ConcedidaPorEmissor { get; private set; } = string.Empty;
 
-    public string ConcedidaPorSub { get; private set; } = string.Empty;
+    public string ConcedidaPorContaId { get; private set; } = string.Empty;
 
     public string? ConcedidaPorNome { get; private set; }
 
@@ -80,7 +80,7 @@ public sealed class Concessao : EntityBase
 
     public string? RevogadaPorEmissor { get; private set; }
 
-    public string? RevogadaPorSub { get; private set; }
+    public string? RevogadaPorContaId { get; private set; }
 
     public string? RevogadaPorNome { get; private set; }
 
@@ -92,7 +92,7 @@ public sealed class Concessao : EntityBase
     /// </summary>
     public Guid? RevogadaPelaJanelaId { get; private set; }
 
-    public Identidade Beneficiario => new(BeneficiarioEmissor, BeneficiarioSub, BeneficiarioNome);
+    public Identidade Beneficiario => new(BeneficiarioEmissor, BeneficiarioContaId, BeneficiarioNome);
 
     // Construtor de materialização do EF Core.
     private Concessao()
@@ -241,7 +241,7 @@ public sealed class Concessao : EntityBase
     {
         RevogadaEm = ato.Instante;
         RevogadaPorEmissor = ato.Agente.Emissor;
-        RevogadaPorSub = ato.Agente.Sub;
+        RevogadaPorContaId = ato.Agente.ContaId;
         RevogadaPorNome = ato.Agente.Nome;
         MotivoRevogacao = motivo;
 
@@ -275,7 +275,7 @@ public sealed class Concessao : EntityBase
         new()
         {
             BeneficiarioEmissor = titular.Pessoa.Emissor,
-            BeneficiarioSub = titular.Pessoa.Sub,
+            BeneficiarioContaId = titular.Pessoa.ContaId,
             BeneficiarioNome = titular.Pessoa.Nome,
             BeneficiarioEmail = PedidoDeConcessao.EmailNormalizado(titular.Email),
             PerfilId = perfil.Id,
@@ -290,7 +290,7 @@ public sealed class Concessao : EntityBase
     {
         ConcedidaEm = ato.Instante;
         ConcedidaPorEmissor = ato.Agente.Emissor;
-        ConcedidaPorSub = ato.Agente.Sub;
+        ConcedidaPorContaId = ato.Agente.ContaId;
         ConcedidaPorNome = ato.Agente.Nome;
         ValidaAte = validaAte;
 

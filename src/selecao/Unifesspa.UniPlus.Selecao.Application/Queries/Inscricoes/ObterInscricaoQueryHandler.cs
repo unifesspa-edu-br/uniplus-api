@@ -16,8 +16,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
-/// Devolve a inscrição do dono do token — nunca de outro CPF, mesmo que o <c>sub</c> coincida por
-/// engano de emissor (<see cref="Inscricao.ConferirDono"/> confere o <c>sub</c> gravado) —, com a
+/// Devolve a inscrição do dono do token — nunca de outro CPF, mesmo que o <c>contaId</c> coincida por
+/// engano de emissor (<see cref="Inscricao.ConferirDono"/> confere o <c>contaId</c> gravado) —, com a
 /// avaliação do que ela gravou.
 /// </summary>
 public static class ObterInscricaoQueryHandler

@@ -30,7 +30,7 @@ public sealed class RegistroDecisaoAcessoTests
             && r.Permissao == Permissao
             && r.Sensibilidade == "pessoal"
             && r.ProcessoId == processo
-            && r.AtorSubject == "sub-opaco-123");
+            && r.AtorSubject == "conta-opaco-123");
     }
 
     [Theory(DisplayName = "O registro leva o client OIDC do contexto; sem ele, ou em branco, vai nulo e a decisão não muda")]
@@ -57,12 +57,12 @@ public sealed class RegistroDecisaoAcessoTests
         ResourceContext resource = Resource(ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: Guid.CreateVersion7());
         Guid execucao = Guid.CreateVersion7();
 
-        string basica = Identidade(resource, execucao, "sub-opaco-123");
+        string basica = Identidade(resource, execucao, "conta-opaco-123");
 
-        Identidade(resource, execucao, "sub-opaco-123").Should().Be(basica);
-        Identidade(resource, Guid.CreateVersion7(), "sub-opaco-123").Should().NotBe(basica);
+        Identidade(resource, execucao, "conta-opaco-123").Should().Be(basica);
+        Identidade(resource, Guid.CreateVersion7(), "conta-opaco-123").Should().NotBe(basica);
         Identidade(resource, execucao, "outra-pessoa").Should().NotBe(basica);
-        Identidade(Resource(ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: Guid.CreateVersion7()), execucao, "sub-opaco-123")
+        Identidade(Resource(ClassificacaoDeProtecao.Pessoal, unidadeProprietariaId: Guid.CreateVersion7()), execucao, "conta-opaco-123")
             .Should().NotBe(basica, "a unidade do resource também distingue o acesso");
     }
 
@@ -165,12 +165,12 @@ public sealed class RegistroDecisaoAcessoTests
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.ResourceContextFatoInvalido);
     }
 
-    private static string Identidade(ResourceContext resource, Guid execucao, string subject) =>
-        IdentidadeDe(resource, execucao, "https://idp.exemplo/realms/unifesspa", subject);
+    private static string Identidade(ResourceContext resource, Guid execucao, string contaId) =>
+        IdentidadeDe(resource, execucao, "https://idp.exemplo/realms/unifesspa", contaId);
 
-    private static string IdentidadeDe(ResourceContext resource, Guid execucao, string emissor, string subject)
+    private static string IdentidadeDe(ResourceContext resource, Guid execucao, string emissor, string contaId)
     {
-        Authorization.ValueObjects.UsuarioRef usuario = Authorization.ValueObjects.UsuarioRef.From(emissor, subject).Value!;
+        Authorization.ValueObjects.UsuarioRef usuario = Authorization.ValueObjects.UsuarioRef.From(emissor, contaId).Value!;
         return RegistroDecisaoAcesso.De(
             Authorization.Contracts.AuthorizationSubject.From(usuario, "jti-abc").Value!,
             Requisito(resource.Sensibilidade),

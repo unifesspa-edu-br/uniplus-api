@@ -23,7 +23,7 @@ public sealed class ItemDaRevisao : EntityBase
 
     public string? DecididoPorEmissor { get; private set; }
 
-    public string? DecididoPorSub { get; private set; }
+    public string? DecididoPorContaId { get; private set; }
 
     public string? DecididoPorNome { get; private set; }
 
@@ -32,7 +32,7 @@ public sealed class ItemDaRevisao : EntityBase
     public bool Pendente => Resultado is null;
 
     public Identidade? DecididoPor =>
-        DecididoPorEmissor is null || DecididoPorSub is null ? null : new(DecididoPorEmissor, DecididoPorSub, DecididoPorNome);
+        DecididoPorEmissor is null || DecididoPorContaId is null ? null : new(DecididoPorEmissor, DecididoPorContaId, DecididoPorNome);
 
     // Construtor de materialização do EF Core.
     private ItemDaRevisao()
@@ -58,7 +58,7 @@ public sealed class ItemDaRevisao : EntityBase
         Resultado = resultado;
         DecididoComo = como;
         DecididoPorEmissor = decisor.Emissor;
-        DecididoPorSub = decisor.Sub;
+        DecididoPorContaId = decisor.ContaId;
         DecididoPorNome = decisor.Nome;
         DecididoEm = instante;
     }

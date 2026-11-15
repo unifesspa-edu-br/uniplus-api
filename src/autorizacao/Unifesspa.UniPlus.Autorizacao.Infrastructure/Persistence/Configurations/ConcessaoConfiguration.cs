@@ -54,9 +54,9 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
         {
             tabela.HasCheckConstraint(
                 "ck_concessoes_revogacao_completa",
-                "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_sub IS NULL AND motivo_revogacao IS NULL AND revogada_pela_janela_id IS NULL)"
-                + " OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_sub IS NOT NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NULL)"
-                + " OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_sub IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NOT NULL)");
+                "(revogada_em IS NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NULL AND revogada_pela_janela_id IS NULL)"
+                + " OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NOT NULL AND revogada_por_conta_id IS NOT NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NULL)"
+                + " OR (revogada_em IS NOT NULL AND revogada_por_emissor IS NULL AND revogada_por_conta_id IS NULL AND motivo_revogacao IS NOT NULL AND revogada_pela_janela_id IS NOT NULL)");
             tabela.HasCheckConstraint(
                 "ck_concessoes_escopo_unidade",
                 "(escopo_tipo = 'unidade') = (unidade_id IS NOT NULL)");
@@ -68,15 +68,15 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
     private static void ConfigurarColunas(EntityTypeBuilder<Concessao> builder)
     {
         builder.Property(c => c.BeneficiarioEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(c => c.BeneficiarioSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(c => c.BeneficiarioContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(c => c.BeneficiarioNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(c => c.BeneficiarioEmail).HasMaxLength(PedidoDeConcessao.EmailMaxLength);
         builder.Property(c => c.ConcedidaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(c => c.RevogadaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(c => c.ConcedidaPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(c => c.ConcedidaPorSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(c => c.ConcedidaPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(c => c.RevogadaPorEmissor).HasMaxLength(IdentidadeMaxLength);
-        builder.Property(c => c.RevogadaPorSub).HasMaxLength(IdentidadeMaxLength);
+        builder.Property(c => c.RevogadaPorContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(c => c.MotivoRevogacao).HasMaxLength(MotivoMaxLength);
         builder.Property(c => c.EscopoTipo).HasConversion(EscopoConverter).HasMaxLength(TipoMaxLength).IsRequired();
         builder.Property(c => c.OrigemTipo).HasConversion(OrigemConverter).HasMaxLength(TipoMaxLength).IsRequired();
@@ -121,7 +121,7 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
         // nula (escopo da instituição) conta como igual a outra nula, o que o índice único não
         // faria por padrão.
         builder.HasIndex(
-                c => new { c.BeneficiarioEmissor, c.BeneficiarioSub, c.PerfilId, c.EscopoTipo, c.UnidadeId })
+                c => new { c.BeneficiarioEmissor, c.BeneficiarioContaId, c.PerfilId, c.EscopoTipo, c.UnidadeId })
             .IsUnique()
             .AreNullsDistinct(false)
             .HasFilter("revogada_em IS NULL")
@@ -130,7 +130,7 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
         // Reprocessar a mesma origem não duplica. A instalação gera duas concessões com a mesma
         // origem, por isso o beneficiário entra na chave.
         builder.HasIndex(
-                c => new { c.OrigemTipo, c.OrigemId, c.BeneficiarioEmissor, c.BeneficiarioSub })
+                c => new { c.OrigemTipo, c.OrigemId, c.BeneficiarioEmissor, c.BeneficiarioContaId })
             .IsUnique()
             .HasDatabaseName("ux_concessoes_origem");
 

@@ -40,13 +40,13 @@ public static class ObterRascunhoDaPublicacaoQueryHandler
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        if (SalvarRascunhoDaPublicacaoCommandHandler.DonoDoRascunho(userContext) is not { } usuarioSub)
+        if (SalvarRascunhoDaPublicacaoCommandHandler.DonoDoRascunho(userContext) is not { } usuarioContaId)
         {
             return null;
         }
 
         RascunhoDePublicacao? rascunho = await rascunhoRepository
-            .ObterDoOperadorAsync(query.ProcessoSeletivoId, usuarioSub, cancellationToken)
+            .ObterDoOperadorAsync(query.ProcessoSeletivoId, usuarioContaId, cancellationToken)
             .ConfigureAwait(false);
         if (rascunho is null)
         {

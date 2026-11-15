@@ -257,7 +257,7 @@ public sealed class LiberacaoDaReclassificacaoNoHostTests : ReclassificacaoNoHos
 
         await LiberarAsync(Marlene, EtapaProtecao, perfil.Perfil, reclassificacao);
 
-        Registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Marlene.Sub.ToString() && r.ResourceTipo == "reclassificacao-de-permissao")
+        Registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Marlene.ContaId.ToString() && r.ResourceTipo == "reclassificacao-de-permissao")
             .Should().ContainSingle(r => r.ResourceId == reclassificacao && r.Resultado == ResultadoDoAcesso.Permitido && r.Permissao == "autorizacao:perfis:aprovar-protecao-de-dados");
     }
 
@@ -283,7 +283,7 @@ public sealed class LiberacaoDaReclassificacaoNoHostTests : ReclassificacaoNoHos
             semPermissao, HttpMethod.Post, $"{RotaReclassificacoes}/{id}/decisoes", LiberarTodasNaProtecao);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-        RegistroDecisaoAcesso[] registrados = [.. Registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Betina.Sub.ToString())];
+        RegistroDecisaoAcesso[] registrados = [.. Registro.Registrados.Skip(antes).Where(r => r.AtorSubject == Betina.ContaId.ToString())];
         registrados.Should().NotBeEmpty();
         registrados.Should().OnlyContain(r => r.ResourceTipo == "reclassificacao-de-permissao" && r.ResourceId == id && r.Resultado == ResultadoDoAcesso.Negado);
     }

@@ -79,7 +79,7 @@ public static class AbrirRetificacaoCommandHandler
             return Result<RetificacaoEmCursoDto>.Failure(lidas.Error!);
         }
 
-        string abertoPorSub = userContext.UserId ?? "system";
+        string abertoPorContaId = userContext.UserId ?? "system";
 
         // O identificador legível que a base congelou vem do envelope dela, e não da raiz viva: é
         // contra o que foi publicado que a sessão decide se ainda pode declará-lo.
@@ -88,7 +88,7 @@ public static class AbrirRetificacaoCommandHandler
             versaoAtual,
             lidas.Value!.IdentificadorLegivelDaBase,
             lidas.Value!.Fatos,
-            abertoPorSub,
+            abertoPorContaId,
             timeProvider.GetUtcNow());
         if (abertura.IsFailure)
         {

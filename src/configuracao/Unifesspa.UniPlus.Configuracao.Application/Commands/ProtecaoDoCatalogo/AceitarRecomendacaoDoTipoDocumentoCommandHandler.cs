@@ -37,7 +37,7 @@ public static class AceitarRecomendacaoDoTipoDocumentoCommandHandler
             command.Id,
             tipo =>
             {
-                Result aceita = tipo.AceitarRecomendacaoDaProtecao(ator.Sub, agora);
+                Result aceita = tipo.AceitarRecomendacaoDaProtecao(ator.ContaId, agora);
                 if (aceita.IsSuccess)
                 {
                     aceito = tipo;

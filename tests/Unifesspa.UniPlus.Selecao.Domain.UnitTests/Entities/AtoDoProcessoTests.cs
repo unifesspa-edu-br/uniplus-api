@@ -33,7 +33,7 @@ public sealed class AtoDoProcessoTests
             Anexos: anexos ?? [],
             AtoCorrigidoId: atoCorrigidoId,
             MotivoDaCorrecao: motivo,
-            PoliticaDeDivulgacaoConfirmadaPorSub: politicaConfirmadaPor);
+            PoliticaDeDivulgacaoConfirmadaPorContaId: politicaConfirmadaPor);
 
     [Fact(DisplayName = "O registro nasce pendente, com os anexos na ordem declarada e a confirmação da política datada e atribuída")]
     public void Registrar_NascePendenteComAnexosNaOrdemDeclarada()
@@ -42,13 +42,13 @@ public sealed class AtoDoProcessoTests
         Guid primeiro = Guid.CreateVersion7();
         NovoAtoDoProcesso novo = Novo(
             anexos: [new AnexoDeclarado(segundo, "Anexo B"), new AnexoDeclarado(primeiro, "Anexo A")],
-            politicaConfirmadaPor: "sub-do-usuario");
+            politicaConfirmadaPor: "conta-do-usuario");
 
         AtoDoProcesso ato = AtoDoProcesso.Registrar(novo, Agora).Value!;
 
         ato.Id.Should().Be(novo.AtoId, "o registro é identificado pelo ato que a Seleção decidiu");
         ato.PoliticaDeDivulgacaoConfirmadaEm.Should().Be(Agora);
-        ato.PoliticaDeDivulgacaoConfirmadaPorSub.Should().Be("sub-do-usuario");
+        ato.PoliticaDeDivulgacaoConfirmadaPorContaId.Should().Be("conta-do-usuario");
         ato.Anexos.Select(a => (a.Ordem, a.DocumentoAPublicarId, a.NomeDeExibicao))
             .Should().Equal((0, segundo, "Anexo B"), (1, primeiro, "Anexo A"));
     }
@@ -136,7 +136,7 @@ public sealed class AtoDoProcessoTests
         AtoDoProcesso ato = AtoDoProcesso.Registrar(novo, Agora).Value!;
 
         ato.Numero.Should().BeNull();
-        ato.PoliticaDeDivulgacaoConfirmadaPorSub.Should().BeNull();
+        ato.PoliticaDeDivulgacaoConfirmadaPorContaId.Should().BeNull();
         ato.PoliticaDeDivulgacaoConfirmadaEm.Should().BeNull();
         ato.MotivoDaCorrecao.Should().BeNull();
     }

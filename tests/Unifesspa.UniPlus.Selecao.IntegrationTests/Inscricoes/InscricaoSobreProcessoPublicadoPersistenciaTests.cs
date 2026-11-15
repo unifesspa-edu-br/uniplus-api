@@ -288,7 +288,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         IUserContext contexto = Substitute.For<IUserContext>();
         contexto.Cpf.Returns(cpf.Valor);
         contexto.NomeCompleto.Returns(PersonasDeTeste.NomeFernandaDrumond);
-        contexto.UserId.Returns("sub-fernanda-drumond");
+        contexto.UserId.Returns("conta-fernanda-drumond");
         contexto.Issuer.Returns("https://idp.unifesspa.edu.br/realms/unifesspa");
         return contexto;
     }
@@ -744,7 +744,7 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
         avaliacao.Value.Modalidades.Itens.Select(static m => m.Codigo).Should().Equal(["AC"]);
     }
 
-    [Fact(DisplayName = "A consulta só responde ao titular: sem inscrição no processo é não encontrada, e o sub divergente é dono divergente")]
+    [Fact(DisplayName = "A consulta só responde ao titular: sem inscrição no processo é não encontrada, e a conta divergente é dono divergente")]
     public async Task Consulta_SoAoTitular()
     {
         await using UniPlusDbContext db = _fixture.CreateDbContext();
@@ -755,12 +755,12 @@ public sealed class InscricaoSobreProcessoPublicadoPersistenciaTests : IClassFix
             new ProcessoSeletivoRepository(db, TimeProvider.System), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), EnderecosSemCopia(),
             DentroDoPeriodo, db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), CancellationToken.None)).IsSuccess.Should().BeTrue();
 
-        IUserContext mesmoCpfOutroSub = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
-        mesmoCpfOutroSub.UserId.Returns("sub-de-outra-conta");
+        IUserContext mesmoCpfOutroContaId = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);
+        mesmoCpfOutroContaId.UserId.Returns("conta-de-outra-conta");
 
         (await AvaliarAsync(db, processoId, UsuarioComCpf(PersonasDeTeste.KevinCarvalho), null)).Error!.Code
             .Should().Be(InscricaoErrorCodes.NaoEncontrada);
-        (await AvaliarAsync(db, processoId, mesmoCpfOutroSub, null)).Error!.Code
+        (await AvaliarAsync(db, processoId, mesmoCpfOutroContaId, null)).Error!.Code
             .Should().Be(InscricaoErrorCodes.DonoDivergente);
     }
 

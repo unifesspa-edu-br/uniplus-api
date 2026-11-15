@@ -19,7 +19,7 @@ internal sealed class IdempotencyEntryConfiguration : IEntityTypeConfiguration<I
 
         builder.HasKey(e => e.Id);
 
-        // O escopo da chave de idempotência é user:{sub}: identifica quem agiu.
+        // O escopo da chave de idempotência é user:{conta}: identifica quem agiu.
         builder.Property(e => e.Scope)
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal)
             .HasMaxLength(255)

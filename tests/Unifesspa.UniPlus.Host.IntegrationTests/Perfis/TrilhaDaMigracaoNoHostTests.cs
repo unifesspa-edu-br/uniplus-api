@@ -53,14 +53,14 @@ public sealed class TrilhaDaMigracaoNoHostTests : JanelaDeMigracaoNoHostTestBase
         string janelaId = (await JanelaAsync(diogo, cenario.PerfilId)).GetProperty("id").GetGuid().ToString();
         JsonElement[] decisoes = EventosDoTipo(trilhaDaMigrada, "migracao_migrar");
         decisoes.Should().HaveCount(2);
-        decisoes.Select(d => d.GetProperty("autor").GetProperty("sub").GetString())
-            .Should().BeEquivalentTo([Isabella.Sub.ToString(), Marlene.Sub.ToString()]);
+        decisoes.Select(d => d.GetProperty("autor").GetProperty("contaId").GetString())
+            .Should().BeEquivalentTo([Isabella.ContaId.ToString(), Marlene.ContaId.ToString()]);
         decisoes.Should().OnlyContain(d => d.GetProperty("ator").GetString() == "humano");
         decisoes.Should().OnlyContain(d => d.GetProperty("detalhe").GetString()!.Contains(janelaId, StringComparison.Ordinal));
         JsonElement retencao = EventosDoTipo(trilhaDaPropria, "migracao_reter").Single();
         retencao.GetProperty("ator").GetString().Should().Be("sistema");
-        DecisoresDe(trilhaDaPropria).Should().NotContain(Isabella.Sub.ToString());
-        DecisoresDe(trilhaDaPropria).Should().Contain([Diogo.Sub.ToString(), Marlene.Sub.ToString()]);
+        DecisoresDe(trilhaDaPropria).Should().NotContain(Isabella.ContaId.ToString());
+        DecisoresDe(trilhaDaPropria).Should().Contain([Diogo.ContaId.ToString(), Marlene.ContaId.ToString()]);
     }
 
     [Fact(DisplayName = "A trilha da concessão não migrada pela janela mostra a decisão e a revogação, ambas do sistema e com a referência à janela")]
@@ -95,5 +95,5 @@ public sealed class TrilhaDaMigracaoNoHostTests : JanelaDeMigracaoNoHostTestBase
         [.. trilha.EnumerateArray()
             .Where(e => e.GetProperty("tipo").GetString()!.StartsWith("migracao_", StringComparison.Ordinal))
             .Where(e => e.TryGetProperty("autor", out JsonElement a) && a.ValueKind == JsonValueKind.Object)
-            .Select(e => e.GetProperty("autor").GetProperty("sub").GetString()!)];
+            .Select(e => e.GetProperty("autor").GetProperty("contaId").GetString()!)];
 }

@@ -5,4 +5,4 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 /// aceita campo ausente, para que o formato incorreto volte como recusa e não como exceção. É a pessoa que a instalação
 /// designa gestor: o e-mail institucional é obrigatório, para que a concessão possa ser revogada, e o nome é opcional.
 /// </summary>
-public sealed record IdentidadeInformada(string? Emissor, string? Sub, string? Email = null, string? Nome = null);
+public sealed record IdentidadeInformada(string? Emissor, string? ContaId, string? Email = null, string? Nome = null);

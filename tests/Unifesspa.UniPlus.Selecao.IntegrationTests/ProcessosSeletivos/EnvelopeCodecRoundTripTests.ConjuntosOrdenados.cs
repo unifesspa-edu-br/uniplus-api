@@ -54,7 +54,7 @@ public sealed partial class EnvelopeCodecRoundTripTests
         EntradaCanonicalizacao entrada = EntradaDosSeisConjuntos(processo);
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
         ConferirSchemaCorrente(congelado);
-        VersaoConfiguracao v1 = Publicado(processo, entrada, congelado, "user-sub-seis-conjuntos");
+        VersaoConfiguracao v1 = Publicado(processo, entrada, congelado, "user-conta-seis-conjuntos");
         SequenciasNoJson noJson = SequenciasDoJson(Envelope(congelado));
         EnvelopeReidratado envelope = Reidratado(v1);
         ConferirSequenciasDecodificadas(envelope, noJson);

@@ -38,7 +38,7 @@ internal static class PublicacaoDeTeste
     {
         Result<VersaoConfiguracao> versao = processo.Publicar(
             DadosDoEdital(), envelopeCongelado ?? EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1",
-            ProcessoSeletivoConformeBuilder.HashFixo, "user-sub-1", new RelogioFixo(Agora),
+            ProcessoSeletivoConformeBuilder.HashFixo, "user-conta-1", new RelogioFixo(Agora),
             ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         versao.IsSuccess.Should().BeTrue(versao.Error?.Message);
         processo.DequeueDomainEvents();
@@ -51,7 +51,7 @@ internal static class PublicacaoDeTeste
     {
         Result<RascunhoRetificacao> rascunho = processo.AbrirRetificacao(
             "Correção do prazo", versaoAtual, identificadorDaVersaoBase: null,
-            VersoesPublicadasDeTeste.SoAVigente(processo), "user-sub-1", Agora);
+            VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora);
         rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);
         processo.DequeueDomainEvents();
     }

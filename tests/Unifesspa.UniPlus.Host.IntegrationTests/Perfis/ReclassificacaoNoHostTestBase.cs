@@ -65,7 +65,7 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
         foreach (Persona pessoa in beneficiarios)
         {
             concessoes[pessoa] = await ConcessoesDeTeste.ConcederAsync(
-                Fixture.Factory.Services, pessoa.Sub.ToString(), perfil, EscopoDaConcessao.DaUnidade(unidade), email: pessoa.Email);
+                Fixture.Factory.Services, pessoa.ContaId.ToString(), perfil, EscopoDaConcessao.DaUnidade(unidade), email: pessoa.Email);
         }
 
         return new Cenario(perfil, unidade, concessoes);
@@ -74,13 +74,13 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
     /// <summary>Concede o perfil do cenário a mais uma pessoa, depois do que o teste já fez com ele.</summary>
     private protected Task<Guid> ConcederDepoisAsync(Cenario cenario, Persona pessoa) =>
         ConcessoesDeTeste.ConcederAsync(
-            Fixture.Factory.Services, pessoa.Sub.ToString(), cenario.Perfil, EscopoDaConcessao.DaUnidade(cenario.Unidade), email: pessoa.Email);
+            Fixture.Factory.Services, pessoa.ContaId.ToString(), cenario.Perfil, EscopoDaConcessao.DaUnidade(cenario.Unidade), email: pessoa.Email);
 
     private protected async Task<string[]> PermissoesAsync(Persona pessoa, Guid perfil)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
         IReadOnlyList<ConcessaoAtiva> ativas = await escopo.ServiceProvider.GetRequiredService<IConcessoesAtivasDoSujeito>()
-            .ListarAsync(UsuarioRef.From(TestAuthHandler.DefaultIssuer, pessoa.Sub.ToString()).Value!, CancellationToken.None);
+            .ListarAsync(UsuarioRef.From(TestAuthHandler.DefaultIssuer, pessoa.ContaId.ToString()).Value!, CancellationToken.None);
 
         return [.. ativas.Where(c => c.PerfilId == perfil).SelectMany(static c => c.Permissoes)];
     }
@@ -164,10 +164,10 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
     {
         await ExecutarSqlAsync(
             """
-            INSERT INTO autorizacao.acessos_ao_documento_da_versao (id, documento_id, leitor_emissor, leitor_sub, instante)
+            INSERT INTO autorizacao.acessos_ao_documento_da_versao (id, documento_id, leitor_emissor, leitor_conta_id, instante)
             SELECT {0}, d.id, {1}, {2}, now() FROM autorizacao.documentos_da_versao d WHERE d.perfil_id = {3}
             """,
-            Guid.CreateVersion7(), TestAuthHandler.DefaultIssuer, leitor.Sub.ToString(), perfil);
+            Guid.CreateVersion7(), TestAuthHandler.DefaultIssuer, leitor.ContaId.ToString(), perfil);
     }
 
     /// <summary>O decisor da etapa: a proteção de dados ou a gestão de acessos, já com o documento lido.</summary>

@@ -73,7 +73,7 @@ public sealed class InscricaoTests
     public void Iniciar_FixaVersaoENasceRascunho()
     {
         Result<Inscricao> resultado = Inscricao.Iniciar(
-            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario);
+            Processo, PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", VersaoFormulario);
 
         resultado.IsSuccess.Should().BeTrue();
         Inscricao inscricao = resultado.Value!;
@@ -87,7 +87,7 @@ public sealed class InscricaoTests
     public void Iniciar_GravaARespostaDoCpfDaConta()
     {
         Inscricao inscricao = Inscricao.Iniciar(
-            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario).Value!;
+            Processo, PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", VersaoFormulario).Value!;
 
         inscricao.Respostas["CPF"].GetString().Should().Be(PersonasDeTeste.FernandaDrumond.Valor);
         inscricao.DefinicoesDasRespostas["CPF"].Should().Match<DefinicaoDaResposta>(d => d.Identificador && d.Cifrada);
@@ -133,44 +133,44 @@ public sealed class InscricaoTests
         inscricao.Respostas.Should().ContainKey("CPF");
     }
 
-    [Fact(DisplayName = "Iniciar sem sub é recusado — o token precisa do claim")]
-    public void Iniciar_SemSub_RetornaFalha()
+    [Fact(DisplayName = "Iniciar sem conta é recusado — o token precisa do claim")]
+    public void Iniciar_SemContaId_RetornaFalha()
     {
         Result<Inscricao> resultado = Inscricao.Iniciar(
             Processo, PersonasDeTeste.FernandaDrumond, "", "https://issuer", VersaoFormulario);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.SubObrigatorio);
+        resultado.Error!.Code.Should().Be(InscricaoErrorCodes.ContaIdObrigatorio);
     }
 
     [Fact(DisplayName = "Iniciar sem emissor é recusado")]
     public void Iniciar_SemEmissor_RetornaFalha()
     {
         Result<Inscricao> resultado = Inscricao.Iniciar(
-            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "", VersaoFormulario);
+            Processo, PersonasDeTeste.FernandaDrumond, "conta-1", "", VersaoFormulario);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.EmissorObrigatorio);
     }
 
-    [Theory(DisplayName = "ConferirDono sem sub no token recusa com SubObrigatorio, sem exceção")]
+    [Theory(DisplayName = "ConferirDono sem conta no token recusa com ContaIdObrigatorio, sem exceção")]
     [InlineData(null)]
     [InlineData("")]
     [InlineData("   ")]
-    public void ConferirDono_SemSub_RecusaComSubObrigatorio(string? sub)
+    public void ConferirDono_SemContaId_RecusaComContaIdObrigatorio(string? contaId)
     {
         Inscricao inscricao = NovaInscricao();
 
-        inscricao.ConferirDono(sub)!.Code.Should().Be(InscricaoErrorCodes.SubObrigatorio);
+        inscricao.ConferirDono(contaId)!.Code.Should().Be(InscricaoErrorCodes.ContaIdObrigatorio);
     }
 
-    [Fact(DisplayName = "ConferirDono recusa sub diferente do gravado")]
-    public void ConferirDono_SubDiferente_RetornaFalha()
+    [Fact(DisplayName = "ConferirDono recusa conta diferente do gravado")]
+    public void ConferirDono_ContaIdDiferente_RetornaFalha()
     {
         Inscricao inscricao = NovaInscricao();
 
-        inscricao.ConferirDono("outro-sub")!.Code.Should().Be(InscricaoErrorCodes.DonoDivergente);
-        inscricao.ConferirDono("sub-1").Should().BeNull("o mesmo sub que iniciou é o dono");
+        inscricao.ConferirDono("outra-conta")!.Code.Should().Be(InscricaoErrorCodes.DonoDivergente);
+        inscricao.ConferirDono("conta-1").Should().BeNull("a mesma conta que iniciou é o dono");
     }
 
     [Fact(DisplayName = "Salvar sem If-Match é recusado — a precondição é obrigatória")]
@@ -343,12 +343,12 @@ public sealed class InscricaoTests
         int revisao = inscricao.Revisao;
         DateTimeOffset instante = Instante();
 
-        Result resultado = inscricao.Cancelar("Mudei de curso", "sub-1", instante, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+        Result resultado = inscricao.Cancelar("Mudei de curso", "conta-1", instante, PrecondicaoIfMatch.DeTags([inscricao.ETag]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         inscricao.Situacao.Should().Be(SituacaoInscricao.Cancelada);
         inscricao.CanceladaEm.Should().Be(instante);
-        inscricao.CanceladaPor.Should().Be("sub-1");
+        inscricao.CanceladaPor.Should().Be("conta-1");
         inscricao.MotivoDoCancelamento.Should().Be("Mudei de curso");
         inscricao.NumeroInscricao.Should().Be("000123");
         inscricao.Revisao.Should().Be(revisao + 1);
@@ -361,7 +361,7 @@ public sealed class InscricaoTests
         Inscricao enviada = NovaInscricaoEnviada();
         enviada.ConferirComprovanteEmitivel().Should().BeNull();
 
-        enviada.Cancelar("Mudei de curso", "sub-1", Instante(), PrecondicaoIfMatch.DeTags([enviada.ETag])).IsSuccess.Should().BeTrue();
+        enviada.Cancelar("Mudei de curso", "conta-1", Instante(), PrecondicaoIfMatch.DeTags([enviada.ETag])).IsSuccess.Should().BeTrue();
 
         enviada.ConferirComprovanteEmitivel()!.Code.Should().Be(InscricaoErrorCodes.ComprovanteDeInscricaoCancelada);
     }
@@ -373,7 +373,7 @@ public sealed class InscricaoTests
     {
         Inscricao inscricao = NovaInscricaoEnviada();
 
-        inscricao.Cancelar(motivo, "sub-1", Instante(), PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+        inscricao.Cancelar(motivo, "conta-1", Instante(), PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
 
         inscricao.MotivoDoCancelamento.Should().Be("a pedido do candidato");
     }
@@ -395,7 +395,7 @@ public sealed class InscricaoTests
         Inscricao inscricao = NovaInscricao();
         int revisao = inscricao.Revisao;
 
-        Result resultado = inscricao.Cancelar(null, "sub-1", Instante(), PrecondicaoIfMatch.DeTags([inscricao.ETag]));
+        Result resultado = inscricao.Cancelar(null, "conta-1", Instante(), PrecondicaoIfMatch.DeTags([inscricao.ETag]));
 
         resultado.Error!.Code.Should().Be(InscricaoErrorCodes.CancelamentoSoDeEnviada);
         inscricao.Situacao.Should().Be(SituacaoInscricao.Rascunho);
@@ -407,9 +407,9 @@ public sealed class InscricaoTests
     {
         Inscricao inscricao = NovaInscricaoEnviada();
 
-        inscricao.Cancelar(null, "sub-1", Instante(), PrecondicaoIfMatch.DeTags(["\"outro\""])).Error!.Code
+        inscricao.Cancelar(null, "conta-1", Instante(), PrecondicaoIfMatch.DeTags(["\"outro\""])).Error!.Code
             .Should().Be(InscricaoErrorCodes.PrecondicaoFalhou);
-        inscricao.Cancelar(new string('x', Inscricao.TamanhoMaximoDoMotivoDoCancelamento + 1), "sub-1", Instante(), PrecondicaoIfMatch.DeTags([inscricao.ETag])).Error!.Code
+        inscricao.Cancelar(new string('x', Inscricao.TamanhoMaximoDoMotivoDoCancelamento + 1), "conta-1", Instante(), PrecondicaoIfMatch.DeTags([inscricao.ETag])).Error!.Code
             .Should().Be(InscricaoErrorCodes.MotivoDoCancelamentoLongo);
 
         inscricao.Situacao.Should().Be(SituacaoInscricao.Submetida);
@@ -419,7 +419,7 @@ public sealed class InscricaoTests
     public void Cancelada_NaoSeAltera()
     {
         Inscricao inscricao = NovaInscricaoEnviada();
-        inscricao.Cancelar(null, "sub-1", Instante(), PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
+        inscricao.Cancelar(null, "conta-1", Instante(), PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
         PrecondicaoIfMatch corrente = PrecondicaoIfMatch.DeTags([inscricao.ETag]);
         int revisao = inscricao.Revisao;
 
@@ -429,7 +429,7 @@ public sealed class InscricaoTests
             inscricao.Submeter(
                 "999999", OfertaDoProcesso, null, Respostas(), SemGrupos(), SemAceites(), Admitidas, FormularioDeTeste.AvaliacaoSemOcultos, SemDerivados(), DefinicoesDosDerivados,
                 corrente, Instante(), []).Error,
-            inscricao.Cancelar(null, "sub-1", Instante(), corrente).Error,
+            inscricao.Cancelar(null, "conta-1", Instante(), corrente).Error,
             inscricao.ConferirDescarte(corrente),
             inscricao.AdotarVersao(Guid.CreateVersion7(), Admitidas).Error,
         ];
@@ -444,7 +444,7 @@ public sealed class InscricaoTests
         Inscricao rascunho = NovaInscricao();
         Inscricao enviada = NovaInscricaoEnviada();
         Inscricao cancelada = NovaInscricaoEnviada();
-        cancelada.Cancelar(null, "sub-1", Instante(), PrecondicaoIfMatch.DeTags([cancelada.ETag]));
+        cancelada.Cancelar(null, "conta-1", Instante(), PrecondicaoIfMatch.DeTags([cancelada.ETag]));
 
         enviada.AcoesPermitidas(inscricoesAbertas: true).Should().Be(new AcoesDaInscricao(false, true, true, false));
         enviada.AcoesPermitidas(inscricoesAbertas: false).Should().Be(new AcoesDaInscricao(false, false, false, false));
@@ -533,7 +533,7 @@ public sealed class InscricaoTests
         Dictionary<string, JsonElement> respostas = Respostas();
 
         Inscricao inscricao = Inscricao.Reidratar(
-            id, Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer",
+            id, Processo, PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer",
             SituacaoInscricao.Submetida, VersaoFormulario, oferta, null, "000123", null, null, null,
             respostas, SemDerivados(), SemGrupos(), SemAceites(), DefinicoesDasRespostas,
             3, criadoEm, atualizadoEm);
@@ -785,7 +785,7 @@ public sealed class InscricaoTests
     public void Salvar_CpfDaResposta_TemDeSerODoDono(string cpfRespondido, bool aceito)
     {
         Inscricao inscricao = Inscricao.Iniciar(
-            Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario).Value!;
+            Processo, PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", VersaoFormulario).Value!;
         Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal)
         {
             ["CPF"] = JsonSerializer.SerializeToElement(cpfRespondido),
@@ -1580,7 +1580,7 @@ public sealed class InscricaoTests
     }
 
     private static Inscricao NovaInscricao() =>
-        Inscricao.Iniciar(Processo, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", VersaoFormulario).Value!;
+        Inscricao.Iniciar(Processo, PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", VersaoFormulario).Value!;
 
     private static DateTimeOffset Instante() => new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
 

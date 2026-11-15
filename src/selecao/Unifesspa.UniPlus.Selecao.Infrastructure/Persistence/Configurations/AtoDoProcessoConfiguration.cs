@@ -29,7 +29,7 @@ public sealed class AtoDoProcessoConfiguration : IEntityTypeConfiguration<AtoDoP
         builder.Property(a => a.SlugDaUnidadeAdministradora).HasMaxLength(AtoDoProcesso.SlugDaUnidadeAdministradoraMaxLength).IsRequired();
         builder.Property(a => a.IdentificadorLegivelDoProcesso).HasMaxLength(AtoDoProcesso.IdentificadorLegivelMaxLength).IsRequired();
         builder.Property(a => a.MotivoDaCorrecao).HasMaxLength(AtoDoProcesso.MotivoDaCorrecaoMaxLength);
-        builder.Property(a => a.PoliticaDeDivulgacaoConfirmadaPorSub).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(AtoDoProcesso.SubMaxLength);
+        builder.Property(a => a.PoliticaDeDivulgacaoConfirmadaPorContaId).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(AtoDoProcesso.ContaIdMaxLength);
         builder.Property(a => a.ItemDoEdital).HasMaxLength(IdentidadeDoItemDoEdital.ChaveMaxLength);
         builder.Property(a => a.PublicadoEm).IsRequired();
 

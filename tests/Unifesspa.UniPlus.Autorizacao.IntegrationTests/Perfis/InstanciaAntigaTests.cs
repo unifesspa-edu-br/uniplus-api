@@ -112,10 +112,10 @@ public sealed class InstanciaAntigaTests : PerfilEndpointTestBase, IAsyncLifetim
         await escopo.ServiceProvider.GetRequiredService<ConciliacaoDoCatalogo>().ExecutarAsync(CancellationToken.None);
     }
 
-    private async Task<IReadOnlyList<string>> PermissoesAsync(string sub)
+    private async Task<IReadOnlyList<string>> PermissoesAsync(string contaId)
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
-        UsuarioRef pessoa = UsuarioRef.From(TestAuthHandler.DefaultIssuer, sub).Value!;
+        UsuarioRef pessoa = UsuarioRef.From(TestAuthHandler.DefaultIssuer, contaId).Value!;
         IReadOnlyList<ConcessaoAtiva> ativas = await escopo.ServiceProvider
             .GetRequiredService<IConcessoesAtivasDoSujeito>().ListarAsync(pessoa, CancellationToken.None);
 

@@ -19,7 +19,7 @@ public sealed class OrdemDasDecisoesDoPedidoNoHostTests : PedidosDeConcessaoTest
 {
     private const string Inserir = """
         INSERT INTO autorizacao.decisoes_do_pedido
-            (id, pedido_id, etapa, resultado, decisor_emissor, decisor_sub, decisor_nome, instante, permissoes_avaliadas, sensibilidade_avaliada)
+            (id, pedido_id, etapa, resultado, decisor_emissor, decisor_conta_id, decisor_nome, instante, permissoes_avaliadas, sensibilidade_avaliada)
         VALUES ({0}, {1}, 'gestor', 'aprovado', 'https://idp.test', {2}, {3}, {4}, ARRAY['selecao:processos:consultar'], 'interno')
         """;
 
@@ -59,7 +59,7 @@ public sealed class OrdemDasDecisoesDoPedidoNoHostTests : PedidosDeConcessaoTest
         string.CompareOrdinal(um.ToString(), outro.ToString()) < 0 ? (um, outro) : (outro, um);
 
     private Task InserirAsync(Guid pedidoId, Guid decisaoId, string nome) =>
-        ExecutarSqlAsync(Inserir, decisaoId, pedidoId, Diogo.Sub.ToString(), nome, MesmoInstante);
+        ExecutarSqlAsync(Inserir, decisaoId, pedidoId, Diogo.ContaId.ToString(), nome, MesmoInstante);
 
     private async Task<PedidoDeConcessao> LerPedidoAsync(Guid pedidoId)
     {

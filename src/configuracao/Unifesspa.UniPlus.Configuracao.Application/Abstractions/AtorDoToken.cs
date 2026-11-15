@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 /// <summary>
-/// Quem age, tirado do token (ADR-0033): o emissor e o <c>sub</c>, e o nome social quando há, senão o civil. O nome
+/// Quem age, tirado do token (ADR-0033): o emissor e o <c>contaId</c>, e o nome social quando há, senão o civil. O nome
 /// de exibição do provedor não entra, porque pode ser o identificador de login. Serve a quem registra um ato e a quem
 /// compara a autoria na leitura.
 /// </summary>

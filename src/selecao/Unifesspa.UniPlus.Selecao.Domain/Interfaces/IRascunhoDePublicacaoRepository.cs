@@ -18,7 +18,7 @@ public interface IRascunhoDePublicacaoRepository : IRepository<RascunhoDePublica
     /// </summary>
     Task<RascunhoDePublicacao?> ObterDoOperadorAsync(
         Guid processoSeletivoId,
-        string usuarioSub,
+        string usuarioContaId,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -50,7 +50,7 @@ public interface IRascunhoDePublicacaoRepository : IRepository<RascunhoDePublica
     /// </remarks>
     Task<int> ApagarDoOperadorAsync(
         Guid processoSeletivoId,
-        string usuarioSub,
+        string usuarioContaId,
         CancellationToken cancellationToken = default);
 
     /// <summary>

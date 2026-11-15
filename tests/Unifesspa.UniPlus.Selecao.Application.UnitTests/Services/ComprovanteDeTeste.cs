@@ -76,7 +76,7 @@ internal static class ComprovanteDeTeste
             inscricao, new ComprovanteNaPosicao(comprovante, numero, total), envelope, "PSS Medicina 2027", "Centro de Processos Seletivos", Prazo: null, Cancelamento: null));
 
     public static Inscricao UmaInscricao(Cpf? cpf = null) =>
-        Inscricao.Iniciar(Guid.CreateVersion7(), cpf ?? PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
+        Inscricao.Iniciar(Guid.CreateVersion7(), cpf ?? PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!;
 
     public static IEnumerable<ItemDoComprovanteDto> TodosOsItens(ComprovanteDaInscricaoDto dto) =>
         dto.Secoes.SelectMany(static s => s.Itens);

@@ -95,7 +95,7 @@ internal sealed class ObrigatoriedadeLegalConfiguration
         builder.Property(o => o.CreatedBy).HasMaxLength(AuditUserMaxLength);
         builder.Property(o => o.UpdatedBy).HasMaxLength(AuditUserMaxLength);
 
-        // Soft delete (EntityBase) — DeletedBy guarda o sub do JWT do admin
+        // Soft delete (EntityBase) — DeletedBy guarda a conta do JWT do admin
         // responsável pela desativação. Sem MaxLength explícito o EF emite
         // `text` para a coluna; alinhamos com os demais campos de audit
         // (255 chars) para coerência de schema e suporte a índice parcial

@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 
 /// <summary>
 /// Stub mínimo de <see cref="IUserContext"/> para testes de persistência da
-/// Story #460. Suporta apenas o caminho "autenticado com <c>sub</c> fixo"
+/// Story #460. Suporta apenas o caminho "autenticado com <c>contaId</c> fixo"
 /// usado pelos interceptors (snapshot_by, created_by). Os demais membros
 /// expõem defaults seguros: as roles não influenciam o ciclo de save.
 /// </summary>

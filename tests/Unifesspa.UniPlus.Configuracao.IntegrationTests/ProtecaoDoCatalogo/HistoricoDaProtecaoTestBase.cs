@@ -53,13 +53,13 @@ public abstract class HistoricoDaProtecaoTestBase
         IServiceProvider servicos = Fixture.Factory.Services;
         foreach (Persona persona in new[] { Isabella, Betina, Caroline })
         {
-            await ConcessoesDeTeste.RemoverDaPessoaAsync(servicos, persona.Sub);
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(servicos, persona.ContaId);
         }
 
         await ConcessoesDeTeste.ConcederPermissoesAsync(
-            servicos, Isabella.Sub, PermissaoConfiguracao.TiposDocumentoManter.Codigo, PermissaoConfiguracao.FatosCandidatoManter.Codigo, PermissaoConfiguracao.FatosCandidatoConsultar.Codigo);
-        await ConcessoesDeTeste.ConcederGovernancaAsync(servicos, Betina.Sub, TipoDeGovernanca.RepresentanteDoControlador, "betina.neves@unifesspa.edu.br");
-        await ConcessoesDeTeste.ConcederGovernancaAsync(servicos, Caroline.Sub, TipoDeGovernanca.RepresentanteDoControlador, "caroline.lima@unifesspa.edu.br");
+            servicos, Isabella.ContaId, PermissaoConfiguracao.TiposDocumentoManter.Codigo, PermissaoConfiguracao.FatosCandidatoManter.Codigo, PermissaoConfiguracao.FatosCandidatoConsultar.Codigo);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(servicos, Betina.ContaId, TipoDeGovernanca.RepresentanteDoControlador, "betina.neves@unifesspa.edu.br");
+        await ConcessoesDeTeste.ConcederGovernancaAsync(servicos, Caroline.ContaId, TipoDeGovernanca.RepresentanteDoControlador, "caroline.lima@unifesspa.edu.br");
     }
 
     private protected static async Task<Guid> CadastrarTipoAsync(HttpClient client, string nome)
@@ -191,11 +191,11 @@ public abstract class HistoricoDaProtecaoTestBase
     private static void Autenticar(HttpRequestMessage request, Persona quem)
     {
         request.Headers.Add("Authorization", $"{TestAuthHandler.AuthorizationScheme} {TestAuthHandler.TokenValue}");
-        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, quem.Sub);
+        request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, quem.ContaId);
         request.Headers.TryAddWithoutValidation(TestAuthHandler.NameHeader, quem.Nome);
     }
 
-    private protected sealed record Persona(string Sub, string Nome);
+    private protected sealed record Persona(string ContaId, string Nome);
 
     private protected sealed record Decisao(
         string Cadastro, Guid ItemId, string Resultado, string Classificacao, string? Recomendada = null, string? Justificativa = null)

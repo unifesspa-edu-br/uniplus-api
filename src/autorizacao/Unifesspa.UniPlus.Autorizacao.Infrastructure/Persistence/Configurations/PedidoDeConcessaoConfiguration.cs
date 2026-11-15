@@ -44,17 +44,17 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
     }
 
     // O banco confere o que o agregado já garante: nenhuma decisão sem a identidade do beneficiário, o
-    // par emissor e sub inteiro, e o encerramento só nos estados terminais. O pedido devolvido, como o cancelado, pode
+    // par emissor e conta inteiro, e o encerramento só nos estados terminais. O pedido devolvido, como o cancelado, pode
     // encerrar antes de o beneficiário aceitar.
     private static void ConfigurarRestricoes(EntityTypeBuilder<PedidoDeConcessao> builder) =>
         builder.ToTable("pedidos_de_concessao", tabela =>
         {
             tabela.HasCheckConstraint(
                 "ck_pedidos_beneficiario_completo",
-                "(beneficiario_emissor IS NULL) = (beneficiario_sub IS NULL)");
+                "(beneficiario_emissor IS NULL) = (beneficiario_conta_id IS NULL)");
             tabela.HasCheckConstraint(
                 "ck_pedidos_decisao_com_beneficiario",
-                "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado', 'devolvido') OR beneficiario_sub IS NOT NULL");
+                "situacao IN ('aguardando_documento', 'aguardando_beneficiario', 'cancelado', 'devolvido') OR beneficiario_conta_id IS NOT NULL");
             tabela.HasCheckConstraint(
                 "ck_pedidos_encerramento",
                 "(situacao IN ('aprovado', 'recusado', 'cancelado', 'devolvido')) = (encerrado_em IS NOT NULL)");
@@ -69,12 +69,12 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
     private static void ConfigurarColunas(EntityTypeBuilder<PedidoDeConcessao> builder)
     {
         builder.Property(p => p.SolicitanteEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(p => p.SolicitanteSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(p => p.SolicitanteContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(p => p.SolicitanteNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(p => p.SolicitanteEmail).HasMaxLength(PedidoDeConcessao.EmailMaxLength);
         builder.Property(p => p.BeneficiarioEmail).HasMaxLength(PedidoDeConcessao.EmailMaxLength).IsRequired();
         builder.Property(p => p.BeneficiarioEmissor).HasMaxLength(IdentidadeMaxLength);
-        builder.Property(p => p.BeneficiarioSub).HasMaxLength(IdentidadeMaxLength);
+        builder.Property(p => p.BeneficiarioContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(p => p.BeneficiarioNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(p => p.Justificativa).HasMaxLength(PedidoDeConcessao.JustificativaMaxLength).IsRequired();
         builder.Property(p => p.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
@@ -159,6 +159,6 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
 
         // As filas dos aprovadores e a lista de quem pediu.
         builder.HasIndex(p => p.Situacao).HasDatabaseName("ix_pedidos_situacao");
-        builder.HasIndex(p => new { p.SolicitanteEmissor, p.SolicitanteSub }).HasDatabaseName("ix_pedidos_solicitante");
+        builder.HasIndex(p => new { p.SolicitanteEmissor, p.SolicitanteContaId }).HasDatabaseName("ix_pedidos_solicitante");
     }
 }

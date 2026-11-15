@@ -37,11 +37,11 @@ public sealed partial class EnvelopeCodecRoundTripTests
         congelado.SchemaVersion.Should().Be(SchemaCorrente, "pré-condição: o codec corrente emite a forma única");
 
     private static VersaoConfiguracao Publicado(
-        ProcessoSeletivo processo, EntradaCanonicalizacao entrada, SnapshotCanonico congelado, string sub)
+        ProcessoSeletivo processo, EntradaCanonicalizacao entrada, SnapshotCanonico congelado, string contaId)
     {
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            entrada.HashDocumento, sub, TimeProvider.System, CorpusEnvelope.ContextoRico(),
+            entrada.HashDocumento, contaId, TimeProvider.System, CorpusEnvelope.ContextoRico(),
             FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         return publicacao.Value!;

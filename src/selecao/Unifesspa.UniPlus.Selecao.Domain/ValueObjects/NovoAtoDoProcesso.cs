@@ -26,8 +26,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </param>
 /// <param name="AtoCorrigidoId">O ato que este corrige, quando é errata ou retificação.</param>
 /// <param name="MotivoDaCorrecao">Motivo da correção; obrigatório com <paramref name="AtoCorrigidoId"/>.</param>
-/// <param name="PoliticaDeDivulgacaoConfirmadaPorSub">
-/// Sub do usuário que confirmou que o documento segue a política de divulgação do certame — pedida
+/// <param name="PoliticaDeDivulgacaoConfirmadaPorContaId">
+/// ContaId do usuário que confirmou que o documento segue a política de divulgação do certame — pedida
 /// na publicação de resultado. Nulo quando a confirmação não foi pedida.
 /// </param>
 public sealed record NovoAtoDoProcesso(
@@ -45,4 +45,4 @@ public sealed record NovoAtoDoProcesso(
     IdentidadeDoItemDoEdital? ItemDoEdital = null,
     Guid? AtoCorrigidoId = null,
     string? MotivoDaCorrecao = null,
-    string? PoliticaDeDivulgacaoConfirmadaPorSub = null);
+    string? PoliticaDeDivulgacaoConfirmadaPorContaId = null);

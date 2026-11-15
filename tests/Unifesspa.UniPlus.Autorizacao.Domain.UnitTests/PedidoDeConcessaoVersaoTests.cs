@@ -229,8 +229,8 @@ public sealed class PedidoDeConcessaoVersaoTests
     private static PedidoDeConcessao Criar(Perfil perfil, bool paraSiMesmo) =>
         (paraSiMesmo ? PedidoDeConcessaoBuilder.Pedido().ParaSiMesmo() : PedidoDeConcessaoBuilder.Pedido()).DoPerfil(perfil).Protegido().Criado();
 
-    private static PessoaNoToken Pessoa(string sub, string nome, string email) =>
-        new(new Identidade(Emissor, sub), nome, email, true);
+    private static PessoaNoToken Pessoa(string contaId, string nome, string email) =>
+        new(new Identidade(Emissor, contaId), nome, email, true);
 
     private sealed class FakeCatalogo : ICatalogoDePermissoesConsultavel
     {

@@ -44,7 +44,7 @@ public sealed partial class TentativaDeConfirmacao
     /// <summary>
     /// A instalação pendente de quem confirma, com o código certo e a tentativa aceita, ou a recusa já gravada. Quem tenta
     /// sem ter instalação aguardando código não toca a pendência alheia nem consome as tentativas de ninguém: o fato fica
-    /// registrado e logado com o <c>sub</c> de quem tentou.
+    /// registrado e logado com o <c>contaId</c> de quem tentou.
     /// </summary>
     internal async Task<Result<Instalacao>> ConferirAsync(
         Identidade autor, string? codigo, DateTimeOffset agora, CancellationToken cancellationToken)
@@ -52,7 +52,7 @@ public sealed partial class TentativaDeConfirmacao
         Instalacao? instalacao = await _instalacoes.ObterAguardandoCodigoDoExecutorAsync(autor, cancellationToken).ConfigureAwait(false);
         if (instalacao is null)
         {
-            LogTentativaSemPendencia(_logger, autor.Sub);
+            LogTentativaSemPendencia(_logger, autor.ContaId);
             return await RecusarAsync(null, autor, ResultadoDaTentativaDeInstalacao.SemPendencia, agora, cancellationToken).ConfigureAwait(false);
         }
 
@@ -90,6 +90,6 @@ public sealed partial class TentativaDeConfirmacao
         return Result<Instalacao>.Failure(falha ?? InstalacaoHandlerErros.CodigoInvalido());
     }
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Tentativa de confirmar a instalação sem instalação aguardando código: sub {Sub}")]
-    private static partial void LogTentativaSemPendencia(ILogger logger, string sub);
+    [LoggerMessage(Level = LogLevel.Warning, Message = "Tentativa de confirmar a instalação sem instalação aguardando código: conta {ContaId}")]
+    private static partial void LogTentativaSemPendencia(ILogger logger, string contaId);
 }

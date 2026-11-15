@@ -88,7 +88,7 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
             modelo, identificador, edital.Id, hashDoEditalCongelado ?? edital.HashSha256!, anexos);
         VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
             processo.Id, envelope, CorpusEnvelope.Codec.SchemaVersion, CorpusEnvelope.Codec.AlgoritmoHash,
-            atoCriadorId: ato, atoCriadorHash: new string('a', 64), atorUsuarioSub: "teste", instante: DateTimeOffset.UtcNow);
+            atoCriadorId: ato, atoCriadorHash: new string('a', 64), atorUsuarioContaId: "teste", instante: DateTimeOffset.UtcNow);
 
         return await PublicarAsync(processo, versao, AcervoPublicoDeTeste.TipoDoAto, identificador, edital);
     }
@@ -106,7 +106,7 @@ internal sealed class SemeadorDoAcervoPublico(AcervoPublicoDeTeste acervo)
         VersaoConfiguracao versao = VersaoConfiguracao.Suceder(
             anterior, envelope, CorpusEnvelope.Codec.SchemaVersion, CorpusEnvelope.Codec.AlgoritmoHash,
             atoCriadorId: ato, atoCriadorHash: new string('b', 64), atoCriadorRetificaId: anterior.AtoCriadorId,
-            atorUsuarioSub: "teste", instante: DateTimeOffset.UtcNow);
+            atorUsuarioContaId: "teste", instante: DateTimeOffset.UtcNow);
 
         await using UniPlusDbContext leitura = acervo.Db.CreateDbContext();
         ProcessoSeletivo processo = await leitura.ProcessosSeletivos.AsNoTracking().SingleAsync(p => p.Id == anterior.ProcessoSeletivoId);

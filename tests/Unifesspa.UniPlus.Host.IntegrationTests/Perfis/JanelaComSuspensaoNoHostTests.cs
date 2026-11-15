@@ -116,7 +116,7 @@ public sealed class JanelaComSuspensaoNoHostTests : JanelaDeMigracaoNoHostTestBa
         Envio vigente = await PerfilVigenteAsync(gestor, Consultar, Sensivel);
         Guid concessao = await ConcessoesDeTeste.ConcederAsync(
             Fixture.Factory.Services,
-            beneficiario.Sub.ToString(),
+            beneficiario.ContaId.ToString(),
             vigente.PerfilId,
             EscopoDaConcessao.DaUnidade(Guid.CreateVersion7()),
             email: beneficiario.Email);

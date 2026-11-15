@@ -29,7 +29,7 @@ public sealed class AvisosDaProvidenciaNoHostTests : ProvidenciasNoHostTestBase
     public async Task Abertura_AvisaAdministracaoMenosOBeneficiario()
     {
         Governanca g = await GovernancaAsync();
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Betina.Sub.ToString(), TipoDeGovernanca.EncarregadoDeDados, Betina.Email);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Betina.ContaId.ToString(), TipoDeGovernanca.EncarregadoDeDados, Betina.Email);
         await ClienteComPermissoesAsync(Leandro, Administrar);
         Guid providencia = await SolicitarAsync(g.Betina, await ConcessaoDeLeandroAsync());
 
@@ -44,7 +44,7 @@ public sealed class AvisosDaProvidenciaNoHostTests : ProvidenciasNoHostTestBase
     {
         Governanca g = await GovernancaAsync();
         Guid providencia = await SolicitarAsync(g.Cecilia, await ConcessaoDeLeandroAsync());
-        Guid perfilDeCecilia = await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.Sub.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
+        Guid perfilDeCecilia = await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Cecilia.ContaId.ToString(), TipoDeGovernanca.EncarregadoDeDados, Cecilia.Email);
         (await RevogarAsync(g.Diogo, perfilDeCecilia, "Deixou a função.", Cecilia.Email)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await ResponderAsync(g.Isabella, providencia)).StatusCode.Should().Be(HttpStatusCode.OK);
@@ -62,7 +62,7 @@ public sealed class AvisosDaProvidenciaNoHostTests : ProvidenciasNoHostTestBase
         await AguardarAvisoAsync(Cecilia, providencia, "Providência atendida");
         JsonElement[] aoBeneficiario = await AvisosDeRevogacaoAoBeneficiarioAsync();
 
-        string[] proibidos = [Cecilia.Nome, Cecilia.Sub.ToString(), Cecilia.Email, Diogo.Nome, Diogo.Sub.ToString(), Diogo.Email, Fundamento, Motivo, "providência", "Providência"];
+        string[] proibidos = [Cecilia.Nome, Cecilia.ContaId.ToString(), Cecilia.Email, Diogo.Nome, Diogo.ContaId.ToString(), Diogo.Email, Fundamento, Motivo, "providência", "Providência"];
         aoBeneficiario.Should().AllSatisfy(m => new[] { "Subject", "Text", "HTML" }.Select(campo => m.GetProperty(campo).GetString()!)
             .Should().AllSatisfy(texto => proibidos.Should().AllSatisfy(p => texto.Should().NotContain(p))));
         aoBeneficiario.Should().AllSatisfy(static m => m.GetProperty("Text").GetString().Should().Contain("nova solicitação comprovando a necessidade"));

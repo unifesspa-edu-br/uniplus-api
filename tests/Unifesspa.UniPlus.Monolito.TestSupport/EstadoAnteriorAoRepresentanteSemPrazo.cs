@@ -19,9 +19,9 @@ public static class EstadoAnteriorAoRepresentanteSemPrazo
     /// Concede o perfil de Representante à pessoa e grava na concessão o prazo informado, com o início um dia antes dele
     /// ou do instante atual, o que for anterior. Concessão igual não revogada é reaproveitada e recebe o prazo.
     /// </summary>
-    public static async Task<Guid> DesignarComPrazoAsync(IServiceProvider services, string sub, DateTimeOffset validaAte, string? email = null)
+    public static async Task<Guid> DesignarComPrazoAsync(IServiceProvider services, string contaId, DateTimeOffset validaAte, string? email = null)
     {
-        Guid id = await ConcessoesDeTeste.ConcederGovernancaAsync(services, sub, TipoDeGovernanca.RepresentanteDoControlador, email);
+        Guid id = await ConcessoesDeTeste.ConcederGovernancaAsync(services, contaId, TipoDeGovernanca.RepresentanteDoControlador, email);
         await GravarPrazoNaDesignacaoAsync(services, id, validaAte);
         return id;
     }

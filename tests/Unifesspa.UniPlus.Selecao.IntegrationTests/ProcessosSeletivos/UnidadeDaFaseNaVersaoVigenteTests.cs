@@ -126,7 +126,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
         await using UniPlusDbContext semeadura = _fixture.CreateDbContext();
         Guid versaoId = await semeadura.VersoesConfiguracao.Where(v => v.ProcessoSeletivoId == processoId).Select(v => v.Id).FirstAsync();
         semeadura.LotesDeNotasDoEnem.Add(LoteDeNotasDoEnem.Registrar(
-            processoId, etapaId, "2026", "INEP_ENEM_RETORNO", "v1", new string('b', 64), new string('c', 64), "sub-admin", importadoEm, 0,
+            processoId, etapaId, "2026", "INEP_ENEM_RETORNO", "v1", new string('b', 64), new string('c', 64), "conta-admin", importadoEm, 0,
             versaoId, new ResultadoDoCruzamento([], [], [], []), []));
         await semeadura.SaveChangesAsync();
     }
@@ -146,7 +146,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
             Id = id,
             ProcessoSeletivoId = processoId,
             CpfIndice = id.ToByteArray(),
-            Sub = $"sub-{id:N}",
+            ContaId = $"conta-{id:N}",
             EmissorToken = "https://issuer",
             Situacao = SituacaoInscricao.Submetida,
             VersaoFormularioId = Guid.CreateVersion7(),

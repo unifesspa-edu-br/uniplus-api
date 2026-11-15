@@ -22,8 +22,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
-    private const string Operador = "sub-operador-1";
-    private const string Colega = "sub-operador-2";
+    private const string Operador = "conta-operador-1";
+    private const string Colega = "conta-operador-2";
     private static readonly DateTimeOffset Agora = new(2026, 9, 14, 12, 0, 0, TimeSpan.Zero);
 
     private readonly ProcessoSeletivoDbFixture _fixture;
@@ -179,16 +179,16 @@ public sealed class RascunhoDePublicacaoPersistenciaTests : IClassFixture<Proces
             .ExecuteUpdateAsync(set => set.SetProperty(r => r.ExpiraEm, Agora.AddDays(-1)));
     }
 
-    private async Task<Guid> GravarAsync(Guid processoId, string usuarioSub, string conteudo, int versao = 1)
+    private async Task<Guid> GravarAsync(Guid processoId, string usuarioContaId, string conteudo, int versao = 1)
     {
         await using UniPlusDbContext contexto = _fixture.CreateDbContext();
         RascunhoDePublicacaoRepository repositorio = new(contexto);
 
-        RascunhoDePublicacao? existente = await repositorio.ObterDoOperadorAsync(processoId, usuarioSub);
+        RascunhoDePublicacao? existente = await repositorio.ObterDoOperadorAsync(processoId, usuarioContaId);
         if (existente is null)
         {
             Result<RascunhoDePublicacao> criacao = RascunhoDePublicacao.Criar(
-                processoId, usuarioSub, conteudo, versao, Agora, RascunhoDePublicacao.Prazo);
+                processoId, usuarioContaId, conteudo, versao, Agora, RascunhoDePublicacao.Prazo);
             criacao.IsSuccess.Should().BeTrue();
             existente = criacao.Value!;
             await repositorio.AdicionarAsync(existente);

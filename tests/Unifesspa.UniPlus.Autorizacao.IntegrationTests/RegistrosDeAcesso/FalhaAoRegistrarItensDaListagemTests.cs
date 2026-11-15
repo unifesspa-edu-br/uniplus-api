@@ -74,9 +74,9 @@ public sealed class FalhaAoRegistrarItensDaListagemTests
         await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
         Microsoft.EntityFrameworkCore.Infrastructure.DatabaseFacade banco = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database;
         await banco.ExecuteSqlRawAsync(
-            "DELETE FROM autorizacao.itens_da_revisao WHERE concessao_id IN (SELECT id FROM autorizacao.concessoes WHERE beneficiario_sub = {0})", Cecilia);
+            "DELETE FROM autorizacao.itens_da_revisao WHERE concessao_id IN (SELECT id FROM autorizacao.concessoes WHERE beneficiario_conta_id = {0})", Cecilia);
         await banco.ExecuteSqlRawAsync("DELETE FROM autorizacao.revisoes_de_acessos r WHERE NOT EXISTS (SELECT 1 FROM autorizacao.itens_da_revisao i WHERE i.revisao_id = r.id)");
-        await banco.ExecuteSqlRawAsync("DELETE FROM autorizacao.pedidos_de_concessao WHERE solicitante_sub = {0}", Cecilia);
+        await banco.ExecuteSqlRawAsync("DELETE FROM autorizacao.pedidos_de_concessao WHERE solicitante_conta_id = {0}", Cecilia);
     }
 
     // A Encarregada só com o perfil dela, com uma concessão própria e um pedido para si mesma de um perfil comum.

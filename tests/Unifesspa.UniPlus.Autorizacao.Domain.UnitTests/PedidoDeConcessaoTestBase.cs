@@ -35,8 +35,8 @@ public abstract class PedidoDeConcessaoTestBase
     internal static EscopoDaConcessao EscopoDe(Perfil? perfil) =>
         perfil?.Governanca is null ? EscopoDaConcessao.DaUnidade(Guid.NewGuid()) : EscopoDaConcessao.DaInstituicao();
 
-    internal static PessoaNoToken Pessoa(string sub, string nome, string email) =>
-        new(new Identidade(Emissor, sub), nome, email, true);
+    internal static PessoaNoToken Pessoa(string contaId, string nome, string email) =>
+        new(new Identidade(Emissor, contaId), nome, email, true);
 
     internal static Perfil PerfilComum() =>
         PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos de atendimento.", ["selecao:processos:consultar"], Catalogo);

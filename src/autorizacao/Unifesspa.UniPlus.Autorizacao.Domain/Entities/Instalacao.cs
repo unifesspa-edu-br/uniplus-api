@@ -44,7 +44,7 @@ public sealed class Instalacao : EntityBase
 
     public string ExecutorEmissor { get; private set; } = string.Empty;
 
-    public string ExecutorSub { get; private set; } = string.Empty;
+    public string ExecutorContaId { get; private set; } = string.Empty;
 
     /// <summary>Nome de exibição de quem iniciou a instalação, gravado no início; nulo quando o token não o trazia.</summary>
     public string? ExecutorNome { get; private set; }
@@ -113,9 +113,9 @@ public sealed class Instalacao : EntityBase
         List<string> emails = [];
         foreach (IdentidadeInformada gestor in gestores)
         {
-            if (gestor is { Emissor: { } emissor, Sub: { } sub }
+            if (gestor is { Emissor: { } emissor, ContaId: { } contaId }
                 && string.Equals(emissor, emissorAceito, StringComparison.Ordinal)
-                && Guid.TryParseExact(sub, "D", out Guid guid)
+                && Guid.TryParseExact(contaId, "D", out Guid guid)
                 && guid != Guid.Empty
                 && PedidoDeConcessao.EmailNormalizado(gestor.Email) is { } email)
             {
@@ -131,7 +131,7 @@ public sealed class Instalacao : EntityBase
         {
             erros.Add(new("gestores", new DomainError(
                 InstalacaoErrorCodes.GestoresInvalidos,
-                "Informe exatamente dois gestores distintos, cada um pelo emissor aceito, pelo identificador (sub) no formato UUID e pelo e-mail institucional.")));
+                "Informe exatamente dois gestores distintos, cada um pelo emissor aceito, pelo contaId no formato UUID e pelo e-mail institucional.")));
         }
         else if (conferidos.Contains(executor))
         {
@@ -163,14 +163,14 @@ public sealed class Instalacao : EntityBase
         Instalacao instalacao = new()
         {
             ExecutorEmissor = executor.Emissor,
-            ExecutorSub = executor.Sub,
+            ExecutorContaId = executor.ContaId,
             ExecutorNome = executor.Nome,
             NumeroDoDocumento = numero!,
             TamanhoDoPdf = tamanhoDoPdf,
             Situacao = SituacaoDaInstalacao.AguardandoDocumento,
             IniciadaEm = instante,
         };
-        instalacao._gestores.AddRange(conferidos.Select((g, posicao) => new GestorDaInstalacao(g.Emissor, g.Sub, emails[posicao], g.Nome)));
+        instalacao._gestores.AddRange(conferidos.Select((g, posicao) => new GestorDaInstalacao(g.Emissor, g.ContaId, emails[posicao], g.Nome)));
 
         return Result<Instalacao>.Success(instalacao);
     }
@@ -181,7 +181,7 @@ public sealed class Instalacao : EntityBase
     /// <summary>Chave em que o verificador promove o PDF limpo.</summary>
     public string ChaveDefinitiva => $"{PrefixoDasChaves}/{Id:D}/definitivo";
 
-    public Identidade Executor => new(ExecutorEmissor, ExecutorSub, ExecutorNome);
+    public Identidade Executor => new(ExecutorEmissor, ExecutorContaId, ExecutorNome);
 
     public bool Pendente => SituacoesPendentes.Contains(Situacao);
 

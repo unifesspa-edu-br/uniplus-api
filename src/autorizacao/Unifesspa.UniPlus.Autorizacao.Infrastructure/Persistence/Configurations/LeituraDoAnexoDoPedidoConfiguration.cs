@@ -30,7 +30,7 @@ internal sealed class LeituraDoAnexoDoPedidoConfiguration : IEntityTypeConfigura
         builder.Property(l => l.Id).ValueGeneratedNever();
 
         builder.Property(l => l.LeitorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
-        builder.Property(l => l.LeitorSub).HasMaxLength(IdentidadeMaxLength).IsRequired();
+        builder.Property(l => l.LeitorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(l => l.LeitorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(l => l.Instante).IsRequired();
 

@@ -32,7 +32,7 @@ public sealed class MontadorDoComprovanteTests
     {
         (VersaoConfiguracao primeira, _) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
         (VersaoConfiguracao retificada, _) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
-        Inscricao inscricao = Inscricao.Iniciar(ProcessoId, PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", primeira.Id).Value!;
+        Inscricao inscricao = Inscricao.Iniciar(ProcessoId, PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", primeira.Id).Value!;
         ComprovanteNaPosicao posicao = new(Emitir(inscricao, Respostas(("APELIDO", "Nanda"))), 1, 2);
 
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();

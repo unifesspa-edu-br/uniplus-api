@@ -84,7 +84,7 @@ internal static class CenariosDeDecisao
         bool mfaSatisfeito = false,
         params EffectiveGrant[] concessoes)
         => AuthorizationSubject.From(
-            UsuarioRef.From("https://idp.exemplo/realms/unifesspa", "sub-opaco-123").Value!,
+            UsuarioRef.From("https://idp.exemplo/realms/unifesspa", "conta-opaco-123").Value!,
             "jti-abc",
             mfaSatisfeito,
             concessoesEfetivas: concessoes).Value!;
@@ -114,7 +114,7 @@ internal static class CenariosDeDecisao
     {
         public int Consultas { get; private set; }
 
-        public Task<bool> TemInscricaoEnviadaAsync(string emissor, string subject, Guid processoId, CancellationToken cancellationToken)
+        public Task<bool> TemInscricaoEnviadaAsync(string emissor, string contaId, Guid processoId, CancellationToken cancellationToken)
         {
             Consultas++;
             return Task.FromResult(processosInscritos.Contains(processoId));
@@ -156,7 +156,7 @@ internal static class CenariosDeDecisao
         public void Revogar(Guid processoId, VinculosDaBanca banca) => _designacoes.Remove((processoId, banca));
 
         public Task<bool> TemDesignacaoVigenteAsync(
-            string emissor, string subject, Guid processoId, VinculosDaBanca banca, CancellationToken cancellationToken)
+            string emissor, string contaId, Guid processoId, VinculosDaBanca banca, CancellationToken cancellationToken)
         {
             Consultas++;
             return Task.FromResult(_designacoes.Contains((processoId, banca)));

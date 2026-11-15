@@ -52,7 +52,7 @@ public sealed class DestinatariosDoRepresentanteNoHostTests : PedidosDeConcessao
         await ExecutarSqlAsync(
             "UPDATE autorizacao.concessoes SET concedida_em = now() - interval '10 days', valida_ate = now() - interval '1 day' WHERE id = {0}", vencida);
         await ExecutarSqlAsync(
-            "UPDATE autorizacao.concessoes SET revogada_em = now(), revogada_por_emissor = beneficiario_emissor, revogada_por_sub = 'concessao.de.teste', motivo_revogacao = 'Revogada para o teste.' WHERE id = {0}",
+            "UPDATE autorizacao.concessoes SET revogada_em = now(), revogada_por_emissor = beneficiario_emissor, revogada_por_conta_id = 'concessao.de.teste', motivo_revogacao = 'Revogada para o teste.' WHERE id = {0}",
             revogada);
     }
 
@@ -98,8 +98,8 @@ public sealed class DestinatariosDoRepresentanteNoHostTests : PedidosDeConcessao
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
         Concessao? existente = await escopo.ServiceProvider.GetRequiredService<IConcessaoRepository>().ObterNaoRevogadaIgualAsync(
-            new Identidade(TestAuthHandler.DefaultIssuer, persona.Sub.ToString()), PerfilDe(governanca), EscopoDaConcessao.DaInstituicao());
-        Guid id = await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, persona.Sub.ToString(), governanca, persona.Email);
+            new Identidade(TestAuthHandler.DefaultIssuer, persona.ContaId.ToString()), PerfilDe(governanca), EscopoDaConcessao.DaInstituicao());
+        Guid id = await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, persona.ContaId.ToString(), governanca, persona.Email);
         if (existente is null)
         {
             _criadas.Add(id);

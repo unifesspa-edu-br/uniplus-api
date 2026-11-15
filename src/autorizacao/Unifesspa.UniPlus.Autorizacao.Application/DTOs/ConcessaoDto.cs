@@ -21,9 +21,9 @@ public sealed record ConcessaoDto(
     string? MotivoRevogacao,
     bool Ativa);
 
-/// <summary>Pessoa pelo par emissor e <c>sub</c> do token, com o nome de exibição gravado quando ela agiu. Nunca traz CPF.</summary>
+/// <summary>Pessoa pelo par emissor e <c>contaId</c> do token, com o nome de exibição gravado quando ela agiu. Nunca traz CPF.</summary>
 /// <param name="Nome">Nome social quando há, senão o civil; nulo no registro que não o gravou.</param>
-public sealed record IdentidadeDto(string Emissor, string Sub, string? Nome = null);
+public sealed record IdentidadeDto(string Emissor, string ContaId, string? Nome = null);
 
 public sealed record PerfilResumoDto(Guid Id, string Nome);
 

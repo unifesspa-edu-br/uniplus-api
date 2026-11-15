@@ -55,7 +55,7 @@ public sealed class ConcessoesController : ControllerBase
 
     /// <summary>
     /// Lista as concessões, paginadas por cursor opaco bidirecional (ADR-0026 + ADR-0089). A
-    /// pessoa é o par <c>emissor</c> e <c>pessoa</c> (o <c>sub</c>), nunca CPF; um sem o outro é
+    /// pessoa é o par <c>emissor</c> e <c>contaId</c>, nunca CPF; um sem o outro é
     /// recusado.
     /// </summary>
     [HttpGet("concessoes")]
@@ -74,7 +74,7 @@ public sealed class ConcessoesController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status503ServiceUnavailable)]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
-        [FromQuery] string? pessoa = null,
+        [FromQuery] string? contaId = null,
         [FromQuery] string? emissor = null,
         [FromQuery] Guid? unidade = null,
         [FromQuery] Guid? perfil = null,
@@ -83,7 +83,7 @@ public sealed class ConcessoesController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        Result<ListarConcessoesQuery> consulta = Consulta(page, pessoa, emissor, unidade, perfil, situacao);
+        Result<ListarConcessoesQuery> consulta = Consulta(page, contaId, emissor, unidade, perfil, situacao);
         if (consulta.IsFailure)
         {
             return consulta.ToActionResult(_mapper);
@@ -167,18 +167,18 @@ public sealed class ConcessoesController : ControllerBase
         return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
-    // A pessoa é o par emissor e sub, nunca CPF, e um sem o outro é recusado; a situação é uma das quatro conhecidas.
+    // A pessoa é o par emissor e contaId, nunca CPF, e um sem o outro é recusado; a situação é uma das quatro conhecidas.
     private static Result<ListarConcessoesQuery> Consulta(
-        PageRequest page, string? pessoa, string? emissor, Guid? unidade, Guid? perfil, string? situacao)
+        PageRequest page, string? contaId, string? emissor, Guid? unidade, Guid? perfil, string? situacao)
     {
-        (pessoa, emissor) = (Aparado(pessoa), Aparado(emissor));
-        if ((pessoa is null) != (emissor is null))
+        (contaId, emissor) = (Aparado(contaId), Aparado(emissor));
+        if ((contaId is null) != (emissor is null))
         {
-            return Recusa(ConcessaoErrorCodes.FiltroDePessoaInvalido, "A pessoa é identificada pelo par emissor e pessoa (sub); informe os dois.");
+            return Recusa(ConcessaoErrorCodes.FiltroDePessoaInvalido, "A pessoa é identificada pelo par emissor e contaId; informe os dois.");
         }
 
         return LerSituacao(situacao) is { } lida
-            ? Result<ListarConcessoesQuery>.Success(new(emissor, pessoa, unidade, perfil, lida, page.AfterId, page.Limit, page.Direction))
+            ? Result<ListarConcessoesQuery>.Success(new(emissor, contaId, unidade, perfil, lida, page.AfterId, page.Limit, page.Direction))
             : Recusa(ConcessaoErrorCodes.FiltroDeSituacaoInvalido, "Situação inválida. Use ativa, revogada, vencida ou todas.");
     }
 

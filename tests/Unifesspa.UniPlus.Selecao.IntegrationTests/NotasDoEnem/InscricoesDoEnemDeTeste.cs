@@ -91,7 +91,7 @@ internal static class InscricoesDoEnemDeTeste
             Id = id,
             ProcessoSeletivoId = processoId,
             CpfIndice = indice,
-            Sub = $"sub-{id:N}",
+            ContaId = $"conta-{id:N}",
             EmissorToken = "https://issuer",
             Situacao = situacao,
             VersaoFormularioId = versaoFormularioId ?? Guid.CreateVersion7(),

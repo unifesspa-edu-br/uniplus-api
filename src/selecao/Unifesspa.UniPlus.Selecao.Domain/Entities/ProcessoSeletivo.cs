@@ -615,11 +615,11 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         VersaoConfiguracao versaoBase,
         IdentificadorLegivel? identificadorDaVersaoBase,
         FatosDasVersoesPublicadas fatosDasVersoesPublicadas,
-        string abertoPorSub,
+        string abertoPorContaId,
         DateTimeOffset abertoEm)
     {
         Result<RascunhoRetificacao> sessao = SessaoDeRetificacao.Abrir(
-            EstadoDaConfiguracao.De(this), motivo, versaoBase, identificadorDaVersaoBase, fatosDasVersoesPublicadas, abertoPorSub, abertoEm);
+            EstadoDaConfiguracao.De(this), motivo, versaoBase, identificadorDaVersaoBase, fatosDasVersoesPublicadas, abertoPorContaId, abertoEm);
         Rascunho = sessao.Value ?? Rascunho;
         return sessao;
     }

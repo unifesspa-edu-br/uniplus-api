@@ -82,7 +82,7 @@ public sealed class TiposFormaisContratoTests
     [Fact]
     public void AuthorizationSubject_ConteudoIdentico_EhIgualPorValor()
     {
-        UsuarioRef usuario = UsuarioRef.From("https://sso.gov.br", "sub-1").Value!;
+        UsuarioRef usuario = UsuarioRef.From("https://sso.gov.br", "conta-1").Value!;
         Guid unidade = Guid.CreateVersion7();
         EffectiveGrant grant = EffectiveGrant.From("selecao.editais.publicar", FonteGrant.Concessao, escopoInstitucional: true).Value!;
 

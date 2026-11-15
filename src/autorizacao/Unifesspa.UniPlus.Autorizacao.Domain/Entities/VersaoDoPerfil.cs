@@ -52,7 +52,7 @@ public sealed partial class VersaoDoPerfil : EntityBase
 
     public string CriadaPorEmissor { get; private set; } = string.Empty;
 
-    public string CriadaPorSub { get; private set; } = string.Empty;
+    public string CriadaPorContaId { get; private set; } = string.Empty;
 
     public string? CriadaPorNome { get; private set; }
 
@@ -60,7 +60,7 @@ public sealed partial class VersaoDoPerfil : EntityBase
 
     public DateTimeOffset CriadaEm { get; private set; }
 
-    public Identidade CriadaPor => new(CriadaPorEmissor, CriadaPorSub, CriadaPorNome);
+    public Identidade CriadaPor => new(CriadaPorEmissor, CriadaPorContaId, CriadaPorNome);
 
     public string? MotivoDaRemocao { get; private set; }
 
@@ -186,7 +186,7 @@ public sealed partial class VersaoDoPerfil : EntityBase
     {
         Situacao = SituacaoDaVersao.Pendente;
         CriadaPorEmissor = autoria.Pessoa.Emissor;
-        CriadaPorSub = autoria.Pessoa.Sub;
+        CriadaPorContaId = autoria.Pessoa.ContaId;
         CriadaPorNome = autoria.Pessoa.Nome;
         CriadaPorEmail = autoria.Email;
         CriadorTemConcessao = autoria.TemConcessao;

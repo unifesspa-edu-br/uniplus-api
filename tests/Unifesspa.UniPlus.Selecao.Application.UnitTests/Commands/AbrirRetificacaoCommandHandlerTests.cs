@@ -185,7 +185,7 @@ public sealed class AbrirRetificacaoCommandHandlerTests
         {
             ProcessoSeletivo processo = NovoProcessoConforme();
             VersaoConfiguracao versao = processo.Publicar(
-                NovosDados(), Bytes, schemaVersion, "canonical-json/sha256@v1", HashFixo, "user-sub-1",
+                NovosDados(), Bytes, schemaVersion, "canonical-json/sha256@v1", HashFixo, "user-conta-1",
                 new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Value!;
             processo.DequeueDomainEvents();
 
@@ -196,7 +196,7 @@ public sealed class AbrirRetificacaoCommandHandlerTests
                 :
                 [
                     VersaoConfiguracao.Abrir(
-                        processo.Id, Bytes, schemaDaVersaoAnterior, "canonical-json/sha256@v1", Guid.CreateVersion7(), HashFixo, "user-sub-1", Agora),
+                        processo.Id, Bytes, schemaDaVersaoAnterior, "canonical-json/sha256@v1", Guid.CreateVersion7(), HashFixo, "user-conta-1", Agora),
                     versao,
                 ];
             repositorio.ObterVersoesAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versoes);
@@ -236,7 +236,7 @@ public sealed class AbrirRetificacaoCommandHandlerTests
     private static IUserContext UsuarioAutenticado()
     {
         IUserContext contexto = Substitute.For<IUserContext>();
-        contexto.UserId.Returns("user-sub-1");
+        contexto.UserId.Returns("user-conta-1");
         return contexto;
     }
 

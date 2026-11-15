@@ -42,7 +42,7 @@ public sealed class RevogacaoDaConcessaoEndpointTests : ConcessaoEndpointTestBas
 
         using JsonDocument concessao = await LerAsync(diogo, $"{Rota}/{id}");
         concessao.RootElement.GetProperty("ativa").GetBoolean().Should().BeFalse();
-        concessao.RootElement.GetProperty("revogadaPor").GetProperty("sub").GetString().Should().Be(Diogo.Sub);
+        concessao.RootElement.GetProperty("revogadaPor").GetProperty("contaId").GetString().Should().Be(Diogo.ContaId);
         concessao.RootElement.GetProperty("motivoRevogacao").GetString().Should().Be(Motivo);
     }
 
@@ -84,7 +84,7 @@ public sealed class RevogacaoDaConcessaoEndpointTests : ConcessaoEndpointTestBas
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         using JsonDocument concessao = await LerAsync(isabella, $"{Rota}/{id}");
-        concessao.RootElement.GetProperty("revogadaPor").GetProperty("sub").GetString().Should().Be(Isabella.Sub);
+        concessao.RootElement.GetProperty("revogadaPor").GetProperty("contaId").GetString().Should().Be(Isabella.ContaId);
     }
 
     [Fact(DisplayName = "Os dois perfis de governança trazem a permissão de administrar concessões")]
@@ -115,7 +115,7 @@ public sealed class RevogacaoDaConcessaoEndpointTests : ConcessaoEndpointTestBas
         segunda.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await segunda.Content.ReadAsStringAsync()).Should().Contain("uniplus.autorizacao.concessao.ja_revogada");
         using JsonDocument concessao = await LerAsync(diogo, $"{Rota}/{id}");
-        concessao.RootElement.GetProperty("revogadaPor").GetProperty("sub").GetString().Should().Be(Diogo.Sub);
+        concessao.RootElement.GetProperty("revogadaPor").GetProperty("contaId").GetString().Should().Be(Diogo.ContaId);
     }
 
     [Fact(DisplayName = "Motivo ausente devolve 422 e a concessão segue ativa")]
@@ -202,8 +202,8 @@ public sealed class RevogacaoDaConcessaoEndpointTests : ConcessaoEndpointTestBas
         using JsonDocument trilha = await LerAsync(isabella, $"{Rota}/{id}/trilha");
 
         JsonElement[] eventos = [.. trilha.RootElement.EnumerateArray()];
-        eventos.Select(e => (e.GetProperty("tipo").GetString(), e.GetProperty("autor").GetProperty("sub").GetString()))
-            .Should().Equal(("concedida", Diogo.Sub), ("revogada", Isabella.Sub));
+        eventos.Select(e => (e.GetProperty("tipo").GetString(), e.GetProperty("autor").GetProperty("contaId").GetString()))
+            .Should().Equal(("concedida", Diogo.ContaId), ("revogada", Isabella.ContaId));
         eventos[1].GetProperty("detalhe").GetString().Should().Be(Motivo);
         eventos[0].GetProperty("instante").GetDateTimeOffset()
             .Should().BeBefore(eventos[1].GetProperty("instante").GetDateTimeOffset());

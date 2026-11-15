@@ -43,10 +43,10 @@ public sealed class TramitacaoDaProvidenciaNoHostTests : ProvidenciasNoHostTestB
     public async Task Impedimentos_DeQuemSolicitouEDoBeneficiario()
     {
         Governanca g = await GovernancaAsync();
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Betina.Sub.ToString(), TipoDeGovernanca.EncarregadoDeDados, Betina.Email);
+        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Betina.ContaId.ToString(), TipoDeGovernanca.EncarregadoDeDados, Betina.Email);
         Guid providencia = await SolicitarAsync(g.Betina, await ConcessaoDeLeandroAsync());
         Guid concessaoDeDiogo = await ConcessoesDeTeste.ConcederAsync(
-            Fixture.Factory.Services, Diogo.Sub.ToString(), await SemearPerfilInternoAsync(), EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()), email: Diogo.Email);
+            Fixture.Factory.Services, Diogo.ContaId.ToString(), await SemearPerfilInternoAsync(), EscopoDaConcessao.DaUnidade(await SemearUnidadeAsync()), email: Diogo.Email);
         Guid sobreDiogo = await SolicitarAsync(g.Cecilia, concessaoDeDiogo);
 
         await ConferirCodigoAsync(await ResponderAsync(g.Betina, providencia), HttpStatusCode.UnprocessableEntity, "uniplus.autorizacao.providencia.solicitante_nao_responde");
@@ -81,8 +81,8 @@ public sealed class TramitacaoDaProvidenciaNoHostTests : ProvidenciasNoHostTestB
         JsonElement[] eventos = [.. (await LerAsync(g.Isabella, $"/api/autorizacao/concessoes/{concessao}/trilha")).EnumerateArray()];
 
         JsonElement solicitada = eventos.Single(static e => e.GetProperty("tipo").GetString() == "providencia_solicitada");
-        (solicitada.GetProperty("autor").GetProperty("sub").GetString(), solicitada.GetProperty("detalhe").GetString()).Should().Be((Cecilia.Sub.ToString(), $"Retirada do acesso. Fundamento: {Fundamento}"));
-        eventos.Single(static e => e.GetProperty("tipo").GetString() == "providencia_respondida").GetProperty("autor").GetProperty("sub").GetString().Should().Be(Diogo.Sub.ToString());
+        (solicitada.GetProperty("autor").GetProperty("contaId").GetString(), solicitada.GetProperty("detalhe").GetString()).Should().Be((Cecilia.ContaId.ToString(), $"Retirada do acesso. Fundamento: {Fundamento}"));
+        eventos.Single(static e => e.GetProperty("tipo").GetString() == "providencia_respondida").GetProperty("autor").GetProperty("contaId").GetString().Should().Be(Diogo.ContaId.ToString());
     }
 
     private RegistroDeDecisoesDeTeste Registro => Fixture.Factory.Services.GetRequiredService<RegistroDeDecisoesDeTeste>();

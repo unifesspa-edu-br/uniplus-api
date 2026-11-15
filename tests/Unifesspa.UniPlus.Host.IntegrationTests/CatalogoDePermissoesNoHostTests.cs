@@ -47,9 +47,9 @@ public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
     // As personas compartilham o banco da coleção: cada teste começa sem concessão alguma.
     public async Task InitializeAsync()
     {
-        foreach (string sub in new[] { Leandro, Betina })
+        foreach (string contaId in new[] { Leandro, Betina })
         {
-            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, contaId);
         }
     }
 
@@ -286,13 +286,13 @@ public sealed class CatalogoDePermissoesNoHostTests : IAsyncLifetime
         return Cliente(Leandro);
     }
 
-    private HttpClient Cliente(string sub, string? papeisDeRealm = null)
+    private HttpClient Cliente(string contaId, string? papeisDeRealm = null)
     {
         HttpClient client = _fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme,
             TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, sub);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, contaId);
         client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "Pessoa de teste");
         client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "pessoa@uniplus-test.local");
         if (papeisDeRealm is not null)

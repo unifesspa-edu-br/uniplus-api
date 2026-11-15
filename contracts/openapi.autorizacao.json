@@ -1141,7 +1141,7 @@
         ],
         "parameters": [
           {
-            "name": "pessoa",
+            "name": "contaId",
             "in": "query",
             "schema": {
               "type": "string"
@@ -9132,14 +9132,14 @@
       "IdentidadeDto": {
         "required": [
           "emissor",
-          "sub"
+          "contaId"
         ],
         "type": "object",
         "properties": {
           "emissor": {
             "type": "string"
           },
-          "sub": {
+          "contaId": {
             "type": "string"
           },
           "nome": {
@@ -9153,7 +9153,7 @@
       "IdentidadeInformadaDto": {
         "required": [
           "emissor",
-          "sub"
+          "contaId"
         ],
         "type": "object",
         "properties": {
@@ -9163,7 +9163,7 @@
               "string"
             ]
           },
-          "sub": {
+          "contaId": {
             "type": [
               "null",
               "string"

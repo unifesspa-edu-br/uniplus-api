@@ -12,18 +12,18 @@ public sealed class DualApprovalGrantTests
     private const string ResourceHash = "sha256:abc123";
     private const string Permissao = "selecao.resultado.homologar";
 
-    private static UsuarioRef Aprovador(string subject) => UsuarioRef.From(Emissor, subject).Value!;
+    private static UsuarioRef Aprovador(string contaId) => UsuarioRef.From(Emissor, contaId).Value!;
 
     // ─── CA-05: aprovador secundário igual ao primário é rejeitado ─────────
 
     [Fact]
     public void DualApprovalGrant_SecundarioIgualPrimario_Rejeita()
     {
-        UsuarioRef primario = Aprovador("sub-1");
+        UsuarioRef primario = Aprovador("conta-1");
 
-        // Mesma identidade OIDC (emissor + subject), ainda que outra instância
+        // Mesma identidade OIDC (emissor + contaId), ainda que outra instância
         // e com UsuarioId distinto — deve ser tratado como o mesmo aprovador.
-        UsuarioRef secundario = UsuarioRef.From(Emissor, "sub-1", Guid.CreateVersion7()).Value!;
+        UsuarioRef secundario = UsuarioRef.From(Emissor, "conta-1", Guid.CreateVersion7()).Value!;
 
         DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
 
@@ -42,8 +42,8 @@ public sealed class DualApprovalGrantTests
         DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
 
         Result<DualApprovalGrant> resultado = DualApprovalGrant.From(
-            Aprovador("sub-1"),
-            Aprovador("sub-2"),
+            Aprovador("conta-1"),
+            Aprovador("conta-2"),
             ResourceHash,
             Permissao,
             concedidoEm,
@@ -58,8 +58,8 @@ public sealed class DualApprovalGrantTests
     [Fact]
     public void DualApprovalGrant_AprovadoresDistintos_Constroi()
     {
-        UsuarioRef primario = Aprovador("sub-1");
-        UsuarioRef secundario = Aprovador("sub-2");
+        UsuarioRef primario = Aprovador("conta-1");
+        UsuarioRef secundario = Aprovador("conta-2");
         DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
         DateTimeOffset validoAte = concedidoEm.Add(DualApprovalGrant.JanelaMaxima); // exatamente no limite (1h)
         DateTimeOffset usadoEm = concedidoEm.AddMinutes(10);
@@ -83,7 +83,7 @@ public sealed class DualApprovalGrantTests
         DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
 
         Result<DualApprovalGrant> resultado = DualApprovalGrant.From(
-            Aprovador("sub-1"), Aprovador("sub-2"), ResourceHash, Permissao, concedidoEm, concedidoEm.AddMinutes(30));
+            Aprovador("conta-1"), Aprovador("conta-2"), ResourceHash, Permissao, concedidoEm, concedidoEm.AddMinutes(30));
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Id.Should().NotBe(Guid.Empty);
@@ -96,7 +96,7 @@ public sealed class DualApprovalGrantTests
         DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
 
         Result<DualApprovalGrant> resultado = DualApprovalGrant.From(
-            Aprovador("sub-1"), Aprovador("sub-2"), ResourceHash, Permissao, concedidoEm, concedidoEm.AddMinutes(30));
+            Aprovador("conta-1"), Aprovador("conta-2"), ResourceHash, Permissao, concedidoEm, concedidoEm.AddMinutes(30));
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Usado.Should().BeFalse();
@@ -110,7 +110,7 @@ public sealed class DualApprovalGrantTests
         DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
 
         Result<DualApprovalGrant> resultado = DualApprovalGrant.From(
-            Aprovador("sub-1"), Aprovador("sub-2"), ResourceHash, Permissao, concedidoEm, concedidoEm);
+            Aprovador("conta-1"), Aprovador("conta-2"), ResourceHash, Permissao, concedidoEm, concedidoEm);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.DualApprovalValidadeNaoPosterior);
@@ -125,7 +125,7 @@ public sealed class DualApprovalGrantTests
         DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
 
         Result<DualApprovalGrant> resultado = DualApprovalGrant.From(
-            Aprovador("sub-1"), Aprovador("sub-2"), ResourceHash, permissao, concedidoEm, concedidoEm.AddMinutes(30));
+            Aprovador("conta-1"), Aprovador("conta-2"), ResourceHash, permissao, concedidoEm, concedidoEm.AddMinutes(30));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.DualApprovalPermissaoObrigatoria);
@@ -140,7 +140,7 @@ public sealed class DualApprovalGrantTests
         DateTimeOffset concedidoEm = DateTimeOffset.UtcNow;
 
         Result<DualApprovalGrant> resultado = DualApprovalGrant.From(
-            Aprovador("sub-1"), Aprovador("sub-2"), resourceHash, Permissao, concedidoEm, concedidoEm.AddMinutes(30));
+            Aprovador("conta-1"), Aprovador("conta-2"), resourceHash, Permissao, concedidoEm, concedidoEm.AddMinutes(30));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(AuthorizationErrorCodes.DualApprovalResourceHashObrigatorio);

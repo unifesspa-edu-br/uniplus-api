@@ -95,7 +95,7 @@ public sealed class AvisosDoPedidoTests
             new TitularComEmail(Diogo, EmailDiogo.ToUpperInvariant()),
             new TitularComEmail(Isabella, EmailIsabella),
             new TitularComEmail(Betina.Identidade, Betina.Email!),
-            new TitularComEmail(new Identidade(Emissor, "outro.sub"), Leandro.Email!));
+            new TitularComEmail(new Identidade(Emissor, "outra.conta"), Leandro.Email!));
 
         IReadOnlyList<EnviarEmail> avisos = await Avisar(pedido, situacaoAnterior: SituacaoDoPedido.AguardandoBeneficiario, concessoes);
 

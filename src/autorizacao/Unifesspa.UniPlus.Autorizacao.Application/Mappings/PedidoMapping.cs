@@ -15,7 +15,7 @@ public static class PedidoMapping
 
         return new PedidoDeConcessaoDto(
             p.Id, p.Situacao.ToCodigo(), p.EtapaAtual?.ToCodigo(),
-            new IdentidadeDto(p.SolicitanteEmissor, p.SolicitanteSub, p.SolicitanteNome),
+            new IdentidadeDto(p.SolicitanteEmissor, p.SolicitanteContaId, p.SolicitanteNome),
             Beneficiario(p),
             new PerfilResumoDto(p.PerfilId, perfil?.Nome ?? string.Empty),
             NumeroDaVersao(p, perfil), Escopo(p), p.Justificativa,
@@ -55,7 +55,7 @@ public static class PedidoMapping
 
     private static DecisaoDoPedidoDto ToDto(DecisaoDoPedido d) => new(
         d.Etapa.ToCodigo(),
-        new IdentidadeDto(d.DecisorEmissor, d.DecisorSub, d.DecisorNome),
+        new IdentidadeDto(d.DecisorEmissor, d.DecisorContaId, d.DecisorNome),
         d.Resultado.ToCodigo(),
         d.Motivo,
         d.Instante,
@@ -65,7 +65,7 @@ public static class PedidoMapping
 
     private static BeneficiarioDoPedidoDto Beneficiario(PedidoDeConcessao p) => new(
         p.BeneficiarioEmail,
-        p.Beneficiario is { } b ? new IdentidadeDto(b.Emissor, b.Sub, b.Nome) : null,
+        p.Beneficiario is { } b ? new IdentidadeDto(b.Emissor, b.ContaId, b.Nome) : null,
         p.BeneficiarioNome);
 
     private static AnexoDoPedidoDto[] Anexos(PedidoDeConcessao p) => [.. p.Anexos.OrderBy(a => a.Id).Select(ToDto)];
@@ -80,7 +80,7 @@ public static class PedidoMapping
         p.Termo is { } termo ? new TermoDoPedidoDto(termo.VersaoId, termo.Numero, termo.Resumo, Aceite(p.AceiteDoTermo)) : null;
 
     private static AceiteDoTermoDto? Aceite(AceiteDoTermo? a) =>
-        a is null ? null : new AceiteDoTermoDto(new IdentidadeDto(a.PessoaEmissor, a.PessoaSub, a.PessoaNome), a.AceitoEm, a.VersaoDoTermoId, a.Numero, a.Resumo);
+        a is null ? null : new AceiteDoTermoDto(new IdentidadeDto(a.PessoaEmissor, a.PessoaContaId, a.PessoaNome), a.AceitoEm, a.VersaoDoTermoId, a.Numero, a.Resumo);
 
     private static EscopoDto Escopo(PedidoDeConcessao p) => new(p.Escopo.Tipo.ToCodigo(), p.UnidadeId);
 }

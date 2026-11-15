@@ -11,50 +11,50 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed class InstalacaoTests
 {
     private const string Emissor = "https://idp.test/realms/unifesspa";
-    private const string SubPaulo = "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0001";
-    private const string SubDiogo = "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002";
-    private const string SubIsabella = "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003";
+    private const string ContaIdPaulo = "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0001";
+    private const string ContaIdDiogo = "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0002";
+    private const string ContaIdIsabella = "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0003";
 
     private static readonly DateTimeOffset Agora = new(2026, 10, 28, 12, 0, 0, TimeSpan.Zero);
-    private static readonly Identidade Paulo = new(Emissor, SubPaulo);
+    private static readonly Identidade Paulo = new(Emissor, ContaIdPaulo);
     private static readonly byte[] Resumo = [1, 2, 3];
 
     [Fact(DisplayName = "Instalação iniciada com dois gestores distintos nasce aguardando o documento")]
     public void Iniciar_Valida_NasceAguardandoDocumento()
     {
         Result<Instalacao> resultado = Instalacao.Iniciar(
-            Paulo, Gestores(SubDiogo, SubIsabella), Emissor, "  SIPAC 123/2026  ", 1024, Agora);
+            Paulo, Gestores(ContaIdDiogo, ContaIdIsabella), Emissor, "  SIPAC 123/2026  ", 1024, Agora);
 
         resultado.IsSuccess.Should().BeTrue();
         Instalacao instalacao = resultado.Value!;
         instalacao.Situacao.Should().Be(SituacaoDaInstalacao.AguardandoDocumento);
         instalacao.NumeroDoDocumento.Should().Be("SIPAC 123/2026");
-        instalacao.ExecutorSub.Should().Be(SubPaulo);
-        instalacao.Gestores.Select(g => g.Sub).Should().BeEquivalentTo(SubDiogo, SubIsabella);
+        instalacao.ExecutorContaId.Should().Be(ContaIdPaulo);
+        instalacao.Gestores.Select(g => g.ContaId).Should().BeEquivalentTo(ContaIdDiogo, ContaIdIsabella);
         instalacao.IniciadaEm.Should().Be(Agora);
     }
 
     [Fact(DisplayName = "Quem executa não pode estar entre os gestores")]
     public void Iniciar_ExecutorEntreGestores_Recusa()
     {
-        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(SubPaulo, SubIsabella), Emissor, "123", 1024, Agora))
+        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(ContaIdPaulo, ContaIdIsabella), Emissor, "123", 1024, Agora))
             .Should().Equal(InstalacaoErrorCodes.ExecutorEntreGestores);
     }
 
     [Fact(DisplayName = "Os dois gestores têm de ser distintos")]
     public void Iniciar_GestoresRepetidos_Recusa()
     {
-        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(SubDiogo, SubDiogo), Emissor, "123", 1024, Agora))
+        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(ContaIdDiogo, ContaIdDiogo), Emissor, "123", 1024, Agora))
             .Should().Equal(InstalacaoErrorCodes.GestoresInvalidos);
     }
 
     [Fact(DisplayName = "Um só gestor, ou mais de dois, é recusado")]
     public void Iniciar_QuantidadeDiferenteDeDois_Recusa()
     {
-        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(SubDiogo), Emissor, "123", 1024, Agora))
+        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(ContaIdDiogo), Emissor, "123", 1024, Agora))
             .Should().Equal(InstalacaoErrorCodes.GestoresInvalidos);
         CodigosDaRecusa(Instalacao.Iniciar(
-                Paulo, Gestores(SubDiogo, SubIsabella, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0004"), Emissor, "123", 1024, Agora))
+                Paulo, Gestores(ContaIdDiogo, ContaIdIsabella, "0e6b9a40-1c11-4f8e-9d52-6a1f0b2c0004"), Emissor, "123", 1024, Agora))
             .Should().Equal(InstalacaoErrorCodes.GestoresInvalidos);
     }
 
@@ -62,20 +62,20 @@ public sealed class InstalacaoTests
     public void Iniciar_GravaOTamanhoDeclaradoDoPdf()
     {
         Instalacao instalacao = Instalacao.Iniciar(
-            Paulo, Gestores(SubDiogo, SubIsabella), Emissor, "123", 2048, Agora).Value!;
+            Paulo, Gestores(ContaIdDiogo, ContaIdIsabella), Emissor, "123", 2048, Agora).Value!;
 
         instalacao.TamanhoDoPdf.Should().Be(2048);
     }
 
-    [Theory(DisplayName = "Gestor com sub fora do formato UUID ou de outro emissor é recusado")]
+    [Theory(DisplayName = "Gestor com conta fora do formato UUID ou de outro emissor é recusado")]
     [InlineData("diogo.souza", Emissor)]
     [InlineData("00000000-0000-0000-0000-000000000000", Emissor)]
-    [InlineData(SubDiogo, "https://outro.idp/realms/x")]
+    [InlineData(ContaIdDiogo, "https://outro.idp/realms/x")]
     [InlineData(null, Emissor)]
-    [InlineData(SubDiogo, null)]
-    public void Iniciar_GestorMalFormado_Recusa(string? sub, string? emissor)
+    [InlineData(ContaIdDiogo, null)]
+    public void Iniciar_GestorMalFormado_Recusa(string? contaId, string? emissor)
     {
-        IdentidadeInformada[] gestores = [new(emissor, sub, "gestor@uniplus-test.local"), .. Gestores(SubIsabella)];
+        IdentidadeInformada[] gestores = [new(emissor, contaId, "gestor@uniplus-test.local"), .. Gestores(ContaIdIsabella)];
 
         CodigosDaRecusa(Instalacao.Iniciar(Paulo, gestores, Emissor, "123", 1024, Agora))
             .Should().Equal(InstalacaoErrorCodes.GestoresInvalidos);
@@ -87,7 +87,7 @@ public sealed class InstalacaoTests
     [InlineData("sem-arroba")]
     public void Iniciar_GestorSemEmail_Recusa(string? email)
     {
-        IdentidadeInformada[] gestores = [new(Emissor, SubDiogo, email), .. Gestores(SubIsabella)];
+        IdentidadeInformada[] gestores = [new(Emissor, ContaIdDiogo, email), .. Gestores(ContaIdIsabella)];
 
         CodigosDaRecusa(Instalacao.Iniciar(Paulo, gestores, Emissor, "123", 1024, Agora))
             .Should().Equal(InstalacaoErrorCodes.GestoresInvalidos);
@@ -98,8 +98,8 @@ public sealed class InstalacaoTests
     {
         IdentidadeInformada[] gestores =
         [
-            new(Emissor, SubDiogo, "  Diogo.Souza@Uniplus-Test.local ", "  Diogo Bruno Filipe Souza "),
-            new(Emissor, SubIsabella, "isabella@uniplus-test.local"),
+            new(Emissor, ContaIdDiogo, "  Diogo.Souza@Uniplus-Test.local ", "  Diogo Bruno Filipe Souza "),
+            new(Emissor, ContaIdIsabella, "isabella@uniplus-test.local"),
         ];
 
         Instalacao instalacao = Instalacao.Iniciar(Paulo, gestores, Emissor, "123", 1024, Agora).Value!;
@@ -115,14 +115,14 @@ public sealed class InstalacaoTests
     [InlineData("12\03")]
     public void Iniciar_NumeroInvalido_Recusa(string? numero)
     {
-        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(SubDiogo, SubIsabella), Emissor, numero, 1024, Agora))
+        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(ContaIdDiogo, ContaIdIsabella), Emissor, numero, 1024, Agora))
             .Should().Equal(InstalacaoErrorCodes.DocumentoInvalido);
     }
 
     [Fact(DisplayName = "Número do documento acima de 60 caracteres é recusado")]
     public void Iniciar_NumeroLongo_Recusa()
     {
-        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(SubDiogo, SubIsabella), Emissor, new string('9', 61), 1024, Agora))
+        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(ContaIdDiogo, ContaIdIsabella), Emissor, new string('9', 61), 1024, Agora))
             .Should().Equal(InstalacaoErrorCodes.DocumentoInvalido);
     }
 
@@ -132,14 +132,14 @@ public sealed class InstalacaoTests
     [InlineData(Instalacao.TamanhoMaximoDoPdfBytes + 1)]
     public void Iniciar_TamanhoDoPdfForaDoLimite_Recusa(long tamanho)
     {
-        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(SubDiogo, SubIsabella), Emissor, "123", tamanho, Agora))
+        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(ContaIdDiogo, ContaIdIsabella), Emissor, "123", tamanho, Agora))
             .Should().Equal(InstalacaoErrorCodes.DocumentoInvalido);
     }
 
     [Fact(DisplayName = "Violações independentes são acumuladas na mesma recusa")]
     public void Iniciar_VariasViolacoes_Acumula()
     {
-        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(SubDiogo), Emissor, null, 0, Agora))
+        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(ContaIdDiogo), Emissor, null, 0, Agora))
             .Should().BeEquivalentTo(
                 InstalacaoErrorCodes.GestoresInvalidos, InstalacaoErrorCodes.DocumentoInvalido, InstalacaoErrorCodes.DocumentoInvalido);
     }
@@ -316,11 +316,11 @@ public sealed class InstalacaoTests
         FluentActions.Invoking(() => instalacao.Cancelar(Agora.AddMinutes(6))).Should().Throw<InvalidOperationException>();
     }
 
-    private static IdentidadeInformada[] Gestores(params string[] subs) =>
-        [.. subs.Select(sub => new IdentidadeInformada(Emissor, sub, $"{sub}@uniplus-test.local"))];
+    private static IdentidadeInformada[] Gestores(params string[] contasId) =>
+        [.. contasId.Select(contaId => new IdentidadeInformada(Emissor, contaId, $"{contaId}@uniplus-test.local"))];
 
     private static Instalacao Iniciada() =>
-        Instalacao.Iniciar(Paulo, Gestores(SubDiogo, SubIsabella), Emissor, "123", 1024, Agora).Value!;
+        Instalacao.Iniciar(Paulo, Gestores(ContaIdDiogo, ContaIdIsabella), Emissor, "123", 1024, Agora).Value!;
 
     private static Instalacao EmVerificacao()
     {

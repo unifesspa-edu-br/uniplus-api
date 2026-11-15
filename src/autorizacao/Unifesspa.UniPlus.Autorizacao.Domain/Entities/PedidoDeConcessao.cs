@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </para>
 /// <para>
 /// <b>Nenhuma decisão acontece sem a identidade completa do beneficiário.</b> O pedido para outra
-/// pessoa espera o aceite dela, que grava emissor, <c>sub</c> e nome do token.
+/// pessoa espera o aceite dela, que grava emissor, <c>contaId</c> e nome do token.
 /// </para>
 /// <para>
 /// <b>As decisões só se acrescentam</b> e guardam o retrato do que o aprovador avaliou. Os estados
@@ -48,7 +48,7 @@ public sealed partial class PedidoDeConcessao : EntityBase
 
     public string SolicitanteEmissor { get; private set; } = string.Empty;
 
-    public string SolicitanteSub { get; private set; } = string.Empty;
+    public string SolicitanteContaId { get; private set; } = string.Empty;
 
     public string? SolicitanteNome { get; private set; }
 
@@ -60,7 +60,7 @@ public sealed partial class PedidoDeConcessao : EntityBase
 
     public string? BeneficiarioEmissor { get; private set; }
 
-    public string? BeneficiarioSub { get; private set; }
+    public string? BeneficiarioContaId { get; private set; }
 
     public string? BeneficiarioNome { get; private set; }
 
@@ -93,11 +93,11 @@ public sealed partial class PedidoDeConcessao : EntityBase
 
     public IReadOnlyList<AnexoDoPedido> Anexos => _anexos;
 
-    public Identidade Solicitante => new(SolicitanteEmissor, SolicitanteSub, SolicitanteNome);
+    public Identidade Solicitante => new(SolicitanteEmissor, SolicitanteContaId, SolicitanteNome);
 
     /// <summary>A identidade do beneficiário; nula enquanto ele não aceitou.</summary>
-    public Identidade? Beneficiario => BeneficiarioEmissor is { } emissor && BeneficiarioSub is { } sub
-        ? new Identidade(emissor, sub, BeneficiarioNome)
+    public Identidade? Beneficiario => BeneficiarioEmissor is { } emissor && BeneficiarioContaId is { } contaId
+        ? new Identidade(emissor, contaId, BeneficiarioNome)
         : null;
 
     public EscopoDaConcessao Escopo => UnidadeId is { } unidade

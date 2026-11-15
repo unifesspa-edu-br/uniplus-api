@@ -42,9 +42,9 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        foreach (string sub in new[] { Leandro, Diogo })
+        foreach (string contaId in new[] { Leandro, Diogo })
         {
-            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, contaId);
         }
     }
 
@@ -90,7 +90,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         resposta.StatusCode.Should().Be(HttpStatusCode.Unauthorized, permissao.Codigo);
     }
 
-    private async Task<HttpResponseMessage> EnviarAsync(string? sub, string rota, string? papel = null)
+    private async Task<HttpResponseMessage> EnviarAsync(string? contaId, string rota, string? papel = null)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         using HttpRequestMessage request = new(HttpMethod.Post, new Uri(rota, UriKind.Relative))
@@ -98,10 +98,10 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
             Content = JsonContent.Create(new { }),
         };
 
-        if (sub is not null)
+        if (contaId is not null)
         {
             request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-            request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, sub);
+            request.Headers.TryAddWithoutValidation(TestAuthHandler.UserIdHeader, contaId);
             if (papel is not null)
             {
                 request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, papel);

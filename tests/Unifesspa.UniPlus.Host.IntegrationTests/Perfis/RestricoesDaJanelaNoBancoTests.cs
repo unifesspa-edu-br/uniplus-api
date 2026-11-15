@@ -38,11 +38,11 @@ public sealed class RestricoesDaJanelaNoBancoTests : JanelaDeMigracaoNoHostTestB
         { "lote de origem sem etapa", "humana", "lote_de_origem_etapa = NULL", "ck_decisoes_da_migracao_lote_de_origem" },
         { "lote de origem da proteção de dados", "humana", "lote_de_origem_etapa = 'protecao_de_dados'", "ck_decisoes_da_migracao_lote_de_origem" },
         { "humana com resultado do sistema", "humana", "decisao = 'reter'", "ck_decisoes_da_migracao_ramo" },
-        { "humana sem decisor", "humana", "decisor_sub = NULL", "ck_decisoes_da_migracao_ramo" },
+        { "humana sem decisor", "humana", "decisor_conta_id = NULL", "ck_decisoes_da_migracao_ramo" },
         { "humana sem lote de origem", "humana", "lote_de_origem_id = NULL, lote_de_origem_etapa = NULL", "ck_decisoes_da_migracao_ramo" },
         { "humana da proteção sem envio", "protecao", "envio_id = NULL, envio_etapa = NULL", "ck_decisoes_da_migracao_ramo" },
         { "humana da gestão com envio de outro lote", "humana", "envio_id = gen_random_uuid(), envio_etapa = 'gestao_de_acessos'", "ck_decisoes_da_migracao_ramo" },
-        { "sistema com decisor", "sistema", "decisor_sub = 'alguem'", "ck_decisoes_da_migracao_ramo" },
+        { "sistema com decisor", "sistema", "decisor_conta_id = 'alguem'", "ck_decisoes_da_migracao_ramo" },
         { "sistema com resultado humano", "sistema", "decisao = 'migrar'", "ck_decisoes_da_migracao_ramo" },
         { "sistema retendo sem lote de origem", "sistema", "lote_de_origem_id = NULL, lote_de_origem_etapa = NULL", "ck_decisoes_da_migracao_ramo" },
         { "sistema com etapa do sistema e resultado de retenção", "sistema", "etapa = 'sistema'", "ck_decisoes_da_migracao_ramo" },
@@ -135,7 +135,7 @@ public sealed class RestricoesDaJanelaNoBancoTests : JanelaDeMigracaoNoHostTestB
 
         PostgresException semMotivo = await FalharAsync(Revogar(cenario, $"revogada_em = now(), revogada_pela_janela_id = '{janela}'"));
         PostgresException comPessoa = await FalharAsync(Revogar(
-            cenario, $"revogada_em = now(), motivo_revogacao = 'x', revogada_por_emissor = 'e', revogada_por_sub = 's', revogada_pela_janela_id = '{janela}'"));
+            cenario, $"revogada_em = now(), motivo_revogacao = 'x', revogada_por_emissor = 'e', revogada_por_conta_id = 's', revogada_pela_janela_id = '{janela}'"));
         PostgresException soJanela = await FalharAsync(Revogar(cenario, $"revogada_pela_janela_id = '{janela}'"));
         PostgresException outraJanela = await FalharAsync(Revogar(
             cenario, "revogada_em = now(), motivo_revogacao = 'x', revogada_pela_janela_id = gen_random_uuid()"));

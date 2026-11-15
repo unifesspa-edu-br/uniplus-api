@@ -30,8 +30,8 @@ public abstract class ContencaoDoPerfilNoHostTestBase : AprovacaoDaVersaoNoHostT
     private protected async Task PrepararAsync()
     {
         await ResetarAsync();
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Leandro.Sub.ToString());
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Betina.Sub.ToString());
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Leandro.ContaId.ToString());
+        await ConcessoesDeTeste.RemoverDaPessoaAsync(Fixture.Factory.Services, Betina.ContaId.ToString());
     }
 
     /// <summary>Perfil institucional em vigor concedido a Leandro, sem permissão protegida: a retomada pede só a gestão.</summary>
@@ -39,7 +39,7 @@ public abstract class ContencaoDoPerfilNoHostTestBase : AprovacaoDaVersaoNoHostT
     {
         Envio envio = await PerfilVigenteAsync(gestor, Catalogo);
         await ConcessoesDeTeste.ConcederAsync(
-            Fixture.Factory.Services, Leandro.Sub.ToString(), envio.PerfilId, EscopoDaConcessao.DaInstituicao(), email: Leandro.Email);
+            Fixture.Factory.Services, Leandro.ContaId.ToString(), envio.PerfilId, EscopoDaConcessao.DaInstituicao(), email: Leandro.Email);
 
         return envio.PerfilId;
     }
@@ -70,7 +70,7 @@ public abstract class ContencaoDoPerfilNoHostTestBase : AprovacaoDaVersaoNoHostT
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
         IReadOnlyList<ConcessaoAtiva> concessoes = await escopo.ServiceProvider.GetRequiredService<IConcessoesAtivasDoSujeito>()
-            .ListarAsync(UsuarioRef.From(TestAuthHandler.DefaultIssuer, (titular ?? Leandro).Sub.ToString()).Value!, CancellationToken.None);
+            .ListarAsync(UsuarioRef.From(TestAuthHandler.DefaultIssuer, (titular ?? Leandro).ContaId.ToString()).Value!, CancellationToken.None);
 
         return [.. concessoes.Single(c => c.PerfilId == perfilId).Permissoes];
     }

@@ -39,14 +39,14 @@ public sealed class RascunhoDePublicacaoRepository : IRascunhoDePublicacaoReposi
 
     public async Task<RascunhoDePublicacao?> ObterDoOperadorAsync(
         Guid processoSeletivoId,
-        string usuarioSub,
+        string usuarioContaId,
         CancellationToken cancellationToken = default)
     {
         // Rastreado: quem lê ou grava de novo (substituindo o conteúdo) ou apaga (expirado na
         // leitura), e os dois precisam da entidade sob o change tracker.
         return await _context.RascunhosDePublicacao
             .FirstOrDefaultAsync(
-                r => r.ProcessoSeletivoId == processoSeletivoId && r.UsuarioSub == usuarioSub,
+                r => r.ProcessoSeletivoId == processoSeletivoId && r.UsuarioContaId == usuarioContaId,
                 cancellationToken)
             .ConfigureAwait(false);
     }
@@ -74,11 +74,11 @@ public sealed class RascunhoDePublicacaoRepository : IRascunhoDePublicacaoReposi
 
     public async Task<int> ApagarDoOperadorAsync(
         Guid processoSeletivoId,
-        string usuarioSub,
+        string usuarioContaId,
         CancellationToken cancellationToken = default)
     {
         return await _context.RascunhosDePublicacao
-            .Where(r => r.ProcessoSeletivoId == processoSeletivoId && r.UsuarioSub == usuarioSub)
+            .Where(r => r.ProcessoSeletivoId == processoSeletivoId && r.UsuarioContaId == usuarioContaId)
             .ExecuteDeleteAsync(cancellationToken)
             .ConfigureAwait(false);
     }

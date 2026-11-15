@@ -38,7 +38,7 @@ public sealed class VerificacaoDosArquivosNoHostTests
         IInscricaoRepository inscricoes = sp.GetRequiredService<IInscricaoRepository>();
         IDocumentoDaInscricaoRepository documentos = sp.GetRequiredService<IDocumentoDaInscricaoRepository>();
         Inscricao inscricao = Inscricao.Iniciar(
-            Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "sub-1", "https://issuer", Guid.CreateVersion7()).Value!;
+            Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!;
         await inscricoes.AdicionarAsync(inscricao);
 
         DocumentoExigido laudo = DocumentoExigido.Criar(

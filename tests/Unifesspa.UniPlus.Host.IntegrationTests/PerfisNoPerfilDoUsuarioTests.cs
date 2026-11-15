@@ -49,9 +49,9 @@ public sealed class PerfisNoPerfilDoUsuarioTests : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        foreach (string sub in new[] { Leandro, Fernanda })
+        foreach (string contaId in new[] { Leandro, Fernanda })
         {
-            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, sub);
+            await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, contaId);
         }
     }
 
@@ -128,12 +128,12 @@ public sealed class PerfisNoPerfilDoUsuarioTests : IAsyncLifetime
         corpo.RootElement.GetProperty("perfis").GetArrayLength().Should().Be(1);
     }
 
-    private async Task<JsonDocument> ConsultarAsync(string sub, string? papeisDoToken = null)
+    private async Task<JsonDocument> ConsultarAsync(string contaId, string? papeisDoToken = null)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
             TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, sub);
+        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, contaId);
         if (papeisDoToken is not null)
         {
             client.DefaultRequestHeaders.Add(TestAuthHandler.RolesHeader, papeisDoToken);

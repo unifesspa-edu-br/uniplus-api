@@ -32,7 +32,7 @@ public sealed class AceiteDoTermoNoHostTests : TermoNoHostTestBase
         JsonElement aceite = pedido.GetProperty("termo").GetProperty("aceite");
         aceite.GetProperty("versaoId").GetGuid().Should().Be(Vigente.Id);
         aceite.GetProperty("resumo").GetString().Should().Be(Vigente.Resumo);
-        aceite.GetProperty("pessoa").GetProperty("sub").GetString().Should().Be(Betina.Sub.ToString());
+        aceite.GetProperty("pessoa").GetProperty("contaId").GetString().Should().Be(Betina.ContaId.ToString());
         (await TiposDaTrilhaAsync(betina, pedido.GetProperty("id").GetGuid())).Should().Contain("termo_aceito");
     }
 
@@ -67,7 +67,7 @@ public sealed class AceiteDoTermoNoHostTests : TermoNoHostTestBase
         (await AceitarAsync(leandro, id)).StatusCode.Should().Be(HttpStatusCode.OK);
 
         JsonElement aceite = (await TermoDoPedidoAsync(leandro, id)).GetProperty("aceite");
-        aceite.GetProperty("pessoa").GetProperty("sub").GetString().Should().Be(Leandro.Sub.ToString());
+        aceite.GetProperty("pessoa").GetProperty("contaId").GetString().Should().Be(Leandro.ContaId.ToString());
     }
 
     [Fact(DisplayName = "Verificação recusada mantém o pedido aguardando o documento; outro anexo verificado libera o aceite")]

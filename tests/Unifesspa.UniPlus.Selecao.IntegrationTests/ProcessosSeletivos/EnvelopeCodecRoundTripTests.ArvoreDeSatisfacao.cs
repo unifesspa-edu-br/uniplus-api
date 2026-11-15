@@ -52,7 +52,7 @@ public sealed partial class EnvelopeCodecRoundTripTests
         EntradaCanonicalizacao entrada = EntradaDeReferencia(processo);
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
         ConferirSchemaCorrente(congelado);
-        VersaoConfiguracao v1 = Publicado(processo, entrada, congelado, "user-sub-123");
+        VersaoConfiguracao v1 = Publicado(processo, entrada, congelado, "user-conta-123");
         EnvelopeReidratado reidratado = Reidratado(v1);
 
         processo.RestaurarConfiguracaoCongelada(v1, reidratado.Grafo).IsSuccess.Should().BeTrue();
@@ -93,7 +93,7 @@ public sealed partial class EnvelopeCodecRoundTripTests
         EntradaCanonicalizacao entrada = EntradaDaArvore(processo);
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(entrada);
         ConferirSchemaCorrente(congelado);
-        VersaoConfiguracao v1 = Publicado(processo, entrada, congelado, "user-sub-arvore");
+        VersaoConfiguracao v1 = Publicado(processo, entrada, congelado, "user-conta-arvore");
         EnvelopeReidratado reidratado = Reidratado(v1);
         ConferirQueOModeloDaExigenciaSobreviveuAoDecoder(reidratado, comprovanteRenda);
         processo.RestaurarConfiguracaoCongelada(v1, reidratado.Grafo).IsSuccess.Should().BeTrue();

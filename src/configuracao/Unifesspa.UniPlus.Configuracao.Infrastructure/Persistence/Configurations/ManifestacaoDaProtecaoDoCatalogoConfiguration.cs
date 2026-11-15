@@ -31,7 +31,7 @@ public sealed class ManifestacaoDaProtecaoDoCatalogoConfiguration : IEntityTypeC
     internal const string CampoDoItem = "_itemId";
 
     private const string CampoDoEmissor = "_autorEmissor";
-    private const string CampoDoSub = "_autorSub";
+    private const string CampoDoContaId = "_autorContaId";
     private const string CampoDoNome = "_autorNome";
     private const int CadastroMaxLength = 20;
 
@@ -65,7 +65,7 @@ public sealed class ManifestacaoDaProtecaoDoCatalogoConfiguration : IEntityTypeC
 
         builder.Property<string>(CampoDoEmissor).HasColumnName("autor_emissor").HasMaxLength(AtorDoAto.IdentidadeMaxLength).IsRequired()
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal);
-        builder.Property<string>(CampoDoSub).HasColumnName("autor_sub").HasMaxLength(AtorDoAto.IdentidadeMaxLength).IsRequired()
+        builder.Property<string>(CampoDoContaId).HasColumnName("autor_conta_id").HasMaxLength(AtorDoAto.IdentidadeMaxLength).IsRequired()
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal);
         builder.Property<string?>(CampoDoNome).HasColumnName("autor_nome").HasMaxLength(AtorDoAto.NomeMaxLength)
             .ClassificaComo(ClassificacaoDeProtecao.Pessoal);
@@ -90,7 +90,7 @@ public sealed class ManifestacaoDaProtecaoDoCatalogoConfiguration : IEntityTypeC
         builder.HasIndex(m => m.SubstituiId)
             .IsUnique()
             .HasDatabaseName(RestricoesDoBanco.ManifestacaoDaProtecaoSubstituicaoUnica);
-        builder.HasIndex(CampoDoCadastro, CampoDoItem, nameof(ManifestacaoDaProtecaoDoCatalogo.Ciclo), CampoDoEmissor, CampoDoSub)
+        builder.HasIndex(CampoDoCadastro, CampoDoItem, nameof(ManifestacaoDaProtecaoDoCatalogo.Ciclo), CampoDoEmissor, CampoDoContaId)
             .IsUnique()
             .HasFilter("substitui_id IS NULL")
             .HasDatabaseName(RestricoesDoBanco.ManifestacaoDaProtecaoInicialDoAutorUnica);
