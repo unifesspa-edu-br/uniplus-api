@@ -24,7 +24,7 @@ public sealed class AuthenticationProblemDetailsWriterTests
         await AssertProblemDetailsAsync(
             context,
             expectedStatus: StatusCodes.Status401Unauthorized,
-            expectedCode: AuthenticationProblemDetailsWriter.UnauthorizedCode);
+            expectedCode: ErrosDaFronteiraHttp.NaoAutenticado.Code);
     }
 
     [Fact]
@@ -37,7 +37,7 @@ public sealed class AuthenticationProblemDetailsWriterTests
         await AssertProblemDetailsAsync(
             context,
             expectedStatus: StatusCodes.Status403Forbidden,
-            expectedCode: AuthenticationProblemDetailsWriter.ForbiddenCode);
+            expectedCode: ErrosDaFronteiraHttp.AcessoNegado.Code);
     }
 
     [Fact]
