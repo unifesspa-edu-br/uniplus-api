@@ -61,7 +61,8 @@ Aplicada automaticamente via NuGet `EFCore.NamingConventions` + `UseSnakeCaseNam
 | PK | `pk_<tabela>` | `pk_editais` |
 | FK | `fk_<tabela>_<referenciada>_<coluna>` | `fk_etapas_editais_edital_id` |
 | Índice | `ix_<tabela>_<coluna>` | `ix_inscricoes_candidato_id_edital_id` |
-| Unique index | `ix_<tabela>_<coluna>` (com `IsUnique()`) | `ix_candidatos_cpf` |
+| Unique index | `ux_<tabela>_<coluna>` (`IsUnique()` com `HasDatabaseName`; sem nome explícito o EF deriva `ix_`) | `ux_candidatos_cpf` |
+| Qualquer identificador (tabela, coluna, chave, FK, índice, restrição) | até 63 bytes, o limite do PostgreSQL; o nome que o EF deriva e passa disso recebe nome explícito, e a trava reprova | `fk_rascunhos_publicacao_processo_seletivo` |
 
 **Regras práticas**:
 
@@ -71,6 +72,7 @@ Aplicada automaticamente via NuGet `EFCore.NamingConventions` + `UseSnakeCaseNam
 - ✅ **Até 30 caracteres, sem abreviação**: o nome se explica sozinho, e o mesmo conceito tem o mesmo nome em todos os módulos. Passou de 30, o nome muda; abreviar não resolve.
 - ✅ Os nomes de PK, FK, índice, unique e check são derivados do nome da tabela, inclusive os escritos à mão (`HasDatabaseName`, `HasCheckConstraint`) e os literais que traduzem uma violação em erro nomeado: renomear a tabela renomeia todos, no mesmo commit. O nome usado para traduzir a violação vem de `RestricoesDoBanco` (em `Application/Persistence` do módulo), a mesma constante que a `Configuration` passa a `HasDatabaseName`.
 - ✅ **Trava**: `RegraDeNomeDeTabela` (`tests/Shared`) decide o nome, sem lista de exceções por tabela. `NomesDeTabelaDoModeloTests` (ArchTests, roda no CI) confere o modelo de cada `DbContext`; `NomesDeTabelaDoCatalogoIntegrationTests` (`Infrastructure.Core.IntegrationTests`, roda localmente) confere o catálogo do banco subido, com uma tabela canária no singular que prova a recusa. A regra só decide o que é decidível sem dicionário: o núcleo termina em `s`; abreviação e concordância ficam para a revisão.
+- ✅ **Identificador de banco até 63 bytes**: o PostgreSQL corta o que passa disso, sem aviso, e dois nomes longos com o mesmo começo viram um só. O nome que o EF gera para FK e índice (`fk_<tabela>_<referenciada>_<colunas>`) fica longo em tabela de nome composto; nesse caso a `Configuration` dá nome explícito, por extenso, que se explica sozinho: `HasConstraintName` na FK, `HasDatabaseName` no índice, o nome no `HasCheckConstraint`. Padrão: `fk_<tabela_filha>_<o_que_referencia>` (referenciada no singular, com o papel quando a tabela tem duas FKs para a mesma: `fk_janelas_de_migracao_versao_nova`). O nome que um handler lê para traduzir violação continua vindo de `RestricoesDoBanco`. **Trava**: `RegraDeTamanhoDeIdentificador` (`tests/Shared`) decide o tamanho, sem lista de exceções; `TamanhoDosIdentificadoresDoModeloTests` (ArchTests, roda no CI) confere os nomes de tabela, coluna, chave, FK, índice e restrição de verificação do modelo relacional de cada `DbContext`. O modelo é construído sem o limite de 63 bytes (`ModelosSemTruncamento`), porque o EF e o plugin de `snake_case` cortam em silêncio o nome que derivam; assim o nome derivado aparece inteiro e a conferência reprova FK ou índice longo sem `HasConstraintName`/`HasDatabaseName`, com o nome e a tabela na mensagem.
 - ❌ **Não criar identificadores `PascalCase` quoted** (`"CreatedAt"`) — quebra padrão e gera fricção em scripts manuais.
 
 ## 3. Tipos PostgreSQL preferidos
