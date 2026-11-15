@@ -68,9 +68,9 @@ public sealed record DadosEdital
 
     /// <summary>
     /// Cria os dados do Edital validando que o período de inscrição é
-    /// coerente e que a referência ao documento não é vazia — a existência e
-    /// a confirmação efetiva do documento são responsabilidade do handler
-    /// (exige consulta ao repositório, fora do alcance de um value object).
+    /// coerente — a existência e a confirmação efetiva do documento, inclusive
+    /// a referência vazia, são responsabilidade do handler (exige consulta ao
+    /// repositório, fora do alcance de um value object).
     /// </summary>
     /// <remarks>
     /// A recusa do instante zerado mora aqui, e não no validator de entrada, porque este
@@ -87,39 +87,25 @@ public sealed record DadosEdital
         Guid documentoEditalId,
         IReadOnlyList<AnexoDoEdital>? anexos = null)
     {
-        if (documentoEditalId == Guid.Empty)
-        {
-            return Result<DadosEdital>.Failure(new DomainError(
-                "DadosEdital.DocumentoEditalIdObrigatorio",
-                "A referência ao documento do Edital é obrigatória."));
-        }
-
-        if (periodoInscricaoInicio == default || periodoInscricaoFim == default)
-        {
-            return Result<DadosEdital>.Failure(new DomainError(
-                "DadosEdital.PeriodoInscricaoObrigatorio",
-                "O período de inscrição exige início e fim definidos."));
-        }
-
-        if (periodoInscricaoFim < periodoInscricaoInicio)
-        {
-            return Result<DadosEdital>.Failure(new DomainError(
-                "DadosEdital.PeriodoInscricaoInvalido",
-                "O fim do período de inscrição não pode anteceder o início."));
-        }
-
         IReadOnlyList<AnexoDoEdital> anexosDoEdital = anexos ?? [];
-        if (RecusaDosAnexos(anexosDoEdital, documentoEditalId) is { } recusa)
+        DomainError? recusa = RecusaDoPeriodo(periodoInscricaoInicio, periodoInscricaoFim)
+            ?? RecusaDosAnexos(anexosDoEdital, documentoEditalId);
+        return recusa is not null
+            ? Result<DadosEdital>.Failure(recusa)
+            : Result<DadosEdital>.Success(new DadosEdital(
+                numero.EmBrancoViraNulo(), periodoInscricaoInicio.ToUniversalTime(), periodoInscricaoFim.ToUniversalTime(), documentoEditalId, anexosDoEdital));
+    }
+
+    private static DomainError? RecusaDoPeriodo(DateTimeOffset inicio, DateTimeOffset fim)
+    {
+        if (inicio == default || fim == default)
         {
-            return Result<DadosEdital>.Failure(recusa);
+            return new DomainError("DadosEdital.PeriodoInscricaoObrigatorio", "O período de inscrição exige início e fim definidos.");
         }
 
-        return Result<DadosEdital>.Success(new DadosEdital(
-            numero.EmBrancoViraNulo(),
-            periodoInscricaoInicio.ToUniversalTime(),
-            periodoInscricaoFim.ToUniversalTime(),
-            documentoEditalId,
-            anexosDoEdital));
+        return fim < inicio
+            ? new DomainError("DadosEdital.PeriodoInscricaoInvalido", "O fim do período de inscrição não pode anteceder o início.")
+            : null;
     }
 
     /// <summary>

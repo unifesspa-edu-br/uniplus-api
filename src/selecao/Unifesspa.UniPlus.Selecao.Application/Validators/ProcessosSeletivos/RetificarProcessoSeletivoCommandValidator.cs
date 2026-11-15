@@ -24,26 +24,33 @@ public sealed class RetificarProcessoSeletivoCommandValidator : AbstractValidato
 
     public RetificarProcessoSeletivoCommandValidator()
     {
-        // O bloco documental do ato é validado ANTES da publicação ser gravada: o que o
-        // formato pode recusar vira 422 no campo, antes de qualquer escrita.
+        RegrasDoAto();
+        RegrasDoProcesso();
+        RegrasDoMotivo();
+        RegrasDoEdital();
+    }
+
+    // O bloco documental do ato é validado ANTES da publicação ser gravada: o que o
+    // formato pode recusar vira 422 no campo, antes de qualquer escrita.
+    private void RegrasDoAto() =>
         RuleFor(x => x.Ato)
             .NotNull()
             .WithMessage("Dados do ato normativo são obrigatórios.")
             .SetValidator(new DadosDoAtoValidator()!);
 
+    private void RegrasDoProcesso() =>
         RuleFor(x => x.ProcessoSeletivoId)
             .NotEmpty()
             .WithMessage("Id do processo seletivo é obrigatório.");
 
+    private void RegrasDoMotivo() =>
         RuleFor(x => x.Motivo)
             .Must(motivo => motivo is null
                 || HashCanonicalComputer.NormalizeNfc(motivo.Trim()).Length <= MotivoMaxLength)
             .WithMessage($"Motivo da retificação deve ter no máximo {MotivoMaxLength} caracteres.");
 
-        RuleFor(x => x.DocumentoEditalId)
-            .NotEmpty()
-            .WithMessage("Referência ao documento do Edital é obrigatória.");
-
+    private void RegrasDoEdital()
+    {
         RuleFor(x => x.Numero)
             .MaximumLength(NumeroMaxLength)
             .WithMessage($"Número do Edital deve ter no máximo {NumeroMaxLength} caracteres.");

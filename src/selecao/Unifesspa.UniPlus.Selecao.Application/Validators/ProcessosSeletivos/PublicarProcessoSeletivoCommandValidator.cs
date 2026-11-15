@@ -13,21 +13,26 @@ public sealed class PublicarProcessoSeletivoCommandValidator : AbstractValidator
 
     public PublicarProcessoSeletivoCommandValidator()
     {
-        // O bloco documental do ato é validado ANTES da publicação ser gravada: o que o
-        // formato pode recusar vira 422 no campo, antes de qualquer escrita.
+        RegrasDoAto();
+        RegrasDoProcesso();
+        RegrasDoEdital();
+    }
+
+    // O bloco documental do ato é validado ANTES da publicação ser gravada: o que o
+    // formato pode recusar vira 422 no campo, antes de qualquer escrita.
+    private void RegrasDoAto() =>
         RuleFor(x => x.Ato)
             .NotNull()
             .WithMessage("Dados do ato normativo são obrigatórios.")
             .SetValidator(new DadosDoAtoValidator()!);
 
+    private void RegrasDoProcesso() =>
         RuleFor(x => x.ProcessoSeletivoId)
             .NotEmpty()
             .WithMessage("Id do processo seletivo é obrigatório.");
 
-        RuleFor(x => x.DocumentoEditalId)
-            .NotEmpty()
-            .WithMessage("Referência ao documento do Edital é obrigatória.");
-
+    private void RegrasDoEdital()
+    {
         RuleFor(x => x.Numero)
             .MaximumLength(NumeroMaxLength)
             .WithMessage($"Número do Edital deve ter no máximo {NumeroMaxLength} caracteres.");
