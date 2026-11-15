@@ -287,7 +287,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
         }
         else
         {
-            resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
+            resultado.Error!.Code.Should().Be("CertamePublicado.EnvelopeInesperado");
         }
     }
 
@@ -410,7 +410,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
             Guid.CreateVersion7(), envelope,
             EnvelopeCom(Formulario(FinalidadeFormulario.Habilitacao, faseDoFormulario, comComprovacao: true)), FinalidadeFormulario.Habilitacao);
 
-        resultado.Error!.Code.Should().Be("FormularioInscricao.VersaoSemApresentacao");
+        resultado.Error!.Code.Should().Be("CertamePublicado.EnvelopeInesperado");
     }
 
     private const string Modelo = """
@@ -427,7 +427,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     /// ATUAL e é válido — exatamente o cenário em que decidir pela forma (o que o handler fazia
     /// antes desta correção) mascara a recusa que o registro de codecs já dá em outras
     /// superfícies (ex.: <c>AbrirRetificacaoCommandHandler</c>). Um envelope malformado não
-    /// provaria nada aqui: o handler já o recusava antes, por <c>FormularioInscricao.VersaoSemApresentacao</c>.
+    /// provaria nada aqui: o handler já o recusava antes, por <c>CertamePublicado.EnvelopeInesperado</c>.
     /// O que só esta correção resolve é a versão desconhecida com bytes que "passariam" no shape.
     /// </summary>
     [Fact(DisplayName = "Versão aposentada com bytes de forma corrente recusa com EnvelopeCodec.VersaoDesconhecida, sem tentar decidir pela forma")]

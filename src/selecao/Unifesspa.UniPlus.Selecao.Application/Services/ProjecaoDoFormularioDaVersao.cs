@@ -32,7 +32,11 @@ public static class ProjecaoDoFormularioDaVersao
     /// documental. O certame público a traz; o formulário da inscrição do candidato não (nulo), porque os documentos
     /// que se aplicam a ele vêm da avaliação da inscrição, sobre as respostas dele (ADR-0143).
     /// </param>
-    public static Result<FormularioRenderizavelDto> Projetar(
+    /// <returns>
+    /// Sucesso com o formulário; sucesso com <see langword="null"/> quando a versão não tem formulário para a
+    /// <paramref name="finalidade"/> (ausência, e não falha de leitura); falha quando o congelado não se deixa ler.
+    /// </returns>
+    public static Result<FormularioRenderizavelDto?> Projetar(
         VersaoConfiguracao versao,
         FinalidadeFormulario finalidade,
         IRegistroCodecsEnvelope registroCodecs,
@@ -41,75 +45,108 @@ public static class ProjecaoDoFormularioDaVersao
         ArgumentNullException.ThrowIfNull(versao);
         ArgumentNullException.ThrowIfNull(registroCodecs);
 
-        if (!registroCodecs.SabeLer(versao.SchemaVersion))
-        {
-            return Result<FormularioRenderizavelDto>.Failure(new DomainError(
-                ErrosCodecEnvelope.VersaoDesconhecida,
-                $"A versão '{versao.SchemaVersion}' do envelope congelado não está entre as capacidades de " +
-                "leitura reconhecidas pelo codec vivo — mesmo que os bytes tenham a forma atual, uma versão " +
-                "aposentada não é reidratada."));
-        }
+        Result<ConfiguracaoLida> lida = LerConfiguracao(versao, registroCodecs);
+        return lida.IsFailure
+            ? Result<FormularioRenderizavelDto?>.Failure(lida.Error!)
+            : ProjetarFormulario(lida.Value!, finalidade, acervoDaComprovacao);
+    }
 
-        if (!EnvelopeCongelado.TentarLer(versao.ConfiguracaoCongelada, out JsonObject? envelope))
-        {
-            // Texto que não fecha como JSON faz JsonNode.Parse LANÇAR, e um documento que fecha
-            // sem ser objeto não sobrevive ao cast. São alcançáveis só por linha escrita fora do
-            // encoder, e ambos são corrupção.
-            return Result<FormularioRenderizavelDto>.Failure(new DomainError(
-                "Snapshot.VigenteAusente",
-                $"A configuração congelada do processo {versao.ProcessoSeletivoId} não é um documento legível."));
-        }
+    private sealed record ConfiguracaoLida(JsonObject Envelope, GrafoConfiguracao Grafo, DefinicaoAvaliavel Avaliavel);
 
-        // A reidratação confere a forma de cada entidade e a prova dos bytes; a apresentação e as
-        // regras saem do grafo reidratado, pela mesma projeção do rascunho (ADR-0139).
+    private static Result<ConfiguracaoLida> LerConfiguracao(VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
+    {
+        Result<JsonObject> envelope = LerEnvelope(versao, registroCodecs);
+        return envelope.IsFailure
+            ? Result<ConfiguracaoLida>.Failure(envelope.Error!)
+            : ReidratarConfiguracao(versao, envelope.Value!, registroCodecs);
+    }
+
+    // A reidratação confere a forma de cada entidade e a prova dos bytes; a apresentação e as
+    // regras saem do grafo reidratado, pela mesma projeção do rascunho (ADR-0139).
+    private static Result<ConfiguracaoLida> ReidratarConfiguracao(
+        VersaoConfiguracao versao, JsonObject envelope, IRegistroCodecsEnvelope registroCodecs)
+    {
         Result<EnvelopeReidratado> reidratado = registroCodecs.Reidratar(versao);
         if (reidratado.IsFailure)
         {
-            return Result<FormularioRenderizavelDto>.Failure(reidratado.Error!);
+            return Result<ConfiguracaoLida>.Failure(reidratado.Error!);
         }
 
         Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DoCongelado(reidratado.Value!);
-        if (avaliavel.IsFailure)
+        return avaliavel.IsFailure
+            ? Result<ConfiguracaoLida>.Failure(avaliavel.Error!)
+            : Result<ConfiguracaoLida>.Success(new ConfiguracaoLida(envelope, reidratado.Value!.Grafo, avaliavel.Value!));
+    }
+
+    private static Result<JsonObject> LerEnvelope(VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
+    {
+        if (!registroCodecs.SabeLer(versao.SchemaVersion))
         {
-            return Result<FormularioRenderizavelDto>.Failure(avaliavel.Error!);
+            return Result<JsonObject>.Failure(VersaoDoEnvelopeNaoReconhecida(versao));
         }
 
-        if (!TentarDataReferenciaFatos(envelope, out DateOnly? dataReferenciaFatos))
+        return EnvelopeCongelado.TentarLer(versao.ConfiguracaoCongelada, out JsonObject? envelope)
+            ? Result<JsonObject>.Success(envelope!)
+            : Result<JsonObject>.Failure(DocumentoCongeladoIlegivel(versao));
+    }
+
+    private static DomainError VersaoDoEnvelopeNaoReconhecida(VersaoConfiguracao versao) => new(
+        ErrosCodecEnvelope.VersaoDesconhecida,
+        $"A versão '{versao.SchemaVersion}' do envelope congelado não está entre as capacidades de " +
+        "leitura reconhecidas pelo codec vivo — mesmo que os bytes tenham a forma atual, uma versão " +
+        "aposentada não é reidratada.");
+
+    // Texto que não fecha como JSON faz JsonNode.Parse LANÇAR, e um documento que fecha
+    // sem ser objeto não sobrevive ao cast. São alcançáveis só por linha escrita fora do
+    // encoder, e ambos são corrupção.
+    private static DomainError DocumentoCongeladoIlegivel(VersaoConfiguracao versao) => new(
+        "Snapshot.VigenteAusente",
+        $"A configuração congelada do processo {versao.ProcessoSeletivoId} não é um documento legível.");
+
+    private static Result<FormularioRenderizavelDto?> ProjetarFormulario(
+        ConfiguracaoLida lida, FinalidadeFormulario finalidade, DocumentosDoAtoNoAcervo? acervoDaComprovacao)
+    {
+        if (!TentarDataReferenciaFatos(lida.Envelope, out DateOnly? dataReferenciaFatos))
         {
-            return VersaoSemApresentacao();
+            return ProjecaoDoCertamePublicado.Recusar<FormularioRenderizavelDto?>("referenciaTemporalDosFatos");
         }
 
-        GrafoConfiguracao grafo = reidratado.Value!.Grafo;
-        if (ProjecaoDoFormularioRenderizavel.Projetar(
-                finalidade, avaliavel.Value!, grafo.Formularios, grafo.FatosColetados, grafo.GruposColetados, grafo.TermosExigidos,
-                dataReferenciaFatos) is not { } formulario)
-        {
-            return Result<FormularioRenderizavelDto>.Failure(new DomainError(
-                "FormularioInscricao.FinalidadeSemFormulario",
-                $"O processo seletivo {versao.ProcessoSeletivoId} não tem formulário para a finalidade '{finalidade}' nesta versão."));
-        }
+        GrafoConfiguracao grafo = lida.Grafo;
+        return ProjecaoDoFormularioRenderizavel.Projetar(
+                finalidade, lida.Avaliavel, grafo.Formularios, grafo.FatosColetados, grafo.GruposColetados, grafo.TermosExigidos,
+                dataReferenciaFatos) is { } formulario
+            ? ComporFormulario(lida, finalidade, formulario, acervoDaComprovacao)
+            : Result<FormularioRenderizavelDto?>.Success(null);
+    }
 
-        FormularioProcesso doFormulario = grafo.Formularios.First(f => f.Finalidade == finalidade);
+    private static Result<FormularioRenderizavelDto?> ComporFormulario(
+        ConfiguracaoLida lida, FinalidadeFormulario finalidade, FormularioRenderizavel formulario, DocumentosDoAtoNoAcervo? acervoDaComprovacao)
+    {
+        FormularioProcesso doFormulario = lida.Grafo.Formularios.First(f => f.Finalidade == finalidade);
         List<ExigenciaDocumentalCertameDto>? comprovacao = null;
         if (acervoDaComprovacao is not null
-            && !TentarComprovacaoDocumental(envelope, doFormulario, formulario.Finalidade, acervoDaComprovacao, out comprovacao))
+            && !TentarComprovacaoDocumental(lida.Envelope, doFormulario, formulario.Finalidade, acervoDaComprovacao, out comprovacao))
         {
-            return VersaoSemApresentacao();
+            return ProjecaoDoCertamePublicado.Recusar<FormularioRenderizavelDto?>("comprovacaoDocumental");
         }
 
-        DependenciasDaAvaliacaoDto? dependencias = null;
-        DependenciasDaAvaliacaoDto? dependenciasDoFator = null;
-        if (finalidade == FinalidadeFormulario.Inscricao)
-        {
-            ConfiguracaoAvaliavel configuracao = ConfiguracaoAvaliavelDoProcesso.DoCongelado(grafo, avaliavel.Value!);
-            DependenciasDaAvaliacao daAvaliacao = Domain.Services.AvaliacaoDaInscricao.Dependencias(configuracao);
-            DependenciasDaAvaliacao doFator = Domain.Services.AvaliacaoDaInscricao.DependenciasDoFator(configuracao, grafo.BonusRegional);
-            dependencias = new DependenciasDaAvaliacaoDto(daAvaliacao.Fatos, daAvaliacao.Grupos);
-            dependenciasDoFator = new DependenciasDaAvaliacaoDto(doFator.Fatos, doFator.Grupos);
-        }
-
-        return Result<FormularioRenderizavelDto>.Success(
+        (DependenciasDaAvaliacaoDto? dependencias, DependenciasDaAvaliacaoDto? dependenciasDoFator) = DependenciasDaInscricao(lida, finalidade);
+        return Result<FormularioRenderizavelDto?>.Success(
             FormularioRenderizavelDto.De(formulario, comprovacao, dependencias, dependenciasDoFator, doFormulario.FaseId));
+    }
+
+    private static (DependenciasDaAvaliacaoDto? Fatos, DependenciasDaAvaliacaoDto? Fator) DependenciasDaInscricao(
+        ConfiguracaoLida lida, FinalidadeFormulario finalidade)
+    {
+        if (finalidade != FinalidadeFormulario.Inscricao)
+        {
+            return (null, null);
+        }
+
+        ConfiguracaoAvaliavel configuracao = ConfiguracaoAvaliavelDoProcesso.DoCongelado(lida.Grafo, lida.Avaliavel);
+        DependenciasDaAvaliacao daAvaliacao = Domain.Services.AvaliacaoDaInscricao.Dependencias(configuracao);
+        DependenciasDaAvaliacao doFator = Domain.Services.AvaliacaoDaInscricao.DependenciasDoFator(configuracao, lida.Grafo.BonusRegional);
+        return (new DependenciasDaAvaliacaoDto(daAvaliacao.Fatos, daAvaliacao.Grupos), new DependenciasDaAvaliacaoDto(doFator.Fatos, doFator.Grupos));
     }
 
     /// <summary>
@@ -134,9 +171,6 @@ public static class ProjecaoDoFormularioDaVersao
     }
 
     /// <summary>
-    /// Lê o documento congelado como objeto JSON, sem deixar passar exceção de análise.
-    /// </summary>
-    /// <summary>
     /// A data de referência dos fatos, já resolvida na publicação, do bloco de documentos exigidos.
     /// Nula quando o processo não declara referência temporal; fora da forma de data, a versão não
     /// tem apresentação.
@@ -144,31 +178,28 @@ public static class ProjecaoDoFormularioDaVersao
     private static bool TentarDataReferenciaFatos(JsonObject envelope, out DateOnly? data)
     {
         data = null;
-        if (!envelope.TryGetPropertyValue("documentosExigidos", out JsonNode? node)
-            || node is not JsonObject documentos
-            || !TentarStringOpcional(documentos, "dataReferenciaFatos", out string? texto))
+        if (!TentarTextoDaDataDeReferencia(envelope, out string? texto))
         {
             return false;
         }
 
-        if (texto is null)
-        {
-            return true;
-        }
-
-        if (!DateOnly.TryParseExact(texto, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly lida))
-        {
-            return false;
-        }
-
-        data = lida;
-        return true;
+        return texto is null || TentarDataIso(texto, out data);
     }
 
-    private static Result<FormularioRenderizavelDto> VersaoSemApresentacao() =>
-        Result<FormularioRenderizavelDto>.Failure(new DomainError(
-            "FormularioInscricao.VersaoSemApresentacao",
-            "A versão publicada vigente foi congelada antes de a apresentação do formulário de inscrição existir — publique uma nova versão para disponibilizar o formulário."));
+    private static bool TentarTextoDaDataDeReferencia(JsonObject envelope, out string? texto)
+    {
+        texto = null;
+        return envelope.TryGetPropertyValue("documentosExigidos", out JsonNode? node)
+            && node is JsonObject documentos
+            && TentarStringOpcional(documentos, "dataReferenciaFatos", out texto);
+    }
+
+    private static bool TentarDataIso(string texto, out DateOnly? data)
+    {
+        bool valida = DateOnly.TryParseExact(texto, "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly lida);
+        data = valida ? lida : null;
+        return valida;
+    }
 
     /// <summary>Chave presente com valor de texto: sucesso. Ausente, nula ou de outro tipo: falha.</summary>
     private static bool TentarString(JsonObject objeto, string chave, out string valor)

@@ -5672,16 +5672,6 @@
       "titulo": "O tamanho máximo em bytes por formato, quando presente, deve ser maior que zero"
     },
     {
-      "codigo": "uniplus.selecao.formulario_inscricao.finalidade_sem_formulario",
-      "status": 422,
-      "titulo": "A versão resolvida não tem formulário para a finalidade pedida"
-    },
-    {
-      "codigo": "uniplus.selecao.formulario_inscricao.versao_sem_apresentacao",
-      "status": 422,
-      "titulo": "A versão publicada vigente não tem apresentação de formulário"
-    },
-    {
       "codigo": "uniplus.selecao.formulario_processo.aplicacao_de_modelo_so_em_rascunho",
       "status": 422,
       "titulo": "O modelo se aplica só em rascunho"

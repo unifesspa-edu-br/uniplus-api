@@ -60,22 +60,38 @@ public static class ObterFormularioRenderizavelQueryHandler
         Result<Services.VersaoDivulgada> divulgada = await Services.VersaoDivulgadaResolver
             .ResolverAsync(query.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, cancellationToken)
             .ConfigureAwait(false);
-        if (divulgada.IsFailure)
+        return divulgada.IsFailure
+            ? Result<FormularioRenderizavelDto>.Failure(divulgada.Error!)
+            : await ProjetarDaDivulgacaoAsync(query, divulgada.Value!, registroCodecs, enderecos, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<FormularioRenderizavelDto>> ProjetarDaDivulgacaoAsync(
+        ObterFormularioRenderizavelQuery query,
+        Services.VersaoDivulgada divulgada,
+        IRegistroCodecsEnvelope registroCodecs,
+        EnderecosDosDocumentosDoAto enderecos,
+        CancellationToken cancellationToken)
+    {
+        DocumentosDoAtoNoAcervo acervo = await enderecos
+            .DoAtoAsync(query.ProcessoSeletivoId, divulgada.AtoDaDivulgacao, cancellationToken)
+            .ConfigureAwait(false);
+        return ComoLeituraPublica(
+            ProjecaoDoFormularioDaVersao.Projetar(divulgada.Versao, query.Finalidade, registroCodecs, acervo), query.ProcessoSeletivoId);
+    }
+
+    // A ausência de formulário da finalidade colapsa no mesmo não encontrado dos demais casos sem
+    // linha (ver remarks).
+    private static Result<FormularioRenderizavelDto> ComoLeituraPublica(
+        Result<FormularioRenderizavelDto?> projetado, Guid processoSeletivoId)
+    {
+        if (projetado.IsFailure)
         {
-            return Result<FormularioRenderizavelDto>.Failure(divulgada.Error!);
+            return Result<FormularioRenderizavelDto>.Failure(projetado.Error!);
         }
 
-        DocumentosDoAtoNoAcervo acervo = await enderecos
-            .DoAtoAsync(query.ProcessoSeletivoId, divulgada.Value!.AtoDaDivulgacao, cancellationToken)
-            .ConfigureAwait(false);
-        Result<FormularioRenderizavelDto> projetado = ProjecaoDoFormularioDaVersao.Projetar(
-            divulgada.Value!.Versao, query.Finalidade, registroCodecs, acervo);
-
-        // A projeção compartilhada nomeia a ausência de formulário da finalidade; a leitura
-        // pública a colapsa no mesmo não encontrado dos demais casos sem linha (ver remarks).
-        return projetado.IsFailure && projetado.Error!.Code == "FormularioInscricao.FinalidadeSemFormulario"
-            ? NaoEncontrado(query.ProcessoSeletivoId)
-            : projetado;
+        return projetado.Value is { } formulario
+            ? Result<FormularioRenderizavelDto>.Success(formulario)
+            : NaoEncontrado(processoSeletivoId);
     }
 
     /// <summary>
