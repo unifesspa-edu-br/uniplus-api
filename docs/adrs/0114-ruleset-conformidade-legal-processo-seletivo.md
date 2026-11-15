@@ -187,3 +187,7 @@ relógio ou outro estado externo.
 - ADR-0109 D6 — envelope canônico extensível por record de entrada única.
 - Issue #852 — contrato, rename e seleção do ruleset.
 - Issue #853 — avaliador, gate e congelamento do resultado.
+
+## Emenda (2026-11-15) — nome do atendimento especializado
+
+O texto cita `OfertaAtendimento.TiposDeficiencia[].TipoDeficienciaNome`. O agregado `ProcessoSeletivo` expõe o atendimento especializado como `AtendimentoEspecializado`, e a lista de tipos de deficiência atendidos é `AtendimentoEspecializado.TiposDeficiencia`, de itens `DeficienciaAtendida`. A decisão não muda; só o nome no código.

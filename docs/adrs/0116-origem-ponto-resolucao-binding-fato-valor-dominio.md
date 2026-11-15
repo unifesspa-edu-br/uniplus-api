@@ -305,3 +305,7 @@ o binding ficar decorativo — exatamente o defeito que a ADR-0111 existe para i
 
 Sem esses cinco elementos, o binding não deve ser adotado — é preferível manter o fato como
 `Declarado` a registrar uma origem que o código não sustenta.
+
+## Emenda (2026-11-15) — nome do atendimento especializado
+
+O texto cita `OfertaAtendimentoEspecializado` e `OfertaTipoDeficiencia`. As entidades passaram a se chamar `AtendimentoEspecializado` e `DeficienciaAtendida`, como as tabelas `atendimentos_especializados` e `deficiencias_atendidas`. A decisão não muda; só o nome no código.

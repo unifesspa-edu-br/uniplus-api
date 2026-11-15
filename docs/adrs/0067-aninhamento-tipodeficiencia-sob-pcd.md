@@ -91,3 +91,7 @@ AtendimentoEspecializadoOferta {
 - Snapshot na publicação: ver [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md) e RN08 de `docs/visao-do-projeto.md`.
 - **Emenda (2026-10-23, #2065):** decisão do líder técnico. O aninhamento continua valendo para a oferta de atendimento especializado, que diz quais tipos de deficiência o processo consegue atender na prova. A oferta deixa de ser a fonte das opções do tipo de deficiência perguntado na reserva de vagas: essas opções são todos os tipos do cadastro, em qualquer processo, com ou sem prova e com ou sem oferta (UNI-REQ-0012), pela fonte `TIPOS_DEFICIENCIA` da ADR-0136. Os processos publicados antes congelaram as opções da oferta e seguem com elas.
 - **Origem:** deliberação técnica de modelagem do Módulo Configuração de Edital conduzida pelo Tech Lead (2026-05-19), fundamentada em pesquisa sobre modelos brasileiros de atendimento especializado (INEP/ENEM, Cebraspe/UnB, LBI Lei 13.146/2015); rascunhos de trabalho não publicados.
+
+## Emenda (2026-11-15) — nome do atendimento especializado
+
+O `AtendimentoEspecializadoOferta` do texto corresponde hoje ao `AtendimentoEspecializado` do processo seletivo, com as condições aceitas em `CondicaoOfertada`, os recursos em `RecursoOfertado` e os tipos de deficiência em `DeficienciaAtendida`, nas tabelas `atendimentos_especializados`, `condicoes_ofertadas`, `recursos_ofertados` e `deficiencias_atendidas`. A regra decidida não muda.
