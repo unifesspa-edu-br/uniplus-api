@@ -7,6 +7,7 @@ using Services;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
 using ValueObjects;
 
@@ -299,12 +300,12 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
                 $"A fase '{codigo}' promete parecer individual e não publica nenhum resultado — não haveria decisão a fundamentar.")));
         }
 
-        if (ViolacaoDaAncoraDoRecurso(codigo, produtos, regraRecurso) is { } violacaoDaAncora)
+        if (AncoraDoRecursoDaFase.Violacao(codigo, produtos, regraRecurso) is { } violacaoDaAncora)
         {
             erros.Add(violacaoDaAncora);
         }
 
-        erros.AddRange(ViolacoesDoRecorteDeCompetencia(codigo, bancasRequeridas));
+        erros.AddRange(RecorteDeCompetenciaDasBancas.Violacoes(codigo, bancasRequeridas));
 
         if (erros.Count > 0)
         {
@@ -382,7 +383,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         // que torna a leitura do campo não-tautológica no round-trip. Pelo MESMO predicado de
         // Criar: uma âncora reposta sobre produto definitivo é tão incoerente quanto uma
         // escrita assim pela primeira vez, e checar só a pertinência deixaria passar metade.
-        if (ViolacaoDaAncoraDoRecurso(codigo, produtos, regraRecurso) is { } violacaoDaAncora)
+        if (AncoraDoRecursoDaFase.Violacao(codigo, produtos, regraRecurso) is { } violacaoDaAncora)
         {
             throw new ArgumentException(violacaoDaAncora.Error.Message, nameof(regraRecurso));
         }
@@ -390,7 +391,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         // Pelo MESMO predicado de Criar, e pelo mesmo motivo: um recorte reposto que não
         // distingue duas bancas do mesmo tipo é tão incoerente quanto um escrito assim pela
         // primeira vez.
-        if (ViolacoesDoRecorteDeCompetencia(codigo, bancasRequeridas) is [{ } violacaoDoRecorte, ..])
+        if (RecorteDeCompetenciaDasBancas.Violacoes(codigo, bancasRequeridas) is [{ } violacaoDoRecorte, ..])
         {
             throw new ArgumentException(violacaoDoRecorte.Error.Message, nameof(bancasRequeridas));
         }
@@ -419,167 +420,19 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     }
 
     /// <summary>
-    /// A violação da âncora do prazo de recurso, ou <see langword="null"/> quando a fase não
-    /// admite recurso ou o ancora corretamente.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Recurso é contra o resultado preliminar: é ele que abre a janela de interposição, e é
-    /// do instante em que é publicado que o prazo corre (UNI-REQ-0115). Fase que não publica
-    /// nenhum não tem decisão a contestar — nem a que só publica o definitivo, que encerra a
-    /// matéria em vez de abri-la. E a âncora é a identidade de um produto DESTA fase, não um
-    /// código de tipo de ato: duas fases podem publicar o mesmo tipo, e só a identidade da
-    /// linha diz de qual das duas publicações o prazo conta.
-    /// </para>
-    /// <para>
-    /// <b>Predicado único, quatro chamadores.</b> <see cref="Criar"/> o acumula como recusa,
-    /// <see cref="Reidratar"/> o lança como erro de programação, o decodificador do envelope o
-    /// propaga como recusa nomeada e <c>ProcessoSeletivo</c> o projeta no gate de publicação e
-    /// no item de conformidade. Escrito uma vez, nenhum deles pode divergir dos outros — foi
-    /// exatamente assim que a conferência da reidratação passou a valer meia invariante.
-    /// </para>
-    /// </remarks>
-    public static FieldError? ViolacaoDaAncoraDoRecurso(
-        string codigo,
-        IReadOnlyList<ProdutoDaFase> produtos,
-        RegraRecursoFase? regraRecurso)
-    {
-        if (regraRecurso is null)
-        {
-            return null;
-        }
-
-        List<ProdutoDaFase> preliminares =
-            [.. produtos.Where(static p => p.Papel == PapelProdutoFase.Preliminar)];
-
-        if (preliminares.Count == 0)
-        {
-            return new("produtos", new DomainError(
-                "RegraRecursoFase.FaseSemProdutoPreliminar",
-                $"A fase '{codigo}' admite recurso e não publica nenhum produto com papel preliminar — declare o resultado preliminar em que o prazo ancora."));
-        }
-
-        // Condicionada à existência de algum preliminar — sem nenhum, a recusa acima é a mais
-        // fundamental, e esta mandaria escolher entre um conjunto vazio.
-        if (!preliminares.Exists(p => p.Id == regraRecurso.ProdutoAncoraId))
-        {
-            return new("regraRecurso.atoAncoraCodigo", new DomainError(
-                "RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase",
-                $"A regra de recurso da fase '{codigo}' não ancora em nenhum dos produtos preliminares que ela publica ({string.Join(", ", preliminares.Select(static p => p.AtoCodigo).Order(StringComparer.Ordinal))})."));
-        }
-
-        return null;
-    }
-
-    /// <summary>
-    /// <see cref="ViolacaoDaAncoraDoRecurso(string, IReadOnlyList{ProdutoDaFase}, RegraRecursoFase?)"/>
-    /// sobre o estado ATUAL da fase — a forma que <c>ProcessoSeletivo</c> usa, porque o
-    /// estado violado é materializável pela hidratação do EF, que não passa por fábrica
-    /// nenhuma.
+    /// <see cref="AncoraDoRecursoDaFase.Violacao"/> sobre o estado ATUAL da fase — a forma que
+    /// <c>ProcessoSeletivo</c> usa, porque o estado violado é materializável pela hidratação do EF, que
+    /// não passa por fábrica nenhuma.
     /// </summary>
     internal FieldError? ViolacaoDaAncoraDoRecurso() =>
-        ViolacaoDaAncoraDoRecurso(Codigo, _produtos, RegraRecurso);
+        AncoraDoRecursoDaFase.Violacao(Codigo, _produtos, RegraRecurso);
 
     /// <summary>
-    /// As violações do recorte de competência das bancas requeridas pela fase — vazio
-    /// quando cada banca é identificável dentro dela.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <b>O recorte só é obrigatório onde o tipo não basta.</b> Com uma banca por tipo, o
-    /// próprio tipo já diz de quem é o parecer, e exigir o recorte pediria informação que
-    /// não acrescenta nada. Com mais de uma, o tipo empata: é o recorte que diz qual delas
-    /// julga renda e qual julga o requisito étnico-racial, e sem ele o certame publica duas
-    /// linhas iguais onde há dois responsáveis distintos. Recortes IDÊNTICOS entre duas
-    /// bancas do mesmo tipo caem na mesma recusa por não distinguirem nada — é o defeito
-    /// que declarar o recorte existe para fechar, e aceitá-los seria cumprir a letra da
-    /// exigência sem cumprir o efeito.
-    /// </para>
-    /// <para>
-    /// <b>O agrupamento é pelo código congelado, não pelo id de origem.</b> É o código que
-    /// aparece no edital publicado, e é por ele que quem lê distingue uma banca da outra;
-    /// dois ids de origem distintos que congelaram o mesmo código produzem, no documento,
-    /// exatamente a ambiguidade que esta invariante recusa. O critério é estritamente mais
-    /// forte que o do id: bancas de mesmo id de origem congelam sempre o mesmo código.
-    /// </para>
-    /// <para>
-    /// <b>Predicado único, quatro chamadores</b> — <see cref="Criar"/>, <see cref="Reidratar"/>,
-    /// o decodificador do envelope e <c>ProcessoSeletivo</c>, no gate de publicação e no item
-    /// de conformidade —, mesma disciplina de
-    /// <see cref="ViolacaoDaAncoraDoRecurso(string, IReadOnlyList{ProdutoDaFase}, RegraRecursoFase?)"/>:
-    /// escrito uma vez, nenhum deles pode divergir dos outros.
-    /// </para>
-    /// <para>Sem I/O e sem navegação — só o que já está em memória.</para>
-    /// </remarks>
-    public static IReadOnlyList<FieldError> ViolacoesDoRecorteDeCompetencia(
-        string codigo,
-        IReadOnlyList<BancaRequerida> bancasRequeridas)
-    {
-        ArgumentNullException.ThrowIfNull(bancasRequeridas);
-
-        List<FieldError> violacoes = [];
-
-        for (int indice = 0; indice < bancasRequeridas.Count; indice++)
-        {
-            BancaRequerida banca = bancasRequeridas[indice];
-            if (banca.RecorteDeCompetencia.Count != banca.ChaveDoRecorte().Count)
-            {
-                violacoes.Add(new($"bancasRequeridas[{indice}].categoriasDocumentoIds", new DomainError(
-                    "BancaRequerida.CategoriaDuplicadaNoRecorte",
-                    $"A banca '{banca.Codigo}' da fase '{codigo}' declara a mesma categoria de documento mais de uma vez no recorte de competência.")));
-            }
-        }
-
-        // Índices agrupados pelo código congelado — a chave da ambiguidade. Um grupo de um
-        // item só não pede recorte algum.
-        foreach (IGrouping<string, int> grupo in Enumerable.Range(0, bancasRequeridas.Count)
-            .GroupBy(i => bancasRequeridas[i].Codigo, StringComparer.Ordinal)
-            .Where(static g => g.Count() > 1))
-        {
-            // Os recortes já vistos no grupo, comparados como CONJUNTO. Concatená-los num
-            // texto de assinatura seria mais barato e dependeria de nenhum código de
-            // categoria conter o separador escolhido — premissa que vale para o cadastro,
-            // cujo código é UPPER_SNAKE, mas não para um envelope decodificado, que traz
-            // texto livre dentro do limite da coluna.
-            List<HashSet<string>> recortesJaDeclarados = [];
-
-            foreach (int indice in grupo)
-            {
-                BancaRequerida banca = bancasRequeridas[indice];
-                string campo = $"bancasRequeridas[{indice}].categoriasDocumentoIds";
-                IReadOnlyList<string> chave = banca.ChaveDoRecorte();
-
-                if (chave.Count == 0)
-                {
-                    violacoes.Add(new(campo, new DomainError(
-                        "BancaRequerida.RecorteDeCompetenciaObrigatorio",
-                        $"A fase '{codigo}' requer mais de uma banca '{banca.Codigo}' e cada uma precisa declarar as categorias de documento que julga.")));
-                    continue;
-                }
-
-                HashSet<string> recorte = new(chave, StringComparer.Ordinal);
-                if (recortesJaDeclarados.Exists(anterior => anterior.SetEquals(recorte)))
-                {
-                    violacoes.Add(new(campo, new DomainError(
-                        "BancaRequerida.RecorteDeCompetenciaDuplicado",
-                        $"A fase '{codigo}' declara duas bancas '{banca.Codigo}' com o mesmo recorte de competência ({string.Join(", ", chave)}) — recortes iguais não distinguem uma banca da outra.")));
-                    continue;
-                }
-
-                recortesJaDeclarados.Add(recorte);
-            }
-        }
-
-        return violacoes;
-    }
-
-    /// <summary>
-    /// <see cref="ViolacoesDoRecorteDeCompetencia(string, IReadOnlyList{BancaRequerida})"/> sobre
-    /// o estado ATUAL da fase — a forma que <c>ProcessoSeletivo</c> usa, porque o estado
-    /// violado é materializável pela hidratação do EF, que não passa por fábrica nenhuma.
+    /// <see cref="RecorteDeCompetenciaDasBancas.Violacoes"/> sobre o estado ATUAL da fase — a forma que
+    /// <c>ProcessoSeletivo</c> usa, pelo mesmo motivo de <see cref="ViolacaoDaAncoraDoRecurso"/>.
     /// </summary>
     internal IReadOnlyList<FieldError> ViolacoesDoRecorteDeCompetencia() =>
-        ViolacoesDoRecorteDeCompetencia(Codigo, _bancasRequeridas);
+        RecorteDeCompetenciaDasBancas.Violacoes(Codigo, _bancasRequeridas);
 
     /// <summary>Refaz a cópia de sigla e nome da unidade que a fase já tem, pelo valor vivo do cadastro.</summary>
     internal void RecopiarUnidadeResponsavel(UnidadeResponsavelSnapshot viva)
@@ -703,47 +556,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         }
 
         RegraRecurso.VincularFase(Id);
-        RemapearAncoraDoRecurso(RegraRecurso, produtos);
-    }
-
-    /// <summary>
-    /// Reaponta a âncora do recurso para o produto que sobreviveu à reconciliação.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// A reconciliação de <see cref="AtualizarDe"/> troca a instância de cada produto pela
-    /// <b>rastreada</b> de mesmo <see cref="ProdutoDaFase.AtoCodigo"/>, que tem o Id que já
-    /// estava no banco — e não o Id da coleção que chegou, para onde a âncora aponta. Sem este remapeamento a
-    /// regra de recurso ficaria referenciando uma linha que a mesma transação remove como
-    /// órfã, e o sintoma só apareceria muito depois, ao tentar resolver a configuração de
-    /// recurso de um ato publicado. Vale para os dois caminhos que chamam este método: a
-    /// redefinição do cronograma ao vivo e a restauração da configuração congelada sobre uma
-    /// sessão de rascunho.
-    /// </para>
-    /// <para>
-    /// A ponte é o par <see cref="ProdutoDaFase.AtoCodigo"/> + <see cref="ProdutoDaFase.Papel"/>,
-    /// porque é a chave da própria reconciliação e é único dentro da fase — o ato sozinho não
-    /// é, desde que a mesma matéria passou a ser publicável como preliminar e como
-    /// definitiva. Quando a coleção que chegou não contém o produto âncora, não há para onde
-    /// remapear e a âncora fica como está: é estado que <see cref="Criar"/> não deixa existir.
-    /// </para>
-    /// </remarks>
-    private void RemapearAncoraDoRecurso(RegraRecursoFase regraRecurso, IReadOnlyList<ProdutoDaFase> produtos)
-    {
-        ProdutoDaFase? ancoraQueChegou = produtos
-            .FirstOrDefault(p => p.Id == regraRecurso.ProdutoAncoraId);
-        if (ancoraQueChegou is null)
-        {
-            return;
-        }
-
-        ProdutoDaFase? ancoraReconciliada = _produtos
-            .Find(p => string.Equals(p.AtoCodigo, ancoraQueChegou.AtoCodigo, StringComparison.Ordinal)
-                && p.Papel == ancoraQueChegou.Papel);
-        if (ancoraReconciliada is not null && ancoraReconciliada.Id != regraRecurso.ProdutoAncoraId)
-        {
-            regraRecurso.RemapearAncora(ancoraReconciliada.Id);
-        }
+        AncoraDoRecursoDaFase.Reancorar(RegraRecurso, produtos, _produtos);
     }
 
     private void AdotarFilhas(

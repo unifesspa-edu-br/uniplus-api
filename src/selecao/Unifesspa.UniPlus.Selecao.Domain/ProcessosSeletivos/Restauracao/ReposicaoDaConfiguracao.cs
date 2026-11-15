@@ -58,7 +58,7 @@ internal static class ReposicaoDaConfiguracao
     /// que ela é descartada aqui, com o produto recriado — a mesma disciplina que as bancas
     /// requeridas já têm por nunca terem Id no envelope. A âncora do prazo de recurso é a
     /// única referência que aponta para o Id de um produto, e
-    /// <see cref="ReancorarRecursoNosProdutosRecriados"/> a acompanha; o caminho que PRECISA
+    /// <see cref="AncoraDoRecursoDaFase.Reancorar"/> a acompanha; o caminho que PRECISA
     /// preservar o Id — a sombra de verificação, que nasce sem fase viva alguma — nunca passa
     /// por aqui, porque cai no ramo que adota a instância congelada inteira.
     /// </para>
@@ -67,41 +67,6 @@ internal static class ReposicaoDaConfiguracao
         viva.Id == congelada.Id
             ? [.. congelada.Produtos]
             : [.. congelada.Produtos.Select(static p => ProdutoDaFase.Criar(p.AtoCodigo, p.Papel))];
-
-    /// <summary>
-    /// Reaponta a âncora do recurso da fase congelada para o produto recriado equivalente,
-    /// quando <see cref="ProdutosParaAFaseViva"/> descartou as identidades congeladas.
-    /// </summary>
-    /// <remarks>
-    /// Sem isto a regra de recurso restaurada ficaria apontando para um produto que a
-    /// restauração acabou de descartar, e o ato publicado deixaria de encontrar o prazo que
-    /// lhe corresponde. A ponte é o PAR <see cref="ProdutoDaFase.AtoCodigo"/> +
-    /// <see cref="ProdutoDaFase.Papel"/>, a mesma chave que as demais reconciliações de produto
-    /// usam: o ato sozinho deixou de ser único dentro da fase quando a mesma matéria passou a
-    /// ser publicável como preliminar e como definitiva, e casar só por ele remapeava a âncora
-    /// do preliminar para o definitivo sempre que este viesse primeiro — o recurso passaria a
-    /// correr da publicação errada, e a snapshot preservaria o engano. A segunda etapa — do
-    /// produto recriado para a instância rastreada que porventura sobreviva — é feita por
-    /// <c>FaseCronograma.AtualizarDe</c>.
-    /// </remarks>
-    internal static void ReancorarRecursoNosProdutosRecriados(
-        FaseCronograma congelada,
-        IReadOnlyList<ProdutoDaFase> produtosDaViva)
-    {
-        if (congelada.RegraRecurso is not { } regraRecurso
-            || congelada.Produtos.FirstOrDefault(p => p.Id == regraRecurso.ProdutoAncoraId) is not { } ancoraCongelada)
-        {
-            return;
-        }
-
-        ProdutoDaFase? ancoraRecriada = produtosDaViva.FirstOrDefault(
-            p => string.Equals(p.AtoCodigo, ancoraCongelada.AtoCodigo, StringComparison.Ordinal)
-                && p.Papel == ancoraCongelada.Papel);
-        if (ancoraRecriada is not null && ancoraRecriada.Id != regraRecurso.ProdutoAncoraId)
-        {
-            regraRecurso.RemapearAncora(ancoraRecriada.Id);
-        }
-    }
 
     /// <summary>
     /// Repõe no lugar as partes rastreadas que a versão congelada também tem e devolve a mudança nas
@@ -203,7 +168,11 @@ internal static class ReposicaoDaConfiguracao
         }
 
         IReadOnlyList<ProdutoDaFase> produtos = ProdutosParaAFaseViva(congelada, viva);
-        ReancorarRecursoNosProdutosRecriados(congelada, produtos);
+        if (congelada.RegraRecurso is { } regraRecurso)
+        {
+            AncoraDoRecursoDaFase.Reancorar(regraRecurso, congelada.Produtos, produtos);
+        }
+
         viva.AtualizarDe(congelada, produtos);
         return viva;
     }

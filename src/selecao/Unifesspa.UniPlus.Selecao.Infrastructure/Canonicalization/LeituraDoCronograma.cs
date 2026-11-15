@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -74,6 +75,11 @@ internal static class LeituraDoCronograma
             return null;
         }
 
+        return LerFilhasEMontar(leitor, item, path, d);
+    }
+
+    private static FaseCronograma? LerFilhasEMontar(LeitorEnvelope leitor, JsonObject item, string path, DeclaracaoDaFase d)
+    {
         IReadOnlyList<ProdutoDaFase> produtos = LerProdutosDaFase(leitor, item, path);
         IReadOnlyList<BancaRequerida> bancas = leitor.Falhou ? [] : LerBancasRequeridas(leitor, item, path);
         RegraRecursoFase? regraRecurso = leitor.Falhou ? null : LeituraDosPrazosDeRecurso.LerRegraRecursoFase(leitor, item, path);
@@ -83,21 +89,28 @@ internal static class LeituraDoCronograma
             return null;
         }
 
-        // A âncora do recurso e o recorte de competência são conferidos pelo mesmo predicado do agregado:
-        // a fábrica só tem throw para esses estados, porque nenhum caminho de escrita os produz, e um
-        // envelope incoerente tem de virar recusa nomeada.
-        if (FaseCronograma.ViolacaoDaAncoraDoRecurso(d.Codigo, produtos, regraRecurso) is { } violacaoDaAncora)
-        {
-            return leitor.Propagar<FaseCronograma?>(violacaoDaAncora.Error);
-        }
-
-        if (FaseCronograma.ViolacoesDoRecorteDeCompetencia(d.Codigo, bancas) is [{ } violacaoDoRecorte, ..])
-        {
-            return leitor.Propagar<FaseCronograma?>(violacaoDoRecorte.Error);
-        }
-
-        Result<FaseCronograma> fase = Reidratar(d, produtos, bancas, regraRecurso, unidadeResponsavel);
+        Result<FaseCronograma> fase = ConferirEReidratar(d, produtos, bancas, regraRecurso, unidadeResponsavel);
         return fase.IsFailure ? leitor.Propagar<FaseCronograma?>(fase.Error!) : fase.Value;
+    }
+
+    // A âncora do recurso e o recorte de competência são conferidos pelo mesmo predicado do agregado:
+    // a fábrica só tem throw para esses estados, porque nenhum caminho de escrita os produz, e um
+    // envelope incoerente tem de virar recusa nomeada.
+    private static Result<FaseCronograma> ConferirEReidratar(
+        DeclaracaoDaFase d,
+        IReadOnlyList<ProdutoDaFase> produtos,
+        IReadOnlyList<BancaRequerida> bancas,
+        RegraRecursoFase? regraRecurso,
+        UnidadeResponsavelSnapshot? unidadeResponsavel)
+    {
+        if (AncoraDoRecursoDaFase.Violacao(d.Codigo, produtos, regraRecurso) is { } violacaoDaAncora)
+        {
+            return Result<FaseCronograma>.Failure(violacaoDaAncora.Error);
+        }
+
+        return RecorteDeCompetenciaDasBancas.Violacoes(d.Codigo, bancas) is [{ } violacaoDoRecorte, ..]
+            ? Result<FaseCronograma>.Failure(violacaoDoRecorte.Error)
+            : Reidratar(d, produtos, bancas, regraRecurso, unidadeResponsavel);
     }
 
     private static Result<FaseCronograma> Reidratar(

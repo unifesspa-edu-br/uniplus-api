@@ -164,7 +164,8 @@ public sealed class RegraRecursoFase : EntityBase
 
     /// <summary>
     /// Reaponta a âncora para o produto que sobreviveu à reconciliação de
-    /// <see cref="FaseCronograma.AtualizarDe"/> — ver o <c>&lt;remarks&gt;</c> de lá.
+    /// <see cref="FaseCronograma.AtualizarDe"/> — ver o <c>&lt;remarks&gt;</c> de
+    /// <see cref="ProcessosSeletivos.Cronograma.AncoraDoRecursoDaFase.Reancorar"/>.
     /// </summary>
     internal void RemapearAncora(Guid produtoAncoraId) => ProdutoAncoraId = produtoAncoraId;
 }
