@@ -90,7 +90,7 @@ internal static partial class CorpusEnvelope
 
     private static void DefinirOfertaEClassificacao(ProcessoSeletivo processo, int variante, bool permutar)
     {
-        DefinirOfertaDeAtendimento(processo, permutar);
+        DefinirAtendimentoEspecializadoDoCorpus(processo, permutar);
         processo.DefinirDistribuicaoVagas(
             Ordem([DistribuicaoLei12711(), DistribuicaoLei12711(OfertaDireito, ("HUMANISTICA_I", "Humanística I"))], permutar),
             FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -103,19 +103,19 @@ internal static partial class CorpusEnvelope
             .IsSuccess.Should().BeTrue();
     }
 
-    private static void DefinirOfertaDeAtendimento(ProcessoSeletivo processo, bool permutar) =>
-        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar(
-            condicoes: Ordem<OfertaCondicao>([
-                OfertaCondicao.Criar(new Guid("eeee0000-0000-4000-8000-000000000001"), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência"),
-                OfertaCondicao.Criar(new Guid("eeee0000-0000-4000-8000-000000000002"), "LACTANTE", "Lactante"),
+    private static void DefinirAtendimentoEspecializadoDoCorpus(ProcessoSeletivo processo, bool permutar) =>
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar(
+            condicoes: Ordem<CondicaoOfertada>([
+                CondicaoOfertada.Criar(new Guid("eeee0000-0000-4000-8000-000000000001"), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência"),
+                CondicaoOfertada.Criar(new Guid("eeee0000-0000-4000-8000-000000000002"), "LACTANTE", "Lactante"),
             ], permutar),
-            recursos: Ordem<OfertaRecurso>([
-                OfertaRecurso.Criar(new Guid("ffff0000-0000-4000-8000-000000000001"), "LEDOR", "Ledor"),
-                OfertaRecurso.Criar(new Guid("ffff0000-0000-4000-8000-000000000002"), "PROVA_AMPLIADA", "Prova ampliada"),
+            recursos: Ordem<RecursoOfertado>([
+                RecursoOfertado.Criar(new Guid("ffff0000-0000-4000-8000-000000000001"), "LEDOR", "Ledor"),
+                RecursoOfertado.Criar(new Guid("ffff0000-0000-4000-8000-000000000002"), "PROVA_AMPLIADA", "Prova ampliada"),
             ], permutar),
-            tiposDeficiencia: Ordem<OfertaTipoDeficiencia>([
-                OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000001"), "DEFICIENCIA_VISUAL", "Deficiência visual"),
-                OfertaTipoDeficiencia.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "DEFICIENCIA_AUDITIVA", "Deficiência auditiva"),
+            tiposDeficiencia: Ordem<DeficienciaAtendida>([
+                DeficienciaAtendida.Criar(new Guid("1111aaaa-0000-4000-8000-000000000001"), "DEFICIENCIA_VISUAL", "Deficiência visual"),
+                DeficienciaAtendida.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "DEFICIENCIA_AUDITIVA", "Deficiência auditiva"),
             ], permutar)).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
     private static void DefinirBonusRegional(ProcessoSeletivo processo) =>

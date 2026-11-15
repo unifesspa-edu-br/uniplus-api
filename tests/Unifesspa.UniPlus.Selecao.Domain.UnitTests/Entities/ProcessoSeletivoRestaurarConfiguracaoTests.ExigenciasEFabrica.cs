@@ -101,7 +101,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 
         GrafoConfiguracao grafoCongelado = new(
             etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
-            ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+            atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
             bonusRegional: null,
             criteriosDesempate: [],
@@ -146,7 +146,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         processo.DefinirEtapas([
             EtapaProcesso.Reidratar(EtapaOriginal, "Prova Original", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL"),
         ], PrecondicaoIfMatch.Ausente);
-        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirDistribuicaoVagas([Distribuicao()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         processo.DefinirClassificacao(Classificacao([]), PrecondicaoIfMatch.Ausente);
 
@@ -193,7 +193,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 
     private static GrafoConfiguracao GrafoComBonus(ConfiguracaoBonusRegional bonus) => new(
         etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
-        ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+        atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
         distribuicaoVagas: [Distribuicao()],
         bonusRegional: bonus,
         criteriosDesempate: [],
@@ -214,7 +214,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         IReadOnlyList<FatoColetado>? fatosColetados = null,
         int? numeroDeOpcoesDeCurso = 1) => new(
             etapas: etapas ?? [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
-            ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+            atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
             bonusRegional: null,
             criteriosDesempate: criterios ?? [],
@@ -235,7 +235,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     private static GrafoConfiguracao GrafoComArvore(
         FaseCronograma fase, IReadOnlyList<DocumentoExigido> documentosExigidos, IReadOnlyList<NoExigencia> nosExigencia) => new(
             etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
-            ofertaAtendimento: OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+            atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
             bonusRegional: null,
             criteriosDesempate: [],
@@ -332,7 +332,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         internal static Estado De(ProcessoSeletivo processo) => new(
             processo.Status,
             [.. processo.Etapas.Select(e => (e.Id, e.Nome, e.Peso, e.Ordem)).OrderBy(e => e.Id)],
-            processo.OfertaAtendimento!.Condicoes.Count,
+            processo.AtendimentoEspecializado!.Condicoes.Count,
             [.. processo.DistribuicaoVagas
                 .Select(d => (d.OfertaCursoOrigemId, d.VoBase, d.Pr, d.Modalidades.Count))
                 .OrderBy(d => d.OfertaCursoOrigemId)],

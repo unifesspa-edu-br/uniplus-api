@@ -306,7 +306,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         (IReadOnlyList<DocumentoExigido> documentos, IReadOnlyList<NoExigencia> nos) =
             exigencias?.Invoke(processoBase) ?? ([.. processoBase.DocumentosExigidos], []);
         GrafoConfiguracao grafo = new(
-            [.. processoBase.Etapas], processoBase.OfertaAtendimento!, [.. processoBase.DistribuicaoVagas],
+            [.. processoBase.Etapas], processoBase.AtendimentoEspecializado!, [.. processoBase.DistribuicaoVagas],
             processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
             [.. processoBase.CronogramaFases], documentos, nos, null,
             fatosColetados: [.. processoBase.FatosColetados],

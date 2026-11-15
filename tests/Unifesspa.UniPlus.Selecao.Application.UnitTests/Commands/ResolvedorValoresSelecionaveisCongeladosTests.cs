@@ -182,7 +182,7 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     public void Resolver_CondicaoAtendimentoSemOferta_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirItens(
             [FatoColetado.Criar("CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
@@ -204,9 +204,9 @@ public sealed class ResolvedorValoresSelecionaveisCongeladosTests
     public void Resolver_CondicaoAtendimentoComOferta_Aceita()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar(
-                [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")], [], []).Value!,
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar(
+                [CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")], [], []).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirItens(
             [FatoColetado.Criar("CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],

@@ -8,9 +8,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-public sealed class OfertaAtendimentoEspecializadoConfiguration : IEntityTypeConfiguration<OfertaAtendimentoEspecializado>
+public sealed class AtendimentoEspecializadoConfiguration : IEntityTypeConfiguration<AtendimentoEspecializado>
 {
-    public void Configure(EntityTypeBuilder<OfertaAtendimentoEspecializado> builder)
+    public void Configure(EntityTypeBuilder<AtendimentoEspecializado> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 
@@ -28,17 +28,20 @@ public sealed class OfertaAtendimentoEspecializadoConfiguration : IEntityTypeCon
 
         builder.HasMany(o => o.Condicoes)
             .WithOne()
-            .HasForeignKey(c => c.OfertaAtendimentoEspecializadoId)
+            .HasForeignKey(c => c.AtendimentoEspecializadoId)
+            .HasConstraintName("fk_condicoes_ofertadas_atendimento_especializado")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(o => o.Recursos)
             .WithOne()
-            .HasForeignKey(r => r.OfertaAtendimentoEspecializadoId)
+            .HasForeignKey(r => r.AtendimentoEspecializadoId)
+            .HasConstraintName("fk_recursos_ofertados_atendimento_especializado")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(o => o.TiposDeficiencia)
             .WithOne()
-            .HasForeignKey(t => t.OfertaAtendimentoEspecializadoId)
+            .HasForeignKey(t => t.AtendimentoEspecializadoId)
+            .HasConstraintName("fk_deficiencias_atendidas_atendimento_especializado")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Navigation(o => o.Condicoes)

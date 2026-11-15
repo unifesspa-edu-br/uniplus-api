@@ -116,11 +116,11 @@ public sealed class ValoresSelecionaveisResolverTests
         // teste — a oferta é o que o processo já tem congelado por snapshot-copy): LACTANTE e
         // PCD, deliberadamente fora de ordem alfabética na oferta, para provar que é o CÓDIGO —
         // não a ordem de inserção na oferta — que decide a posição.
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar(
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar(
                 condicoes: [
-                    OfertaCondicao.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante"),
-                    OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência"),
+                    CondicaoOfertada.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante"),
+                    CondicaoOfertada.Criar(Guid.CreateVersion7(), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência"),
                 ],
                 recursos: [],
                 tiposDeficiencia: []).Value!,
@@ -150,7 +150,7 @@ public sealed class ValoresSelecionaveisResolverTests
         valores.Should().NotBeNull();
         valores!.Should().HaveCount(2, "o processo oferta exatamente 2 das 3 condições — nunca uma terceira inventada");
         valores.Select(static v => v.Codigo).Should().Equal(
-            ["LACTANTE", OfertaAtendimentoEspecializado.CodigoCondicaoPcd],
+            ["LACTANTE", AtendimentoEspecializado.CodigoCondicaoPcd],
             "ordenado por CondicaoCodigo ordinal — 'LACTANTE' antecede 'PCD' alfabeticamente, mesmo tendo sido " +
             "inserido ANTES na oferta (a ordem de inserção não decide nada aqui)");
         valores.Select(static v => v.Ordem).Should().Equal([0, 1], "numerado 0..n-1 pela projeção, D3");
@@ -163,11 +163,11 @@ public sealed class ValoresSelecionaveisResolverTests
         // código. Remover "LACTANTE" republicando só com PCD e SABATISTA tem de preservar a
         // ordem RELATIVA entre elas (PCD antes de SABATISTA), renumerando 0..1.
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar(
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar(
                 condicoes: [
-                    OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência"),
-                    OfertaCondicao.Criar(Guid.CreateVersion7(), "SABATISTA", "Sabatista"),
+                    CondicaoOfertada.Criar(Guid.CreateVersion7(), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência"),
+                    CondicaoOfertada.Criar(Guid.CreateVersion7(), "SABATISTA", "Sabatista"),
                 ],
                 recursos: [],
                 tiposDeficiencia: []).Value!,
@@ -193,7 +193,7 @@ public sealed class ValoresSelecionaveisResolverTests
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
         entradaCapturada!.ValoresSelecionaveisCongelados!["CONDICAO_ATENDIMENTO"]!
             .Select(static v => v.Codigo).Should().Equal(
-                [OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "SABATISTA"],
+                [AtendimentoEspecializado.CodigoCondicaoPcd, "SABATISTA"],
                 "'PCD' continua antes de 'SABATISTA' — a mesma ordem relativa de quando LACTANTE também existia");
     }
 

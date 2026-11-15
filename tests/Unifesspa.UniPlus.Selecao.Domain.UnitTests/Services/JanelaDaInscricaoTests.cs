@@ -47,7 +47,7 @@ public sealed class JanelaDaInscricaoTests
         DadosEdital.Criar("01/2026", de, ate, Guid.CreateVersion7()).Value!;
 
     private static GrafoConfiguracao Grafo(ProcessoSeletivo processo) => new(
-        [], OfertaAtendimentoEspecializado.Criar([], [], []).Value!, [], null, [],
+        [], AtendimentoEspecializado.Criar([], [], []).Value!, [], null, [],
         VersoesPublicadasDeTeste.DoProcesso(processo).Classificacao, [.. processo.CronogramaFases], [], [], null,
         formularios: [.. processo.Formularios],
         localidade: processo.Localidade,

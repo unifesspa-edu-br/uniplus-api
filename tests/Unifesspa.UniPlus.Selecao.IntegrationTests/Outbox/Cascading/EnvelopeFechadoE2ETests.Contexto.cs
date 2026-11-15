@@ -62,10 +62,10 @@ public sealed partial class EnvelopeFechadoE2ETests
         public Task<HttpResponseMessage> PutEtapasAsync(object[] etapas, string? ifMatch) =>
             EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/etapas", etapas, ifMatch);
 
-        public Task<HttpResponseMessage> PutOfertaAtendimentoAsync(
+        public Task<HttpResponseMessage> PutAtendimentoEspecializadoAsync(
             IReadOnlyList<Guid> condicaoIds, IReadOnlyList<Guid> recursoIds, IReadOnlyList<Guid> tipoDeficienciaIds) =>
             EnviarAsync(
-                HttpMethod.Put, $"{Rota}/{ProcessoId}/oferta-atendimento",
+                HttpMethod.Put, $"{Rota}/{ProcessoId}/atendimento-especializado",
                 new { condicaoIds, recursoIds, tipoDeficienciaIds }, ifMatch: null);
 
         public Task<HttpResponseMessage> PutDistribuicaoVagasAsync()

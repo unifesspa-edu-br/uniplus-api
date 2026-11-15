@@ -61,7 +61,7 @@ public sealed class DocumentosDaInscricaoCommandHandlersTests
         NoExigencia folhaCertidao = NoExigencia.CriarFolha(_certidao, 1, repetePorEntidade: Grupo).Value!;
         NoExigencia folhaOutraFase = NoExigencia.CriarFolha(_deOutraFase, 2).Value!;
         GrafoConfiguracao grafo = new(
-            conforme.Etapas, conforme.OfertaAtendimento, conforme.DistribuicaoVagas, conforme.BonusRegional, conforme.CriteriosDesempate,
+            conforme.Etapas, conforme.AtendimentoEspecializado, conforme.DistribuicaoVagas, conforme.BonusRegional, conforme.CriteriosDesempate,
             conforme.Classificacao, [faseDaInscricao, outraFase], [_laudo, _certidao, _deOutraFase], [folhaLaudo, folhaCertidao, folhaOutraFase], null,
             fatosColetados: conforme.FatosColetados, formularios: conforme.Formularios, gruposColetados: conforme.GruposColetados,
             numeroDeOpcoesDeCurso: 1);

@@ -19,7 +19,7 @@ internal sealed record BlocosDaConfiguracao
 
     public required IReadOnlyList<ConfiguracaoDistribuicaoVagas> Distribuicao { get; init; }
 
-    public required OfertaAtendimentoEspecializado? Atendimento { get; init; }
+    public required AtendimentoEspecializado? Atendimento { get; init; }
 
     public required ConfiguracaoBonusRegional? Bonus { get; init; }
 

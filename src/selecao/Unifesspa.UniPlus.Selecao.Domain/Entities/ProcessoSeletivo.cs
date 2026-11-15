@@ -107,10 +107,10 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
 
     private readonly List<OpcaoDeclaradaFato> _opcoesDeclaradas = [];
 
-    /// <summary>As opções que o processo declara para os fatos de fonte do processo; as do atendimento especializado vêm da oferta.</summary>
+    /// <summary>As opções que o processo declara para os fatos de fonte do processo; as do atendimento especializado vêm dele.</summary>
     public IReadOnlyCollection<OpcaoDeclaradaFato> OpcoesDeclaradas => _opcoesDeclaradas.AsReadOnly();
 
-    /// <summary>As opções do processo para o fato: as da oferta de atendimento, quando ela gere o fato, ou as declaradas.</summary>
+    /// <summary>As opções do processo para o fato: as do atendimento especializado, quando ele gere o fato, ou as declaradas.</summary>
     public IReadOnlyList<OpcaoDoProcesso> OpcoesDoProcesso(string fatoCodigo) =>
         RegrasDasOpcoesDeclaradas.OpcoesDoProcesso(EstadoDaConfiguracao.De(this), fatoCodigo);
 
@@ -151,7 +151,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>Âncora que resolve FAIXA_ETARIA; sem ela nenhum gatilho por idade pode existir.</summary>
     public ReferenciaTemporalFatos? ReferenciaTemporalFatos { get; private set; }
 
-    public OfertaAtendimentoEspecializado? OfertaAtendimento { get; private set; }
+    public AtendimentoEspecializado? AtendimentoEspecializado { get; private set; }
 
     private readonly List<ConfiguracaoDistribuicaoVagas> _distribuicaoVagas = [];
     public IReadOnlyCollection<ConfiguracaoDistribuicaoVagas> DistribuicaoVagas => _distribuicaoVagas.AsReadOnly();
@@ -226,14 +226,14 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
             novas => Substituir(_etapas, novas));
     }
 
-    /// <summary>Define a oferta de atendimento especializado, sem deixar de fora um código que uma condição viva ainda cita.</summary>
-    public Result DefinirOfertaAtendimento(OfertaAtendimentoEspecializado oferta, PrecondicaoIfMatch precondicao)
+    /// <summary>Define o atendimento especializado, sem deixar de fora um código que uma condição viva ainda cita.</summary>
+    public Result DefinirAtendimentoEspecializado(AtendimentoEspecializado atendimento, PrecondicaoIfMatch precondicao)
     {
-        ArgumentNullException.ThrowIfNull(oferta);
+        ArgumentNullException.ThrowIfNull(atendimento);
 
         return Editar(precondicao,
-            () => RegrasDaOfertaDeAtendimento.Recusa(EstadoDaConfiguracao.De(this), oferta).Com(oferta),
-            nova => OfertaAtendimento = Vincular(nova));
+            () => RegrasDoAtendimentoEspecializado.Recusa(EstadoDaConfiguracao.De(this), atendimento).Com(atendimento),
+            nova => AtendimentoEspecializado = Vincular(nova));
     }
 
     /// <summary>Substitui a distribuição de vagas: uma configuração por oferta de curso, sem repetir a oferta.</summary>
@@ -595,7 +595,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <summary>A localidade é a única reposição condicional: o grafo que não a traz (anterior à declaração) não apaga a viva.</summary>
     private void AplicarEscalares(GrafoConfiguracao grafo, ReferenciaTemporalFatos? referenciaTemporal)
     {
-        OfertaAtendimento = Vincular(grafo.OfertaAtendimento);
+        AtendimentoEspecializado = Vincular(grafo.AtendimentoEspecializado);
         BonusRegional = Vincular(grafo.BonusRegional);
         AplicaBonusRegional = grafo.BonusRegional is not null;
         NumeroDeOpcoesDeCurso = grafo.NumeroDeOpcoesDeCurso;

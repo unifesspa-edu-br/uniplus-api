@@ -29,25 +29,25 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-internal static class RegrasDaOfertaDeAtendimento
+internal static class RegrasDoAtendimentoEspecializado
 {
     // Condição e recurso são citados por código, não por Guid: só recusa se o novo conjunto de
-    // ofertas deixar de conter um código hoje referenciado por condição viva.
-    internal static DomainError? Recusa(EstadoDaConfiguracao estado, OfertaAtendimentoEspecializado oferta)
+    // condições e recursos ofertados deixar de conter um código hoje referenciado por condição viva.
+    internal static DomainError? Recusa(EstadoDaConfiguracao estado, AtendimentoEspecializado atendimento)
     {
-        HashSet<string> novosCodigos = [.. oferta.Condicoes.Select(c => c.CondicaoCodigo)];
-        if (ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, OfertaAtendimentoEspecializado.FatoCondicaoAtendimento, novosCodigos))
+        HashSet<string> novosCodigos = [.. atendimento.Condicoes.Select(c => c.CondicaoCodigo)];
+        if (ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, AtendimentoEspecializado.FatoCondicaoAtendimento, novosCodigos))
         {
             return new DomainError(
                 "ProcessoSeletivo.CondicaoAtendimentoReferenciadaPorExigenciaViva",
-                "Existe condição de gatilho documental referenciando um código de condição de atendimento que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a oferta de atendimento.");
+                "Existe condição de gatilho documental referenciando um código de condição de atendimento que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir o atendimento especializado.");
         }
 
-        HashSet<string> novosRecursos = [.. oferta.Recursos.Select(static r => r.RecursoCodigo)];
-        return ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, OfertaAtendimentoEspecializado.FatoRecursoAcessibilidade, novosRecursos)
+        HashSet<string> novosRecursos = [.. atendimento.Recursos.Select(static r => r.RecursoCodigo)];
+        return ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, AtendimentoEspecializado.FatoRecursoAcessibilidade, novosRecursos)
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.RecursoAcessibilidadeReferenciadoPorCondicaoViva,
-                "Existe condição referenciando um código de recurso de acessibilidade que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir a oferta de atendimento.")
+                "Existe condição referenciando um código de recurso de acessibilidade que deixaria de ser ofertado — ajuste ou remova a condição antes de redefinir o atendimento especializado.")
             : null;
     }
 }

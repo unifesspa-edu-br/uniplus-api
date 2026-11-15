@@ -216,7 +216,7 @@ public sealed class AbrirRetificacaoCommandHandlerTests
         private static EnvelopeReidratado EnvelopeDaBase(ProcessoSeletivo processo, IdentificadorLegivel? identificadorCongelado) =>
             new(
                 new GrafoConfiguracao(
-                    [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas],
+                    [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas],
                     processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
                     [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
                     identificadorLegivel: identificadorCongelado,

@@ -197,8 +197,8 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
                 peso: 1m, notaMinima: null, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
@@ -252,7 +252,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
             .Include(p => p.Classificacao)
             .Include(p => p.Formularios).ThenInclude(f => f.Etapas)
             .Include(p => p.Campos).ThenInclude(f => f.Precondicoes)
-            .Include(p => p.OfertaAtendimento)
+            .Include(p => p.AtendimentoEspecializado)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
             .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)

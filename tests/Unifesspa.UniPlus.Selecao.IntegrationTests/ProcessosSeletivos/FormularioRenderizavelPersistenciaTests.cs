@@ -108,8 +108,8 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
             EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
@@ -241,7 +241,7 @@ public sealed class FormularioRenderizavelPersistenciaTests : IClassFixture<Proc
         // interpreta é o que a configuração declarou.
         EnvelopeReidratado vivo = new(
             new GrafoConfiguracao(
-                [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas], processo.BonusRegional,
+                [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas], processo.BonusRegional,
                 [.. processo.CriteriosDesempate], processo.Classificacao!, [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
                 fatosColetados: [.. processo.FatosColetados], regrasDerivacao: [.. processo.RegrasDerivacao], formularios: [.. processo.Formularios],
                 termosExigidos: [.. processo.TermosExigidos], gruposColetados: [.. processo.GruposColetados],

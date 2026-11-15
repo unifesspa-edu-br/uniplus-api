@@ -18,11 +18,11 @@ public static class RegrasDasOpcoesDeclaradas
     {
         ArgumentNullException.ThrowIfNull(estado);
 
-        if (OfertaAtendimentoEspecializado.GereOpcoesDoFato(fato))
+        if (AtendimentoEspecializado.GereOpcoesDoFato(fato))
         {
             return new DomainError(
-                OpcaoDeclaradaFatoErrorCodes.GeridasPelaOfertaDeAtendimento,
-                "As opções deste fato vêm da oferta de atendimento especializado; defina-as na oferta.");
+                OpcaoDeclaradaFatoErrorCodes.GeridasPeloAtendimentoEspecializado,
+                "As opções deste fato vêm do atendimento especializado; defina-as nele.");
         }
 
         // A edição do ENEM só tem sentido quando a classificação lê notas do ENEM do candidato.
@@ -56,11 +56,11 @@ public static class RegrasDasOpcoesDeclaradas
         ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, fato, codigos)
         || (agregadosDoFato ?? []).Any(agregado => ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, agregado, codigos));
 
-    /// <summary>A origem das opções de um campo coletado: a copiada do catálogo, salvo condição e recurso de atendimento, que são sempre do processo porque a oferta é a dona deles.</summary>
+    /// <summary>A origem das opções de um campo coletado: a copiada do catálogo, salvo condição e recurso de atendimento, que são sempre do processo porque o atendimento especializado é o dono deles.</summary>
     public static OrigemValoresColeta OrigemDasOpcoes(FatoColetado fato)
     {
         ArgumentNullException.ThrowIfNull(fato);
-        return OfertaAtendimentoEspecializado.ImpoeOrigemDoFato(fato.FatoCodigo)
+        return AtendimentoEspecializado.ImpoeOrigemDoFato(fato.FatoCodigo)
             ? OrigemValoresColeta.OpcoesDoProcesso
             : fato.OrigemValores;
     }
@@ -70,9 +70,9 @@ public static class RegrasDasOpcoesDeclaradas
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
 
-        if (OfertaAtendimentoEspecializado.GereOpcoesDoFato(fatoCodigo))
+        if (AtendimentoEspecializado.GereOpcoesDoFato(fatoCodigo))
         {
-            return estado.OfertaAtendimento?.OpcoesDoFato(fatoCodigo) ?? [];
+            return estado.AtendimentoEspecializado?.OpcoesDoFato(fatoCodigo) ?? [];
         }
 
         return [.. estado.OpcoesDeclaradas

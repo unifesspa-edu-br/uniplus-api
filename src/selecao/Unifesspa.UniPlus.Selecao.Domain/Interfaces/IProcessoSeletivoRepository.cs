@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Repositório único do agregado <see cref="ProcessoSeletivo"/>: carrega e
 /// persiste a raiz com as entidades de configuração já modeladas (etapas e
-/// oferta de atendimento especializado; as demais dimensões entram nas fatias
+/// atendimento especializado; as demais dimensões entram nas fatias
 /// seguintes). Nenhuma entidade filha tem repositório próprio.
 /// </summary>
 public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>

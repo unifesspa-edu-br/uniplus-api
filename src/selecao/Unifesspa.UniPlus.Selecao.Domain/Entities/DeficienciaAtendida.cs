@@ -6,15 +6,15 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 /// Tipo de deficiência ofertado pelo processo, congelado por snapshot-copy
 /// (ADR-0061) do cadastro de <c>TipoDeficiencia</c> do módulo Configuração.
 /// Só pode existir quando a condição PcD está ofertada (ADR-0067) — invariante
-/// garantida em <see cref="OfertaAtendimentoEspecializado.Criar"/>.
+/// garantida em <see cref="AtendimentoEspecializado.Criar"/>.
 /// </summary>
 /// <remarks>
 /// <see cref="EntityBase"/> puro (sem soft-delete): ver justificativa em
 /// <see cref="EtapaProcesso"/>.
 /// </remarks>
-public sealed class OfertaTipoDeficiencia : EntityBase
+public sealed class DeficienciaAtendida : EntityBase
 {
-    public Guid OfertaAtendimentoEspecializadoId { get; private set; }
+    public Guid AtendimentoEspecializadoId { get; private set; }
     public Guid TipoDeficienciaOrigemId { get; private set; }
 
     /// <summary>
@@ -27,9 +27,9 @@ public sealed class OfertaTipoDeficiencia : EntityBase
 
     public string TipoDeficienciaNome { get; private set; } = string.Empty;
 
-    private OfertaTipoDeficiencia() { }
+    private DeficienciaAtendida() { }
 
-    public static OfertaTipoDeficiencia Criar(
+    public static DeficienciaAtendida Criar(
         Guid tipoDeficienciaOrigemId,
         string tipoDeficienciaCodigo,
         string tipoDeficienciaNome)
@@ -41,7 +41,7 @@ public sealed class OfertaTipoDeficiencia : EntityBase
             throw new ArgumentException("TipoDeficienciaOrigemId não pode ser Guid vazio.", nameof(tipoDeficienciaOrigemId));
         }
 
-        return new OfertaTipoDeficiencia
+        return new DeficienciaAtendida
         {
             TipoDeficienciaOrigemId = tipoDeficienciaOrigemId,
             TipoDeficienciaCodigo = tipoDeficienciaCodigo.Trim(),
@@ -49,6 +49,6 @@ public sealed class OfertaTipoDeficiencia : EntityBase
         };
     }
 
-    internal void VincularOferta(Guid ofertaAtendimentoEspecializadoId) =>
-        OfertaAtendimentoEspecializadoId = ofertaAtendimentoEspecializadoId;
+    internal void VincularAtendimentoEspecializado(Guid atendimentoEspecializadoId) =>
+        AtendimentoEspecializadoId = atendimentoEspecializadoId;
 }

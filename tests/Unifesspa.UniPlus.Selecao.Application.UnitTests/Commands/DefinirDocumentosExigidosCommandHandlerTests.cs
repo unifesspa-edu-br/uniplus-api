@@ -526,7 +526,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        // Processo NÃO oferece atendimento especializado — OfertaAtendimento nulo.
+        // Processo NÃO oferece atendimento especializado — AtendimentoEspecializado nulo.
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -608,7 +608,7 @@ public sealed class DefinirDocumentosExigidosCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        // Processo NÃO oferece atendimento especializado — OfertaAtendimento nulo.
+        // Processo NÃO oferece atendimento especializado — AtendimentoEspecializado nulo.
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();

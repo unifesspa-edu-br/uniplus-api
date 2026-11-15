@@ -293,7 +293,7 @@ main() {
     cadastrar_pesos_por_area
     criar_processo
     definir_algoritmo_contagem_prazo
-    definir_oferta_atendimento
+    definir_atendimento_especializado
     definir_distribuicao_vagas
     definir_opcoes_de_curso
     definir_cascata_remanejamento

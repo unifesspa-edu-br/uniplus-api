@@ -225,7 +225,7 @@ public sealed class IniciarInscricaoCommandHandlerTests
             FinalidadeFormulario.Inscricao).Value!;
 
         GrafoConfiguracao grafo = new(
-            [.. processoBase.Etapas], processoBase.OfertaAtendimento!, [.. processoBase.DistribuicaoVagas],
+            [.. processoBase.Etapas], processoBase.AtendimentoEspecializado!, [.. processoBase.DistribuicaoVagas],
             processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
             [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null,
             fatosColetados:

@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <summary>
 /// Resolve as condições de gatilho de uma folha. Monta uma <see cref="CondicaoDnf"/> por linha, agrupa em
 /// <see cref="PredicadoDnf"/> para validar fato no vocabulário fechado, operador contra domínio e valor
-/// contra domínio — estático ou dinâmico, contra a oferta do processo — e só então converte para as
+/// contra domínio — estático ou dinâmico, contra o atendimento especializado do processo — e só então converte para as
 /// entidades <see cref="CondicaoGatilho"/> que o domínio persiste.
 /// </summary>
 internal static class ConferenciaDasCondicoesDaExigencia

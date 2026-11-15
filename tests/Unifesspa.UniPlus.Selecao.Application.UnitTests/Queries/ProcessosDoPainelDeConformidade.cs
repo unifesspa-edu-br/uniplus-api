@@ -61,7 +61,7 @@ internal static class ProcessosDoPainelDeConformidade
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS 2026 — Falso Verde", OrigemCandidatos.InscricaoPropria);
         processo.DefinirEtapas([], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
             "Story #851 §3.5: lista vazia é estado válido sob CLASSIFICACAO-IMPORTADA — sem etapa, não precisamos de fase que agrupe etapas");
-        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas([DistribuicaoComAmpla()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirCronogramaFases([FaseQueProduzResultadoSemColetarInscricao()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -75,7 +75,7 @@ internal static class ProcessosDoPainelDeConformidade
     public static ProcessoSeletivo ComTodosOsItensObrigatorios()
     {
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS 2026 — SiSU", OrigemCandidatos.InscricaoPropria);
-        processo.DefinirOfertaAtendimento(OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirDistribuicaoVagas([DistribuicaoComAmpla()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         processo.DefinirClassificacao(ClassificacaoPorMediaPonderada(), PrecondicaoIfMatch.Ausente);
         processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente);

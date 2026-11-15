@@ -305,10 +305,10 @@ public static class AvaliadorConformidadeLegal
             return (true, null, null);
         }
 
-        // O código congelado na oferta, não o da regra: uma exigência CONDICIONAL guarda a
+        // O código congelado no atendimento especializado, não o da regra: uma exigência CONDICIONAL guarda a
         // condição com o código que valia quando foi configurada, e alimentar o fato com o
         // código novo da regra faria a cláusula não casar — reprovando exatamente o processo
-        // conforme cuja renomeação esta avaliação passou a acomodar. Ofertas congeladas em
+        // conforme cuja renomeação esta avaliação passou a acomodar. Atendimentos congelados em
         // momentos diferentes podem carregar códigos diferentes para a mesma identidade;
         // basta uma cobrir.
         string[] codigosCongelados = [.. processo.DistribuicaoVagas
@@ -396,12 +396,12 @@ public static class AvaliadorConformidadeLegal
         IdentidadesDeCadastro identidades,
         AtendimentoDisponivel predicado)
     {
-        if (processo.OfertaAtendimento is null)
+        if (processo.AtendimentoEspecializado is null)
         {
-            return (false, "nenhuma oferta de atendimento especializado cadastrada", null);
+            return (false, "nenhum atendimento especializado cadastrado", null);
         }
 
-        IReadOnlyCollection<OfertaTipoDeficiencia> ofertados = processo.OfertaAtendimento.TiposDeficiencia;
+        IReadOnlyCollection<DeficienciaAtendida> ofertados = processo.AtendimentoEspecializado.TiposDeficiencia;
         List<string> ausentes = [];
         List<string> reatribuidos = [];
 

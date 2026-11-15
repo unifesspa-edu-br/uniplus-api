@@ -30,7 +30,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Os modelos de inscrição (com e sem prova) e de habilitação do PSR, semeados pela migration da
-/// Configuração, são aplicados a um processo PSR em rascunho, com bônus regional, a oferta de
+/// Configuração, são aplicados a um processo PSR em rascunho, com bônus regional, o
 /// atendimento especializado e cota da lei ofertada, pelo passo Formulários, sem recusa.
 /// </summary>
 [Collection(CascadingCollection.Name)]
@@ -42,7 +42,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
 
     public AplicarModelosPsrMedicina2027Tests(CascadingFixture fixture) => _fixture = fixture;
 
-    [Fact(DisplayName = "A inscrição com prova e a habilitação são aplicadas ao processo PSR com bônus regional e oferta de atendimento, com os municípios do bônus, o atendimento especializado, os documentos dele e a composição familiar")]
+    [Fact(DisplayName = "A inscrição com prova e a habilitação são aplicadas ao processo PSR com bônus regional e atendimento especializado, com os municípios do bônus, as condições e os recursos, os documentos dele e a composição familiar")]
     public async Task ModelosComProva_SaoAplicadosAoProcessoPsr()
     {
         ProcessoSeletivo processo = await AplicarInscricaoEHabilitacaoAsync(SementePsrMedicina2027.ModeloDeInscricaoComProva);
@@ -82,8 +82,8 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         processo.Campos.Select(static c => c.FatoCodigo).Should().Contain("TIPO_DEFICIENCIA");
     }
 
-    [Fact(DisplayName = "No processo sem prova e sem oferta de atendimento, o tipo de deficiência da inscrição oferece os tipos ativos do cadastro")]
-    public async Task ModeloSemProva_SemOfertaDeAtendimento_TipoDeficienciaOfereceOsTiposDoCadastro()
+    [Fact(DisplayName = "No processo sem prova e sem atendimento especializado, o tipo de deficiência da inscrição oferece os tipos ativos do cadastro")]
+    public async Task ModeloSemProva_SemAtendimentoEspecializado_TipoDeficienciaOfereceOsTiposDoCadastro()
     {
         string prefixo = $"DEF_{Guid.NewGuid().ToString("N")[..10].ToUpperInvariant()}";
         TipoDeficiencia ativo = TipoDeficiencia.Criar($"{prefixo}_ATIVO", "Tipo ativo", "Descrição de teste").Value!;
@@ -100,7 +100,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         try
         {
             ProcessoSeletivo processo = await AplicarInscricaoEHabilitacaoAsync(SementePsrMedicina2027.ModeloDeInscricaoSemProva, ofertarAtendimento: false);
-            processo.OfertaAtendimento.Should().BeNull();
+            processo.AtendimentoEspecializado.Should().BeNull();
 
             string[] tiposAtivos;
             await using (AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope())
@@ -165,7 +165,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
 
     /// <summary>
     /// O bônus regional com um município, de onde o campo do município do bônus tira as opções; a
-    /// oferta de atendimento com a condição fora da lista, cuja escolha a inscrição cita para pedir a
+    /// atendimento especializado com a condição fora da lista, cuja escolha a inscrição cita para pedir a
     /// descrição, uma condição que o modelo não conhece, a lactante, a pessoa idosa e um recurso; e uma cota da lei ofertada, porque a inscrição pergunta pela opção
     /// pelas cotas.
     /// </summary>
@@ -192,14 +192,14 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         Result definido = processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
 
-        OfertaAtendimentoEspecializado oferta = OfertaAtendimentoEspecializado.Criar(
+        AtendimentoEspecializado atendimento = AtendimentoEspecializado.Criar(
             [
-                OfertaCondicao.Criar(Guid.CreateVersion7(), SementePsrMedicina2027.CondicaoForaDaLista, "Outra condição específica"),
-                OfertaCondicao.Criar(Guid.CreateVersion7(), "VISAO_MONOCULAR", "Visão monocular"),
-                OfertaCondicao.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante"),
-                OfertaCondicao.Criar(Guid.CreateVersion7(), "PESSOA_IDOSA", "Pessoa idosa"),
+                CondicaoOfertada.Criar(Guid.CreateVersion7(), SementePsrMedicina2027.CondicaoForaDaLista, "Outra condição específica"),
+                CondicaoOfertada.Criar(Guid.CreateVersion7(), "VISAO_MONOCULAR", "Visão monocular"),
+                CondicaoOfertada.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante"),
+                CondicaoOfertada.Criar(Guid.CreateVersion7(), "PESSOA_IDOSA", "Pessoa idosa"),
             ],
-            [OfertaRecurso.Criar(Guid.CreateVersion7(), "SALA_DE_FACIL_ACESSO", "Sala de fácil acesso")],
+            [RecursoOfertado.Criar(Guid.CreateVersion7(), "SALA_DE_FACIL_ACESSO", "Sala de fácil acesso")],
             []).Value!;
         // A classificação pelas notas do ENEM e a edição que a inscrição pergunta: sem ela o formulário
         // não teria o que oferecer.
@@ -218,7 +218,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
 
         if (ofertarAtendimento)
         {
-            Result ofertada = processo.DefinirOfertaAtendimento(oferta, PrecondicaoIfMatch.Ausente);
+            Result ofertada = processo.DefinirAtendimentoEspecializado(atendimento, PrecondicaoIfMatch.Ausente);
             ofertada.IsSuccess.Should().BeTrue(ofertada.Error?.Message);
         }
 

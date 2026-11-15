@@ -41,7 +41,7 @@ public static class SelecaoCodegenRegistration
         opts.CodeGeneration.AlwaysUseServiceLocationFor<ArmazenamentoDoCandidato>();
 
         // Readers de reference data cross-módulo (ADR-0056) consumidos pelo
-        // handler de oferta de atendimento especializado (F0). A interface vive
+        // handler de atendimento especializado (F0). A interface vive
         // em Configuracao.Contracts (contrato público), mas o concreto é
         // internal a Configuracao.Infrastructure por design de encapsulamento —
         // o codegen do Wolverine não consegue emitir `new XReader(...)` de um

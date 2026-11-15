@@ -63,7 +63,7 @@ internal sealed class CenarioDoEnemDeTeste
             .. edicoesDivulgadas.Select((e, i) => OpcaoDeclaradaFato.Criar(EdicaoDoEnem.Fato, e, $"ENEM {e}", i + 1).Value!),
         ];
         GrafoConfiguracao grafo = new(
-            [EtapaDoEnem, EtapaSemEnem], modelo.OfertaAtendimento,
+            [EtapaDoEnem, EtapaSemEnem], modelo.AtendimentoEspecializado,
             [
                 ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(grupoAreaEnem: ("TECNOLOGICA", "Tecnológica"), ofertaCursoOrigemId: OfertaTecnologica),
                 ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(grupoAreaEnem: ("HUMANISTICA_I", "Humanística I"), ofertaCursoOrigemId: OfertaHumanistica),

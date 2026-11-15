@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do agregado
 /// <c>ProcessoSeletivo</c> na fatia F0 (fundação): persiste e recarrega a raiz
-/// com etapas pontuadas e a oferta de atendimento especializado (3 níveis),
+/// com etapas pontuadas e o atendimento especializado (3 níveis),
 /// validando o mapeamento EF (HasMany/HasOne + FK, sem owned types) e a
 /// migration aplicando limpo contra Postgres real.
 /// </summary>
@@ -54,12 +54,12 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
         ], PrecondicaoIfMatch.Ausente);
         etapasResult.IsSuccess.Should().BeTrue();
 
-        Result<OfertaAtendimentoEspecializado> ofertaResult = OfertaAtendimentoEspecializado.Criar(
-            condicoes: [OfertaCondicao.Criar(condicaoOrigemId, "PCD", "Pessoa com deficiência")],
-            recursos: [OfertaRecurso.Criar(recursoOrigemId, "LEDOR", "Ledor")],
-            tiposDeficiencia: [OfertaTipoDeficiencia.Criar(tipoDeficienciaOrigemId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
-        ofertaResult.IsSuccess.Should().BeTrue();
-        processo.DefinirOfertaAtendimento(ofertaResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        Result<AtendimentoEspecializado> atendimentoResult = AtendimentoEspecializado.Criar(
+            condicoes: [CondicaoOfertada.Criar(condicaoOrigemId, "PCD", "Pessoa com deficiência")],
+            recursos: [RecursoOfertado.Criar(recursoOrigemId, "LEDOR", "Ledor")],
+            tiposDeficiencia: [DeficienciaAtendida.Criar(tipoDeficienciaOrigemId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
+        atendimentoResult.IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(atendimentoResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -71,9 +71,9 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
         ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
             .Include(p => p.Etapas)
-            .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Condicoes)
-            .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Recursos)
-            .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.TiposDeficiencia)
+            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.Condicoes)
+            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.Recursos)
+            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.TiposDeficiencia)
             .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
 
         recarregado.Should().NotBeNull();
@@ -91,11 +91,11 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
             e => e.NotaMaxima == null && e.PassoDoLancamento == null
                 && e.FormaDeAvaliacao == null && e.RegraConsolidacao == null);
 
-        recarregado.OfertaAtendimento.Should().NotBeNull();
-        recarregado.OfertaAtendimento!.Condicoes.Single().CondicaoOrigemId.Should().Be(condicaoOrigemId);
-        recarregado.OfertaAtendimento.Recursos.Single().RecursoOrigemId.Should().Be(recursoOrigemId);
-        recarregado.OfertaAtendimento.Recursos.Single().RecursoCodigo.Should().Be("LEDOR");
-        recarregado.OfertaAtendimento.TiposDeficiencia.Single().TipoDeficienciaOrigemId.Should().Be(tipoDeficienciaOrigemId);
+        recarregado.AtendimentoEspecializado.Should().NotBeNull();
+        recarregado.AtendimentoEspecializado!.Condicoes.Single().CondicaoOrigemId.Should().Be(condicaoOrigemId);
+        recarregado.AtendimentoEspecializado.Recursos.Single().RecursoOrigemId.Should().Be(recursoOrigemId);
+        recarregado.AtendimentoEspecializado.Recursos.Single().RecursoCodigo.Should().Be("LEDOR");
+        recarregado.AtendimentoEspecializado.TiposDeficiencia.Single().TipoDeficienciaOrigemId.Should().Be(tipoDeficienciaOrigemId);
     }
 
     [Fact(DisplayName = "Persiste dois processos do mesmo tipo no mesmo DbContext sem compartilhar o owned snapshot")]

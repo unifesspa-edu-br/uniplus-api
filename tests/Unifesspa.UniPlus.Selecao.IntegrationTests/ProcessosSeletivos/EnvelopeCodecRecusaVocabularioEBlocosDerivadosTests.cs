@@ -132,8 +132,8 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
 
     /// <summary>
     /// O código da condição é <b>chave natural</b>: é por ele que a invariante ADR-0067
-    /// reconhece a condição PcD (<c>OfertaAtendimentoEspecializado.CodigoCondicaoPcd</c> —
-    /// <c>"PCD"</c>). O cadastro impõe <c>^[A-Z][A-Z0-9_]{1,49}$</c>; <c>OfertaCondicao.Criar</c>
+    /// reconhece a condição PcD (<c>AtendimentoEspecializado.CodigoCondicaoPcd</c> —
+    /// <c>"PCD"</c>). O cadastro impõe <c>^[A-Z][A-Z0-9_]{1,49}$</c>; <c>CondicaoOfertada.Criar</c>
     /// apenas faz <c>Trim</c>.
     /// </summary>
     [Theory(DisplayName = "Código de condição fora do formato do cadastro é recusado — é CHAVE da invariante PcD")]

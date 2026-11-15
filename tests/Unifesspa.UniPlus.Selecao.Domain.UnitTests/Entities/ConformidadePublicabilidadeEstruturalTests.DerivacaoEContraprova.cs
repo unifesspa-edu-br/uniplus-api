@@ -268,7 +268,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
             "PS Precedência", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
                 "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        // OfertaAtendimento NUNCA definida — Gate 1 (PendenciaDeConformidade) fica pendente.
+        // AtendimentoEspecializado NUNCA definida — Gate 1 (PendenciaDeConformidade) fica pendente.
         processo.DefinirDistribuicaoVagas([DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         // Fase sem coleta de inscrição, com InscricaoPropria — Gate 2 (cronograma) TAMBÉM pendente.

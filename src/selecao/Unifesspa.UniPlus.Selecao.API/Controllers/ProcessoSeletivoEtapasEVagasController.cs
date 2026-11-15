@@ -80,7 +80,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// <summary>
     /// Substitui as opções que o processo declara para um fato cuja fonte dos valores é o
     /// processo — por exemplo, as edições do ENEM aceitas —, congeladas no edital na publicação.
-    /// As opções dos fatos de atendimento especializado vêm da oferta de atendimento.
+    /// As opções dos fatos de atendimento especializado vêm do que o processo define nele.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/fatos/{fatoCodigo}/opcoes")]
@@ -119,12 +119,12 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     }
 
     /// <summary>
-    /// Define (ou substitui) a oferta de atendimento especializado do
+    /// Define (ou substitui) o atendimento especializado do
     /// processo — tipo de deficiência só é aceito sob a condição PcD
     /// (ADR-0067).
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
-    [HttpPut("{id:guid}/oferta-atendimento")]
+    [HttpPut("{id:guid}/atendimento-especializado")]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -133,9 +133,9 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
     [EmiteETag]
-    public async Task<IActionResult> DefinirOfertaAtendimento(
+    public async Task<IActionResult> DefinirAtendimentoEspecializado(
         Guid id,
-        [FromBody] DefinirOfertaAtendimentoRequest request,
+        [FromBody] DefinirAtendimentoEspecializadoRequest request,
         [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
@@ -145,7 +145,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
             return malformada!;
 
         Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirOfertaAtendimentoCommand(id, request.CondicaoIds, request.RecursoIds, request.TipoDeficienciaIds, precondicao),
+            new DefinirAtendimentoEspecializadoCommand(id, request.CondicaoIds, request.RecursoIds, request.TipoDeficienciaIds, precondicao),
             cancellationToken);
         return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
     }

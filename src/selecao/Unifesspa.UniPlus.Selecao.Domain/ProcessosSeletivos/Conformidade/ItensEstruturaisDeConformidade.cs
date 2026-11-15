@@ -25,7 +25,7 @@ internal static class ItensEstruturaisDeConformidade
 
     /// <summary>
     /// As dimensões estruturalmente obrigatórias do agregado, que <see cref="ChecklistDeConformidade.PendenciaDeConformidade"/>
-    /// agrega no <c>DomainError</c> genérico: oferta de atendimento, distribuição de vagas, classificação,
+    /// agrega no <c>DomainError</c> genérico: atendimento especializado, distribuição de vagas, classificação,
     /// cronograma, taxa, base legal das exigências e as declarações do bônus regional e dos critérios de
     /// desempate (obrigatórios só com inscrição própria; com resultado importado a lista já vem classificada).
     /// </summary>
@@ -42,7 +42,7 @@ internal static class ItensEstruturaisDeConformidade
     {
         List<ItemConformidade> itens =
         [
-            new ItemConformidade("atendimento_especializado_ausente", DimensaoConformidade.AtendimentoEspecializado, "Atendimento especializado", estado.OfertaAtendimento is not null),
+            new ItemConformidade("atendimento_especializado_ausente", DimensaoConformidade.AtendimentoEspecializado, "Atendimento especializado", estado.AtendimentoEspecializado is not null),
             new ItemConformidade("distribuicao_vagas_ausente", DimensaoConformidade.DistribuicaoVagas, "Distribuição de vagas", estado.DistribuicaoVagas.Count > 0),
             // O candidato escolhe a oferta pelo nome congelado; a distribuição definida antes de a
             // oferta ser nomeada precisa ser redefinida.

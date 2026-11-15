@@ -305,8 +305,8 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         processo.OpcoesDoProcesso("FATO_OPCAO_DE_TESTE").Should().ContainSingle().Which.Codigo.Should().Be("2025");
     }
 
-    [Theory(DisplayName = "Definir opções declaradas recusa fato da oferta de atendimento, lista vazia e código repetido")]
-    [InlineData("CONDICAO_ATENDIMENTO", 1, "OpcaoDeclaradaFato.GeridasPelaOfertaDeAtendimento")]
+    [Theory(DisplayName = "Definir opções declaradas recusa fato do atendimento especializado, lista vazia e código repetido")]
+    [InlineData("CONDICAO_ATENDIMENTO", 1, "OpcaoDeclaradaFato.GeridasPeloAtendimentoEspecializado")]
     [InlineData("FATO_OPCAO_DE_TESTE", 0, "OpcaoDeclaradaFato.ListaVazia")]
     [InlineData("FATO_OPCAO_DE_TESTE", 2, "OpcaoDeclaradaFato.CodigoRepetido")]
     public void DefinirOpcoesDeclaradas_Recusa(string fato, int quantidade, string codigoEsperado)

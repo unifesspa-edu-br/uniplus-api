@@ -12,7 +12,7 @@ using Xunit;
 /// <summary>
 /// <b>Invariância à permutação</b> (Story #928, §7.5; issue #1087): o envelope canônico depende só
 /// do <b>conteúdo</b> da configuração, nunca da ordem em que as coleções não ordenadas chegam ao
-/// agregado. Permutar a ordem de entrada de etapas, da oferta de atendimento (condições, recursos e
+/// agregado. Permutar a ordem de entrada de etapas, do atendimento especializado (condições, recursos e
 /// tipos de deficiência), distribuição de vagas e ofertas, critérios de desempate, cronograma de
 /// fases (inclusive as bancas requeridas de uma fase), fatos coletados, regras de derivação (a
 /// lista externa, as regras internas de uma configuração e as condições aninhadas de uma regra),
@@ -29,7 +29,7 @@ using Xunit;
 /// <c>IdCanonicoTests</c>); aqui a prova é sobre os <b>bytes do envelope inteiro</b>.
 /// </para>
 /// <para>
-/// <c>ofertaAtendimento</c> (condições/recursos/tipos de deficiência) e
+/// <c>atendimentoEspecializado</c> (condições/recursos/tipos de deficiência) e
 /// <c>cronogramaFases.fases[].bancasRequeridas</c> ordenam pela IDENTIDADE DE ORIGEM do item
 /// (<c>CondicaoOrigemId</c>/<c>RecursoOrigemId</c>/<c>TipoDeficienciaOrigemId</c>/<c>TipoBancaOrigemId</c>)
 /// — a segunda camada da política de ordenação, não a chave de conteúdo (ADR-0109 D9, a terceira e
@@ -84,20 +84,20 @@ public sealed class EnvelopeCanonicoPermutacaoTests
             .Should().NotEqual(permutado.Etapas.SelectMany(static e => e.Produtos).Select(static p => p.Id),
                 "pré-condição: a permutação tem de inverter a ordem de entrada dos produtos da etapa");
 
-        // A oferta de atendimento não tem chave `Ordem` — o encoder ordena as três listas pela
+        // O atendimento especializado não tem chave `Ordem` — o encoder ordena as três listas pela
         // IDENTIDADE DE ORIGEM do item (CondicaoOrigemId/RecursoOrigemId/TipoDeficienciaOrigemId),
         // não pela chave de conteúdo. Sem esta pré-condição, remover o OrderBy de
         // SerializarAtendimento no encoder deixaria a comparação de bytes ao final vazia para as
         // três listas (issue #1087).
-        direto.OfertaAtendimento!.Condicoes.Select(static c => c.CondicaoOrigemId)
-            .Should().NotEqual(permutado.OfertaAtendimento!.Condicoes.Select(static c => c.CondicaoOrigemId),
-                "pré-condição: a permutação tem de inverter a ordem de entrada das condições da oferta de atendimento");
-        direto.OfertaAtendimento!.Recursos.Select(static r => r.RecursoOrigemId)
-            .Should().NotEqual(permutado.OfertaAtendimento!.Recursos.Select(static r => r.RecursoOrigemId),
-                "pré-condição: a permutação tem de inverter a ordem de entrada dos recursos da oferta de atendimento");
-        direto.OfertaAtendimento!.TiposDeficiencia.Select(static t => t.TipoDeficienciaOrigemId)
-            .Should().NotEqual(permutado.OfertaAtendimento!.TiposDeficiencia.Select(static t => t.TipoDeficienciaOrigemId),
-                "pré-condição: a permutação tem de inverter a ordem de entrada dos tipos de deficiência da oferta de atendimento");
+        direto.AtendimentoEspecializado!.Condicoes.Select(static c => c.CondicaoOrigemId)
+            .Should().NotEqual(permutado.AtendimentoEspecializado!.Condicoes.Select(static c => c.CondicaoOrigemId),
+                "pré-condição: a permutação tem de inverter a ordem de entrada das condições do atendimento especializado");
+        direto.AtendimentoEspecializado!.Recursos.Select(static r => r.RecursoOrigemId)
+            .Should().NotEqual(permutado.AtendimentoEspecializado!.Recursos.Select(static r => r.RecursoOrigemId),
+                "pré-condição: a permutação tem de inverter a ordem de entrada dos recursos do atendimento especializado");
+        direto.AtendimentoEspecializado!.TiposDeficiencia.Select(static t => t.TipoDeficienciaOrigemId)
+            .Should().NotEqual(permutado.AtendimentoEspecializado!.TiposDeficiencia.Select(static t => t.TipoDeficienciaOrigemId),
+                "pré-condição: a permutação tem de inverter a ordem de entrada dos tipos de deficiência do atendimento especializado");
 
         direto.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId)
             .Should().NotEqual(permutado.DistribuicaoVagas.Select(static d => d.OfertaCursoOrigemId),
@@ -170,7 +170,7 @@ public sealed class EnvelopeCanonicoPermutacaoTests
         SnapshotCanonico bytesPermutado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(permutado));
 
         bytesPermutado.Bytes.Should().Equal(bytesDireto.Bytes,
-            "o envelope depende só do conteúdo — permutar a ordem de entrada de etapas, oferta de atendimento, " +
+            "o envelope depende só do conteúdo — permutar a ordem de entrada de etapas, atendimento especializado, " +
             "distribuição/ofertas, critérios de desempate, cronograma de fases (inclusive as bancas requeridas " +
             "de uma fase), fatos coletados, regras de derivação (a lista externa, as regras internas de uma " +
             "configuração e as condições aninhadas de uma regra), destinos da cascata e a árvore de satisfação " +

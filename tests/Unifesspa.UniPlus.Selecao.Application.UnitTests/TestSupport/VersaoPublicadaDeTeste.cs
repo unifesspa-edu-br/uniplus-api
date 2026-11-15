@@ -38,7 +38,7 @@ internal static class VersaoPublicadaDeTeste
         VersaoConfiguracao versao = Abrir(processo, repositorio);
         codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
             new GrafoConfiguracao(
-                [.. grafoDe.Etapas], OfertaAtendimentoEspecializado.Criar([], [], []).Value!, [.. grafoDe.DistribuicaoVagas], grafoDe.BonusRegional,
+                [.. grafoDe.Etapas], AtendimentoEspecializado.Criar([], [], []).Value!, [.. grafoDe.DistribuicaoVagas], grafoDe.BonusRegional,
                 [.. grafoDe.CriteriosDesempate], ConfiguracaoClassificacao.Criar(
                     ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!, null, null,
                     ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)).Value!, [],

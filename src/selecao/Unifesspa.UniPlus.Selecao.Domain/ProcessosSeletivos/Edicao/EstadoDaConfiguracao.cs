@@ -60,7 +60,7 @@ public sealed record EstadoDaConfiguracao
 
     public required IReadOnlyCollection<CriterioDesempate> CriteriosDesempate { get; init; }
 
-    public required OfertaAtendimentoEspecializado? OfertaAtendimento { get; init; }
+    public required AtendimentoEspecializado? AtendimentoEspecializado { get; init; }
 
     public required ConfiguracaoBonusRegional? BonusRegional { get; init; }
 
@@ -121,7 +121,7 @@ public sealed record EstadoDaConfiguracao
             RegrasDerivacao = processo.RegrasDerivacao,
             DistribuicaoVagas = processo.DistribuicaoVagas,
             CriteriosDesempate = processo.CriteriosDesempate,
-            OfertaAtendimento = processo.OfertaAtendimento,
+            AtendimentoEspecializado = processo.AtendimentoEspecializado,
             BonusRegional = processo.BonusRegional,
             Cascata = processo.Cascata,
             Classificacao = processo.Classificacao,

@@ -2068,7 +2068,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_atendimentos_especializados", x => x.id);
                     table.ForeignKey(
-                        name: "fk_atendimentos_especializados_processo_seletivo_processo_sele",
+                        name: "fk_atendimentos_especializados_processo_seletivo",
                         column: x => x.processo_seletivo_id,
                         principalSchema: "selecao",
                         principalTable: "processos_seletivos",
@@ -3311,7 +3311,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    oferta_atendimento_especializado_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    atendimento_especializado_id = table.Column<Guid>(type: "uuid", nullable: false),
                     condicao_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     condicao_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     condicao_nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
@@ -3322,8 +3322,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_condicoes_ofertadas", x => x.id);
                     table.ForeignKey(
-                        name: "fk_condicoes_ofertadas_atendimentos_especializados_oferta_aten",
-                        column: x => x.oferta_atendimento_especializado_id,
+                        name: "fk_condicoes_ofertadas_atendimento_especializado",
+                        column: x => x.atendimento_especializado_id,
                         principalSchema: "selecao",
                         principalTable: "atendimentos_especializados",
                         principalColumn: "id",
@@ -3336,7 +3336,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    oferta_atendimento_especializado_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    atendimento_especializado_id = table.Column<Guid>(type: "uuid", nullable: false),
                     tipo_deficiencia_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     tipo_deficiencia_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     tipo_deficiencia_nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
@@ -3347,8 +3347,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_deficiencias_atendidas", x => x.id);
                     table.ForeignKey(
-                        name: "fk_deficiencias_atendidas_atendimentos_especializados_oferta_a",
-                        column: x => x.oferta_atendimento_especializado_id,
+                        name: "fk_deficiencias_atendidas_atendimento_especializado",
+                        column: x => x.atendimento_especializado_id,
                         principalSchema: "selecao",
                         principalTable: "atendimentos_especializados",
                         principalColumn: "id",
@@ -3361,7 +3361,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
-                    oferta_atendimento_especializado_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    atendimento_especializado_id = table.Column<Guid>(type: "uuid", nullable: false),
                     recurso_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
                     recurso_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     recurso_nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
@@ -3372,8 +3372,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_recursos_ofertados", x => x.id);
                     table.ForeignKey(
-                        name: "fk_recursos_ofertados_atendimentos_especializados_oferta_atend",
-                        column: x => x.oferta_atendimento_especializado_id,
+                        name: "fk_recursos_ofertados_atendimento_especializado",
+                        column: x => x.atendimento_especializado_id,
                         principalSchema: "selecao",
                         principalTable: "atendimentos_especializados",
                         principalColumn: "id",
@@ -5992,10 +5992,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "documento_exigido_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_condicoes_ofertadas_oferta_atendimento_especializado_id_con",
+                name: "ux_condicoes_ofertadas_por_atendimento_origem",
                 schema: "selecao",
                 table: "condicoes_ofertadas",
-                columns: new[] { "oferta_atendimento_especializado_id", "condicao_origem_id" },
+                columns: new[] { "atendimento_especializado_id", "condicao_origem_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -6166,10 +6166,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "ix_deficiencias_atendidas_oferta_atendimento_especializado_id_",
+                name: "ux_deficiencias_atendidas_por_atendimento_origem",
                 schema: "selecao",
                 table: "deficiencias_atendidas",
-                columns: new[] { "oferta_atendimento_especializado_id", "tipo_deficiencia_origem_id" },
+                columns: new[] { "atendimento_especializado_id", "tipo_deficiencia_origem_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -7007,10 +7007,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
-                name: "ix_recursos_ofertados_oferta_atendimento_especializado_id_recu",
+                name: "ux_recursos_ofertados_por_atendimento_origem",
                 schema: "selecao",
                 table: "recursos_ofertados",
-                columns: new[] { "oferta_atendimento_especializado_id", "recurso_origem_id" },
+                columns: new[] { "atendimento_especializado_id", "recurso_origem_id" },
                 unique: true);
 
             migrationBuilder.CreateIndex(

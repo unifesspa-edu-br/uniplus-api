@@ -16,7 +16,7 @@ public static class SelecaoDbSets
 
         public DbSet<EtapaProcesso> EtapasProcesso => contexto.Set<EtapaProcesso>();
 
-        public DbSet<OfertaAtendimentoEspecializado> OfertasAtendimentoEspecializado => contexto.Set<OfertaAtendimentoEspecializado>();
+        public DbSet<AtendimentoEspecializado> AtendimentosEspecializados => contexto.Set<AtendimentoEspecializado>();
 
         public DbSet<ConfiguracaoDistribuicaoVagas> ConfiguracoesDistribuicaoVagas => contexto.Set<ConfiguracaoDistribuicaoVagas>();
 

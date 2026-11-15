@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// pelo código no cronograma e o tipo pelo código no catálogo. Os documentos da finalidade do modelo que o
 /// processo já tinha são trocados pelos do modelo, como o formulário da finalidade; os das outras
 /// finalidades ficam. Modelo sem conjunto não mexe na árvore. A cláusula que cita valor que o processo não
-/// oferta — a condição de atendimento fora da oferta — não tem como valer e sai da cópia; o documento sem
+/// oferta — a condição de atendimento fora das condições ofertadas — não tem como valer e sai da cópia; o documento sem
 /// nenhuma cláusula que valha sai com ela. O documento que o modelo multiplica pelas opções de um fato
 /// entra uma vez por opção ofertada.
 /// </summary>

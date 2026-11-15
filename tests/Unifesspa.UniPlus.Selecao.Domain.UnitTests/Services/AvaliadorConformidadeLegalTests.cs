@@ -229,11 +229,11 @@ public sealed class AvaliadorConformidadeLegalTests
         // Com a comparação pelo código, o rótulo pode mudar à vontade: a identidade que
         // a regra cita é a mesma.
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar(
-                [OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar(
+                [CondicaoOfertada.Criar(Guid.CreateVersion7(), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
                 [],
-                [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "AUDITIVA", "Nome completamente diferente do que a regra cita")]).Value!,
+                [DeficienciaAtendida.Criar(Guid.CreateVersion7(), "AUDITIVA", "Nome completamente diferente do que a regra cita")]).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
@@ -250,11 +250,11 @@ public sealed class AvaliadorConformidadeLegalTests
         // A contraprova do teste acima: se a comparação ainda caísse no nome, este
         // cenário aprovaria — o nome bate, o código não.
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar(
-                [OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar(
+                [CondicaoOfertada.Criar(Guid.CreateVersion7(), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
                 [],
-                [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_AUDITIVA", "AUDITIVA")]).Value!,
+                [DeficienciaAtendida.Criar(Guid.CreateVersion7(), "DEFICIENCIA_AUDITIVA", "AUDITIVA")]).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
@@ -269,11 +269,11 @@ public sealed class AvaliadorConformidadeLegalTests
     public void AtendimentoDisponivel_ComNecessidadeOfertada_Aprova()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar(
-                [OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar(
+                [CondicaoOfertada.Criar(Guid.CreateVersion7(), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
                 [],
-                [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "AUDITIVA", "auditiva")]).Value!,
+                [DeficienciaAtendida.Criar(Guid.CreateVersion7(), "AUDITIVA", "auditiva")]).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
@@ -283,7 +283,7 @@ public sealed class AvaliadorConformidadeLegalTests
         resultado.Regras.Single().Aprovada.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "CA-06 (AtendimentoDisponivel): reprova SEM lançar quando OfertaAtendimento é nula")]
+    [Fact(DisplayName = "CA-06 (AtendimentoDisponivel): reprova SEM lançar quando AtendimentoEspecializado é nula")]
     public void AtendimentoDisponivel_OfertaNula_ReprovaSemLancar()
     {
         ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
@@ -483,11 +483,11 @@ public sealed class AvaliadorConformidadeLegalTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Guid identidadeDoTipo = Guid.CreateVersion7();
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar(
-                [OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar(
+                [CondicaoOfertada.Criar(Guid.CreateVersion7(), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
                 [],
-                [OfertaTipoDeficiencia.Criar(identidadeDoTipo, "AUDITIVA", "Deficiência auditiva")]).Value!,
+                [DeficienciaAtendida.Criar(identidadeDoTipo, "AUDITIVA", "Deficiência auditiva")]).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["DEF_AUDITIVA"]));
@@ -507,11 +507,11 @@ public sealed class AvaliadorConformidadeLegalTests
     public void AtendimentoDisponivel_ComCodigoReatribuido_Reprova()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar(
-                [OfertaCondicao.Criar(Guid.CreateVersion7(), OfertaAtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar(
+                [CondicaoOfertada.Criar(Guid.CreateVersion7(), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
                 [],
-                [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "AUDITIVA", "Deficiência auditiva")]).Value!,
+                [DeficienciaAtendida.Criar(Guid.CreateVersion7(), "AUDITIVA", "Deficiência auditiva")]).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ObrigatoriedadeLegal regra = NovaRegra("ATENDIMENTO", new AtendimentoDisponivel(["AUDITIVA"]));
@@ -828,7 +828,7 @@ public sealed class AvaliadorConformidadeLegalTests
                 m => m.ModalidadeOrigemId),
             MapaDe(processo.Etapas, e => e.TipoEtapa.Codigo, e => e.TipoEtapa.OrigemId),
             MapaDe(
-                processo.OfertaAtendimento?.TiposDeficiencia ?? [],
+                processo.AtendimentoEspecializado?.TiposDeficiencia ?? [],
                 t => t.TipoDeficienciaCodigo,
                 t => t.TipoDeficienciaOrigemId));
 

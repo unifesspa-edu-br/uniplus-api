@@ -45,7 +45,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     public static ProcessoSeletivo NovoProcessoConforme(string nome, DateTimeOffset? inicioDaFase = null)
     {
         ProcessoSeletivo processo = ProcessoVazio(nome);
-        DefinirOfertaSemAtendimentoEspecializado(processo);
+        DefinirAtendimentoEspecializadoVazio(processo);
         processo.DefinirDistribuicaoVagas([DistribuicaoDaModalidadeAmpla()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         DefinirClassificacaoImportadaEFaseDeResultadoFinal(processo, inicioDaFase);
 
@@ -66,9 +66,9 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         return processo;
     }
 
-    private static void DefinirOfertaSemAtendimentoEspecializado(ProcessoSeletivo processo) =>
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    private static void DefinirAtendimentoEspecializadoVazio(ProcessoSeletivo processo) =>
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
     private static ModalidadeSelecionada ModalidadeAmplaDeTeste() => ModalidadeSelecionada.Criar(
         modalidadeOrigemId: Guid.CreateVersion7(),
@@ -173,7 +173,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     public static ProcessoSeletivo NovoProcessoComOfertaFederalECascata(string nome, bool comCascata = true)
     {
         ProcessoSeletivo processo = ProcessoVazio(nome);
-        DefinirOfertaSemAtendimentoEspecializado(processo);
+        DefinirAtendimentoEspecializadoVazio(processo);
         processo.DefinirDistribuicaoVagas([OfertaFederalCompleta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         DefinirClassificacaoImportadaEFaseDeResultadoFinal(processo);
 

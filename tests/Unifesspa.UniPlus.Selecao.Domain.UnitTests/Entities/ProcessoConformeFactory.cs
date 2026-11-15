@@ -81,8 +81,8 @@ internal static class ProcessoConformeFactory
         processo.DefinirCronogramaFases([faseDoProcesso], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([EtapaDaProvaObjetiva(faseDoProcesso.Codigo)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirOfertaAtendimento(
-            OfertaAtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirDistribuicaoVagas([Oferta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

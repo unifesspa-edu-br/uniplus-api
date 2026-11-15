@@ -21,7 +21,7 @@ internal static class VersoesPublicadasDeTeste
     /// <summary>Uma versão publicada com estes formulários, itens e grupos.</summary>
     public static GrafoConfiguracao Versao(
         IEnumerable<FormularioProcesso> formularios, IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado>? grupos = null) => new(
-        [], OfertaAtendimentoEspecializado.Criar([], [], []).Value!, [], null, [], ClassificacaoMinima, [], [], [], null,
+        [], AtendimentoEspecializado.Criar([], [], []).Value!, [], null, [], ClassificacaoMinima, [], [], [], null,
         fatosColetados: [.. itens],
         formularios: [.. formularios],
         gruposColetados: [.. grupos ?? []]);

@@ -184,9 +184,10 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             .HasForeignKey(e => e.ProcessoSeletivoId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        builder.HasOne(p => p.OfertaAtendimento)
+        builder.HasOne(p => p.AtendimentoEspecializado)
             .WithOne()
-            .HasForeignKey<OfertaAtendimentoEspecializado>(o => o.ProcessoSeletivoId)
+            .HasForeignKey<AtendimentoEspecializado>(o => o.ProcessoSeletivoId)
+            .HasConstraintName("fk_atendimentos_especializados_processo_seletivo")
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasMany(p => p.DistribuicaoVagas)

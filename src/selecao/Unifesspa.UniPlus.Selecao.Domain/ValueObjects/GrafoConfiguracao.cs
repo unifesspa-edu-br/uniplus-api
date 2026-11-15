@@ -28,7 +28,7 @@ public sealed class GrafoConfiguracao
 {
     public GrafoConfiguracao(
         IReadOnlyList<EtapaProcesso> etapas,
-        OfertaAtendimentoEspecializado ofertaAtendimento,
+        AtendimentoEspecializado atendimentoEspecializado,
         IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoVagas,
         ConfiguracaoBonusRegional? bonusRegional,
         IReadOnlyList<CriterioDesempate> criteriosDesempate,
@@ -77,7 +77,7 @@ public sealed class GrafoConfiguracao
         int? numeroDeOpcoesDeCurso = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
-        ArgumentNullException.ThrowIfNull(ofertaAtendimento);
+        ArgumentNullException.ThrowIfNull(atendimentoEspecializado);
         ArgumentNullException.ThrowIfNull(distribuicaoVagas);
         ArgumentNullException.ThrowIfNull(criteriosDesempate);
         ArgumentNullException.ThrowIfNull(classificacao);
@@ -94,7 +94,7 @@ public sealed class GrafoConfiguracao
         AlgoritmoContagemPrazo = algoritmoContagemPrazo;
         IdentificadorLegivel = identificadorLegivel;
         Etapas = [.. etapas];
-        OfertaAtendimento = ofertaAtendimento;
+        AtendimentoEspecializado = atendimentoEspecializado;
         DistribuicaoVagas = [.. distribuicaoVagas];
         BonusRegional = bonusRegional;
         CriteriosDesempate = [.. criteriosDesempate];
@@ -119,7 +119,7 @@ public sealed class GrafoConfiguracao
     /// <summary>Quantos cursos o candidato escolhe na inscrição; ausência = não declarado.</summary>
     public int? NumeroDeOpcoesDeCurso { get; }
 
-    public OfertaAtendimentoEspecializado OfertaAtendimento { get; }
+    public AtendimentoEspecializado AtendimentoEspecializado { get; }
 
     public IReadOnlyList<ConfiguracaoDistribuicaoVagas> DistribuicaoVagas { get; }
 

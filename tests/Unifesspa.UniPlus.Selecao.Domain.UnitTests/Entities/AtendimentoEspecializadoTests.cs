@@ -6,20 +6,20 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
-/// Cobertura de <see cref="OfertaAtendimentoEspecializado.Criar"/> (CA-06, Story #758,
+/// Cobertura de <see cref="AtendimentoEspecializado.Criar"/> (CA-06, Story #758,
 /// ADR-0067) — acumulação de duplicatas por dimensão e da invariante "tipo de deficiência só
-/// sob condição PcD" (ADR-0125), e de <see cref="OfertaAtendimentoEspecializado.ValidarIdsUnicos"/>
+/// sob condição PcD" (ADR-0125), e de <see cref="AtendimentoEspecializado.ValidarIdsUnicos"/>
 /// (checagem pura, sem cadastro resolvido).
 /// </summary>
-public sealed class OfertaAtendimentoEspecializadoTests
+public sealed class AtendimentoEspecializadoTests
 {
     [Fact(DisplayName = "Criar com condição PcD e tipo de deficiência tem sucesso")]
     public void Criar_ComPcdETipoDeficiencia_Aceita()
     {
-        Result<OfertaAtendimentoEspecializado> resultado = OfertaAtendimentoEspecializado.Criar(
-            [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
+        Result<AtendimentoEspecializado> resultado = AtendimentoEspecializado.Criar(
+            [CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
             [],
-            [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
+            [DeficienciaAtendida.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.TiposDeficiencia.Should().ContainSingle();
@@ -29,24 +29,24 @@ public sealed class OfertaAtendimentoEspecializadoTests
     public void Criar_CondicaoDuplicada_Recusa()
     {
         Guid condicaoId = Guid.CreateVersion7();
-        Result<OfertaAtendimentoEspecializado> resultado = OfertaAtendimentoEspecializado.Criar(
-            [OfertaCondicao.Criar(condicaoId, "LACTANTE", "Lactante"), OfertaCondicao.Criar(condicaoId, "LACTANTE", "Lactante")],
+        Result<AtendimentoEspecializado> resultado = AtendimentoEspecializado.Criar(
+            [CondicaoOfertada.Criar(condicaoId, "LACTANTE", "Lactante"), CondicaoOfertada.Criar(condicaoId, "LACTANTE", "Lactante")],
             [], []);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("OfertaAtendimento.CondicaoDuplicada");
+        resultado.Error!.Code.Should().Be("AtendimentoEspecializado.CondicaoDuplicada");
     }
 
     [Fact(DisplayName = "Criar com tipo de deficiência sem condição PcD ofertada falha")]
     public void Criar_TipoDeficienciaSemPcd_Recusa()
     {
-        Result<OfertaAtendimentoEspecializado> resultado = OfertaAtendimentoEspecializado.Criar(
-            [OfertaCondicao.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante")],
+        Result<AtendimentoEspecializado> resultado = AtendimentoEspecializado.Criar(
+            [CondicaoOfertada.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante")],
             [],
-            [OfertaTipoDeficiencia.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
+            [DeficienciaAtendida.Criar(Guid.CreateVersion7(), "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("OfertaAtendimento.TipoDeficienciaSemCondicaoPcd");
+        resultado.Error!.Code.Should().Be("AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd");
     }
 
     [Fact(DisplayName = "ADR-0125: Criar acumula duplicata de recurso e de tipo de deficiência no mesmo lote")]
@@ -55,16 +55,16 @@ public sealed class OfertaAtendimentoEspecializadoTests
         Guid recursoId = Guid.CreateVersion7();
         Guid tipoId = Guid.CreateVersion7();
 
-        Result<OfertaAtendimentoEspecializado> resultado = OfertaAtendimentoEspecializado.Criar(
-            [OfertaCondicao.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
-            [OfertaRecurso.Criar(recursoId, "LEDOR", "Ledor"), OfertaRecurso.Criar(recursoId, "LEDOR", "Ledor")],
-            [OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"), OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
+        Result<AtendimentoEspecializado> resultado = AtendimentoEspecializado.Criar(
+            [CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência")],
+            [RecursoOfertado.Criar(recursoId, "LEDOR", "Ledor"), RecursoOfertado.Criar(recursoId, "LEDOR", "Ledor")],
+            [DeficienciaAtendida.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"), DeficienciaAtendida.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
         [
-            "OfertaAtendimento.RecursoDuplicado",
-            "OfertaAtendimento.TipoDeficienciaDuplicado",
+            "AtendimentoEspecializado.RecursoDuplicado",
+            "AtendimentoEspecializado.TipoDeficienciaDuplicado",
         ]);
     }
 
@@ -73,23 +73,23 @@ public sealed class OfertaAtendimentoEspecializadoTests
     {
         Guid tipoId = Guid.CreateVersion7();
 
-        Result<OfertaAtendimentoEspecializado> resultado = OfertaAtendimentoEspecializado.Criar(
+        Result<AtendimentoEspecializado> resultado = AtendimentoEspecializado.Criar(
             [],
             [],
-            [OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"), OfertaTipoDeficiencia.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
+            [DeficienciaAtendida.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual"), DeficienciaAtendida.Criar(tipoId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
         [
-            "OfertaAtendimento.TipoDeficienciaDuplicado",
-            "OfertaAtendimento.TipoDeficienciaSemCondicaoPcd",
+            "AtendimentoEspecializado.TipoDeficienciaDuplicado",
+            "AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd",
         ]);
     }
 
     [Fact(DisplayName = "ValidarIdsUnicos sem duplicatas não retorna violações")]
     public void ValidarIdsUnicos_SemDuplicatas_Vazio()
     {
-        List<FieldError> erros = OfertaAtendimentoEspecializado.ValidarIdsUnicos(
+        List<FieldError> erros = AtendimentoEspecializado.ValidarIdsUnicos(
             [Guid.CreateVersion7()], [Guid.CreateVersion7()], [Guid.CreateVersion7()]);
 
         erros.Should().BeEmpty();
@@ -100,9 +100,9 @@ public sealed class OfertaAtendimentoEspecializadoTests
     {
         Guid condicaoId = Guid.CreateVersion7();
 
-        List<FieldError> erros = OfertaAtendimentoEspecializado.ValidarIdsUnicos(
+        List<FieldError> erros = AtendimentoEspecializado.ValidarIdsUnicos(
             [condicaoId, condicaoId], [], []);
 
-        erros.Select(e => e.Error.Code).Should().BeEquivalentTo(["OfertaAtendimento.CondicaoDuplicada"]);
+        erros.Select(e => e.Error.Code).Should().BeEquivalentTo(["AtendimentoEspecializado.CondicaoDuplicada"]);
     }
 }

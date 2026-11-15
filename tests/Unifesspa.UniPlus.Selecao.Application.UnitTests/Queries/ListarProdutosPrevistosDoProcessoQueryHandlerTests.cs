@@ -67,7 +67,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         _processos.ObterVersaoVigenteAsync(_processoId, Agora, Arg.Any<CancellationToken>()).Returns(versao);
         _codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
             new GrafoConfiguracao(
-                etapas ?? [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas],
+                etapas ?? [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas],
                 processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
                 fases, [.. processo.DocumentosExigidos], [], null, configuracaoDivulgacao: divulgacao, numeroDeOpcoesDeCurso: 1),
             DadosEdital.Criar("001/2027", Agora, Agora.AddDays(30), Guid.CreateVersion7()).Value!,

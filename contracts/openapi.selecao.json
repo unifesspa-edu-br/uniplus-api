@@ -7054,7 +7054,7 @@
         "x-uniplus-idempotent": true
       }
     },
-    "/api/selecao/processos-seletivos/{id}/oferta-atendimento": {
+    "/api/selecao/processos-seletivos/{id}/atendimento-especializado": {
       "put": {
         "tags": [
           "ProcessoSeletivo"
@@ -7093,17 +7093,17 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/DefinirOfertaAtendimentoRequest"
+                "$ref": "#/components/schemas/DefinirAtendimentoEspecializadoRequest"
               }
             },
             "text/json": {
               "schema": {
-                "$ref": "#/components/schemas/DefinirOfertaAtendimentoRequest"
+                "$ref": "#/components/schemas/DefinirAtendimentoEspecializadoRequest"
               }
             },
             "application/*\u002Bjson": {
               "schema": {
-                "$ref": "#/components/schemas/DefinirOfertaAtendimentoRequest"
+                "$ref": "#/components/schemas/DefinirAtendimentoEspecializadoRequest"
               }
             }
           },
@@ -13020,6 +13020,39 @@
           }
         }
       },
+      "AtendimentoEspecializadoDto": {
+        "required": [
+          "id",
+          "condicoes",
+          "recursos",
+          "tiposDeficiencia"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "condicoes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CondicaoOfertadaDto"
+            }
+          },
+          "recursos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RecursoOfertadoDto"
+            }
+          },
+          "tiposDeficiencia": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DeficienciaAtendidaDto"
+            }
+          }
+        }
+      },
       "AtoDoProcessoDto": {
         "required": [
           "id",
@@ -14150,6 +14183,31 @@
           }
         }
       },
+      "CondicaoOfertadaDto": {
+        "required": [
+          "id",
+          "condicaoOrigemId",
+          "condicaoCodigo",
+          "condicaoNome"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "condicaoOrigemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "condicaoCodigo": {
+            "type": "string"
+          },
+          "condicaoNome": {
+            "type": "string"
+          }
+        }
+      },
       "CondicaoPrecondicaoDto": {
         "required": [
           "fato",
@@ -15047,6 +15105,27 @@
           }
         }
       },
+      "DeficienciaAtendidaDto": {
+        "required": [
+          "id",
+          "tipoDeficienciaOrigemId",
+          "tipoDeficienciaNome"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoDeficienciaOrigemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "tipoDeficienciaNome": {
+            "type": "string"
+          }
+        }
+      },
       "DefinirAlgoritmoContagemPrazoRequest": {
         "required": [
           "codigo",
@@ -15065,6 +15144,37 @@
               "null",
               "string"
             ]
+          }
+        }
+      },
+      "DefinirAtendimentoEspecializadoRequest": {
+        "required": [
+          "condicaoIds",
+          "recursoIds",
+          "tipoDeficienciaIds"
+        ],
+        "type": "object",
+        "properties": {
+          "condicaoIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "recursoIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "tipoDeficienciaIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid"
+            }
           }
         }
       },
@@ -15351,37 +15461,6 @@
               "null",
               "string"
             ]
-          }
-        }
-      },
-      "DefinirOfertaAtendimentoRequest": {
-        "required": [
-          "condicaoIds",
-          "recursoIds",
-          "tipoDeficienciaIds"
-        ],
-        "type": "object",
-        "properties": {
-          "condicaoIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          "recursoIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
-          },
-          "tipoDeficienciaIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid"
-            }
           }
         }
       },
@@ -20301,64 +20380,6 @@
           }
         }
       },
-      "OfertaAtendimentoEspecializadoDto": {
-        "required": [
-          "id",
-          "condicoes",
-          "recursos",
-          "tiposDeficiencia"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "condicoes": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OfertaCondicaoDto"
-            }
-          },
-          "recursos": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OfertaRecursoDto"
-            }
-          },
-          "tiposDeficiencia": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OfertaTipoDeficienciaDto"
-            }
-          }
-        }
-      },
-      "OfertaCondicaoDto": {
-        "required": [
-          "id",
-          "condicaoOrigemId",
-          "condicaoCodigo",
-          "condicaoNome"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "condicaoOrigemId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "condicaoCodigo": {
-            "type": "string"
-          },
-          "condicaoNome": {
-            "type": "string"
-          }
-        }
-      },
       "OfertaDeCursoCertameDto": {
         "required": [
           "ofertaCursoOrigemId",
@@ -20411,52 +20432,6 @@
           "ordem": {
             "type": "integer",
             "format": "int32"
-          }
-        }
-      },
-      "OfertaRecursoDto": {
-        "required": [
-          "id",
-          "recursoOrigemId",
-          "recursoCodigo",
-          "recursoNome"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "recursoOrigemId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "recursoCodigo": {
-            "type": "string"
-          },
-          "recursoNome": {
-            "type": "string"
-          }
-        }
-      },
-      "OfertaTipoDeficienciaDto": {
-        "required": [
-          "id",
-          "tipoDeficienciaOrigemId",
-          "tipoDeficienciaNome"
-        ],
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "tipoDeficienciaOrigemId": {
-            "type": "string",
-            "format": "uuid"
-          },
-          "tipoDeficienciaNome": {
-            "type": "string"
           }
         }
       },
@@ -21149,7 +21124,7 @@
           "unidadeAdministradora",
           "localidade",
           "etapas",
-          "ofertaAtendimento",
+          "atendimentoEspecializado",
           "distribuicaoVagas",
           "bonusRegional",
           "aplicaBonusRegional",
@@ -21205,13 +21180,13 @@
               "$ref": "#/components/schemas/EtapaProcessoDto"
             }
           },
-          "ofertaAtendimento": {
+          "atendimentoEspecializado": {
             "oneOf": [
               {
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/OfertaAtendimentoEspecializadoDto"
+                "$ref": "#/components/schemas/AtendimentoEspecializadoDto"
               }
             ]
           },
@@ -21924,6 +21899,31 @@
                 "$ref": "#/components/schemas/UnidadePrazo"
               }
             ]
+          }
+        }
+      },
+      "RecursoOfertadoDto": {
+        "required": [
+          "id",
+          "recursoOrigemId",
+          "recursoCodigo",
+          "recursoNome"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recursoOrigemId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "recursoCodigo": {
+            "type": "string"
+          },
+          "recursoNome": {
+            "type": "string"
           }
         }
       },

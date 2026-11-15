@@ -63,7 +63,7 @@ using Xunit;
 ///   <item><term><c>arvoreSatisfacao</c> (raízes)</term><description>Ordem semântica vs. tipo do nó — <see cref="ArvoreSatisfacao_RaizesEFilhos_OrdemGovernaSobreConteudo"/></description></item>
 ///   <item><term><c>arvoreSatisfacao[].filhos</c></term><description>Ordem semântica vs. Id do nó (identidade técnica), com duas raízes e dois irmãos — <see cref="ArvoreSatisfacao_RaizesEFilhos_OrdemGovernaSobreConteudo"/></description></item>
 ///   <item><term><c>documentosExigidos.metadadosFatos[].valoresDominioDeclarados</c></term><description>Ordem semântica vs. Codigo — <see cref="MetadadosFatos_ValoresDominioDeclarados_OrdemGovernaSobreCodigo"/></description></item>
-///   <item><term><c>atendimento.condicoes</c>/<c>recursos</c>/<c>tiposDeficiencia</c></term><description>Identidade de origem vs. conteúdo, oráculo próprio para os três arrays — <see cref="OfertaAtendimento_Condicoes_IdentidadeDeOrigemGovernaSobreConteudo"/></description></item>
+///   <item><term><c>atendimento.condicoes</c>/<c>recursos</c>/<c>tiposDeficiencia</c></term><description>Identidade de origem vs. conteúdo, oráculo próprio para os três arrays — <see cref="AtendimentoEspecializado_Condicoes_IdentidadeDeOrigemGovernaSobreConteudo"/></description></item>
 ///   <item><term><c>documentosExigidos.exigencias</c></term><description>Identidade parcial (fase + tipo) vs. conteúdo — <see cref="DocumentosExigidos_Exigencias_IdentidadeParcialGovernaSobreConteudo"/></description></item>
 ///   <item><term><c>documentosExigidos.exigencias</c> (empate de identidade)</term><description>Conteúdo vs. Id — <see cref="DocumentosExigidos_Exigencias_EmpateDeIdentidade_DesempataPeloConteudo"/></description></item>
 ///   <item><term><c>grafoDependencia.nos</c>/<c>arestas</c>/<c>ordemTopologica</c></term><description>DELEGAÇÃO — ordem derivada por <see cref="Domain.ValueObjects.GrafoDependenciaConjunta"/> e apenas preservada — <see cref="GrafoDependencia_OrdemTopologica_PreservaAOrdemDoDominio_NaoReordenaAlfabeticamente"/></description></item>
@@ -148,7 +148,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
     /// </summary>
     private static ProcessoSeletivo Montar(
         IReadOnlyList<EtapaProcesso>? etapas = null,
-        OfertaAtendimentoEspecializado? ofertaAtendimento = null,
+        AtendimentoEspecializado? atendimentoEspecializado = null,
         IReadOnlyList<CriterioDesempate>? criteriosDesempate = null,
         IReadOnlyList<FaseCronograma>? cronogramaFases = null,
         IReadOnlyList<NoExigencia>? documentosExigidos = null,
@@ -161,8 +161,8 @@ public sealed partial class PoliticaDeOrdenacaoTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
 
-        processo.DefinirOfertaAtendimento(
-            ofertaAtendimento ?? OfertaAtendimentoEspecializado.Criar([], [], []).Value!,
+        processo.DefinirAtendimentoEspecializado(
+            atendimentoEspecializado ?? AtendimentoEspecializado.Criar([], [], []).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirDistribuicaoVagas([DistribuicaoMinima()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

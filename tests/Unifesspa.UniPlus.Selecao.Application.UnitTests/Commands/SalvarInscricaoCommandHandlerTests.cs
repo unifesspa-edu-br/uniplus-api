@@ -142,7 +142,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         // certame) — por isso o grafo leva processoBase.Formularios, que FormularioDeTeste.DefinirItens
         // já colocou o item dentro da seção "DADOS" da finalidade Inscrição.
         GrafoConfiguracao grafo = new(
-            [.. processoBase.Etapas], processoBase.OfertaAtendimento!, [.. processoBase.DistribuicaoVagas],
+            [.. processoBase.Etapas], processoBase.AtendimentoEspecializado!, [.. processoBase.DistribuicaoVagas],
             processoBase.BonusRegional, [.. processoBase.CriteriosDesempate], processoBase.Classificacao!,
             [.. processoBase.CronogramaFases], [.. processoBase.DocumentosExigidos], [], null,
             fatosColetados: [.. processoBase.FatosColetados],

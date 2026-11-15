@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Contêiner (um por processo) da oferta de atendimento especializado do
+/// Contêiner (um por processo) do atendimento especializado do
 /// <see cref="ProcessoSeletivo"/>: as condições, recursos de acessibilidade e
 /// tipos de deficiência que o certame disponibiliza aos candidatos, todos
 /// congelados por snapshot-copy (ADR-0061) dos cadastros do módulo
@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <see cref="EntityBase"/> puro (sem soft-delete): ver justificativa em
 /// <see cref="EtapaProcesso"/>.
 /// </remarks>
-public sealed class OfertaAtendimentoEspecializado : EntityBase, IParteDoProcesso
+public sealed class AtendimentoEspecializado : EntityBase, IParteDoProcesso
 {
     /// <summary>
     /// Código canônico da condição PcD no cadastro de condições de atendimento
@@ -33,38 +33,38 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase, IParteDoProcess
     public const string FatoTipoDeficiencia = "TIPO_DEFICIENCIA";
 
     /// <summary>
-    /// Indica que as opções do fato vêm sempre da oferta de atendimento, qualquer que seja a origem
-    /// copiada para o campo: a oferta é, por natureza, a dona da condição e do recurso.
+    /// Indica que as opções do fato vêm sempre do atendimento especializado, qualquer que seja a origem
+    /// copiada para o campo: o atendimento é, por natureza, o dono da condição e do recurso.
     /// </summary>
     public static bool ImpoeOrigemDoFato(string fatoCodigo) =>
         fatoCodigo is FatoCondicaoAtendimento or FatoRecursoAcessibilidade;
 
     /// <summary>
-    /// Indica que, quando o campo tem as opções do processo, quem responde por elas é a oferta de
-    /// atendimento, e não as opções declaradas. Inclui o tipo de deficiência: o campo novo dele tem os
+    /// Indica que, quando o campo tem as opções do processo, quem responde por elas é o atendimento
+    /// especializado, e não as opções declaradas. Inclui o tipo de deficiência: o campo novo dele tem os
     /// tipos do cadastro (UNI-REQ-0012), mas o processo publicado antes disso congelou a origem do
-    /// processo, e as opções dele continuam sendo as da oferta.
+    /// processo, e as opções dele continuam sendo as do atendimento.
     /// </summary>
     public static bool GereOpcoesDoFato(string fatoCodigo) =>
         ImpoeOrigemDoFato(fatoCodigo) || fatoCodigo is FatoTipoDeficiencia;
 
     public Guid ProcessoSeletivoId { get; private set; }
 
-    private readonly List<OfertaCondicao> _condicoes = [];
-    public IReadOnlyCollection<OfertaCondicao> Condicoes => _condicoes.AsReadOnly();
+    private readonly List<CondicaoOfertada> _condicoes = [];
+    public IReadOnlyCollection<CondicaoOfertada> Condicoes => _condicoes.AsReadOnly();
 
-    private readonly List<OfertaRecurso> _recursos = [];
-    public IReadOnlyCollection<OfertaRecurso> Recursos => _recursos.AsReadOnly();
+    private readonly List<RecursoOfertado> _recursos = [];
+    public IReadOnlyCollection<RecursoOfertado> Recursos => _recursos.AsReadOnly();
 
-    private readonly List<OfertaTipoDeficiencia> _tiposDeficiencia = [];
-    public IReadOnlyCollection<OfertaTipoDeficiencia> TiposDeficiencia => _tiposDeficiencia.AsReadOnly();
+    private readonly List<DeficienciaAtendida> _tiposDeficiencia = [];
+    public IReadOnlyCollection<DeficienciaAtendida> TiposDeficiencia => _tiposDeficiencia.AsReadOnly();
 
-    private OfertaAtendimentoEspecializado() { }
+    private AtendimentoEspecializado() { }
 
     /// <summary>
-    /// As opções que a oferta dá ao fato, ordenadas pelo código e numeradas a partir de zero: a
-    /// oferta não tem ordem de negócio própria, e remover um item renumera os demais preservando
-    /// a ordem relativa. Vazio para fato que a oferta não gere.
+    /// As opções que o atendimento dá ao fato, ordenadas pelo código e numeradas a partir de zero: o
+    /// atendimento não tem ordem de negócio própria, e remover um item renumera os demais preservando
+    /// a ordem relativa. Vazio para fato que o atendimento não gere.
     /// </summary>
     public IReadOnlyList<OpcaoDoProcesso> OpcoesDoFato(string fatoCodigo) =>
         fatoCodigo switch
@@ -90,10 +90,10 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase, IParteDoProcess
     /// cadastros vivos (validação sempre precede I/O) — chamar <see cref="Criar"/>
     /// diretamente sem passar por ali (ex.: em teste) ainda é seguro.
     /// </summary>
-    public static Result<OfertaAtendimentoEspecializado> Criar(
-        IReadOnlyList<OfertaCondicao> condicoes,
-        IReadOnlyList<OfertaRecurso> recursos,
-        IReadOnlyList<OfertaTipoDeficiencia> tiposDeficiencia)
+    public static Result<AtendimentoEspecializado> Criar(
+        IReadOnlyList<CondicaoOfertada> condicoes,
+        IReadOnlyList<RecursoOfertado> recursos,
+        IReadOnlyList<DeficienciaAtendida> tiposDeficiencia)
     {
         ArgumentNullException.ThrowIfNull(condicoes);
         ArgumentNullException.ThrowIfNull(recursos);
@@ -108,21 +108,21 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase, IParteDoProcess
         if (condicoes.Select(c => c.CondicaoOrigemId).Distinct().Count() != condicoes.Count)
         {
             erros.Add(new("condicaoIds", new DomainError(
-                "OfertaAtendimento.CondicaoDuplicada",
+                "AtendimentoEspecializado.CondicaoDuplicada",
                 "Cada condição de atendimento só pode ser ofertada uma vez.")));
         }
 
         if (recursos.Select(r => r.RecursoOrigemId).Distinct().Count() != recursos.Count)
         {
             erros.Add(new("recursoIds", new DomainError(
-                "OfertaAtendimento.RecursoDuplicado",
+                "AtendimentoEspecializado.RecursoDuplicado",
                 "Cada recurso de acessibilidade só pode ser ofertado uma vez.")));
         }
 
         if (tiposDeficiencia.Select(t => t.TipoDeficienciaOrigemId).Distinct().Count() != tiposDeficiencia.Count)
         {
             erros.Add(new("tipoDeficienciaIds", new DomainError(
-                "OfertaAtendimento.TipoDeficienciaDuplicado",
+                "AtendimentoEspecializado.TipoDeficienciaDuplicado",
                 "Cada tipo de deficiência só pode ser ofertado uma vez.")));
         }
 
@@ -132,35 +132,35 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase, IParteDoProcess
         if (tiposDeficiencia.Count > 0 && !pcdOfertada)
         {
             erros.Add(new("tipoDeficienciaIds", new DomainError(
-                "OfertaAtendimento.TipoDeficienciaSemCondicaoPcd",
+                "AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd",
                 "Tipos de deficiência só podem ser ofertados quando a condição PcD está ofertada.")));
         }
 
         if (erros.Count > 0)
         {
-            return Result<OfertaAtendimentoEspecializado>.ValidationFailure(erros);
+            return Result<AtendimentoEspecializado>.ValidationFailure(erros);
         }
 
-        OfertaAtendimentoEspecializado oferta = new();
-        foreach (OfertaCondicao condicao in condicoes)
+        AtendimentoEspecializado atendimento = new();
+        foreach (CondicaoOfertada condicao in condicoes)
         {
-            condicao.VincularOferta(oferta.Id);
-            oferta._condicoes.Add(condicao);
+            condicao.VincularAtendimentoEspecializado(atendimento.Id);
+            atendimento._condicoes.Add(condicao);
         }
 
-        foreach (OfertaRecurso recurso in recursos)
+        foreach (RecursoOfertado recurso in recursos)
         {
-            recurso.VincularOferta(oferta.Id);
-            oferta._recursos.Add(recurso);
+            recurso.VincularAtendimentoEspecializado(atendimento.Id);
+            atendimento._recursos.Add(recurso);
         }
 
-        foreach (OfertaTipoDeficiencia tipo in tiposDeficiencia)
+        foreach (DeficienciaAtendida deficiencia in tiposDeficiencia)
         {
-            tipo.VincularOferta(oferta.Id);
-            oferta._tiposDeficiencia.Add(tipo);
+            deficiencia.VincularAtendimentoEspecializado(atendimento.Id);
+            atendimento._tiposDeficiencia.Add(deficiencia);
         }
 
-        return Result<OfertaAtendimentoEspecializado>.Success(oferta);
+        return Result<AtendimentoEspecializado>.Success(atendimento);
     }
 
     /// <summary>
@@ -183,21 +183,21 @@ public sealed class OfertaAtendimentoEspecializado : EntityBase, IParteDoProcess
         if (condicaoIds.Distinct().Count() != condicaoIds.Count)
         {
             erros.Add(new("condicaoIds", new DomainError(
-                "OfertaAtendimento.CondicaoDuplicada",
+                "AtendimentoEspecializado.CondicaoDuplicada",
                 "Cada condição de atendimento só pode ser ofertada uma vez.")));
         }
 
         if (recursoIds.Distinct().Count() != recursoIds.Count)
         {
             erros.Add(new("recursoIds", new DomainError(
-                "OfertaAtendimento.RecursoDuplicado",
+                "AtendimentoEspecializado.RecursoDuplicado",
                 "Cada recurso de acessibilidade só pode ser ofertado uma vez.")));
         }
 
         if (tipoDeficienciaIds.Distinct().Count() != tipoDeficienciaIds.Count)
         {
             erros.Add(new("tipoDeficienciaIds", new DomainError(
-                "OfertaAtendimento.TipoDeficienciaDuplicado",
+                "AtendimentoEspecializado.TipoDeficienciaDuplicado",
                 "Cada tipo de deficiência só pode ser ofertado uma vez.")));
         }
 

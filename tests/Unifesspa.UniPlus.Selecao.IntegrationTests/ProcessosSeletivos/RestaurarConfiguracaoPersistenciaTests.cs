@@ -102,7 +102,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         reposto.Etapas.Should().OnlyContain(e => e.ProcessoSeletivoId == processoId);
         reposto.DistribuicaoVagas.Should().OnlyContain(d => d.ProcessoSeletivoId == processoId);
         reposto.CriteriosDesempate.Should().OnlyContain(c => c.ProcessoSeletivoId == processoId);
-        reposto.OfertaAtendimento!.ProcessoSeletivoId.Should().Be(processoId);
+        reposto.AtendimentoEspecializado!.ProcessoSeletivoId.Should().Be(processoId);
         reposto.BonusRegional!.ProcessoSeletivoId.Should().Be(processoId);
         reposto.Classificacao!.ProcessoSeletivoId.Should().Be(processoId);
 
@@ -114,16 +114,16 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
 
         reposto.Classificacao.RegrasEliminacao.Should()
             .OnlyContain(r => r.ConfiguracaoClassificacaoId == reposto.Classificacao.Id);
-        reposto.OfertaAtendimento.Condicoes.Should()
-            .OnlyContain(c => c.OfertaAtendimentoEspecializadoId == reposto.OfertaAtendimento.Id);
+        reposto.AtendimentoEspecializado.Condicoes.Should()
+            .OnlyContain(c => c.AtendimentoEspecializadoId == reposto.AtendimentoEspecializado.Id);
 
         // (b) As filhas da sessão editorial saíram — sem órfãs.
         reposto.Etapas.Should().HaveCount(4);
         reposto.DistribuicaoVagas.Should().HaveCount(2);
         reposto.CriteriosDesempate.Should().HaveCount(6);
         reposto.Classificacao.RegrasEliminacao.Should().HaveCount(6);
-        reposto.OfertaAtendimento.Condicoes.Should().HaveCount(2);
-        reposto.OfertaAtendimento.TiposDeficiencia.Should().HaveCount(2);
+        reposto.AtendimentoEspecializado.Condicoes.Should().HaveCount(2);
+        reposto.AtendimentoEspecializado.TiposDeficiencia.Should().HaveCount(2);
         reposto.BonusRegional.Fator.Should().Be(1.2000m, "o bônus voltou — com o fator congelado");
 
         // (c) O Id congelado da etapa sobreviveu ao banco — é ele que o etapaRef referencia.
@@ -389,9 +389,9 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             .Include(p => p.Etapas).ThenInclude(e => e.Bancas)
             .Include(p => p.Etapas).ThenInclude(e => e.Recursos)
             .Include(p => p.Etapas).ThenInclude(e => e.ItensDeAvaliacao)
-            .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Condicoes)
-            .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.Recursos)
-            .Include(p => p.OfertaAtendimento!).ThenInclude(o => o.TiposDeficiencia)
+            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.Condicoes)
+            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.Recursos)
+            .Include(p => p.AtendimentoEspecializado!).ThenInclude(o => o.TiposDeficiencia)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
             .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.VagasOfertadas)
             .Include(p => p.BonusRegional!).ThenInclude(b => b.Municipios)

@@ -403,7 +403,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests
         _processos.ObterVersaoVigenteAsync(_processoId, Agora, Arg.Any<CancellationToken>()).Returns(versao);
         _codecs.Reidratar(versao).Returns(_ => Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
             new GrafoConfiguracao(
-                [.. processo.Etapas], processo.OfertaAtendimento!, [.. processo.DistribuicaoVagas],
+                [.. processo.Etapas], processo.AtendimentoEspecializado!, [.. processo.DistribuicaoVagas],
                 processo.BonusRegional, [.. processo.CriteriosDesempate], processo.Classificacao!,
                 fases, [.. processo.DocumentosExigidos], [], null, numeroDeOpcoesDeCurso: 1),
             DadosEdital.Criar("001/2027", Agora, Agora.AddDays(30), Guid.CreateVersion7()).Value!,

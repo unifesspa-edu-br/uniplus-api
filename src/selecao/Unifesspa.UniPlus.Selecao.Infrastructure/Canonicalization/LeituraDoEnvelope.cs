@@ -54,7 +54,7 @@ internal static class LeituraDoEnvelope
         DadosEdital? dados = LeituraDoEdital.LerDadosEdital(leitor, payload, out string hashDocumento);
         IReadOnlyList<EtapaProcesso> etapas = LeituraDasEtapas.LerEtapas(leitor, payload);
         IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicao = LeituraDasVagas.LerDistribuicao(leitor, payload);
-        OfertaAtendimentoEspecializado? atendimento = LeituraDoBonusEAtendimento.LerAtendimento(leitor, payload);
+        AtendimentoEspecializado? atendimento = LeituraDoBonusEAtendimento.LerAtendimento(leitor, payload);
         ConfiguracaoBonusRegional? bonus = LeituraDoBonusEAtendimento.LerBonusRegional(leitor, payload);
         ConfiguracaoCascataRemanejamento? cascata = LeituraDaCascata.LerCascataRemanejamento(leitor, payload);
         IReadOnlyList<CriterioDesempate> desempate = LeituraDoDesempate.LerCriteriosDesempate(leitor, payload);

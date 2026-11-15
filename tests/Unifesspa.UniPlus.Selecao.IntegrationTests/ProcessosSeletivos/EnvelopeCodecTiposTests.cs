@@ -27,7 +27,7 @@ using Xunit;
 /// </para>
 /// <para>
 /// A string vazia é o caso mais traiçoeiro. <c>EtapaProcesso.Reidratar</c>,
-/// <c>OfertaCondicao.Criar</c> e as irmãs validam com
+/// <c>CondicaoOfertada.Criar</c> e as irmãs validam com
 /// <c>ArgumentException.ThrowIfNullOrWhiteSpace</c> — elas <b>lançam</b>, não devolvem
 /// <c>Result</c>. Sem a guarda de não-vazio no leitor, um <c>"nome": ""</c> atravessaria a
 /// leitura e explodiria dentro da factory: <b>exceção não tratada no meio de um
