@@ -17,18 +17,6 @@ using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 /// </summary>
 public static class AuthenticationProblemDetailsWriter
 {
-    /// <summary>
-    /// Code/title/detail canônicos do 401 emitido pela camada de autenticação.
-    /// </summary>
-    public const string UnauthorizedCode = "uniplus.auth.unauthorized";
-
-    /// <summary>
-    /// Code/title/detail canônicos do 403 emitido pela camada de autorização.
-    /// </summary>
-    public const string ForbiddenCode = "uniplus.auth.forbidden";
-
-    private const string UnauthorizedTitle = "Não autenticado";
-    private const string ForbiddenTitle = "Acesso negado";
     private const string UnauthorizedDetail =
         "Requisição requer autenticação válida. Inclua um token Bearer não expirado.";
     private const string ForbiddenDetail =
@@ -51,22 +39,18 @@ public static class AuthenticationProblemDetailsWriter
             httpContext.Response.Headers.Append(HeaderNames.WWWAuthenticate, "Bearer");
         }
 
-        return WriteAsync(httpContext, StatusCodes.Status401Unauthorized,
-            UnauthorizedCode, UnauthorizedTitle, UnauthorizedDetail);
+        return WriteAsync(httpContext, ErrosDaFronteiraHttp.NaoAutenticado, UnauthorizedDetail);
     }
 
     /// <summary>
     /// Escreve um body 403 problem+json no <paramref name="httpContext"/>.
     /// </summary>
     public static Task WriteForbiddenAsync(HttpContext httpContext) =>
-        WriteAsync(httpContext, StatusCodes.Status403Forbidden,
-            ForbiddenCode, ForbiddenTitle, ForbiddenDetail);
+        WriteAsync(httpContext, ErrosDaFronteiraHttp.AcessoNegado, ForbiddenDetail);
 
     private static async Task WriteAsync(
         HttpContext httpContext,
-        int statusCode,
-        string code,
-        string title,
+        DomainErrorMapping definicao,
         string detail)
     {
         ArgumentNullException.ThrowIfNull(httpContext);
@@ -74,21 +58,21 @@ public static class AuthenticationProblemDetailsWriter
         if (httpContext.Response.HasStarted)
             return;
 
-        httpContext.Response.StatusCode = statusCode;
+        httpContext.Response.StatusCode = definicao.Status;
 
         IProblemTypeUriFactory problemTypeUriFactory = httpContext.RequestServices
             .GetRequiredService<IProblemTypeUriFactory>();
 
         ProblemDetails problem = new()
         {
-            Status = statusCode,
-            Type = problemTypeUriFactory.Build(code),
-            Title = title,
+            Status = definicao.Status,
+            Type = problemTypeUriFactory.Build(definicao.Code),
+            Title = definicao.Title,
             Detail = detail,
             Instance = $"urn:uuid:{Guid.CreateVersion7()}",
         };
 
-        problem.Extensions["code"] = code;
+        problem.Extensions["code"] = definicao.Code;
         problem.Extensions["traceId"] = Activity.Current?.TraceId.ToHexString()
             ?? Guid.CreateVersion7().ToString("N");
 

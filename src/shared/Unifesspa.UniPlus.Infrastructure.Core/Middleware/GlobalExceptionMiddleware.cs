@@ -129,18 +129,14 @@ public sealed partial class GlobalExceptionMiddleware
         EscreverProblemAsync(
             context,
             problemTypeUriFactory,
-            StatusCodes.Status409Conflict,
-            "uniplus.concorrencia.conflito",
-            "Conflito de concorrência",
+            ErrosDaFronteiraHttp.ConflitoDeConcorrencia,
             "Este recurso foi modificado por outra operação concorrente. Recarregue os dados e tente novamente.");
 
     private static Task EscreverRespostaCursorInvalido(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
         EscreverProblemAsync(
             context,
             problemTypeUriFactory,
-            StatusCodes.Status400BadRequest,
-            "uniplus.paginacao.cursor-invalido",
-            "Cursor inválido",
+            ErrosDaFronteiraHttp.CursorInvalido,
             "O cursor informado não continua esta consulta. Refaça a listagem sem cursor.");
 
     // O registro de acesso é do shared e qualquer módulo pode lançar a falha, então a resposta não depende do registro
@@ -149,9 +145,7 @@ public sealed partial class GlobalExceptionMiddleware
         EscreverProblemAsync(
             context,
             problemTypeUriFactory,
-            StatusCodes.Status503ServiceUnavailable,
-            "uniplus.autorizacao.registro_de_acesso.falha_ao_gravar",
-            "Registro de acesso indisponível",
+            ErrosDaFronteiraHttp.RegistroDeAcessoNaoGravado,
             "O acesso não pôde ser registrado e por isso não foi concluído. Tente novamente em instantes.");
 
     // O catálogo é do shared e qualquer módulo que decide acesso pode lançar a falha; a resposta não depende do registro de
@@ -160,38 +154,32 @@ public sealed partial class GlobalExceptionMiddleware
         EscreverProblemAsync(
             context,
             problemTypeUriFactory,
-            StatusCodes.Status503ServiceUnavailable,
-            "uniplus.autorizacao.catalogo.desatualizado",
-            "Sistema em atualização",
+            ErrosDaFronteiraHttp.CatalogoDePermissoesDesatualizado,
             "O sistema está sendo atualizado e o acesso não pôde ser decidido. Tente novamente em instantes.");
 
     private static Task EscreverRespostaErro(HttpContext context, IProblemTypeUriFactory problemTypeUriFactory) =>
         EscreverProblemAsync(
             context,
             problemTypeUriFactory,
-            StatusCodes.Status500InternalServerError,
-            "uniplus.internal.unexpected",
-            "Erro interno do servidor",
+            ErrosDaFronteiraHttp.ErroInesperado,
             "Ocorreu um erro inesperado. Tente novamente mais tarde.");
 
     private static async Task EscreverProblemAsync(
         HttpContext context,
         IProblemTypeUriFactory problemTypeUriFactory,
-        int status,
-        string code,
-        string title,
+        DomainErrorMapping definicao,
         string detail)
     {
-        context.Response.StatusCode = status;
+        context.Response.StatusCode = definicao.Status;
 
         Dictionary<string, object?> body = new()
         {
-            ["type"] = problemTypeUriFactory.Build(code),
-            ["title"] = title,
-            ["status"] = status,
+            ["type"] = problemTypeUriFactory.Build(definicao.Code),
+            ["title"] = definicao.Title,
+            ["status"] = definicao.Status,
             ["detail"] = detail,
             ["instance"] = $"urn:uuid:{Guid.CreateVersion7()}",
-            ["code"] = code,
+            ["code"] = definicao.Code,
             ["traceId"] = Activity.Current?.TraceId.ToHexString() ?? Guid.CreateVersion7().ToString("N"),
         };
 

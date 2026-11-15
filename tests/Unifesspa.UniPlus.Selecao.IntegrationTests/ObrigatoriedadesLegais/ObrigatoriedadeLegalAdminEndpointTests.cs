@@ -13,6 +13,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Outbox.Cascading;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Errors;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
@@ -29,18 +30,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
-public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
+public sealed class ObrigatoriedadeLegalAdminEndpointTests : ObrigatoriedadeLegalAdminTestBase
 {
-    private const string Leandro = "leandro.viana";
-
-    // Predicados em Dictionary porque anonymous types não suportam keys que
-    // começam com '$' (o JsonPolymorphic do PredicadoObrigatoriedade usa
-    // "$tipo" como discriminator per ADR-0058).
-    private static readonly Dictionary<string, object> PredicadoConcorrenciaDupla = new(StringComparer.Ordinal)
-    {
-        ["$tipo"] = "concorrenciaDuplaObrigatoria",
-    };
-
     private static readonly Dictionary<string, object> PredicadoEtapaProvaObjetiva = new(StringComparer.Ordinal)
     {
         ["$tipo"] = "etapaObrigatoria",
@@ -49,33 +40,9 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
         ["tipoEtapaCodigo"] = "PROVA_OBJETIVA",
     };
 
-    private readonly CascadingFixture _fixture;
-
     public ObrigatoriedadeLegalAdminEndpointTests(CascadingFixture fixture)
+        : base(fixture)
     {
-        _fixture = fixture;
-    }
-
-    public async Task InitializeAsync() =>
-        await ConcessoesDeTeste.RemoverDaPessoaAsync(_fixture.Factory.Services, Leandro);
-
-    /// <summary>
-    /// A <see cref="CascadingFixture"/> compartilha UM Postgres entre TODAS as classes da
-    /// coleção (Story #853 tornou isso perigoso): uma <c>ObrigatoriedadeLegal</c> universal
-    /// (<c>"*"</c>) que esta classe cria com vigência aberta sobreviveria para o resto da
-    /// suíte, e o gate legal novo passaria a avaliar TODO <c>Publicar</c>/<c>Retificar</c>/
-    /// <c>FecharRetificacao</c> de OUTRAS classes contra ela — reprovando processos que nunca
-    /// tiveram nada a ver com esta suíte. Soft-delete de tudo que esta classe criou
-    /// (identificado pelo prefixo <c>TEST_</c> de <see cref="UniqueRegraCodigo"/>) devolve o
-    /// catálogo ao estado anterior para a próxima classe da coleção.
-    /// </summary>
-    public async Task DisposeAsync()
-    {
-        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
-        await using UniPlusDbContext db = ResolveDbContext(scope);
-
-        await db.Database.ExecuteSqlAsync(
-            $"UPDATE selecao.obrigatoriedades_legais SET is_deleted = true WHERE regra_codigo LIKE 'TEST\\_%' ESCAPE '\\'");
     }
 
     [Fact(DisplayName = "POST admin/obrigatoriedades-legais com a permissão de manutenção cria regra universal")]
@@ -103,7 +70,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
         string body = await response.Content.ReadAsStringAsync();
         response.StatusCode.Should().Be(HttpStatusCode.Created,
             $"esperava Created mas veio {response.StatusCode}. Body: {body}");
-        await using (AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope())
+        await using (AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope())
         await using (UniPlusDbContext db = ResolveDbContext(scope))
         {
             ObrigatoriedadeLegal? regra = await db.ObrigatoriedadesLegais
@@ -272,7 +239,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
 
         put.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
-        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         await using UniPlusDbContext db = ResolveDbContext(scope);
         ObrigatoriedadeLegal regra = await db.ObrigatoriedadesLegais.SingleAsync(o => o.Id == id);
         regra.BaseLegal.Should().Be("Lei 14.723/2023 art.2º — nova");
@@ -312,6 +279,11 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
             putPayload);
 
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        using JsonDocument problema = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        DomainErrorMapping definicao = ErrosDaFronteiraHttp.IdDaRotaDivergenteDoCorpo;
+        problema.RootElement.GetProperty("type").GetString().Should().Be(definicao.Code);
+        problema.RootElement.GetProperty("title").GetString().Should().Be(definicao.Title);
+        problema.RootElement.GetProperty("status").GetInt32().Should().Be(definicao.Status);
     }
 
     [Fact(DisplayName = "DELETE soft-delete retorna 204 e regra some do GET público")]
@@ -331,7 +303,7 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
         publicGet.StatusCode.Should().Be(HttpStatusCode.NotFound);
 
         // Histórico forensic mantém a regra com snapshot pós-soft-delete.
-        await using AsyncServiceScope scope = _fixture.Factory.Services.CreateAsyncScope();
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         await using UniPlusDbContext db = ResolveDbContext(scope);
         int historico = await db.ObrigatoriedadeLegalHistorico
             .Where(h => h.RegraId == id)
@@ -387,125 +359,6 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
         semFiltro.Should().Contain(regraPSIQ);
     }
 
-    /// <summary>
-    /// O discriminador do predicado é <c>$tipo</c> (ADR-0058), e não o <c>type</c> que a maioria
-    /// das bibliotecas usa por convenção: errar o <c>$</c> é o modo de falha esperado de quem
-    /// integra pela primeira vez. Isso devolvia 500 — "erro interno do servidor" para um defeito
-    /// do cliente que a API sabe descrever, e num status que endpoint nenhum declara (issue
-    /// #1410).
-    /// </summary>
-    [Theory(DisplayName = "POST com predicado sem '$tipo' devolve 400 nomeando o campo e o discriminador")]
-    [InlineData("tipo")]
-    [InlineData("type")]
-    public async Task Criar_PredicadoSemDiscriminador_Retorna400NomeandoOCampo(string chaveErrada)
-    {
-        using HttpClient client = await ClienteComConcessaoAsync();
-        Dictionary<string, object> predicadoSemDiscriminador = new(StringComparer.Ordinal)
-        {
-            [chaveErrada] = "concorrenciaDuplaObrigatoria",
-        };
-
-        HttpResponseMessage response = await PostAsync(
-            client,
-            "/api/selecao/admin/obrigatoriedades-legais",
-            PayloadCom(predicadoSemDiscriminador));
-
-        string body = await response.Content.ReadAsStringAsync();
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, $"body: {body}");
-
-        using JsonDocument problema = JsonDocument.Parse(body);
-        problema.RootElement.GetProperty("code").GetString()
-            .Should().Be("uniplus.requisicao.malformada");
-        string detalhe = problema.RootElement.GetProperty("detail").GetString()!;
-        detalhe.Should().Contain("'predicado'").And.Contain("'$tipo'");
-        detalhe.Should().NotContain("Unifesspa.UniPlus",
-            "o nome do tipo CLR que falhou a desserialização não é assunto de quem chamou");
-    }
-
-    /// <summary>
-    /// Os dois erros de forma vizinhos, que antes divergiam: predicado vazio escapava como 500 e
-    /// discriminador desconhecido já respondia 400. A recusa é a mesma para os dois.
-    /// </summary>
-    [Theory(DisplayName = "POST com predicado inválido devolve 400 uniformemente")]
-    [InlineData("""{}""")]
-    [InlineData("""{"$tipo":"inexistente"}""")]
-    public async Task Criar_PredicadoInvalido_Retorna400(string predicadoJson)
-    {
-        using HttpClient client = await ClienteComConcessaoAsync();
-
-        HttpResponseMessage response = await PostAsync(
-            client,
-            "/api/selecao/admin/obrigatoriedades-legais",
-            PayloadCom(JsonSerializer.Deserialize<JsonElement>(predicadoJson)));
-
-        string body = await response.Content.ReadAsStringAsync();
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest, $"body: {body}");
-    }
-
-    /// <summary>O mesmo corpo com o discriminador no lugar continua sendo aceito.</summary>
-    [Fact(DisplayName = "POST com predicado e '$tipo' declarado continua criando a regra")]
-    public async Task Criar_PredicadoComDiscriminador_Cria()
-    {
-        using HttpClient client = await ClienteComConcessaoAsync();
-
-        HttpResponseMessage response = await PostAsync(
-            client,
-            "/api/selecao/admin/obrigatoriedades-legais",
-            PayloadCom(PredicadoConcorrenciaDupla));
-
-        response.StatusCode.Should().Be(HttpStatusCode.Created,
-            $"body: {await response.Content.ReadAsStringAsync()}");
-    }
-
-    /// <summary>O corpo mínimo aceito pelo endpoint, variando só o predicado.</summary>
-    private static object PayloadCom(object predicado) => new
-    {
-        tipoProcessoCodigo = "*",
-        categoria = "outros",
-        regraCodigo = UniqueRegraCodigo(),
-        predicado,
-        descricaoHumana = "Predicado sob teste de leitura do corpo",
-        baseLegal = "Lei 12.711/2012 art.1º",
-        vigenciaInicio = "2026-01-01",
-        vigenciaFim = (string?)null,
-        atoNormativoUrl = (string?)null,
-        portariaInternaCodigo = (string?)null,
-    };
-
-    // O token só identifica Leandro; quem lhe dá a permissão é a concessão gravada do perfil.
-    private async Task<HttpClient> ClienteComConcessaoAsync()
-    {
-        await ConcessoesDeTeste.ConcederPermissoesAsync(
-            _fixture.Factory.Services, Leandro, PermissaoSelecao.ObrigatoriedadesLegaisManter.Codigo);
-        HttpClient client = _fixture.Factory.CreateClient();
-        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue(
-            TestAuthHandler.AuthorizationScheme,
-            TestAuthHandler.TokenValue);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.UserIdHeader, Leandro);
-        client.DefaultRequestHeaders.Add(TestAuthHandler.NameHeader, "Leandro Viana");
-        client.DefaultRequestHeaders.Add(TestAuthHandler.EmailHeader, "leandro.viana@unifesspa.edu.br");
-        return client;
-    }
-
-    private static async Task<HttpResponseMessage> PostAsync(HttpClient client, string url, object payload, string? idempotencyKey = null)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Post, new Uri(url, UriKind.Relative));
-        request.Content = JsonContent.Create(payload);
-        request.Headers.Add("Idempotency-Key", idempotencyKey ?? Guid.NewGuid().ToString());
-        return await client.SendAsync(request);
-    }
-
-    private static async Task<HttpResponseMessage> PutAsync(HttpClient client, string url, object payload)
-    {
-        using HttpRequestMessage request = new(HttpMethod.Put, new Uri(url, UriKind.Relative));
-        request.Content = JsonContent.Create(payload);
-        request.Headers.Add("Idempotency-Key", Guid.NewGuid().ToString());
-        return await client.SendAsync(request);
-    }
-
-    private static UniPlusDbContext ResolveDbContext(AsyncServiceScope scope) =>
-        scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-
     private static async Task<Guid> SeedRegraAsync(
         HttpClient client,
         string regraCodigo,
@@ -534,7 +387,4 @@ public sealed class ObrigatoriedadeLegalAdminEndpointTests : IAsyncLifetime
         string body = await response.Content.ReadAsStringAsync();
         return JsonSerializer.Deserialize<Guid>(body);
     }
-
-    private static string UniqueRegraCodigo() =>
-        $"TEST_{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString(CultureInfo.InvariantCulture)}_{Guid.NewGuid().ToString("N")[..6].ToUpperInvariant()}";
 }

@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.Errors;
 
-using Microsoft.AspNetCore.Http;
-
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -18,16 +16,14 @@ public static class DomainErrorProblemDetailsFactory
         ArgumentNullException.ThrowIfNull(error);
         ArgumentNullException.ThrowIfNull(mapper);
 
-        bool found = mapper.TryGetMapping(error.Code, out DomainErrorMapping? mapping);
-
-        int status = found ? mapping!.Status : StatusCodes.Status400BadRequest;
-        string code = found ? mapping!.Code : "uniplus.erro_nao_mapeado";
-        string title = found ? mapping!.Title : "Erro de domínio";
+        DomainErrorMapping resolvido = mapper.TryGetMapping(error.Code, out DomainErrorMapping? mapping)
+            ? mapping
+            : ErrosDaFronteiraHttp.ErroDeDominioNaoMapeado;
 
         // Erro não mapeado nunca é retentável: não se afirma sobre um código que o catálogo não
         // conhece, e a ausência do campo é o sinal de que o cliente não deve contar com a repetição.
-        bool retryable = found && mapping!.RetryableConflict;
+        bool retryable = mapping is { RetryableConflict: true };
 
-        return (status, mapper.GetProblemTypeUri(code), title, code, retryable);
+        return (resolvido.Status, mapper.GetProblemTypeUri(resolvido.Code), resolvido.Title, resolvido.Code, retryable);
     }
 }

@@ -221,28 +221,28 @@ public partial class VendorMediaTypeAttribute : ActionFilterAttribute
 
     private void WriteNotAcceptable(ActionExecutingContext context)
     {
-        const string code = "uniplus.contract.versao_nao_suportada";
+        DomainErrorMapping definicao = ErrosDaFronteiraHttp.VersaoDeMidiaNaoSuportada;
 
         IProblemTypeUriFactory problemTypeUriFactory = context.HttpContext.RequestServices
             .GetRequiredService<IProblemTypeUriFactory>();
 
         ProblemDetails problem = new()
         {
-            Status = StatusCodes.Status406NotAcceptable,
-            Type = problemTypeUriFactory.Build(code),
-            Title = "Versão de mídia não suportada",
+            Status = definicao.Status,
+            Type = problemTypeUriFactory.Build(definicao.Code),
+            Title = definicao.Title,
             Detail = $"Nenhuma versão suportada pelo recurso '{Resource}' foi aceita pelo cliente.",
             Instance = $"urn:uuid:{Guid.CreateVersion7()}",
         };
 
-        problem.Extensions["code"] = code;
+        problem.Extensions["code"] = definicao.Code;
         problem.Extensions["available_versions"] = Versions;
         problem.Extensions["traceId"] = Activity.Current?.TraceId.ToHexString()
             ?? Guid.CreateVersion7().ToString("N");
 
         context.Result = new ObjectResult(problem)
         {
-            StatusCode = StatusCodes.Status406NotAcceptable,
+            StatusCode = definicao.Status,
             ContentTypes = { "application/problem+json" },
         };
     }

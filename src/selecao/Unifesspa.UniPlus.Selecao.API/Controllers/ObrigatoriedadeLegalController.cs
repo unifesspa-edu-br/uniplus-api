@@ -165,12 +165,8 @@ public sealed class ObrigatoriedadeLegalController : ControllerBase
 
         if (command.Id != id)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Id do path não bate com Id do body",
-                Status = StatusCodes.Status400BadRequest,
-                Type = "uniplus.contract.id_path_body_divergente",
-            });
+            DomainErrorMapping recusa = ErrosDaFronteiraHttp.IdDaRotaDivergenteDoCorpo;
+            return BadRequest(new ProblemDetails { Title = recusa.Title, Status = recusa.Status, Type = recusa.Code });
         }
 
         Result resultado = await _commandBus
