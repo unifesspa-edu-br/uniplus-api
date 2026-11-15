@@ -10,6 +10,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- O esquema Avro do valor do registro de acesso é a fonte única do contrato: o produtor o carrega daqui. -->
+    <EmbeddedResource Include="Contracts\Schemas\*.avsc" />
+  </ItemGroup>
+
+  <ItemGroup>
     <InternalsVisibleTo Include="Unifesspa.UniPlus.Authorization.UnitTests" />
   </ItemGroup>
 
