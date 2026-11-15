@@ -71,6 +71,7 @@ public sealed class AuditableInterceptor : SaveChangesInterceptor
         string userBy = ResolveUserBy();
 
         MarcarDonosDeOwnedAlterado(context);
+        DonosDeJuncaoAlterada.Marcar(context);
 
         foreach (EntityEntry<EntityBase> entry in context.ChangeTracker.Entries<EntityBase>())
         {

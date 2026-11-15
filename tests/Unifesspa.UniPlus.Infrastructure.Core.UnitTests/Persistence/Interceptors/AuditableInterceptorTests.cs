@@ -58,12 +58,28 @@ public sealed class AuditableInterceptorTests
         Guid IFilhoDeAgregado.DonoId => DonoId;
     }
 
+    private sealed class ConjuntoTeste : EntityBase
+    {
+        public List<ItemTeste> Itens { get; } = [];
+    }
+
+    private sealed class ItemTeste : EntityBase
+    {
+        public string Nome { get; set; } = string.Empty;
+    }
+
     private sealed class ContextoTeste(DbContextOptions<ContextoTeste> options) : DbContext(options)
     {
+        public DbSet<ConjuntoTeste> Conjuntos { get; set; } = null!;
+        public DbSet<ItemTeste> ItensDoConjunto { get; set; } = null!;
+
         public DbSet<DonoTeste> Donos { get; set; } = null!;
         public DbSet<FilhoTeste> Filhos { get; set; } = null!;
         public DbSet<EntidadeTeste> Entidades { get; set; } = null!;
         public DbSet<EntidadeAuditavel> EntidadesAuditaveis { get; set; } = null!;
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder) =>
+            modelBuilder.Entity<ConjuntoTeste>().HasMany(conjunto => conjunto.Itens).WithMany();
     }
 
     private static ContextoTeste CriarContexto(IUserContext? userContext = null, string? dbName = null) =>
@@ -252,5 +268,35 @@ public sealed class AuditableInterceptorTests
 
         acao.Should().NotThrow();
         entidade.CreatedAt.Should().Be(Instante, "CreatedAt é carimbado pelo interceptor mesmo em entidade não-auditável");
+    }
+
+    [Fact]
+    public void SavingChanges_DadoSoAJuncaoMuitosParaMuitosAlterada_EntaoOUpdatedAtDoDonoDeclaranteEhCarimbado()
+    {
+        // Sem marcar o dono, só as linhas da junção mudariam e o banco não conferiria a versão da linha dele.
+        string banco = Guid.NewGuid().ToString();
+        (Guid conjuntoId, Guid itemNaoVinculadoId) = GravarConjuntoComUmItemEOutroSolto(banco);
+
+        using ContextoTeste edicao = CriarContexto(dbName: banco);
+        ConjuntoTeste conjunto = edicao.Conjuntos.Include(c => c.Itens).Single(c => c.Id == conjuntoId);
+        ItemTeste item = edicao.ItensDoConjunto.Single(i => i.Id == itemNaoVinculadoId);
+        conjunto.Itens.Clear();
+        conjunto.Itens.Add(item);
+        edicao.SaveChanges();
+
+        conjunto.UpdatedAt.Should().Be(Instante, "trocar só os itens da junção também altera o conjunto que os declara");
+        item.UpdatedAt.Should().BeNull("o item referenciado não é editado por quem muda o vínculo");
+    }
+
+    private static (Guid ConjuntoId, Guid ItemSoltoId) GravarConjuntoComUmItemEOutroSolto(string banco)
+    {
+        ConjuntoTeste conjunto = new();
+        ItemTeste solto = new() { Nome = "solto" };
+        conjunto.Itens.Add(new ItemTeste { Nome = "vinculado" });
+        using ContextoTeste gravacao = CriarContexto(dbName: banco);
+        gravacao.Conjuntos.Add(conjunto);
+        gravacao.ItensDoConjunto.Add(solto);
+        gravacao.SaveChanges();
+        return (conjunto.Id, solto.Id);
     }
 }
