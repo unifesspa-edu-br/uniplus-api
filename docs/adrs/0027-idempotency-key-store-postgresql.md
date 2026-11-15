@@ -110,6 +110,12 @@ A segunda exceção tem a mesma forma da primeira — um status abaixo de 500 cu
 > Efeito no filtro: toda resposta `4xx` produzida dentro do MVC **libera a reserva** (como as `>= 500`), salvo a que declara `RecusaAposGravacao`; o `2xx` continua armazenado. A distinção entre `409` durável e `409` retentável deixa de decidir o filtro (o campo `retryable` segue no envelope, para o cliente). Vale para a resposta produzida **dentro do MVC**: a exceção que chega ao tratador global **retém** a reserva, porque a mutação pode já ter sido gravada, e esse caminho é tratado à parte.
 >
 > **Consequência aceita.** Reusar a chave com **corpo diferente** depois de um `4xx` já não devolve `422` de divergência de corpo: sem entrada, o corpo novo executa. É o efeito pretendido (corrigir e tentar de novo), e afrouxa o `draft-ietf-httpapi-idempotency-key-header`, que trata o reúso da chave com carga diferente como erro do cliente independentemente do desfecho anterior.
+>
+> **Emenda (2026-11-14) — a espera esgotada pela trava guarda a recusa na chave.**
+>
+> A recusa `503` `uniplus.concorrencia.espera_esgotada` nasce antes da mutação: o banco abortou a transação e nada foi gravado. Isso não basta para liberar a chave, porque a repetição só tem o mesmo significado quando a requisição **nomeia o alvo** ([ADR-0134](0134-conflito-retentavel-declarado-nao-ocupa-a-chave-de-idempotencia.md)): a operação que age sobre "o que está valendo" ou que lê o estado depois da trava pode, depois da corrida perdida, agir sobre o que o vencedor mudou.
+>
+> A recusa é **guardada** pela chave, sem `Retry-After`. A mesma chave recebe a mesma recusa, e o cliente relê o estado e envia de novo, com uma nova chave onde a rota exige `Idempotency-Key`; onde não exige, não há chave a trocar e a resposta só manda reler e enviar de novo. É um `5xx` armazenado, exceção ao "`5xx` não é cacheado" acima. O contrato declara o `503` em toda mutação marcada com `EmiteEsperaEsgotadaPelaTrava`.
 
 ### Cifragem at-rest
 

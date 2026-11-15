@@ -12,6 +12,8 @@ informed:
 # ADR-0134: O conflito declarado retentável não ocupa a chave de idempotência
 
 > **Nota (2026-10-29).** A emenda da [ADR-0027](0027-idempotency-key-store-postgresql.md) "Status codes em cache" generalizou a regra: toda resposta `4xx` produzida dentro do MVC libera a chave, e o filtro deixou de ler a declaração `retryable`. O campo segue no envelope, como sinal ao cliente; a distinção entre `409` durável e retentável não decide mais o armazenamento.
+>
+> **Nota (2026-11-14).** O critério abaixo, "o alvo é nomeado pela requisição", também decide a espera esgotada pela trava: a emenda da [ADR-0027](0027-idempotency-key-store-postgresql.md) "Status codes em cache" guarda a recusa na chave, sem `Retry-After`, porque nenhuma rota nomeia o alvo de modo que a repetição, depois da corrida perdida, aja sobre o mesmo estado: o `If-Match: *` e o que o handler lê depois da trava deixam o alvo sair do estado corrente.
 
 ## Contexto e enunciado do problema
 
