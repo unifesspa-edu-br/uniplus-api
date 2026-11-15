@@ -2,7 +2,7 @@
 
 Roteiro reproduzível e resultado da validação local do recorte obrigatório da governança de acessos: separação entre quem cria e quem aprova, segunda etapa pela proteção de dados, designação do Encarregado de dados, continuidade dos gestores e do Representante do controlador, registro de acesso no tópico Kafka e E2E reais da web. A execução usa a stack local do `uniplus-api` (docker compose, Keycloak e Kafka locais) e o `uniplus-web` servido com `nx serve`. HML e produção não fazem parte desta validação.
 
-Tudo que o roteiro grava passa pela API, sem escrita direta no banco. As identidades são as personas fictícias do realm `unifesspa` (`docker/keycloak/personas.json`). Nenhum token, `sub` ou e-mail entra no registro do resultado.
+Tudo que o roteiro grava passa pela API, sem escrita direta no banco. As identidades são as personas fictícias do realm `unifesspa` (`docker/keycloak/personas.json`). Nenhum token, `contaId` ou e-mail entra no registro do resultado.
 
 ## 1. Versões
 
@@ -107,7 +107,7 @@ token() {
     --data-urlencode "username=$1" --data-urlencode "password=$SENHA" | jq -r '.access_token // empty'
 }
 claim() { jq -rR --arg c "$2" 'split(".")[1] | gsub("-";"+") | gsub("_";"/") | @base64d | fromjson | .[$c]' <<< "$1"; }
-sub_de()   { claim "$(token "$1")" sub; }
+conta_id_de() { claim "$(token "$1")" sub; }
 email_de() { claim "$(token "$1")" email; }
 
 # Chamada como a persona: corpo em $VAL_DIR/ultima.json, cabeçalhos em ultima.hdr, status em $STATUS.
@@ -169,18 +169,18 @@ ajustar_clients_web() {
 
 # Uma leitura registrada no Kafka: $1=rótulo $2=persona $3=rota $4=status esperado $5=ids esperados (JSON) ou "corpo".
 k_leitura() {
-  local rot="$1" quem="$2" rota="$3" st="$4" ids="$5" n sub
-  sub=$(sub_de "$quem"); n=$(fim_do_topico)
+  local rot="$1" quem="$2" rota="$3" st="$4" ids="$5" n conta_id
+  conta_id=$(conta_id_de "$quem"); n=$(fim_do_topico)
   api "$quem" GET "$rota"; espera "$st" "${6:-}" "$rot $quem GET $rota"
   [ "$ids" = corpo ] && ids=$(corpo -c '[.[].id]')
   sleep 2
   mensagens_desde "$n" > "$VAL_DIR/$rot.kafka.txt"
-  valores_desde "$n" | jq -s --arg sub "$sub" --argjson ids "$ids" '{
+  valores_desde "$n" | jq -s --arg contaId "$conta_id" --argjson ids "$ids" '{
      mensagens: length, registros: (map(length) | add // 0),
      chavesValidas: (map(.[].chave | test("^[0-9a-f]{64}$")) | all),
      execucaoUnica: (map([.[].registro.execucaoId] | unique | length == 1) | all),
      idsConferem: ((map(.[].registro.resourceId) | sort) == ($ids | sort)),
-     atorConfere: (map(.[].registro.atorSubject == $sub) | all),
+     atorConfere: (map(.[].registro.atorContaId == $contaId) | all),
      campos: (map(.[].registro | {permissao, fonteGrant, resourceTipo, sensibilidade, resultado, permitido,
                                  motivoNegativa, grantId, perfilId, versaoId, escopoUnidadeId}) | unique)}' \
     | tee "$VAL_DIR/$rot.resumo.json" | jq -c .
@@ -311,15 +311,15 @@ espera 200 "" "5.3 o segundo Representante decide a segunda etapa"; CONC_E=$(cor
 A trava do último Representante vale desde a primeira designação: com dois, a revogação de um passa, e a do último restante é recusada.
 
 ```bash
-conc_de() { api diogo.souza GET "/api/autorizacao/concessoes?perfil=$1&situacao=ativa&limit=100" >/dev/null; corpo -r --arg s "$2" '.[] | select(.beneficiario.sub==$s and .ativa) | .id'; }
+conc_de() { api diogo.souza GET "/api/autorizacao/concessoes?perfil=$1&situacao=ativa&limit=100" >/dev/null; corpo -r --arg s "$2" '.[] | select(.beneficiario.contaId==$s and .ativa) | .id'; }
 revogar() { api diogo.souza POST "/api/autorizacao/concessoes/$1/revogacao" "$(jq -nc --arg e "$2" '{motivo: "Validação local da governança de acessos.", confirmacaoEmail: $e}')"; }
 
 revogar "$CONC_K" "$(email_de kevin.carvalho)"; espera 204 "" "5.4 revogação comum"
-revogar "$(conc_de "$GESTOR_ID" "$(sub_de leandro.viana)")" "$(email_de leandro.viana)"
+revogar "$(conc_de "$GESTOR_ID" "$(conta_id_de leandro.viana)")" "$(email_de leandro.viana)"
 espera 422 uniplus.autorizacao.concessao.minimo_de_gestores "5.4 revogação do penúltimo gestor recusada"
-revogar "$(conc_de "$REPRESENTANTE_ID" "$(sub_de caroline.jesus)")" "$(email_de caroline.jesus)"
+revogar "$(conc_de "$REPRESENTANTE_ID" "$(conta_id_de caroline.jesus)")" "$(email_de caroline.jesus)"
 espera 204 "" "5.4 revogação de um de dois Representantes"
-C_BETINA=$(conc_de "$REPRESENTANTE_ID" "$(sub_de betina.neves)")
+C_BETINA=$(conc_de "$REPRESENTANTE_ID" "$(conta_id_de betina.neves)")
 revogar "$C_BETINA" "$(email_de betina.neves)"
 espera 422 uniplus.autorizacao.concessao.ultimo_representante "5.4 revogação do último Representante recusada"
 corpo -r .detail                                                            # orienta a designar antes quem substitui

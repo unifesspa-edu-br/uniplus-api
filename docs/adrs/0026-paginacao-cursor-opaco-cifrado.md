@@ -53,7 +53,7 @@ O cursor recebido pelo cliente é uma string base64-url-safe sem padding. Seu co
 A mitigação:
 
 - Endpoint user-scoped declara `[FromCursor(resource, RequireUserBinding = true)]`. Default `false` (recurso público).
-- Binder popula `user_id` no payload com o sub do principal corrente quando `RequireUserBinding == true`.
+- Binder popula `user_id` no payload com o identificador da conta do principal corrente quando `RequireUserBinding == true`.
 - No decode, valida `payload.user_id == currentUser.UserId`. Mismatch → 400 com `code: uniplus.cursor.invalido` (não `uniplus.cursor.proibido` para não vazar status: cursor de outro user é tratado como cursor adulterado).
 - Anonymous request em endpoint marcado → 400 `uniplus.cursor.invalido` (consistente com a política do filter de Idempotency-Key — endpoints user-scoped exigem auth).
 

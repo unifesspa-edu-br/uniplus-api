@@ -180,7 +180,7 @@ Todo tipo de documento e todo fato do catálogo, em qualquer classificação, pa
 
 ### Contrato
 
-Sem produção nem integrador, as mudanças de contrato (respostas como itens tipados, identificador mascarado, itens omitidos, revelação por campo no lugar da revelação do CPF, `selecao:inscricoes:revelar-cpf` fora do catálogo, o `sub` de quem abriu a retificação fora da resposta) entram na versão `v1` do contrato, sem incremento de versão, registradas no PR. A política de mudança incompatível do princípio 5 da [ADR-0022](0022-contrato-rest-canonico-umbrella.md) e da [ADR-0028](0028-versionamento-per-resource-content-negotiation.md) passa a valer com o primeiro integrador.
+Sem produção nem integrador, as mudanças de contrato (respostas como itens tipados, identificador mascarado, itens omitidos, revelação por campo no lugar da revelação do CPF, `selecao:inscricoes:revelar-cpf` fora do catálogo, o `contaId` de quem abriu a retificação fora da resposta) entram na versão `v1` do contrato, sem incremento de versão, registradas no PR. A política de mudança incompatível do princípio 5 da [ADR-0022](0022-contrato-rest-canonico-umbrella.md) e da [ADR-0028](0028-versionamento-per-resource-content-negotiation.md) passa a valer com o primeiro integrador.
 
 ## Consequências
 

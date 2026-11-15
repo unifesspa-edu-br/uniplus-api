@@ -256,7 +256,7 @@ public static class PublicarProcessoSeletivoCommandHandler
 
         Result<PublicacaoResultado> publicarResult = processo.Publicar(
             dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            documento.HashSha256!, atorUsuarioSub, timeProvider);
+            documento.HashSha256!, atorUsuarioContaId, timeProvider);
         if (publicarResult.IsFailure)
         {
             return (Result.Failure(publicarResult.Error!), []);

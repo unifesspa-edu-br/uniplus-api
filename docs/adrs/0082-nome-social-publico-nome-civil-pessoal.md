@@ -143,7 +143,7 @@ identidade. `ProcessoSeletivoController` inteiro é `[Authorize(Roles = "platafo
 acesso à rota a essa role, mas não constitui, por si, um gate de mérito sobre a norma citada.
 
 O gate de mérito desta ADR é o **publicador**: é na publicação que `PublicarProcessoSeletivoCommandHandler`
-congela a identidade do ator responsável — `VersaoConfiguracao.AtorUsuarioSub` ("sub do usuário que publicou —
+congela a identidade do ator responsável — `VersaoConfiguracao.AtorUsuarioContaId` ("ContaId do usuário que publicou —
 evidência forense de autoria"), campo distinto de `AtoCriadorId`/`AtoCriadorHash` (identidade e integridade do
 **ato**, não da pessoa). Antes de publicar um processo com `nome` na divulgação, é o `plataforma-admin` que
 publica quem deve conferir a existência e a aplicabilidade da norma citada na justificativa, e a impossibilidade
