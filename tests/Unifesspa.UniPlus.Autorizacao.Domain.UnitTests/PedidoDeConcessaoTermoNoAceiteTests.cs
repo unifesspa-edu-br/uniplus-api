@@ -17,10 +17,10 @@ public sealed class PedidoDeConcessaoTermoNoAceiteTests
     {
         PedidoDeConcessao pedido = Pedido().ParaSiMesmo().DeclarandoDocumento().Protegido().Criado();
 
-        Codigos(pedido.Aceitar(Betina, pedido.TermoVersaoId, Agora)).Should().Equal(PedidoErrorCodes.AnexoNaoVerificado);
+        Codigos(pedido.Aceitar(Betina, pedido.Termo?.VersaoId, Agora)).Should().Equal(PedidoErrorCodes.AnexoNaoVerificado);
         VerificarDocumento(pedido);
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario, "o pedido protegido passa pelo aceite antes do gestor");
-        pedido.Aceitar(Betina, pedido.TermoVersaoId, Agora).IsSuccess.Should().BeTrue();
+        pedido.Aceitar(Betina, pedido.Termo?.VersaoId, Agora).IsSuccess.Should().BeTrue();
 
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
         pedido.AceiteDoTermo!.Pessoa.Should().Be(Betina.Identidade);
@@ -48,7 +48,7 @@ public sealed class PedidoDeConcessaoTermoNoAceiteTests
             VerificarDocumento(pedido);
         }
 
-        pedido.Aceitar(Leandro, pedido.TermoVersaoId, Agora).IsSuccess.Should().BeTrue();
+        pedido.Aceitar(Leandro, pedido.Termo?.VersaoId, Agora).IsSuccess.Should().BeTrue();
 
         pedido.AceiteDoTermo!.Pessoa.Should().Be(Leandro.Identidade);
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
@@ -61,8 +61,8 @@ public sealed class PedidoDeConcessaoTermoNoAceiteTests
         PedidoDeConcessao proprio = Pedido().ParaSiMesmo().DeclarandoDocumento().Protegido().Criado();
         VerificarDocumento(proprio);
 
-        Codigos(paraOutra.Aceitar(Betina, paraOutra.TermoVersaoId, Agora)).Should().Equal(PedidoErrorCodes.NaoEOBeneficiario);
-        Codigos(proprio.Aceitar(Leandro with { Email = Betina.Email }, proprio.TermoVersaoId, Agora))
+        Codigos(paraOutra.Aceitar(Betina, paraOutra.Termo?.VersaoId, Agora)).Should().Equal(PedidoErrorCodes.NaoEOBeneficiario);
+        Codigos(proprio.Aceitar(Leandro with { Email = Betina.Email }, proprio.Termo?.VersaoId, Agora))
             .Should().Equal(PedidoErrorCodes.NaoEOBeneficiario);
     }
 

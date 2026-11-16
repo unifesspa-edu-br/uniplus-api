@@ -78,15 +78,26 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         // A unidade é de outro módulo (ADR-0087): sem chave estrangeira entre schemas.
         builder.Property(p => p.UnidadeId);
         builder.Property(p => p.AnexaraDocumento).IsRequired();
-        builder.Property(p => p.TermoNumero);
-        builder.Property(p => p.TermoResumo).HasMaxLength(ConteudoDoTermo.ResumoLength).IsFixedLength();
+        ConfigurarTermo(builder);
 
         // Derivados do estado: não se gravam de novo.
         builder.Ignore(p => p.Escopo);
         builder.Ignore(p => p.Ativo);
         builder.Ignore(p => p.EtapaAtual);
-        builder.Ignore(p => p.Termo);
         builder.Ignore(p => p.AguardaAceiteDoTermo);
+    }
+
+    private static void ConfigurarTermo(EntityTypeBuilder<PedidoDeConcessao> builder)
+    {
+        builder.OwnsOne(p => p.Termo, termo =>
+        {
+            termo.Property(t => t.VersaoId).HasColumnName("termo_versao_id");
+            termo.Property(t => t.Numero).HasColumnName("termo_numero");
+            termo.Property(t => t.Resumo).HasColumnName("termo_resumo").HasMaxLength(ConteudoDoTermo.ResumoLength).IsFixedLength();
+
+            // A versão fixada é imutável e não se apaga: a chave estrangeira impede o pedido de apontar para versão inexistente.
+            termo.HasOne<VersaoDoTermo>().WithMany().HasForeignKey(t => t.VersaoId).OnDelete(DeleteBehavior.Restrict);
+        });
     }
 
     private static void ConfigurarSolicitante(EntityTypeBuilder<PedidoDeConcessao> builder)
@@ -143,12 +154,6 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         builder.HasMany(p => p.Anexos)
             .WithOne()
             .HasForeignKey(a => a.PedidoId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // A versão fixada é imutável e não se apaga: a chave estrangeira impede o pedido de apontar para versão inexistente.
-        builder.HasOne<VersaoDoTermo>()
-            .WithMany()
-            .HasForeignKey(p => p.TermoVersaoId)
             .OnDelete(DeleteBehavior.Restrict);
 
         // O aceite acompanha toda leitura do pedido: a trilha, o detalhe e a aprovação o conferem.

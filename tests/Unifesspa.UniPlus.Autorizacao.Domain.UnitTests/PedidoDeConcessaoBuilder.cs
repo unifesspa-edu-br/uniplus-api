@@ -94,7 +94,7 @@ internal sealed class PedidoDeConcessaoBuilder
 
         if (pedido.Situacao == SituacaoDoPedido.AguardandoBeneficiario)
         {
-            pedido.Aceitar(_paraSiMesmo ? _solicitante : _beneficiario, pedido.TermoVersaoId, Agora).IsSuccess.Should().BeTrue();
+            pedido.Aceitar(_paraSiMesmo ? _solicitante : _beneficiario, pedido.Termo?.VersaoId, Agora).IsSuccess.Should().BeTrue();
         }
 
         return pedido;

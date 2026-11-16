@@ -167,7 +167,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         pedido.FixarTermo(new TermoNaCriacao(Vigente, Vigente.Id, true), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         if (!paraSiMesmo)
         {
-            pedido.Aceitar(Leandro, pedido.TermoVersaoId, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+            pedido.Aceitar(Leandro, pedido.Termo?.VersaoId, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         }
 
         return pedido;

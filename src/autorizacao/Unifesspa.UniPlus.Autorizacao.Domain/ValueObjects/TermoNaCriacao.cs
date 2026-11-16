@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <param name="Exigido">O perfil do pedido exige o termo (<see cref="ExigenciaDoTermo"/>).</param>
 public sealed record TermoNaCriacao(VersaoDoTermo? Vigente, Guid? Apresentada, bool Exigido)
 {
+    internal TermoFixado? Fixado => Exigido && Vigente is { } vigente ? new TermoFixado(vigente.Id, vigente.Numero, vigente.Resumo) : null;
+
     internal Result? Recusa() =>
         Exigido && Vigente is null
             ? Result.Failure(new DomainError(
