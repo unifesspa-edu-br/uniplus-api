@@ -1632,11 +1632,6 @@
       "titulo": "Tamanho da orientação do valor de domínio inválido"
     },
     {
-      "codigo": "uniplus.configuracao.grupo_curso.fora_do_dominio",
-      "status": 422,
-      "titulo": "Grupo de área do ENEM fora dos quatro grupos da Resolução nº 805/2024/Consepe"
-    },
-    {
       "codigo": "uniplus.configuracao.local_oferta.campus_responsavel_nao_encontrado",
       "status": 422,
       "titulo": "Campus responsável informado não encontrado"
