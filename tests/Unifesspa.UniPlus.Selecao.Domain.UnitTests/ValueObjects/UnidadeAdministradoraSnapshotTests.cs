@@ -32,44 +32,16 @@ public sealed class UnidadeAdministradoraSnapshotTests
         resultado.Value!.Sigla.Should().Be(esperado);
     }
 
-    [Fact(DisplayName = "Criar com sigla vazia falha")]
-    public void Criar_SiglaVazia_Falha()
+    [Theory(DisplayName = "Sigla, slug, nome ou tipo em branco é defeito de quem chama e lança, sem código público")]
+    [InlineData("sigla", "", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA")]
+    [InlineData("slug", "CEPS", "  ", "Centro de Processos Seletivos", "ADMINISTRATIVA")]
+    [InlineData("nome", "CEPS", "ceps", "", "ADMINISTRATIVA")]
+    [InlineData("tipo", "CEPS", "ceps", "Centro de Processos Seletivos", " ")]
+    public void Criar_CampoObrigatorioEmBranco_Lanca(string campo, string sigla, string slug, string nome, string tipo)
     {
-        Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
-            "", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA");
+        Action criar = () => UnidadeAdministradoraSnapshot.Criar(sigla, slug, nome, tipo);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("UnidadeAdministradoraSnapshot.SiglaObrigatoria");
-    }
-
-    [Fact(DisplayName = "Criar com slug vazio falha")]
-    public void Criar_SlugVazio_Falha()
-    {
-        Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
-            "CEPS", "", "Centro de Processos Seletivos", "ADMINISTRATIVA");
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("UnidadeAdministradoraSnapshot.SlugObrigatorio");
-    }
-
-    [Fact(DisplayName = "Criar com nome vazio falha")]
-    public void Criar_NomeVazio_Falha()
-    {
-        Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
-            "CEPS", "ceps", "", "ADMINISTRATIVA");
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("UnidadeAdministradoraSnapshot.NomeObrigatorio");
-    }
-
-    [Fact(DisplayName = "Criar com tipo vazio falha")]
-    public void Criar_TipoVazio_Falha()
-    {
-        Result<UnidadeAdministradoraSnapshot> resultado = UnidadeAdministradoraSnapshot.Criar(
-            "CEPS", "ceps", "Centro de Processos Seletivos", "");
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("UnidadeAdministradoraSnapshot.TipoObrigatorio");
+        criar.Should().Throw<ArgumentException>().WithParameterName(campo);
     }
 
     // ── Cidade (issue #1114) — opcional all-or-nothing ────────────────────

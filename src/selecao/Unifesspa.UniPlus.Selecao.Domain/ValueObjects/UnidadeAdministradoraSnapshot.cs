@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using System.Runtime.CompilerServices;
+
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -48,48 +50,30 @@ public sealed record UnidadeAdministradoraSnapshot
     public string? CidadeNome { get; }
     public string? CidadeUf { get; }
 
+    /// <summary>
+    /// Sigla, slug, nome e tipo vêm do cadastro vivo da unidade, que já os exige: vazios são defeito de quem chama, não recusa a
+    /// um cliente, e lançam <see cref="ArgumentException"/>. A referência de cidade é a que pode falhar como resultado.
+    /// </summary>
     public static Result<UnidadeAdministradoraSnapshot> Criar(
         string sigla, string slug, string nome, string tipo,
         string? cidadeCodigoIbge = null, string? cidadeNome = null, string? cidadeUf = null)
     {
-        if (string.IsNullOrWhiteSpace(sigla))
-        {
-            return Result<UnidadeAdministradoraSnapshot>.Failure(new DomainError(
-                "UnidadeAdministradoraSnapshot.SiglaObrigatoria", "Sigla da unidade administradora é obrigatória."));
-        }
-
-        if (string.IsNullOrWhiteSpace(slug))
-        {
-            return Result<UnidadeAdministradoraSnapshot>.Failure(new DomainError(
-                "UnidadeAdministradoraSnapshot.SlugObrigatorio", "Slug da unidade administradora é obrigatório."));
-        }
-
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            return Result<UnidadeAdministradoraSnapshot>.Failure(new DomainError(
-                "UnidadeAdministradoraSnapshot.NomeObrigatorio", "Nome da unidade administradora é obrigatório."));
-        }
-
-        if (string.IsNullOrWhiteSpace(tipo))
-        {
-            return Result<UnidadeAdministradoraSnapshot>.Failure(new DomainError(
-                "UnidadeAdministradoraSnapshot.TipoObrigatorio", "Tipo da unidade administradora é obrigatório."));
-        }
-
         Result cidadeValidacao = ValidarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
         if (cidadeValidacao.IsFailure)
         {
             return Result<UnidadeAdministradoraSnapshot>.Failure(cidadeValidacao.Error!);
         }
 
-        // CA1062: ValidarReferenciaCidade, acima, já prova a bicondicional entre os três
-        // parâmetros — o analisador não relaciona essa prova entre parâmetros distintos.
-#pragma warning disable CA1062
         (string? codigo, string? nomeCidade, string? uf) = NormalizarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
-#pragma warning restore CA1062
 
         return Result<UnidadeAdministradoraSnapshot>.Success(new UnidadeAdministradoraSnapshot(
-            sigla.Trim(), slug.Trim(), nome.Trim(), tipo.Trim(), codigo, nomeCidade, uf));
+            Obrigatorio(sigla), Obrigatorio(slug), Obrigatorio(nome), Obrigatorio(tipo), codigo, nomeCidade, uf));
+    }
+
+    private static string Obrigatorio(string? valor, [CallerArgumentExpression(nameof(valor))] string? campo = null)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(valor, campo);
+        return valor.Trim();
     }
 
     /// <summary>
@@ -107,19 +91,10 @@ public sealed record UnidadeAdministradoraSnapshot
             : Result.Success();
     }
 
-    /// <summary>
-    /// Normaliza o trio já validado por <see cref="ValidarReferenciaCidade"/> — extraído
-    /// para método privado porque o CA1062 não relaciona a prova da bicondicional entre
-    /// parâmetros distintos dentro do método público <see cref="Criar"/>.
-    /// </summary>
+    /// <summary>Normaliza o trio já validado por <see cref="ValidarReferenciaCidade"/>: ou os três presentes, ou nenhum.</summary>
     private static (string? Codigo, string? Nome, string? Uf) NormalizarReferenciaCidade(
-        string? cidadeCodigoIbge, string? cidadeNome, string? cidadeUf)
-    {
-        if (string.IsNullOrWhiteSpace(cidadeCodigoIbge))
-        {
-            return (null, null, null);
-        }
-
-        return (cidadeCodigoIbge.Trim(), cidadeNome!.Trim(), cidadeUf!.Trim().ToUpperInvariant());
-    }
+        string? cidadeCodigoIbge, string? cidadeNome, string? cidadeUf) =>
+        string.IsNullOrWhiteSpace(cidadeCodigoIbge)
+            ? (null, null, null)
+            : (cidadeCodigoIbge.Trim(), cidadeNome?.Trim(), cidadeUf?.Trim().ToUpperInvariant());
 }

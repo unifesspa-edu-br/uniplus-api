@@ -8012,26 +8012,6 @@
       "titulo": "Snapshot do tipo de processo seletivo excede o tamanho permitido"
     },
     {
-      "codigo": "uniplus.selecao.unidade_administradora_snapshot.nome_obrigatorio",
-      "status": 422,
-      "titulo": "Nome da unidade administradora é obrigatório"
-    },
-    {
-      "codigo": "uniplus.selecao.unidade_administradora_snapshot.sigla_obrigatoria",
-      "status": 422,
-      "titulo": "Sigla da unidade administradora é obrigatória"
-    },
-    {
-      "codigo": "uniplus.selecao.unidade_administradora_snapshot.slug_obrigatorio",
-      "status": 422,
-      "titulo": "Slug da unidade administradora é obrigatório"
-    },
-    {
-      "codigo": "uniplus.selecao.unidade_administradora_snapshot.tipo_obrigatorio",
-      "status": 422,
-      "titulo": "Tipo da unidade administradora é obrigatório"
-    },
-    {
       "codigo": "uniplus.selecao.vaga_ofertada.modalidade_codigo_obrigatorio",
       "status": 422,
       "titulo": "Código da modalidade da vaga ofertada é obrigatório"
