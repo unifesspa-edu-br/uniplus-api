@@ -32,6 +32,20 @@ public sealed class ValidacaoEmDoisPassosTests
         await termos.DidNotReceive().ObterVigenteSobTravaCompartilhadaAsync(Arg.Any<CancellationToken>());
     }
 
+    [Theory(DisplayName = "A justificativa omitida ou nula na requisição é recusada como inválida")]
+    [InlineData(null)]
+    [InlineData("")]
+    public async Task JustificativaOmitida_EhRecusada(string? justificativa)
+    {
+        ITermoDeResponsabilidadeRepository termos = Substitute.For<ITermoDeResponsabilidadeRepository>();
+        Perfil perfil = ApoioDoPedido.PerfilComum();
+        CriarPedidoDeConcessaoCommand comando = new(ApoioDoPedido.Leandro.Email, perfil.Id, Guid.NewGuid(), justificativa);
+
+        Result<NovoPedido> resultado = await Conferencia(perfil, termos).ConferirAsync(comando, ApoioDoPedido.Betina, CancellationToken.None);
+
+        resultado.Errors.Select(e => e.Error.Code).Should().Equal(PedidoErrorCodes.JustificativaInvalida);
+    }
+
     private static ConferenciaDoNovoPedido Conferencia(Perfil perfil, ITermoDeResponsabilidadeRepository termos)
     {
         IConcessaoRepository concessoes = Substitute.For<IConcessaoRepository>();
