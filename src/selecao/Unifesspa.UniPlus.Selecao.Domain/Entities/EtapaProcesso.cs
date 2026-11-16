@@ -26,23 +26,6 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// <summary>Alinhado a <c>EtapaProcessoConfiguration</c> (varchar(300)).</summary>
     public const int NomeMaxLength = 300;
 
-    /// <summary>Caráter declarado que o tipo de etapa não admite (<see cref="CaraterDaEtapa.ValidarAdmitido"/>).</summary>
-    public const string CaraterNaoAdmitidoPeloTipo = "EtapaProcesso.CaraterNaoAdmitidoPeloTipo";
-
-    public const string NotaMaximaInvalida = "EtapaProcesso.NotaMaximaInvalida";
-    public const string PassoDoLancamentoInvalido = "EtapaProcesso.PassoDoLancamentoInvalido";
-    public const string NotaMinimaAcimaDaNotaMaxima = "EtapaProcesso.NotaMinimaAcimaDaNotaMaxima";
-    public const string NotaMaximaForaDoPasso = "EtapaProcesso.NotaMaximaForaDoPasso";
-    public const string AvaliacaoNaEtapaDoEnem = "EtapaProcesso.AvaliacaoNaEtapaDoEnem";
-    public const string RegraDeConsolidacaoForaDaFormaHumana = "EtapaProcesso.RegraDeConsolidacaoForaDaFormaHumana";
-    public const string RegraDeConsolidacaoInvalida = "EtapaProcesso.RegraDeConsolidacaoInvalida";
-    public const string PassoNaFormaObjetiva = "EtapaProcesso.PassoNaFormaObjetiva";
-    public const string FormaDeAvaliacaoDesconhecida = "EtapaProcesso.FormaDeAvaliacaoDesconhecida";
-    public const string ItensNaEtapaDoEnem = "EtapaProcesso.ItensNaEtapaDoEnem";
-    public const string EscalaSemItens = "EtapaProcesso.EscalaSemItens";
-    public const string EscalaNaFormaObjetiva = "EtapaProcesso.EscalaNaFormaObjetiva";
-    public const string PassoComEscalaDeAtendimento = "EtapaProcesso.PassoComEscalaDeAtendimento";
-
     public Guid ProcessoSeletivoId { get; private set; }
 
     /// <summary>

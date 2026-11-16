@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// Recusa a contradição entre o que a etapa declara sobre como a nota é obtida, em rascunho também: a
@@ -49,17 +50,17 @@ public static class CoerenciaDaAvaliacaoDaEtapa
 
     private static FieldError?[] RecusasDaFormaEDaRegraNoEnem(FormaDeAvaliacao? forma, string? regraConsolidacaoCodigo) =>
     [
-        Recusa(forma is not null, "formaDeAvaliacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem,
+        Recusa(forma is not null, "formaDeAvaliacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem,
             "A etapa de nota do ENEM não declara forma de avaliação: a nota vem do INEP."),
-        Recusa(regraConsolidacaoCodigo is not null, "regraConsolidacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem,
+        Recusa(regraConsolidacaoCodigo is not null, "regraConsolidacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem,
             "A etapa de nota do ENEM não declara regra de consolidação: a nota vem do INEP."),
     ];
 
     private static FieldError?[] RecusasDosItensEDaEscalaNoEnem(bool declaraItens, bool declaraEscala) =>
     [
-        Recusa(declaraItens, "itensDeAvaliacao", EtapaProcesso.ItensNaEtapaDoEnem,
+        Recusa(declaraItens, "itensDeAvaliacao", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem,
             "A etapa de nota do ENEM não declara itens de avaliação: a nota vem do INEP."),
-        Recusa(declaraEscala, "escalaDeAtendimento", EtapaProcesso.ItensNaEtapaDoEnem,
+        Recusa(declaraEscala, "escalaDeAtendimento", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem,
             "A etapa de nota do ENEM não declara escala de atendimento: a nota vem do INEP."),
     ];
 
@@ -70,25 +71,25 @@ public static class CoerenciaDaAvaliacaoDaEtapa
             return null;
         }
 
-        return Recusa(forma != FormaDeAvaliacao.Humana, "regraConsolidacao", EtapaProcesso.RegraDeConsolidacaoForaDaFormaHumana,
+        return Recusa(forma != FormaDeAvaliacao.Humana, "regraConsolidacao", EtapaProcessoErrorCodes.RegraDeConsolidacaoForaDaFormaHumana,
                 "A regra de consolidação só se aplica à avaliação humana: com mais de um avaliador é que as notas precisam ser combinadas.")
             ?? Recusa(!RegraConsolidacaoCodigo.Rol.Contains(regraConsolidacaoCodigo), "regraConsolidacao",
-                EtapaProcesso.RegraDeConsolidacaoInvalida,
+                EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida,
                 $"A regra '{regraConsolidacaoCodigo}' não é uma regra de consolidação do catálogo.");
     }
 
     private static FieldError? RecusaDoPasso(FormaDeAvaliacao? forma, decimal? passoDoLancamento) =>
         Recusa(forma == FormaDeAvaliacao.Objetiva && passoDoLancamento is not null, "passoDoLancamento",
-            EtapaProcesso.PassoNaFormaObjetiva,
+            EtapaProcessoErrorCodes.PassoNaFormaObjetiva,
             "O passo do lançamento só se aplica à avaliação humana: na avaliação objetiva ninguém lança a nota.");
 
     private static FieldError?[] RecusasDaEscalaDeAtendimento(FormaDeAvaliacao? forma, decimal? passoDoLancamento, bool declaraItens) =>
     [
-        Recusa(!declaraItens, "escalaDeAtendimento", EtapaProcesso.EscalaSemItens,
+        Recusa(!declaraItens, "escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaSemItens,
             "A escala de atendimento é aplicada a cada item: sem itens de avaliação, não há o que atender."),
-        Recusa(forma == FormaDeAvaliacao.Objetiva, "escalaDeAtendimento", EtapaProcesso.EscalaNaFormaObjetiva,
+        Recusa(forma == FormaDeAvaliacao.Objetiva, "escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaNaFormaObjetiva,
             "A escala de atendimento só se aplica à avaliação humana: na avaliação objetiva ninguém escolhe o nível."),
-        Recusa(passoDoLancamento is not null, "passoDoLancamento", EtapaProcesso.PassoComEscalaDeAtendimento,
+        Recusa(passoDoLancamento is not null, "passoDoLancamento", EtapaProcessoErrorCodes.PassoComEscalaDeAtendimento,
             "Com escala de atendimento a banca escolhe o nível e não digita a nota, então a etapa não declara passo do lançamento."),
     ];
 

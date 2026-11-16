@@ -112,7 +112,7 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
         if (regra is null || regra.Tipo != TipoRegra.RegraConsolidacao)
         {
             return Result<ReferenciaRegra>.ValidationFailure([new("regraConsolidacao", new DomainError(
-                EtapaProcesso.RegraDeConsolidacaoInvalida,
+                EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida,
                 $"A regra {codigo}/{versao}, declarada pela etapa '{etapa.Nome}', não é uma regra de consolidação do catálogo."))]);
         }
 
@@ -121,12 +121,12 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
 
     private static FieldError RecusaDaFormaDesconhecida(EtapaProcessoInput etapa) =>
         new("formaDeAvaliacao", new DomainError(
-            EtapaProcesso.FormaDeAvaliacaoDesconhecida,
+            EtapaProcessoErrorCodes.FormaDeAvaliacaoDesconhecida,
             $"A forma de avaliação '{etapa.FormaDeAvaliacao}', declarada pela etapa '{etapa.Nome}', não existe — use '{FormaDeAvaliacaoCodigo.Objetiva}' ou '{FormaDeAvaliacaoCodigo.Humana}'."));
 
     private static FieldError RecusaDoParIncompleto(EtapaProcessoInput etapa, bool temCodigo) =>
         new("regraConsolidacao", new DomainError(
-            EtapaProcesso.RegraDeConsolidacaoInvalida,
+            EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida,
             $"A regra de consolidação da etapa '{etapa.Nome}' precisa de código e versão juntos: falta {(temCodigo ? "a versão" : "o código")}."));
 
     private readonly record struct DeclaracaoDaAvaliacao(FormaDeAvaliacao? Forma, (string Codigo, string Versao)? Regra);

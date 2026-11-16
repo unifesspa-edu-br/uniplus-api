@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Xunit;
@@ -125,11 +126,11 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
 
     [Fact(DisplayName = "A escala só vale com itens")]
     public void Criar_EscalaSemItens_Recusa() =>
-        Codigos(Criar([], EscalaCompleta)).Should().Equal(EtapaProcesso.EscalaSemItens);
+        Codigos(Criar([], EscalaCompleta)).Should().Equal(EtapaProcessoErrorCodes.EscalaSemItens);
 
     [Fact(DisplayName = "A escala nunca vale na forma objetiva")]
     public void Criar_EscalaNaFormaObjetiva_Recusa() =>
-        Codigos(Criar([Item("A", 10m)], EscalaCompleta, FormaDeAvaliacao.Objetiva)).Should().Equal(EtapaProcesso.EscalaNaFormaObjetiva);
+        Codigos(Criar([Item("A", 10m)], EscalaCompleta, FormaDeAvaliacao.Objetiva)).Should().Equal(EtapaProcessoErrorCodes.EscalaNaFormaObjetiva);
 
     [Fact(DisplayName = "Em rascunho, a escala sem forma declarada é gravada: a falta da forma é do gate")]
     public void Criar_EscalaSemForma_Grava() =>
@@ -141,7 +142,7 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
         Result<EtapaProcesso> resultado = Criar([Item("A", 10m)], EscalaCompleta, passo: 0.5m);
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("passoDoLancamento");
-        Codigos(resultado).Should().Equal(EtapaProcesso.PassoComEscalaDeAtendimento);
+        Codigos(resultado).Should().Equal(EtapaProcessoErrorCodes.PassoComEscalaDeAtendimento);
     }
 
     [Fact(DisplayName = "A etapa de nota do ENEM recusa itens e escala, cada um no seu campo")]
@@ -151,8 +152,8 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("itensDeAvaliacao", EtapaProcesso.ItensNaEtapaDoEnem),
-            ("escalaDeAtendimento", EtapaProcesso.ItensNaEtapaDoEnem),
+            ("itensDeAvaliacao", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem),
+            ("escalaDeAtendimento", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem),
         ]);
     }
 

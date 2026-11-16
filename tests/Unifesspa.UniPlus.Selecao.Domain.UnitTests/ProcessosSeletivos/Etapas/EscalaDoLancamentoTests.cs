@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 
 public sealed class EscalaDoLancamentoTests
@@ -18,7 +19,7 @@ public sealed class EscalaDoLancamentoTests
     {
         List<FieldError> erros = EscalaDoLancamento.Validar(notaMinimaAceita: null, notaMaxima, passoDoLancamento: null);
 
-        Pares(erros).Should().Equal(("notaMaxima", EtapaProcesso.NotaMaximaInvalida));
+        Pares(erros).Should().Equal(("notaMaxima", EtapaProcessoErrorCodes.NotaMaximaInvalida));
     }
 
     [Theory(DisplayName = "O passo do lançamento zero ou negativo é recusado")]
@@ -28,7 +29,7 @@ public sealed class EscalaDoLancamentoTests
     {
         List<FieldError> erros = EscalaDoLancamento.Validar(notaMinimaAceita: null, notaMaxima: 10m, (decimal)passo);
 
-        Pares(erros).Should().Equal(("passoDoLancamento", EtapaProcesso.PassoDoLancamentoInvalido));
+        Pares(erros).Should().Equal(("passoDoLancamento", EtapaProcessoErrorCodes.PassoDoLancamentoInvalido));
     }
 
     [Fact(DisplayName = "A nota mínima acima da nota máxima é recusada no campo da nota mínima")]
@@ -36,7 +37,7 @@ public sealed class EscalaDoLancamentoTests
     {
         List<FieldError> erros = EscalaDoLancamento.Validar(notaMinimaAceita: 10.01m, notaMaxima: 10m, passoDoLancamento: null);
 
-        Pares(erros).Should().Equal(("notaMinima", EtapaProcesso.NotaMinimaAcimaDaNotaMaxima));
+        Pares(erros).Should().Equal(("notaMinima", EtapaProcessoErrorCodes.NotaMinimaAcimaDaNotaMaxima));
     }
 
     [Fact(DisplayName = "A nota mínima igual à nota máxima é aceita")]
@@ -69,7 +70,7 @@ public sealed class EscalaDoLancamentoTests
     {
         List<FieldError> erros = EscalaDoLancamento.Validar(notaMinimaAceita: 5m, notaMaxima: 0m, passoDoLancamento: 0.3m);
 
-        Pares(erros).Should().Equal(("notaMaxima", EtapaProcesso.NotaMaximaInvalida));
+        Pares(erros).Should().Equal(("notaMaxima", EtapaProcessoErrorCodes.NotaMaximaInvalida));
     }
 
     [Fact(DisplayName = "Sem nota máxima declarada nada é comparado")]
@@ -84,8 +85,8 @@ public sealed class EscalaDoLancamentoTests
         List<FieldError> erros = EscalaDoLancamento.Validar(notaMinimaAceita: 12m, notaMaxima: 10m, passoDoLancamento: 0.3m);
 
         Pares(erros).Should().Equal(
-            ("notaMinima", EtapaProcesso.NotaMinimaAcimaDaNotaMaxima),
-            ("notaMaxima", EtapaProcesso.NotaMaximaForaDoPasso));
+            ("notaMinima", EtapaProcessoErrorCodes.NotaMinimaAcimaDaNotaMaxima),
+            ("notaMaxima", EtapaProcessoErrorCodes.NotaMaximaForaDoPasso));
     }
 
     [Fact(DisplayName = "As recusas dos valores isolados vêm antes das comparações")]
@@ -94,7 +95,7 @@ public sealed class EscalaDoLancamentoTests
         List<FieldError> erros = EscalaDoLancamento.Validar(notaMinimaAceita: 20m, notaMaxima: 10m, passoDoLancamento: 0m);
 
         Pares(erros).Should().Equal(
-            ("passoDoLancamento", EtapaProcesso.PassoDoLancamentoInvalido),
-            ("notaMinima", EtapaProcesso.NotaMinimaAcimaDaNotaMaxima));
+            ("passoDoLancamento", EtapaProcessoErrorCodes.PassoDoLancamentoInvalido),
+            ("notaMinima", EtapaProcessoErrorCodes.NotaMinimaAcimaDaNotaMaxima));
     }
 }

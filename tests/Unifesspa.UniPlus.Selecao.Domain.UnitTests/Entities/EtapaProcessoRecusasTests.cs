@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -90,12 +91,12 @@ public sealed class EtapaProcessoRecusasTests
         ("carater", "EtapaProcesso.CaraterObrigatorio"),
         ("peso", "EtapaProcesso.PesoInvalido"),
         ("notaMinima", "EtapaProcesso.NotaMinimaInvalida"),
-        ("notaMaxima", EtapaProcesso.NotaMaximaInvalida),
-        ("passoDoLancamento", EtapaProcesso.PassoDoLancamentoInvalido),
+        ("notaMaxima", EtapaProcessoErrorCodes.NotaMaximaInvalida),
+        ("passoDoLancamento", EtapaProcessoErrorCodes.PassoDoLancamentoInvalido),
         ("ordem", "EtapaProcesso.OrdemInvalida"),
-        ("passoDoLancamento", EtapaProcesso.PassoNaFormaObjetiva),
-        ("escalaDeAtendimento", EtapaProcesso.EscalaNaFormaObjetiva),
-        ("passoDoLancamento", EtapaProcesso.PassoComEscalaDeAtendimento),
+        ("passoDoLancamento", EtapaProcessoErrorCodes.PassoNaFormaObjetiva),
+        ("escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaNaFormaObjetiva),
+        ("passoDoLancamento", EtapaProcessoErrorCodes.PassoComEscalaDeAtendimento),
     ];
 
     [Fact(DisplayName = "Criar recusa a forma e a avaliação nesta ordem: nome, caráter, peso, nota, escala, ordem, forma e escala de atendimento")]
@@ -129,10 +130,10 @@ public sealed class EtapaProcessoRecusasTests
         EntradaDaEtapa entrada = EntradaDoEnemComAvaliacaoDeclarada();
 
         Pares(Criar(entrada).Errors).Should().Equal(
-            ("formaDeAvaliacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem),
-            ("regraConsolidacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem),
-            ("itensDeAvaliacao", EtapaProcesso.ItensNaEtapaDoEnem),
-            ("escalaDeAtendimento", EtapaProcesso.ItensNaEtapaDoEnem));
+            ("formaDeAvaliacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem),
+            ("regraConsolidacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem),
+            ("itensDeAvaliacao", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem),
+            ("escalaDeAtendimento", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem));
         Atualizar(entrada).Errors.Should().Equal(Criar(entrada).Errors);
     }
 
@@ -190,7 +191,7 @@ public sealed class EtapaProcessoRecusasTests
     {
         Result<EtapaProcesso> resultado = Criar(new() { NotaMinima = 10.01m, NotaMaxima = 10m });
 
-        Pares(resultado.Errors).Should().Equal(("notaMinima", EtapaProcesso.NotaMinimaAcimaDaNotaMaxima));
+        Pares(resultado.Errors).Should().Equal(("notaMinima", EtapaProcessoErrorCodes.NotaMinimaAcimaDaNotaMaxima));
     }
 
     [Fact(DisplayName = "Nota mínima acima da máxima e máxima fora do passo acumulam, a mínima primeiro")]
@@ -199,8 +200,8 @@ public sealed class EtapaProcessoRecusasTests
         List<FieldError> erros = FormaBasica(CaraterEtapa.Eliminatoria, notaMinima: 12m, notaMaxima: 10m, passo: 0.3m);
 
         Pares(erros).Should().Equal(
-            ("notaMinima", EtapaProcesso.NotaMinimaAcimaDaNotaMaxima),
-            ("notaMaxima", EtapaProcesso.NotaMaximaForaDoPasso));
+            ("notaMinima", EtapaProcessoErrorCodes.NotaMinimaAcimaDaNotaMaxima),
+            ("notaMaxima", EtapaProcessoErrorCodes.NotaMaximaForaDoPasso));
     }
 
     [Fact(DisplayName = "Nota máxima inválida não é comparada com a nota mínima nem com o passo")]
@@ -208,7 +209,7 @@ public sealed class EtapaProcessoRecusasTests
     {
         List<FieldError> erros = FormaBasica(CaraterEtapa.Eliminatoria, notaMinima: 5m, notaMaxima: 0m, passo: 0.3m);
 
-        Pares(erros).Should().Equal(("notaMaxima", EtapaProcesso.NotaMaximaInvalida));
+        Pares(erros).Should().Equal(("notaMaxima", EtapaProcessoErrorCodes.NotaMaximaInvalida));
     }
 
     [Theory(DisplayName = "A nota máxima com casas decimais precisa ser múltipla do passo")]
@@ -285,7 +286,7 @@ public sealed class EtapaProcessoRecusasTests
         Pares(resultado.Errors).Should().Equal(
             ("escalaDeAtendimento[0]", NiveisDeAtendimento.RotuloInvalido),
             ("escalaDeAtendimento", NiveisDeAtendimento.SemNivelCompleto),
-            ("escalaDeAtendimento", EtapaProcesso.EscalaSemItens));
+            ("escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaSemItens));
     }
 
     [Fact(DisplayName = "Criar com um nível completo e um elemento nulo recusa o nulo em vez de lançar ao ordenar")]

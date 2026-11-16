@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -70,7 +71,7 @@ public sealed class DefinirEtapasCaraterDoTipoTests
         result.IsFailure.Should().BeTrue();
         result.Errors.Should().ContainSingle();
         result.Errors[0].Field.Should().Be("etapas[0].carater");
-        result.Errors[0].Error.Code.Should().Be(EtapaProcesso.CaraterNaoAdmitidoPeloTipo);
+        result.Errors[0].Error.Code.Should().Be(EtapaProcessoErrorCodes.CaraterNaoAdmitidoPeloTipo);
         processo.Etapas.Single().Carater.Should().Be(CaraterEtapa.Ambas, "a recusa não muta o agregado");
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -232,7 +233,7 @@ public sealed class DefinirEtapasCaraterDoTipoTests
             result.IsFailure.Should().BeTrue();
             result.Errors.Should().ContainSingle();
             result.Errors[0].Field.Should().Be("etapas[0].carater");
-            result.Errors[0].Error.Code.Should().Be(EtapaProcesso.CaraterNaoAdmitidoPeloTipo);
+            result.Errors[0].Error.Code.Should().Be(EtapaProcessoErrorCodes.CaraterNaoAdmitidoPeloTipo);
         }
 
         result.Errors.Should().NotContain(e => e.Error.Code == "ProcessoSeletivo.TipoEtapaNaoEncontradoOuInativo");

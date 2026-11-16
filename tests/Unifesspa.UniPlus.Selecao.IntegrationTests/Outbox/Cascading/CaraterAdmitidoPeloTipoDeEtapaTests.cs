@@ -12,6 +12,7 @@ using Kernel.Results;
 using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Wolverine;
@@ -51,7 +52,7 @@ public sealed class CaraterAdmitidoPeloTipoDeEtapaTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle();
         resultado.Errors[0].Field.Should().Be("etapas[0].carater");
-        resultado.Errors[0].Error.Code.Should().Be(EtapaProcesso.CaraterNaoAdmitidoPeloTipo);
+        resultado.Errors[0].Error.Code.Should().Be(EtapaProcessoErrorCodes.CaraterNaoAdmitidoPeloTipo);
         resultado.Errors[0].Error.Message.Should().Contain("Análise Documental",
             "a recusa nomeia o tipo, senão não diz qual dos dois campos revisar");
     }

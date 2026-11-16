@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 
 public sealed class CoerenciaDaAvaliacaoDaEtapaTests
@@ -23,7 +24,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
         List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
             notaDeOrigemNoEnem: true, passoDoLancamento: null, FormaDeAvaliacao.Objetiva, regraConsolidacaoCodigo: null);
 
-        Pares(erros).Should().Equal(("formaDeAvaliacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem));
+        Pares(erros).Should().Equal(("formaDeAvaliacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem));
     }
 
     [Fact(DisplayName = "A etapa de nota do ENEM recusa a regra de consolidação declarada")]
@@ -32,7 +33,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
         List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
             notaDeOrigemNoEnem: true, passoDoLancamento: null, forma: null, RegraConsolidacaoCodigo.AvaliacaoUnica);
 
-        Pares(erros).Should().Equal(("regraConsolidacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem));
+        Pares(erros).Should().Equal(("regraConsolidacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem));
     }
 
     [Fact(DisplayName = "A etapa de nota do ENEM recusa itens de avaliação")]
@@ -41,7 +42,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
         List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
             notaDeOrigemNoEnem: true, passoDoLancamento: null, forma: null, regraConsolidacaoCodigo: null, declaraItens: true);
 
-        Pares(erros).Should().Equal(("itensDeAvaliacao", EtapaProcesso.ItensNaEtapaDoEnem));
+        Pares(erros).Should().Equal(("itensDeAvaliacao", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem));
     }
 
     [Fact(DisplayName = "A etapa de nota do ENEM recusa a escala de atendimento")]
@@ -50,7 +51,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
         List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
             notaDeOrigemNoEnem: true, passoDoLancamento: null, forma: null, regraConsolidacaoCodigo: null, declaraEscala: true);
 
-        Pares(erros).Should().Equal(("escalaDeAtendimento", EtapaProcesso.ItensNaEtapaDoEnem));
+        Pares(erros).Should().Equal(("escalaDeAtendimento", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem));
     }
 
     [Fact(DisplayName = "A etapa de nota do ENEM não repete as demais recusas de avaliação")]
@@ -65,9 +66,9 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
             declaraEscala: true);
 
         Pares(erros).Should().Equal(
-            ("formaDeAvaliacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem),
-            ("regraConsolidacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem),
-            ("escalaDeAtendimento", EtapaProcesso.ItensNaEtapaDoEnem));
+            ("formaDeAvaliacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem),
+            ("regraConsolidacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem),
+            ("escalaDeAtendimento", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem));
     }
 
     [Theory(DisplayName = "A regra de consolidação só se aplica à forma humana")]
@@ -78,7 +79,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
         List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
             notaDeOrigemNoEnem: false, passoDoLancamento: null, forma, RegraConsolidacaoCodigo.AvaliacaoUnica);
 
-        Pares(erros).Should().Equal(("regraConsolidacao", EtapaProcesso.RegraDeConsolidacaoForaDaFormaHumana));
+        Pares(erros).Should().Equal(("regraConsolidacao", EtapaProcessoErrorCodes.RegraDeConsolidacaoForaDaFormaHumana));
     }
 
     [Fact(DisplayName = "A regra de consolidação fora do rol conhecido é recusada e a mensagem a nomeia")]
@@ -86,7 +87,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
     {
         List<FieldError> erros = DaEtapaHumana(regra: "CONSOLIDACAO-INEXISTENTE");
 
-        Pares(erros).Should().Equal(("regraConsolidacao", EtapaProcesso.RegraDeConsolidacaoInvalida));
+        Pares(erros).Should().Equal(("regraConsolidacao", EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida));
         erros.Single().Error.Message.Should().Contain("'CONSOLIDACAO-INEXISTENTE'");
     }
 
@@ -102,13 +103,13 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
         List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
             notaDeOrigemNoEnem: false, passoDoLancamento: 0.5m, FormaDeAvaliacao.Objetiva, regraConsolidacaoCodigo: null);
 
-        Pares(erros).Should().Equal(("passoDoLancamento", EtapaProcesso.PassoNaFormaObjetiva));
+        Pares(erros).Should().Equal(("passoDoLancamento", EtapaProcessoErrorCodes.PassoNaFormaObjetiva));
     }
 
     [Fact(DisplayName = "A escala de atendimento sem itens de avaliação é recusada")]
     public void Validar_EscalaSemItens_Recusa()
     {
-        Pares(DaEtapaHumana(declaraEscala: true)).Should().Equal(("escalaDeAtendimento", EtapaProcesso.EscalaSemItens));
+        Pares(DaEtapaHumana(declaraEscala: true)).Should().Equal(("escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaSemItens));
     }
 
     [Fact(DisplayName = "A escala de atendimento não se aplica à forma objetiva")]
@@ -118,7 +119,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
             notaDeOrigemNoEnem: false, passoDoLancamento: null, FormaDeAvaliacao.Objetiva, regraConsolidacaoCodigo: null,
             declaraItens: true, declaraEscala: true);
 
-        Pares(erros).Should().Equal(("escalaDeAtendimento", EtapaProcesso.EscalaNaFormaObjetiva));
+        Pares(erros).Should().Equal(("escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaNaFormaObjetiva));
     }
 
     [Fact(DisplayName = "Com escala de atendimento a etapa não declara passo do lançamento")]
@@ -126,7 +127,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
     {
         List<FieldError> erros = DaEtapaHumana(passo: 0.5m, declaraItens: true, declaraEscala: true);
 
-        Pares(erros).Should().Equal(("passoDoLancamento", EtapaProcesso.PassoComEscalaDeAtendimento));
+        Pares(erros).Should().Equal(("passoDoLancamento", EtapaProcessoErrorCodes.PassoComEscalaDeAtendimento));
     }
 
     [Fact(DisplayName = "As recusas da escala de atendimento acumulam: sem itens, forma objetiva e passo, nesta ordem")]
@@ -137,10 +138,10 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
             declaraItens: false, declaraEscala: true);
 
         Pares(erros).Should().Equal(
-            ("passoDoLancamento", EtapaProcesso.PassoNaFormaObjetiva),
-            ("escalaDeAtendimento", EtapaProcesso.EscalaSemItens),
-            ("escalaDeAtendimento", EtapaProcesso.EscalaNaFormaObjetiva),
-            ("passoDoLancamento", EtapaProcesso.PassoComEscalaDeAtendimento));
+            ("passoDoLancamento", EtapaProcessoErrorCodes.PassoNaFormaObjetiva),
+            ("escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaSemItens),
+            ("escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaNaFormaObjetiva),
+            ("passoDoLancamento", EtapaProcessoErrorCodes.PassoComEscalaDeAtendimento));
     }
 
     [Fact(DisplayName = "A etapa sem forma declarada e sem nada a coerir não é recusada: a falta é do gate de publicação")]

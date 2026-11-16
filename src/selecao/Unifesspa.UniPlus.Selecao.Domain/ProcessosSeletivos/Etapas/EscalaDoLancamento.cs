@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// A escala em que a nota da etapa é lançada: a nota máxima e o passo do lançamento, e a contradição entre
@@ -31,24 +32,24 @@ internal static class EscalaDoLancamento
     private static FieldError? RecusaDaNotaMaxima(decimal? notaMaxima) =>
         notaMaxima is <= 0
             ? new("notaMaxima", new DomainError(
-                EtapaProcesso.NotaMaximaInvalida, "A nota máxima da etapa, quando informada, deve ser maior que zero."))
+                EtapaProcessoErrorCodes.NotaMaximaInvalida, "A nota máxima da etapa, quando informada, deve ser maior que zero."))
             : null;
 
     private static FieldError? RecusaDoPasso(decimal? passoDoLancamento) =>
         passoDoLancamento is <= 0
             ? new("passoDoLancamento", new DomainError(
-                EtapaProcesso.PassoDoLancamentoInvalido, "O passo do lançamento, quando informado, deve ser maior que zero."))
+                EtapaProcessoErrorCodes.PassoDoLancamentoInvalido, "O passo do lançamento, quando informado, deve ser maior que zero."))
             : null;
 
     private static FieldError?[] RecusasDaComparacao(decimal? notaMinimaAceita, decimal? notaMaxima, decimal? passoDoLancamento) =>
     [
         notaMinimaAceita > notaMaxima
             ? new("notaMinima", new DomainError(
-                EtapaProcesso.NotaMinimaAcimaDaNotaMaxima, "A nota mínima da etapa não pode passar da nota máxima."))
+                EtapaProcessoErrorCodes.NotaMinimaAcimaDaNotaMaxima, "A nota mínima da etapa não pode passar da nota máxima."))
             : null,
         passoDoLancamento > 0 && notaMaxima % passoDoLancamento != 0
             ? new("notaMaxima", new DomainError(
-                EtapaProcesso.NotaMaximaForaDoPasso, "A nota máxima da etapa deve ser múltipla do passo do lançamento."))
+                EtapaProcessoErrorCodes.NotaMaximaForaDoPasso, "A nota máxima da etapa deve ser múltipla do passo do lançamento."))
             : null,
     ];
 }

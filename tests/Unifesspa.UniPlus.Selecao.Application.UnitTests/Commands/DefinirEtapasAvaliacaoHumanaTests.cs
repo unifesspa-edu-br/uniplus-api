@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -71,7 +72,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
             repository, unitOfWork, regraCatalogoReader: regraCatalogoReader);
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("etapas[0].regraConsolidacao");
-        resultado.Errors[0].Error.Code.Should().Be(EtapaProcesso.RegraDeConsolidacaoInvalida);
+        resultado.Errors[0].Error.Code.Should().Be(EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida);
         await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -95,10 +96,10 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("etapas[0].regraConsolidacao", EtapaProcesso.RegraDeConsolidacaoForaDaFormaHumana),
-            ("etapas[0].passoDoLancamento", EtapaProcesso.PassoNaFormaObjetiva),
-            ("etapas[1].regraConsolidacao", EtapaProcesso.RegraDeConsolidacaoForaDaFormaHumana),
-            ("etapas[1].passoDoLancamento", EtapaProcesso.PassoNaFormaObjetiva),
+            ("etapas[0].regraConsolidacao", EtapaProcessoErrorCodes.RegraDeConsolidacaoForaDaFormaHumana),
+            ("etapas[0].passoDoLancamento", EtapaProcessoErrorCodes.PassoNaFormaObjetiva),
+            ("etapas[1].regraConsolidacao", EtapaProcessoErrorCodes.RegraDeConsolidacaoForaDaFormaHumana),
+            ("etapas[1].passoDoLancamento", EtapaProcessoErrorCodes.PassoNaFormaObjetiva),
         ]);
         await regraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
     }
@@ -117,7 +118,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
             repository, Substitute.For<IUnitOfWork>());
 
         resultado.Errors.Should().ContainSingle().Which.Error.Message.Should().Contain(falta);
-        resultado.Errors[0].Error.Code.Should().Be(EtapaProcesso.RegraDeConsolidacaoInvalida);
+        resultado.Errors[0].Error.Code.Should().Be(EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida);
     }
 
     [Fact(DisplayName = "Token de forma de avaliação desconhecido é recusado, não lido como ausente")]
@@ -132,7 +133,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
             repository, Substitute.For<IUnitOfWork>());
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("etapas[0].formaDeAvaliacao");
-        resultado.Errors[0].Error.Code.Should().Be(EtapaProcesso.FormaDeAvaliacaoDesconhecida);
+        resultado.Errors[0].Error.Code.Should().Be(EtapaProcessoErrorCodes.FormaDeAvaliacaoDesconhecida);
     }
 
     private static EtapaProcessoInput EntrevistaComItens(
@@ -208,6 +209,6 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
             repository, Substitute.For<IUnitOfWork>(), reader);
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("etapas[0].itensDeAvaliacao");
-        resultado.Errors[0].Error.Code.Should().Be(EtapaProcesso.ItensNaEtapaDoEnem);
+        resultado.Errors[0].Error.Code.Should().Be(EtapaProcessoErrorCodes.ItensNaEtapaDoEnem);
     }
 }

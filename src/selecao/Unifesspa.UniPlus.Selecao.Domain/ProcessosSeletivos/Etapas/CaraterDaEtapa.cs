@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// O caráter da etapa: se ela pontua, se ela elimina, o que o edital pode declarar de peso e de nota
@@ -64,7 +65,7 @@ public static class CaraterDaEtapa
     }
 
     private static FieldError NaoAdmitido(string mensagem) =>
-        new("carater", new DomainError(EtapaProcesso.CaraterNaoAdmitidoPeloTipo, mensagem));
+        new("carater", new DomainError(EtapaProcessoErrorCodes.CaraterNaoAdmitidoPeloTipo, mensagem));
 
     private static FieldError? RecusaDoCarater(CaraterEtapa carater) =>
         carater == CaraterEtapa.Nenhum || !Enum.IsDefined(carater)

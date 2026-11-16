@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 
 public sealed class CaraterDaEtapaTests
@@ -119,7 +120,7 @@ public sealed class CaraterDaEtapaTests
         erros.Should().AllSatisfy(erro =>
         {
             erro.Field.Should().Be("carater");
-            erro.Error.Code.Should().Be(EtapaProcesso.CaraterNaoAdmitidoPeloTipo);
+            erro.Error.Code.Should().Be(EtapaProcessoErrorCodes.CaraterNaoAdmitidoPeloTipo);
         });
     }
 

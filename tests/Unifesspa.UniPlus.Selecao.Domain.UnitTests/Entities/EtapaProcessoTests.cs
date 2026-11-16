@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -122,7 +123,7 @@ public sealed partial class EtapaProcessoTests
             new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: forma, RegraConsolidacao: RegraDeConsolidacao(), EscalaDeAtendimento: null));
 
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcesso.RegraDeConsolidacaoForaDaFormaHumana);
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcessoErrorCodes.RegraDeConsolidacaoForaDaFormaHumana);
         resultado.Errors[0].Field.Should().Be("regraConsolidacao");
     }
 
@@ -133,7 +134,7 @@ public sealed partial class EtapaProcessoTests
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: 0.5m, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcesso.PassoNaFormaObjetiva);
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcessoErrorCodes.PassoNaFormaObjetiva);
         resultado.Errors[0].Field.Should().Be("passoDoLancamento");
     }
 
@@ -146,8 +147,8 @@ public sealed partial class EtapaProcessoTests
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
-            ("formaDeAvaliacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem),
-            ("regraConsolidacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem),
+            ("formaDeAvaliacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem),
+            ("regraConsolidacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem),
         ]);
     }
 
@@ -158,7 +159,7 @@ public sealed partial class EtapaProcessoTests
             new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: RegraDeConsolidacao("PRECISAO-TRUNCAR"), EscalaDeAtendimento: null));
 
-        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcesso.RegraDeConsolidacaoInvalida);
+        resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida);
     }
 
     [Fact(DisplayName = "Em rascunho, a forma humana sem regra e sem passo é gravada: a falta só recusa a publicação")]
