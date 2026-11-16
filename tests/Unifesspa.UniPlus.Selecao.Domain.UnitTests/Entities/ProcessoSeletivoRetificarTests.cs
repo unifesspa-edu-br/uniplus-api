@@ -1,19 +1,13 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
-using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Regras.Enums;
-using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Testes.Compartilhado;
+
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDaPublicacaoDoProcessoSeletivo;
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDaRetificacaoDoProcessoSeletivo;
 
 /// <summary>
 /// Cobertura de <see cref="ProcessoSeletivo.Retificar"/> (congelamento dos parâmetros na publicação, UNI-REQ-0019, ADR-0101/0103/0104):
@@ -28,138 +22,15 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </remarks>
 public sealed class ProcessoSeletivoRetificarTests
 {
-    private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
-    private static readonly byte[] BytesCanonicos = Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString());
-
-    private static DadosEdital NovosDados() => DadosEdital.Criar(
-        numero: "001/2026",
-        periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-        periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-        documentoEditalId: Guid.CreateVersion7()).Value!;
-
-    // Relógio manual: os testes avançam (ou regridem) o instante explicitamente
-    // quando o cenário exige. Datas de publicação iguais entre atos do mesmo
-    // processo são um estado válido (ADR-0104) — a data documental não ordena.
-    private static RelogioManual Relogio() => new(new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero));
-
-    // A data que o DOCUMENTO declara (ADR-0108) não aparece mais aqui: ela é atributo do ato,
-    // que é de Publicações (ADR-0103/0105), e viaja direto para lá na mensagem durável. O
-    // agregado não a recebe nem a guarda — ela nunca ordenou coisa alguma.
-
-    /// <summary>
-    /// Versão de configuração avulsa, sem vínculo com nenhum processo real —
-    /// usada só no teste que recusa retificação de um processo em rascunho:
-    /// a guarda de transição de status barra ANTES de qualquer uso do
-    /// conteúdo da versão, então o valor em si é irrelevante ali; o que
-    /// importa é satisfazer o parâmetro não nulo de <see cref="ProcessoSeletivo.Retificar"/>.
-    /// </summary>
-    private static VersaoConfiguracao VersaoQualquer() => VersaoConfiguracao.Abrir(
-        Guid.CreateVersion7(),
-        BytesCanonicos,
-        "1.0",
-        "canonical-json/sha256@v1",
-        Guid.CreateVersion7(),
-        HashFixo,
-        "user-conta-123",
-        Relogio().GetUtcNow());
-
-    private static ProcessoSeletivo NovoProcessoConforme()
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!;
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 1m,
-            regraDistribuicao: regraDistribuicao,
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!,
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        return processo;
-    }
-
-    /// <summary>Fase mínima e conforme: agrupa etapas (há 1 acima), produz resultado e coleta inscrição (há vagas e a origem é InscricaoPropria).</summary>
-    private static FaseCronograma FaseConforme() => FaseCronograma.Criar(
-        new OrigemCanonicaDaFase(
-            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
-            ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(
-            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
-            UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
-        bancasRequeridas: []).Value!;
-
-    private static ProcessoSeletivo NovoProcessoPublicado(RelogioManual clock, out VersaoConfiguracao versaoAbertura)
-    {
-        ProcessoSeletivo processo = NovoProcessoConforme();
-        Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
-        versaoAbertura = publicacao.Value!;
-        processo.DequeueDomainEvents();
-        return processo;
-    }
-
     [Fact(DisplayName = "Retificar processo publicado emite um ato que emenda o ato criador da versão corrente, com motivo")]
     public void Retificar_ProcessoPublicado_EmiteAtoQueEmendaOVigente()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
-        clock.Avancar(TimeSpan.FromMinutes(1));
+        ProcessoSeletivo processo = NovoProcessoPublicadoHaUmMinuto(clock, out VersaoConfiguracao versaoAbertura);
 
-        Result<VersaoConfiguracao> resultado = processo.Retificar(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            motivo: "Correção do prazo de inscrição", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        VersaoConfiguracao versao = RetificarComSucesso(processo, versaoAbertura, "Correção do prazo de inscrição", clock);
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.Status.Should().Be(StatusProcesso.Publicado, "retificar não altera o status Publicado");
-
-        VersaoConfiguracao versao = resultado.Value!;
         versao.NumeroVersao.Should().Be(2);
         versao.AtoCriadorId.Should().NotBe(versaoAbertura.AtoCriadorId, "a retificação é um ato NOVO — o passado não se muta");
         versao.AtoCriadorRetificaId.Should().Be(
@@ -171,29 +42,13 @@ public sealed class ProcessoSeletivoRetificarTests
     public void Retificar_NaoCarregaMarcaDeTipo_SoARelacao()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
-        clock.Avancar(TimeSpan.FromMinutes(1));
+        ProcessoSeletivo processo = NovoProcessoPublicadoHaUmMinuto(clock, out VersaoConfiguracao versaoAbertura);
 
-        Result<VersaoConfiguracao> resultado = processo.Retificar(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            motivo: "Correção do anexo II", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        VersaoConfiguracao retificada = RetificarComSucesso(processo, versaoAbertura, "Correção do anexo II", clock);
 
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-
-        // A ÚNICA diferença entre a versão da abertura e a da retificação é a presença do ato
-        // emendado. Não há campo de "natureza", nem rótulo, nem enum: uma convocação retificada
-        // continua convocação, e o tipo do ato vem do catálogo de Publicações, declarado pelo
-        // operador (ADR-0103). Se um dia voltar a existir um atributo aqui que diga "isto é uma
-        // retificação", este teste é o que o denuncia.
         versaoAbertura.AtoCriadorRetificaId.Should().BeNull("a raiz da cadeia não emenda ninguém");
-        resultado.Value!.AtoCriadorRetificaId.Should().NotBeNull("a retificação emenda — e é só isso que a distingue");
-
-        typeof(VersaoConfiguracao).GetProperties()
-            .Select(p => p.Name)
-            .Should().NotContain(
-                nome => nome.Contains("Natureza", StringComparison.OrdinalIgnoreCase)
-                    || nome.Contains("TipoAto", StringComparison.OrdinalIgnoreCase),
-                "a configuração congelada não carrega o tipo do ato: saber o que um ato É pertence a Publicações");
+        retificada.AtoCriadorRetificaId.Should().NotBeNull("a retificação emenda — e é só isso que a distingue");
+        AfirmarQueAVersaoNaoCarregaMarcaDeTipo();
     }
 
     [Fact(DisplayName = "Lifecycle — retificar processo ainda em rascunho é recusado (CA-09)")]
@@ -201,9 +56,7 @@ public sealed class ProcessoSeletivoRetificarTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
 
-        Result<VersaoConfiguracao> resultado = processo.Retificar(
-            NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            motivo: "qualquer", clock: Relogio(), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> resultado = RetificarComDadosPadrao(processo, VersaoQualquer(), "qualquer", Relogio());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
@@ -214,12 +67,9 @@ public sealed class ProcessoSeletivoRetificarTests
     public void Retificar_SemMotivo_Recusa()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
-        clock.Avancar(TimeSpan.FromMinutes(1));
+        ProcessoSeletivo processo = NovoProcessoPublicadoHaUmMinuto(clock, out VersaoConfiguracao versaoAbertura);
 
-        Result<VersaoConfiguracao> resultado = processo.Retificar(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            motivo: "   ", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> resultado = RetificarComDadosPadrao(processo, versaoAbertura, "   ", clock);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.MotivoRetificacaoObrigatorio");
@@ -230,40 +80,27 @@ public sealed class ProcessoSeletivoRetificarTests
     public void Retificar_SegundaRetificacao_EmpilhaNaCabeca()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
+        ProcessoSeletivo processo = NovoProcessoPublicadoHaUmMinuto(clock, out VersaoConfiguracao versaoAbertura);
+        VersaoConfiguracao primeira = RetificarComSucesso(processo, versaoAbertura, "primeira retificação", clock);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
-        Result<VersaoConfiguracao> primeira = processo.Retificar(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            motivo: "primeira retificação", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-        primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
-        clock.Avancar(TimeSpan.FromMinutes(1));
+        // O aviso que prorroga um prazo já prorrogado cita o aviso anterior, não o edital original (ADR-0103).
+        VersaoConfiguracao segunda = RetificarComSucesso(processo, primeira, "segunda retificação", clock);
 
-        // A segunda retificação emenda o ato que criou a versão CORRENTE (R1), não a abertura:
-        // é o que a prática faz — o aviso que prorroga um prazo já prorrogado cita o aviso
-        // anterior, não o edital original (ADR-0103).
-        Result<VersaoConfiguracao> segunda = processo.Retificar(
-            NovosDados(), primeira.Value!, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            motivo: "segunda retificação", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-        segunda.IsSuccess.Should().BeTrue(segunda.Error?.Message);
-        primeira.Value!.AtoCriadorRetificaId.Should().Be(versaoAbertura.AtoCriadorId, "R1 emenda a abertura");
-        segunda.Value!.AtoCriadorRetificaId.Should().Be(
-            primeira.Value!.AtoCriadorId,
+        primeira.AtoCriadorRetificaId.Should().Be(versaoAbertura.AtoCriadorId, "R1 emenda a abertura");
+        segunda.AtoCriadorRetificaId.Should().Be(
+            primeira.AtoCriadorId,
             "R2 emenda R1 — cada ato é emendado no máximo uma vez, e a cadeia é linear");
-        segunda.Value!.NumeroVersao.Should().Be(3, "o topo da cadeia de configuração avança com a última retificação");
+        segunda.NumeroVersao.Should().Be(3, "o topo da cadeia de configuração avança com a última retificação");
     }
 
     [Fact(DisplayName = "Retificar — versão corrente de OUTRO processo é recusada: a cadeia não atravessa certames")]
     public void Retificar_VersaoDeOutroProcesso_Recusa()
     {
         RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out _);
-        clock.Avancar(TimeSpan.FromMinutes(1));
+        ProcessoSeletivo processo = NovoProcessoPublicadoHaUmMinuto(clock, out _);
 
-        Result<VersaoConfiguracao> resultado = processo.Retificar(
-            NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            motivo: "Correção de datas", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> resultado = RetificarComDadosPadrao(processo, VersaoQualquer(), "Correção de datas", clock);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("VersaoConfiguracao.VersaoAnteriorDeOutroProcesso");
@@ -276,39 +113,54 @@ public sealed class ProcessoSeletivoRetificarTests
         RelogioManual clock = Relogio();
         ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
 
-        // O relógio regride 10 minutos entre a abertura e a retificação (ajuste NTP em
-        // degrau). Suceder já ancorava a VIGÊNCIA na da anterior; o id do ato tem de nascer
-        // do mesmo instante ancorado.
+        // Ajuste NTP em degrau: o id do ato tem de nascer do mesmo instante ancorado que a vigência.
         clock.Avancar(TimeSpan.FromMinutes(-10));
+        VersaoConfiguracao retificacao = RetificarComSucesso(processo, versaoAbertura, "retificação sob relógio regredido", clock);
 
-        Result<VersaoConfiguracao> retificacao = processo.Retificar(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            motivo: "retificação sob relógio regredido", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-        retificacao.IsSuccess.Should().BeTrue(retificacao.Error?.Message);
-
-        // O Guid v7 carrega o timestamp nos 48 bits MAIS SIGNIFICATIVOS (RFC 9562 §5.7), e é
-        // por eles que o Postgres ordena `uuid` — a ordem bytewise big-endian de que a
-        // paginação por keyset depende (ADR-0032). Se o id do ato novo nascesse do relógio
-        // CRU, o seu timestamp seria 10 minutos ANTERIOR ao do ato que ele emenda, e a cadeia
-        // apareceria invertida na listagem. (Comparar os `Guid` em C# não serviria: o layout
-        // do tipo é misto, e a ordem de `Comparer<Guid>` não é a do banco.)
-        DateTimeOffset instanteDaAbertura = InstanteDoGuidV7(versaoAbertura.AtoCriadorId);
-        DateTimeOffset instanteDaRetificacao = InstanteDoGuidV7(retificacao.Value!.AtoCriadorId);
-
-        instanteDaRetificacao.Should().BeOnOrAfter(
-            instanteDaAbertura,
-            "o ato que emenda nunca ordena antes do ato emendado — o instante do id é ancorado, como o da vigência");
-
-        retificacao.Value!.VigenteAPartirDe.Should().Be(
+        AfirmarQueOIdDoAtoNaoOrdenaAntesDoEmendado(versaoAbertura, retificacao);
+        retificacao.VigenteAPartirDe.Should().Be(
             versaoAbertura.VigenteAPartirDe,
             "id e vigência descrevem o MESMO instante: uma leitura do relógio, uma âncora só");
     }
 
-    /// <summary>
-    /// Lê o timestamp Unix em milissegundos dos 48 bits mais significativos de um Guid v7
-    /// (RFC 9562 §5.7) — a mesma grandeza pela qual o Postgres ordena a coluna <c>uuid</c>.
-    /// </summary>
+    // Ordenar o alvo pelo tempo tornaria uma cadeia perfeitamente linear irretificável.
+    [Fact(DisplayName = "Retificar — relógio que regride não move o alvo: quem ordena a cadeia é a versão, não o tempo")]
+    public void Retificar_RelogioRegride_AlvoVemDaCadeiaDeVersoes()
+    {
+        RelogioManual clock = Relogio();
+        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
+
+        clock.Avancar(TimeSpan.FromMinutes(-10));
+        VersaoConfiguracao primeira = RetificarComSucesso(processo, versaoAbertura, "primeira retificação", clock);
+        primeira.VigenteAPartirDe.Should().Be(versaoAbertura.VigenteAPartirDe, "a vigência da sucessora é ancorada na anterior quando o relógio regride — nunca precede o passado");
+        VersaoConfiguracao segunda = RetificarComSucesso(processo, primeira, "segunda retificação", clock);
+
+        segunda.AtoCriadorRetificaId.Should().Be(primeira.AtoCriadorId, "o alvo é o ato criador da versão corrente — a cadeia manda, não o relógio");
+        segunda.NumeroVersao.Should().Be(3);
+    }
+
+    // Se um dia voltar a existir aqui um atributo que diga "isto é uma retificação", este
+    // teste é o que o denuncia: a única diferença entre as versões é a presença do ato emendado.
+    private static void AfirmarQueAVersaoNaoCarregaMarcaDeTipo() =>
+        typeof(VersaoConfiguracao).GetProperties()
+            .Select(p => p.Name)
+            .Should().NotContain(
+                nome => nome.Contains("Natureza", StringComparison.OrdinalIgnoreCase)
+                    || nome.Contains("TipoAto", StringComparison.OrdinalIgnoreCase),
+                "a configuração congelada não carrega o tipo do ato: saber o que um ato É pertence a Publicações");
+
+    // O Guid v7 carrega o timestamp nos 48 bits mais significativos (RFC 9562 §5.7), e é por eles
+    // que o Postgres ordena `uuid` (ADR-0032); comparar `Guid` em C# não serviria, o layout é misto.
+    private static void AfirmarQueOIdDoAtoNaoOrdenaAntesDoEmendado(VersaoConfiguracao emendada, VersaoConfiguracao retificacao)
+    {
+        DateTimeOffset instanteDaAbertura = InstanteDoGuidV7(emendada.AtoCriadorId);
+        DateTimeOffset instanteDaRetificacao = InstanteDoGuidV7(retificacao.AtoCriadorId);
+
+        instanteDaRetificacao.Should().BeOnOrAfter(
+            instanteDaAbertura,
+            "o ato que emenda nunca ordena antes do ato emendado — o instante do id é ancorado, como o da vigência");
+    }
+
     private static DateTimeOffset InstanteDoGuidV7(Guid id)
     {
         Span<byte> bytes = stackalloc byte[16];
@@ -321,270 +173,5 @@ public sealed class ProcessoSeletivoRetificarTests
         }
 
         return DateTimeOffset.FromUnixTimeMilliseconds(milissegundos);
-    }
-
-    [Fact(DisplayName = "Retificar — relógio que regride não move o alvo: quem ordena a cadeia é a versão, não o tempo")]
-    public void Retificar_RelogioRegride_AlvoVemDaCadeiaDeVersoes()
-    {
-        RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
-
-        // O relógio regride (ajuste NTP em degrau, troca de hora do host). Isso não pode mover
-        // a cadeia: quem ordena as versões é a vigência, e ela nunca precede a da anterior.
-        clock.Avancar(TimeSpan.FromMinutes(-10));
-        Result<VersaoConfiguracao> primeira = processo.Retificar(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            motivo: "primeira retificação", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-        primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
-        primeira.Value!.VigenteAPartirDe.Should().Be(
-            versaoAbertura.VigenteAPartirDe,
-            "a vigência da sucessora é ancorada na anterior quando o relógio regride — nunca precede o passado");
-
-        // A segunda retificação continua possível, e emenda R1 — o ato que criou a versão
-        // corrente. Ordenar o alvo pelo tempo tornaria uma cadeia perfeitamente linear
-        // irretificável.
-        Result<VersaoConfiguracao> segunda = processo.Retificar(
-            NovosDados(), primeira.Value!, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            motivo: "segunda retificação", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-        segunda.IsSuccess.Should().BeTrue(segunda.Error?.Message);
-        segunda.Value!.AtoCriadorRetificaId.Should().Be(
-            primeira.Value!.AtoCriadorId,
-            "o alvo é o ato criador da versão corrente — a cadeia manda, não o relógio");
-        segunda.Value!.NumeroVersao.Should().Be(3);
-    }
-
-    // ── Story #554/PR #903 (issue #548) — guarda B-01 removida: o bloco deixou de ser stub ──
-
-    [Fact(DisplayName = "Story #554/PR #903: fechar retificação com exigência configurada durante a sessão é aceito — a guarda B-01 foi removida")]
-    public void FecharRetificacao_ExigenciaConfiguradaNaSessao_Aceita()
-    {
-        RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
-        clock.Avancar(TimeSpan.FromMinutes(1));
-
-        Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            "Incluir exigência documental", versaoAbertura, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-123", clock.GetUtcNow());
-        abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
-
-        Guid faseId = processo.CronogramaFases.Single().Id;
-        // Story #554, PR #898: a exigência determina resultado (Obrigatorio=true), então
-        // precisa de base legal RESOLVIDO para satisfazer o 5º item de AvaliarConformidade.
-        DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
-            "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId,
-            tipoDocumentoOrigemId: Guid.CreateVersion7(),
-            tipoDocumentoCodigo: "IDENTIDADE",
-            tipoDocumentoNome: "Documento de identidade",
-            tipoDocumentoCategoria: "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            aplicabilidade: Aplicabilidade.Geral,
-            obrigatorio: true,
-            consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido");
-
-        clock.Avancar(TimeSpan.FromMinutes(1));
-        Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            PrecondicaoIfMatch.Curinga, clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-        resultado.IsSuccess.Should().BeTrue(
-            resultado.Error?.Message ?? "o bloco documentosExigidos.exigencias deixou de ser stub — nada mais bloqueia este fechamento");
-        processo.Rascunho.Should().BeNull("o fechamento aceito encerra a sessão editorial");
-    }
-
-    private static FaseCronograma FaseSemUnidadeResponsavelComOMesmoConteudoDe(FaseCronograma atual) => FaseCronograma.Criar(
-        new OrigemCanonicaDaFase(
-            atual.FaseCanonicaOrigemId, atual.Codigo, atual.OrigemData, atual.AgrupaEtapas, atual.PermiteComplementacao, atual.ColetaInscricao, atual.ColetaSolicitacaoIsencao),
-        new DecisoesDeCronogramaDaFase(atual.Ordem, atual.Inicio, atual.Fim, atual.FaseConcluinteCodigo, UnidadeResponsavel: null),
-        new PublicacoesDaFase([.. atual.Produtos], atual.EmiteParecerIndividual, atual.RegraRecurso),
-        [.. atual.BancasRequeridas]).Value!;
-
-    [Fact(DisplayName = "Fechar a retificação com uma fase sem unidade responsável recusa e a sessão segue aberta")]
-    public void FecharRetificacao_FaseSemUnidadeResponsavel_RecusaESessaoSegueAberta()
-    {
-        RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoPublicado(clock, out VersaoConfiguracao versaoAbertura);
-        clock.Avancar(TimeSpan.FromMinutes(1));
-
-        processo.AbrirRetificacao(
-            "Trocar a unidade responsável pela matrícula", versaoAbertura, identificadorDaVersaoBase: null,
-            VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-123", clock.GetUtcNow())
-            .IsSuccess.Should().BeTrue();
-
-        // Trocar a unidade depois de publicar é retificação, e a sessão aceita o rascunho sem ela:
-        // quem recusa é o fechamento, que congela a versão nova.
-        FaseCronograma atual = processo.CronogramaFases.Single();
-        FaseCronograma semUnidade = FaseSemUnidadeResponsavelComOMesmoConteudoDe(atual);
-        Result cronograma = processo.DefinirCronogramaFases([semUnidade], [], PrecondicaoIfMatch.Curinga);
-        cronograma.IsSuccess.Should().BeTrue(cronograma.Error?.Message);
-
-        clock.Avancar(TimeSpan.FromMinutes(1));
-        Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            PrecondicaoIfMatch.Curinga, clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
-        processo.Rascunho.Should().NotBeNull("a recusa não destrói a sessão editorial");
-    }
-
-    // ── Story #554 (PR #903, issue #548) — CA-05 (5/5): reavaliação após mudança de gatilho ──
-
-    private static ProcessoSeletivo NovoProcessoComDuasModalidades()
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        // AcaoQuandoIndeferido = RECLASSIFICA_AC: heteroidentificação/cota reprovada
-        // reclassifica o candidato para ampla concorrência, nunca elimina (RN, concorrência
-        // dupla — Lei 14.723/2023).
-        ModalidadeSelecionada ppi = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(), codigo: "LB_PPI", descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.CotaReservada, composicaoVagas: ComposicaoVagasModalidade.DentroDoVr,
-            composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.SegueCascata,
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: "RECLASSIFICA_AC", baseLegal: "Lei 12.711/2012", quantidadeDeclarada: null).Value!;
-        // As demais 7 modalidades federais (Story #575, cascata de remanejamento de cotas, UNI-REQ-0056) — SegueCascata só é
-        // válida no regime federal completo, com cascata legal por trás.
-        List<ModalidadeSelecionada> demaisFederais =
-        [
-            .. ModalidadesFederaisLei12711.Codigos
-                .Where(codigo => codigo != "LB_PPI")
-                .Select(codigo => ModalidadeSelecionada.Criar(
-                    Guid.CreateVersion7(), codigo, null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr,
-                    null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), null, "Lei 12.711/2012", quantidadeDeclarada: null).Value!),
-        ];
-        ModalidadeSelecionada ac = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(), codigo: "AC", descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla, composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
-            composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
-            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null, baseLegal: "Res. Unifesspa 532/2021", quantidadeDeclarada: null).Value!;
-        ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 0.5m,
-            regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Lei12711, "v1", HashFixo).Value!,
-            regraAjuste: ReferenciaRegra.Criar("RECONCILIACAO-VAGAS-ART11-PU", "v1", HashFixo).Value!,
-            referenciaDemografica: ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!,
-            modalidades: [.. demaisFederais, ppi, ac], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        List<DestinoRemanejamento> destinosCascata = [];
-        foreach (string origem in ModalidadesFederaisLei12711.Codigos)
-        {
-            string[] ordemDestinos = [.. ModalidadesFederaisLei12711.Codigos.Where(o => o != origem)];
-            for (int i = 0; i < ordemDestinos.Length; i++)
-            {
-                destinosCascata.Add(DestinoRemanejamento.Criar(origem, i + 1, ordemDestinos[i]).Value!);
-            }
-        }
-
-        ReferenciaRegra regraCascata = ReferenciaRegra.Criar(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo).Value!;
-        ConfiguracaoCascataRemanejamento cascata = ConfiguracaoCascataRemanejamento.Criar(
-            regraCascata, ModalidadesFederaisLei12711.Ac, destinosCascata).Value!;
-        processo.DefinirCascataRemanejamento(cascata, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!,
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        RegrasDeAplicabilidadeDeTeste.DerivarOQueAOpcaoPelasCotasCita(processo);
-        return processo;
-    }
-
-    private static DocumentoExigidoBaseLegal BaseLegalResolvidaQualquer() => DocumentoExigidoBaseLegal.Criar(
-        "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
-
-    private static DocumentoExigido ExigenciaCondicionalPorModalidadeComConsequencia(Guid exigidoNaFaseId, string modalidadeCodigo, string consequenciaIndeferimento) =>
-        DocumentoExigido.Criar(
-            exigidoNaFaseId,
-            tipoDocumentoOrigemId: Guid.CreateVersion7(),
-            tipoDocumentoCodigo: "AUTODECLARACAO_ETNICO_RACIAL",
-            tipoDocumentoNome: "Autodeclaração étnico-racial",
-            tipoDocumentoCategoria: "HETEROIDENTIFICACAO", ProtecaoDoDocumentoDeTeste.Pessoal,
-            aplicabilidade: Aplicabilidade.Condicional,
-            obrigatorio: false,
-            consequenciaIndeferimento: consequenciaIndeferimento,
-            condicoes: [CondicaoGatilho.Criar(0, "MODALIDADE", Operador.Igual, JsonSerializer.SerializeToElement(modalidadeCodigo)).Value!],
-            basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
-
-    [Fact(DisplayName = "CA-05 (5/5): mudar o gatilho de AC para LB_PPI numa retificação reavalia a coerência consequência↔ação — não fica cacheada da publicação anterior")]
-    public void FecharRetificacao_MudancaDeGatilhoTornaConsequenciaIncoerente_Reavalia()
-    {
-        RelogioManual clock = Relogio();
-        ProcessoSeletivo processo = NovoProcessoComDuasModalidades();
-        Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "AC", "ELIMINA"), 0).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-        publicacao.IsSuccess.Should().BeTrue(
-            publicacao.Error?.Message ?? "AC não declara AcaoQuandoIndeferido — nada com que a exigência seja incoerente");
-        VersaoConfiguracao versaoAbertura = publicacao.Value!;
-        processo.DequeueDomainEvents();
-        clock.Avancar(TimeSpan.FromMinutes(1));
-
-        Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            "Estender exigência de heteroidentificação para a cota PPI", versaoAbertura, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-123", clock.GetUtcNow());
-        abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
-
-        // Mesma consequência ELIMINA — só o gatilho muda, de AC (ação null, coerente) para
-        // LB_PPI (ação RECLASSIFICA_AC, incoerente com ELIMINA).
-        processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(ExigenciaCondicionalPorModalidadeComConsequencia(faseId, "LB_PPI", "ELIMINA"), 0).Value!],
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue("mutar a configuração viva durante a sessão é permitido");
-
-        clock.Avancar(TimeSpan.FromMinutes(1));
-        Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
-            NovosDados(), versaoAbertura, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            PrecondicaoIfMatch.Curinga, clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-        resultado.IsFailure.Should().BeTrue(
-            "a coerência é recomputada a cada fechamento, a partir da coleção real de exigências — não fica " +
-            "cacheada do estado coerente aprovado na publicação anterior");
-        resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
-        processo.Rascunho.Should().NotBeNull("o fechamento recusado não encerra a sessão editorial");
-    }
-
-    /// <summary>
-    /// Relógio manual determinístico — evita depender de
-    /// <c>Microsoft.Extensions.TimeProvider.Testing</c> na camada de teste do
-    /// Domain (que só referencia Domain + Kernel). Permite dar instantes
-    /// distintos à abertura e à retificação (unicidade de data_publicacao).
-    /// </summary>
-    private sealed class RelogioManual(DateTimeOffset inicio) : TimeProvider
-    {
-        private DateTimeOffset _agora = inicio;
-
-        public override DateTimeOffset GetUtcNow() => _agora;
-
-        public void Avancar(TimeSpan delta) => _agora = _agora.Add(delta);
     }
 }
