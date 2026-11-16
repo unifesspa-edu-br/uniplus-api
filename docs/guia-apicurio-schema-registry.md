@@ -7,10 +7,10 @@
 
 ## O que é
 
-[Apicurio Schema Registry](https://www.apicur.io/registry/) é o **registro central de schemas Avro** dos eventos cross-módulo do Uni+. Em standalone roda em
+[Apicurio Schema Registry](https://www.apicur.io/registry/) é o **registro central de schemas** dos eventos cross-módulo do Uni+ (Avro) e do documento de configuração (JSON Schema). Em standalone roda em
 `schema-registry.standalone.portaluni.com.br` (chart `apps/apicurio-registry/` no `uniplus-infra`), em **modo Confluent-compat** — o cliente .NET (`Confluent.SchemaRegistry`) usa o endpoint `/apis/ccompat/v7` exatamente como contra um Confluent Schema Registry vanilla.
 
-**Por que Schema Registry:** garante compatibilidade entre producer e consumer. Ao invés de cada serviço carregar seu `.avsc` local e quebrar quando o outro evolui, o producer registra o schema no Apicurio e embute o `schema-id` no envelope da mensagem. Consumers recuperam o schema do Registry via `schema-id`, deserializam, e o servidor enforce regras de compatibility (default Uni+: **BACKWARD** — schemas novos podem ler dados antigos).
+**Por que Schema Registry:** garante compatibilidade entre producer e consumer. Ao invés de cada serviço carregar seu `.avsc` local e quebrar quando o outro evolui, o producer registra o schema no Apicurio e embute o `schema-id` no envelope da mensagem. Consumers recuperam o schema do Registry via `schema-id`, deserializam, e o servidor enforce regras de compatibility (default Uni+ para o Avro: **BACKWARD** — schemas novos podem ler dados antigos; o subject de JSON Schema usa **NONE**, ver "Registrando um JSON Schema").
 
 ## Arquitetura
 
@@ -145,7 +145,7 @@ SchemaRegistry__BasicAuthUserInfo: "admin:${APICURIO_BASIC_AUTH_PASSWORD}"
 
 ### Compatibility check
 
-- Apicurio aplica a regra de compatibility configurada por subject (default global do chart Uni+: **BACKWARD**).
+- Apicurio aplica a regra de compatibility configurada por subject (default global do chart Uni+: **BACKWARD** para o Avro; o subject de JSON Schema declara **NONE**).
 - Quando o producer registra um schema novo (evolução), Apicurio compara com a versão anterior. Incompatível → 409 Conflict, hosted service loga error e segue (host não trava). Producer continua tentando registrar em runtime (Confluent serdes loga e retenta).
 
 ## Adicionando um novo evento
@@ -159,12 +159,24 @@ Padrão concreto. Para acrescentar `InscricaoCriadaEvent` (módulo Selecao):
 5. **Routing:** em `Program.cs`, adicione `opts.PublishMessage<unifesspa.uniplus.selecao.events.InscricaoCriada>().ToKafkaTopic("inscricao_events").DefaultSerializer(new SchemaRegistryAvroSerializer(selecaoSrClient));`
 6. **Registro:** adicione `.AddSchema("inscricao_events-value", InscricaoCriada.SchemaResourceName, typeof(InscricaoCriadaEvent).Assembly)` na chain de `AddSchemaRegistry`.
 
+## Registrando um JSON Schema
+
+Para o contrato que não é evento Avro (hoje, o documento de configuração do processo seletivo). A decisão está na emenda da [ADR-0051](adrs/0051-apicurio-schema-registry-avro-wolverine.md).
+
+1. **Contrato:** o arquivo `.schema.json` vive no repositório como fonte única e entra no assembly como `<EmbeddedResource>`.
+2. **Registro:** `AddSchemaRegistry(configuration).AddJsonSchema("<subject>", "<nome do recurso>", typeof(...).Assembly)`. O subject não segue tópico: é estável e traz a versão principal do formato (e.g. `configuracao-do-processo-seletivo-v1`), de modo que uma mudança incompatível vira um subject novo.
+3. **Regra `NONE` no subject:** a infraestrutura a declara no Apicurio (chart ou bootstrap), antes da primeira subida: `PUT /apis/ccompat/v7/config/<subject>` com `{"compatibility":"NONE"}`. A API não escreve regra. Sem essa regra, ou com outra, a subida falha com mensagem que cita o subject, a regra encontrada e a esperada. A conferência usa a regra **efetiva** (a do subject, ou a global quando o subject não tem uma própria).
+4. **Compatibilidade:** como a regra é `NONE`, quem garante a evolução é o teste de contrato do repositório, que compara a versão nova com todas as publicadas.
+5. **Indisponibilidade:** com o Schema Registry fora do ar, a API sobe e repete o registro em segundo plano (espera de 5 s, dobrando até 5 min). A repetição para ao confirmar, no encerramento ou numa falha determinística (que fica registrada como erro).
+6. **Verificação manual:** `curl "<url>/config/<subject>?defaultToGlobal=true"` mostra a regra efetiva. Sem `defaultToGlobal`, o Apicurio devolve `NONE` para subject sem regra própria, mesmo quando aplica a global: não use essa leitura para conferir.
+
 ## Troubleshooting
 
 | Sintoma | Causa provável | Resolução |
 |---|---|---|
 | API trava em `StartAsync` com erro de bind | `SchemaRegistrySettingsValidator` falhou | Logs mostram a falha exata. Conferir env vars `SchemaRegistry__*` |
 | Hosted service loga `Falha ao registrar schema Avro no startup` | Apicurio offline, auth inválida, ou DNS não resolve | Logs incluem o subject; Apicurio side: `kubectl logs deploy/apicurio-registry`. Após Apicurio voltar, registro tenta novamente em runtime |
+| Subida falha com `exige None` e a regra encontrada | Subject de JSON Schema sem regra `NONE` efetiva | A infraestrutura declara `NONE` no subject (`PUT /config/<subject>`); ver "Registrando um JSON Schema" |
 | Producer falha com `SchemaRegistryException: Schema being registered is incompatible` | Mudança no `.avsc` quebra BACKWARD compatibility | Re-pensar evolução — campos novos devem ter default; remoção exige etapa intermediária |
 | Consumer recebe `AvroException: Unable to find type 'unifesspa...ProcessoPublicado'` | Namespace do `.avsc` não casa com namespace da classe C# | Apache.Avro NET resolve via `Type.GetType("&lt;ns&gt;.&lt;name&gt;")` — namespace lowercase é mandatório quando o schema usa lowercase |
 | Token endpoint retorna 401 | Vault não populado ou client_secret rotacionado | RUNBOOKS §15.6 do `uniplus-infra` — re-recuperar via `kcadm.sh get clients/$CID/client-secret` |
