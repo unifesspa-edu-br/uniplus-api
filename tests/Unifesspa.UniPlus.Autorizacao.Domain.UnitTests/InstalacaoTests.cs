@@ -126,10 +126,17 @@ public sealed class InstalacaoTests
             .Should().Equal(InstalacaoErrorCodes.DocumentoInvalido);
     }
 
+    [Fact(DisplayName = "Gestores, número do documento e tamanho do PDF inválidos juntos saem acumulados, nessa ordem")]
+    public void Iniciar_TudoInvalido_AcumulaNaOrdem()
+    {
+        CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(ContaIdDiogo), Emissor, " ", 0, Agora))
+            .Should().Equal(InstalacaoErrorCodes.GestoresInvalidos, InstalacaoErrorCodes.DocumentoInvalido, InstalacaoErrorCodes.DocumentoInvalido);
+    }
+
     [Theory(DisplayName = "PDF vazio ou acima de 10 MB é recusado")]
     [InlineData(0)]
     [InlineData(-1)]
-    [InlineData(Instalacao.TamanhoMaximoDoPdfBytes + 1)]
+    [InlineData(DocumentoDeDesignacao.TamanhoMaximoDoPdfBytes + 1)]
     public void Iniciar_TamanhoDoPdfForaDoLimite_Recusa(long tamanho)
     {
         CodigosDaRecusa(Instalacao.Iniciar(Paulo, Gestores(ContaIdDiogo, ContaIdIsabella), Emissor, "123", tamanho, Agora))
