@@ -109,6 +109,6 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests
     }
 
     private static PedidoDeConcessao Novo(bool paraSiMesmo) =>
-        PedidoDeConcessao.Criar(
+        CriacaoDoPedido.Criar(
             new PartesDoPedido(Betina, paraSiMesmo ? null : Leandro.Email), PerfilComum(), EscopoDe(null), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
 }

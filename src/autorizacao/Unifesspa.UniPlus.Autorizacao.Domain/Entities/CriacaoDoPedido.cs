@@ -5,10 +5,42 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>As conferências que antecedem a criação do pedido: o perfil, o escopo, a justificativa e a validade.</summary>
-internal static class ValidacaoDaCriacaoDoPedido
+/// <summary>
+/// A criação do pedido de concessão: confere o perfil, o escopo, a justificativa, a validade e o beneficiário, acumulando toda
+/// violação independente num só conjunto de erros (ADR-0125), e só então cria o pedido. Que o pedido ativo igual não exista é
+/// do índice único, traduzido por quem grava; que a unidade exista é do handler; o termo de responsabilidade se fixa em
+/// seguida, por <see cref="PedidoDeConcessao.FixarTermo"/>.
+/// </summary>
+public static class CriacaoDoPedido
 {
-    internal static (List<FieldError> Erros, string? Justificativa) ValidarCampos(
+    /// <param name="partes">Quem pede e a quem o pedido se destina.</param>
+    /// <param name="declaracao">Justificativa, validade sugerida e intenção de anexar documento; os perfis de gestor de acessos e de Representante do controlador não admitem prazo.</param>
+    public static Result<PedidoDeConcessao> Criar(
+        PartesDoPedido partes,
+        Perfil perfil,
+        EscopoDaConcessao escopo,
+        DeclaracaoDoPedido declaracao,
+        IDominiosInstitucionais dominios,
+        ICatalogoDePermissoesConsultavel catalogo,
+        DateTimeOffset instante)
+    {
+        ArgumentNullException.ThrowIfNull(partes);
+        ArgumentNullException.ThrowIfNull(perfil);
+        ArgumentNullException.ThrowIfNull(escopo);
+        ArgumentNullException.ThrowIfNull(declaracao);
+        ArgumentNullException.ThrowIfNull(dominios);
+        ArgumentNullException.ThrowIfNull(catalogo);
+
+        DomainError? recusa = partes.RecusaDoSolicitante(dominios);
+        (List<FieldError> erros, string? justificativa) = ValidarCampos(perfil, escopo, catalogo, declaracao, instante);
+        BeneficiarioIndicado beneficiario = partes.ResolverBeneficiario(dominios, erros);
+
+        return recusa is not null ? Result<PedidoDeConcessao>.Failure(recusa)
+            : erros.Count > 0 ? Result<PedidoDeConcessao>.ValidationFailure(erros)
+            : Result<PedidoDeConcessao>.Success(new PedidoDeConcessao(partes.Solicitante, beneficiario, perfil, escopo, declaracao.Consolidada(justificativa!, perfil), instante));
+    }
+
+    private static (List<FieldError> Erros, string? Justificativa) ValidarCampos(
         Perfil perfil, EscopoDaConcessao escopo, ICatalogoDePermissoesConsultavel catalogo, DeclaracaoDoPedido declaracao, DateTimeOffset instante)
     {
         List<FieldError> erros = [.. ErrosDoPerfil(perfil), .. ErrosDoEscopo(perfil, escopo, catalogo)];

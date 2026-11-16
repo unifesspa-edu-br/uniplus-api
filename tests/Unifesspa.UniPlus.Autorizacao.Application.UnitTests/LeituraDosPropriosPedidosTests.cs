@@ -196,7 +196,7 @@ public sealed class LeituraDosPropriosPedidosTests
     }
 
     private static PedidoDeConcessao Pedido(PessoaNoToken solicitante, string? emailDoBeneficiario = null) =>
-        PedidoDeConcessao.Criar(
+        CriacaoDoPedido.Criar(
             new PartesDoPedido(solicitante, emailDoBeneficiario),
             PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos de atendimento.", ["geral:pedidos:consultar"], new CatalogoInstitucional()),
             EscopoDaConcessao.DaInstituicao(),

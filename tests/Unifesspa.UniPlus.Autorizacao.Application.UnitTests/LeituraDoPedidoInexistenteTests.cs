@@ -57,7 +57,7 @@ public sealed class LeituraDoPedidoInexistenteTests
     }
 
     private static PedidoDeConcessao Pedido() =>
-        PedidoDeConcessao.Criar(
+        CriacaoDoPedido.Criar(
             new PartesDoPedido(Paulo, null),
             PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos de atendimento.", ["geral:pedidos:consultar"], new CatalogoInstitucional()),
             EscopoDaConcessao.DaInstituicao(),

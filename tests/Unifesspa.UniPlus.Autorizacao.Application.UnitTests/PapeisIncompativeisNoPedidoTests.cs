@@ -85,7 +85,7 @@ public sealed class PapeisIncompativeisNoPedidoTests
         new(new PedidosNaMemoria(pedido), new DoublesDeAvisos.PerfilQualquer(), DoublesDeAvisos.Avisos(), _unidade, papeis, TimeProvider.System);
 
     private static PedidoDeConcessao Pedido(bool paraSiMesmo) =>
-        PedidoDeConcessao.Criar(new PartesDoPedido(Betina, paraSiMesmo ? null : Leandro.Email), PerfilComum(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido("Atende o setor de matrículas."), new DominiosDeTeste(), new CatalogoInstitucional(), DateTimeOffset.UtcNow).Value!;
+        CriacaoDoPedido.Criar(new PartesDoPedido(Betina, paraSiMesmo ? null : Leandro.Email), PerfilComum(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido("Atende o setor de matrículas."), new DominiosDeTeste(), new CatalogoInstitucional(), DateTimeOffset.UtcNow).Value!;
 
     // O pedido é de Betina para si mesma; o perfil decidido recebe o id do perfil de sistema que a aprovação concederia.
     private static DecisaoDaEtapa Decisao(Guid perfilId)

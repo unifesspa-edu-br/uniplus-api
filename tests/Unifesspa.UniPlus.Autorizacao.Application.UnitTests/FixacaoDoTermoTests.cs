@@ -63,7 +63,7 @@ public sealed class FixacaoDoTermoTests
             .FixarAsync(pedido, perfil, apresentada, DateTimeOffset.UtcNow, CancellationToken.None);
 
     private static PedidoDeConcessao Novo(Perfil perfil) =>
-        PedidoDeConcessao.Criar(
+        CriacaoDoPedido.Criar(
             new PartesDoPedido(ApoioDoPedido.Betina, ApoioDoPedido.Leandro.Email),
             perfil,
             ApoioDoPedido.EscopoDe(perfil),

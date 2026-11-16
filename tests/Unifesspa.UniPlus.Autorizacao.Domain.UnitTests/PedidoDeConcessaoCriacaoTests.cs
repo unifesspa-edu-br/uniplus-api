@@ -87,7 +87,7 @@ public sealed class PedidoDeConcessaoCriacaoTests
         Perfil perfil = PerfilComum();
         PerfisDeTeste.Desativar(perfil, Catalogo);
 
-        Result<PedidoDeConcessao> resultado = PedidoDeConcessao.Criar(new PartesDoPedido(Betina, "leandro@gmail.com"), perfil, EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido("curta"), Dominios, Catalogo, Agora);
+        Result<PedidoDeConcessao> resultado = CriacaoDoPedido.Criar(new PartesDoPedido(Betina, "leandro@gmail.com"), perfil, EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido("curta"), Dominios, Catalogo, Agora);
 
         Codigos(resultado).Should().BeEquivalentTo(
             PedidoErrorCodes.PerfilInativo,
@@ -102,17 +102,17 @@ public sealed class PedidoDeConcessaoCriacaoTests
     [InlineData("curta")]
     [InlineData("Justificativa com caractere\0 nulo")]
     public void Criar_JustificativaInvalida_Recusa(string justificativa) =>
-        Codigos(PedidoDeConcessao.Criar(new PartesDoPedido(Betina, "leandro-viana84@uniplus-test.local"), PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new DeclaracaoDoPedido(justificativa), Dominios, Catalogo, Agora))
+        Codigos(CriacaoDoPedido.Criar(new PartesDoPedido(Betina, "leandro-viana84@uniplus-test.local"), PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new DeclaracaoDoPedido(justificativa), Dominios, Catalogo, Agora))
             .Should().Equal(PedidoErrorCodes.JustificativaInvalida);
 
     [Fact(DisplayName = "Justificativa com mais de 2000 caracteres é recusada")]
     public void Criar_JustificativaLonga_Recusa() =>
-        Codigos(PedidoDeConcessao.Criar(new PartesDoPedido(Betina, "leandro-viana84@uniplus-test.local"), PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new DeclaracaoDoPedido(new string('a', 2001)), Dominios, Catalogo, Agora))
+        Codigos(CriacaoDoPedido.Criar(new PartesDoPedido(Betina, "leandro-viana84@uniplus-test.local"), PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new DeclaracaoDoPedido(new string('a', 2001)), Dominios, Catalogo, Agora))
             .Should().Equal(PedidoErrorCodes.JustificativaInvalida);
 
     [Fact(DisplayName = "Perfil de governança só se pede no escopo da instituição")]
     public void Criar_GovernancaNaUnidade_Recusa() =>
-        Codigos(PedidoDeConcessao.Criar(new PartesDoPedido(Betina, "isabellapriscilafigueiredo@uniplus-test.local"), PerfilDeGovernanca(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora))
+        Codigos(CriacaoDoPedido.Criar(new PartesDoPedido(Betina, "isabellapriscilafigueiredo@uniplus-test.local"), PerfilDeGovernanca(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora))
             .Should().Equal(PedidoErrorCodes.EscopoInvalido);
 
     [Fact(DisplayName = "Perfil sem versão em vigor não aceita pedido")]
@@ -120,7 +120,7 @@ public sealed class PedidoDeConcessaoCriacaoTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Análise de atendimento", "Analisa os pedidos de atendimento.", ["selecao:processos:consultar"], Catalogo);
 
-        Codigos(PedidoDeConcessao.Criar(new PartesDoPedido(Betina, "leandro-viana84@uniplus-test.local"), perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora))
+        Codigos(CriacaoDoPedido.Criar(new PartesDoPedido(Betina, "leandro-viana84@uniplus-test.local"), perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora))
             .Should().Equal(PedidoErrorCodes.PerfilSemVersaoEmVigor);
     }
 
@@ -129,9 +129,9 @@ public sealed class PedidoDeConcessaoCriacaoTests
     {
         Perfil perfil = PerfisDeTeste.Vigente("Manutenção de motivos", "Mantém os motivos de isenção.", ["selecao:motivos:manter"], Catalogo);
 
-        Codigos(PedidoDeConcessao.Criar(new PartesDoPedido(Betina, "leandro-viana84@uniplus-test.local"), perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora))
+        Codigos(CriacaoDoPedido.Criar(new PartesDoPedido(Betina, "leandro-viana84@uniplus-test.local"), perfil, EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora))
             .Should().Equal(PedidoErrorCodes.EscopoInvalido);
-        PedidoDeConcessao.Criar(new PartesDoPedido(Betina, "leandro-viana84@uniplus-test.local"), perfil, EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora)
+        CriacaoDoPedido.Criar(new PartesDoPedido(Betina, "leandro-viana84@uniplus-test.local"), perfil, EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora)
             .IsSuccess.Should().BeTrue();
     }
 
@@ -183,6 +183,6 @@ public sealed class PedidoDeConcessaoCriacaoTests
     private static PedidoDeConcessao Criar(PessoaNoToken solicitante, string? email) => CriarResultado(solicitante, email).Value!;
 
     private static Result<PedidoDeConcessao> CriarResultado(PessoaNoToken solicitante, string? email) =>
-        PedidoDeConcessao.Criar(
+        CriacaoDoPedido.Criar(
             new PartesDoPedido(solicitante, email), PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora);
 }

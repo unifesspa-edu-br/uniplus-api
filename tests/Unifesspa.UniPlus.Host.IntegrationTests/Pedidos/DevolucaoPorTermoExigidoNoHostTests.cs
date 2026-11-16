@@ -49,7 +49,7 @@ public sealed class DevolucaoPorTermoExigidoNoHostTests : PedidosDeConcessaoTest
         IServiceProvider servicos = escopo.ServiceProvider;
         Perfil perfil = (await servicos.GetRequiredService<IConcessaoRepository>().ObterParaConcederAsync(perfilId))!;
         PessoaNoToken betina = new(new Identidade(TestAuthHandler.DefaultIssuer, Betina.ContaId.ToString(), Betina.Nome), Betina.Nome, Betina.Email, true);
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
+        PedidoDeConcessao pedido = CriacaoDoPedido.Criar(
             new PartesDoPedido(betina, null), perfil, EscopoDaConcessao.DaUnidade(unidade), new DeclaracaoDoPedido(Justificativa),
             servicos.GetRequiredService<IDominiosInstitucionais>(), servicos.GetRequiredService<ICatalogoDePermissoesConsultavel>(), DateTimeOffset.UtcNow).Value!;
         await servicos.GetRequiredService<IPedidoDeConcessaoRepository>().AdicionarAsync(pedido);

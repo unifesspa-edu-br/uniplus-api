@@ -210,6 +210,6 @@ public sealed class PedidoDeConcessaoAprovacaoTests
     }
 
     private static Result<PedidoDeConcessao> CriarComSugestao(Perfil perfil, DateTimeOffset validaAteSugerida) =>
-        PedidoDeConcessao.Criar(
+        CriacaoDoPedido.Criar(
             new PartesDoPedido(Betina, null), perfil, EscopoDe(perfil), new DeclaracaoDoPedido(Justificativa, validaAteSugerida), Dominios, Catalogo, Agora);
 }

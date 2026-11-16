@@ -58,7 +58,7 @@ public sealed class ConferenciaDoNovoPedido
         }
 
         DateTimeOffset agora = _clock.GetUtcNow();
-        Result<PedidoDeConcessao> criado = PedidoDeConcessao.Criar(
+        Result<PedidoDeConcessao> criado = CriacaoDoPedido.Criar(
             new PartesDoPedido(solicitante, command.BeneficiarioEmail), lido.Value!, EscopoDaConcessao.Da(command.UnidadeId), Declaracao(command), _dominios, _catalogo, agora);
 
         return criado.IsFailure
