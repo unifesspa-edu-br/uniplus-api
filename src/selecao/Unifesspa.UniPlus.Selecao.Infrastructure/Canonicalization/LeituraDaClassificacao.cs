@@ -146,7 +146,7 @@ internal static class LeituraDaClassificacao
     {
         leitor.ExigirChaves(item, path, "grupoAreaEnem", "baseLegal", "areas");
 
-        (string Codigo, string Rotulo)? grupo = LeituraDasVagas.LerGrupoAreaEnemObrigatorio(leitor, item, path);
+        (string Codigo, string Rotulo)? grupo = LeituraDoGrupoDeAreaEnem.LerObrigatorio(leitor, item, path);
         string baseLegal = leitor.TextoNaoVazio(item, "baseLegal", path, LimitesDoEnvelope.BaseLegalPesoAreaEnem);
         JsonArray arrayAreas = leitor.Array(item, "areas", path);
         if (leitor.Falhou || grupo is not { } grupoLido)

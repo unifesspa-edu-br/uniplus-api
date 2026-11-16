@@ -24,6 +24,13 @@ public static class MontagemDoQuadroDeVagas
     {
         ArgumentNullException.ThrowIfNull(declarada);
 
+        return MontarDoRamo(declarada with { Modalidades = [.. declarada.Modalidades.OrderBy(static m => m.Codigo, StringComparer.Ordinal)] });
+    }
+
+    // O desempate do maior resto é pela posição no quadro: ordenar as modalidades pelo código faz o quadro
+    // não depender da ordem da declaração, que o envelope também não preserva.
+    private static Result<QuadroDeVagas> MontarDoRamo(DistribuicaoDeVagasDeclarada declarada)
+    {
         string regra = declarada.RegraDeDistribuicao.Codigo;
         if (RegraDistribuicaoVagasCodigo.EhRamoFederal(regra))
         {

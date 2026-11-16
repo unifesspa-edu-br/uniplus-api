@@ -124,6 +124,20 @@ public sealed class MontagemDoQuadroDeVagasTests
         quadro.TotalDeVagasRetiradasNoAjuste.Should().Be(10);
     }
 
+    [Fact(DisplayName = "O quadro fixado reduzido por maior resto não depende da ordem em que as modalidades foram declaradas")]
+    public void Fixado_ReduzirProporcionalEm_ComRestosIguais_IndependeDaOrdemDeDeclaracao()
+    {
+        ArgsRegraAjusteDistribuicao ajuste = new ArgsReduzirProporcionalEm(["AC", "IND", "QUI"]);
+        DistribuicaoDeVagasDeclarada emOrdemAlfabetica = FixadaNoEdital(Fixada("AC", 20), Fixada("IND", 20), Fixada("QUI", 20)) with { AjusteDoQuadro = ajuste };
+        DistribuicaoDeVagasDeclarada emOutraOrdem = FixadaNoEdital(Fixada("QUI", 20), Fixada("AC", 20), Fixada("IND", 20)) with { AjusteDoQuadro = ajuste };
+
+        (string Codigo, int Quantidade)[] alfabetica = DoQuadro(Montar(emOrdemAlfabetica));
+        (string Codigo, int Quantidade)[] outra = DoQuadro(Montar(emOutraOrdem));
+
+        outra.OrderBy(static v => v.Codigo, StringComparer.Ordinal).Should().Equal(alfabetica);
+        outra.Select(static v => v.Codigo).Should().Equal("AC", "IND", "QUI");
+    }
+
     [Fact(DisplayName = "O quadro fixado que não completa as vagas ofertadas base é recusado")]
     public void Fixado_SomaMenor_Recusa() =>
         MontagemDoQuadroDeVagas.Montar(FixadaNoEdital(Fixada("IND", 20))).Error!.Code

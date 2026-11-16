@@ -18,6 +18,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 internal static partial class CorpusEnvelope
 {
+    internal const int VagasOfertadasBaseDaLeiDeCotasDoCorpus = 60;
+
     /// <summary>
     /// A matriz legal completa (8×7), fallback AC — mesma forma semeada em
     /// REMANEJ-CASCATA-LEI-12711 v1. <paramref name="permutar"/> inverte a ordem de ENTRADA dos
@@ -67,7 +69,8 @@ internal static partial class CorpusEnvelope
     /// lei; as variantes de remanejamento que as cotas não usam ficam na oferta institucional.
     /// </summary>
     private static ConfiguracaoDistribuicaoVagas DistribuicaoLei12711(
-        Guid? ofertaCursoOrigemId = null, (string? Codigo, string? Rotulo)? grupoAreaEnem = null)
+        Guid? ofertaCursoOrigemId = null, (string? Codigo, string? Rotulo)? grupoAreaEnem = null,
+        int vagasOfertadasBase = VagasOfertadasBaseDaLeiDeCotasDoCorpus)
     {
         List<ModalidadeSelecionada> modalidades =
         [
@@ -113,7 +116,7 @@ internal static partial class CorpusEnvelope
         return ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId ?? OfertaMedicina,
             new DistribuicaoDeVagasDeclarada
             {
-                VagasOfertadasBase = 60,
+                VagasOfertadasBase = vagasOfertadasBase,
                 PercentualDaReservaLegal = 0.7500m,
                 RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711, '7'),
                 RegraDeAjuste = Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, '0'),

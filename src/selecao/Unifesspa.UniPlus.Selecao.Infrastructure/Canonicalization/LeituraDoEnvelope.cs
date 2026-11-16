@@ -99,7 +99,7 @@ internal static class LeituraDoEnvelope
         ConfiguracaoDivulgacao? divulgacao = LeituraDaDivulgacaoETaxa.LerDivulgacao(leitor, payload);
         ConfiguracaoTaxaInscricao? taxa = LeituraDaDivulgacaoETaxa.LerTaxaInscricao(leitor, payload);
         (LocalidadeRegente? localidade, string? fusoHorario) = LeituraDoCalendario.LerLocalidade(leitor, payload);
-        int? opcoesDeCurso = LeituraDasVagas.LerOpcoesDeCurso(leitor, payload);
+        int? opcoesDeCurso = LeituraDasOpcoesDeCurso.Ler(leitor, payload);
         ReferenciaRegra? algoritmo = LeituraDoCalendario.LerAlgoritmoContagemPrazo(leitor, payload);
         CalendarioDiasUteisCongelado? calendario = LeituraDoCalendario.LerCalendarioDiasUteis(
             leitor, payload, configuracao.CronogramaFases, configuracao.Etapas);

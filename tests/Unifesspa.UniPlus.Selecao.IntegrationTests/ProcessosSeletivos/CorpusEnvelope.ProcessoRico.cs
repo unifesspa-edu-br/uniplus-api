@@ -41,11 +41,12 @@ internal static partial class CorpusEnvelope
     /// </param>
     /// <param name="tiposDeDecisaoDaFaseFinal">Os tipos de decisão que a fase de resultado final declara; ausentes por padrão.</param>
     internal static ProcessoSeletivo ProcessoRico(
-        int variante = 0, bool permutar = false, bool comArvoreSatisfacao = false, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal = null)
+        int variante = 0, bool permutar = false, bool comArvoreSatisfacao = false, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal = null,
+        int vagasOfertadasBaseDaLeiDeCotas = VagasOfertadasBaseDaLeiDeCotasDoCorpus)
     {
         ProcessoSeletivo processo = NovoProcessoRico(variante);
         DefinirCronogramaEEtapas(processo, variante, permutar, tiposDeDecisaoDaFaseFinal);
-        DefinirOfertaEClassificacao(processo, variante, permutar);
+        DefinirOfertaEClassificacao(processo, variante, permutar, vagasOfertadasBaseDaLeiDeCotas);
         DefinirFormularioDeInscricao(processo, permutar);
         DefinirCascataEDocumentos(processo, variante, permutar, comArvoreSatisfacao);
         DefinirTaxaEOpcoesDeCurso(processo, permutar);
@@ -92,11 +93,11 @@ internal static partial class CorpusEnvelope
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 
-    private static void DefinirOfertaEClassificacao(ProcessoSeletivo processo, int variante, bool permutar)
+    private static void DefinirOfertaEClassificacao(ProcessoSeletivo processo, int variante, bool permutar, int vagasOfertadasBase)
     {
         DefinirAtendimentoEspecializadoDoCorpus(processo, permutar);
         processo.DefinirDistribuicaoVagas(
-            Ordem([DistribuicaoLei12711(), DistribuicaoLei12711(OfertaDireito, ("HUMANISTICA_I", "Humanística I"))], permutar),
+            Ordem([DistribuicaoLei12711(vagasOfertadasBase: vagasOfertadasBase), DistribuicaoLei12711(OfertaDireito, ("HUMANISTICA_I", "Humanística I"), vagasOfertadasBase)], permutar),
             FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         DefinirBonusRegional(processo);
         DefinirCriteriosDeDesempate(processo, variante, permutar);

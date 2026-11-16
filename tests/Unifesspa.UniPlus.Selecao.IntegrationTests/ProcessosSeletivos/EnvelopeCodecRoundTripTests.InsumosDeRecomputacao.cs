@@ -57,25 +57,32 @@ public sealed partial class EnvelopeCodecRoundTripTests
     }
 
     /// <summary>
-    /// <c>voBase</c> e <c>pr</c> (issue #848/ADR-0115) não são mais campos-folha: são
-    /// insumo do quadro de vagas, que <see cref="Domain.Entities.ConfiguracaoDistribuicaoVagas.Criar"/>
-    /// recalcula do zero a cada reidratação (a prova não-circular do CA-13 exige
-    /// exatamente isso — recomputar do insumo, não reler o output congelado). Mutar
-    /// qualquer um dos dois muda o bloco <c>vagas</c> recodificado de um jeito que o
-    /// "JSON mutado no lugar" não prevê (ele só tem o insumo alterado, não o quadro
-    /// recomputado a partir dele) — por isso, como os campos de ordenação, só cabe a
-    /// asserção primária.
+    /// <c>vagasOfertadasBase</c>, <c>percentualDaReservaLegal</c> e a referência demográfica
+    /// (issue #848/ADR-0115) não são campos-folha: são insumo do quadro de vagas, que
+    /// <see cref="Domain.Entities.ConfiguracaoDistribuicaoVagas.Criar"/> recalcula do zero a cada
+    /// reidratação (a prova não-circular exige recomputar do insumo, não reler o quadro congelado).
+    /// Mutar um insumo sem mutar o quadro deixa o congelado diferente do que a declaração monta, e a
+    /// leitura o recusa — o que só acontece se ela LÊ o insumo e o usa na montagem.
     /// </summary>
-    [Theory(DisplayName = "O decoder lê também os insumos que disparam recomputação do quadro de vagas")]
-    [InlineData("distribuicao.0.voBase", "77")]
-    [InlineData("distribuicao.0.pr", "0.9000")]
+    [Theory(DisplayName = "O decoder lê os insumos do quadro de vagas e recusa o envelope cujo quadro congelado não os reflete")]
+    [InlineData("distribuicao.0.vagasOfertadasBase", "77")]
+    [InlineData("distribuicao.0.percentualDaReservaLegal", "0.9000")]
     [InlineData("distribuicao.0.referenciaDemografica.ppiPercentual", "12.34")]
-    public void Decoder_NaoPerdeCampoQueDisparaRecomputacaoDoQuadro(string caminho, string valorNovo)
+    public void Decoder_LeOsInsumosDoQuadro_ERecusaOQuadroQueNaoOsReflete(string caminho, string valorNovo)
     {
-        (byte[] originais, byte[] _, byte[] recodificados) = MutarEReidratar(caminho, valorNovo);
+        ArgumentNullException.ThrowIfNull(caminho);
 
-        recodificados.Should().NotEqual(originais,
-            $"o decoder tem de LER '{caminho}' — se o ignorasse, a recodificação traria o valor original de volta");
+        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        CorpusEnvelope.Publicar(processo);
+        JsonObject mutado = Envelope(congelado);
+        Mutar(mutado, caminho, valorNovo);
+
+        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(mutado));
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
+
+        reidratado.IsFailure.Should().BeTrue($"o quadro congelado não é o que '{caminho}' monta");
+        reidratado.Error!.Message.Should().Contain("o quadro congelado não é o que a declaração da oferta monta");
     }
 
     private static (byte[] Originais, byte[] Mutados, byte[] Recodificados) MutarEReidratar(string caminho, string valorNovo)

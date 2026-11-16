@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -97,14 +98,15 @@ internal static partial class CorpusEnvelope
     internal static void Publicar(ProcessoSeletivo processo, EntradaCanonicalizacao? entrada = null)
     {
         SnapshotCanonico snapshot = Codec.Codificar(entrada ?? Entrada(processo));
-        processo.Publicar(
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(
             DadosRicos(),
             snapshot.Bytes,
             snapshot.SchemaVersion,
             snapshot.AlgoritmoHash,
             HashDocumento,
             Ator,
-            TimeProvider.System, ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
+            TimeProvider.System, ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         processo.ClearDomainEvents();
     }
 

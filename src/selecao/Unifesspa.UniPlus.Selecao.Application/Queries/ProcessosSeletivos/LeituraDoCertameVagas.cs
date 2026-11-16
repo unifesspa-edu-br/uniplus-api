@@ -73,7 +73,7 @@ internal static class LeituraDoCertameVagas
         quadro = null;
         if (item is not JsonObject configuracao
             || !PrimitivasDaProjecao.TentarIdentificador(configuracao, "ofertaCursoOrigemId", out Guid ofertaId)
-            || !PrimitivasDaProjecao.TentarInteiro(configuracao, "totalPublicado", out int total)
+            || !PrimitivasDaProjecao.TentarInteiro(configuracao, "totalDeVagasDoEdital", out int total)
             || !PrimitivasDaProjecao.TentarArray(configuracao, "quadro", out JsonArray? quadroArray)
             || !PrimitivasDaProjecao.TentarItens<VagaPorModalidadeCertameDto>(quadroArray, TentarVagaPorModalidade, out List<VagaPorModalidadeCertameDto>? linhas))
         {

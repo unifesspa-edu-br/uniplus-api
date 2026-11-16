@@ -64,7 +64,7 @@ public sealed class EnvelopeCodecTiposTests
     public void TextoNoLugarDeInteiro_Recusa()
     {
         Result<EnvelopeReidratado> resultado = Reidratar(envelope =>
-            envelope["distribuicao"]!.AsArray()[0]!["voBase"] = "sessenta");
+            envelope["distribuicao"]!.AsArray()[0]!["vagasOfertadasBase"] = "sessenta");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
@@ -74,7 +74,7 @@ public sealed class EnvelopeCodecTiposTests
     public void InteiroForaDeFaixa_Recusa()
     {
         Result<EnvelopeReidratado> resultado = Reidratar(envelope =>
-            envelope["distribuicao"]!.AsArray()[0]!["voBase"] = 9_999_999_999L);
+            envelope["distribuicao"]!.AsArray()[0]!["vagasOfertadasBase"] = 9_999_999_999L);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
