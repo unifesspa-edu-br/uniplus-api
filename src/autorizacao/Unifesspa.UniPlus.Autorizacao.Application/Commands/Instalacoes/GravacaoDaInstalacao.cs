@@ -34,6 +34,20 @@ internal static class GravacaoDaInstalacao
         }
     }
 
+    /// <summary>
+    /// Grava o passo que a instalação acabou de dar; o passo recusado descarta o rastreamento e devolve a própria recusa.
+    /// </summary>
+    public static async Task<Result> GravarPassoAsync(Result passo, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        if (passo.IsFailure)
+        {
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return passo;
+        }
+
+        return await GravarAsync(unitOfWork, cancellationToken).ConfigureAwait(false) is { } falha ? Result.Failure(falha) : passo;
+    }
+
     private static bool EhViolacaoReconhecida(Exception ex) =>
         ConcessaoViolacoes.EhConcessaoDuplicada(ex)
         || ViolacoesDeGravacao.ViolaIndiceUnico(ex, PendenciaUnicaConstraint)
