@@ -17,9 +17,18 @@ public sealed class DefinicoesComunsDoEsquemaDaConfiguracaoTests
     [Fact(DisplayName = "A referência de regra tem código e versão e recusa propriedade desconhecida")]
     public void ReferenciaDeRegra_TemCodigoEVersao()
     {
-        CaminhosComErro(Documento("""{ "codigo": "PRAZO-DIAS-UTEIS", "versao": "1" }"""), $"{Comuns}#/$defs/referenciaDeRegra").Should().BeEmpty();
+        CaminhosComErro(Documento("""{ "codigo": "PRAZO-DIAS-UTEIS", "versao": "v1" }"""), $"{Comuns}#/$defs/referenciaDeRegra").Should().BeEmpty();
         CaminhosComErro(Documento("""{ "codigo": "PRAZO-DIAS-UTEIS", "id": "x" }"""), $"{Comuns}#/$defs/referenciaDeRegra").Should().Contain("/id");
     }
+
+    [Theory(DisplayName = "A versão da regra só tem a forma do catálogo, vN")]
+    [InlineData("1")]
+    [InlineData("1.0.0")]
+    [InlineData("V1")]
+    [InlineData("v")]
+    public void ReferenciaDeRegra_VersaoForaDaFormaDoCatalogo_Recusa(string versao) =>
+        CaminhosComErro(Documento($$"""{ "codigo": "PRAZO-DIAS-UTEIS", "versao": "{{versao}}" }"""), $"{Comuns}#/$defs/referenciaDeRegra")
+            .Should().Contain("/versao");
 
     [Fact(DisplayName = "O predicado sem cláusula e o de uma cláusula com duas condições validam")]
     public void Predicado_ClausulasEmOuCondicoesEmE_Valida()

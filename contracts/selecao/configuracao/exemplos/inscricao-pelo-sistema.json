@@ -18,7 +18,7 @@
     "identificadorLegivel": "processo-exemplo-2027",
     "algoritmoContagemPrazo": {
       "codigo": "CONTAGEM-PRAZO-AVANCA-DATA-UTIL",
-      "versao": "1.0.0"
+      "versao": "v1"
     }
   },
   "coleta": {
@@ -82,7 +82,7 @@
         ],
         "regraRecurso": {
           "regraCodigo": "RECURSO-PRAZO-ANCORADO-EM-ATO",
-          "regraVersao": "1.0.0",
+          "regraVersao": "v1",
           "prazoValor": 2,
           "prazoUnidade": "diasUteis",
           "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
@@ -120,7 +120,7 @@
       "formaDeAvaliacao": "HUMANA",
       "regraConsolidacao": {
         "codigo": "CONSOLIDACAO-AVALIACAO-UNICA",
-        "versao": "1.0.0"
+        "versao": "v1"
       },
       "itensDeAvaliacao": [
         {
@@ -175,7 +175,7 @@
         {
           "ancora": "atoPublicado",
           "regraCodigo": "RECURSO-PRAZO-ANCORADO-EM-ATO",
-          "regraVersao": "1.0.0",
+          "regraVersao": "v1",
           "prazoValor": 2,
           "prazoUnidade": "diasUteis",
           "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
@@ -196,6 +196,180 @@
     "camposPublicos": [
       "numero_inscricao",
       "nome_abreviado"
+    ]
+  },
+  "tiposDeAtoCongelados": [
+    {
+      "codigo": "RESULTADO_PRELIMINAR",
+      "unicoPorObjeto": true,
+      "ehResultado": true,
+      "congelaConfiguracao": false
+    },
+    {
+      "codigo": "RESULTADO_FINAL",
+      "unicoPorObjeto": true,
+      "ehResultado": true,
+      "congelaConfiguracao": true
+    }
+  ],
+  "documentosExigidos": {
+    "exigencias": [
+      {
+        "chave": "documento-de-identificacao",
+        "tipoDocumentoCodigo": "DOCUMENTO_IDENTIFICACAO",
+        "tipoDocumentoNome": "Documento de identificação",
+        "faseChave": "inscricao",
+        "finalidade": "INSCRICAO",
+        "aplicabilidade": "Geral",
+        "obrigatorio": true,
+        "consequenciaIndeferimento": "PENDENCIA_REENVIO",
+        "formatosPermitidos": {
+          "qualquer": true
+        },
+        "tamanhoMaximoBytes": 5242880
+      },
+      {
+        "chave": "comprovante-de-renda",
+        "tipoDocumentoCodigo": "COMPROVANTE_RENDA",
+        "tipoDocumentoNome": "Comprovante de renda",
+        "faseChave": "inscricao",
+        "finalidade": "ISENCAO_TAXA",
+        "aplicabilidade": "Condicional",
+        "obrigatorio": true,
+        "consequenciaIndeferimento": "REMOVE_VANTAGEM",
+        "condicaoGatilho": [
+          [
+            {
+              "fato": "SOLICITA_ISENCAO",
+              "operador": "IGUAL",
+              "valor": true
+            }
+          ]
+        ],
+        "basesLegais": [
+          {
+            "referencia": "Decreto 6.593/2008",
+            "abrangencia": "FEDERAL",
+            "status": "RESOLVIDO"
+          }
+        ],
+        "idadeMaximaEmissao": {
+          "valor": 90,
+          "unidade": "DIAS",
+          "referenciaTipo": "FIM_INSCRICAO"
+        }
+      }
+    ],
+    "arvoreDeSatisfacao": [
+      {
+        "ordem": 1,
+        "tipo": "E",
+        "filhos": [
+          {
+            "tipo": "FOLHA",
+            "exigenciaChave": "documento-de-identificacao"
+          },
+          {
+            "tipo": "FOLHA",
+            "exigenciaChave": "comprovante-de-renda",
+            "consequencia": "REMOVE_VANTAGEM"
+          }
+        ]
+      }
+    ]
+  },
+  "classificacao": {
+    "regraCalculo": {
+      "codigo": "CALCULO-MEDIA-PONDERADA",
+      "versao": "v1"
+    },
+    "regraArredondamento": {
+      "codigo": "ARREDONDAMENTO-MEIO-ACIMA",
+      "versao": "v1"
+    },
+    "casasArredondamento": 2,
+    "escalaNotaFinal": 100,
+    "regraOrdemAlocacao": {
+      "codigo": "ORDEM-ALOCACAO-POR-NOTA",
+      "versao": "v1"
+    },
+    "baseadoEmEnem": false,
+    "regrasEliminacao": [
+      {
+        "regra": {
+          "codigo": "ELIM-NOTA-MINIMA-ETAPA",
+          "versao": "v1"
+        },
+        "args": {
+          "etapaChave": "prova-objetiva",
+          "notaMinima": 30
+        }
+      },
+      {
+        "regra": {
+          "codigo": "ELIM-AUSENCIA-NA-ETAPA",
+          "versao": "v1"
+        },
+        "args": {
+          "etapaChave": "prova-objetiva"
+        }
+      }
+    ],
+    "criteriosDeDesempate": [
+      {
+        "ordem": 1,
+        "regra": {
+          "codigo": "DESEMPATE-MAIOR-NOTA-ETAPA",
+          "versao": "v1"
+        },
+        "args": {
+          "etapaChave": "prova-objetiva"
+        }
+      },
+      {
+        "ordem": 2,
+        "regra": {
+          "codigo": "DESEMPATE-MAIOR-IDADE",
+          "versao": "v1"
+        },
+        "args": {}
+      }
+    ]
+  },
+  "atendimento": {
+    "condicoes": [
+      {
+        "condicaoCodigo": "MOBILIDADE_REDUZIDA",
+        "condicaoNome": "Mobilidade reduzida"
+      }
+    ],
+    "recursos": [
+      {
+        "recursoCodigo": "SALA_DE_FACIL_ACESSO",
+        "recursoNome": "Sala de fácil acesso"
+      }
+    ],
+    "tiposDeficiencia": [
+      {
+        "tipoDeficienciaCodigo": "FISICA",
+        "tipoDeficienciaNome": "Deficiência física"
+      }
+    ]
+  },
+  "bonusRegional": {
+    "aplica": false
+  },
+  "provaPresencial": {
+    "temProvaPresencial": true,
+    "municipios": [
+      {
+        "codigoIbge": "1504208",
+        "uf": "PA"
+      },
+      {
+        "codigoIbge": "1505536",
+        "uf": "PA"
+      }
     ]
   }
 }

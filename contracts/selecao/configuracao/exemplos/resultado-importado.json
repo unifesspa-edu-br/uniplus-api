@@ -19,12 +19,27 @@
         "fim": "2027-03-01T14:00:00Z",
         "unidadeResponsavelCodigo": "CEPS",
         "produtos": [
-          { "atoCodigo": "RESULTADO_FINAL", "papel": "DEFINITIVO" }
+          {
+            "atoCodigo": "RESULTADO_FINAL",
+            "papel": "DEFINITIVO"
+          }
         ]
       }
     ]
   },
   "taxaDeInscricao": {
     "cobra": false
+  },
+  "importacao": {
+    "relatorios": [
+      {
+        "leiauteCodigo": "INEP_RETORNO_ENEM",
+        "leiauteVersao": "v1"
+      }
+    ],
+    "primeiraFaseDepoisDaImportacaoChave": "resultado-final"
+  },
+  "classificacao": {
+    "baseadoEmEnem": true
   }
 }

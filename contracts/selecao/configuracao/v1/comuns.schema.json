@@ -71,9 +71,9 @@
         },
         "regraVersao": {
           "title": "Versão da regra",
-          "description": "Versão da regra de prazo de recurso.",
+          "description": "Versão da regra de prazo de recurso, na forma v1, v2, v3.",
           "type": "string",
-          "minLength": 1,
+          "pattern": "^v[0-9]+$",
           "maxLength": 16
         },
         "prazoValor": {
@@ -150,9 +150,9 @@
         },
         "versao": {
           "title": "Versão da regra",
-          "description": "Versão da regra no catálogo de regras.",
+          "description": "Versão da regra no catálogo de regras, na forma v1, v2, v3.",
           "type": "string",
-          "minLength": 1,
+          "pattern": "^v[0-9]+$",
           "maxLength": 16
         }
       }

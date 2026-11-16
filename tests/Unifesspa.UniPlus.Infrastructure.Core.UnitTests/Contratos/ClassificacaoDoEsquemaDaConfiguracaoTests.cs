@@ -16,17 +16,17 @@ public sealed class ClassificacaoDoEsquemaDaConfiguracaoTests
     private const string Classificacao = "classificacao.schema.json";
 
     private const string ClassificacaoCompleta = """
-        { "regraCalculo": { "codigo": "MEDIA-PONDERADA", "versao": "1" },
-          "regraArredondamento": { "codigo": "PRECISAO-ARREDONDAR-CIMA", "versao": "1" }, "casasArredondamento": 2,
-          "escalaNotaFinal": 1000, "regraOrdemAlocacao": { "codigo": "ORDEM-POR-NOTA", "versao": "1" }, "baseadoEmEnem": false,
+        { "regraCalculo": { "codigo": "MEDIA-PONDERADA", "versao": "v1" },
+          "regraArredondamento": { "codigo": "PRECISAO-ARREDONDAR-CIMA", "versao": "v1" }, "casasArredondamento": 2,
+          "escalaNotaFinal": 1000, "regraOrdemAlocacao": { "codigo": "ORDEM-POR-NOTA", "versao": "v1" }, "baseadoEmEnem": false,
           "regrasEliminacao": [
-            { "regra": { "codigo": "ELIM-NOTA-MINIMA-ETAPA", "versao": "1" }, "args": { "etapaChave": "prova-objetiva", "notaMinima": 30.5 } },
-            { "regra": { "codigo": "ELIM-ZERO-EM-AREA", "versao": "1" }, "args": {} } ],
+            { "regra": { "codigo": "ELIM-NOTA-MINIMA-ETAPA", "versao": "v1" }, "args": { "etapaChave": "prova-objetiva", "notaMinima": 30.5 } },
+            { "regra": { "codigo": "ELIM-ZERO-EM-AREA", "versao": "v1" }, "args": {} } ],
           "criteriosDeDesempate": [
-            { "ordem": 1, "regra": { "codigo": "DESEMPATE-MAIOR-NOTA-ETAPA", "versao": "1" }, "args": { "etapaChave": "prova-objetiva" } },
-            { "ordem": 2, "regra": { "codigo": "DESEMPATE-IDOSO", "versao": "1" }, "args": { "idadeMinima": 60 } },
-            { "ordem": 3, "regra": { "codigo": "DESEMPATE-PREDICADO-FATO", "versao": "1" }, "args": { "fato": "UF", "operador": "EM", "valor": ["PA"] } },
-            { "ordem": 4, "regra": { "codigo": "DESEMPATE-MAIOR-IDADE", "versao": "1" }, "args": {} } ],
+            { "ordem": 1, "regra": { "codigo": "DESEMPATE-MAIOR-NOTA-ETAPA", "versao": "v1" }, "args": { "etapaChave": "prova-objetiva" } },
+            { "ordem": 2, "regra": { "codigo": "DESEMPATE-IDOSO", "versao": "v1" }, "args": { "idadeMinima": 60 } },
+            { "ordem": 3, "regra": { "codigo": "DESEMPATE-PREDICADO-FATO", "versao": "v1" }, "args": { "fato": "UF", "operador": "EM", "valor": ["PA"] } },
+            { "ordem": 4, "regra": { "codigo": "DESEMPATE-MAIOR-IDADE", "versao": "v1" }, "args": {} } ],
           "resolucaoPesoAreaEnem": "RES-2026-01" }
         """;
 
@@ -54,7 +54,7 @@ public sealed class ClassificacaoDoEsquemaDaConfiguracaoTests
         ArgumentNullException.ThrowIfNull(codigo);
         ArgumentNullException.ThrowIfNull(args);
         ArgumentNullException.ThrowIfNull(caminho);
-        JsonNode classificacao = Documento($$"""{ "criteriosDeDesempate": [ { "ordem": 1, "regra": { "codigo": "{{codigo}}", "versao": "1" }, "args": {{args}} } ] }""");
+        JsonNode classificacao = Documento($$"""{ "criteriosDeDesempate": [ { "ordem": 1, "regra": { "codigo": "{{codigo}}", "versao": "v1" }, "args": {{args}} } ] }""");
 
         CaminhosComErro(classificacao, Classificacao).Should().Contain($"/criteriosDeDesempate/0{caminho}");
     }
@@ -69,14 +69,14 @@ public sealed class ClassificacaoDoEsquemaDaConfiguracaoTests
         ArgumentNullException.ThrowIfNull(codigo);
         ArgumentNullException.ThrowIfNull(args);
         ArgumentNullException.ThrowIfNull(caminho);
-        JsonNode classificacao = Documento($$"""{ "regrasEliminacao": [ { "regra": { "codigo": "{{codigo}}", "versao": "1" }, "args": {{args}} } ] }""");
+        JsonNode classificacao = Documento($$"""{ "regrasEliminacao": [ { "regra": { "codigo": "{{codigo}}", "versao": "v1" }, "args": {{args}} } ] }""");
 
         CaminhosComErro(classificacao, Classificacao).Should().Contain($"/regrasEliminacao/0{caminho}");
     }
 
     [Fact(DisplayName = "A regra de código desconhecido aceita parâmetros livres, porque a variante nova nasce no catálogo")]
     public void Regra_DeCodigoDesconhecido_AceitaParametros() =>
-        CaminhosComErro(Documento("""{ "regrasEliminacao": [ { "regra": { "codigo": "ELIM-NOVA", "versao": "1" }, "args": { "x": 1 } } ] }"""), Classificacao)
+        CaminhosComErro(Documento("""{ "regrasEliminacao": [ { "regra": { "codigo": "ELIM-NOVA", "versao": "v1" }, "args": { "x": 1 } } ] }"""), Classificacao)
             .Should().BeEmpty();
 
     [Theory(DisplayName = "A escala da nota final fora do intervalo ou com casas demais é recusada")]
