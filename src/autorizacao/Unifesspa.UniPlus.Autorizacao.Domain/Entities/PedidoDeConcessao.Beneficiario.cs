@@ -4,7 +4,6 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>Quem é o beneficiário do pedido e o e-mail institucional que o identifica.</summary>
@@ -21,13 +20,14 @@ public sealed partial class PedidoDeConcessao
     {
         ArgumentNullException.ThrowIfNull(pessoa);
 
-        Result? recusa = RecusaDoAceite(pessoa) is { } erro ? Result.Failure(erro) : ApresentacaoDoTermo.Conferir(termoApresentado, Termo?.VersaoId);
+        DomainError? recusaDoAceite = RecusaDaSituacaoNoAceite() ?? Beneficiario.RecusaDoAceite(pessoa, BeneficiarioEmail);
+        Result? recusa = recusaDoAceite is { } erro ? Result.Failure(erro) : ApresentacaoDoTermo.Conferir(termoApresentado, Termo?.VersaoId);
         if (recusa is not null)
         {
             return recusa;
         }
 
-        Beneficiario = BeneficiarioDoPedido.Aceito(pessoa.Identidade, NomeDeExibicao.Normalizar(pessoa.Nome), instante);
+        Beneficiario = BeneficiarioDoPedido.AceitoPor(pessoa, instante);
         RegistrarAceiteDoTermo(instante);
         Situacao = SituacaoDoPedido.AguardandoGestor;
 
@@ -40,26 +40,7 @@ public sealed partial class PedidoDeConcessao
         ArgumentNullException.ThrowIfNull(pessoa);
 
         return Solicitante.Eh(pessoa.Identidade)
-            || Beneficiario.Eh(pessoa.Identidade)
-            || (Beneficiario.Identidade is null && EhOBeneficiarioPeloEmail(pessoa));
-    }
-
-    private DomainError? RecusaDoAceite(PessoaNoToken pessoa)
-    {
-        if (RecusaDaSituacaoNoAceite() is { } recusa)
-        {
-            return recusa;
-        }
-
-        if (!EhOBeneficiario(pessoa))
-        {
-            return new DomainError(
-                PedidoErrorCodes.NaoEOBeneficiario,
-                "Só a pessoa a quem o pedido se destina, com o e-mail institucional verificado, o aceita.");
-        }
-
-        // O aprovador julga a pessoa pelo nome: sem ele no token, o pedido não avança à aprovação.
-        return NomeDeExibicao.Normalizar(pessoa.Nome) is null ? BeneficiarioDoPedido.SemNome() : null;
+            || Beneficiario.Reconhece(pessoa, BeneficiarioEmail);
     }
 
     private DomainError? RecusaDaSituacaoNoAceite() => Situacao switch
@@ -70,12 +51,4 @@ public sealed partial class PedidoDeConcessao
             "O documento declarado ainda não foi verificado; o aceite e a decisão esperam a verificação."),
         _ => SituacaoInvalida("O pedido não aguarda o aceite do beneficiário."),
     };
-
-    private bool EhOBeneficiario(PessoaNoToken pessoa) =>
-        Beneficiario.Identidade is not null ? Beneficiario.Eh(pessoa.Identidade) : EhOBeneficiarioPeloEmail(pessoa);
-
-    private bool EhOBeneficiarioPeloEmail(PessoaNoToken pessoa) =>
-        pessoa.EmailVerificado
-        && EmailDaPessoa.Normalizar(pessoa.Email) is { } email
-        && string.Equals(email, BeneficiarioEmail, StringComparison.Ordinal);
 }

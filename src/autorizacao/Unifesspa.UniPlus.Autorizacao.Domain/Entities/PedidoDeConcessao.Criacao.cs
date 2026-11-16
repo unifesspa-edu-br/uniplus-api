@@ -34,11 +34,11 @@ public sealed partial class PedidoDeConcessao
 
         DomainError? recusa = partes.RecusaDoSolicitante(dominios);
         (List<FieldError> erros, string? justificativa) = ValidacaoDaCriacaoDoPedido.ValidarCampos(perfil, escopo, catalogo, declaracao, instante);
-        (string? email, bool paraSiMesmo) = partes.ResolverBeneficiario(dominios, erros);
+        BeneficiarioIndicado beneficiario = partes.ResolverBeneficiario(dominios, erros);
 
         return recusa is not null ? Result<PedidoDeConcessao>.Failure(recusa)
             : erros.Count > 0 ? Result<PedidoDeConcessao>.ValidationFailure(erros)
-            : Result<PedidoDeConcessao>.Success(Novo(partes.Solicitante, perfil, escopo, declaracao.Consolidada(justificativa!, perfil), instante, (email!, paraSiMesmo)));
+            : Result<PedidoDeConcessao>.Success(Novo(partes.Solicitante, perfil, escopo, declaracao.Consolidada(justificativa!, perfil), instante, beneficiario));
     }
 
     private static PedidoDeConcessao Novo(
@@ -47,7 +47,7 @@ public sealed partial class PedidoDeConcessao
         EscopoDaConcessao escopo,
         DeclaracaoDoPedido declaracao,
         DateTimeOffset instante,
-        (string Email, bool ParaSiMesmo) beneficiario)
+        BeneficiarioIndicado beneficiario)
     {
         PedidoDeConcessao pedido = new()
         {
@@ -63,12 +63,11 @@ public sealed partial class PedidoDeConcessao
         return pedido;
     }
 
-    private void DefinirPartes(PessoaNoToken solicitante, (string Email, bool ParaSiMesmo) beneficiario)
+    private void DefinirPartes(PessoaNoToken solicitante, BeneficiarioIndicado beneficiario)
     {
-        BeneficiarioEmail = beneficiario.Email;
+        BeneficiarioEmail = beneficiario.Email!;
         Solicitante = SolicitanteDoPedido.De(solicitante);
-
-        Beneficiario = beneficiario.ParaSiMesmo ? BeneficiarioDoPedido.Conhecido(Solicitante.Identidade, Solicitante.Nome) : BeneficiarioDoPedido.Desconhecido();
+        Beneficiario = beneficiario.Inicial(Solicitante);
     }
 
     // O documento declarado vem antes de tudo; sem ele, o pedido para si mesmo vai ao gestor e o para outra pessoa espera o
