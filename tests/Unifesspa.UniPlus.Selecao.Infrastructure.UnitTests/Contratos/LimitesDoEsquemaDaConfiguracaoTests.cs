@@ -17,6 +17,7 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
     private const string Comuns = "comuns.schema.json";
     private const string Etapas = "etapas.schema.json";
     private const string Exigencia = "exigencias.schema.json#/$defs/exigencia/properties";
+    private const string Predicado = "predicado.schema.json";
     private const string Pesos = "pesos-por-area.schema.json";
 
     private static readonly (string Constante, int Limite, string Arquivo, string Caminho, bool Exato)[] Paridades =
@@ -29,8 +30,8 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
         (nameof(LimitesDoEnvelope.TipoAtoCodigo), LimitesDoEnvelope.TipoAtoCodigo, Comuns, "/$defs/produto/properties/atoCodigo", true),
         (nameof(LimitesDoEnvelope.RegraCodigo), LimitesDoEnvelope.RegraCodigo, Comuns, "/$defs/referenciaDeRegra/properties/codigo", true),
         (nameof(LimitesDoEnvelope.RegraVersao), LimitesDoEnvelope.RegraVersao, Comuns, "/$defs/referenciaDeRegra/properties/versao", true),
-        (nameof(LimitesDoEnvelope.Fato), LimitesDoEnvelope.Fato, Comuns, "/$defs/condicao/properties/fato", true),
-        (nameof(LimitesDoEnvelope.ObservacaoBaseLegal), LimitesDoEnvelope.ObservacaoBaseLegal, Comuns, "/$defs/baseLegal/properties/observacao", true),
+        (nameof(LimitesDoEnvelope.Fato), LimitesDoEnvelope.Fato, Predicado, "/$defs/condicao/properties/fato", true),
+        (nameof(LimitesDoEnvelope.ObservacaoBaseLegal), LimitesDoEnvelope.ObservacaoBaseLegal, Predicado, "/$defs/baseLegal/properties/observacao", true),
         (nameof(LimitesDoEnvelope.TipoDocumentoCodigo), LimitesDoEnvelope.TipoDocumentoCodigo, Exigencia, "/tipoDocumentoCodigo", true),
         (nameof(LimitesDoEnvelope.TipoDocumentoNome), LimitesDoEnvelope.TipoDocumentoNome, Exigencia, "/tipoDocumentoNome", true),
         (nameof(LimitesDoEnvelope.TipoDocumentoCategoria), LimitesDoEnvelope.TipoDocumentoCategoria, Exigencia, "/tipoDocumentoCategoria", true),

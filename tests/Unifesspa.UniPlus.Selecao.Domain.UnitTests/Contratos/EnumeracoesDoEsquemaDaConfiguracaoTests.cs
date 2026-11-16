@@ -23,6 +23,7 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
     private const string Deliberacao = "/$defs/regraDeDeliberacao/properties";
     private const string Exigencias = "exigencias.schema.json";
     private const string Exigencia = "/$defs/exigencia/properties";
+    private const string Predicado = "predicado.schema.json";
     private const string Recurso = "/$defs/propriedadesDoRecurso/properties";
 
     private static readonly (string Arquivo, string Caminho, Func<IEnumerable<string>> Dominio)[] Paridades =
@@ -39,10 +40,10 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         (Comuns, "/$defs/produto/properties/papel", () => Codigos<PapelProdutoFase>(static v => ((PapelProdutoFase?)v).ToCodigo()!)),
         (Comuns, $"{Recurso}/suspensividadePrimeiraInstanciaUnidade", Nomes<UnidadePrazo>),
         (Comuns, $"{Recurso}/suspensividadeSegundaInstanciaUnidade", Nomes<UnidadePrazo>),
-        (Comuns, "/$defs/condicao/properties/operador", () => Codigos<Operador>(static v => v.ToCodigo())),
-        (Comuns, "/$defs/obrigatoriedade/properties/tipo", () => [PredicadoDnfJson.ObrigatoriedadeSempre, PredicadoDnfJson.ObrigatoriedadeNunca, PredicadoDnfJson.ObrigatoriedadeQuando]),
-        (Comuns, "/$defs/baseLegal/properties/abrangencia", () => Codigos<TipoAbrangencia>(static v => v.ToCodigo())),
-        (Comuns, "/$defs/baseLegal/properties/status", () => Codigos<StatusBaseLegal>(static v => v.ToCodigo())),
+        (Predicado, "/$defs/condicao/properties/operador", () => Codigos<Operador>(static v => v.ToCodigo())),
+        (Predicado, "/$defs/obrigatoriedade/properties/tipo", () => [PredicadoDnfJson.ObrigatoriedadeSempre, PredicadoDnfJson.ObrigatoriedadeNunca, PredicadoDnfJson.ObrigatoriedadeQuando]),
+        (Predicado, "/$defs/baseLegal/properties/abrangencia", () => Codigos<TipoAbrangencia>(static v => v.ToCodigo())),
+        (Predicado, "/$defs/baseLegal/properties/status", () => Codigos<StatusBaseLegal>(static v => v.ToCodigo())),
         ("divulgacao.schema.json", "/properties/camposPublicos/items", () => ConfiguracaoDivulgacao.CamposPermitidos.Select(static c => c.Codigo)),
         ("etapas.schema.json", "/properties/carater", Nomes<CaraterEtapa>),
         ("etapas.schema.json", "/properties/formaDeAvaliacao", () => Codigos<FormaDeAvaliacao>(static v => ((FormaDeAvaliacao?)v).ToCodigo()!)),

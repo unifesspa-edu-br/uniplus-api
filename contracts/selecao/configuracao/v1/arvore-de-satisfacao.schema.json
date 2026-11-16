@@ -50,7 +50,7 @@
       "description": "Embasamento normativo do nó.",
       "type": "array",
       "items": {
-        "$ref": "comuns.schema.json#/$defs/baseLegal"
+        "$ref": "predicado.schema.json#/$defs/baseLegal"
       }
     },
     "chaveDistincao": {

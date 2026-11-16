@@ -13,6 +13,7 @@ using static Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Contratos.ContratoD
 public sealed class DefinicoesComunsDoEsquemaDaConfiguracaoTests
 {
     private const string Comuns = "comuns.schema.json";
+    private const string Predicado = "predicado.schema.json";
 
     [Fact(DisplayName = "A referência de regra tem código e versão e recusa propriedade desconhecida")]
     public void ReferenciaDeRegra_TemCodigoEVersao()
@@ -39,13 +40,13 @@ public sealed class DefinicoesComunsDoEsquemaDaConfiguracaoTests
                 { "fato": "UF", "operador": "EM", "valor": ["PA", "TO"] } ] ]
             """);
 
-        CaminhosComErro(semClausula, $"{Comuns}#/$defs/predicado").Should().BeEmpty();
-        CaminhosComErro(umaClausula, $"{Comuns}#/$defs/predicado").Should().BeEmpty();
+        CaminhosComErro(semClausula, $"{Predicado}#/$defs/predicado").Should().BeEmpty();
+        CaminhosComErro(umaClausula, $"{Predicado}#/$defs/predicado").Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A cláusula vazia é recusada com o caminho dela")]
     public void Predicado_ClausulaVazia_Recusa() =>
-        CaminhosComErro(Documento("[ [] ]"), $"{Comuns}#/$defs/predicado").Should().Contain("/0");
+        CaminhosComErro(Documento("[ [] ]"), $"{Predicado}#/$defs/predicado").Should().Contain("/0");
 
     [Theory(DisplayName = "O valor incoerente com o operador é recusado")]
     [InlineData("EM", "\"PA\"")]
@@ -58,18 +59,18 @@ public sealed class DefinicoesComunsDoEsquemaDaConfiguracaoTests
         ArgumentNullException.ThrowIfNull(valor);
         JsonNode condicao = Documento($$"""{ "fato": "UF", "operador": "{{operador}}", "valor": {{valor}} }""");
 
-        CaminhosComErro(condicao, $"{Comuns}#/$defs/condicao").Should().Contain("/valor");
+        CaminhosComErro(condicao, $"{Predicado}#/$defs/condicao").Should().Contain("/valor");
     }
 
     [Fact(DisplayName = "O operador desconhecido é recusado")]
     public void Condicao_OperadorDesconhecido_Recusa() =>
-        CaminhosComErro(Documento("""{ "fato": "UF", "operador": "PARECIDO", "valor": "PA" }"""), $"{Comuns}#/$defs/condicao")
+        CaminhosComErro(Documento("""{ "fato": "UF", "operador": "PARECIDO", "valor": "PA" }"""), $"{Predicado}#/$defs/condicao")
             .Should().Contain("/operador");
 
     [Fact(DisplayName = "A obrigatoriedade QUANDO exige o predicado e as outras o recusam")]
     public void Obrigatoriedade_PredicadoSoEmQuando()
     {
-        string definicao = $"{Comuns}#/$defs/obrigatoriedade";
+        string definicao = $"{Predicado}#/$defs/obrigatoriedade";
 
         CaminhosComErro(Documento("""{ "tipo": "SEMPRE" }"""), definicao).Should().BeEmpty();
         CaminhosComErro(Documento("""{ "tipo": "NUNCA", "predicado": null }"""), definicao).Should().BeEmpty();
@@ -81,7 +82,7 @@ public sealed class DefinicoesComunsDoEsquemaDaConfiguracaoTests
 
     [Fact(DisplayName = "A obrigatoriedade QUANDO com predicado nulo é recusada")]
     public void Obrigatoriedade_QuandoComPredicadoNulo_Recusa() =>
-        CaminhosComErro(Documento("""{ "tipo": "QUANDO", "predicado": null }"""), $"{Comuns}#/$defs/obrigatoriedade").Should().Contain("/predicado");
+        CaminhosComErro(Documento("""{ "tipo": "QUANDO", "predicado": null }"""), $"{Predicado}#/$defs/obrigatoriedade").Should().Contain("/predicado");
 
     [Theory(DisplayName = "O fato ou o valor em branco da condição é recusado")]
     [InlineData("\"  \"", "\"PA\"", "/fato")]
@@ -92,13 +93,13 @@ public sealed class DefinicoesComunsDoEsquemaDaConfiguracaoTests
         ArgumentNullException.ThrowIfNull(valor);
         JsonNode condicao = Documento($$"""{ "fato": {{fato}}, "operador": "IGUAL", "valor": {{valor}} }""");
 
-        CaminhosComErro(condicao, $"{Comuns}#/$defs/condicao").Should().Contain(caminho);
+        CaminhosComErro(condicao, $"{Predicado}#/$defs/condicao").Should().Contain(caminho);
     }
 
     [Fact(DisplayName = "O item de texto em branco na lista de EM é recusado e a lista vazia é aceita")]
     public void Condicao_ListaComItemEmBranco_Recusa()
     {
-        string definicao = $"{Comuns}#/$defs/condicao";
+        string definicao = $"{Predicado}#/$defs/condicao";
 
         CaminhosComErro(Documento("""{ "fato": "UF", "operador": "EM", "valor": ["PA", " "] }"""), definicao).Should().Contain("/valor/1");
         CaminhosComErro(Documento("""{ "fato": "UF", "operador": "EM", "valor": [] }"""), definicao).Should().BeEmpty();

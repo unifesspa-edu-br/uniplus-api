@@ -144,14 +144,14 @@
         "condicaoGatilho": {
           "title": "Condição de gatilho",
           "description": "Predicado que torna a exigência aplicável, quando ela é condicional.",
-          "$ref": "comuns.schema.json#/$defs/predicado"
+          "$ref": "predicado.schema.json#/$defs/predicado"
         },
         "basesLegais": {
           "title": "Bases legais",
           "description": "Embasamento normativo da exigência.",
           "type": "array",
           "items": {
-            "$ref": "comuns.schema.json#/$defs/baseLegal"
+            "$ref": "predicado.schema.json#/$defs/baseLegal"
           }
         },
         "idadeMaximaEmissao": {
