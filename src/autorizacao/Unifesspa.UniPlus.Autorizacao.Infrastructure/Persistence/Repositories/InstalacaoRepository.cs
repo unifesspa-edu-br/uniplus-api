@@ -13,6 +13,9 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 /// <summary>Repositório das instalações dos primeiros gestores e das tentativas de confirmá-las.</summary>
 public sealed class InstalacaoRepository : IInstalacaoRepository
 {
+    private const string TravaDaLinha =
+        $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.instalacoes WHERE id = {{0}} FOR UPDATE";
+
     private readonly UniPlusDbContext _context;
 
     public InstalacaoRepository(UniPlusDbContext context)
@@ -57,33 +60,24 @@ public sealed class InstalacaoRepository : IInstalacaoRepository
             .ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Duas tentativas simultâneas do mesmo executor se enfileiram na linha da instalação: sem a trava, a que perde o
+    /// conflito de concorrência descartaria o registro da própria tentativa. A trava dura até o fim da transação do
+    /// handler, e a releitura depois dela enxerga o que a anterior confirmou.
+    /// </summary>
     public async Task<Instalacao?> ObterAguardandoCodigoDoExecutorAsync(Identidade executor, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(executor);
 
-        Guid? id = await _context.Instalacoes
-            .AsNoTracking()
-            .Where(i => i.ExecutorEmissor == executor.Emissor
-                && i.ExecutorContaId == executor.ContaId
-                && i.Situacao == SituacaoDaInstalacao.AguardandoCodigo)
-            .Select(i => (Guid?)i.Id)
-            .FirstOrDefaultAsync(cancellationToken)
-            .ConfigureAwait(false);
-        if (id is null)
+        if (await IdAguardandoCodigoDoExecutorAsync(executor, cancellationToken).ConfigureAwait(false) is not { } id)
         {
             return null;
         }
 
-        // Duas tentativas simultâneas do mesmo executor se enfileiram na linha da instalação: sem a trava, a que
-        // perde o conflito de concorrência descartaria o registro da própria tentativa. A trava dura até o fim da
-        // transação do handler, e a releitura depois dela enxerga o que a anterior confirmou.
-        await _context.Database.ExecuteSqlRawAsync(
-            $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.instalacoes WHERE id = {{0}} FOR UPDATE",
-            [id.Value],
-            cancellationToken).ConfigureAwait(false);
+        await TravarParaAtualizarAsync(id, cancellationToken).ConfigureAwait(false);
 
         return await _context.Instalacoes
-            .Where(i => i.Id == id.Value && i.Situacao == SituacaoDaInstalacao.AguardandoCodigo)
+            .Where(i => i.Id == id && i.Situacao == SituacaoDaInstalacao.AguardandoCodigo)
             .FirstOrDefaultAsync(cancellationToken)
             .ConfigureAwait(false);
     }
@@ -136,4 +130,17 @@ public sealed class InstalacaoRepository : IInstalacaoRepository
 
         return (itens, page.PrevAfterId, page.NextAfterId);
     }
+
+    private async Task<Guid?> IdAguardandoCodigoDoExecutorAsync(Identidade executor, CancellationToken cancellationToken) =>
+        await _context.Instalacoes
+            .AsNoTracking()
+            .Where(i => i.ExecutorEmissor == executor.Emissor
+                && i.ExecutorContaId == executor.ContaId
+                && i.Situacao == SituacaoDaInstalacao.AguardandoCodigo)
+            .Select(i => (Guid?)i.Id)
+            .FirstOrDefaultAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+    private async Task TravarParaAtualizarAsync(Guid id, CancellationToken cancellationToken) =>
+        await _context.Database.ExecuteSqlRawAsync(TravaDaLinha, [id], cancellationToken).ConfigureAwait(false);
 }
