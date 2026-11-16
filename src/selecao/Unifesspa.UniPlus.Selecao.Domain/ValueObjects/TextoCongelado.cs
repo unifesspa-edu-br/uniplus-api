@@ -34,6 +34,14 @@ public static class TextoCongelado
     public static string? NormalizarOuNulo(string? texto) =>
         string.IsNullOrWhiteSpace(texto) ? null : Normalizar(texto);
 
+    /// <summary>O texto traz o caractere nulo, de controle ou de formatação — o que um texto de uma linha recusa.</summary>
+    public static bool TemCaractereInvalido(string texto)
+    {
+        ArgumentNullException.ThrowIfNull(texto);
+
+        return CaracteresInvisiveis.Contem(texto);
+    }
+
     /// <summary>O texto traz o caractere nulo (U+0000).</summary>
     public static bool ContemCaractereNulo(string texto)
     {

@@ -128,7 +128,7 @@ public sealed class GrupoPesoAreaEnemCongeladoTests
         string naoCaractere = ((char)0xFFFE).ToString();
 
         GrupoPesoAreaEnemCongelado.Criar("TECNOLOGICA", "Tecnológica" + naoCaractere, BaseLegal, Areas())
-            .Errors.Should().ContainSingle(e => e.Error.Code == "GrupoAreaEnemSnapshot.CaractereNulo");
+            .Errors.Should().ContainSingle(e => e.Error.Code == "GrupoAreaEnemSnapshot.CaractereInvalido");
         GrupoPesoAreaEnemCongelado.Criar("TECNOLOGICA", "Tecnológica", BaseLegal + naoCaractere, Areas())
             .Errors.Should().ContainSingle(e => e.Error.Code == "GrupoPesoAreaEnemCongelado.BaseLegalInvalida");
         GrupoPesoAreaEnemCongelado.Criar("TECNOLOGICA", "Tecnológica", BaseLegal, [("REDACAO", "Redação" + naoCaractere, 2m, null)])

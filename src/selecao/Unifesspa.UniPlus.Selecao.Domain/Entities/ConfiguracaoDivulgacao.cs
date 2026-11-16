@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -62,13 +63,6 @@ public sealed class ConfiguracaoDivulgacao : EntityBase, IParteDoProcesso
     /// </summary>
     public const int JustificativaMaxLength = 1000;
 
-    /// <summary>
-    /// U+0000, escrito por código de caractere (não como literal <c>'\0'</c> no fonte) para que
-    /// nenhum editor ou ferramenta de texto insira o byte cru no arquivo — o PostgreSQL recusa
-    /// esse byte em coluna de texto, e é exatamente o que este caractere representa.
-    /// </summary>
-    private const char CaractereNulo = (char)0;
-
     public Guid ProcessoSeletivoId { get; private set; }
 
     /// <summary>Os campos publicados, deduplicados e na ordem canônica — a mesma ordem que o envelope emite.</summary>
@@ -89,92 +83,20 @@ public sealed class ConfiguracaoDivulgacao : EntityBase, IParteDoProcesso
     {
         ArgumentNullException.ThrowIfNull(camposPublicos);
 
-        List<FieldError> erros = [];
-
-        if (camposPublicos.Count == 0)
-        {
-            erros.Add(new("camposPublicos", new DomainError(
-                "ConfiguracaoDivulgacao.CamposPublicosVazio",
-                "A lista de campos públicos não pode ser vazia — para restaurar o default, remova a configuração explícita.")));
-        }
-
-        // Item nulo não pertence ao vocabulário — reportado junto dos demais campos fora do
-        // vocabulário fechado, em vez de escapar de FirstOrDefault(...) is { } (que descarta um
-        // resultado nulo como "não encontrado") e sobreviver silenciosamente na lista canônica.
-        // A mensagem não ecoa os valores rejeitados (ADR-0023): errors[].message nunca carrega
-        // reflexo do dado rejeitado, mesmo quando o campo em si não é PII.
-        bool temCampoNaoPermitido = camposPublicos.Any(static c =>
-            c is null || !CamposPermitidos.Any(permitido => string.Equals(permitido.Codigo, c, StringComparison.Ordinal)));
-        if (temCampoNaoPermitido)
-        {
-            erros.Add(new("camposPublicos", new DomainError(
-                "ConfiguracaoDivulgacao.CampoNaoPermitido",
-                $"Um ou mais campos não pertencem ao vocabulário de divulgação pública ({NumeroInscricao}, {NomeAbreviado}, {Nome}).")));
-        }
-
-        // Redundante com CamposPublicosVazio quando a lista já está vazia — não acrescenta um
-        // segundo erro para a mesma causa raiz.
-        if (camposPublicos.Count > 0 && !camposPublicos.Contains(NumeroInscricao, StringComparer.Ordinal))
-        {
-            erros.Add(new("camposPublicos", new DomainError(
-                "ConfiguracaoDivulgacao.NumeroInscricaoObrigatorio",
-                $"'{NumeroInscricao}' é o piso da divulgação pública — não pode ser removido da lista.")));
-        }
-
-        bool temNomeAbreviado = camposPublicos.Contains(NomeAbreviado, StringComparer.Ordinal);
-        bool temNome = camposPublicos.Contains(Nome, StringComparer.Ordinal);
-
-        if (temNomeAbreviado && temNome)
-        {
-            erros.Add(new("camposPublicos", new DomainError(
-                "ConfiguracaoDivulgacao.FormasDeIdentificacaoExcludentes",
-                $"'{NomeAbreviado}' e '{Nome}' não podem ser publicados ao mesmo tempo — escolha uma forma de identificação do candidato.")));
-        }
-
         string? justificativaNormalizada = NormalizarJustificativa(justificativa);
+        List<FieldError> erros = RecusasDosCampos(camposPublicos);
+        erros.AddRange(RecusasDaJustificativa(justificativaNormalizada, camposPublicos.Contains(Nome, StringComparer.Ordinal)));
 
-        // U+0000 sobrevive a IsNullOrWhiteSpace, Trim e NormalizeNfc — nenhum dos três o
-        // reconhece como espaço em branco nem o remove. Sem esta guarda ele chegaria ao
-        // SaveChanges e o PostgreSQL recusaria o byte zero em coluna de texto (500 em vez de
-        // erro de validação); recusado aqui, o mesmo guard cobre tanto o comando quanto a
-        // restauração do envelope, que também passa por este método.
-        if (justificativaNormalizada is not null && justificativaNormalizada.Contains(CaractereNulo))
-        {
-            erros.Add(new("justificativa", new DomainError(
-                "ConfiguracaoDivulgacao.JustificativaComCaractereNulo",
-                "A justificativa não pode conter o caractere nulo (U+0000).")));
-        }
-
-        // If independente do guard acima: uma justificativa longa demais E com caractere nulo
-        // viola as duas regras ao mesmo tempo — um else if suprimiria JustificativaMuitoLonga
-        // até o cliente reenviar sem o caractere nulo, escondendo uma violação já detectável.
-        if (justificativaNormalizada is { Length: > JustificativaMaxLength })
-        {
-            erros.Add(new("justificativa", new DomainError(
-                "ConfiguracaoDivulgacao.JustificativaMuitoLonga",
-                $"A justificativa deve ter no máximo {JustificativaMaxLength} caracteres.")));
-        }
-
-        if (temNome && justificativaNormalizada is null)
-        {
-            erros.Add(new("justificativa", new DomainError(
-                "ConfiguracaoDivulgacao.JustificativaObrigatoria",
-                $"Publicar '{Nome}' exige justificativa (UNI-REQ-0050) — '{NumeroInscricao}' e '{NomeAbreviado}' dispensam.")));
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<ConfiguracaoDivulgacao>.ValidationFailure(erros);
-        }
-
-        string[] canonico = [.. camposPublicos.Distinct(StringComparer.Ordinal).OrderBy(static c => c, StringComparer.Ordinal)];
-
-        return Result<ConfiguracaoDivulgacao>.Success(new ConfiguracaoDivulgacao
-        {
-            CamposPublicos = canonico,
-            Justificativa = justificativaNormalizada,
-        });
+        return erros.Count > 0
+            ? Result<ConfiguracaoDivulgacao>.ValidationFailure(erros)
+            : Result<ConfiguracaoDivulgacao>.Success(Montar(camposPublicos, justificativaNormalizada));
     }
+
+    private static ConfiguracaoDivulgacao Montar(IReadOnlyList<string> camposPublicos, string? justificativaNormalizada) => new()
+    {
+        CamposPublicos = [.. camposPublicos.Distinct(StringComparer.Ordinal).OrderBy(static c => c, StringComparer.Ordinal)],
+        Justificativa = justificativaNormalizada,
+    };
 
     /// <summary>
     /// O default minimizado: só o piso, sem justificativa — o efetivo que um processo sem
@@ -189,6 +111,103 @@ public sealed class ConfiguracaoDivulgacao : EntityBase, IParteDoProcesso
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
+
+    private static List<FieldError> RecusasDosCampos(IReadOnlyList<string> camposPublicos)
+    {
+        List<FieldError> erros = [];
+        ConferirListaNaoVazia(camposPublicos, erros);
+        ConferirVocabulario(camposPublicos, erros);
+        ConferirPiso(camposPublicos, erros);
+        ConferirFormasExcludentes(camposPublicos, erros);
+        return erros;
+    }
+
+    private static void ConferirListaNaoVazia(IReadOnlyList<string> camposPublicos, List<FieldError> erros)
+    {
+        if (camposPublicos.Count == 0)
+        {
+            Recusar(erros, "camposPublicos", "ConfiguracaoDivulgacao.CamposPublicosVazio",
+                "A lista de campos públicos não pode ser vazia — para restaurar o default, remova a configuração explícita.");
+        }
+    }
+
+    // Item nulo não pertence ao vocabulário — reportado junto dos demais campos fora do
+    // vocabulário fechado, em vez de escapar de FirstOrDefault(...) is { } (que descarta um
+    // resultado nulo como "não encontrado") e sobreviver silenciosamente na lista canônica.
+    // A mensagem não ecoa os valores rejeitados (ADR-0023): errors[].message nunca carrega
+    // reflexo do dado rejeitado, mesmo quando o campo em si não é PII.
+    private static void ConferirVocabulario(IReadOnlyList<string> camposPublicos, List<FieldError> erros)
+    {
+        bool temCampoNaoPermitido = camposPublicos.Any(static c =>
+            c is null || !CamposPermitidos.Any(permitido => string.Equals(permitido.Codigo, c, StringComparison.Ordinal)));
+        if (temCampoNaoPermitido)
+        {
+            Recusar(erros, "camposPublicos", "ConfiguracaoDivulgacao.CampoNaoPermitido",
+                $"Um ou mais campos não pertencem ao vocabulário de divulgação pública ({NumeroInscricao}, {NomeAbreviado}, {Nome}).");
+        }
+    }
+
+    // Redundante com CamposPublicosVazio quando a lista já está vazia — não acrescenta um
+    // segundo erro para a mesma causa raiz.
+    private static void ConferirPiso(IReadOnlyList<string> camposPublicos, List<FieldError> erros)
+    {
+        if (camposPublicos.Count > 0 && !camposPublicos.Contains(NumeroInscricao, StringComparer.Ordinal))
+        {
+            Recusar(erros, "camposPublicos", "ConfiguracaoDivulgacao.NumeroInscricaoObrigatorio",
+                $"'{NumeroInscricao}' é o piso da divulgação pública — não pode ser removido da lista.");
+        }
+    }
+
+    private static void ConferirFormasExcludentes(IReadOnlyList<string> camposPublicos, List<FieldError> erros)
+    {
+        if (camposPublicos.Contains(NomeAbreviado, StringComparer.Ordinal) && camposPublicos.Contains(Nome, StringComparer.Ordinal))
+        {
+            Recusar(erros, "camposPublicos", "ConfiguracaoDivulgacao.FormasDeIdentificacaoExcludentes",
+                $"'{NomeAbreviado}' e '{Nome}' não podem ser publicados ao mesmo tempo — escolha uma forma de identificação do candidato.");
+        }
+    }
+
+    // Os dois primeiros ifs são independentes: uma justificativa longa demais E com caractere
+    // inválido viola as duas regras ao mesmo tempo, e um else if esconderia a primeira até o
+    // cliente reenviar sem a segunda.
+    private static List<FieldError> RecusasDaJustificativa(string? justificativa, bool publicaNome)
+    {
+        List<FieldError> erros = [];
+        ConferirCaracteresDaJustificativa(justificativa, erros);
+        ConferirTamanhoDaJustificativa(justificativa, erros);
+        if (publicaNome && justificativa is null)
+        {
+            Recusar(erros, "justificativa", "ConfiguracaoDivulgacao.JustificativaObrigatoria",
+                $"Publicar '{Nome}' exige justificativa (UNI-REQ-0050) — '{NumeroInscricao}' e '{NomeAbreviado}' dispensam.");
+        }
+
+        return erros;
+    }
+
+    // Nulo, controle e formatação sobrevivem a IsNullOrWhiteSpace, Trim e NormalizeNfc, e o
+    // nulo chegaria ao SaveChanges, onde o PostgreSQL recusa o byte zero (500 em vez de erro de
+    // validação). Quebra de linha e tabulação são texto legítimo de justificativa. O mesmo guard
+    // cobre o comando e a restauração do envelope, que passa por este método.
+    private static void ConferirCaracteresDaJustificativa(string? justificativa, List<FieldError> erros)
+    {
+        if (justificativa is not null && TextoNormalizavel.TemCaractereRecusadoEmVariasLinhas(justificativa))
+        {
+            Recusar(erros, "justificativa", "ConfiguracaoDivulgacao.JustificativaCaractereInvalido",
+                "A justificativa não pode conter o caractere nulo, de controle (exceto quebra de linha e tabulação) ou de formatação.");
+        }
+    }
+
+    private static void ConferirTamanhoDaJustificativa(string? justificativa, List<FieldError> erros)
+    {
+        if (justificativa is { Length: > JustificativaMaxLength })
+        {
+            Recusar(erros, "justificativa", "ConfiguracaoDivulgacao.JustificativaMuitoLonga",
+                $"A justificativa deve ter no máximo {JustificativaMaxLength} caracteres.");
+        }
+    }
+
+    private static void Recusar(List<FieldError> erros, string campo, string codigo, string mensagem) =>
+        erros.Add(new(campo, new DomainError(codigo, mensagem)));
 
     /// <summary>
     /// <b>Trim + NFC</b> — mesmo raciocínio de <see cref="RascunhoRetificacao.NormalizarMotivo"/>:

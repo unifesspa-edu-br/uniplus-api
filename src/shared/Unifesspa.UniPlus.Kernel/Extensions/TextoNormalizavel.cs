@@ -68,7 +68,11 @@ public static class TextoNormalizavel
     /// demais de controle e os de formatação, como os controles bidirecionais.
     /// </summary>
     public static SituacaoDoTexto TentarNfcDeTextoDeVariasLinhas(string texto, int maximo, out string normalizado) =>
-        Tentar(texto, maximo, static t => CaracteresInvisiveis.Contem(t, QuebrasDeLinhaETabulacao), out normalizado);
+        Tentar(texto, maximo, TemCaractereRecusadoEmVariasLinhas, out normalizado);
+
+    /// <summary>O texto traz caractere que o texto de várias linhas recusa: nulo, controle ou formatação, fora a quebra de linha e a tabulação.</summary>
+    public static bool TemCaractereRecusadoEmVariasLinhas(string texto) =>
+        CaracteresInvisiveis.Contem(texto, QuebrasDeLinhaETabulacao);
 
     /// <summary>
     /// Como <see cref="TentarNfc"/>, para texto livre que não volta em mensagem nem em log: aceita
