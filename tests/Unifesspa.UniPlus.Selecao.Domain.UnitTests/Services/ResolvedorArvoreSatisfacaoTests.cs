@@ -80,13 +80,12 @@ public sealed class ResolvedorArvoreSatisfacaoTests
         DocumentoExigido documento, string entidadeId) =>
         new() { [documento.Id] = [new ApresentacaoDocumento(Guid.CreateVersion7(), EntidadeId: entidadeId)] };
 
-    [Fact(DisplayName = "Árvore ausente retorna ArvoreAusente")]
-    public void Resolver_ArvoreAusente_RetornaErroNomeado()
+    [Fact(DisplayName = "Árvore nula é erro de programação: a configuração congelada sempre traz a árvore")]
+    public void Resolver_ArvoreNula_Lanca()
     {
-        Result<ResultadoResolucaoArvore> resultado = ResolvedorArvoreSatisfacao.Resolver(null, SemFatos, SemApresentacoes);
+        Action resolver = () => ResolvedorArvoreSatisfacao.Resolver(null!, SemFatos, SemApresentacoes);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ResolvedorArvoreSatisfacao.ArvoreAusente");
+        resolver.Should().Throw<ArgumentNullException>().WithParameterName("arvore");
     }
 
     // ── (RG E CPF) OU CIN — cenário central da issue #920 ──────────────────────────────

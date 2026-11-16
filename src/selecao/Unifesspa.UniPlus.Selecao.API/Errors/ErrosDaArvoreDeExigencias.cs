@@ -89,10 +89,8 @@ internal static class ErrosDaArvoreDeExigencias
         new("NoExigenciaBaseLegal.ReferenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.referencia_obrigatoria", "A referência da base legal é obrigatória")),
         new("NoExigenciaBaseLegal.AbrangenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.abrangencia_obrigatoria", "A abrangência da base legal é obrigatória")),
         new("NoExigenciaBaseLegal.StatusObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.status_obrigatorio", "O status da base legal é obrigatório")),
-        // Resolvedor da árvore de satisfação (substitui ResolvedorExigencias.* do
-        // grupo plano) — domain service puro, sem caller HTTP (o runtime de
-        // coleta é fora de escopo); registrado por disciplina uniforme com o resto do módulo.
-        new("ResolvedorArvoreSatisfacao.ArvoreAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_arvore_satisfacao.arvore_ausente", "Não há versão vigente congelada para resolver a árvore de exigências documentais")),
+        // Resolvedor da árvore de satisfação, alcançado pela avaliação da inscrição: a árvore congelada
+        // malformada e a ocorrência de grupo inválida afloram como recusa nomeada.
         new("ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_arvore_satisfacao.arvore_estruturalmente_invalida", "A árvore de exigências congelada tem identidade repetida entre folhas")),
         // Insumo de instâncias de entidade repetível (chamador, não a árvore congelada).
         new("ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.resolvedor_arvore_satisfacao.instancia_entidade_invalida", "Uma instância de entidade declarada tem EntidadeId vazio ou duplicado")),

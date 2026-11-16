@@ -49,12 +49,13 @@ using ValueObjects;
 public static class ResolvedorArvoreSatisfacao
 {
     public static Result<ResultadoResolucaoArvore> Resolver(
-        ArvoreExigenciasCongelada? arvore,
+        ArvoreExigenciasCongelada arvore,
         IReadOnlyDictionary<string, FatoResolvido> fatosResolvidos,
         IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoesPorExigenciaId,
         IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>>? instanciasPorGrupo = null,
         IReadOnlySet<Guid>? exigenciasBloqueadas = null)
     {
+        ArgumentNullException.ThrowIfNull(arvore);
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
         ArgumentNullException.ThrowIfNull(apresentacoesPorExigenciaId);
 
@@ -65,13 +66,6 @@ public static class ResolvedorArvoreSatisfacao
         // suprimida pelo predicado recursivo emissionBlocked. Ausência = nada bloqueado (a resolução
         // no ponto devido, sem fronteira a mascarar).
         IReadOnlySet<Guid> bloqueadas = exigenciasBloqueadas ?? new HashSet<Guid>();
-
-        if (arvore is null)
-        {
-            return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
-                "ResolvedorArvoreSatisfacao.ArvoreAusente",
-                "Não há versão vigente congelada para resolver — nenhuma árvore de exigências documentais para avaliar."));
-        }
 
         List<NoExigencia> todosOsNos = [.. arvore.Raizes.SelectMany(static raiz => raiz.AchatarComDescendentes())];
         List<NoExigencia> folhas = [.. todosOsNos.Where(static no => no.Tipo == TipoNo.Folha)];

@@ -7882,11 +7882,6 @@
       "titulo": "O nome a abreviar não pode ser vazio ou só espaços"
     },
     {
-      "codigo": "uniplus.selecao.resolvedor_arvore_satisfacao.arvore_ausente",
-      "status": 422,
-      "titulo": "Não há versão vigente congelada para resolver a árvore de exigências documentais"
-    },
-    {
       "codigo": "uniplus.selecao.resolvedor_arvore_satisfacao.arvore_estruturalmente_invalida",
       "status": 422,
       "titulo": "A árvore de exigências congelada tem identidade repetida entre folhas"
