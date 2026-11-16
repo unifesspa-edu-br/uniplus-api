@@ -100,6 +100,11 @@
       "title": "Documentos exigidos",
       "description": "As exigências de documentos do processo e a árvore de satisfação delas. Lista vazia ou ausente é válida: há processos sem comprovação documental.",
       "$ref": "exigencias.schema.json"
+    },
+    "classificacao": {
+      "title": "Classificação",
+      "description": "Cálculo da nota final, ordem de alocação, eliminação e desempate. Ausente no rascunho que ainda não decidiu a classificação.",
+      "$ref": "classificacao.schema.json"
     }
   }
 }

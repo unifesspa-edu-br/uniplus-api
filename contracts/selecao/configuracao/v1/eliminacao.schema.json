@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/eliminacao.schema.json",
+  "title": "Regra de eliminação",
+  "description": "Uma regra de eliminação: a regra do catálogo e os parâmetros dela.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "regra"
+  ],
+  "properties": {
+    "regra": {
+      "title": "Regra de eliminação",
+      "description": "Regra de eliminação no catálogo de regras.",
+      "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
+    },
+    "args": {
+      "title": "Parâmetros",
+      "description": "Parâmetros da regra, conforme o código dela.",
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "regra": {
+            "properties": {
+              "codigo": {
+                "const": "ELIM-NOTA-MINIMA-ETAPA"
+              }
+            },
+            "required": [
+              "codigo"
+            ]
+          }
+        },
+        "required": [
+          "regra"
+        ]
+      },
+      "then": {
+        "properties": {
+          "args": {
+            "$ref": "#/$defs/argsNotaMinimaEtapa"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "regra": {
+            "properties": {
+              "codigo": {
+                "const": "ELIM-CORTE-EM-AREA"
+              }
+            },
+            "required": [
+              "codigo"
+            ]
+          }
+        },
+        "required": [
+          "regra"
+        ]
+      },
+      "then": {
+        "properties": {
+          "args": {
+            "$ref": "#/$defs/argsCorteEmArea"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "regra": {
+            "properties": {
+              "codigo": {
+                "const": "ELIM-ZERO-EM-AREA"
+              }
+            },
+            "required": [
+              "codigo"
+            ]
+          }
+        },
+        "required": [
+          "regra"
+        ]
+      },
+      "then": {
+        "properties": {
+          "args": {
+            "$ref": "comuns.schema.json#/$defs/semParametros"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "regra": {
+            "properties": {
+              "codigo": {
+                "const": "ELIM-FALTA-EM-DIA-DE-PROVA-ENEM"
+              }
+            },
+            "required": [
+              "codigo"
+            ]
+          }
+        },
+        "required": [
+          "regra"
+        ]
+      },
+      "then": {
+        "properties": {
+          "args": {
+            "$ref": "comuns.schema.json#/$defs/semParametros"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "regra": {
+            "properties": {
+              "codigo": {
+                "const": "ELIM-AUSENCIA-NA-ETAPA"
+              }
+            },
+            "required": [
+              "codigo"
+            ]
+          }
+        },
+        "required": [
+          "regra"
+        ]
+      },
+      "then": {
+        "properties": {
+          "args": {
+            "$ref": "#/$defs/argsAusenciaNaEtapa"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "argsNotaMinimaEtapa": {
+      "title": "Parâmetros da regra",
+      "description": "Elimina o candidato com nota abaixo do mínimo numa etapa.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "etapaChave": {
+          "title": "Etapa citada",
+          "description": "Chave local da etapa que a regra cita.",
+          "$ref": "comuns.schema.json#/$defs/chave"
+        },
+        "notaMinima": {
+          "title": "Nota mínima",
+          "description": "Nota abaixo da qual o candidato é eliminado.",
+          "type": "number",
+          "multipleOf": 0.0001,
+          "minimum": 0
+        }
+      },
+      "required": [
+        "etapaChave",
+        "notaMinima"
+      ]
+    },
+    "argsCorteEmArea": {
+      "title": "Parâmetros da regra",
+      "description": "Elimina o candidato com nota abaixo do corte numa área do Enem.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "areaCodigo": {
+          "title": "Área",
+          "description": "Código da área do Enem: letras maiúsculas, dígitos e sublinhado, até 30 caracteres.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 30,
+          "pattern": "^[A-Z0-9_]+$"
+        },
+        "minimo": {
+          "title": "Mínimo",
+          "description": "Nota abaixo da qual o candidato é eliminado na área.",
+          "type": "number",
+          "multipleOf": 0.0001,
+          "minimum": 0
+        }
+      },
+      "required": [
+        "areaCodigo",
+        "minimo"
+      ]
+    },
+    "argsAusenciaNaEtapa": {
+      "title": "Parâmetros da regra",
+      "description": "Elimina o candidato ausente numa etapa.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "etapaChave": {
+          "title": "Etapa citada",
+          "description": "Chave local da etapa que a regra cita.",
+          "$ref": "comuns.schema.json#/$defs/chave"
+        }
+      },
+      "required": [
+        "etapaChave"
+      ]
+    }
+  }
+}

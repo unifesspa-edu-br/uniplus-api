@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/desempate.schema.json",
+  "title": "Critério de desempate",
+  "description": "Um critério de desempate: a regra do catálogo e os parâmetros dela. Os critérios são aplicados na ordem, do primeiro ao último.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "regra"
+  ],
+  "properties": {
+    "ordem": {
+      "title": "Ordem",
+      "description": "Posição do critério na sequência de desempate, a partir de 1.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "regra": {
+      "title": "Regra do critério",
+      "description": "Regra de desempate no catálogo de regras.",
+      "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
+    },
+    "args": {
+      "title": "Parâmetros",
+      "description": "Parâmetros da regra, conforme o código dela.",
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "regra": {
+            "properties": {
+              "codigo": {
+                "const": "DESEMPATE-MAIOR-NOTA-ETAPA"
+              }
+            },
+            "required": [
+              "codigo"
+            ]
+          }
+        },
+        "required": [
+          "regra"
+        ]
+      },
+      "then": {
+        "properties": {
+          "args": {
+            "$ref": "#/$defs/argsMaiorNotaEtapa"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "regra": {
+            "properties": {
+              "codigo": {
+                "const": "DESEMPATE-MAIOR-IDADE"
+              }
+            },
+            "required": [
+              "codigo"
+            ]
+          }
+        },
+        "required": [
+          "regra"
+        ]
+      },
+      "then": {
+        "properties": {
+          "args": {
+            "$ref": "comuns.schema.json#/$defs/semParametros"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "regra": {
+            "properties": {
+              "codigo": {
+                "const": "DESEMPATE-IDOSO"
+              }
+            },
+            "required": [
+              "codigo"
+            ]
+          }
+        },
+        "required": [
+          "regra"
+        ]
+      },
+      "then": {
+        "properties": {
+          "args": {
+            "$ref": "#/$defs/argsIdoso"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "regra": {
+            "properties": {
+              "codigo": {
+                "const": "DESEMPATE-PREDICADO-FATO"
+              }
+            },
+            "required": [
+              "codigo"
+            ]
+          }
+        },
+        "required": [
+          "regra"
+        ]
+      },
+      "then": {
+        "properties": {
+          "args": {
+            "$ref": "#/$defs/condicaoDoDesempate"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "regra": {
+            "properties": {
+              "codigo": {
+                "const": "DESEMPATE-MAIOR-NOTA-AREA-ENEM"
+              }
+            },
+            "required": [
+              "codigo"
+            ]
+          }
+        },
+        "required": [
+          "regra"
+        ]
+      },
+      "then": {
+        "properties": {
+          "args": {
+            "$ref": "#/$defs/argsMaiorNotaAreaEnem"
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "argsMaiorNotaEtapa": {
+      "title": "Parâmetros da regra",
+      "description": "Desempata pela maior nota numa etapa.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "etapaChave": {
+          "title": "Etapa citada",
+          "description": "Chave local da etapa que a regra cita.",
+          "$ref": "comuns.schema.json#/$defs/chave"
+        }
+      },
+      "required": [
+        "etapaChave"
+      ]
+    },
+    "argsIdoso": {
+      "title": "Parâmetros da regra",
+      "description": "Desempata a favor do candidato com a idade mínima informada ou mais.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "idadeMinima": {
+          "title": "Idade mínima",
+          "description": "Idade mínima, em anos, para valer a preferência.",
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": [
+        "idadeMinima"
+      ]
+    },
+    "argsMaiorNotaAreaEnem": {
+      "title": "Parâmetros da regra",
+      "description": "Desempata pela maior nota nas áreas do Enem, na ordem listada.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "areas": {
+          "title": "Áreas",
+          "description": "Códigos das áreas do Enem, em ordem de precedência.",
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z0-9_]+$",
+            "minLength": 1,
+            "maxLength": 30
+          }
+        }
+      },
+      "required": [
+        "areas"
+      ]
+    },
+    "condicaoDoDesempate": {
+      "title": "Condição do desempate",
+      "description": "Fato, operador e valor que o desempate por predicado avalia.",
+      "$ref": "comuns.schema.json#/$defs/condicao"
+    }
+  }
+}
