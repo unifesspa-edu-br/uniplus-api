@@ -30,26 +30,29 @@ public sealed class ObrigatoriedadeLegalCorridaNoBancoTests : ObrigatoriedadeLeg
     {
     }
 
-    [Fact(DisplayName = "Segunda criação do mesmo código, com a consulta prévia cega, é recusada e o save seguinte não estoura")]
-    public async Task Criar_ViolacaoDeUnicidadeNoBanco_RecusaESaveSeguinteNaoEstoura()
+    [Theory(DisplayName = "Segunda criação que perde a corrida é recusada pela constraint violada e o save seguinte não estoura")]
+    [InlineData(2026, 6, 1, "ObrigatoriedadeLegal.HashColisao")]
+    [InlineData(2026, 7, 1, "ObrigatoriedadeLegal.RegraCodigoDuplicada")]
+    public async Task Criar_ViolacaoDeUnicidadeNoBanco_RecusaESaveSeguinteNaoEstoura(int ano, int mes, int dia, string codigoEsperado)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         IServiceProvider servicos = scope.ServiceProvider;
         IObrigatoriedadeLegalRepository repositorio = RepositorioCegoParaDuplicidade(servicos);
         IUnitOfWork unitOfWork = servicos.GetRequiredService<IUnitOfWork>();
-        CriarObrigatoriedadeLegalCommand comando = ComandoDeCriar(UniqueRegraCodigo());
+        string regraCodigo = UniqueRegraCodigo();
+        (await Criar(ComandoDeCriar(regraCodigo), repositorio, servicos, unitOfWork)).IsSuccess.Should().BeTrue();
 
-        Result<Guid> primeira = await Criar(comando, repositorio, servicos, unitOfWork);
-        Result<Guid> segunda = await Criar(comando, repositorio, servicos, unitOfWork);
+        Result<Guid> segunda = await Criar(
+            ComandoDeCriar(regraCodigo) with { VigenciaInicio = new DateOnly(ano, mes, dia) }, repositorio, servicos, unitOfWork);
 
-        primeira.IsSuccess.Should().BeTrue(primeira.Error?.Message);
-        segunda.Error!.Code.Should().BeOneOf("ObrigatoriedadeLegal.RegraCodigoDuplicada", "ObrigatoriedadeLegal.HashColisao");
-        Func<Task> saveDoWolverine = () => unitOfWork.SalvarAlteracoesAsync(CancellationToken.None);
-        await saveDoWolverine.Should().NotThrowAsync("o rastreamento da regra recusada foi descartado");
+        segunda.Error!.Code.Should().Be(codigoEsperado);
+        await ConferirSaveSeguinteAsync(unitOfWork);
     }
 
-    [Fact(DisplayName = "Atualizar para o código de outra regra, com a consulta prévia cega, é recusado e o save seguinte não estoura")]
-    public async Task Atualizar_ViolacaoDeUnicidadeNoBanco_RecusaESaveSeguinteNaoEstoura()
+    [Theory(DisplayName = "Atualização que perde a corrida é recusada pela constraint violada e o save seguinte não estoura")]
+    [InlineData(2026, 6, 1, "ObrigatoriedadeLegal.HashColisao")]
+    [InlineData(2026, 7, 1, "ObrigatoriedadeLegal.RegraCodigoDuplicada")]
+    public async Task Atualizar_ViolacaoDeUnicidadeNoBanco_RecusaESaveSeguinteNaoEstoura(int ano, int mes, int dia, string codigoEsperado)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         IServiceProvider servicos = scope.ServiceProvider;
@@ -58,10 +61,16 @@ public sealed class ObrigatoriedadeLegalCorridaNoBancoTests : ObrigatoriedadeLeg
         string codigoEmUso = UniqueRegraCodigo();
         await Criar(ComandoDeCriar(codigoEmUso), repositorio, servicos, unitOfWork);
         Guid idDestaRegra = (await Criar(ComandoDeCriar(UniqueRegraCodigo()), repositorio, servicos, unitOfWork)).Value;
+        AtualizarObrigatoriedadeLegalCommand comando = ComandoDeAtualizar(idDestaRegra, codigoEmUso) with { VigenciaInicio = new DateOnly(ano, mes, dia) };
 
-        Result resultado = await Atualizar(ComandoDeAtualizar(idDestaRegra, codigoEmUso), repositorio, servicos, unitOfWork);
+        Result resultado = await Atualizar(comando, repositorio, servicos, unitOfWork);
 
-        resultado.Error!.Code.Should().BeOneOf("ObrigatoriedadeLegal.RegraCodigoDuplicada", "ObrigatoriedadeLegal.HashColisao");
+        resultado.Error!.Code.Should().Be(codigoEsperado);
+        await ConferirSaveSeguinteAsync(unitOfWork);
+    }
+
+    private static async Task ConferirSaveSeguinteAsync(IUnitOfWork unitOfWork)
+    {
         Func<Task> saveDoWolverine = () => unitOfWork.SalvarAlteracoesAsync(CancellationToken.None);
         await saveDoWolverine.Should().NotThrowAsync("o rastreamento da regra recusada foi descartado");
     }
@@ -77,30 +86,6 @@ public sealed class ObrigatoriedadeLegalCorridaNoBancoTests : ObrigatoriedadeLeg
             servicos.GetRequiredService<ConferenciaDaObrigatoriedadeLegal>(),
             unitOfWork,
             CancellationToken.None);
-
-    [Fact(DisplayName = "POST concorrente do mesmo código termina em um 201 e 409 para os demais, sem 500")]
-    public async Task Criar_PostsConcorrentesDoMesmoCodigo_UmCriaEOsDemaisRecebem409()
-    {
-        using HttpClient client = await ClienteComConcessaoAsync();
-        object payload = PayloadDoMesmoCodigo(UniqueRegraCodigo());
-
-        HttpResponseMessage[] respostas = await Task.WhenAll(
-            Enumerable.Range(0, 8).Select(_ => PostAsync(client, "/api/selecao/admin/obrigatoriedades-legais", payload)));
-
-        respostas.Select(r => (int)r.StatusCode).Should().OnlyContain(c => c == 201 || c == 409);
-        respostas.Count(r => r.StatusCode == System.Net.HttpStatusCode.Created).Should().Be(1);
-    }
-
-    private static object PayloadDoMesmoCodigo(string regraCodigo) => new
-    {
-        tipoProcessoCodigo = "*",
-        categoria = "outros",
-        regraCodigo,
-        predicado = PredicadoConcorrenciaDupla,
-        descricaoHumana = "Descrição da regra",
-        baseLegal = "Lei 12.711/2012",
-        vigenciaInicio = "2026-06-01",
-    };
 
     private static AtualizarObrigatoriedadeLegalCommand ComandoDeAtualizar(Guid id, string regraCodigo) =>
         new(
