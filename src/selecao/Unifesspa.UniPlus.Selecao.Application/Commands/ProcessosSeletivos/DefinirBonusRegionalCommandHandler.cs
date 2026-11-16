@@ -67,28 +67,46 @@ public static class DefinirBonusRegionalCommandHandler
             return Result<MutacaoAceita>.Failure(bloqueio);
         }
 
-        if (!command.Aplica)
+        return command.Aplica
+            ? await AplicarAsync(command, processo, regraCatalogoReader, baseLegalBonusRegionalReader, unitOfWork, cancellationToken)
+                .ConfigureAwait(false)
+            : await NaoAplicarAsync(command, processo, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<MutacaoAceita>> NaoAplicarAsync(
+        DefinirBonusRegionalCommand command,
+        ProcessoSeletivo processo,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        // Qualquer campo do bônus enviado contradiz a declaração: descartá-lo em silêncio
+        // esconderia um payload mal formado.
+        if (command.RegraCodigo is not null || command.RegraVersao is not null || command.Fator is not null
+            || command.Teto is not null || command.FatoElegibilidadeCodigo is not null || command.BaseLegalBonusRegionalId is not null)
         {
-            // Qualquer campo do bônus enviado contradiz a declaração: descartá-lo em silêncio
-            // esconderia um payload mal formado.
-            if (command.RegraCodigo is not null || command.RegraVersao is not null || command.Fator is not null
-                || command.Teto is not null || command.FatoElegibilidadeCodigo is not null || command.BaseLegalBonusRegionalId is not null)
-            {
-                return Result<MutacaoAceita>.Failure(new DomainError(
-                    ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao,
-                    "O processo que não aplica o bônus regional não pode ter a configuração do bônus."));
-            }
-
-            Result naoAplicaResult = processo.DefinirBonusRegional(aplica: false, bonus: null, command.Precondicao);
-            if (naoAplicaResult.IsFailure)
-            {
-                return Result<MutacaoAceita>.Failure(naoAplicaResult.Error!);
-            }
-
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-            return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+            return Result<MutacaoAceita>.Failure(new DomainError(
+                ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao,
+                "O processo que não aplica o bônus regional não pode ter a configuração do bônus."));
         }
 
+        Result naoAplicaResult = processo.DefinirBonusRegional(aplica: false, bonus: null, command.Precondicao);
+        if (naoAplicaResult.IsFailure)
+        {
+            return Result<MutacaoAceita>.Failure(naoAplicaResult.Error!);
+        }
+
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+    }
+
+    private static async Task<Result<MutacaoAceita>> AplicarAsync(
+        DefinirBonusRegionalCommand command,
+        ProcessoSeletivo processo,
+        IRegraCatalogoReader regraCatalogoReader,
+        IBaseLegalBonusRegionalReader baseLegalBonusRegionalReader,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
         if (command.RegraCodigo is null)
         {
             return Result<MutacaoAceita>.Failure(new DomainError(
@@ -138,11 +156,7 @@ public static class DefinirBonusRegionalCommandHandler
             command.Fator.Value,
             command.Teto,
             command.FatoElegibilidadeCodigo,
-            baseLegal.Id,
-            baseLegal.TipoInstrumento,
-            baseLegal.Identificacao,
-            baseLegal.Descricao,
-            baseLegal.Municipios.Select(static m => (m.CodigoIbge, m.Nome, m.Uf)));
+            Congelar(baseLegal));
         if (bonusResult.IsFailure)
         {
             return Result<MutacaoAceita>.ValidationFailure(bonusResult.Errors);
@@ -158,4 +172,13 @@ public static class DefinirBonusRegionalCommandHandler
 
         return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
     }
+
+    private static BaseLegalCongelada Congelar(BaseLegalBonusRegionalView baseLegal) =>
+        new(
+            baseLegal.Id,
+            baseLegal.Codigo,
+            baseLegal.TipoInstrumento,
+            baseLegal.Identificacao,
+            baseLegal.Descricao,
+            [.. baseLegal.Municipios.Select(static m => (m.CodigoIbge, m.Nome, m.Uf))]);
 }

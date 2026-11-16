@@ -67,19 +67,29 @@ internal static class SerializacaoDoBonusEDoAtendimento
             return new JsonObject { ["presente"] = false };
         }
 
-        return new JsonObject
+        JsonObject json = ParametrosDoBonus(bonus);
+        AcrescentarBaseLegalCongelada(json, bonus);
+        return json;
+    }
+
+    private static JsonObject ParametrosDoBonus(ConfiguracaoBonusRegional bonus) =>
+        new()
         {
             ["presente"] = true,
             ["regra"] = EscritaCanonica.SerializarReferenciaRegra(bonus.Regra),
             ["fator"] = HashCanonicalComputer.SerializeDecimalCanonical(bonus.Fator, EscritaCanonica.EscalaPadrao),
             ["teto"] = bonus.Teto is { } teto ? HashCanonicalComputer.SerializeDecimalCanonical(teto, EscritaCanonica.EscalaPadrao) : null,
             ["fatoElegibilidadeCodigo"] = bonus.FatoElegibilidadeCodigo,
-            ["baseLegalBonusRegionalId"] = bonus.BaseLegalBonusRegionalId,
-            ["tipoInstrumento"] = HashCanonicalComputer.NormalizeNfc(bonus.TipoInstrumento),
-            ["identificacao"] = HashCanonicalComputer.NormalizeNfc(bonus.Identificacao),
-            ["descricao"] = HashCanonicalComputer.NormalizeNfc(bonus.Descricao),
-            ["municipios"] = SerializarMunicipiosDoBonus(bonus),
         };
+
+    private static void AcrescentarBaseLegalCongelada(JsonObject json, ConfiguracaoBonusRegional bonus)
+    {
+        json["baseLegalBonusRegionalId"] = bonus.BaseLegalBonusRegionalId;
+        json["baseLegalBonusRegionalCodigo"] = HashCanonicalComputer.NormalizeNfc(bonus.BaseLegalBonusRegionalCodigo);
+        json["tipoInstrumento"] = HashCanonicalComputer.NormalizeNfc(bonus.TipoInstrumento);
+        json["identificacao"] = HashCanonicalComputer.NormalizeNfc(bonus.Identificacao);
+        json["descricao"] = HashCanonicalComputer.NormalizeNfc(bonus.Descricao);
+        json["municipios"] = SerializarMunicipiosDoBonus(bonus);
     }
 
     private static JsonArray SerializarMunicipiosDoBonus(ConfiguracaoBonusRegional bonus) =>

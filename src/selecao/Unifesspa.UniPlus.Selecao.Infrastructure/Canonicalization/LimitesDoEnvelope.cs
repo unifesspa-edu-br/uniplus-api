@@ -256,6 +256,9 @@ public static class LimitesDoEnvelope
     /// <summary><c>ConfiguracaoBonusRegional.FatoElegibilidadeCodigo</c> — código do fato que decide quem recebe o acréscimo.</summary>
     public const int FatoElegibilidadeBonusRegional = FormaDoItem.FatoCodigoMaxLength;
 
+    /// <summary><c>ConfiguracaoBonusRegional.BaseLegalBonusRegionalCodigo</c> — snapshot-copy do código estável da Base Legal (teto do <c>CodigoBaseLegalBonusRegional</c>).</summary>
+    public const int CodigoBaseLegalBonusRegional = 100;
+
     /// <summary><c>ConfiguracaoBonusRegional.Identificacao</c> — snapshot-copy da identificação da Base Legal.</summary>
     public const int IdentificacaoBaseLegalBonusRegional = 500;
 

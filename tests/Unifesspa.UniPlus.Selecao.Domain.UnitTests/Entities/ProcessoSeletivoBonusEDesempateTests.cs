@@ -20,10 +20,7 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
     public void DefinirBonusRegional_DefineERemove()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)),
-            1.20m, null, null, Guid.CreateVersion7(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
-            [("1504208", "Marabá", "PA")]).Value!;
+        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
 
         processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.BonusRegional.Should().NotBeNull();

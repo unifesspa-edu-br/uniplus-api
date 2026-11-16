@@ -1332,6 +1332,7 @@ selecao.condicoes_regra_derivacao.operador: Interno
 selecao.condicoes_regra_derivacao.regra_derivacao_configurada_id: Interno
 selecao.condicoes_regra_derivacao.updated_at: Interno
 selecao.condicoes_regra_derivacao.valor: Interno
+selecao.configuracoes_bonus_regional.base_legal_bonus_regional_codigo: Interno
 selecao.configuracoes_bonus_regional.base_legal_bonus_regional_id: Interno
 selecao.configuracoes_bonus_regional.created_at: Interno
 selecao.configuracoes_bonus_regional.descricao: Interno

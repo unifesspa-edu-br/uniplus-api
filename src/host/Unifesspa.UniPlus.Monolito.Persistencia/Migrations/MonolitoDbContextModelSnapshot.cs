@@ -11548,6 +11548,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("BaseLegalBonusRegionalCodigo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("base_legal_bonus_regional_codigo");
+
                     b.Property<Guid>("BaseLegalBonusRegionalId")
                         .HasColumnType("uuid")
                         .HasColumnName("base_legal_bonus_regional_id");

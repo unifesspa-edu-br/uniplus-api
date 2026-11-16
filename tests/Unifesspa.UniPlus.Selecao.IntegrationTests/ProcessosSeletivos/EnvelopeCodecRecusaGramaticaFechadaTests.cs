@@ -220,9 +220,45 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
         resultado.Error!.Code.Should().Be(codigoEsperado);
     }
 
+    [Theory(DisplayName = "O código estável da base legal do bônus fora da gramática do cadastro é recusado no envelope")]
+    [InlineData("minuscula")]
+    [InlineData("COM PONTUACAO!")]
+    [InlineData("1COMECA_POR_DIGITO")]
+    [InlineData("COM-HIFEN")]
+    [InlineData("A")]
+    [InlineData("TERMINA_EM_QUEBRA\n")]
+    public void Bonus_CodigoDaBaseLegalForaDaGramatica_RecusaOEnvelope(string codigo)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+            envelope["bonusRegional"]!["baseLegalBonusRegionalCodigo"] = codigo);
+
+        resultado.IsFailure.Should().BeTrue("o código congelado tem de obedecer à gramática que o cadastro impõe");
+    }
+
+    [Theory(DisplayName = "O código estável da base legal do bônus é obrigatório e não vazio no envelope")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Bonus_CodigoDaBaseLegalAusenteOuVazio_RecusaOEnvelope(bool removerChave)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject bonus = envelope["bonusRegional"]!.AsObject();
+            if (removerChave)
+            {
+                bonus.Remove("baseLegalBonusRegionalCodigo");
+            }
+            else
+            {
+                bonus["baseLegalBonusRegionalCodigo"] = string.Empty;
+            }
+        });
+
+        resultado.IsFailure.Should().BeTrue("o snapshot do bônus sem código estável deixaria o certame sem a referência que o documento resolve");
+    }
+
     private static readonly string[] ArgsDoBonusAlemDoFator =
     [
-        "regra", "teto", "baseLegalBonusRegionalId", "tipoInstrumento", "identificacao", "descricao", "municipios",
+        "regra", "teto", "baseLegalBonusRegionalId", "baseLegalBonusRegionalCodigo", "tipoInstrumento", "identificacao", "descricao", "municipios",
     ];
 
     /// <summary>Sobra `fator` — a forma "ausente" só admite `presente`.</summary>

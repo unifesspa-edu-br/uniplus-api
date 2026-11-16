@@ -18,7 +18,7 @@ using Xunit;
 
 public sealed partial class EnvelopeCodecRoundTripTests
 {
-    private const string SchemaCorrente = "0.0.43";
+    private const string SchemaCorrente = "0.0.44";
 
     private static (ProcessoSeletivo Processo, FaseCronograma Fase) ProcessoDeInscricao(string titulo)
     {

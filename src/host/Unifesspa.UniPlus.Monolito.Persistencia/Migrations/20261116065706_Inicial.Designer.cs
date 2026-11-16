@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261116065639_Inicial")]
+    [Migration("20261116065706_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -11550,6 +11550,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uuid")
                         .HasColumnName("id");
+
+                    b.Property<string>("BaseLegalBonusRegionalCodigo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("base_legal_bonus_regional_codigo");
 
                     b.Property<Guid>("BaseLegalBonusRegionalId")
                         .HasColumnType("uuid")

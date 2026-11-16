@@ -194,9 +194,7 @@ public sealed class AvaliacaoDaInscricaoTests
     private const string GrupoDeMunicipios = "GRUPO_MUNICIPIOS";
 
     private static ConfiguracaoBonusRegional Bonus(string? fatoElegibilidade) =>
-        ConfiguracaoBonusRegional.Criar(
-            ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)), 1.20m, null, fatoElegibilidade, Guid.CreateVersion7(),
-            "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")]).Value!;
+        ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)), 1.20m, null, fatoElegibilidade, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
 
     private static ConfiguracaoAvaliavel Configuracao(bool derivaModalidade, bool rendaSoParaBaixaRenda = false, bool municipioDoBonus = false, bool municipioNoGrupo = false)
     {

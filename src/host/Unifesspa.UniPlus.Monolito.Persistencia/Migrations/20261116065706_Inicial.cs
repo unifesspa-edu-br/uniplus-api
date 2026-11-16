@@ -2091,6 +2091,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     teto = table.Column<decimal>(type: "numeric(6,4)", precision: 6, scale: 4, nullable: true),
                     fato_elegibilidade_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
                     base_legal_bonus_regional_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    base_legal_bonus_regional_codigo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     tipo_instrumento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     identificacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     descricao = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),

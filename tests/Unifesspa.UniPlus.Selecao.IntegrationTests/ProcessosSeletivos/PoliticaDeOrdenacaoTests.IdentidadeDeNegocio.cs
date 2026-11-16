@@ -271,12 +271,20 @@ public sealed partial class PoliticaDeOrdenacaoTests
     public void BonusRegional_MunicipiosComMesmoCodigoIbge_DesempataPorNomeEUf()
     {
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            Regra(RegraBonusCodigo.Multiplicativo, 'd'), 1.20m, null, null, Guid.CreateVersion7(),
-            "PORTARIA", "Portaria Teste 1/2026", "Descrição de teste",
-            // Inserido fisicamente na ordem ERRADA (Zebu antes de Abaco) — um canonicalizador que
-            // preservasse a ordem de ENTRADA para um empate de CodigoIbge reproduziria esta mesma
-            // sequência errada.
-            [("1504208", "Zebu", "PA"), ("1504208", "Abaco", "PA")]).Value!;
+            Regra(RegraBonusCodigo.Multiplicativo, 'd'),
+            1.20m,
+            null,
+            null,
+            new BaseLegalCongelada(
+                Guid.CreateVersion7(),
+                "PORTARIA_UNIFESSPA_NO_2514_2023",
+                "PORTARIA",
+                "Portaria Teste 1/2026",
+                "Descrição de teste",
+                // Inserido fisicamente na ordem ERRADA (Zebu antes de Abaco) — um canonicalizador que
+                // preservasse a ordem de ENTRADA para um empate de CodigoIbge reproduziria esta mesma
+                // sequência errada.
+                [("1504208", "Zebu", "PA"), ("1504208", "Abaco", "PA")])).Value!;
 
         ProcessoSeletivo processo = Montar();
         processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

@@ -91,9 +91,7 @@ internal static class ProcessosDeInscricaoDeTeste
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
         if (fatoDoFator is not null)
         {
-            ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-                ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('d', 64)), 1.20m, null, fatoDoFator,
-                Guid.CreateVersion7(), "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")]).Value!;
+            ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('d', 64)), 1.20m, null, fatoDoFator, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
             processo.DefinirBonusRegional(aplica: true, bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         }
 

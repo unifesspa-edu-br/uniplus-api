@@ -112,10 +112,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         origemValores: OrigemValoresColeta.MunicipiosDoBonus, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
     private static ConfiguracaoBonusRegional Bonus(params (string CodigoIbge, string Nome, string Uf)[] municipios) =>
-        ConfiguracaoBonusRegional.Criar(
-            ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)),
-            1.20m, null, null, Guid.NewGuid(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
-            municipios).Value!;
+        ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [.. municipios])).Value!;
 
     [Fact(DisplayName = "Fato coletado com os municípios do bônus num processo sem bônus: item vermelho; com bônus, liberado")]
     public void FatoDosMunicipiosDoBonusSemBonus_RecusaAteHaverBonus()

@@ -102,11 +102,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         processo.DefinirBonusRegional(
-            aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
-                ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", HashFixo),
-                fator: 1.2m, teto: null, fatoElegibilidadeCodigo: FormularioDeTeste.FatoBooleanoDaInscricao, baseLegalBonusRegionalId: Guid.CreateVersion7(),
-                tipoInstrumento: "PORTARIA", identificacao: "Portaria Unifesspa nº 2514/2023",
-                descricao: "Institui inclusão regional", municipios: [("1504208", "Marabá", "PA")]).Value!,
+            aplica: true, bonus: ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", HashFixo), fator: 1.2m, teto: null, fatoElegibilidadeCodigo: FormularioDeTeste.FatoBooleanoDaInscricao, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(

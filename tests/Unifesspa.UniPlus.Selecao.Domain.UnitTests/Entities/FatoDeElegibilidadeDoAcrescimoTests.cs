@@ -77,10 +77,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
     private static void Aplicar(ProcessoSeletivo processo, string? fatoElegibilidade) =>
         processo.DefinirBonusRegional(
             aplica: true,
-            ConfiguracaoBonusRegional.Criar(
-                ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)),
-                1.20m, null, fatoElegibilidade, Guid.NewGuid(), "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso",
-                [("1504208", "Marabá", "PA")]).Value!,
+            ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)), 1.20m, null, fatoElegibilidade, new BaseLegalCongelada(Guid.NewGuid(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")])).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
     /// <summary>Derivado booleano: verdadeiro quando a dependência é verdadeira.</summary>

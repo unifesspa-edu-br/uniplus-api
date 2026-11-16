@@ -124,15 +124,16 @@ internal static partial class CorpusEnvelope
             fator: 1.2000m,
             teto: 95.5000m,
             fatoElegibilidadeCodigo: FormularioDeTeste.FatoBooleanoDaInscricao,
-            baseLegalBonusRegionalId: new Guid("baba0000-0000-4000-8000-000000000001"),
-            tipoInstrumento: "PORTARIA",
-            identificacao: "Portaria Unifesspa nº 2514/2023",
-            descricao: "Institui inclusão regional para candidatos de municípios do interior",
-            municipios:
-            [
-                ("1504208", "Marabá", "PA"),
-                ("1501402", "Belém", "PA"),
-            ]).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            baseLegal: new BaseLegalCongelada(
+                new Guid("baba0000-0000-4000-8000-000000000001"),
+                "PORTARIA_UNIFESSPA_NO_2514_2023",
+                "PORTARIA",
+                "Portaria Unifesspa nº 2514/2023",
+                "Institui inclusão regional para candidatos de municípios do interior",
+                [
+                    ("1504208", "Marabá", "PA"),
+                    ("1501402", "Belém", "PA"),
+                ])).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
     // As CINCO variantes de args — e DUAS do mesmo código (MAIOR-NOTA-ETAPA em
     // ordens distintas), que um decoder indexado por código colapsaria em uma. A ordem

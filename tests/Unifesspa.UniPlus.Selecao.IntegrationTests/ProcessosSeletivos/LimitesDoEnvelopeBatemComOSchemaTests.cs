@@ -58,6 +58,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         // Story #1466 — bônus regional referencia Base Legal tipada (snapshot congelado).
         ("TipoInstrumentoNormativo", LimitesDoEnvelope.TipoInstrumentoNormativo, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.TipoInstrumento)),
         ("FatoElegibilidadeBonusRegional", LimitesDoEnvelope.FatoElegibilidadeBonusRegional, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.FatoElegibilidadeCodigo)),
+        ("CodigoBaseLegalBonusRegional", LimitesDoEnvelope.CodigoBaseLegalBonusRegional, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.BaseLegalBonusRegionalCodigo)),
         ("IdentificacaoBaseLegalBonusRegional", LimitesDoEnvelope.IdentificacaoBaseLegalBonusRegional, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.Identificacao)),
         ("DescricaoBaseLegalBonusRegional", LimitesDoEnvelope.DescricaoBaseLegalBonusRegional, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.Descricao)),
         ("MunicipioBonusRegionalCodigoIbge", LimitesDoEnvelope.MunicipioBonusRegionalCodigoIbge, typeof(ConfiguracaoBonusRegionalMunicipio), nameof(ConfiguracaoBonusRegionalMunicipio.CodigoIbge)),

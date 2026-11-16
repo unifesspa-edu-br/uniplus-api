@@ -65,10 +65,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         desempateResult.IsSuccess.Should().BeTrue();
 
         Guid baseLegalId = Guid.CreateVersion7();
-        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.20m, null, "PEDE_O_ACRESCIMO", baseLegalId,
-            "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
-            [("1504208", "Marabá", "PA")]).Value!;
+        ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.20m, null, "PEDE_O_ACRESCIMO", new BaseLegalCongelada(baseLegalId, "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
         processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
@@ -126,10 +123,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         processo.DefinirCriteriosDesempate(
             [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, "a"), new ArgsDesempateMaiorIdade()).Value!], PrecondicaoIfMatch.Ausente);
         processo.DefinirBonusRegional(
-            aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
-                Regra(RegraBonusCodigo.Multiplicativo, "b"), 1.10m, null, null, Guid.CreateVersion7(),
-                "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
-                [("1504208", "Marabá", "PA")]).Value!, PrecondicaoIfMatch.Ausente);
+            aplica: true, bonus: ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "b"), 1.10m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!, PrecondicaoIfMatch.Ausente);
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -151,10 +145,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             desempateResult.IsSuccess.Should().BeTrue();
 
             Result bonusResult = carregado.DefinirBonusRegional(
-                aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
-                    Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.30m, 5m, null, Guid.CreateVersion7(),
-                    "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
-                    [("1504208", "Marabá", "PA")]).Value!, PrecondicaoIfMatch.Ausente);
+                aplica: true, bonus: ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.30m, 5m, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!, PrecondicaoIfMatch.Ausente);
             bonusResult.IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);

@@ -21,10 +21,7 @@ public sealed class ConfiguracaoBonusRegionalTests
         ReferenciaRegra? regra = null,
         IEnumerable<(string CodigoIbge, string Nome, string Uf)>? municipios = null,
         string? fatoElegibilidade = null) =>
-        ConfiguracaoBonusRegional.Criar(
-            regra ?? RegraMultiplicativo(), fator, teto, fatoElegibilidade, BaseLegalId,
-            "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
-            municipios ?? MunicipioValido);
+        ConfiguracaoBonusRegional.Criar(regra ?? RegraMultiplicativo(), fator, teto, fatoElegibilidade, new BaseLegalCongelada(BaseLegalId, "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [.. municipios ?? MunicipioValido]));
 
     [Fact(DisplayName = "Criar com fator válido e sem teto tem sucesso (P.O.: ×1,20 sem teto)")]
     public void Criar_SemTeto_Sucesso()
@@ -54,7 +51,7 @@ public sealed class ConfiguracaoBonusRegionalTests
         resultado.Errors.Should().ContainSingle(e => e.Error.Code == "ConfiguracaoBonusRegional.FatoElegibilidadeInvalido");
     }
 
-    [Fact(DisplayName = "Criar congela o snapshot da Base Legal (Id, tipo, identificação, descrição e municípios)")]
+    [Fact(DisplayName = "Criar congela o snapshot da Base Legal (Id, código, tipo, identificação, descrição e municípios)")]
     public void Criar_CongelaSnapshotDaBaseLegal()
     {
         Result<ConfiguracaoBonusRegional> resultado = Criar();
@@ -62,6 +59,7 @@ public sealed class ConfiguracaoBonusRegionalTests
         resultado.IsSuccess.Should().BeTrue();
         ConfiguracaoBonusRegional bonus = resultado.Value!;
         bonus.BaseLegalBonusRegionalId.Should().Be(BaseLegalId);
+        bonus.BaseLegalBonusRegionalCodigo.Should().Be("PORTARIA_UNIFESSPA_NO_2514_2023");
         bonus.TipoInstrumento.Should().Be("PORTARIA");
         bonus.Identificacao.Should().Be("Portaria Unifesspa nº 2514/2023");
         bonus.Descricao.Should().Be("Institui inclusão regional");
