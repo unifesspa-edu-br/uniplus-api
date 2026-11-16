@@ -26,4 +26,10 @@ public static class ImportacaoDoResultadoErrorCodes
 
     /// <summary>A primeira fase declarada depois da importação não é fase do cronograma do processo.</summary>
     public const string PrimeiraFaseForaDoCronograma = "ImportacaoDoResultado.PrimeiraFaseForaDoCronograma";
+
+    /// <summary>Um campo de formulário coleta fato que um relatório do processo traz no arquivo.</summary>
+    public const string FatoColetadoPorFormulario = "ImportacaoDoResultado.FatoColetadoPorFormulario";
+
+    /// <summary>O formulário coleta dado básico que algum relatório não traz inteiro, e não é o obrigatório da primeira fase depois da importação.</summary>
+    public const string DadoBasicoComplementarForaDaPrimeiraFase = "ImportacaoDoResultado.DadoBasicoComplementarForaDaPrimeiraFase";
 }
