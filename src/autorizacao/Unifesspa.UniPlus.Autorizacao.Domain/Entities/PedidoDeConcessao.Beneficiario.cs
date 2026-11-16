@@ -59,7 +59,7 @@ public sealed partial class PedidoDeConcessao
         }
 
         // O aprovador julga a pessoa pelo nome: sem ele no token, o pedido não avança à aprovação.
-        return NomeDeExibicao.Normalizar(pessoa.Nome) is null ? SemNome() : null;
+        return NomeDeExibicao.Normalizar(pessoa.Nome) is null ? BeneficiarioDoPedido.SemNome() : null;
     }
 
     private DomainError? RecusaDaSituacaoNoAceite() => Situacao switch
@@ -78,47 +78,4 @@ public sealed partial class PedidoDeConcessao
         pessoa.EmailVerificado
         && EmailDaPessoa.Normalizar(pessoa.Email) is { } email
         && string.Equals(email, BeneficiarioEmail, StringComparison.Ordinal);
-
-    private static DomainError SemNome() => new(
-        PedidoErrorCodes.BeneficiarioSemNome,
-        "A sessão do beneficiário não traz o nome completo, que o aprovador precisa para julgar o pedido.");
-
-    // O beneficiário é o próprio solicitante quando o e-mail vem em branco ou é o do token dele, verificado:
-    // quem usa o próprio e-mail já provou que é ele, e não há ninguém a quem esperar.
-    private static (string? Email, bool ParaSiMesmo) ResolverBeneficiario(
-        PartesDoPedido partes, IDominiosInstitucionais dominios, List<FieldError> erros) =>
-        partes.ParaSiMesmo
-            ? (ResolverParaSiMesmo(partes.Solicitante, dominios, erros), true)
-            : (ResolverParaOutraPessoa(partes.EmailDoBeneficiario, dominios, erros), false);
-
-    private static string? ResolverParaSiMesmo(PessoaNoToken solicitante, IDominiosInstitucionais dominios, List<FieldError> erros)
-    {
-        string? doToken = solicitante.EmailVerificadoNormalizado;
-        if (doToken is null || !EmailDaPessoa.Institucional(doToken, dominios))
-        {
-            erros.Add(new("beneficiarioEmail", new DomainError(
-                PedidoErrorCodes.BeneficiarioInvalido,
-                "Para pedir para si, o e-mail da sessão deve ser institucional e verificado; para outra pessoa, informe o e-mail institucional dela.")));
-        }
-
-        if (NomeDeExibicao.Normalizar(solicitante.Nome) is null)
-        {
-            erros.Add(new("beneficiario", SemNome()));
-        }
-
-        return doToken;
-    }
-
-    private static string? ResolverParaOutraPessoa(string? emailInformado, IDominiosInstitucionais dominios, List<FieldError> erros)
-    {
-        string? informado = EmailDaPessoa.Normalizar(emailInformado);
-        if (informado is null || !EmailDaPessoa.Institucional(informado, dominios))
-        {
-            erros.Add(new("beneficiarioEmail", new DomainError(
-                PedidoErrorCodes.BeneficiarioInvalido,
-                "O beneficiário é identificado pelo e-mail institucional dele.")));
-        }
-
-        return informado;
-    }
 }
