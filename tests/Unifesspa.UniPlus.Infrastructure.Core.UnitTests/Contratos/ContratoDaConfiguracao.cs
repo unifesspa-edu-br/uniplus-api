@@ -22,7 +22,15 @@ internal static class ContratoDaConfiguracao
     private static readonly Dictionary<string, JsonNode> Esquemas = Directory.GetFiles(Path.Join(PastaDoContrato, "v1"), "*.schema.json")
         .ToDictionary(static caminho => Path.GetFileName(caminho), static caminho => JsonNode.Parse(File.ReadAllText(caminho))!, StringComparer.Ordinal);
 
-    private static readonly JsonSchema Schema = MontarEsquema();
+    // O registro de esquemas da biblioteca não aceita uso concorrente, e as classes de teste rodam em paralelo.
+    private static readonly Lock Trava = new();
+
+    private static readonly BuildOptions Construcao = new() { SchemaRegistry = new SchemaRegistry() };
+
+    private static readonly Dictionary<string, JsonSchema> Construidos = Esquemas.ToDictionary(
+        static par => par.Key, static par => JsonSchema.FromText(par.Value.ToJsonString(), Construcao), StringComparer.Ordinal);
+
+    private static readonly JsonSchema Schema = Construidos[ArquivoDoDocumento];
 
     private static readonly EvaluationOptions Opcoes = new() { RequireFormatValidation = true, OutputFormat = OutputFormat.List };
 
@@ -45,9 +53,34 @@ internal static class ContratoDaConfiguracao
 
     internal static string[] CaminhosComErro(JsonNode documento)
     {
-        EvaluationResults resultado = Schema.Evaluate(JsonSerializer.SerializeToElement(documento), Opcoes);
-        string[] invalidos = [.. Detalhes(resultado).Where(static r => !r.IsValid && !EstaSobNot(r)).Select(static r => r.EvaluationPath.ToString())];
-        return [.. Detalhes(resultado).Where(static r => !r.IsValid && !EstaSobNot(r))
+        lock (Trava)
+        {
+            return CaminhosComErro(Schema, documento);
+        }
+    }
+
+    /// <summary>Os caminhos que a instância viola contra uma definição do esquema, citada como <c>arquivo#/$defs/nome</c>.</summary>
+    internal static string[] CaminhosComErro(JsonNode instancia, string definicao)
+    {
+        string[] partes = definicao.Split('#', 2);
+        string id = Esquemas[partes[0]]["$id"]!.GetValue<string>();
+        lock (Trava)
+        {
+            JsonSchema alvo = JsonSchema.FromText($$"""{ "$ref": "{{id}}{{(partes.Length == 2 ? "#" + partes[1] : string.Empty)}}" }""", Construcao);
+            return CaminhosComErro(alvo, instancia);
+        }
+    }
+
+    private static string[] CaminhosComErro(JsonSchema schema, JsonNode documento)
+    {
+        EvaluationResults resultado = schema.Evaluate(JsonSerializer.SerializeToElement(documento), Opcoes);
+        if (resultado.IsValid)
+        {
+            return [];
+        }
+
+        string[] invalidos = [.. Detalhes(resultado).Where(static r => !r.IsValid && !EstaSobNegacaoOuCondicao(r)).Select(static r => r.EvaluationPath.ToString())];
+        return [.. Detalhes(resultado).Where(static r => !r.IsValid && !EstaSobNegacaoOuCondicao(r))
             .Where(r => !invalidos.Any(outro => outro.StartsWith(r.EvaluationPath + "/", StringComparison.Ordinal)))
             .Select(static r => r.InstanceLocation.ToString()).Distinct()];
     }
@@ -64,18 +97,11 @@ internal static class ContratoDaConfiguracao
         atual[passos[^1]] = valor;
     }
 
-    private static JsonSchema MontarEsquema()
-    {
-        BuildOptions construcao = new() { SchemaRegistry = new SchemaRegistry() };
-        Dictionary<string, JsonSchema> construidos = Esquemas.ToDictionary(
-            static par => par.Key, par => JsonSchema.FromText(par.Value.ToJsonString(), construcao), StringComparer.Ordinal);
-        return construidos[ArquivoDoDocumento];
-    }
-
-    private static bool EstaSobNot(EvaluationResults resultado)
+    // O que falha sob "not" ou sob a condição "if" não é violação do documento: é a avaliação que escolhe o ramo.
+    private static bool EstaSobNegacaoOuCondicao(EvaluationResults resultado)
     {
         string caminho = resultado.EvaluationPath.ToString();
-        return caminho.EndsWith("/not", StringComparison.Ordinal) || caminho.Contains("/not/", StringComparison.Ordinal);
+        return new[] { "/not", "/if" }.Any(ramo => caminho.EndsWith(ramo, StringComparison.Ordinal) || caminho.Contains(ramo + "/", StringComparison.Ordinal));
     }
 
     private static IEnumerable<EvaluationResults> Detalhes(EvaluationResults resultado) =>

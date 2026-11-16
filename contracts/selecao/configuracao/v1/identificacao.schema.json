@@ -83,24 +83,7 @@
     "algoritmoContagemPrazo": {
       "title": "Convenção de contagem de prazo",
       "description": "Regra do catálogo que define como os prazos do processo são contados.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "codigo": {
-          "title": "Código da regra",
-          "description": "Código da regra de contagem de prazo no catálogo de regras.",
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 128
-        },
-        "versao": {
-          "title": "Versão da regra",
-          "description": "Versão da regra de contagem de prazo.",
-          "type": "string",
-          "minLength": 1,
-          "maxLength": 16
-        }
-      }
+      "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
     }
   }
 }
