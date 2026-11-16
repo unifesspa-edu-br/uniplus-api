@@ -162,28 +162,40 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             "PS Cronograma", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        FaseCronograma abre = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            produtos:
-            [
-                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
-            ],
-            faseConcluinteCodigo: "RESULTADO_FINAL", emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        FaseCronograma conclui = FaseCronograma.Criar(
-            2, Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        FaseCronograma abre = FaseQueAbreEFechaOMesmoTipoApontandoConcluinte();
+        FaseCronograma conclui = FaseConcluinteQuePublicaODefinitivo();
 
         Result gravar = processo.DefinirCronogramaFases([abre, conclui], [], PrecondicaoIfMatch.Curinga);
 
         gravar.IsFailure.Should().BeTrue();
         gravar.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("ProcessoSeletivo.ConclusaoDuplicada");
     }
+
+    private static FaseCronograma FaseQueAbreEFechaOMesmoTipoApontandoConcluinte() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            1, Inicio: null, Fim: null, FaseConcluinteCodigo: "RESULTADO_FINAL", UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            Produtos:
+            [
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
+            ],
+            EmiteParecerIndividual: false,
+            RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
+    private static FaseCronograma FaseConcluinteQuePublicaODefinitivo() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false,
+            RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static TiposDeAtoUnicosPorObjeto Catalogo(string codigo, bool ehResultado, bool congela) =>
         TiposDeAtoUnicosPorObjeto.ParaChecklist(
@@ -195,12 +207,14 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             });
 
     private static FaseCronograma FaseComProdutos(params ProdutoDaFase[] produtos) => FaseCronograma.Criar(
-        1, Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao,
-        agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: produtos,
-        faseConcluinteCodigo: null, emiteParecerIndividual: false,
-        bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false,
+            ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
+            FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     [Fact(DisplayName = "Tipo classificado como resultado declarado sem papel: item vermelho e a publicação recusa")]
     public void ResultadoSemPapel_Recusa()

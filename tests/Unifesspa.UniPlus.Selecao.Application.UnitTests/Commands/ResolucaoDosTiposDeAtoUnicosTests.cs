@@ -56,28 +56,9 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
     [Fact(DisplayName = "Congela a classificação de cada tipo declarado, e recusa o tipo declarado que o catálogo não tem")]
     public void Congelamento_UmaEntradaPorTipoDeclarado_ERecusaOSemVersaoVigente()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        processo.DefinirCronogramaFases(
-            [FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao,
-                agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-                inicio: null, fim: null,
-                produtos:
-                [
-                    ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Preliminar),
-                    ProdutoDaFase.Criar("RESULTADO_X", PapelProdutoFase.Definitivo),
-                    ProdutoDaFase.Criar("AVISO_UNICO", null),
-                ],
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
-            [],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        var classificacoes = new Dictionary<string, ClassificacaoDoTipoDeAto>(StringComparer.Ordinal)
-        {
-            ["RESULTADO_X"] = new(EhResultado: true, CongelaConfiguracao: false),
-            ["AVISO_UNICO"] = new(EhResultado: false, CongelaConfiguracao: false),
-        };
-        TiposDeAtoUnicosPorObjeto tipos = TiposDeAtoUnicosPorObjeto.ParaChecklist(
-            new Dictionary<string, string>(StringComparer.Ordinal) { ["AVISO_UNICO"] = "Aviso único" }, [], classificacoes);
+        ProcessoSeletivo processo = ProcessoQueProduz(
+            ("RESULTADO_X", PapelProdutoFase.Preliminar), ("RESULTADO_X", PapelProdutoFase.Definitivo), ("AVISO_UNICO", null));
+        TiposDeAtoUnicosPorObjeto tipos = TiposComResultadoXEAvisoUnico();
 
         Result<IReadOnlyDictionary<string, Application.Abstractions.TipoDeAtoCongelado>> congelados = CongelamentoDosTiposDeAto.Resolver(processo, tipos);
 
@@ -136,18 +117,31 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
                 processo, new TipoAtoPublicadoView("EDITAL_RETIFICACAO", "Retificação", true, false, false, false), [],
                 Hoje, congelados, CancellationToken.None);
 
+    private static TiposDeAtoUnicosPorObjeto TiposComResultadoXEAvisoUnico()
+    {
+        var classificacoes = new Dictionary<string, ClassificacaoDoTipoDeAto>(StringComparer.Ordinal)
+        {
+            ["RESULTADO_X"] = new(EhResultado: true, CongelaConfiguracao: false),
+            ["AVISO_UNICO"] = new(EhResultado: false, CongelaConfiguracao: false),
+        };
+        return TiposDeAtoUnicosPorObjeto.ParaChecklist(
+            new Dictionary<string, string>(StringComparer.Ordinal) { ["AVISO_UNICO"] = "Aviso único" }, [], classificacoes);
+    }
+
+    private static FaseCronograma FaseDeClassificacaoQuePublica(params (string Tipo, PapelProdutoFase? Papel)[] produtos) => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            Produtos: [.. produtos.Select(static p => ProdutoDaFase.Criar(p.Tipo, p.Papel))], EmiteParecerIndividual: false,
+            RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     private static ProcessoSeletivo ProcessoQueProduz(params (string Tipo, PapelProdutoFase? Papel)[] produtos)
     {
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS", OrigemCandidatos.ImportacaoExterna);
-        processo.DefinirCronogramaFases(
-            [FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao,
-                agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-                inicio: null, fim: null,
-                produtos: [.. produtos.Select(static p => ProdutoDaFase.Criar(p.Tipo, p.Papel))],
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
-            [],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseDeClassificacaoQuePublica(produtos)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
     }

@@ -29,18 +29,12 @@ public sealed partial class FaseCronogramaTests
         IReadOnlyList<BancaRequerida>? bancasRequeridas = null) =>
         FaseCronograma.Reidratar(
             Guid.CreateVersion7(),
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_PRELIMINAR",
-            origemData: OrigemDataFase.NaExecucao,
-            agrupaEtapas: false,
-            permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: null, fim: null,
-            produtos, faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas ?? [],
-            regraRecurso,
-            UnidadesDeTeste.Ceps);
+            new OrigemCanonicaDaFase(
+                OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+                ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(produtos, EmiteParecerIndividual: false, regraRecurso),
+            bancasRequeridas ?? []);
 
     private static ArgsRegraPrazoRecurso ArgsValidos() => new(
         PrazoValor: 48m,
@@ -65,21 +59,10 @@ public sealed partial class FaseCronogramaTests
         bool semUnidadeResponsavel = false,
         UnidadeResponsavelSnapshot? unidadeResponsavel = null) =>
         FaseCronograma.Criar(
-            ordem,
-            Guid.CreateVersion7(),
-            "RESULTADO_PRELIMINAR",
-            origemData,
-            agrupaEtapas,
-            permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio,
-            fim,
-            produtos ?? [],
-            faseConcluinteCodigo,
-            emiteParecerIndividual,
-            bancasRequeridas ?? [],
-            regraRecurso,
-            semUnidadeResponsavel ? null : unidadeResponsavel ?? UnidadesDeTeste.Ceps);
+            new OrigemCanonicaDaFase(Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", origemData, agrupaEtapas, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(ordem, inicio, fim, faseConcluinteCodigo, semUnidadeResponsavel ? null : unidadeResponsavel ?? UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(produtos ?? [], emiteParecerIndividual, regraRecurso),
+            bancasRequeridas ?? []);
 
     // ── Unidade responsável pela fase (ADR-0061, ADR-0129) ──
 
@@ -192,26 +175,23 @@ public sealed partial class FaseCronogramaTests
             "a mensagem descreve a janela na mesma representação em que ela é guardada");
     }
 
+    private static FaseCronograma FaseReidratadaComJanelaEmBelem(DateTimeOffset instanteUtc) => FaseCronograma.Reidratar(
+        Guid.CreateVersion7(),
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: instanteUtc.ToOffset(TimeSpan.FromHours(-3)), Fim: instanteUtc.AddDays(2).ToOffset(TimeSpan.FromHours(-3)), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []);
+
     [Fact(DisplayName = "Reidratar também guarda a janela em UTC")]
     public void Reidratar_ComOffset_GuardaEmUtc()
     {
         DateTimeOffset instanteUtc = new(2027, 1, 25, 11, 0, 0, TimeSpan.Zero);
 
-        FaseCronograma fase = FaseCronograma.Reidratar(
-            Guid.CreateVersion7(),
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_PRELIMINAR",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: false,
-            permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: instanteUtc.ToOffset(TimeSpan.FromHours(-3)),
-            fim: instanteUtc.AddDays(2).ToOffset(TimeSpan.FromHours(-3)),
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps);
+        FaseCronograma fase = FaseReidratadaComJanelaEmBelem(instanteUtc);
 
         fase.Inicio.Should().Be(instanteUtc);
         fase.Inicio!.Value.Offset.Should().Be(TimeSpan.Zero);

@@ -35,16 +35,16 @@ public sealed class EtapaVinculadaAFaseTests
     private static FaseCronograma Fase(
         int ordem, string codigo, DateTimeOffset? inicio = null, DateTimeOffset? fim = null) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo,
-            inicio is not null && fim is not null ? OrigemDataFase.NoEdital : OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: inicio, fim: fim, produtos: [], faseConcluinteCodigo: null,
-            emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                Guid.CreateVersion7(), codigo, inicio is not null && fim is not null ? OrigemDataFase.NoEdital : OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
+                ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: inicio, Fim: fim, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
 
     private static EtapaProcesso Etapa(string nome, string? faseCodigo) => EtapaProcesso.Criar(
-        nome, CaraterEtapa.Classificatoria, Tipo(), peso: 1m, notaMinima: null, ordem: null,
-        faseCodigo: faseCodigo).Value!;
+        new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: null, FaseCodigo: faseCodigo),
+        new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     private static DateTimeOffset Instante(string iso) =>
         DateTimeOffset.Parse(iso, CultureInfo.InvariantCulture);
@@ -387,16 +387,18 @@ public sealed class EtapaVinculadaAFaseTests
         processo.EtapasDaFase("HABILITACAO").Single().Nome.Should().Be("Envio dos documentos pessoais");
     }
 
+    private static FaseCronograma FaseDeAvaliacao() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "AVALIACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     [Fact(DisplayName = "Fase agrupadora com etapa declarada nela não é recusada por falta de etapa")]
     public void FaseAgrupadora_ComEtapaDeclarada_Aceita()
     {
         ProcessoSeletivo processo = Processo();
-        FaseCronograma avaliacao = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "AVALIACAO", OrigemDataFase.NaExecucao,
-            agrupaEtapas: true, permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: null, fim: null, produtos: [], faseConcluinteCodigo: null,
-            emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        FaseCronograma avaliacao = FaseDeAvaliacao();
 
         // A ordem que o vínculo impõe: a fase entra primeiro, e só então a etapa pode
         // declará-la. É por isso que a guarda eager de "agrupadora sem etapa" saiu da

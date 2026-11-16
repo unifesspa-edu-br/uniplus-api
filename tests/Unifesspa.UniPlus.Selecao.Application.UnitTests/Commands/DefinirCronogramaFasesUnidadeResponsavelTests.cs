@@ -116,10 +116,12 @@ public sealed class DefinirCronogramaFasesUnidadeResponsavelTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS unidade gravada");
         FaseCronograma conforme = processo.CronogramaFases.Single();
         FaseCronograma comCga = FaseCronograma.Criar(
-            conforme.Ordem, conforme.FaseCanonicaOrigemId, conforme.Codigo, conforme.OrigemData,
-            conforme.AgrupaEtapas, conforme.PermiteComplementacao, conforme.ColetaInscricao, conforme.ColetaSolicitacaoIsencao,
-            conforme.Inicio, conforme.Fim, [.. conforme.Produtos], conforme.FaseConcluinteCodigo, conforme.EmiteParecerIndividual,
-            [.. conforme.BancasRequeridas], conforme.RegraRecurso, UnidadesDeTeste.Cga).Value!;
+            new OrigemCanonicaDaFase(
+                conforme.FaseCanonicaOrigemId, conforme.Codigo, conforme.OrigemData, conforme.AgrupaEtapas, conforme.PermiteComplementacao, conforme.ColetaInscricao,
+                conforme.ColetaSolicitacaoIsencao),
+            new DecisoesDeCronogramaDaFase(conforme.Ordem, conforme.Inicio, conforme.Fim, conforme.FaseConcluinteCodigo, UnidadesDeTeste.Cga),
+            new PublicacoesDaFase([.. conforme.Produtos], conforme.EmiteParecerIndividual, conforme.RegraRecurso),
+            [.. conforme.BancasRequeridas]).Value!;
         processo.DefinirCronogramaFases([comCga], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;

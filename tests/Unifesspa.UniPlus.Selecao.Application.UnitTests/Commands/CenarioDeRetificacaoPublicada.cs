@@ -127,11 +127,11 @@ internal sealed class CenarioDeRetificacaoPublicada
 
     private static FaseCronograma FaseDaProvaComPreliminarEDefinitivo(ProdutoDaFase preliminar) =>
         FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "PROVA", OrigemDataFase.NoEdital,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: Agora, fim: Agora.AddDays(10),
-            produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                Guid.CreateVersion7(), "PROVA", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(1, Inicio: Agora, Fim: Agora.AddDays(10), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
 
     private static AtoDoProcesso PreliminarJaPublicado(Guid processoId, FaseCronograma fase, ProdutoDaFase preliminar)
     {

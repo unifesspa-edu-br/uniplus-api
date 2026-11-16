@@ -31,13 +31,10 @@ public sealed class ConformidadeCronogramaTests
         bool coletaInscricao = false,
         bool coletaSolicitacaoIsencao = false) =>
         FaseCronograma.Criar(
-            ordem, Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao,
-            agrupaEtapas, permiteComplementacao: false,
-            coletaInscricao, coletaSolicitacaoIsencao,
-            inicio: null, fim: null,
-            produtos: produzResultado ? [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)] : [],
-            faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps);
+            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: agrupaEtapas, PermiteComplementacao: false, ColetaInscricao: coletaInscricao, ColetaSolicitacaoIsencao: coletaSolicitacaoIsencao),
+            new DecisoesDeCronogramaDaFase(Ordem: ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: produzResultado ? [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)] : [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []);
 
 
     [Fact(DisplayName = "CA-11: origem InscricaoPropria sem NENHUMA fase que colete inscrição reprova a publicação")]
@@ -118,7 +115,7 @@ public sealed class ConformidadeCronogramaTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases([Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!], PrecondicaoIfMatch.Ausente);
+            [ApoioDaPublicacaoDoProcessoSeletivo.EtapaDaProvaObjetiva("Prova", CaraterEtapa.Classificatoria, 1m)], PrecondicaoIfMatch.Ausente);
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
@@ -156,7 +153,7 @@ public sealed class ConformidadeCronogramaTests
         // Etapa eliminatória pura não compõe a nota (compor exige classificatória ou ambas, com peso):
         // o domínio recusa a lista já em DefinirEtapas, antes de a publicação chegar ao divisor zero.
         Result definirEtapas = processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: null, notaMinima: 5m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!],
+            [ApoioDaPublicacaoDoProcessoSeletivo.EtapaDaProvaObjetiva("Entrevista", CaraterEtapa.Eliminatoria, null, notaMinima: 5m)],
             PrecondicaoIfMatch.Ausente);
         definirEtapas.IsFailure.Should().BeTrue(
             "pré-condição: DefinirEtapas já recusa uma lista sem NENHUMA etapa que componha a nota — " +

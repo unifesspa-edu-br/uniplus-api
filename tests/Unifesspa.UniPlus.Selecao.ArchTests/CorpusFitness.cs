@@ -24,30 +24,22 @@ internal static class CorpusFitness
 
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
-                "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, ordem: 1).Value!,
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ], PrecondicaoIfMatch.Ausente);
 
         // Cronograma mínimo (Story #851): UMA fase satisfaz as duas exigências do corpus —
         // AgrupaEtapas (há etapa acima) e ProduzResultado (há vagas ofertadas abaixo).
         processo.DefinirCronogramaFases([
             FaseCronograma.Criar(
-                ordem: 1,
-                faseCanonicaOrigemId: new Guid("44444444-4444-4444-4444-444444444444"),
-                codigo: "RESULTADO_FINAL",
-                origemData: OrigemDataFase.NoEdital,
-                agrupaEtapas: true,
-                permiteComplementacao: false,
-                coletaInscricao: false, coletaSolicitacaoIsencao: false,
-                inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-                produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-                faseConcluinteCodigo: null,
-                emiteParecerIndividual: false,
-                bancasRequeridas: [],
-                regraRecurso: null,
-                unidadeResponsavel: UnidadesDeTeste.Ceps).Value!,
+                new OrigemCanonicaDaFase(
+                    OrigemId: new Guid("44444444-4444-4444-4444-444444444444"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
+                    ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+                new DecisoesDeCronogramaDaFase(
+                    Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+                    UnidadeResponsavel: UnidadesDeTeste.Ceps),
+                new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+                bancasRequeridas: []).Value!,
         ], [], PrecondicaoIfMatch.Ausente);
 
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);

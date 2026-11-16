@@ -12,13 +12,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class EstadoDaConfiguracaoTests
 {
     private static EtapaProcesso Etapa() => EtapaProcesso.Criar(
-        "Prova Objetiva",
-        CaraterEtapa.Classificatoria,
-        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-        peso: 1m,
-        ordem: 1,
-        notaMaxima: 10m,
-        formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!;
+        new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
+        new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     [Fact(DisplayName = "A vista acompanha a configuração viva do processo")]
     public void De_AcompanhaAConfiguracaoViva()

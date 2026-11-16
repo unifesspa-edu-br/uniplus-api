@@ -42,15 +42,19 @@ public sealed class EtapaProcessoRecusasTests
     private static ItemDeAvaliacaoDeclarado Item(string rotulo, decimal pontuacao) => new(null, rotulo, pontuacao);
 
     private static Result<EtapaProcesso> Criar(EntradaDaEtapa e) => EtapaProcesso.Criar(
-        e.Nome, e.Carater, Tipo(e.DoEnem), e.Peso, e.NotaMinima, e.Ordem, faseCodigo: null,
-        e.NotaMaxima, e.Passo, e.Forma, e.Regra, e.Itens, e.Escala);
+        new IdentificacaoDaEtapa(Nome: e.Nome, Carater: e.Carater, TipoEtapa: Tipo(e.DoEnem), Ordem: e.Ordem, FaseCodigo: null),
+        new DeclaracaoDaAvaliacaoDaEtapa(Peso: e.Peso, NotaMinima: e.NotaMinima, NotaMaxima: e.NotaMaxima, PassoDoLancamento: e.Passo, FormaDeAvaliacao: e.Forma, RegraConsolidacao: e.Regra, EscalaDeAtendimento: e.Escala),
+        e.Itens);
 
     private static Result Atualizar(EntradaDaEtapa e)
     {
-        EtapaProcesso existente = EtapaProcesso.Criar("Etapa existente", CaraterEtapa.Classificatoria, Tipo(), peso: 1m).Value!;
+        EtapaProcesso existente = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Etapa existente", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         return existente.AtualizarDados(
-            e.Nome, e.Carater, Tipo(e.DoEnem), e.Peso, e.NotaMinima, e.Ordem, faseCodigo: null,
-            e.NotaMaxima, e.Passo, e.Forma, e.Regra, e.Itens, e.Escala);
+            new IdentificacaoDaEtapa(Nome: e.Nome, Carater: e.Carater, TipoEtapa: Tipo(e.DoEnem), Ordem: e.Ordem, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: e.Peso, NotaMinima: e.NotaMinima, NotaMaxima: e.NotaMaxima, PassoDoLancamento: e.Passo, FormaDeAvaliacao: e.Forma, RegraConsolidacao: e.Regra, EscalaDeAtendimento: e.Escala),
+            e.Itens);
     }
 
     private static (string? Campo, string Codigo)[] Pares(IEnumerable<FieldError> erros) =>
@@ -58,7 +62,10 @@ public sealed class EtapaProcessoRecusasTests
 
     private static List<FieldError> FormaBasica(
         CaraterEtapa carater, decimal? peso = null, decimal? notaMinima = null, decimal? notaMaxima = null, decimal? passo = null) =>
-        EtapaProcesso.ValidarFormaBasica("Entrevista", carater, peso, notaMinima, ordem: 1, notaMaxima, passo);
+        EtapaProcesso.ValidarFormaBasica(
+            "Entrevista", carater, ordem: 1,
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: notaMinima, NotaMaxima: notaMaxima, PassoDoLancamento: passo, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null);
 
     // ── Criar e AtualizarDados recusam igual ──
 
@@ -126,23 +133,6 @@ public sealed class EtapaProcessoRecusasTests
             ("itensDeAvaliacao", EtapaProcesso.ItensNaEtapaDoEnem),
             ("escalaDeAtendimento", EtapaProcesso.ItensNaEtapaDoEnem));
         Atualizar(entrada).Errors.Should().Equal(Criar(entrada).Errors);
-    }
-
-    [Fact(DisplayName = "A etapa de nota do ENEM não repete as demais recusas de avaliação")]
-    public void ValidarAvaliacao_EtapaDoEnem_NaoRepeteAsDemaisRecusas()
-    {
-        List<FieldError> erros = EtapaProcesso.ValidarAvaliacao(
-            notaDeOrigemNoEnem: true,
-            passoDoLancamento: 0.5m,
-            FormaDeAvaliacao.Objetiva,
-            RegraConsolidacaoCodigo.CorrecaoIndependente,
-            declaraItens: false,
-            declaraEscala: true);
-
-        Pares(erros).Should().Equal(
-            ("formaDeAvaliacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem),
-            ("regraConsolidacao", EtapaProcesso.AvaliacaoNaEtapaDoEnem),
-            ("escalaDeAtendimento", EtapaProcesso.ItensNaEtapaDoEnem));
     }
 
     // ── Peso e nota mínima por caráter ──
@@ -238,8 +228,9 @@ public sealed class EtapaProcessoRecusasTests
 
     private static List<FieldError> FormaBasicaComEscala(IReadOnlyList<NivelDeAtendimento?> escala) =>
         EtapaProcesso.ValidarFormaBasica(
-            "Entrevista", CaraterEtapa.Ambas, peso: null, notaMinima: null, ordem: 1,
-            notaMaxima: null, passoDoLancamento: null, itensDeAvaliacao: null, escalaDeAtendimento: escala);
+            "Entrevista", CaraterEtapa.Ambas, ordem: 1,
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: escala),
+            itens: null);
 
     [Fact(DisplayName = "A escala com um nível completo e um elemento nulo não é recusada: o nulo é ignorado")]
     public void ValidarFormaBasica_EscalaComNivelCompletoEElementoNulo_NaoRecusa()

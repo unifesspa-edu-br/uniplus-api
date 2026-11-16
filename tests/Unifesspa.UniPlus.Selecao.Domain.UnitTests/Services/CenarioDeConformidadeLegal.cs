@@ -55,7 +55,9 @@ internal static class CenarioDeConformidadeLegal
 
     internal static void DefinirEtapa(ProcessoSeletivo processo, string nome, TipoEtapaSnapshot tipo) =>
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar(nome, CaraterEtapa.Classificatoria, tipo, peso: 1m, ordem: 1).Value!],
+            [EtapaProcesso.Criar(
+                new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: tipo, Ordem: 1, FaseCodigo: null),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
     internal static void DefinirAtendimento(ProcessoSeletivo processo, Guid origem, string codigo, string nome) =>
@@ -112,9 +114,12 @@ internal static class CenarioDeConformidadeLegal
     internal static Guid PrepararProcessoComModalidade(ProcessoSeletivo processo, string modalidadeCodigo)
     {
         FaseCronograma fase = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "ENVIO_DOCUMENTOS", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null, produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                OrigemId: Guid.CreateVersion7(), Codigo: "ENVIO_DOCUMENTOS", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+                ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         DefinirOfertas(processo, NovaOferta(NovaModalidade(modalidadeCodigo, NaturezaLegalModalidade.CotaReservada)));
         return fase.Id;

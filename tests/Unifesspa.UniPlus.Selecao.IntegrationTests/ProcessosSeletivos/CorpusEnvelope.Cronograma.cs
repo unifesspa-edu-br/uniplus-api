@@ -26,21 +26,14 @@ internal static partial class CorpusEnvelope
     /// </summary>
     private static FaseCronograma FaseInscricao(int variante = 0) => FaseCronograma.Reidratar(
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000001"),
-        ordem: 1,
-        faseCanonicaOrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"),
-        codigo: "INSCRICAO",
-        origemData: OrigemDataFase.NoEdital,
-        agrupaEtapas: false,
-        permiteComplementacao: true,
-        coletaInscricao: true, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
-        fim: new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Reidratar(ProdutoId(1, 1, variante), "COMUNICADO_INSCRICOES", null)],
-        faseConcluinteCodigo: null,
-        emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps);
+        new OrigemCanonicaDaFase(
+            OrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: true,
+            ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Reidratar(ProdutoId(1, 1, variante), "COMUNICADO_INSCRICOES", null)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []);
 
     /// <summary>
     /// Fase 2: agrupa as três etapas, publica DOIS produtos preliminares — gabarito e
@@ -54,16 +47,15 @@ internal static partial class CorpusEnvelope
     /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
     /// <param name="permutar">Inverte a ordem de ENTRADA dos produtos e das bancas requeridas desta fase — nunca o conteúdo.</param>
     private static FaseCronograma FaseResultadoPreliminarComRecurso(int variante = 0, bool permutar = false) => FaseCronograma.Reidratar(
-        id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000002"), ordem: 2,
-        faseCanonicaOrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"), codigo: "RESULTADO_PRELIMINAR",
-        origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false,
-        coletaInscricao: false, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero),
-        fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero),
-        produtos: ProdutosDaFaseDeRecurso(variante, permutar),
-        faseConcluinteCodigo: "RESULTADO_FINAL", emiteParecerIndividual: true,
-        bancasRequeridas: BancasRequeridasDaFaseDeRecurso(permutar), regraRecurso: RegraDeRecursoDaFase(variante),
-        unidadeResponsavel: UnidadesDeTeste.Ceps);
+        id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000002"),
+        new OrigemCanonicaDaFase(
+            OrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 2, Inicio: new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: "RESULTADO_FINAL",
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: ProdutosDaFaseDeRecurso(variante, permutar), EmiteParecerIndividual: true, RegraRecurso: RegraDeRecursoDaFase(variante)),
+        bancasRequeridas: BancasRequeridasDaFaseDeRecurso(permutar));
 
     private static IReadOnlyList<ProdutoDaFase> ProdutosDaFaseDeRecurso(int variante, bool permutar) =>
         Ordem<ProdutoDaFase>([
@@ -142,41 +134,29 @@ internal static partial class CorpusEnvelope
     /// </summary>
     private static FaseCronograma FaseResultadoFinal(int variante = 0) => FaseCronograma.Reidratar(
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000003"),
-        ordem: 3,
-        faseCanonicaOrigemId: new Guid("4444dddd-0000-4000-8000-000000000003"),
-        codigo: "RESULTADO_FINAL",
-        origemData: OrigemDataFase.NoEdital,
-        agrupaEtapas: false,
-        permiteComplementacao: false,
-        coletaInscricao: false, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 4, 10, 0, 0, 0, TimeSpan.Zero),
-        fim: new DateTimeOffset(2026, 4, 10, 18, 0, 0, TimeSpan.Zero),
-        produtos:
-        [
-            ProdutoDaFase.Reidratar(ProdutoId(3, 1, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
-            ProdutoDaFase.Reidratar(ProdutoId(3, 2, variante), "GABARITO", PapelProdutoFase.Definitivo),
-        ],
-        faseConcluinteCodigo: null,
-        emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps);
+        new OrigemCanonicaDaFase(
+            OrigemId: new Guid("4444dddd-0000-4000-8000-000000000003"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 3, Inicio: new DateTimeOffset(2026, 4, 10, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 4, 10, 18, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            Produtos: [
+                ProdutoDaFase.Reidratar(ProdutoId(3, 1, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Reidratar(ProdutoId(3, 2, variante), "GABARITO", PapelProdutoFase.Definitivo),
+            ],
+            EmiteParecerIndividual: false,
+            RegraRecurso: null),
+        bancasRequeridas: []);
 
     /// <summary>Fase mínima que satisfaz o bicondicional fase×etapa (uma etapa acompanha os dois grafos acima).</summary>
     private static FaseCronograma FaseCronogramaConforme(int variante) => FaseCronograma.Criar(
-        ordem: 1,
-        faseCanonicaOrigemId: new Guid($"9999eee{variante:x}-0000-4000-8000-000000000001"),
-        codigo: "RESULTADO_FINAL",
-        origemData: OrigemDataFase.NoEdital,
-        agrupaEtapas: true,
-        permiteComplementacao: false,
-        coletaInscricao: false, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null,
-        emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            OrigemId: new Guid($"9999eee{variante:x}-0000-4000-8000-000000000001"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 }

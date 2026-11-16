@@ -61,7 +61,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
             quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!;
 
         GrafoConfiguracao GrafoComClassificacaoEnem() => new(
-            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
+            etapas: [EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Prova", ordem: 1)],
             atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [Distribuicao()],
             bonusRegional: null,
@@ -89,7 +89,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         Estado antes = Estado.De(processo);
 
         GrafoConfiguracao invalido = Grafo(
-            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
+            etapas: [EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Prova", ordem: 1)],
             criterios: [
                 CriterioDesempate.Criar(
                     1,
@@ -113,8 +113,8 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         VersaoConfiguracao versao = VersaoDo(processo);
 
         GrafoConfiguracao invalido = Grafo(etapas: [
-            EtapaProcesso.Reidratar(EtapaCongelada, "Prova A", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva),
-            EtapaProcesso.Reidratar(EtapaCongelada, "Prova B", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 2m, null, 2, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva),
+            EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Prova A", ordem: 1),
+            EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Prova B", ordem: 2, peso: 2m),
         ]);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, invalido);
@@ -163,7 +163,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 
         // A etapa congelada tem o MESMO Id da viva, mas dados diferentes.
         GrafoConfiguracao grafo = Grafo(etapas: [
-            EtapaProcesso.Reidratar(EtapaOriginal, "Nome Restaurado", CaraterEtapa.Ambas, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 7m, 20m, 3, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva),
+            EtapaCongeladaDeProvaObjetiva(EtapaOriginal, "Nome Restaurado", ordem: 3, peso: 7m, notaMinima: 20m, carater: CaraterEtapa.Ambas),
         ]);
 
         processo.RestaurarConfiguracaoCongelada(versao, grafo).IsSuccess.Should().BeTrue();
@@ -191,16 +191,23 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         VersaoConfiguracao versao = VersaoDo(processo);
 
         GrafoConfiguracao grafo = Grafo(etapas: [
-            EtapaProcesso.Reidratar(
-                EtapaOriginal, "Prova", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                1m, null, 1, "RESULTADO_FINAL", notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva),
+            EtapaCongeladaDeProvaObjetiva(EtapaOriginal, "Prova", ordem: 1, faseCodigo: "RESULTADO_FINAL"),
         ]);
 
         processo.RestaurarConfiguracaoCongelada(versao, grafo).IsSuccess.Should().BeTrue();
 
         processo.Etapas.Single().FaseCodigo.Should().Be("RESULTADO_FINAL");
     }
+
+    private static FaseCronograma FaseDeAvaliacao() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: new Guid("eeee0000-0000-4000-8000-000000000002"), Codigo: "AVALIACAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 2, Inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     /// <summary>
     /// O descarte tem de devolver a etapa à fase que o envelope congelou, e não deixá-la na
@@ -212,22 +219,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     public void EtapaSobrevivente_RecuperaOVinculoComAFaseCongelada()
     {
         // O estado de que o descarte parte: duas fases, e a etapa na segunda delas.
-        FaseCronograma avaliacao = FaseCronograma.Criar(
-            ordem: 2,
-            faseCanonicaOrigemId: new Guid("eeee0000-0000-4000-8000-000000000002"),
-            codigo: "AVALIACAO",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero),
-            produtos: [],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        FaseCronograma avaliacao = FaseDeAvaliacao();
 
         // O estado de que o descarte parte chega por uma restauração: o agregado publicado
         // recusa mudar de fase uma etapa fora de sessão editorial, e o que se testa aqui é o
@@ -237,10 +229,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 
         GrafoConfiguracao daSessao = Grafo(
             etapas: [
-                EtapaProcesso.Reidratar(
-                    EtapaOriginal, "Prova", CaraterEtapa.Classificatoria,
-                    TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                    1m, null, 1, "AVALIACAO", notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva),
+                EtapaCongeladaDeProvaObjetiva(EtapaOriginal, "Prova", ordem: 1, faseCodigo: "AVALIACAO"),
             ],
             // Só a fase nova: a bicondicional é por vínculo, e deixar no grafo uma fase que
             // agrupa etapas sem nenhuma etapa nela é estado que a restauração recusa — com
@@ -254,10 +243,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 
         GrafoConfiguracao grafo = Grafo(
             etapas: [
-                EtapaProcesso.Reidratar(
-                    EtapaOriginal, "Prova", CaraterEtapa.Classificatoria,
-                    TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                    1m, null, 1, "RESULTADO_FINAL", notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva),
+                EtapaCongeladaDeProvaObjetiva(EtapaOriginal, "Prova", ordem: 1, faseCodigo: "RESULTADO_FINAL"),
             ],
             cronogramaFases: [FaseConforme()]);
 
@@ -274,6 +260,16 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         processo.EtapasDaFase("AVALIACAO").Should().BeEmpty();
     }
 
+    private static FaseCronograma FaseDeHabilitacao() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: new Guid("eeee0000-0000-4000-8000-000000000003"), Codigo: "HABILITACAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     /// <summary>
     /// A bicondicional fase×etapa é lida pelo VÍNCULO desde que a etapa passou a declarar em que
     /// fase acontece: qualquer fase pode subdividir-se, não só a que o cadastro marca como
@@ -288,29 +284,15 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
-        FaseCronograma habilitacao = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: new Guid("eeee0000-0000-4000-8000-000000000003"),
-            codigo: "HABILITACAO",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: false,
-            permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 3, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        FaseCronograma habilitacao = FaseDeHabilitacao();
 
         GrafoConfiguracao grafo = Grafo(
             etapas: [
                 EtapaProcesso.Reidratar(
-                    EtapaOriginal, "Análise documental", CaraterEtapa.Classificatoria,
-                    TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise documental", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                    1m, null, 1, "HABILITACAO", notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva),
+                    EtapaOriginal,
+                    new IdentificacaoDaEtapa(Nome: "Análise documental", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise documental", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "HABILITACAO"),
+                    new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
+                    itens: null),
             ],
             cronogramaFases: [habilitacao]);
 

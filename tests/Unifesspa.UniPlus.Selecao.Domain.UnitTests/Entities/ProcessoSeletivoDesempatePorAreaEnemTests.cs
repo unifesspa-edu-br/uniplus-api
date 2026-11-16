@@ -428,7 +428,9 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
 
     private static void AdicionarEtapasDeNotaDoEnem(ProcessoSeletivo processo, int quantidade)
     {
-        EtapaProcesso Etapa(int ordem) => EtapaProcesso.Criar("Nota do ENEM", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, peso: 1m, ordem: ordem).Value!;
+        EtapaProcesso Etapa(int ordem) => EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, Ordem: ordem, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         System.Reflection.FieldInfo etapas = typeof(ProcessoSeletivo).GetField("_etapas", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)!;
         ((List<EtapaProcesso>)etapas.GetValue(processo)!).AddRange(Enumerable.Range(1, quantidade).Select(Etapa));
     }

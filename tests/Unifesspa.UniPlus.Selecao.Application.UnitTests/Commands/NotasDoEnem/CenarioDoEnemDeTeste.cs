@@ -101,10 +101,6 @@ internal sealed class CenarioDoEnemDeTeste
 
     private static EtapaProcesso Etapa(string nome, string tipo, bool notaDeOrigemNoEnem) =>
         EtapaProcesso.Criar(
-            nome,
-            CaraterEtapa.Classificatoria,
-            TipoEtapaSnapshot.Criar(
-                CadastrosVivos.IdentidadeDe(tipo), tipo, nome, admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: notaDeOrigemNoEnem).Value!,
-            peso: 1m,
-            ordem: 1, notaMaxima: 10m, formaDeAvaliacao: notaDeOrigemNoEnem ? null : FormaDeAvaliacao.Objetiva).Value!;
+            new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe(tipo), tipo, nome, admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: notaDeOrigemNoEnem).Value!, Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: notaDeOrigemNoEnem ? null : FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 }

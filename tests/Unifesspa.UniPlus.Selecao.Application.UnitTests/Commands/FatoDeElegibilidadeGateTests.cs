@@ -93,6 +93,16 @@ public sealed class FatoDeElegibilidadeGateTests
         eventos.Should().BeEmpty();
     }
 
+    private static FaseCronograma FaseDoCronograma() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: FormularioProcesso.CodigoFaseHabilitacao, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 2, Inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     /// <summary>
     /// Processo conforme com a habilitação depois da inscrição e o acréscimo citando um campo booleano
     /// do formulário de inscrição: sem o catálogo, o fato é da inscrição e o checklist o aceita.
@@ -100,19 +110,27 @@ public sealed class FatoDeElegibilidadeGateTests
     private static ProcessoSeletivo ProcessoQueAplicaOAcrescimo()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Gate Elegibilidade");
-        FaseCronograma habilitacao = FaseCronograma.Criar(
-            ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: FormularioProcesso.CodigoFaseHabilitacao,
-            origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero),
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        FaseCronograma habilitacao = FaseDoCronograma();
         FormularioDeTeste.TrocarCronograma(processo, [.. processo.CronogramaFases, habilitacao], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
+        DefinirOFatoDoAcrescimo(processo);
+        DefinirOBonusRegionalDoAcrescimo(processo);
+
+        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), new Dictionary<string, string>(), new Dictionary<string, string>())
+            .Should().BeNull("sem o catálogo, o campo da inscrição é conhecido na inscrição");
+        return processo;
+    }
+
+    private static void DefinirOFatoDoAcrescimo(ProcessoSeletivo processo)
+    {
         Result itens = processo.DefinirItens(
             [FatoColetado.Criar(Fato, 0, "Deseja solicitar o acréscimo?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
+    }
 
+    private static void DefinirOBonusRegionalDoAcrescimo(ProcessoSeletivo processo)
+    {
         processo.DefinirBonusRegional(
             aplica: true,
             ConfiguracaoBonusRegional.Criar(
@@ -120,10 +138,6 @@ public sealed class FatoDeElegibilidadeGateTests
                 1.20m, null, Fato, Guid.CreateVersion7(), "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso",
                 [("1504208", "Marabá", "PA")]).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), new Dictionary<string, string>(), new Dictionary<string, string>())
-            .Should().BeNull("sem o catálogo, o campo da inscrição é conhecido na inscrição");
-        return processo;
     }
 
     private static (ProcessoSeletivo Processo, VersaoConfiguracao VersaoAtual) ProcessoPublicado()

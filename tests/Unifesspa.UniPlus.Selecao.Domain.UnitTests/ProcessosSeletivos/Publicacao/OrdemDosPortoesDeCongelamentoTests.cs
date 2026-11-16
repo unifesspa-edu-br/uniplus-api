@@ -114,37 +114,39 @@ public sealed class OrdemDosPortoesDeCongelamentoTests
     private static FaseCronograma[] Cronograma() => [FaseDeInscricao(), FasePreliminarComRecurso(), FaseDoResultadoFinal()];
 
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
-        1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
-        agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-        fim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-        produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-        bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), Fim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static FaseCronograma FasePreliminarComRecurso() => FaseCronograma.Criar(
-        2, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao,
-        agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-        inicio: null, fim: null,
-        produtos: [ProdutoDaFase.Reidratar(ProdutoPreliminar, ResultadoClassificacao, PapelProdutoFase.Preliminar)],
-        faseConcluinteCodigo: "RESULTADO_FINAL", emiteParecerIndividual: false,
-        bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()],
-        regraRecurso: RegraRecursoFase.Criar(
-            Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'd'),
-            new ArgsRegraPrazoRecurso(2m, UnidadePrazo.DiasUteis, null, null, false, null, null),
-            ProdutoPreliminar).Value!,
-        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, FaseConcluinteCodigo: "RESULTADO_FINAL", UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            Produtos: [ProdutoDaFase.Reidratar(ProdutoPreliminar, ResultadoClassificacao, PapelProdutoFase.Preliminar)],
+            EmiteParecerIndividual: false,
+            RegraRecurso: RegraRecursoFase.Criar(
+                Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'd'),
+                new ArgsRegraPrazoRecurso(2m, UnidadePrazo.DiasUteis, null, null, false, null, null),
+                ProdutoPreliminar).Value!),
+        bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
 
     private static FaseCronograma FaseDoResultadoFinal() => FaseCronograma.Criar(
-        3, Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao,
-        agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-        inicio: null, fim: null,
-        produtos:
-        [
-            ProdutoDaFase.Criar(ResultadoClassificacao, PapelProdutoFase.Definitivo),
-            ProdutoDaFase.Criar(AtoSemPapel, null),
-        ],
-        faseConcluinteCodigo: null, emiteParecerIndividual: false,
-        bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(3, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            Produtos: [
+                ProdutoDaFase.Criar(ResultadoClassificacao, PapelProdutoFase.Definitivo),
+                ProdutoDaFase.Criar(AtoSemPapel, null),
+            ],
+            EmiteParecerIndividual: false,
+            RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static DocumentoExigido ExigenciaGeral(Guid faseId) => DocumentoExigido.Criar(
         faseId,

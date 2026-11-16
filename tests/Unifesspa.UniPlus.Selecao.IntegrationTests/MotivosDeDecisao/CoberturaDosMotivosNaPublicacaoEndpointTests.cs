@@ -88,13 +88,14 @@ public sealed class CoberturaDosMotivosNaPublicacaoEndpointTests : IAsyncLifetim
     private static void HabilitarIsencao(ProcessoSeletivo processo)
     {
         FaseCronograma isencao = FaseCronograma.Criar(
-            ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ISENCAO_DA_TAXA",
-            origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: true,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero),
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                OrigemId: Guid.CreateVersion7(), Codigo: "ISENCAO_DA_TAXA", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+                ColetaSolicitacaoIsencao: true),
+            new DecisoesDeCronogramaDaFase(
+                Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 15, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+                UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
         processo.DefinirCronogramaFases([processo.CronogramaFases.Single(), isencao], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(cobra: true, valor: 100m, fundamentosCodigos: [Fundamento]).Value!;

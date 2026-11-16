@@ -220,7 +220,9 @@ public sealed partial class EnvelopeCodecRoundTripTests
         // E a contraprova: regenerar o id quebra o round-trip — o etapaRef fica órfão.
         GrafoConfiguracao comIdRegenerado = new(
             etapas: [.. envelope.Grafo.Etapas.Select(e =>
-                EtapaProcesso.Criar(e.Nome, e.Carater, e.TipoEtapa, e.Peso, e.NotaMinima, e.Ordem).Value!)],
+                EtapaProcesso.Criar(
+                    new IdentificacaoDaEtapa(Nome: e.Nome, Carater: e.Carater, TipoEtapa: e.TipoEtapa, Ordem: e.Ordem, FaseCodigo: null),
+                    new DeclaracaoDaAvaliacaoDaEtapa(Peso: e.Peso, NotaMinima: e.NotaMinima, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!)],
             atendimentoEspecializado: envelope.Grafo.AtendimentoEspecializado,
             distribuicaoVagas: envelope.Grafo.DistribuicaoVagas,
             bonusRegional: envelope.Grafo.BonusRegional,

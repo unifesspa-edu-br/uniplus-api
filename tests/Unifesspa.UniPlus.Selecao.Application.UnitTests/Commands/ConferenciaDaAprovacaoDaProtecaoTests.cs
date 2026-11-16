@@ -73,17 +73,28 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
 
     private static Dictionary<Guid, TipoDocumentoView> Vivos(TipoDocumentoView tipo) => new() { [tipo.Id] = tipo };
 
+    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     private static async Task<(ProcessoSeletivo Processo, TipoDocumentoView Tipo)> ProcessoComExigenciaAsync(string[] fatosComprovados)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Medicina", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        FaseCronograma fase = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        FaseCronograma fase = FaseDeInscricao();
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         TipoDocumentoView tipo = new(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ClassificacaoDeProtecao.Sensivel, "Comprovação do atendimento especializado.", "TUTELA_DA_SAUDE", ProtecaoAprovada: true);
+        await DefinirExigenciaDoTipoAsync(processo, fase, tipo, fatosComprovados);
+
+        return (processo, tipo);
+    }
+
+    private static async Task DefinirExigenciaDoTipoAsync(
+        ProcessoSeletivo processo, FaseCronograma fase, TipoDocumentoView tipo, string[] fatosComprovados)
+    {
         ITipoDocumentoReader leitor = Substitute.For<ITipoDocumentoReader>();
         leitor.ObterPorIdAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
         ItemDocumentoExigidoInput item = new(fase.Id, tipo.Id, "GERAL", true, null, [], [], null, Qualquer, null, FatosComprovados: fatosComprovados);
@@ -92,8 +103,6 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
             new CadastrosDosDocumentosExigidos(leitor, Substitute.For<IFatoCandidatoReader>(), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IModeloDeDocumentoRepository>()),
             CancellationToken.None);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
-
-        return (processo, tipo);
     }
 
     private static FatoCandidatoView Fato(string codigo, string origem, bool aprovada) => new(

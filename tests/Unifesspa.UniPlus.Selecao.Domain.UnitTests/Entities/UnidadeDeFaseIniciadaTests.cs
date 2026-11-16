@@ -112,8 +112,9 @@ public sealed class UnidadeDeFaseIniciadaTests
 
     private static FaseCronograma ComUnidade(FaseCronograma atual, UnidadeResponsavelSnapshot unidade) =>
         FaseCronograma.Criar(
-            atual.Ordem, atual.FaseCanonicaOrigemId, atual.Codigo, atual.OrigemData,
-            atual.AgrupaEtapas, atual.PermiteComplementacao, atual.ColetaInscricao, atual.ColetaSolicitacaoIsencao,
-            atual.Inicio, atual.Fim, [.. atual.Produtos], atual.FaseConcluinteCodigo, atual.EmiteParecerIndividual,
-            [.. atual.BancasRequeridas], atual.RegraRecurso, unidade).Value!;
+            new OrigemCanonicaDaFase(
+                atual.FaseCanonicaOrigemId, atual.Codigo, atual.OrigemData, atual.AgrupaEtapas, atual.PermiteComplementacao, atual.ColetaInscricao, atual.ColetaSolicitacaoIsencao),
+            new DecisoesDeCronogramaDaFase(atual.Ordem, atual.Inicio, atual.Fim, atual.FaseConcluinteCodigo, unidade),
+            new PublicacoesDaFase([.. atual.Produtos], atual.EmiteParecerIndividual, atual.RegraRecurso),
+            [.. atual.BancasRequeridas]).Value!;
 }

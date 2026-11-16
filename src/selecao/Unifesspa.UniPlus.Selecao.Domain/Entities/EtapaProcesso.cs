@@ -2,6 +2,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Enums;
 
+using ProcessosSeletivos.Bancas;
+using ProcessosSeletivos.Etapas;
+
 using Services;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
@@ -30,7 +33,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
 
     /// <summary>
     /// Caráter declarado que o tipo de etapa não admite — ver
-    /// <see cref="ValidarCaraterAdmitido"/>.
+    /// <see cref="CaraterDaEtapa.ValidarAdmitido"/>.
     /// </summary>
     public const string CaraterNaoAdmitidoPeloTipo = "EtapaProcesso.CaraterNaoAdmitidoPeloTipo";
 
@@ -143,7 +146,287 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// <summary>A etapa produz resultado quando declara ao menos um produto com papel.</summary>
     public bool ProduzResultado => _produtos.Exists(static p => p.Papel is not null);
 
+    /// <summary>
+    /// Uma etapa compõe a nota final quando o seu caráter pontua
+    /// (classificatória ou ambas) e ela declara peso — é o critério que a
+    /// inclui no divisor da média (<see cref="ProcessoSeletivo.CalcularDivisorMedia"/>).
+    /// </summary>
+    public bool ComponeNota => CaraterDaEtapa.Pontua(Carater) && Peso.HasValue;
+
+    /// <summary>
+    /// A etapa declara que sua nota vem do ENEM — é o atributo do tipo congelado que diz
+    /// isso, e é essa declaração que o motor de classificação consome.
+    /// </summary>
+    public bool DeclaraNotaDoEnem => TipoEtapa.NotaDeOrigemNoEnem;
+
     private EtapaProcesso() { }
+
+    /// <summary>
+    /// Cria a etapa acumulando toda violação independente em vez de retornar na primeira (ADR-0125), com
+    /// as mesmas recusas e a mesma ordem de <see cref="AtualizarDados"/>. A identidade da etapa nova é do
+    /// sistema, não do cliente, e os itens declarados entram todos como itens novos. Precisão/escala de
+    /// <see cref="Peso"/>, <see cref="NotaMinima"/>, <see cref="NotaMaxima"/> e
+    /// <see cref="PassoDoLancamento"/> (<c>numeric(18,4)</c>) permanecem só no validator: não há ainda um
+    /// helper de domínio para limite decimal, então checar aqui duplicaria uma regra de forma de
+    /// wire/coluna sem trazer nenhum ganho de correção.
+    /// </summary>
+    public static Result<EtapaProcesso> Criar(
+        IdentificacaoDaEtapa identificacao,
+        DeclaracaoDaAvaliacaoDaEtapa avaliacao,
+        IReadOnlyList<ItemDeAvaliacaoDeclarado>? itens = null)
+    {
+        EtapaProcesso etapa = new();
+        Result declarada = etapa.AtualizarDados(identificacao, avaliacao, itens);
+
+        return declarada.IsSuccess
+            ? Result<EtapaProcesso>.Success(etapa)
+            : Result<EtapaProcesso>.ValidationFailure(declarada.Errors);
+    }
+
+    /// <summary>
+    /// Nome, caráter, ordem, peso, nota mínima e a escala (nota máxima e passo) não dependem de nenhum
+    /// cadastro cross-módulo — diferente de <see cref="TipoEtapa"/> (resolvido à parte, contra o cadastro
+    /// vivo de Configuração, por quem chama). Compartilhada entre <see cref="Criar"/> e
+    /// <see cref="AtualizarDados"/> (mesmas checagens) e exposta para o handler poder confirmar a forma de
+    /// TODAS as etapas do payload numa primeira passada, antes de resolver o tipo de etapa no cadastro
+    /// (mesmo padrão de <c>FormaDoItem.ValidarFormaBasica</c>, PR #1214).
+    /// </summary>
+    /// <remarks>
+    /// O nome, o caráter e a ordem chegam soltos porque o handler confere a forma antes de ter o tipo, e
+    /// <see cref="IdentificacaoDaEtapa"/> só existe depois dele. A forma de avaliação e a regra de
+    /// consolidação de <paramref name="avaliacao"/> não são conferidas aqui: a coerência entre elas é de
+    /// <see cref="CoerenciaDaAvaliacaoDaEtapa"/>.
+    /// </remarks>
+    public static List<FieldError> ValidarFormaBasica(
+        string? nome,
+        CaraterEtapa carater,
+        int? ordem,
+        DeclaracaoDaAvaliacaoDaEtapa avaliacao,
+        IReadOnlyList<ItemDeAvaliacaoDeclarado?>? itens)
+    {
+        ArgumentNullException.ThrowIfNull(avaliacao);
+
+        List<FieldError> erros = ValidarNome(nome);
+        erros.AddRange(CaraterDaEtapa.ValidarDeclarado(carater, avaliacao.Peso, avaliacao.NotaMinima));
+        decimal? notaMinimaAceita = erros.Exists(static e => e.Field == "notaMinima") ? null : avaliacao.NotaMinima;
+        erros.AddRange(EscalaDoLancamento.Validar(notaMinimaAceita, avaliacao.NotaMaxima, avaliacao.PassoDoLancamento));
+        erros.AddRange(ValidarOrdem(ordem));
+        erros.AddRange(ItemDeAvaliacao.Validar(itens, avaliacao.PassoDoLancamento));
+        erros.AddRange(NiveisDeAtendimento.Validar(avaliacao.EscalaDeAtendimento));
+
+        return erros;
+    }
+
+    private static List<FieldError> ValidarNome(string? nome)
+    {
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            return [new("nome", new DomainError("EtapaProcesso.NomeObrigatorio", "O nome da etapa é obrigatório."))];
+        }
+
+        return nome.Trim().Length > NomeMaxLength
+            ? [new("nome", new DomainError(
+                "EtapaProcesso.NomeTamanho", $"O nome da etapa deve ter no máximo {NomeMaxLength} caracteres."))]
+            : [];
+    }
+
+    private static List<FieldError> ValidarOrdem(int? ordem) =>
+        ordem is <= 0
+            ? [new("ordem", new DomainError(
+                "EtapaProcesso.OrdemInvalida", "A ordem da etapa, quando informada, deve ser maior que zero."))]
+            : [];
+
+    /// <summary>
+    /// Reidrata uma etapa a partir de uma <see cref="VersaoConfiguracao"/> congelada,
+    /// <b>preservando o <see cref="EntityBase.Id"/></b> — que <see cref="Criar"/> não
+    /// aceita, por decisão (a identidade de uma etapa nova é do sistema, não do cliente).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// O <c>id</c> da etapa é congelado no envelope (ADR-0110 D2), porque
+    /// <c>criteriosDesempate.args.etapaRef</c> e <c>regrasEliminacao.args.etapaRef</c>
+    /// apontam para ele: sem preservá-lo, o snapshot reidratado teria referências que
+    /// não resolvem, e o desempate e a eliminação do certame ficariam inexecutáveis. O
+    /// mesmo vale para o id de cada item de avaliação (ADR-0150), a que o lançamento e o
+    /// recurso apontam, e que chega por <paramref name="itens"/>. Os ids das
+    /// demais filhas são regenerados — nenhuma referência de negócio exige estabilidade
+    /// deles, e as FKs internas são reconstruídas junto com o grafo.
+    /// </para>
+    /// <para>
+    /// Reidratar não é criar: os dados vêm de um documento com peso jurídico, já
+    /// validado quando foi congelado. As guardas aqui são a última linha contra erro de
+    /// programação — o decoder do envelope é quem recusa bytes inválidos, e o faz com
+    /// <c>Result</c>, nunca com exceção.
+    /// </para>
+    /// </remarks>
+    public static EtapaProcesso Reidratar(
+        Guid id,
+        IdentificacaoDaEtapa identificacao,
+        DeclaracaoDaAvaliacaoDaEtapa avaliacao,
+        IReadOnlyList<ItemDeAvaliacao>? itens)
+    {
+        ArgumentNullException.ThrowIfNull(identificacao);
+        ArgumentNullException.ThrowIfNull(avaliacao);
+        ExigirIdentidadeCongelada(id, identificacao.Nome, identificacao.Carater, identificacao.TipoEtapa);
+
+        EtapaProcesso etapa = new() { Id = id };
+        etapa.DefinirIdentificacaoECarater(identificacao);
+        etapa.DefinirLancamentoDaNota(avaliacao);
+        etapa.ReporItensCongelados(itens ?? []);
+
+        return etapa;
+    }
+
+    private static void ExigirTipoResolvido(TipoEtapaSnapshot tipoEtapa) => ArgumentNullException.ThrowIfNull(tipoEtapa);
+
+    private static void ExigirIdentidadeCongelada(Guid id, string nome, CaraterEtapa carater, TipoEtapaSnapshot tipoEtapa)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(nome);
+        ExigirTipoResolvido(tipoEtapa);
+        if (id == Guid.Empty)
+        {
+            throw new ArgumentException("A etapa reidratada deve declarar o Id congelado no envelope.", nameof(id));
+        }
+
+        if (carater == CaraterEtapa.Nenhum)
+        {
+            throw new ArgumentException(
+                "Caráter da etapa é obrigatório (classificatória, eliminatória ou ambas).", nameof(carater));
+        }
+    }
+
+    /// <summary>
+    /// Atualiza os dados da MESMA etapa (mesmo <see cref="EntityBase.Id"/>) em
+    /// vez de recriá-la — permite que <c>DefinirEtapasCommandHandler</c>
+    /// reconcilie o payload de <c>PUT /etapas</c> com o agregado tracked
+    /// preservando a identidade de uma etapa já referenciada por critério de
+    /// desempate ou regra de eliminação da classificação (sem isso, qualquer
+    /// reconfiguração de etapas quebraria essas referências por construção).
+    /// Recusa sem mutar nada quando a declaração viola alguma regra.
+    /// </summary>
+    public Result AtualizarDados(
+        IdentificacaoDaEtapa identificacao,
+        DeclaracaoDaAvaliacaoDaEtapa avaliacao,
+        IReadOnlyList<ItemDeAvaliacaoDeclarado>? itens = null)
+    {
+        List<FieldError> erros = ViolacoesDaDeclaracao(identificacao, avaliacao, itens);
+        if (erros.Count > 0)
+        {
+            return Result.ValidationFailure(erros);
+        }
+
+        DefinirIdentificacaoECarater(identificacao);
+        DefinirLancamentoDaNota(avaliacao);
+        ReconciliarItens(itens);
+
+        return Result.Success();
+    }
+
+    private static List<FieldError> ViolacoesDaDeclaracao(
+        IdentificacaoDaEtapa identificacao, DeclaracaoDaAvaliacaoDaEtapa avaliacao, IReadOnlyList<ItemDeAvaliacaoDeclarado>? itens)
+    {
+        ArgumentNullException.ThrowIfNull(identificacao);
+        ArgumentNullException.ThrowIfNull(avaliacao);
+        ExigirTipoResolvido(identificacao.TipoEtapa);
+
+        List<FieldError> erros = ValidarFormaBasica(identificacao.Nome, identificacao.Carater, identificacao.Ordem, avaliacao, itens);
+        erros.AddRange(CoerenciaDaAvaliacaoDaEtapa.Validar(
+            identificacao.TipoEtapa.NotaDeOrigemNoEnem, avaliacao.PassoDoLancamento, avaliacao.FormaDeAvaliacao,
+            avaliacao.RegraConsolidacao?.Codigo, itens?.Count > 0, avaliacao.EscalaDeAtendimento?.Count > 0));
+
+        return erros;
+    }
+
+    private void DefinirIdentificacaoECarater(IdentificacaoDaEtapa identificacao)
+    {
+        Nome = identificacao.Nome.Trim();
+        Carater = identificacao.Carater;
+        TipoEtapa = identificacao.TipoEtapa;
+        Ordem = identificacao.Ordem;
+        FaseCodigo = string.IsNullOrWhiteSpace(identificacao.FaseCodigo) ? null : identificacao.FaseCodigo.Trim();
+    }
+
+    private void DefinirLancamentoDaNota(DeclaracaoDaAvaliacaoDaEtapa avaliacao)
+    {
+        Peso = avaliacao.Peso;
+        NotaMinima = avaliacao.NotaMinima;
+        NotaMaxima = avaliacao.NotaMaxima;
+        PassoDoLancamento = avaliacao.PassoDoLancamento;
+        FormaDeAvaliacao = avaliacao.FormaDeAvaliacao;
+        RegraConsolidacao = avaliacao.RegraConsolidacao;
+        EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(avaliacao.EscalaDeAtendimento);
+    }
+
+    private IdentificacaoDaEtapa IdentificacaoAtual() => new(Nome, Carater, TipoEtapa, Ordem, FaseCodigo);
+
+    private DeclaracaoDaAvaliacaoDaEtapa AvaliacaoAtual() =>
+        new(Peso, NotaMinima, NotaMaxima, PassoDoLancamento, FormaDeAvaliacao, RegraConsolidacao, EscalaDeAtendimento);
+
+    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
+        ProcessoSeletivoId = processoSeletivoId;
+
+    /// <summary>
+    /// Substitui os itens reconciliando pelo id: o item declarado com o id de um existente é a
+    /// mesma linha com rótulo e pontuação novos, e é isso que mantém o id estável para quem aponta
+    /// para ele. Sem id, ou com um que a etapa não conhece, é item novo.
+    /// </summary>
+    private void ReconciliarItens(IReadOnlyList<ItemDeAvaliacaoDeclarado>? declarados)
+    {
+        List<ItemDeAvaliacao> vivos = [.. _itensDeAvaliacao];
+
+        SubstituirItens((declarados ?? []).Select(declarado =>
+            ReaproveitarItemPeloId(vivos, declarado.Id, declarado.Rotulo, declarado.PontuacaoMaxima)
+                ?? ItemDeAvaliacao.Criar(declarado)));
+    }
+
+    /// <summary>
+    /// Repõe os itens congelados preservando o id: o item vivo de mesmo id é reaproveitado, e o
+    /// congelado que a linha viva não tem entra com o id do envelope.
+    /// </summary>
+    private void ReporItensCongelados(IReadOnlyList<ItemDeAvaliacao> congelados)
+    {
+        List<ItemDeAvaliacao> vivos = [.. _itensDeAvaliacao];
+
+        SubstituirItens(congelados.Select(congelado =>
+            ReaproveitarItemPeloId(vivos, congelado.Id, congelado.Rotulo, congelado.PontuacaoMaxima) ?? congelado));
+    }
+
+    private static ItemDeAvaliacao? ReaproveitarItemPeloId(
+        List<ItemDeAvaliacao> vivos, Guid? id, string rotulo, decimal pontuacaoMaxima)
+    {
+        ItemDeAvaliacao? existente = id is { } procurado ? vivos.Find(i => i.Id == procurado) : null;
+        if (existente is null)
+        {
+            return null;
+        }
+
+        vivos.Remove(existente);
+        existente.Atualizar(rotulo, pontuacaoMaxima);
+
+        return existente;
+    }
+
+    /// <summary>Declara a janela própria da etapa, normalizada para UTC, e o parecer individual.</summary>
+    public Result DefinirJanelaEParecer(DateTimeOffset? inicio, DateTimeOffset? fim, bool emiteParecerIndividual)
+    {
+        if (inicio is not null && fim is not null && fim < inicio)
+        {
+            return Result.Failure(new DomainError(
+                "EtapaProcesso.JanelaInvertida",
+                "O fim da janela da etapa não pode ser anterior ao início."));
+        }
+
+        AplicarJanelaEParecer(inicio, fim, emiteParecerIndividual);
+
+        return Result.Success();
+    }
+
+    private void AplicarJanelaEParecer(DateTimeOffset? inicio, DateTimeOffset? fim, bool emiteParecerIndividual)
+    {
+        Inicio = inicio?.ToUniversalTime();
+        Fim = fim?.ToUniversalTime();
+        EmiteParecerIndividual = emiteParecerIndividual;
+    }
 
     /// <summary>
     /// Substitui os produtos da etapa por inteiro, recusando o mesmo par ato e papel
@@ -182,190 +465,46 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
             "EtapaProcesso.AtoDuplicadoNaEtapa",
             $"A etapa declara o ato '{duplicado.AtoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por etapa."));
 
-    private void SubstituirProdutos(IEnumerable<ProdutoDaEtapa> produtos)
+    /// <summary>Substitui as bancas da etapa por inteiro, recusando o mesmo tipo duas vezes.</summary>
+    public Result DefinirBancas(IReadOnlyList<BancaDaEtapa> bancas)
     {
-        _produtos.Clear();
-        foreach (ProdutoDaEtapa produto in produtos)
+        ArgumentNullException.ThrowIfNull(bancas);
+
+        if (AlinhamentoDasBancasDaEtapa.CodigoRepetido(bancas))
         {
-            produto.VincularEtapa(Id);
-            _produtos.Add(produto);
+            return Result.Failure(new DomainError(
+                "EtapaProcesso.BancaDuplicadaNaEtapa",
+                "Cada tipo de banca pode ser requerido uma única vez por etapa."));
         }
+
+        SubstituirBancas(bancas);
+
+        return Result.Success();
     }
 
-    /// <summary>
-    /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125). Precisão/
-    /// escala de <see cref="Peso"/>, <see cref="NotaMinima"/>, <see cref="NotaMaxima"/> e
-    /// <see cref="PassoDoLancamento"/> (<c>numeric(18,4)</c>) permanecem
-    /// só no validator — não há ainda um helper de domínio para limite decimal, então checar
-    /// aqui duplicaria uma regra de forma de wire/coluna sem trazer nenhum ganho de correção.
-    /// </summary>
-    public static Result<EtapaProcesso> Criar(
-        string nome,
-        CaraterEtapa carater,
-        TipoEtapaSnapshot tipoEtapa,
-        decimal? peso = null,
-        decimal? notaMinima = null,
-        int? ordem = null,
-        string? faseCodigo = null,
-        decimal? notaMaxima = null,
-        decimal? passoDoLancamento = null,
-        FormaDeAvaliacao? formaDeAvaliacao = null,
-        ReferenciaRegra? regraConsolidacao = null,
-        IReadOnlyList<ItemDeAvaliacaoDeclarado>? itensDeAvaliacao = null,
-        IReadOnlyList<NivelDeAtendimento>? escalaDeAtendimento = null)
-    {
-        ArgumentNullException.ThrowIfNull(tipoEtapa);
-
-        List<FieldError> erros = ValidarFormaBasica(
-            nome, carater, peso, notaMinima, ordem, notaMaxima, passoDoLancamento, itensDeAvaliacao, escalaDeAtendimento);
-        erros.AddRange(ValidarAvaliacao(
-            tipoEtapa.NotaDeOrigemNoEnem, passoDoLancamento, formaDeAvaliacao, regraConsolidacao?.Codigo,
-            itensDeAvaliacao?.Count > 0, escalaDeAtendimento?.Count > 0));
-        if (erros.Count > 0)
-        {
-            return Result<EtapaProcesso>.ValidationFailure(erros);
-        }
-
-        EtapaProcesso etapa = new()
-        {
-            Nome = nome.Trim(),
-            Carater = carater,
-            TipoEtapa = tipoEtapa,
-            Peso = peso,
-            NotaMinima = notaMinima,
-            NotaMaxima = notaMaxima,
-            PassoDoLancamento = passoDoLancamento,
-            FormaDeAvaliacao = formaDeAvaliacao,
-            RegraConsolidacao = regraConsolidacao,
-            EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(escalaDeAtendimento),
-            Ordem = ordem,
-            FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim(),
-        };
-        etapa.ReconciliarItens(itensDeAvaliacao);
-
-        return Result<EtapaProcesso>.Success(etapa);
-    }
+    /// <summary>Os tipos de ato cujo preliminar a etapa publica sem o definitivo do mesmo tipo.</summary>
+    internal IEnumerable<string> TiposComCicloAberto() =>
+        CicloRecursal.TiposComCicloAberto(_produtos.Select(static p => (p.AtoCodigo, p.Papel)));
 
     /// <summary>
-    /// Nome/Carater/Peso/NotaMinima/Ordem e a escala (nota máxima e passo) não dependem de nenhum cadastro cross-módulo —
-    /// diferente de <see cref="TipoEtapa"/> (resolvido à parte, contra o cadastro vivo de
-    /// Configuração, por quem chama). Compartilhada entre <see cref="Criar"/> e
-    /// <see cref="AtualizarDados"/> (mesmas checagens) e exposta para o handler poder
-    /// confirmar a forma de TODAS as etapas do payload numa primeira passada, antes de
-    /// resolver o tipo de etapa no cadastro (mesmo padrão de
-    /// <c>FormaDoItem.ValidarFormaBasica</c>, PR #1214).
+    /// Substitui as janelas recursais por inteiro. Prova o que só a etapa enxerga: a âncora
+    /// em ato referencia um produto preliminar desta etapa; a âncora em ciência exige a
+    /// promessa de parecer individual, porque é dele que corre o prazo; e não há duas
+    /// janelas para o mesmo fato.
     /// </summary>
-    public static List<FieldError> ValidarFormaBasica(
-        string? nome,
-        CaraterEtapa carater,
-        decimal? peso,
-        decimal? notaMinima,
-        int? ordem,
-        decimal? notaMaxima = null,
-        decimal? passoDoLancamento = null,
-        IReadOnlyList<ItemDeAvaliacaoDeclarado?>? itensDeAvaliacao = null,
-        IReadOnlyList<NivelDeAtendimento?>? escalaDeAtendimento = null)
+    public Result DefinirRecursos(IReadOnlyList<RecursoDaEtapa> recursos)
     {
-        List<FieldError> erros = [];
+        ArgumentNullException.ThrowIfNull(recursos);
 
-        if (string.IsNullOrWhiteSpace(nome))
+        DomainError? recusa = JanelasRecursaisDaEtapa.ViolacaoDaAncora(this, recursos) ?? JanelasRecursaisDaEtapa.FatoRepetido(recursos);
+        if (recusa is not null)
         {
-            erros.Add(new("nome", new DomainError(
-                "EtapaProcesso.NomeObrigatorio", "O nome da etapa é obrigatório.")));
-        }
-        else if (nome.Trim().Length > NomeMaxLength)
-        {
-            erros.Add(new("nome", new DomainError(
-                "EtapaProcesso.NomeTamanho", $"O nome da etapa deve ter no máximo {NomeMaxLength} caracteres.")));
+            return Result.Failure(recusa);
         }
 
-        if (carater == CaraterEtapa.Nenhum || !Enum.IsDefined(carater))
-        {
-            erros.Add(new("carater", new DomainError(
-                "EtapaProcesso.CaraterObrigatorio",
-                "Caráter da etapa é obrigatório (classificatória, eliminatória ou ambas).")));
-        }
+        SubstituirRecursos(recursos);
 
-        if (peso is <= 0)
-        {
-            erros.Add(new("peso", new DomainError(
-                "EtapaProcesso.PesoInvalido", "O peso da etapa, quando informado, deve ser maior que zero.")));
-        }
-        else if (peso.HasValue && carater is CaraterEtapa.Eliminatoria)
-        {
-            // Peso em etapa que não pontua é dado morto: CalcularDivisorMedia soma apenas as
-            // etapas cujo caráter compõe a nota, então o valor fica gravado sem nunca pesar em
-            // nada — e quem configurou acredita que pesa.
-            erros.Add(new("peso", new DomainError(
-                "EtapaProcesso.PesoSemCaraterQuePontua",
-                "Peso só se aplica a etapa cujo caráter compõe a nota final; etapa apenas eliminatória aprova ou reprova sem pontuar.")));
-        }
-
-        if (notaMinima is < 0)
-        {
-            erros.Add(new("notaMinima", new DomainError(
-                "EtapaProcesso.NotaMinimaInvalida", "A nota mínima, quando informada, não pode ser negativa.")));
-        }
-        else if (notaMinima.HasValue && carater is CaraterEtapa.Classificatoria)
-        {
-            erros.Add(new("notaMinima", new DomainError(
-                "EtapaProcesso.NotaMinimaSemCaraterQueElimina",
-                "Nota mínima só se aplica a etapa cujo caráter elimina; etapa apenas classificatória pontua sem reprovar.")));
-        }
-
-        ValidarEscala(
-            erros, notaMinima, notaMaxima, passoDoLancamento,
-            notaMinimaJaRecusada: erros.Exists(static e => e.Field == "notaMinima"));
-
-        if (ordem is <= 0)
-        {
-            erros.Add(new("ordem", new DomainError(
-                "EtapaProcesso.OrdemInvalida", "A ordem da etapa, quando informada, deve ser maior que zero.")));
-        }
-
-        erros.AddRange(ItemDeAvaliacao.Validar(itensDeAvaliacao, passoDoLancamento));
-        erros.AddRange(NiveisDeAtendimento.Validar(escalaDeAtendimento));
-
-        return erros;
-    }
-
-    /// <summary>
-    /// Recusa a contradição entre valores declarados da escala, em rascunho também: a falta é
-    /// tolerada (o gate de publicação a cobra), mas dois valores que não convivem não são falta.
-    /// Quem já recusou o valor isolado não o repete nas regras que o comparam, o que também
-    /// evita dividir por zero no múltiplo do passo.
-    /// </summary>
-    private static void ValidarEscala(
-        List<FieldError> erros, decimal? notaMinima, decimal? notaMaxima, decimal? passo, bool notaMinimaJaRecusada)
-    {
-        if (notaMaxima is <= 0)
-        {
-            erros.Add(new("notaMaxima", new DomainError(
-                NotaMaximaInvalida, "A nota máxima da etapa, quando informada, deve ser maior que zero.")));
-        }
-
-        if (passo is <= 0)
-        {
-            erros.Add(new("passoDoLancamento", new DomainError(
-                PassoDoLancamentoInvalido, "O passo do lançamento, quando informado, deve ser maior que zero.")));
-        }
-
-        if (notaMaxima is not > 0)
-        {
-            return;
-        }
-
-        if (!notaMinimaJaRecusada && notaMinima > notaMaxima)
-        {
-            erros.Add(new("notaMinima", new DomainError(
-                NotaMinimaAcimaDaNotaMaxima, "A nota mínima da etapa não pode passar da nota máxima.")));
-        }
-
-        if (passo > 0 && notaMaxima % passo != 0)
-        {
-            erros.Add(new("notaMaxima", new DomainError(
-                NotaMaximaForaDoPasso, "A nota máxima da etapa deve ser múltipla do passo do lançamento.")));
-        }
+        return Result.Success();
     }
 
     /// <summary>
@@ -390,40 +529,23 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     {
         ArgumentNullException.ThrowIfNull(congelada);
 
-        ReporIdentificacaoDe(congelada);
-        ReporAvaliacaoDe(congelada);
+        ReporDadosDe(congelada);
         ReporFilhasDe(congelada);
     }
 
-    private void ReporIdentificacaoDe(EtapaProcesso congelada)
+    private void ReporDadosDe(EtapaProcesso congelada)
     {
-        Nome = congelada.Nome.Trim();
-        Carater = congelada.Carater;
-        TipoEtapa = congelada.TipoEtapa;
-        Ordem = congelada.Ordem;
-        FaseCodigo = string.IsNullOrWhiteSpace(congelada.FaseCodigo) ? null : congelada.FaseCodigo.Trim();
-        Inicio = congelada.Inicio?.ToUniversalTime();
-        Fim = congelada.Fim?.ToUniversalTime();
-        EmiteParecerIndividual = congelada.EmiteParecerIndividual;
-    }
-
-    private void ReporAvaliacaoDe(EtapaProcesso congelada)
-    {
-        Peso = congelada.Peso;
-        NotaMinima = congelada.NotaMinima;
-        NotaMaxima = congelada.NotaMaxima;
-        PassoDoLancamento = congelada.PassoDoLancamento;
-        FormaDeAvaliacao = congelada.FormaDeAvaliacao;
-        RegraConsolidacao = congelada.RegraConsolidacao;
-        EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(congelada.EscalaDeAtendimento);
-        ReporItensCongelados(congelada.ItensDeAvaliacao);
+        DefinirIdentificacaoECarater(congelada.IdentificacaoAtual());
+        DefinirLancamentoDaNota(congelada.AvaliacaoAtual());
+        AplicarJanelaEParecer(congelada.Inicio, congelada.Fim, congelada.EmiteParecerIndividual);
     }
 
     private void ReporFilhasDe(EtapaProcesso congelada)
     {
+        ReporItensCongelados(congelada.ItensDeAvaliacao);
         IReadOnlyDictionary<Guid, Guid> produtoVivoPorCongelado = ReporProdutosDe(congelada);
-        ReporBancasDe(congelada);
-        ReporRecursosDe(congelada, produtoVivoPorCongelado);
+        SubstituirBancas(congelada.Bancas);
+        SubstituirRecursos(JanelasRecursaisDaEtapa.Repor(_recursos, congelada.Recursos, produtoVivoPorCongelado));
     }
 
     /// <summary>
@@ -444,584 +566,27 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         return reconciliados.IdentidadeVivaPorIdentidadeChegada;
     }
 
-    /// <summary>
-    /// Bancas pelo código, que é a chave do índice único da etapa — mesmo motivo dos produtos. O
-    /// tipo de origem é reposto na linha viva em vez de recriá-la.
-    /// </summary>
-    private void ReporBancasDe(EtapaProcesso congelada)
+    private void SubstituirProdutos(IEnumerable<ProdutoDaEtapa> produtos) =>
+        SubstituirFilhas(_produtos, produtos, produto => produto.VincularEtapa(Id));
+
+    private void SubstituirBancas(IEnumerable<BancaDaEtapa> declaradas) =>
+        SubstituirFilhas(_bancas, AlinhamentoDasBancasDaEtapa.Reconciliar(_bancas, declaradas), banca => banca.VincularEtapa(Id));
+
+    private void SubstituirRecursos(IEnumerable<RecursoDaEtapa> recursos) =>
+        SubstituirFilhas(_recursos, recursos, recurso => recurso.VincularEtapa(Id));
+
+    private void SubstituirItens(IEnumerable<ItemDeAvaliacao> itens) =>
+        SubstituirFilhas(_itensDeAvaliacao, itens, item => item.VincularEtapa(Id));
+
+    // Materializa antes de limpar: as novas podem ser derivadas da própria coleção que se esvazia.
+    private static void SubstituirFilhas<T>(List<T> atuais, IEnumerable<T> novas, Action<T> vincularEtapa)
     {
-        List<BancaDaEtapa> vivas = [.. _bancas];
-        List<BancaDaEtapa> finais = [];
-        foreach (BancaDaEtapa bancaCongelada in congelada.Bancas)
+        List<T> substitutas = [.. novas];
+        atuais.Clear();
+        foreach (T filha in substitutas)
         {
-            finais.Add(ReconciliarBancaPeloCodigo(vivas, bancaCongelada));
+            vincularEtapa(filha);
+            atuais.Add(filha);
         }
-
-        _bancas.Clear();
-        foreach (BancaDaEtapa banca in finais)
-        {
-            banca.VincularEtapa(Id);
-            _bancas.Add(banca);
-        }
-    }
-
-    private static BancaDaEtapa ReconciliarBancaPeloCodigo(List<BancaDaEtapa> vivas, BancaDaEtapa congelada)
-    {
-        string codigoCongelado = HashCanonicalComputer.NormalizeNfc(congelada.Codigo);
-        BancaDaEtapa? mesmoCodigo = vivas.Find(
-            b => string.Equals(
-                HashCanonicalComputer.NormalizeNfc(b.Codigo), codigoCongelado, StringComparison.Ordinal));
-        if (mesmoCodigo is null)
-        {
-            return congelada;
-        }
-
-        vivas.Remove(mesmoCodigo);
-        mesmoCodigo.ReporOrigem(congelada.TipoBancaOrigemId);
-
-        return mesmoCodigo;
-    }
-
-    /// <summary>
-    /// Recursos pelo Id da âncora, traduzido para o Id que o produto tem depois da reconciliação:
-    /// sem isso a âncora apontaria para uma linha que esta mesma transação remove como órfã, e o
-    /// sintoma só apareceria muito depois, ao resolver o recurso de um ato publicado. Aqui não há
-    /// índice único além da própria chave primária, e é ELA que colidiria se o mesmo recurso saísse
-    /// e voltasse na mesma transação.
-    /// </summary>
-    private void ReporRecursosDe(EtapaProcesso congelada, IReadOnlyDictionary<Guid, Guid> produtoVivoPorCongelado)
-    {
-        List<RecursoDaEtapa> vivos = [.. _recursos];
-        List<RecursoDaEtapa> finais = [];
-        foreach (RecursoDaEtapa recursoCongelado in congelada.Recursos)
-        {
-            finais.Add(ReconciliarRecursoPelaAncora(vivos, recursoCongelado, produtoVivoPorCongelado));
-        }
-
-        _recursos.Clear();
-        foreach (RecursoDaEtapa recurso in finais)
-        {
-            recurso.VincularEtapa(Id);
-            _recursos.Add(recurso);
-        }
-    }
-
-    /// <summary>
-    /// Casa pela ÂNCORA, que é o que identifica a janela no negócio — o envelope não congela o id do
-    /// recurso, e casar por ele nunca acertaria: a linha viva sairia e voltaria a cada restauração,
-    /// trocando de identidade sem que nada tivesse mudado.
-    /// </summary>
-    private static RecursoDaEtapa ReconciliarRecursoPelaAncora(
-        List<RecursoDaEtapa> vivos,
-        RecursoDaEtapa congelado,
-        IReadOnlyDictionary<Guid, Guid> produtoVivoPorCongelado)
-    {
-        Guid ancora = produtoVivoPorCongelado.GetValueOrDefault(congelado.ProdutoAncoraId, congelado.ProdutoAncoraId);
-        RecursoDaEtapa? mesmaAncora = vivos.Find(
-            r => r.Ancora == congelado.Ancora && r.ProdutoAncoraId == ancora);
-        RecursoDaEtapa destino = mesmaAncora ?? congelado;
-        if (mesmaAncora is not null)
-        {
-            vivos.Remove(mesmaAncora);
-        }
-
-        destino.ReporDadosCongelados(congelado.Ancora, congelado.Regra, congelado.Args, ancora);
-
-        return destino;
-    }
-
-    /// <summary>
-    /// Confere o caráter declarado contra o que o tipo de etapa admite, acumulando as duas
-    /// violações possíveis (ADR-0125).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Fora de <see cref="ValidarFormaBasica"/> de propósito: aquela checagem é de forma, e esta
-    /// depende de onde vêm os sinalizadores — do cadastro vivo quando a gravação lê o tipo
-    /// (etapa nova, vínculo novo ou caráter alterado), do <see cref="TipoEtapaSnapshot"/> quando
-    /// o tipo foi desativado e a etapa mantém o vínculo. Quem escolhe a fonte é quem chama
-    /// (ADR-0129).
-    /// </para>
-    /// <para>
-    /// Não entra em <see cref="Criar"/> nem em <see cref="AtualizarDados"/>: quem chama confere
-    /// numa passada própria, antes de qualquer mutação, para devolver de uma vez a recusa de
-    /// todas as etapas do payload (ADR-0125). A restauração de uma versão congelada, que repõe
-    /// por <see cref="Reidratar"/> e <see cref="ReporDe"/>, também não confere:
-    /// repor não é declarar, e o par caráter e sinalizadores volta como foi conferido ao congelar.
-    /// </para>
-    /// </remarks>
-    public static List<FieldError> ValidarCaraterAdmitido(
-        CaraterEtapa carater, bool admitePontuacao, bool admiteEliminacao, string nomeDoTipo)
-    {
-        List<FieldError> erros = [];
-
-        if ((carater is CaraterEtapa.Classificatoria or CaraterEtapa.Ambas) && !admitePontuacao)
-        {
-            erros.Add(new("carater", new DomainError(
-                CaraterNaoAdmitidoPeloTipo,
-                $"O tipo de etapa '{nomeDoTipo}' não compõe a nota final, então a etapa não pode ter caráter que pontua.")));
-        }
-
-        if ((carater is CaraterEtapa.Eliminatoria or CaraterEtapa.Ambas) && !admiteEliminacao)
-        {
-            erros.Add(new("carater", new DomainError(
-                CaraterNaoAdmitidoPeloTipo,
-                $"O tipo de etapa '{nomeDoTipo}' não elimina candidato, então a etapa não pode ter caráter que reprova.")));
-        }
-
-        return erros;
-    }
-
-    /// <summary>
-    /// Reidrata uma etapa a partir de uma <see cref="VersaoConfiguracao"/> congelada,
-    /// <b>preservando o <see cref="EntityBase.Id"/></b> — que <see cref="Criar"/> não
-    /// aceita, por decisão (a identidade de uma etapa nova é do sistema, não do cliente).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// O <c>id</c> da etapa é congelado no envelope (ADR-0110 D2), porque
-    /// <c>criteriosDesempate.args.etapaRef</c> e <c>regrasEliminacao.args.etapaRef</c>
-    /// apontam para ele: sem preservá-lo, o snapshot reidratado teria referências que
-    /// não resolvem, e o desempate e a eliminação do certame ficariam inexecutáveis. O
-    /// mesmo vale para o id de cada item de avaliação (ADR-0150), a que o lançamento e o
-    /// recurso apontam, e que chega por <paramref name="itensDeAvaliacao"/>. Os ids das
-    /// demais filhas são regenerados — nenhuma referência de negócio exige estabilidade
-    /// deles, e as FKs internas são reconstruídas junto com o grafo.
-    /// </para>
-    /// <para>
-    /// Reidratar não é criar: os dados vêm de um documento com peso jurídico, já
-    /// validado quando foi congelado. As guardas aqui são a última linha contra erro de
-    /// programação — o decoder do envelope é quem recusa bytes inválidos, e o faz com
-    /// <c>Result</c>, nunca com exceção.
-    /// </para>
-    /// </remarks>
-    public static EtapaProcesso Reidratar(
-        Guid id,
-        string nome,
-        CaraterEtapa carater,
-        TipoEtapaSnapshot tipoEtapa,
-        decimal? peso,
-        decimal? notaMinima,
-        int? ordem,
-        string? faseCodigo = null,
-        decimal? notaMaxima = null,
-        decimal? passoDoLancamento = null,
-        FormaDeAvaliacao? formaDeAvaliacao = null,
-        ReferenciaRegra? regraConsolidacao = null,
-        IReadOnlyList<ItemDeAvaliacao>? itensDeAvaliacao = null,
-        IReadOnlyList<NivelDeAtendimento>? escalaDeAtendimento = null)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(nome);
-        ArgumentNullException.ThrowIfNull(tipoEtapa);
-        if (id == Guid.Empty)
-        {
-            throw new ArgumentException("A etapa reidratada deve declarar o Id congelado no envelope.", nameof(id));
-        }
-
-        if (carater == CaraterEtapa.Nenhum)
-        {
-            throw new ArgumentException(
-                "Caráter da etapa é obrigatório (classificatória, eliminatória ou ambas).",
-                nameof(carater));
-        }
-
-        EtapaProcesso etapa = new()
-        {
-            Id = id,
-            Nome = nome.Trim(),
-            Carater = carater,
-            TipoEtapa = tipoEtapa,
-            Peso = peso,
-            NotaMinima = notaMinima,
-            NotaMaxima = notaMaxima,
-            PassoDoLancamento = passoDoLancamento,
-            FormaDeAvaliacao = formaDeAvaliacao,
-            RegraConsolidacao = regraConsolidacao,
-            EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(escalaDeAtendimento),
-            Ordem = ordem,
-            FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim(),
-        };
-        etapa.ReporItensCongelados(itensDeAvaliacao ?? []);
-
-        return etapa;
-    }
-
-    /// <summary>
-    /// Uma etapa compõe a nota final quando o seu caráter pontua
-    /// (classificatória ou ambas) e ela declara peso — é o critério que a
-    /// inclui no divisor da média (<see cref="ProcessoSeletivo.CalcularDivisorMedia"/>).
-    /// </summary>
-    public bool ComponeNota => Carater is CaraterEtapa.Classificatoria or CaraterEtapa.Ambas && Peso.HasValue;
-
-    /// <summary>
-    /// A etapa declara que sua nota vem do ENEM — é o atributo do tipo congelado que diz
-    /// isso, e é essa declaração que o motor de classificação consome.
-    /// </summary>
-    public bool DeclaraNotaDoEnem => TipoEtapa.NotaDeOrigemNoEnem;
-
-    /// <summary>
-    /// Atualiza os dados da MESMA etapa (mesmo <see cref="EntityBase.Id"/>) em
-    /// vez de recriá-la — permite que <c>DefinirEtapasCommandHandler</c>
-    /// reconcilie o payload de <c>PUT /etapas</c> com o agregado tracked
-    /// preservando a identidade de uma etapa já referenciada por critério de
-    /// desempate ou regra de eliminação da classificação (sem isso, qualquer
-    /// reconfiguração de etapas quebraria essas referências por construção).
-    /// </summary>
-    public Result AtualizarDados(
-        string nome,
-        CaraterEtapa carater,
-        TipoEtapaSnapshot tipoEtapa,
-        decimal? peso,
-        decimal? notaMinima,
-        int? ordem,
-        string? faseCodigo = null,
-        decimal? notaMaxima = null,
-        decimal? passoDoLancamento = null,
-        FormaDeAvaliacao? formaDeAvaliacao = null,
-        ReferenciaRegra? regraConsolidacao = null,
-        IReadOnlyList<ItemDeAvaliacaoDeclarado>? itensDeAvaliacao = null,
-        IReadOnlyList<NivelDeAtendimento>? escalaDeAtendimento = null)
-    {
-        ArgumentNullException.ThrowIfNull(tipoEtapa);
-
-        List<FieldError> erros = ValidarFormaBasica(
-            nome, carater, peso, notaMinima, ordem, notaMaxima, passoDoLancamento, itensDeAvaliacao, escalaDeAtendimento);
-        erros.AddRange(ValidarAvaliacao(
-            tipoEtapa.NotaDeOrigemNoEnem, passoDoLancamento, formaDeAvaliacao, regraConsolidacao?.Codigo,
-            itensDeAvaliacao?.Count > 0, escalaDeAtendimento?.Count > 0));
-        if (erros.Count > 0)
-        {
-            return Result.ValidationFailure(erros);
-        }
-
-        Nome = nome.Trim();
-        Carater = carater;
-        TipoEtapa = tipoEtapa;
-        Peso = peso;
-        NotaMinima = notaMinima;
-        NotaMaxima = notaMaxima;
-        PassoDoLancamento = passoDoLancamento;
-        FormaDeAvaliacao = formaDeAvaliacao;
-        RegraConsolidacao = regraConsolidacao;
-        EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(escalaDeAtendimento);
-        Ordem = ordem;
-        FaseCodigo = string.IsNullOrWhiteSpace(faseCodigo) ? null : faseCodigo.Trim();
-        ReconciliarItens(itensDeAvaliacao);
-
-        return Result.Success();
-    }
-
-    void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
-        ProcessoSeletivoId = processoSeletivoId;
-
-    /// <summary>
-    /// Substitui os itens reconciliando pelo id: o item declarado com o id de um existente é a
-    /// mesma linha com rótulo e pontuação novos, e é isso que mantém o id estável para quem aponta
-    /// para ele. Sem id, ou com um que a etapa não conhece, é item novo.
-    /// </summary>
-    private void ReconciliarItens(IReadOnlyList<ItemDeAvaliacaoDeclarado>? declarados)
-    {
-        List<ItemDeAvaliacao> vivos = [.. _itensDeAvaliacao];
-        List<ItemDeAvaliacao> finais = [];
-        foreach (ItemDeAvaliacaoDeclarado declarado in declarados ?? [])
-        {
-            ItemDeAvaliacao? existente = declarado.Id is { } id ? vivos.Find(i => i.Id == id) : null;
-            if (existente is null)
-            {
-                finais.Add(ItemDeAvaliacao.Criar(declarado));
-                continue;
-            }
-
-            vivos.Remove(existente);
-            existente.Atualizar(declarado.Rotulo, declarado.PontuacaoMaxima);
-            finais.Add(existente);
-        }
-
-        SubstituirItens(finais);
-    }
-
-    /// <summary>
-    /// Repõe os itens congelados preservando o id: o item vivo de mesmo id é reaproveitado, e o
-    /// congelado que a linha viva não tem entra com o id do envelope.
-    /// </summary>
-    private void ReporItensCongelados(IReadOnlyList<ItemDeAvaliacao> congelados)
-    {
-        List<ItemDeAvaliacao> vivos = [.. _itensDeAvaliacao];
-        List<ItemDeAvaliacao> finais = [];
-        foreach (ItemDeAvaliacao congelado in congelados)
-        {
-            ItemDeAvaliacao? existente = vivos.Find(i => i.Id == congelado.Id);
-            if (existente is null)
-            {
-                finais.Add(congelado);
-                continue;
-            }
-
-            vivos.Remove(existente);
-            existente.Atualizar(congelado.Rotulo, congelado.PontuacaoMaxima);
-            finais.Add(existente);
-        }
-
-        SubstituirItens(finais);
-    }
-
-    private void SubstituirItens(List<ItemDeAvaliacao> itens)
-    {
-        _itensDeAvaliacao.Clear();
-        foreach (ItemDeAvaliacao item in itens)
-        {
-            item.VincularEtapa(Id);
-            _itensDeAvaliacao.Add(item);
-        }
-    }
-
-
-    /// <summary>
-    /// Recusa a contradição entre o que a etapa declara sobre como a nota é obtida, em rascunho
-    /// também: a falta (de forma, de regra, de passo, de banca) é tolerada, porque o gate de
-    /// publicação a cobra, e a recusa que depende do grafo — a etapa sem nota não declara forma —
-    /// também é do gate.
-    /// </summary>
-    /// <remarks>
-    /// A etapa de nota do ENEM não declara forma nem regra: a nota vem do INEP. Quando recusa por
-    /// isso, não repete as demais recusas, que seriam consequência da mesma causa. Recebe só o
-    /// código da regra, para a Application poder rodar a coerência de todas as etapas antes de ler
-    /// o catálogo (ADR-0125); que a regra exista nele e seja do tipo de consolidação é conferido
-    /// por ela (ADR-0042). O código ser do rol conhecido é a defesa do domínio, a mesma que o
-    /// decodificador do envelope aplica ao reidratar.
-    /// </remarks>
-    public static List<FieldError> ValidarAvaliacao(
-        bool notaDeOrigemNoEnem,
-        decimal? passoDoLancamento,
-        FormaDeAvaliacao? forma,
-        string? regraConsolidacaoCodigo,
-        bool declaraItens = false,
-        bool declaraEscala = false)
-    {
-        List<FieldError> erros = [];
-
-        if (notaDeOrigemNoEnem)
-        {
-            if (forma is not null)
-            {
-                erros.Add(new("formaDeAvaliacao", new DomainError(
-                    AvaliacaoNaEtapaDoEnem,
-                    "A etapa de nota do ENEM não declara forma de avaliação: a nota vem do INEP.")));
-            }
-
-            if (regraConsolidacaoCodigo is not null)
-            {
-                erros.Add(new("regraConsolidacao", new DomainError(
-                    AvaliacaoNaEtapaDoEnem,
-                    "A etapa de nota do ENEM não declara regra de consolidação: a nota vem do INEP.")));
-            }
-
-            if (declaraItens)
-            {
-                erros.Add(new("itensDeAvaliacao", new DomainError(
-                    ItensNaEtapaDoEnem,
-                    "A etapa de nota do ENEM não declara itens de avaliação: a nota vem do INEP.")));
-            }
-
-            if (declaraEscala)
-            {
-                erros.Add(new("escalaDeAtendimento", new DomainError(
-                    ItensNaEtapaDoEnem,
-                    "A etapa de nota do ENEM não declara escala de atendimento: a nota vem do INEP.")));
-            }
-
-            return erros;
-        }
-
-        if (regraConsolidacaoCodigo is not null)
-        {
-            if (forma != Enums.FormaDeAvaliacao.Humana)
-            {
-                erros.Add(new("regraConsolidacao", new DomainError(
-                    RegraDeConsolidacaoForaDaFormaHumana,
-                    "A regra de consolidação só se aplica à avaliação humana: com mais de um avaliador é que as notas precisam ser combinadas.")));
-            }
-            else if (!RegraConsolidacaoCodigo.Rol.Contains(regraConsolidacaoCodigo))
-            {
-                erros.Add(new("regraConsolidacao", new DomainError(
-                    RegraDeConsolidacaoInvalida,
-                    $"A regra '{regraConsolidacaoCodigo}' não é uma regra de consolidação do catálogo.")));
-            }
-        }
-
-        if (forma == Enums.FormaDeAvaliacao.Objetiva && passoDoLancamento is not null)
-        {
-            erros.Add(new("passoDoLancamento", new DomainError(
-                PassoNaFormaObjetiva,
-                "O passo do lançamento só se aplica à avaliação humana: na avaliação objetiva ninguém lança a nota.")));
-        }
-
-        if (declaraEscala)
-        {
-            if (!declaraItens)
-            {
-                erros.Add(new("escalaDeAtendimento", new DomainError(
-                    EscalaSemItens,
-                    "A escala de atendimento é aplicada a cada item: sem itens de avaliação, não há o que atender.")));
-            }
-
-            if (forma == Enums.FormaDeAvaliacao.Objetiva)
-            {
-                erros.Add(new("escalaDeAtendimento", new DomainError(
-                    EscalaNaFormaObjetiva,
-                    "A escala de atendimento só se aplica à avaliação humana: na avaliação objetiva ninguém escolhe o nível.")));
-            }
-
-            if (passoDoLancamento is not null)
-            {
-                erros.Add(new("passoDoLancamento", new DomainError(
-                    PassoComEscalaDeAtendimento,
-                    "Com escala de atendimento a banca escolhe o nível e não digita a nota, então a etapa não declara passo do lançamento.")));
-            }
-        }
-
-        return erros;
-    }
-
-    /// <summary>Declara a janela própria da etapa, normalizada para UTC, e o parecer individual.</summary>
-    public Result DefinirJanelaEParecer(DateTimeOffset? inicio, DateTimeOffset? fim, bool emiteParecerIndividual)
-    {
-        if (inicio is not null && fim is not null && fim < inicio)
-        {
-            return Result.Failure(new DomainError(
-                "EtapaProcesso.JanelaInvertida",
-                "O fim da janela da etapa não pode ser anterior ao início."));
-        }
-
-        Inicio = inicio?.ToUniversalTime();
-        Fim = fim?.ToUniversalTime();
-        EmiteParecerIndividual = emiteParecerIndividual;
-        return Result.Success();
-    }
-
-    /// <summary>Substitui as bancas da etapa por inteiro, recusando o mesmo tipo duas vezes.</summary>
-    public Result DefinirBancas(IReadOnlyList<BancaDaEtapa> bancas)
-    {
-        ArgumentNullException.ThrowIfNull(bancas);
-
-        // Normalizado pela mesma razão do ato do produto: o documento canônico emite o código
-        // em NFC, e duas grafias do mesmo código passariam a guarda para depois sair do
-        // envelope como duas bancas de código idêntico.
-        List<string> codigos = [.. bancas.Select(b => HashCanonicalComputer.NormalizeNfc(b.Codigo))];
-        if (codigos.Distinct(StringComparer.Ordinal).Count() != codigos.Count)
-        {
-            return Result.Failure(new DomainError(
-                "EtapaProcesso.BancaDuplicadaNaEtapa",
-                "Cada tipo de banca pode ser requerido uma única vez por etapa."));
-        }
-
-        // Mesma reconciliação dos produtos, pela mesma razão: o código identifica a banca, e a
-        // linha que continua declarada continua sendo a mesma linha.
-        List<BancaDaEtapa> bancasDisponiveis = [.. _bancas];
-        List<BancaDaEtapa> bancasReconciliadas = [];
-        foreach (BancaDaEtapa declarada in bancas)
-        {
-            string codigoDeclarado = HashCanonicalComputer.NormalizeNfc(declarada.Codigo);
-            BancaDaEtapa? existente = bancasDisponiveis.Find(b =>
-                string.Equals(
-                    HashCanonicalComputer.NormalizeNfc(b.Codigo),
-                    codigoDeclarado,
-                    StringComparison.Ordinal));
-
-            if (existente is null)
-            {
-                bancasReconciliadas.Add(declarada);
-                continue;
-            }
-
-            bancasDisponiveis.Remove(existente);
-            existente.ReporOrigem(declarada.TipoBancaOrigemId);
-            bancasReconciliadas.Add(existente);
-        }
-
-        _bancas.Clear();
-        foreach (BancaDaEtapa banca in bancasReconciliadas)
-        {
-            banca.VincularEtapa(Id);
-            _bancas.Add(banca);
-        }
-
-        return Result.Success();
-    }
-
-    /// <summary>
-    /// A violação da âncora das janelas de recurso que a etapa declara, ou
-    /// <see langword="null"/> quando todas se ancoram onde podem. É o predicado que a gravação
-    /// das janelas e o gate de publicação chamam: o estado carregado do banco não passa pela
-    /// gravação, e só o gate o alcança.
-    /// </summary>
-    internal DomainError? ViolacaoDaAncoraDoRecurso() => ViolacaoDaAncoraDoRecurso(_recursos);
-
-    private DomainError? ViolacaoDaAncoraDoRecurso(IReadOnlyCollection<RecursoDaEtapa> recursos)
-    {
-        HashSet<Guid> preliminares =
-            [.. _produtos.Where(p => p.Papel == PapelProdutoFase.Preliminar).Select(p => p.Id)];
-
-        foreach (RecursoDaEtapa recurso in recursos)
-        {
-            // Na etapa de nota do ENEM, o recurso em ato não cabe de modo algum, e a regra do
-            // processo diz isso nomeando o caminho certo (a regra de recurso da fase). Pedir
-            // aqui um preliminar que ela depois recusa mandaria o operador na direção errada.
-            if (recurso.Ancora == AncoraDoRecurso.AtoPublicado && !DeclaraNotaDoEnem && !preliminares.Contains(recurso.ProdutoAncoraId))
-            {
-                return new DomainError(
-                    "EtapaProcesso.AncoraNaoEhProdutoPreliminarDaEtapa",
-                    "O recurso contra ato publicado ancora num resultado preliminar desta etapa — é a publicação dele que abre a janela.");
-            }
-
-            if (recurso.Ancora == AncoraDoRecurso.CienciaIndividual && !EmiteParecerIndividual)
-            {
-                return new DomainError(
-                    "EtapaProcesso.CienciaSemParecerIndividual",
-                    "O prazo que corre da ciência do candidato exige que a etapa prometa parecer individual: é dele que o candidato toma ciência.");
-            }
-        }
-
-        return null;
-    }
-
-    /// <summary>Os tipos de ato cujo preliminar a etapa publica sem o definitivo do mesmo tipo.</summary>
-    internal IEnumerable<string> TiposComCicloAberto() =>
-        CicloRecursal.TiposComCicloAberto(_produtos.Select(static p => (p.AtoCodigo, p.Papel)));
-
-    /// <summary>
-    /// Substitui as janelas recursais por inteiro. Prova o que só a etapa enxerga: a âncora
-    /// em ato referencia um produto preliminar desta etapa; a âncora em ciência exige a
-    /// promessa de parecer individual, porque é dele que corre o prazo; e não há duas
-    /// janelas para o mesmo fato.
-    /// </summary>
-    public Result DefinirRecursos(IReadOnlyList<RecursoDaEtapa> recursos)
-    {
-        ArgumentNullException.ThrowIfNull(recursos);
-
-        if (ViolacaoDaAncoraDoRecurso(recursos) is { } violacaoDaAncora)
-        {
-            return Result.Failure(violacaoDaAncora);
-        }
-
-        List<string> fatos =
-            [.. recursos.Select(r => r.Ancora == AncoraDoRecurso.AtoPublicado
-                ? $"ato:{r.ProdutoAncoraId}"
-                : "ciencia")];
-        if (fatos.Distinct(StringComparer.Ordinal).Count() != fatos.Count)
-        {
-            return Result.Failure(new DomainError(
-                "EtapaProcesso.RecursoDuplicadoNaEtapa",
-                "Cada fato recorrível abre uma janela só: dois prazos para a mesma publicação, ou dois para a ciência, seriam ambíguos."));
-        }
-
-        _recursos.Clear();
-        foreach (RecursoDaEtapa recurso in recursos)
-        {
-            recurso.VincularEtapa(Id);
-            _recursos.Add(recurso);
-        }
-
-        return Result.Success();
     }
 }

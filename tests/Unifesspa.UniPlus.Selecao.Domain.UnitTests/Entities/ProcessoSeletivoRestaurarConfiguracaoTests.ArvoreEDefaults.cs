@@ -222,7 +222,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         VersaoConfiguracao versao = VersaoDo(processo);
 
         GrafoConfiguracao grafo = Grafo(etapas: [
-            EtapaProcesso.Reidratar(EtapaCongelada, "Etapa Que Voltou", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva),
+            EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Etapa Que Voltou", ordem: 1),
         ]);
 
         processo.RestaurarConfiguracaoCongelada(versao, grafo).IsSuccess.Should().BeTrue();

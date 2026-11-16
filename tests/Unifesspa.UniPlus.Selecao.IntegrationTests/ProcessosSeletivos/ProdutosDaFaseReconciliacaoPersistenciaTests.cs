@@ -196,22 +196,12 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
 
     private static FaseCronograma Fase(Guid faseCanonicaOrigemId, IReadOnlyList<ProdutoDaFase> produtos) =>
         FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: faseCanonicaOrigemId,
-            codigo: "HOMOLOGACAO",
-            origemData: OrigemDataFase.NaExecucao,
-            agrupaEtapas: false,
-            permiteComplementacao: false,
-            coletaInscricao: false,
-            coletaSolicitacaoIsencao: false,
-            inicio: null,
-            fim: null,
-            produtos: produtos,
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                OrigemId: faseCanonicaOrigemId, Codigo: "HOMOLOGACAO", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+                ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
 
     private static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos

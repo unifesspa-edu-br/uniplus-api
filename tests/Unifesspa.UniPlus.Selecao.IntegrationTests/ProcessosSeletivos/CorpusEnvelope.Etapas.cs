@@ -34,11 +34,13 @@ internal static partial class CorpusEnvelope
 
     private static EtapaProcesso NovaEtapaObjetiva(int variante, bool permutar) =>
         EtapaProcesso.Reidratar(
-            EtapaId(1, variante), "Prova Objetiva", CaraterEtapa.Ambas, TipoEtapaProvaObjetiva(), peso: 3.5000m, notaMinima: 40.0000m, ordem: 1, notaMaxima: 100.0000m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva,
-            itensDeAvaliacao: Ordem([
+            EtapaId(1, variante),
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: "RESULTADO_PRELIMINAR"),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3.5000m, NotaMinima: 40.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: Ordem([
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(2, variante), "Bloco de Matemática", 40.0000m),
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(1, variante), "Bloco de Linguagens", 60.0000m),
-            ], permutar), faseCodigo: "RESULTADO_PRELIMINAR");
+            ], permutar));
 
     // A MESMA matéria nos dois papéis: é o par que a ordenação canônica precisa desempatar,
     // e é o único caso em que o código do ato não basta para fixar a posição no envelope.
@@ -124,18 +126,23 @@ internal static partial class CorpusEnvelope
             Guid.Empty).Value!;
 
     private static EtapaProcesso EtapaRedacao(int variante) =>
-        EtapaProcesso.Reidratar(EtapaId(2, variante), "Redação", CaraterEtapa.Classificatoria, TipoEtapaRedacao(), peso: 2.2500m, notaMinima: null, ordem: 2, notaMaxima: 100.0000m,
-            formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_PRELIMINAR");
+        EtapaProcesso.Reidratar(
+            EtapaId(2, variante),
+            new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaRedacao(), Ordem: 2, FaseCodigo: "RESULTADO_PRELIMINAR"),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2.2500m, NotaMinima: null, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null);
 
     // A etapa de avaliação humana exige ao menos uma banca para publicar.
     private static EtapaProcesso EtapaEntrevista(int variante, bool permutar)
     {
-        EtapaProcesso etapa = EtapaProcesso.Reidratar(EtapaId(3, variante), "Entrevista", CaraterEtapa.Eliminatoria, TipoEtapaEntrevista(), peso: null, notaMinima: 60.0000m, ordem: 3, notaMaxima: 100.0000m, passoDoLancamento: 0.5000m,
-            formaDeAvaliacao: FormaDeAvaliacao.Humana, regraConsolidacao: Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, 'f'),
-            itensDeAvaliacao: Ordem([
+        EtapaProcesso etapa = EtapaProcesso.Reidratar(
+            EtapaId(3, variante),
+            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaEntrevista(), Ordem: 3, FaseCodigo: "RESULTADO_FINAL"),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 60.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: 0.5000m, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, 'f'), EscalaDeAtendimento: null),
+            itens: Ordem([
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(5, variante), "Primeiro acesso ao ensino superior", 20.5000m),
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(6, variante), "Domínio do conteúdo", 79.5000m),
-            ], permutar), faseCodigo: "RESULTADO_FINAL");
+            ], permutar));
         etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA", "Banca de teste", BancasDeTeste.Regra())]).IsSuccess.Should().BeTrue();
         return etapa;
     }
@@ -145,13 +152,13 @@ internal static partial class CorpusEnvelope
     private static EtapaProcesso EtapaDefesa(int variante, bool permutar)
     {
         EtapaProcesso etapa = EtapaProcesso.Reidratar(
-            EtapaId(4, variante), "Defesa oral", CaraterEtapa.Eliminatoria, TipoEtapaEntrevista(), peso: null, notaMinima: 50.0000m, ordem: 4, notaMaxima: 100.0000m,
-            formaDeAvaliacao: FormaDeAvaliacao.Humana, regraConsolidacao: Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, 'e'),
-            itensDeAvaliacao: Ordem([
+            EtapaId(4, variante),
+            new IdentificacaoDaEtapa(Nome: "Defesa oral", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: TipoEtapaEntrevista(), Ordem: 4, FaseCodigo: "RESULTADO_FINAL"),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 50.0000m, NotaMaxima: 100.0000m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, 'e'), EscalaDeAtendimento: EscalaDeAtendimentoDaDefesa(permutar)),
+            itens: Ordem([
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(4, variante), "Coesão da exposição", 30.0000m),
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(3, variante), "Argumentação", 70.0000m),
-            ], permutar),
-            escalaDeAtendimento: EscalaDeAtendimentoDaDefesa(permutar), faseCodigo: "RESULTADO_FINAL");
+            ], permutar));
         etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA", "Banca de teste", BancasDeTeste.Regra())]).IsSuccess.Should().BeTrue();
         return etapa;
     }

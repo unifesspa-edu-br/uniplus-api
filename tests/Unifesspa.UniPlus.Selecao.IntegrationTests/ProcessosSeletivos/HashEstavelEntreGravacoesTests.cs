@@ -223,9 +223,8 @@ public sealed class HashEstavelEntreGravacoesTests
         processo.DefinirCronogramaFases([FaseDoCertame(UnidadesDeTeste.Ceps)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
-                "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(TipoEtapaOrigem, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                peso: 1m, ordem: 1, faseCodigo: "RESULTADO_FINAL").Value!,
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(TipoEtapaOrigem, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
@@ -233,15 +232,14 @@ public sealed class HashEstavelEntreGravacoesTests
 
     /// <summary>A fase única do certame, sob a unidade dada, sempre por instância nova.</summary>
     private static FaseCronograma FaseDoCertame(UnidadeResponsavelSnapshot unidadeResponsavel) => FaseCronograma.Criar(
-        ordem: 1, faseCanonicaOrigemId: FaseOrigem, codigo: "RESULTADO_FINAL",
-        origemData: OrigemDataFase.NoEdital, agrupaEtapas: true,
-        permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: unidadeResponsavel).Value!;
+        new OrigemCanonicaDaFase(
+            OrigemId: FaseOrigem, Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: unidadeResponsavel),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static DadosEdital DadosDeReferencia() => DadosEdital.Criar(
         "001/2026",

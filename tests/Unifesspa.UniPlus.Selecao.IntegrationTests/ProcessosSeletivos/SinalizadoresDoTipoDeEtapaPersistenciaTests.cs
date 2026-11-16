@@ -31,9 +31,12 @@ public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSVR", TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         TipoEtapaSnapshot soElimina = TipoEtapaSnapshot.Criar(
             Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise documental", admitePontuacao: false, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
-        EtapaProcesso etapa = EtapaProcesso.Criar("Análise documental", CaraterEtapa.Eliminatoria, soElimina, peso: null, notaMinima: 5m, ordem: 1).Value!;
-        EtapaProcesso prova = EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(
-            Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 2).Value!;
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Análise documental", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: soElimina, Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 5m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
+        EtapaProcesso prova = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Prova", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 2, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         processo.DefinirEtapas([etapa, prova], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
@@ -54,7 +57,8 @@ public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<
 
             // O caminho do handler quando o caráter da etapa muda e o tipo relido passou a pontuar.
             tracked.AtualizarDados(
-                "Análise documental", CaraterEtapa.Ambas, tracked.TipoEtapa.ComSinalizadores(true, true), 1m, 5m, 1)
+                new IdentificacaoDaEtapa(Nome: "Análise documental", Carater: CaraterEtapa.Ambas, TipoEtapa: tracked.TipoEtapa.ComSinalizadores(true, true), Ordem: 1, FaseCodigo: null),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: 5m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null))
                 .IsSuccess.Should().BeTrue();
             await configureContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -74,10 +78,12 @@ public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<
     public async Task NotaDeOrigemNoEnem_PersisteERegravacaoAPreserva()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2027 — Medicina", TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        EtapaProcesso doEnem = EtapaProcesso.Criar("Nota do ENEM", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(
-            Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, peso: 1m, ordem: 1).Value!;
-        EtapaProcesso prova = EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(
-            Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 2).Value!;
+        EtapaProcesso doEnem = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
+        EtapaProcesso prova = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Prova", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 2, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         processo.DefinirEtapas([doEnem, prova], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
@@ -97,7 +103,8 @@ public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<
             carregado.Etapas.Single(e => e.Id == prova.Id).DeclaraNotaDoEnem.Should().BeFalse();
 
             tracked.AtualizarDados(
-                "Nota do ENEM", CaraterEtapa.Classificatoria, tracked.TipoEtapa.ComSinalizadores(true, false), 1m, null, 1)
+                new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: tracked.TipoEtapa.ComSinalizadores(true, false), Ordem: 1, FaseCodigo: null),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null))
                 .IsSuccess.Should().BeTrue();
             await configureContext.SaveChangesAsync(CancellationToken.None);
         }

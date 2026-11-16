@@ -96,7 +96,9 @@ public sealed class DefinirEtapasNotaDoEnemTests
         ProcessoSeletivo processo = ProcessoSemEtapas();
         TipoEtapaSnapshot doEnem = TipoEtapaSnapshot.Criar(
             TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!;
-        EtapaProcesso etapa = EtapaProcesso.Criar("Nota do ENEM", CaraterEtapa.Classificatoria, doEnem, 1m, ordem: 1).Value!;
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: doEnem, Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);

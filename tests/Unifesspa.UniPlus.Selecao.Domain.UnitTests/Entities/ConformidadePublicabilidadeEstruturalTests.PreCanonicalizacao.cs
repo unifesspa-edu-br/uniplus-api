@@ -25,6 +25,31 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed partial class ConformidadePublicabilidadeEstruturalTests
 {
+    private static FaseCronograma FaseDeHomologacao() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "HOMOLOGACAO", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            2, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
+    private static void ReferenciarOFimDaFase(ProcessoSeletivo processo, FaseCronograma fase) =>
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, fase.Id).Value!, PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+    private static void ExigirDeclaracaoDeMaioridade(ProcessoSeletivo processo, Guid faseId)
+    {
+        DocumentoExigido exigencia = DocumentoExigido.Criar(
+            faseId, Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
+            condicoes: [GatilhoFaixaEtaria()], basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+    }
+
     [Fact(DisplayName = "Pré-canonicalização: referência temporal aponta para fase removida depois — item vermelho e Publicar recusa com ReferenciaTemporalFatosFaseInexistente")]
     public void PreCanon_ReferenciaTemporalFatosFaseInexistente()
     {
@@ -33,69 +58,47 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         // temporal (será removida DEPOIS, deixando a referência órfã — §3.5-like, mas para
         // ReferenciaTemporalFatos, que DefinirCronogramaFases não guarda contra remoção).
         FaseCronograma faseComExigencia = FaseBase();
-        FaseCronograma faseAncora = FaseCronograma.Criar(
-            2, Guid.CreateVersion7(), "HOMOLOGACAO", OrigemDataFase.NoEdital,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        FaseCronograma faseAncora = FaseDeHomologacao();
         processo.DefinirCronogramaFases([faseComExigencia, faseAncora], [], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseComExigencia.Id, Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [GatilhoFaixaEtaria()], basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
+        ExigirDeclaracaoDeMaioridade(processo, faseComExigencia.Id);
 
-        processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseAncora.Id).Value!, PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
+        ReferenciarOFimDaFase(processo, faseAncora);
 
         // Remove a fase-âncora do cronograma — só faseComExigencia sobrevive (mesma
         // FaseCanonicaOrigemId, então DefinirDocumentosExigidos.ExigidoNaFaseId não fica órfão).
         processo.DefinirCronogramaFases([faseComExigencia], [], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("referencia_temporal_fase_fora_do_cronograma");
+        SoEstesItensVermelhos(processo, "referencia_temporal_fase_fora_do_cronograma");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosFaseInexistente");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.ReferenciaTemporalFatosFaseInexistente");
     }
+
+    private static FaseCronograma FaseDeHomologacaoNaOrdem2() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "HOMOLOGACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     [Fact(DisplayName = "Pré-canonicalização: referência temporal aponta para fase sem o extremo definido — item vermelho e Publicar recusa com ReferenciaTemporalFatosExtremoAusente")]
     public void PreCanon_ReferenciaTemporalFatosExtremoAusente()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        FaseCronograma faseSemExtremo = FaseCronograma.Criar(
-            2, Guid.CreateVersion7(), "HOMOLOGACAO", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        FaseCronograma faseSemExtremo = FaseDeHomologacaoNaOrdem2();
         processo.DefinirCronogramaFases([FaseBase(), faseSemExtremo], [], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
         Guid faseComExigenciaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseComExigenciaId, Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [GatilhoFaixaEtaria()], basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
+        ExigirDeclaracaoDeMaioridade(processo, faseComExigenciaId);
 
-        processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseSemExtremo.Id).Value!, PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
+        ReferenciarOFimDaFase(processo, faseSemExtremo);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("referencia_temporal_extremo_da_fase_ausente");
+        SoEstesItensVermelhos(processo, "referencia_temporal_extremo_da_fase_ausente");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente");
     }
 
     [Fact(DisplayName = "Pré-canonicalização: FIM_INSCRICAO sem fase de coleta com Fim definido — item vermelho e Publicar recusa com ReferenciaTemporalFatosFimInscricaoIndisponivel")]
@@ -115,12 +118,9 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!, PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("referencia_temporal_fim_inscricao_indisponivel");
+        SoEstesItensVermelhos(processo, "referencia_temporal_fim_inscricao_indisponivel");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel");
     }
 
     [Fact(DisplayName = "Pré-canonicalização: regra de derivação cita fato que o processo não coleta nem deriva — item vermelho e Publicar recusa com FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado")]
@@ -134,8 +134,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirRegrasDerivacao([configuracao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
             "a definição isolada só valida forma e unicidade — não conhece o universo de fatos do processo");
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("derivacao_fatos_citados_inexistentes");
+        SoEstesItensVermelhos(processo, "derivacao_fatos_citados_inexistentes");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsFailure.Should().BeTrue();
@@ -160,9 +159,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.FatoColetadoSemValoresOfertados");
     }
 
     [Fact(DisplayName = "TIPO_DEFICIENCIA com os tipos do cadastro não depende do atendimento especializado: sem tipo ofertado, o processo publica")]
@@ -195,9 +192,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.FatoColetadoSemValoresOfertados");
     }
 
     private static FatoColetado CampoRecursoAcessibilidade() => FatoColetado.Criar(
@@ -214,9 +209,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.FatoColetadoSemValoresOfertados");
     }
 
     [Fact(DisplayName = "Fato coletável RECURSO_ACESSIBILIDADE oferece os recursos do atendimento especializado, pelo código, e o processo publica")]

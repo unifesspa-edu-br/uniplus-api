@@ -25,7 +25,9 @@ public sealed class DefinirEtapasCaraterDoTipoTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         decimal? peso = carater is CaraterEtapa.Eliminatoria ? null : 1m;
-        etapa = EtapaProcesso.Criar("Prova Objetiva", carater, TipoEtapaProvaObjetiva(), peso, ordem: 1).Value!;
+        etapa = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: carater, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         // Falha aqui é fixture inválida, não cenário: sem a asserção o processo voltaria sem
         // etapa nenhuma e o teste morreria depois, longe da causa.
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente)
@@ -85,9 +87,12 @@ public sealed class DefinirEtapasCaraterDoTipoTests
         ProcessoSeletivo processo = ProcessoSemEtapas();
         TipoEtapaSnapshot semPontuacao = TipoEtapaSnapshot.Criar(
             TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: false, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
-        EtapaProcesso eliminatoria = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Eliminatoria, semPontuacao, null, notaMinima: 5m, ordem: 1).Value!;
-        EtapaProcesso redacao = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(
-            TipoRedacaoOrigemId, "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, ordem: 2).Value!;
+        EtapaProcesso eliminatoria = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: semPontuacao, Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 5m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
+        EtapaProcesso redacao = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(TipoRedacaoOrigemId, "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 2, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         processo.DefinirEtapas([eliminatoria, redacao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -163,8 +168,12 @@ public sealed class DefinirEtapasCaraterDoTipoTests
         ProcessoSeletivo processo = ProcessoSemEtapas();
         TipoEtapaSnapshot congelado = TipoEtapaSnapshot.Criar(
             TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
-        EtapaProcesso primeira = EtapaProcesso.Criar("Objetiva I", CaraterEtapa.Classificatoria, congelado, 1m, ordem: 1).Value!;
-        EtapaProcesso segunda = EtapaProcesso.Criar("Objetiva II", CaraterEtapa.Classificatoria, congelado.ComSinalizadores(true, true), 1m, ordem: 2).Value!;
+        EtapaProcesso primeira = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Objetiva I", Carater: CaraterEtapa.Classificatoria, TipoEtapa: congelado, Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
+        EtapaProcesso segunda = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Objetiva II", Carater: CaraterEtapa.Classificatoria, TipoEtapa: congelado.ComSinalizadores(true, true), Ordem: 2, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         processo.DefinirEtapas([primeira, segunda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -196,8 +205,9 @@ public sealed class DefinirEtapasCaraterDoTipoTests
     public async Task Handle_TipoDesativadoECaraterAlterado_ConfereContraOSnapshot(bool snapshotAdmiteEliminacao, bool aceito)
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
-        EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(
-            TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: snapshotAdmiteEliminacao, notaDeOrigemNoEnem: false).Value!, 1m, ordem: 1).Value!;
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: snapshotAdmiteEliminacao, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);

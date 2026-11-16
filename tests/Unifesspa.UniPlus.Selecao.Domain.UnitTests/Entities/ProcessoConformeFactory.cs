@@ -57,9 +57,8 @@ internal static class ProcessoConformeFactory
 
     private static EtapaProcesso EtapaDaProvaObjetiva(string faseCodigo) =>
         EtapaProcesso.Criar(
-            "Prova", CaraterEtapa.Classificatoria,
-            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-            peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: faseCodigo).Value!;
+            new IdentificacaoDaEtapa(Nome: "Prova", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: faseCodigo),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     /// <param name="declararTaxa">
     /// Falso deixa a taxa por declarar, único jeito de exercitar a recusa correspondente.
@@ -122,13 +121,14 @@ internal static class ProcessoConformeFactory
         RegraRecursoFase? regraRecurso = null, bool semUnidadeResponsavel = false, IReadOnlyList<BancaRequerida>? bancas = null)
     {
         Result<FaseCronograma> fase = FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL", origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: ProdutosDaFaseConforme(comRecurso: regraRecurso is not null),
-            faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: bancas ?? (regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()]),
-            regraRecurso: regraRecurso, unidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps);
+            new OrigemCanonicaDaFase(
+                OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
+                ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(
+                Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+                UnidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: ProdutosDaFaseConforme(comRecurso: regraRecurso is not null), EmiteParecerIndividual: false, RegraRecurso: regraRecurso),
+            bancasRequeridas: bancas ?? (regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()]));
 
         fase.IsSuccess.Should().BeTrue(fase.Error?.Message);
         return fase.Value!;

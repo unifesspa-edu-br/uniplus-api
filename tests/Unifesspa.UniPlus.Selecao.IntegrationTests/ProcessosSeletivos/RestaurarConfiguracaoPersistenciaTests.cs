@@ -297,11 +297,9 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
             // Troca o rótulo de um item, mantendo o id, e acrescenta um item novo no lugar do outro.
             ItemDeAvaliacao matematica = objetiva.ItensDeAvaliacao.Single(i => i.Rotulo == "Bloco de Matemática");
             objetiva.AtualizarDados(
-                objetiva.Nome, objetiva.Carater, objetiva.TipoEtapa, objetiva.Peso, objetiva.NotaMinima, objetiva.Ordem,
-                objetiva.FaseCodigo, objetiva.NotaMaxima, objetiva.PassoDoLancamento,
-                objetiva.FormaDeAvaliacao, objetiva.RegraConsolidacao,
-                [new(matematica.Id, "Bloco de Exatas", 40m), new(null, "Bloco de Humanidades", 60m)],
-                escalaDeAtendimento: null).IsSuccess.Should().BeTrue();
+                new IdentificacaoDaEtapa(Nome: objetiva.Nome, Carater: objetiva.Carater, TipoEtapa: objetiva.TipoEtapa, Ordem: objetiva.Ordem, FaseCodigo: objetiva.FaseCodigo),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: objetiva.Peso, NotaMinima: objetiva.NotaMinima, NotaMaxima: objetiva.NotaMaxima, PassoDoLancamento: objetiva.PassoDoLancamento, FormaDeAvaliacao: objetiva.FormaDeAvaliacao, RegraConsolidacao: objetiva.RegraConsolidacao, EscalaDeAtendimento: null),
+                [new(matematica.Id, "Bloco de Exatas", 40m), new(null, "Bloco de Humanidades", 60m)]).IsSuccess.Should().BeTrue();
 
             await sessao.SaveChangesAsync();
         }

@@ -266,6 +266,16 @@ public sealed partial class EnvelopeCodecRoundTripTests
             resolucaoPesoAreaEnem: null,
             quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, etapaDeNotaDoEnem: false);
 
+    private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     /// <summary>
     /// O menor processo publicável, com a classificação informada e uma etapa só, que é a de nota
     /// do ENEM quando <paramref name="etapaDeNotaDoEnem"/> é verdadeiro.
@@ -277,29 +287,12 @@ public sealed partial class EnvelopeCodecRoundTripTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         processo.DefinirCronogramaFases([
-            FaseCronograma.Criar(
-                ordem: 1,
-                faseCanonicaOrigemId: Guid.CreateVersion7(),
-                codigo: "RESULTADO_FINAL",
-                origemData: OrigemDataFase.NoEdital,
-                agrupaEtapas: true,
-                permiteComplementacao: false,
-                coletaInscricao: true, coletaSolicitacaoIsencao: false,
-                inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-                fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-                produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-                faseConcluinteCodigo: null,
-                emiteParecerIndividual: false,
-                bancasRequeridas: [],
-                regraRecurso: null,
-                unidadeResponsavel: UnidadesDeTeste.Ceps).Value!,
+            FaseDeResultadoFinal(),
         ], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
-                "Prova Objetiva", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: etapaDeNotaDoEnem).Value!,
-                peso: 1m, ordem: 1, notaMaxima: etapaDeNotaDoEnem ? null : 10m,
-            formaDeAvaliacao: etapaDeNotaDoEnem ? null : FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: etapaDeNotaDoEnem).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: etapaDeNotaDoEnem ? null : 10m, PassoDoLancamento: null, FormaDeAvaliacao: etapaDeNotaDoEnem ? null : FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirAtendimentoEspecializado(

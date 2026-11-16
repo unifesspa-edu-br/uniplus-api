@@ -113,12 +113,12 @@ internal static class ApoioDoDescarteAposDeslocamentoDeOrdem
         string? faseConcluinteCodigo = null,
         RegraRecursoFase? regraRecurso = null) =>
         FaseCronograma.Criar(
-            ordem, faseCanonicaOrigemId, codigo, OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: null, fim: null,
-            produtos, faseConcluinteCodigo, emiteParecerIndividual: false,
-            bancasRequeridas: BancasDaFase(regraRecurso), regraRecurso, UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                OrigemId: faseCanonicaOrigemId, Codigo: codigo, OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+                ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: faseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: regraRecurso),
+            bancasRequeridas: BancasDaFase(regraRecurso)).Value!;
 
     internal static FaseCronograma FaseReidratada(
         int ordem,
@@ -128,12 +128,13 @@ internal static class ApoioDoDescarteAposDeslocamentoDeOrdem
         string? faseConcluinteCodigo,
         RegraRecursoFase? regraRecurso = null) =>
         FaseCronograma.Reidratar(
-            Guid.CreateVersion7(), ordem, faseCanonicaOrigemId, codigo, OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: null, fim: null,
-            produtos, faseConcluinteCodigo, emiteParecerIndividual: false,
-            bancasRequeridas: BancasDaFase(regraRecurso), regraRecurso, UnidadesDeTeste.Ceps);
+            Guid.CreateVersion7(),
+            new OrigemCanonicaDaFase(
+                OrigemId: faseCanonicaOrigemId, Codigo: codigo, OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+                ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: faseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: regraRecurso),
+            bancasRequeridas: BancasDaFase(regraRecurso));
 
     internal static BancaRequerida[] BancasDaFase(RegraRecursoFase? regraRecurso) =>
         regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()];

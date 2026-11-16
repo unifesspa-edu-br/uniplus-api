@@ -35,6 +35,46 @@ public static class AlinhamentoDasBancasDaEtapa
         }
     }
 
+    /// <summary>
+    /// Se duas das bancas têm o mesmo código. O código é comparado em NFC, como o documento canônico o
+    /// emite: duas grafias do mesmo código passariam a guarda para depois sair do envelope como duas
+    /// bancas de código idêntico.
+    /// </summary>
+    internal static bool CodigoRepetido(IEnumerable<BancaDaEtapa> bancas)
+    {
+        List<string> codigos = [.. bancas.Select(static b => HashCanonicalComputer.NormalizeNfc(b.Codigo))];
+
+        return codigos.Distinct(StringComparer.Ordinal).Count() != codigos.Count;
+    }
+
+    /// <summary>
+    /// As bancas que a etapa passa a ter: a linha viva de mesmo código é reaproveitada, com o tipo de
+    /// origem reposto nela, e a banca sem linha viva entra como chegou. O código identifica a banca, e a
+    /// linha que continua declarada continua sendo a mesma linha, senão a mesma transação removeria e
+    /// inseriria o mesmo código no índice único da etapa. Cada linha viva é consumida no máximo uma vez.
+    /// </summary>
+    /// <returns>As bancas que ficam, na ordem das declaradas ou congeladas.</returns>
+    internal static List<BancaDaEtapa> Reconciliar(IEnumerable<BancaDaEtapa> vivas, IEnumerable<BancaDaEtapa> declaradas)
+    {
+        List<BancaDaEtapa> disponiveis = [.. vivas];
+
+        return [.. declaradas.Select(declarada => ReaproveitarOuAdotar(disponiveis, declarada))];
+    }
+
+    private static BancaDaEtapa ReaproveitarOuAdotar(List<BancaDaEtapa> disponiveis, BancaDaEtapa declarada)
+    {
+        BancaDaEtapa? viva = disponiveis.Find(candidata => MesmoCodigo(candidata, declarada));
+        if (viva is null)
+        {
+            return declarada;
+        }
+
+        disponiveis.Remove(viva);
+        viva.ReporOrigem(declarada.TipoBancaOrigemId);
+
+        return viva;
+    }
+
     private static bool MesmoCodigo(BancaDaEtapa viva, BancaDaEtapa declarada) =>
         string.Equals(
             HashCanonicalComputer.NormalizeNfc(viva.Codigo),

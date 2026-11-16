@@ -215,13 +215,13 @@ internal static class CicloRecursalDoCronograma
     /// <summary>
     /// A primeira violação da âncora das janelas de recurso das etapas, ou
     /// <see langword="null"/> quando toda janela se ancora onde pode. Chama o mesmo predicado de
-    /// <see cref="EtapaProcesso"/> que a gravação das janelas chama.
+    /// <see cref="JanelasRecursaisDaEtapa"/> que a gravação das janelas chama.
     /// </summary>
     internal static DomainError? PendenciaDaAncoraDoRecursoDasEtapas(EstadoDaConfiguracao estado)
     {
         foreach (EtapaProcesso etapa in estado.Etapas)
         {
-            if (etapa.ViolacaoDaAncoraDoRecurso() is { } violacao)
+            if (JanelasRecursaisDaEtapa.ViolacaoDaAncora(etapa, etapa.Recursos) is { } violacao)
             {
                 return violacao;
             }

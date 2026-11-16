@@ -51,7 +51,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         Estado antes = Estado.De(processo);
 
         GrafoConfiguracao invalido = Grafo(
-            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
+            etapas: [EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Prova", ordem: 1)],
             eliminacoes: [
                 RegraEliminacao.Criar(
                     Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, 'e'),
@@ -147,7 +147,11 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     public void Restaurar_EtapaNotaEnemForaDaMedia_Recusa(CaraterEtapa carater)
     {
         ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.PSIQ);
-        EtapaProcesso etapa = EtapaProcesso.Reidratar(EtapaCongelada, "Nota do ENEM", carater, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, null, null, 1);
+        EtapaProcesso etapa = EtapaProcesso.Reidratar(
+            EtapaCongelada,
+            new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(
             VersaoDo(processo),
@@ -339,4 +343,13 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
         Estado.De(processo).Should().BeEquivalentTo(antes);
     }
+
+    private static EtapaProcesso EtapaCongeladaDeProvaObjetiva(
+        Guid id, string nome, int ordem, string? faseCodigo = null, decimal peso = 1m, decimal? notaMinima = null,
+        CaraterEtapa carater = CaraterEtapa.Classificatoria) =>
+        EtapaProcesso.Reidratar(
+            id,
+            new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: faseCodigo),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: notaMinima, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null);
 }

@@ -43,7 +43,9 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe("PROVA_OBJETIVA"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!],
+            [EtapaProcesso.Criar(
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe("PROVA_OBJETIVA"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ObrigatoriedadeLegal regraAprovada = NovaRegra("CONSULTA-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
@@ -321,6 +323,15 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
             "é o que a publicação recusa primeiro — a recusa que sai é a que orienta o operador");
     }
 
+    private static FaseCronograma FaseDeInscricaoComJanelaParcial(bool temInicio, bool temFim) => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            1, Inicio: temInicio ? InstanteEmBelem.Em(2026, 1, 1) : null, Fim: temFim ? InstanteEmBelem.Em(2026, 2, 1) : null, FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     [Theory(DisplayName = "#1456 — janela MEIO-ABERTA da fase âncora recusa como o gate, e não responde 200")]
     [InlineData(true, false)]
     [InlineData(false, true)]
@@ -330,39 +341,23 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // do `Inicio` deixava a consulta aprovar um rascunho que a publicação recusa — meia
         // janela é estado válido de cadastro, e a divergência apareceria exatamente aí.
         ProcessoSeletivo processo = ProcessoBase();
-        FaseCronograma meiaJanela = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true,
-            coletaSolicitacaoIsencao: false,
-            inicio: temInicio ? InstanteEmBelem.Em(2026, 1, 1) : null,
-            fim: temFim ? InstanteEmBelem.Em(2026, 2, 1) : null,
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        FaseCronograma meiaJanela = FaseDeInscricaoComJanelaParcial(temInicio, temFim);
         processo.DefinirCronogramaFases([meiaJanela], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
-
-        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta =
-            await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
-                new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id),
-                processoSeletivoRepository,
-                obrigatoriedadeLegalRepository,
-                CadastrosVivos.Modalidades(),
-                CadastrosVivos.TiposDocumento(),
-                CadastrosVivos.TiposEtapa(),
-                CadastrosVivos.TiposDeficiencia(),
-                CadastrosVivos.RegrasDesempate(),
-                new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
-                CancellationToken.None);
+        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await ConsultarAsync(processo);
 
         resultadoDaConsulta.IsFailure.Should().BeTrue(
             "o gate recusa a janela meio-aberta, e a consulta responde pelo mesmo veredicto");
         resultadoDaConsulta.Error!.Code.Should().Be("ProcessoSeletivo.FaseQueColetaInscricaoSemJanela");
     }
+
+    private static FaseCronograma FaseDeInscricaoNaOrdem1() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     [Fact(DisplayName = "#1456 — fase que coleta inscrição sem janela recusa com FaseQueColetaInscricaoSemJanela (422), nunca com 404")]
     public async Task FaseDeColetaSemJanela_RecusaComOCodigoDoGate()
@@ -371,37 +366,34 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // Revisão. O gate recusa a publicação com este código; a consulta tem de dizer o mesmo,
         // para a tela apontar o cronograma em vez de mandar tentar de novo.
         ProcessoSeletivo processo = ProcessoBase();
-        FaseCronograma faseSemJanela = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true,
-            coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        FaseCronograma faseSemJanela = FaseDeInscricaoNaOrdem1();
         processo.DefinirCronogramaFases([faseSemJanela], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
-            .Returns(processo);
-        IObrigatoriedadeLegalRepository obrigatoriedadeLegalRepository = Substitute.For<IObrigatoriedadeLegalRepository>();
-
-        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta =
-            await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
-                new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id),
-                processoSeletivoRepository,
-                obrigatoriedadeLegalRepository,
-                CadastrosVivos.Modalidades(),
-                CadastrosVivos.TiposDocumento(),
-                CadastrosVivos.TiposEtapa(),
-                CadastrosVivos.TiposDeficiencia(),
-                CadastrosVivos.RegrasDesempate(),
-                new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
-                CancellationToken.None);
+        Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await ConsultarAsync(processo);
 
         resultadoDaConsulta.IsFailure.Should().BeTrue();
         resultadoDaConsulta.Error!.Code.Should().Be(
             "ProcessoSeletivo.FaseQueColetaInscricaoSemJanela",
             "o mesmo código que ProcessoSeletivo.Publicar recusa — a pendência é da fase, não do período do ato");
+    }
+
+    private static async Task<Result<ConformidadeLegalProcessoSeletivoDto>> ConsultarAsync(ProcessoSeletivo processo)
+    {
+        IProcessoSeletivoRepository processoSeletivoRepository = Substitute.For<IProcessoSeletivoRepository>();
+        processoSeletivoRepository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>())
+            .Returns(processo);
+        return await ObterConformidadeLegalProcessoSeletivoQueryHandler.Handle(
+            new ObterConformidadeLegalProcessoSeletivoQuery(processo.Id),
+            processoSeletivoRepository,
+            Substitute.For<IObrigatoriedadeLegalRepository>(),
+            CadastrosVivos.Modalidades(),
+            CadastrosVivos.TiposDocumento(),
+            CadastrosVivos.TiposEtapa(),
+            CadastrosVivos.TiposDeficiencia(),
+            CadastrosVivos.RegrasDesempate(),
+            new ResolvedorFusoDeTeste(), CadastrosVivos.CatalogoDeFatos(),
+            CancellationToken.None);
     }
 
     private static ProcessoSeletivo ProcessoBase() =>

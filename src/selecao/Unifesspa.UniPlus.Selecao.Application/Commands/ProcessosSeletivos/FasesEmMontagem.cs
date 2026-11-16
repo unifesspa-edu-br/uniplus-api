@@ -163,14 +163,22 @@ internal sealed class FasesEmMontagem
     private void CriarFase(
         FaseCronogramaInput input, int indice, InsumosDaFase insumos, List<ProdutoDaFase> produtos, RegraRecursoFase? regraRecurso)
     {
-        FaseCanonicaView canonica = insumos.Canonica;
         Result<FaseCronograma> fase = FaseCronograma.Criar(
-            input.Ordem, canonica.Id, canonica.Codigo, OrigemDataFaseCodigo.FromCodigo(canonica.OrigemData),
-            canonica.AgrupaEtapas, canonica.PermiteComplementacao, canonica.ColetaInscricao, canonica.ColetaSolicitacaoIsencao,
-            input.Inicio, input.Fim, produtos, input.FaseConcluinteCodigo, input.EmiteParecerIndividual,
-            insumos.Bancas, regraRecurso, insumos.Unidade);
+            OrigemCanonicaDe(insumos.Canonica),
+            new(input.Ordem, input.Inicio, input.Fim, input.FaseConcluinteCodigo, insumos.Unidade),
+            new(produtos, input.EmiteParecerIndividual, regraRecurso),
+            insumos.Bancas);
         Acumular(fase, indice);
     }
+
+    private static OrigemCanonicaDaFase OrigemCanonicaDe(FaseCanonicaView canonica) => new(
+        canonica.Id,
+        canonica.Codigo,
+        OrigemDataFaseCodigo.FromCodigo(canonica.OrigemData),
+        canonica.AgrupaEtapas,
+        canonica.PermiteComplementacao,
+        canonica.ColetaInscricao,
+        canonica.ColetaSolicitacaoIsencao);
 
     private void Acumular(Result<FaseCronograma> fase, int indice)
     {

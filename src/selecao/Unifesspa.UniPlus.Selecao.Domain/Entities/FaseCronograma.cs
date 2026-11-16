@@ -92,34 +92,26 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// <summary>Verdadeiro quando a fase abre a janela de pedido de isenção da taxa.</summary>
     public bool ColetaSolicitacaoIsencao { get; private set; }
 
+    private static readonly FinalidadeFormulario[] FinalidadesNaOrdemDeApresentacao =
+        [FinalidadeFormulario.Inscricao, FinalidadeFormulario.IsencaoTaxa, FinalidadeFormulario.Habilitacao];
+
     /// <summary>
     /// As finalidades cujo formulário se responde nesta fase: a inscrição na fase que a coleta, a
     /// isenção na que abre o pedido e a habilitação na fase de habilitação. Inscrição e isenção podem
     /// dividir a mesma fase.
     /// </summary>
-    public IReadOnlyList<FinalidadeFormulario> FinalidadesQueAtende()
-    {
-        List<FinalidadeFormulario> finalidades = [];
-        if (ColetaInscricao)
-        {
-            finalidades.Add(FinalidadeFormulario.Inscricao);
-        }
-
-        if (ColetaSolicitacaoIsencao)
-        {
-            finalidades.Add(FinalidadeFormulario.IsencaoTaxa);
-        }
-
-        if (string.Equals(Codigo, FormularioProcesso.CodigoFaseHabilitacao, StringComparison.Ordinal))
-        {
-            finalidades.Add(FinalidadeFormulario.Habilitacao);
-        }
-
-        return finalidades;
-    }
+    public IReadOnlyList<FinalidadeFormulario> FinalidadesQueAtende() =>
+        [.. FinalidadesNaOrdemDeApresentacao.Where(Atende)];
 
     /// <summary>Se o formulário da finalidade se responde nesta fase.</summary>
-    public bool Atende(FinalidadeFormulario finalidade) => FinalidadesQueAtende().Contains(finalidade);
+    public bool Atende(FinalidadeFormulario finalidade) => finalidade switch
+    {
+        FinalidadeFormulario.Inscricao => ColetaInscricao,
+        FinalidadeFormulario.IsencaoTaxa => ColetaSolicitacaoIsencao,
+        FinalidadeFormulario.Habilitacao =>
+            string.Equals(Codigo, FormularioProcesso.CodigoFaseHabilitacao, StringComparison.Ordinal),
+        _ => false,
+    };
 
     /// <summary>
     /// Início da janela, sempre em UTC (<c>Offset</c> zero) — ver o <c>&lt;remarks&gt;</c> da
@@ -196,140 +188,29 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// (<see cref="ProcessoSeletivo.DefinirCronogramaFases"/>), que tem acesso ao
     /// cronograma inteiro e às etapas.
     /// </summary>
+    /// <remarks>
+    /// Os valores recebidos são conferidos antes de qualquer filha ser vinculada: numa criação
+    /// recusada, produtos, bancas e regra de recurso continuam sem fase. As mensagens citam o código
+    /// como chegou, sem aparar. As recusas de negócio acumulam (ADR-0125) porque são independentes
+    /// entre si; a ordem, a origem canônica e a origem da data são erro de programação e só lançam.
+    /// </remarks>
     public static Result<FaseCronograma> Criar(
-        int ordem,
-        Guid faseCanonicaOrigemId,
-        string codigo,
-        OrigemDataFase origemData,
-        bool agrupaEtapas,
-        bool permiteComplementacao,
-        bool coletaInscricao,
-        bool coletaSolicitacaoIsencao,
-        DateTimeOffset? inicio,
-        DateTimeOffset? fim,
-        IReadOnlyList<ProdutoDaFase> produtos,
-        string? faseConcluinteCodigo,
-        bool emiteParecerIndividual,
-        IReadOnlyList<BancaRequerida> bancasRequeridas,
-        RegraRecursoFase? regraRecurso,
-        UnidadeResponsavelSnapshot? unidadeResponsavel)
+        OrigemCanonicaDaFase origem,
+        DecisoesDeCronogramaDaFase cronograma,
+        PublicacoesDaFase publicacoes,
+        IReadOnlyList<BancaRequerida> bancasRequeridas)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
-        ArgumentNullException.ThrowIfNull(produtos);
-        ArgumentNullException.ThrowIfNull(bancasRequeridas);
+        ExigirDeclaracaoPresente(origem, cronograma, publicacoes, bancasRequeridas);
+        ExigirValoresDeCriacao(cronograma.Ordem, origem.OrigemId, origem.OrigemData);
 
-        // A janela é fixada em UTC ANTES das validações, para que a mensagem de
-        // JanelaInvertida e o valor gravado falem da mesma representação do instante.
-        inicio = EmUtc(inicio);
-        fim = EmUtc(fim);
-
-        if (ordem <= 0)
+        List<FieldError> violacoes = ViolacoesDaDeclaracao(origem, cronograma, publicacoes, bancasRequeridas);
+        if (violacoes.Count > 0)
         {
-            throw new ArgumentException("A ordem da fase deve ser maior que zero.", nameof(ordem));
+            return Result<FaseCronograma>.ValidationFailure(violacoes);
         }
 
-        if (faseCanonicaOrigemId == Guid.Empty)
-        {
-            throw new ArgumentException("O id de origem da fase canônica é obrigatório.", nameof(faseCanonicaOrigemId));
-        }
-
-        if (origemData == OrigemDataFase.Nenhuma)
-        {
-            throw new ArgumentException("A origem da data da fase é obrigatória.", nameof(origemData));
-        }
-
-        // Acumula (ADR-0125) as checagens abaixo — todas independentes entre si, nenhuma
-        // decide o que checar a partir do resultado de outra. Diferente das demais fatias
-        // desta rolagem, NÃO há uma "ValidarFormaBasica" pré-I/O extraída para o handler
-        // chamar numa primeira passada: origemData é snapshot-copy do CADASTRO
-        // (FaseCanonica), resolvido via IFaseCanonicaReader — não primitivo do payload do
-        // cliente —, e os produtos só existem depois de o catálogo de tipos de ato ter
-        // sido consultado. Ordem permanece só throw (defesa de programação, nunca
-        // acumulada) e continua coberta pelo FluentValidation; a janela (Fim >= Início) NÃO
-        // tem mais regra equivalente no validator — ela é a acumulada abaixo
-        // (JanelaInvertida), e deixá-la também no validator faria o middleware bloquear
-        // sozinho, sem nunca deixar o payload chegar aqui para acumular junto de outras
-        // violações da mesma fase.
-        List<FieldError> erros = [];
-
-        // JanelaInvertida vale independentemente da origem da data — uma fase NA_EXECUCAO
-        // com janela declarada não escapa da checagem de coerência interna.
-        if (inicio is { } inicioValor && fim is { } fimValor && fimValor < inicioValor)
-        {
-            erros.Add(new("fim", new DomainError(
-                "FaseCronograma.JanelaInvertida",
-                $"A fase '{codigo}' tem o fim da janela ({fimValor:O}) antes do início ({inicioValor:O}).")));
-        }
-
-        // CA-07: OrigemData=NO_EDITAL exige janela; NA_EXECUCAO aceita "sem data" como estado
-        // válido — a data não é fixada no edital, e a unidade responsável a define na execução (§3.2).
-        if (origemData == OrigemDataFase.NoEdital && (inicio is null || fim is null))
-        {
-            erros.Add(new(null, new DomainError(
-                "FaseCronograma.JanelaObrigatoriaEmDataNoEdital",
-                $"A fase '{codigo}' tem a data fixada no edital e exige início e fim da janela.")));
-        }
-
-        // O par ato + papel é a chave natural do produto dentro da fase, e o índice único da
-        // tabela a espelha. Repetir o par daria à fase duas intenções sobre a mesma
-        // publicação, e o motor não teria como eleger uma.
-        //
-        // A chave é o par, e não o ato sozinho, porque o catálogo nomeia a MATÉRIA, não o
-        // papel: "Gabarito" é um código só, publicado uma vez como preliminar — que abre o
-        // ciclo recursal — e outra como definitivo, que o encerra. É esse tipo comum que liga
-        // o definitivo ao preliminar que ele espera.
-        ProdutoDaFase? duplicado = produtos
-            .GroupBy(static p => (p.AtoCodigo, p.Papel))
-            .FirstOrDefault(static g => g.Count() > 1)?.First();
-        if (duplicado is not null)
-        {
-            erros.Add(new("produtos", new DomainError(
-                "FaseCronograma.AtoDuplicadoNaFase",
-                $"A fase '{codigo}' declara o ato '{duplicado.AtoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por fase.")));
-        }
-
-        bool produzResultado = produtos.Any(static p => p.Papel is not null);
-
-        // O parecer individual é o que dá ao candidato fundamento claro para recorrer. Sem
-        // publicação de resultado não há decisão a contestar nem prazo a correr, e a
-        // promessa ficaria sem objeto.
-        if (emiteParecerIndividual && !produzResultado)
-        {
-            erros.Add(new("emiteParecerIndividual", new DomainError(
-                "FaseCronograma.ParecerIndividualSemResultado",
-                $"A fase '{codigo}' promete parecer individual e não publica nenhum resultado — não haveria decisão a fundamentar.")));
-        }
-
-        if (AncoraDoRecursoDaFase.Violacao(codigo, produtos, regraRecurso) is { } violacaoDaAncora)
-        {
-            erros.Add(violacaoDaAncora);
-        }
-
-        erros.AddRange(RecorteDeCompetenciaDasBancas.Violacoes(codigo, bancasRequeridas));
-
-        if (erros.Count > 0)
-        {
-            return Result<FaseCronograma>.ValidationFailure(erros);
-        }
-
-        FaseCronograma fase = new()
-        {
-            Ordem = ordem,
-            FaseCanonicaOrigemId = faseCanonicaOrigemId,
-            Codigo = codigo.Trim(),
-            OrigemData = origemData,
-            AgrupaEtapas = agrupaEtapas,
-            PermiteComplementacao = permiteComplementacao,
-            ColetaInscricao = coletaInscricao,
-            ColetaSolicitacaoIsencao = coletaSolicitacaoIsencao,
-            Inicio = inicio,
-            Fim = fim,
-            FaseConcluinteCodigo = NormalizarCodigo(faseConcluinteCodigo),
-            EmiteParecerIndividual = emiteParecerIndividual,
-        };
-
-        fase.DefinirUnidadeResponsavel(unidadeResponsavel);
-        fase.AdotarFilhas(produtos, bancasRequeridas, regraRecurso);
+        FaseCronograma fase = new();
+        fase.AdotarDeclaracao(origem, cronograma, publicacoes, bancasRequeridas);
 
         return Result<FaseCronograma>.Success(fase);
     }
@@ -353,70 +234,183 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// </remarks>
     public static FaseCronograma Reidratar(
         Guid id,
-        int ordem,
-        Guid faseCanonicaOrigemId,
-        string codigo,
-        OrigemDataFase origemData,
-        bool agrupaEtapas,
-        bool permiteComplementacao,
-        bool coletaInscricao,
-        bool coletaSolicitacaoIsencao,
-        DateTimeOffset? inicio,
-        DateTimeOffset? fim,
-        IReadOnlyList<ProdutoDaFase> produtos,
-        string? faseConcluinteCodigo,
-        bool emiteParecerIndividual,
-        IReadOnlyList<BancaRequerida> bancasRequeridas,
-        RegraRecursoFase? regraRecurso,
-        UnidadeResponsavelSnapshot? unidadeResponsavel)
+        OrigemCanonicaDaFase origem,
+        DecisoesDeCronogramaDaFase cronograma,
+        PublicacoesDaFase publicacoes,
+        IReadOnlyList<BancaRequerida> bancasRequeridas)
+    {
+        ExigirDeclaracaoPresente(origem, cronograma, publicacoes, bancasRequeridas);
+        ExigirIdCongelado(id);
+        ExigirAncoraCoerente(origem.Codigo, publicacoes.Produtos, publicacoes.RegraRecurso);
+        ExigirRecorteCoerente(origem.Codigo, bancasRequeridas);
+
+        FaseCronograma fase = new() { Id = id };
+        fase.AdotarDeclaracao(origem, cronograma, publicacoes, bancasRequeridas);
+
+        return fase;
+    }
+
+    private static void ExigirDeclaracaoPresente(
+        OrigemCanonicaDaFase origem,
+        DecisoesDeCronogramaDaFase cronograma,
+        PublicacoesDaFase publicacoes,
+        IReadOnlyList<BancaRequerida> bancasRequeridas)
+    {
+        ArgumentNullException.ThrowIfNull(origem);
+        ArgumentNullException.ThrowIfNull(cronograma);
+        ArgumentNullException.ThrowIfNull(publicacoes);
+        ExigirCodigoEFilhas(origem.Codigo, publicacoes.Produtos, bancasRequeridas);
+    }
+
+    private static void ExigirCodigoEFilhas(
+        string codigo, IReadOnlyList<ProdutoDaFase> produtos, IReadOnlyList<BancaRequerida> bancasRequeridas)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
         ArgumentNullException.ThrowIfNull(produtos);
         ArgumentNullException.ThrowIfNull(bancasRequeridas);
+    }
+
+    private static void ExigirValoresDeCriacao(int ordem, Guid faseCanonicaOrigemId, OrigemDataFase origemData)
+    {
+        if (ordem <= 0)
+        {
+            throw new ArgumentException("A ordem da fase deve ser maior que zero.", nameof(ordem));
+        }
+
+        if (faseCanonicaOrigemId == Guid.Empty)
+        {
+            throw new ArgumentException("O id de origem da fase canônica é obrigatório.", nameof(faseCanonicaOrigemId));
+        }
+
+        if (origemData == OrigemDataFase.Nenhuma)
+        {
+            throw new ArgumentException("A origem da data da fase é obrigatória.", nameof(origemData));
+        }
+    }
+
+    private static void ExigirIdCongelado(Guid id)
+    {
         if (id == Guid.Empty)
         {
             throw new ArgumentException("A fase reidratada deve declarar o Id congelado no envelope.", nameof(id));
         }
+    }
 
-        // A âncora congelada é reposta como estava — é ela que o ato já publicado resolve de
-        // volta (UNI-REQ-0093). Conferi-la é a última linha contra envelope incoerente, e é o
-        // que torna a leitura do campo não-tautológica no round-trip. Pelo MESMO predicado de
-        // Criar: uma âncora reposta sobre produto definitivo é tão incoerente quanto uma
-        // escrita assim pela primeira vez, e checar só a pertinência deixaria passar metade.
+    // A âncora congelada é reposta como estava — é ela que o ato já publicado resolve de volta
+    // (UNI-REQ-0093). Pelo MESMO predicado de Criar: uma âncora reposta sobre produto definitivo é tão
+    // incoerente quanto uma escrita assim pela primeira vez, e checar só a pertinência deixaria passar
+    // metade.
+    private static void ExigirAncoraCoerente(
+        string codigo, IReadOnlyList<ProdutoDaFase> produtos, RegraRecursoFase? regraRecurso)
+    {
         if (AncoraDoRecursoDaFase.Violacao(codigo, produtos, regraRecurso) is { } violacaoDaAncora)
         {
             throw new ArgumentException(violacaoDaAncora.Error.Message, nameof(regraRecurso));
         }
+    }
 
-        // Pelo MESMO predicado de Criar, e pelo mesmo motivo: um recorte reposto que não
-        // distingue duas bancas do mesmo tipo é tão incoerente quanto um escrito assim pela
-        // primeira vez.
+    // Pelo MESMO predicado de Criar: um recorte reposto que não distingue duas bancas do mesmo tipo é
+    // tão incoerente quanto um escrito assim pela primeira vez.
+    private static void ExigirRecorteCoerente(string codigo, IReadOnlyList<BancaRequerida> bancasRequeridas)
+    {
         if (RecorteDeCompetenciaDasBancas.Violacoes(codigo, bancasRequeridas) is [{ } violacaoDoRecorte, ..])
         {
             throw new ArgumentException(violacaoDoRecorte.Error.Message, nameof(bancasRequeridas));
         }
+    }
 
-        FaseCronograma fase = new()
-        {
-            Id = id,
-            Ordem = ordem,
-            FaseCanonicaOrigemId = faseCanonicaOrigemId,
-            Codigo = codigo.Trim(),
-            OrigemData = origemData,
-            AgrupaEtapas = agrupaEtapas,
-            PermiteComplementacao = permiteComplementacao,
-            ColetaInscricao = coletaInscricao,
-            ColetaSolicitacaoIsencao = coletaSolicitacaoIsencao,
-            Inicio = EmUtc(inicio),
-            Fim = EmUtc(fim),
-            FaseConcluinteCodigo = NormalizarCodigo(faseConcluinteCodigo),
-            EmiteParecerIndividual = emiteParecerIndividual,
-        };
+    // As recusas de negócio acumulam (ADR-0125) e nenhuma decide o que checar a partir de outra. Não há
+    // passada pré-I/O para o handler chamar antes: a origem da data é cópia do CADASTRO e os produtos só
+    // existem depois de o catálogo de tipos de ato ser consultado. A janela invertida acumula aqui, e não
+    // no validator, para a resposta trazê-la junto das outras violações da mesma fase.
+    private static List<FieldError> ViolacoesDaDeclaracao(
+        OrigemCanonicaDaFase origem,
+        DecisoesDeCronogramaDaFase cronograma,
+        PublicacoesDaFase publicacoes,
+        IReadOnlyList<BancaRequerida> bancasRequeridas) =>
+    [
+        .. ViolacoesDaJanela(origem.Codigo, origem.OrigemData, cronograma),
+        .. ViolacoesDasPublicacoes(origem.Codigo, publicacoes),
+        .. RecorteDeCompetenciaDasBancas.Violacoes(origem.Codigo, bancasRequeridas),
+    ];
 
-        fase.DefinirUnidadeResponsavel(unidadeResponsavel);
-        fase.AdotarFilhas(produtos, bancasRequeridas, regraRecurso);
+    // A janela é fixada em UTC antes de montar as mensagens, para que a violação e o valor gravado falem
+    // da mesma representação do instante.
+    private static List<FieldError> ViolacoesDaJanela(
+        string codigo, OrigemDataFase origemData, DecisoesDeCronogramaDaFase cronograma)
+    {
+        DateTimeOffset? inicio = EmUtc(cronograma.Inicio);
+        DateTimeOffset? fim = EmUtc(cronograma.Fim);
+        FieldError?[] violacoes =
+        [
+            JanelaInvertida(codigo, inicio, fim),
+            JanelaObrigatoriaNoEdital(codigo, origemData, inicio, fim),
+        ];
 
-        return fase;
+        return [.. violacoes.OfType<FieldError>()];
+    }
+
+    // Vale independentemente da origem da data: uma fase NA_EXECUCAO com janela declarada não escapa da
+    // checagem de coerência interna.
+    private static FieldError? JanelaInvertida(string codigo, DateTimeOffset? inicio, DateTimeOffset? fim) =>
+        inicio is { } inicioValor && fim is { } fimValor && fimValor < inicioValor
+            ? new FieldError("fim", new DomainError(
+                "FaseCronograma.JanelaInvertida",
+                $"A fase '{codigo}' tem o fim da janela ({fimValor:O}) antes do início ({inicioValor:O})."))
+            : null;
+
+    // CA-07: NO_EDITAL exige janela; NA_EXECUCAO aceita "sem data" como estado válido — a data não é
+    // fixada no edital, e a unidade responsável a define na execução (§3.2).
+    private static FieldError? JanelaObrigatoriaNoEdital(
+        string codigo, OrigemDataFase origemData, DateTimeOffset? inicio, DateTimeOffset? fim) =>
+        origemData == OrigemDataFase.NoEdital && (inicio is null || fim is null)
+            ? new FieldError(null, new DomainError(
+                "FaseCronograma.JanelaObrigatoriaEmDataNoEdital",
+                $"A fase '{codigo}' tem a data fixada no edital e exige início e fim da janela."))
+            : null;
+
+    private static List<FieldError> ViolacoesDasPublicacoes(string codigo, PublicacoesDaFase publicacoes)
+    {
+        FieldError?[] violacoes =
+        [
+            AtoDuplicado(codigo, publicacoes.Produtos),
+            ParecerIndividualSemResultado(codigo, publicacoes),
+            AncoraDoRecursoDaFase.Violacao(codigo, publicacoes.Produtos, publicacoes.RegraRecurso),
+        ];
+
+        return [.. violacoes.OfType<FieldError>()];
+    }
+
+    // O par ato + papel é a chave natural do produto dentro da fase, e o índice único da tabela a espelha.
+    // A chave é o par, e não o ato sozinho, porque o catálogo nomeia a MATÉRIA, não o papel: "Gabarito"
+    // é um código só, publicado como preliminar — que abre o ciclo recursal — e como definitivo, que o
+    // encerra.
+    private static FieldError? AtoDuplicado(string codigo, IReadOnlyList<ProdutoDaFase> produtos) =>
+        ProdutosPublicados.PrimeiroParRepetido(produtos, static ato => ato) is { } duplicado
+            ? new FieldError("produtos", new DomainError(
+                "FaseCronograma.AtoDuplicadoNaFase",
+                $"A fase '{codigo}' declara o ato '{duplicado.AtoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por fase."))
+            : null;
+
+    // O parecer individual é o que dá ao candidato fundamento claro para recorrer. Sem publicação de
+    // resultado não há decisão a contestar nem prazo a correr, e a promessa ficaria sem objeto.
+    private static FieldError? ParecerIndividualSemResultado(string codigo, PublicacoesDaFase publicacoes) =>
+        publicacoes.EmiteParecerIndividual && !publicacoes.Produtos.Any(static p => p.Papel is not null)
+            ? new FieldError("emiteParecerIndividual", new DomainError(
+                "FaseCronograma.ParecerIndividualSemResultado",
+                $"A fase '{codigo}' promete parecer individual e não publica nenhum resultado — não haveria decisão a fundamentar."))
+            : null;
+
+    private void AdotarDeclaracao(
+        OrigemCanonicaDaFase origem,
+        DecisoesDeCronogramaDaFase cronograma,
+        PublicacoesDaFase publicacoes,
+        IReadOnlyList<BancaRequerida> bancasRequeridas)
+    {
+        DefinirOrigemCanonica(origem);
+        DefinirCronograma(cronograma);
+        EmiteParecerIndividual = publicacoes.EmiteParecerIndividual;
+        AdotarFilhas(publicacoes.Produtos, bancasRequeridas, publicacoes.RegraRecurso);
     }
 
     /// <summary>
@@ -502,16 +496,23 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         ArgumentNullException.ThrowIfNull(origem);
         ArgumentNullException.ThrowIfNull(produtos);
 
-        CopiarOrigemCanonicaDe(origem);
-        CopiarDecisoesDoEditalDe(origem);
+        DefinirOrigemCanonica(origem.OrigemCanonica());
+        DefinirCronograma(origem.DecisoesDeCronograma());
+        EmiteParecerIndividual = origem.EmiteParecerIndividual;
         ReconciliarProdutos(produtos);
         ReporBancasRequeridasDe(origem);
         ReporRegraDeRecursoDe(origem, produtos);
     }
 
-    private void CopiarOrigemCanonicaDe(FaseCronograma origem)
+    private OrigemCanonicaDaFase OrigemCanonica() => new(
+        FaseCanonicaOrigemId, Codigo, OrigemData, AgrupaEtapas, PermiteComplementacao, ColetaInscricao, ColetaSolicitacaoIsencao);
+
+    private DecisoesDeCronogramaDaFase DecisoesDeCronograma() =>
+        new(Ordem, Inicio, Fim, FaseConcluinteCodigo, UnidadeResponsavel);
+
+    private void DefinirOrigemCanonica(OrigemCanonicaDaFase origem)
     {
-        FaseCanonicaOrigemId = origem.FaseCanonicaOrigemId;
+        FaseCanonicaOrigemId = origem.OrigemId;
         Codigo = origem.Codigo.Trim();
         OrigemData = origem.OrigemData;
         AgrupaEtapas = origem.AgrupaEtapas;
@@ -520,14 +521,13 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         ColetaSolicitacaoIsencao = origem.ColetaSolicitacaoIsencao;
     }
 
-    private void CopiarDecisoesDoEditalDe(FaseCronograma origem)
+    private void DefinirCronograma(DecisoesDeCronogramaDaFase cronograma)
     {
-        Ordem = origem.Ordem;
-        Inicio = EmUtc(origem.Inicio);
-        Fim = EmUtc(origem.Fim);
-        FaseConcluinteCodigo = NormalizarCodigo(origem.FaseConcluinteCodigo);
-        EmiteParecerIndividual = origem.EmiteParecerIndividual;
-        DefinirUnidadeResponsavel(origem.UnidadeResponsavel);
+        Ordem = cronograma.Ordem;
+        Inicio = EmUtc(cronograma.Inicio);
+        Fim = EmUtc(cronograma.Fim);
+        FaseConcluinteCodigo = NormalizarCodigo(cronograma.FaseConcluinteCodigo);
+        DefinirUnidadeResponsavel(cronograma.UnidadeResponsavel);
     }
 
     private void ReconciliarProdutos(IReadOnlyList<ProdutoDaFase> chegados)

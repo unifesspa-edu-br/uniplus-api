@@ -284,6 +284,13 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         ProcessoSeletivo processo, IProcessoSeletivoRepository repository, IRegistroCodecsEnvelope codecs, TipoAtoPublicadoView hoje) =>
         (await ChecklistAsyncBruto(processo, repository, codecs, hoje))!;
 
+    private static FaseCronograma FaseDeClassificacaoQuePublica(ProdutoDaFase[] produtos) => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     /// <summary>
     /// Processo com o cronograma pedido, cuja versão publicada congelou a classificação dada. O processo vivo
     /// declara o mesmo cronograma que a versão publicada.
@@ -293,11 +300,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases(
-            [FaseCronograma.Criar(
-                1, Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao,
-                agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-                inicio: null, fim: null, produtos: produtos,
-                faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
+            [FaseDeClassificacaoQuePublica(produtos)],
             [],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -306,6 +309,12 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterComConfiguracaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         repository.ObterVersaoAtualAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versao);
+        IRegistroCodecsEnvelope codecs = CodecsQueReidratamO(processo, versao, congelado);
+        return (processo, repository, codecs);
+    }
+
+    private static IRegistroCodecsEnvelope CodecsQueReidratamO(ProcessoSeletivo processo, VersaoConfiguracao versao, TipoDeAtoCongelado congelado)
+    {
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
         codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
             new GrafoConfiguracao(
@@ -319,6 +328,6 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
             new string('a', 64), "America/Sao_Paulo", retificacao: null, conformidade: null,
             tiposDeAtoCongelados: new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal) { [congelado.Codigo] = congelado })));
-        return (processo, repository, codecs);
+        return codecs;
     }
 }

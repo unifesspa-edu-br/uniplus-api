@@ -184,26 +184,28 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
 
     private static FaseCronograma FaseDeInscricao(DateTimeOffset inicio, DateTimeOffset fim) =>
         FaseCronograma.Criar(
-            ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "INSCRICAO",
-            origemData: OrigemDataFase.NoEdital, agrupaEtapas: false, permiteComplementacao: false,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: inicio, fim: fim,
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true,
+                ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: inicio, Fim: fim, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
 
     private static FaseCronograma FaseDeIsencao(
         DateTimeOffset? inicio, DateTimeOffset? fim, RegraRecursoFase? recurso = null) =>
         FaseCronograma.Criar(
-            ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "SOLICITACAO_ISENCAO",
-            origemData: OrigemDataFase.NaExecucao, agrupaEtapas: false, permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: true, inicio: inicio, fim: fim,
-            produtos:
-            [
-                ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_ISENCAO", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("RESULTADO_ISENCAO", PapelProdutoFase.Definitivo),
-            ],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: recurso ?? RecursoEmDiasUteis(2m), unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                OrigemId: Guid.CreateVersion7(), Codigo: "SOLICITACAO_ISENCAO", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+                ColetaSolicitacaoIsencao: true),
+            new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: inicio, Fim: fim, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(
+                Produtos: [
+                    ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_ISENCAO", PapelProdutoFase.Preliminar),
+                    ProdutoDaFase.Criar("RESULTADO_ISENCAO", PapelProdutoFase.Definitivo),
+                ],
+                EmiteParecerIndividual: false,
+                RegraRecurso: recurso ?? RecursoEmDiasUteis(2m)),
+            bancasRequeridas: []).Value!;
 
     /// <summary>Produto preliminar da fase de isenção — a âncora que a regra de recurso declara.</summary>
     private static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000003");

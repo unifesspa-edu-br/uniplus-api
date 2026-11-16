@@ -25,19 +25,12 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         ProcessoSeletivo.Criar("PS Documentos Exigidos", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static FaseCronograma Fase(int ordem, string codigo, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(
-        ordem,
-        faseCanonicaOrigemId ?? Guid.CreateVersion7(),
-        codigo,
-        OrigemDataFase.NaExecucao,
-        agrupaEtapas: false,
-        permiteComplementacao: false,
-        coletaInscricao: false, coletaSolicitacaoIsencao: false,
-        inicio: null,
-        fim: null,
-        produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            faseCanonicaOrigemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static DocumentoExigido Exigencia(
         Guid exigidoNaFaseId, Aplicabilidade aplicabilidade = Aplicabilidade.Geral, string? consequenciaIndeferimento = null,
@@ -56,28 +49,17 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
     private static FaseCronograma FaseComComplementacao(
         int ordem, string codigo, bool permiteComplementacao, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(
-        ordem,
-        faseCanonicaOrigemId ?? Guid.CreateVersion7(),
-        codigo,
-        OrigemDataFase.NaExecucao,
-        agrupaEtapas: false,
-        permiteComplementacao: permiteComplementacao,
-        coletaInscricao: false, coletaSolicitacaoIsencao: false,
-        inicio: null,
-        fim: null,
-        produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            faseCanonicaOrigemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: permiteComplementacao, ColetaInscricao: false,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static EtapaProcesso Etapa(string nome, string faseCodigo, int ordem) =>
         EtapaProcesso.Criar(
-            nome,
-            CaraterEtapa.Classificatoria,
-            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise documental", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-            peso: 1m,
-            ordem: ordem,
-            faseCodigo: faseCodigo).Value!;
+            new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "ANALISE_DOCUMENTAL", "Análise documental", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: faseCodigo),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     private static DocumentoExigido ExigenciaNaEtapa(Guid exigidoNaFaseId, Guid exigidoNaEtapaId, FinalidadeFormulario? finalidade = null) =>
         DocumentoExigido.Criar(
@@ -96,19 +78,11 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
             finalidade: finalidade).Value!;
 
     private static FaseCronograma FaseQueResponde(bool inscricao, bool isencao) => FaseCronograma.Criar(
-        1,
-        Guid.CreateVersion7(),
-        "INSCRICAO",
-        OrigemDataFase.NaExecucao,
-        agrupaEtapas: false,
-        permiteComplementacao: false,
-        coletaInscricao: inscricao, coletaSolicitacaoIsencao: isencao,
-        inicio: null,
-        fim: null,
-        produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: inscricao, ColetaSolicitacaoIsencao: isencao),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static Result DefinirNaFase(FaseCronograma fase, FinalidadeFormulario? finalidade)
     {
@@ -250,13 +224,9 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
         // porque o id continua na lista.
         EtapaProcesso movida = EtapaProcesso.Reidratar(
             etapa.Id,
-            etapa.Nome,
-            etapa.Carater,
-            etapa.TipoEtapa,
-            etapa.Peso,
-            etapa.NotaMinima,
-            etapa.Ordem,
-            faseCodigo: "AVALIACAO");
+            new IdentificacaoDaEtapa(Nome: etapa.Nome, Carater: etapa.Carater, TipoEtapa: etapa.TipoEtapa, Ordem: etapa.Ordem, FaseCodigo: "AVALIACAO"),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: etapa.Peso, NotaMinima: etapa.NotaMinima, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null);
 
         Result resultado = processo.DefinirEtapas([movida], PrecondicaoIfMatch.Ausente);
 
@@ -265,19 +235,10 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
     }
 
     private static FaseCronograma FaseComFim(int ordem, string codigo, DateTimeOffset fim) => FaseCronograma.Criar(
-        ordem,
-        Guid.CreateVersion7(),
-        codigo,
-        OrigemDataFase.NoEdital,
-        agrupaEtapas: false,
-        permiteComplementacao: false,
-        coletaInscricao: false, coletaSolicitacaoIsencao: false,
-        inicio: fim.AddDays(-10),
-        fim: fim,
-        produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: fim.AddDays(-10), Fim: fim, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static DocumentoExigido ExigenciaComIdade(Guid exigidoNaFaseId, IdadeMaximaEmissao idade, FinalidadeFormulario? finalidade = null) =>
         DocumentoExigido.Criar(
@@ -704,19 +665,12 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
     private static FaseCronograma FaseComExtremo(
         int ordem, string codigo, DateTimeOffset? inicio, DateTimeOffset? fim, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(
-        ordem,
-        faseCanonicaOrigemId ?? Guid.CreateVersion7(),
-        codigo,
-        OrigemDataFase.NaExecucao,
-        agrupaEtapas: false,
-        permiteComplementacao: false,
-        coletaInscricao: false, coletaSolicitacaoIsencao: false,
-        inicio: inicio,
-        fim: fim,
-        produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            faseCanonicaOrigemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: inicio, Fim: fim, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static DocumentoExigido ExigenciaComIdadeAncoradaEmFase(
         Guid exigidoNaFaseId, Guid referenciaFaseId, ReferenciaTipoIdadeEmissao referenciaTipo)
@@ -831,19 +785,12 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
 
     private static FaseCronograma FaseColetaInscricao(
         int ordem, string codigo, DateTimeOffset? fim, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(
-        ordem,
-        faseCanonicaOrigemId ?? Guid.CreateVersion7(),
-        codigo,
-        OrigemDataFase.NaExecucao,
-        agrupaEtapas: false,
-        permiteComplementacao: false,
-        coletaInscricao: true, coletaSolicitacaoIsencao: false,
-        inicio: null,
-        fim: fim,
-        produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-        bancasRequeridas: [],
-        regraRecurso: null,
-        unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            faseCanonicaOrigemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: fim, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     private static DocumentoExigido ExigenciaComIdadeFimInscricao(Guid exigidoNaFaseId, FinalidadeFormulario? finalidade = null)
     {

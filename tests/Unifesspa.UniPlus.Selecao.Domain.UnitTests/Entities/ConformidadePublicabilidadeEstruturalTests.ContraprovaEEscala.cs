@@ -128,20 +128,24 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
 
     /// <summary>Fase preliminar que publica o ato âncora e aceita recurso sobre ele.</summary>
     private static FaseCronograma FaseComRecurso() => FaseCronograma.Criar(
-        1, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao,
-        agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-        produtos: [ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
-        faseConcluinteCodigo: "RESULTADO_FINAL",
-        emiteParecerIndividual: false,
-        bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()], regraRecurso: RecursoEmHoras(), unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: "RESULTADO_FINAL", UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            Produtos: [ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
+            EmiteParecerIndividual: false, RegraRecurso: RecursoEmHoras()),
+        bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
 
     private static FaseCronograma FaseFinal(int ordem) => FaseCronograma.Criar(
-        ordem, Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao,
-        agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-        produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null,
-        emiteParecerIndividual: false,
-        bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false,
+            RegraRecurso: null),
+        bancasRequeridas: []).Value!;
 
     [Fact(DisplayName = "Convenção de contagem não declarada com fase que aceita recurso — item vermelho e Publicar recusa com AlgoritmoContagemPrazoNaoDeclarado")]
     public void ContagemDePrazos_AlgoritmoNaoDeclarado()
@@ -176,6 +180,22 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.LocalidadeAusente");
     }
 
+    private static FaseCronograma FasePreliminarDeGabaritoComConcluinte() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            1, Inicio: null, Fim: null, FaseConcluinteCodigo: "RESULTADO_FINAL", UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            Produtos: [ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
+    // Entrega as fases à lista do processo como a hidratação do EF faz, sem passar pela gravação do cronograma.
+    private static void MaterializarFases(ProcessoSeletivo processo, params FaseCronograma[] fases) =>
+        typeof(ProcessoSeletivo).GetField("_cronogramaFases", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(processo).Should().BeAssignableTo<List<FaseCronograma>>().Which
+            .AddRange(fases);
+
     [Fact(DisplayName = "Fase que abre o ciclo com um tipo de ato e tem como concluinte a que só fecha outro tipo — item vermelho e Publicar recusa")]
     public void ConclusaoDoCiclo_ConcluinteComDefinitivoDeOutroTipo_ReprovaNoChecklistENaPublicacao()
     {
@@ -183,15 +203,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
 
         // O estado só existe em processo materializado do banco: a gravação do cronograma já
         // o recusa. Sem esta metade, o gate de publicação ficaria sem prova.
-        FaseCronograma abre = FaseCronograma.Criar(
-            1, Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            produtos: [ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar)],
-            faseConcluinteCodigo: "RESULTADO_FINAL", emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-        typeof(ProcessoSeletivo).GetField("_cronogramaFases", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-            .GetValue(processo).Should().BeAssignableTo<List<FaseCronograma>>().Which
-            .AddRange([abre, FaseFinal(2)]);
+        MaterializarFases(processo, FasePreliminarDeGabaritoComConcluinte(), FaseFinal(2));
 
         SoEstesItensVermelhos(processo, "cronograma_conclusao_do_ciclo_recursal");
 
@@ -295,8 +307,10 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica)]);
         processo.DefinirEtapas(
             [
-                EtapaProcesso.Criar("Nota do ENEM", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, peso: 2m, ordem: 1, faseCodigo: "RESULTADO_FINAL").Value!,
-                EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 2, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!,
+                EtapaProcesso.Criar(
+                    new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+                    new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
+                EtapaDeProvaObjetiva("Entrevista", CaraterEtapa.Classificatoria, 2, 1m, null, "RESULTADO_FINAL"),
             ],
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 

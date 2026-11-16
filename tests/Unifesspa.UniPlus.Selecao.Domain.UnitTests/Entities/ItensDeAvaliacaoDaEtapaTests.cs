@@ -32,8 +32,9 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
         decimal? passo = null,
         bool doEnem = false) =>
         EtapaProcesso.Criar(
-            "Entrevista", CaraterEtapa.Classificatoria, Tipo(doEnem), peso: 1m, notaMaxima: 10m, passoDoLancamento: passo,
-            formaDeAvaliacao: forma, itensDeAvaliacao: itens, escalaDeAtendimento: escala);
+            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(doEnem), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: passo, FormaDeAvaliacao: forma, RegraConsolidacao: null, EscalaDeAtendimento: escala),
+            itens);
 
     private static ItemDeAvaliacaoDeclarado Item(string rotulo, decimal pontuacao, Guid? id = null) => new(id, rotulo, pontuacao);
 
@@ -162,9 +163,9 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
         Guid idDaClareza = etapa.ItensDeAvaliacao.Single(static i => i.Rotulo == "Clareza").Id;
 
         etapa.AtualizarDados(
-            "Entrevista", CaraterEtapa.Classificatoria, Tipo(), 1m, null, null, notaMaxima: 10m,
-            formaDeAvaliacao: FormaDeAvaliacao.Humana,
-            itensDeAvaliacao: [Item("Objetividade", 5m, idDaClareza), Item("Domínio", 5m)]).IsSuccess.Should().BeTrue();
+            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            [Item("Objetividade", 5m, idDaClareza), Item("Domínio", 5m)]).IsSuccess.Should().BeTrue();
 
         etapa.ItensDeAvaliacao.Should().Contain(i => i.Id == idDaClareza && i.Rotulo == "Objetividade" && i.PontuacaoMaxima == 5m);
         etapa.ItensDeAvaliacao.Should().HaveCount(2);
@@ -178,9 +179,9 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
         Guid desconhecido = Guid.CreateVersion7();
 
         etapa.AtualizarDados(
-            "Entrevista", CaraterEtapa.Classificatoria, Tipo(), 1m, null, null, notaMaxima: 10m,
-            formaDeAvaliacao: FormaDeAvaliacao.Humana,
-            itensDeAvaliacao: [Item("Postura", 5m), Item("Fluência", 5m, desconhecido)]).IsSuccess.Should().BeTrue();
+            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            [Item("Postura", 5m), Item("Fluência", 5m, desconhecido)]).IsSuccess.Should().BeTrue();
 
         etapa.ItensDeAvaliacao.Select(static i => i.Id).Should().NotIntersectWith(antes).And.NotContain(desconhecido);
         etapa.ItensDeAvaliacao.Should().HaveCount(2);
@@ -192,9 +193,9 @@ public sealed class ItensDeAvaliacaoDaEtapaTests
         EtapaProcesso etapa = Criar([Item("Clareza", 10m)]).Value!;
 
         etapa.AtualizarDados(
-            "Entrevista", CaraterEtapa.Classificatoria, Tipo(), 1m, null, null, notaMaxima: 10m,
-            formaDeAvaliacao: FormaDeAvaliacao.Humana,
-            itensDeAvaliacao: [Item("", 10m)]).IsFailure.Should().BeTrue();
+            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            [Item("", 10m)]).IsFailure.Should().BeTrue();
 
         etapa.ItensDeAvaliacao.Should().ContainSingle().Which.Rotulo.Should().Be("Clareza");
     }

@@ -36,12 +36,9 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
         IReadOnlyList<NivelDeAtendimento>? escala = null)
     {
         EtapaProcesso etapa = EtapaProcesso.Criar(
-            nome, carater, Tipo(), carater == CaraterEtapa.Classificatoria ? 1m : null, null, ordem,
-            notaMaxima: carater == CaraterEtapa.Classificatoria ? 10m : null, passoDoLancamento: passo, formaDeAvaliacao: forma,
-            regraConsolidacao: comRegra
-                ? ProcessoConformeFactory.Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, "b")
-                : null,
-            itensDeAvaliacao: itens, escalaDeAtendimento: escala, faseCodigo: "RESULTADO_FINAL").Value!;
+            new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: Tipo(), Ordem: ordem, FaseCodigo: "RESULTADO_FINAL"),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: carater == CaraterEtapa.Classificatoria ? 1m : null, NotaMinima: null, NotaMaxima: carater == CaraterEtapa.Classificatoria ? 10m : null, PassoDoLancamento: passo, FormaDeAvaliacao: forma, RegraConsolidacao: comRegra ? ProcessoConformeFactory.Regra(RegraConsolidacaoCodigo.AvaliacaoUnica, "b") : null, EscalaDeAtendimento: escala),
+            itens).Value!;
         if (comBanca)
         {
             etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_AVALIADORA", "Banca de teste", BancasDeTeste.Regra())]).IsSuccess.Should().BeTrue();

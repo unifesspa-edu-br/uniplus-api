@@ -82,9 +82,8 @@ internal static class ProcessoDoEnemPublicadoDeTeste
     private static Guid ConfigurarEnem(ProcessoSeletivo processo, Guid ofertaTecnologica, Guid ofertaHumanistica)
     {
         EtapaProcesso etapa = EtapaProcesso.Criar(
-            "Nota do ENEM", CaraterEtapa.Classificatoria,
-            TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!,
-            peso: 1m, notaMinima: null, ordem: 1, faseCodigo: "RESULTADO_FINAL").Value!;
+            new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         Exigir(processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(
                 regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixo).Value!,

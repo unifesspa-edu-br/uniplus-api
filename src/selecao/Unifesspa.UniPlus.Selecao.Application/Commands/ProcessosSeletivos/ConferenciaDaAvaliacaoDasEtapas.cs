@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
+using Domain.ProcessosSeletivos.Etapas;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -80,7 +81,7 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
     }
 
     private static List<FieldError> ValidarAvaliacao(EtapaConferida etapa, FormaDeAvaliacao? forma, string? regraConsolidacaoCodigo) =>
-        EtapaProcesso.ValidarAvaliacao(
+        CoerenciaDaAvaliacaoDaEtapa.Validar(
             etapa.NotaDeOrigemNoEnem,
             etapa.Declarada.PassoDoLancamento,
             forma,

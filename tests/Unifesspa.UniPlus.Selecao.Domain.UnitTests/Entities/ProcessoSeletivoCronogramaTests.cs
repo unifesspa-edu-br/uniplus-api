@@ -37,22 +37,11 @@ public sealed partial class ProcessoSeletivoCronogramaTests
         bool emiteParecerIndividual = false,
         IReadOnlyList<BancaRequerida>? bancasRequeridas = null) =>
         FaseCronograma.Criar(
-            ordem,
-            faseCanonicaOrigemId ?? Guid.CreateVersion7(),
-            codigo,
-            OrigemDataFase.NaExecucao,
-            agrupaEtapas,
-            permiteComplementacao: false,
-            coletaInscricao,
-            coletaSolicitacaoIsencao,
-            inicio,
-            fim,
-            produtos ?? (produzResultado ? [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)] : []),
-            faseConcluinteCodigo,
-            emiteParecerIndividual,
-            bancasRequeridas ?? [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps);
+            new OrigemCanonicaDaFase(
+                faseCanonicaOrigemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, agrupaEtapas, PermiteComplementacao: false, coletaInscricao, coletaSolicitacaoIsencao),
+            new DecisoesDeCronogramaDaFase(ordem, inicio, fim, faseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(produtos ?? (produzResultado ? [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)] : []), emiteParecerIndividual, RegraRecurso: null),
+            bancasRequeridas ?? []);
 
     private static ArestaPrecedencia Aresta(string antecessora, string sucessora, bool permiteSobreposicao = false) =>
         new(antecessora, sucessora, permiteSobreposicao);
@@ -124,7 +113,9 @@ public sealed partial class ProcessoSeletivoCronogramaTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!],
+            [EtapaProcesso.Criar(
+                new IdentificacaoDaEtapa(Nome: "Prova", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!],
             PrecondicaoIfMatch.Ausente);
         FaseCronograma fase = Fase(1, "AVALIACAO", agrupaEtapas: true).Value!;
 

@@ -134,22 +134,12 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
 
     private static FaseCronograma Fase(Guid faseCanonicaOrigemId, IReadOnlyList<BancaRequerida> bancas) =>
         FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: faseCanonicaOrigemId,
-            codigo: "ANALISE_DOCUMENTAL",
-            origemData: OrigemDataFase.NaExecucao,
-            agrupaEtapas: false,
-            permiteComplementacao: false,
-            coletaInscricao: false,
-            coletaSolicitacaoIsencao: false,
-            inicio: null,
-            fim: null,
-            produtos: [],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: bancas,
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(
+                OrigemId: faseCanonicaOrigemId, Codigo: "ANALISE_DOCUMENTAL", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
+                ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: bancas).Value!;
 
     private static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos

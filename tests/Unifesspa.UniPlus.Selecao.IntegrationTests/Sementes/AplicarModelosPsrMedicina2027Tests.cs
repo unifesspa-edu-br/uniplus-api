@@ -163,6 +163,13 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         return processo.Id;
     }
 
+    private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(2, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
     /// <summary>
     /// O bônus regional com um município, de onde o campo do município do bônus tira as opções; a
     /// atendimento especializado com a condição fora da lista, cuja escolha a inscrição cita para pedir a
@@ -223,11 +230,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         }
 
         // O modelo exige os documentos do atendimento na fase de inscrição do cronograma.
-        FaseCronograma inscricao = FaseCronograma.Criar(
-            2, Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: true, coletaSolicitacaoIsencao: false, inicio: null, fim: null,
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        FaseCronograma inscricao = FaseDeInscricao();
         Result cronograma = processo.DefinirCronogramaFases([.. processo.CronogramaFases, inscricao], [], PrecondicaoIfMatch.Ausente);
         cronograma.IsSuccess.Should().BeTrue(string.Join("; ", cronograma.Errors.Select(static e => e.Error.Code)) + cronograma.Error?.Message);
     }

@@ -122,12 +122,9 @@ internal static partial class CorpusEnvelope
         return new GrafoConfiguracao(
             etapas: [EtapaProcesso.Reidratar(
                 primeira.Id,
-                "Etapa Descaracterizada",
-                CaraterEtapa.Classificatoria,
-                TipoEtapaProvaObjetiva(),
-                peso: 9.9999m,
-                notaMinima: null,
-                ordem: 7, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
+                new IdentificacaoDaEtapa(Nome: "Etapa Descaracterizada", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 7, FaseCodigo: null),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 9.9999m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
+                itens: null)],
             atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [DistribuicaoInstitucional()],
             bonusRegional: null,
@@ -149,7 +146,11 @@ internal static partial class CorpusEnvelope
 
     /// <summary>Um grafo mínimo e conforme — a "sessão editorial" que o descarte terá de desfazer.</summary>
     internal static GrafoConfiguracao GrafoPobre(int variante = 0) => new(
-        etapas: [EtapaProcesso.Reidratar(new Guid($"9999fff{variante:x}-0000-4000-8000-000000000001"), "Etapa Única", CaraterEtapa.Classificatoria, TipoEtapaProvaObjetiva(), 1.0000m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
+        etapas: [EtapaProcesso.Reidratar(
+            new Guid($"9999fff{variante:x}-0000-4000-8000-000000000001"),
+            new IdentificacaoDaEtapa(Nome: "Etapa Única", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1.0000m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null)],
         atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
         distribuicaoVagas: [DistribuicaoInstitucional()],
         bonusRegional: null,

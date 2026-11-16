@@ -98,7 +98,11 @@ public sealed class OrdemDasRecusasDoGrafoTests
         ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
 
     private static EtapaProcesso Etapa(Guid id, int ordem, CaraterEtapa carater = CaraterEtapa.Eliminatoria, decimal? peso = null) =>
-        EtapaProcesso.Reidratar(id, $"Etapa {ordem}", carater, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso, 5m, ordem, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva);
+        EtapaProcesso.Reidratar(
+            id,
+            new IdentificacaoDaEtapa(Nome: $"Etapa {ordem}", Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: 5m, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null);
 
     private static ConfiguracaoDistribuicaoVagas Oferta(Guid? ofertaCursoOrigemId = null) =>
         ConfiguracaoDistribuicaoVagas.Criar(
@@ -137,13 +141,13 @@ public sealed class OrdemDasRecusasDoGrafoTests
             quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
 
     private static FaseCronograma Fase(int ordem, bool agrupaEtapas, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Reidratar(
-        Guid.CreateVersion7(), ordem, faseCanonicaOrigemId ?? Guid.CreateVersion7(), $"FASE_{ordem}",
-        origemData: OrigemDataFase.NoEdital, agrupaEtapas: agrupaEtapas,
-        permiteComplementacao: false, coletaInscricao: false, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-        fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null,
-        emiteParecerIndividual: false,
-        bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps);
+        Guid.CreateVersion7(),
+        new OrigemCanonicaDaFase(
+            faseCanonicaOrigemId ?? Guid.CreateVersion7(), $"FASE_{ordem}", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: agrupaEtapas, PermiteComplementacao: false, ColetaInscricao: false,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            ordem, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []);
 }

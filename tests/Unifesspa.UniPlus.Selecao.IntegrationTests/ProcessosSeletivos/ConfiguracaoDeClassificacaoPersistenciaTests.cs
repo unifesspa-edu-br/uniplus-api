@@ -54,7 +54,9 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     public async Task PersisteERecarrega_ComCincoVariantesDeEliminacao()
     {
         ProcessoSeletivo processo = NovoProcesso("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU);
-        EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoDeEtapaProvaObjetiva(), peso: 1m, ordem: 1).Value!;
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         RegraEliminacao notaMinima = RegraEliminacao.Criar(
@@ -128,7 +130,9 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     public async Task PersisteERecarrega_Importada_SemArredondamento()
     {
         ProcessoSeletivo processo = NovoProcesso("PS 2026 — Transferência", TiposDeProcessoDeTeste.TransferenciaExterna);
-        processo.DefinirEtapas([EtapaProcesso.Criar("Análise curricular", CaraterEtapa.Classificatoria, TipoDeEtapaProvaObjetiva(), peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirEtapas([EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Análise curricular", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(
@@ -162,7 +166,9 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     public async Task ReconfigurarClassificacaoSobreAgregadoTracked_InsereFilhos()
     {
         ProcessoSeletivo processo = NovoProcesso("PS 2026 — PSVR", TiposDeProcessoDeTeste.PSVR);
-        EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoDeEtapaProvaObjetiva(), peso: 1m, ordem: 1).Value!;
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao original = ConfiguracaoClassificacao.Criar(
@@ -217,7 +223,9 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     public async Task AtualizarEtapaMesmoId_MantemEliminacaoReferenciada()
     {
         ProcessoSeletivo processo = NovoProcesso("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU);
-        EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoDeEtapaProvaObjetiva(), peso: 1m, ordem: 1).Value!;
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
@@ -245,7 +253,9 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
             // mesma instância tracked em vez de recriá-la — sem isso, o
             // etapa_ref da eliminação ficaria órfão a cada PUT /etapas.
             EtapaProcesso etapaTracked = carregado.Etapas.Single();
-            etapaTracked.AtualizarDados("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, TipoDeEtapaProvaObjetiva(), 2m, null, 1);
+            etapaTracked.AtualizarDados(
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva (revisada)", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
             Result result = carregado.DefinirEtapas([etapaTracked], PrecondicaoIfMatch.Ausente);
             result.IsSuccess.Should().BeTrue();
@@ -275,7 +285,9 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     {
         ProcessoSeletivo processo = NovoProcesso("PS 2026 — BaseadoEmEnem", TiposDeProcessoDeTeste.PSIQ);
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoDeEtapaProvaObjetiva(), peso: 1m, ordem: 1, faseCodigo: "RESULTADO_FINAL").Value!], PrecondicaoIfMatch.Ausente);
+            [EtapaProcesso.Criar(
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente);
 
         Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, "1"),

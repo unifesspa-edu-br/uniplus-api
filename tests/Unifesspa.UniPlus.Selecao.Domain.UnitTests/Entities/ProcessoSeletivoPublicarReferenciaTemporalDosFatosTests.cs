@@ -168,35 +168,15 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         ProcessoSeletivo processo = NovoProcessoConforme();
 
         FaseCronograma coletaOrdem1 = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "INSCRICAO_AC",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: false,
-            permiteComplementacao: false,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero),
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO_AC", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
         FaseCronograma coletaOrdem2 = FaseCronograma.Criar(
-            ordem: 2,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "INSCRICAO_REMANEJAMENTO",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 20, 12, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 25, 12, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO_REMANEJAMENTO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 20, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 25, 12, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
 
         // Insere a fase de Ordem 2 ANTES da de Ordem 1 — _cronogramaFases preserva a ordem
         // de ENTRADA de DefinirCronogramaFases, diferente do envelope (sempre ordenado por
@@ -226,19 +206,10 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         // que apenas truncasse a data (sem converter o fuso) devolveria 02/03, um dia
         // inteiro adiantado em relação ao que o administrador viu na tela.
         FaseCronograma faseComVirada = FaseCronograma.Criar(
-            ordem: 2,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_PRELIMINAR",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: false,
-            permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 3, 2, 1, 30, 0, TimeSpan.Zero),
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 2, 1, 30, 0, TimeSpan.Zero), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
         // A segunda fase precisa entrar ANTES de configurar a exigência: uma vez que a
         // exigência referencia a fase 1 (ExigidoNaFaseId), redefinir o cronograma depois
         // recriaria a fase 1 com outra FaseCanonicaOrigemId e o guard
@@ -278,19 +249,10 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     private static Guid AcrescentarFaseSemExtremo(ProcessoSeletivo processo)
     {
         FaseCronograma semExtremo = FaseCronograma.Criar(
-            ordem: 2,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "HOMOLOGACAO",
-            origemData: OrigemDataFase.NaExecucao,
-            agrupaEtapas: false,
-            permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: null,
-            fim: null,
-            produtos: [], faseConcluinteCodigo: null, emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "HOMOLOGACAO", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
         FormularioDeTeste.TrocarCronograma(processo, [FaseConforme(), semExtremo], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         return semExtremo.Id;
     }
@@ -313,21 +275,10 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     private static Guid DefinirCronogramaSemFaseDeColeta(ProcessoSeletivo processo)
     {
         FaseCronograma resultado = FaseCronograma.Criar(
-            ordem: 2,
-            faseCanonicaOrigemId: Guid.CreateVersion7(),
-            codigo: "RESULTADO_FINAL",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: null,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
         FormularioDeTeste.TrocarCronograma(processo, [resultado], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         return resultado.Id;
     }

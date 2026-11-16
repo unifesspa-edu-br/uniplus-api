@@ -39,20 +39,19 @@ public sealed class FaseCronogramaAtualizacaoTests
     }
 
     private static Result<FaseCronograma> Criar(DadosDaFase dados) => FaseCronograma.Criar(
-        dados.Ordem, Guid.CreateVersion7(), dados.Codigo, dados.OrigemData,
-        agrupaEtapas: false, permiteComplementacao: false,
-        dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao, dados.Inicio, dados.Fim,
-        dados.Produtos, dados.FaseConcluinteCodigo, dados.EmiteParecerIndividual,
-        dados.Bancas, dados.RegraRecurso, dados.Unidade);
+        new OrigemCanonicaDaFase(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, AgrupaEtapas: false, PermiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao),
+        new DecisoesDeCronogramaDaFase(dados.Ordem, dados.Inicio, dados.Fim, dados.FaseConcluinteCodigo, dados.Unidade),
+        new PublicacoesDaFase(dados.Produtos, dados.EmiteParecerIndividual, dados.RegraRecurso),
+        dados.Bancas);
 
     private static FaseCronograma Fase(DadosDaFase dados) => Criar(dados).Value!;
 
     private static FaseCronograma Reidratar(Guid id, DadosDaFase dados) => FaseCronograma.Reidratar(
-        id, dados.Ordem, Guid.CreateVersion7(), dados.Codigo, dados.OrigemData,
-        agrupaEtapas: false, permiteComplementacao: false,
-        dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao, dados.Inicio, dados.Fim,
-        dados.Produtos, dados.FaseConcluinteCodigo, dados.EmiteParecerIndividual,
-        dados.Bancas, dados.RegraRecurso, dados.Unidade);
+        id,
+        new OrigemCanonicaDaFase(Guid.CreateVersion7(), dados.Codigo, dados.OrigemData, AgrupaEtapas: false, PermiteComplementacao: false, dados.ColetaInscricao, dados.ColetaSolicitacaoIsencao),
+        new DecisoesDeCronogramaDaFase(dados.Ordem, dados.Inicio, dados.Fim, dados.FaseConcluinteCodigo, dados.Unidade),
+        new PublicacoesDaFase(dados.Produtos, dados.EmiteParecerIndividual, dados.RegraRecurso),
+        dados.Bancas);
 
     private static void Atualizar(FaseCronograma viva, FaseCronograma nova) =>
         viva.AtualizarDe(nova, [.. nova.Produtos]);

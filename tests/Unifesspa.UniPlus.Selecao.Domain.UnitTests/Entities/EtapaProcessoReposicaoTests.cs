@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Xunit;
@@ -28,7 +29,9 @@ public sealed class EtapaProcessoReposicaoTests
         admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
     private static EtapaProcesso Etapa() =>
-        EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Ambas, Tipo(), peso: 1m).Value!;
+        EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Ambas, TipoEtapa: Tipo(), Ordem: null, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     private static EtapaProcesso EtapaCom(params ProdutoDaEtapa[] produtos)
     {
@@ -141,7 +144,7 @@ public sealed class EtapaProcessoReposicaoTests
         janela.Should().BeSameAs(congelada.Recursos.Single());
         janela.ProdutoAncoraId.Should().Be(idDaLinhaViva);
         janela.EtapaProcessoId.Should().Be(viva.Id);
-        viva.ViolacaoDaAncoraDoRecurso().Should().BeNull();
+        JanelasRecursaisDaEtapa.ViolacaoDaAncora(viva, viva.Recursos).Should().BeNull();
     }
 
     // ── ReporDe: bancas ──
@@ -178,7 +181,8 @@ public sealed class EtapaProcessoReposicaoTests
     public void ReporDe_DadosDaEtapaCongelada_SaoReplicadosNaViva()
     {
         EtapaProcesso congelada = EtapaProcesso.Criar(
-            "  Entrevista  ", CaraterEtapa.Eliminatoria, Tipo(), notaMinima: 5m, ordem: 2, faseCodigo: " AVALIACAO ").Value!;
+            new IdentificacaoDaEtapa(Nome: "  Entrevista  ", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: Tipo(), Ordem: 2, FaseCodigo: " AVALIACAO "),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 5m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         congelada.DefinirJanelaEParecer(
             InicioDaJanela.ToOffset(TimeSpan.FromHours(-3)), InicioDaJanela.AddDays(1), emiteParecerIndividual: true)
             .IsSuccess.Should().BeTrue();
@@ -196,7 +200,10 @@ public sealed class EtapaProcessoReposicaoTests
     public void ReporDe_EtapaCongeladaForaDaFormaAtual_ERepostaSemRecusa()
     {
         EtapaProcesso congelada = EtapaProcesso.Reidratar(
-            Guid.CreateVersion7(), "Entrevista", CaraterEtapa.Eliminatoria, Tipo(), peso: 2m, notaMinima: null, ordem: 1);
+            Guid.CreateVersion7(),
+            new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Eliminatoria, TipoEtapa: Tipo(), Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
+            itens: null);
         EtapaProcesso viva = Etapa();
 
         viva.ReporDe(congelada);

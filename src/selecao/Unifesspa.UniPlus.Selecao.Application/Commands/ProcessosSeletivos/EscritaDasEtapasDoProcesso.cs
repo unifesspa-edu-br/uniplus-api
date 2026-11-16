@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
+using Domain.ProcessosSeletivos.Etapas;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -44,14 +45,21 @@ internal static class EscritaDasEtapasDoProcesso
     public static List<NivelDeAtendimento> NiveisDeclarados(EtapaProcessoInput input) =>
         [.. (input.EscalaDeAtendimento ?? []).Select(static n => new NivelDeAtendimento(n.Rotulo, n.Fracao))];
 
+    /// <summary>
+    /// Como a etapa do payload declara a avaliação da nota, com a forma e a regra de consolidação que a
+    /// conferência resolveu; antes de resolvê-las, a conferência da forma passa ambas nulas.
+    /// </summary>
+    public static DeclaracaoDaAvaliacaoDaEtapa DeclaracaoDaAvaliacao(
+        EtapaProcessoInput input, FormaDeAvaliacao? forma, ReferenciaRegra? regraConsolidacao) =>
+        new(input.Peso, input.NotaMinima, input.NotaMaxima, input.PassoDoLancamento, forma, regraConsolidacao, NiveisDeclarados(input));
+
     /// <summary>As recusas do caráter declarado contra o que o tipo da etapa admite, já com a posição.</summary>
     public static IReadOnlyList<FieldError> ErrosDeCarater(
         CaraterEtapa carater, bool admitePontuacao, bool admiteEliminacao, string nomeDoTipo, int indice) =>
-        ComIndice(EtapaProcesso.ValidarCaraterAdmitido(carater, admitePontuacao, admiteEliminacao, nomeDoTipo), indice);
+        ComIndice(CaraterDaEtapa.ValidarAdmitido(carater, admitePontuacao, admiteEliminacao, nomeDoTipo), indice);
 
     private static List<FieldError> FormaDaEtapa(EtapaProcessoInput etapa) =>
         EtapaProcesso.ValidarFormaBasica(
-            etapa.Nome, etapa.Carater, etapa.Peso, etapa.NotaMinima, etapa.Ordem,
-            etapa.NotaMaxima, etapa.PassoDoLancamento,
-            ItensDeclarados(etapa), NiveisDeclarados(etapa));
+            etapa.Nome, etapa.Carater, etapa.Ordem,
+            DeclaracaoDaAvaliacao(etapa, forma: null, regraConsolidacao: null), ItensDeclarados(etapa));
 }

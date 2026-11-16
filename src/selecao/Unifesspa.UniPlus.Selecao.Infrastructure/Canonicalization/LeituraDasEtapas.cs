@@ -203,37 +203,51 @@ internal static class LeituraDasEtapas
         string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.EtapaNome);
         CaraterEtapa carater = leitor.Enumeracao<CaraterEtapa>(item, "carater", path);
         TipoEtapaSnapshot? tipoEtapa = LerTipoEtapaDaEtapa(leitor, item, path);
+        (DeclaracaoDaAvaliacaoDaEtapa avaliacao, List<ItemDeAvaliacao> itens) = LerAvaliacaoDaEtapa(leitor, item, path);
+        (int? ordem, string? faseCodigo) = (
+            leitor.InteiroOpcional(item, "ordem", path), leitor.TextoOpcional(item, "faseCodigo", path, LimitesDoEnvelope.FaseCodigo));
+
+        return leitor.Falhou
+            ? null
+            : ReidratarDentroDosLimites(leitor, path, id, new IdentificacaoDaEtapa(nome, carater, tipoEtapa!, ordem, faseCodigo), avaliacao, itens);
+    }
+
+    private static (DeclaracaoDaAvaliacaoDaEtapa Avaliacao, List<ItemDeAvaliacao> Itens) LerAvaliacaoDaEtapa(
+        LeitorEnvelope leitor, JsonObject item, string path)
+    {
         decimal? peso = LerDecimalDaEtapa(leitor, item, "peso", path);
         decimal? notaMinima = LerDecimalDaEtapa(leitor, item, "notaMinima", path);
         decimal? notaMaxima = LerDecimalDaEtapa(leitor, item, "notaMaxima", path);
         decimal? passoDoLancamento = LerDecimalDaEtapa(leitor, item, "passoDoLancamento", path);
         FormaDeAvaliacao? formaDeAvaliacao = leitor.EnumeracaoOpcional<FormaDeAvaliacao>(item, "formaDeAvaliacao", path);
         ReferenciaRegra? regraConsolidacao = leitor.RegraOpcional(item, "regraConsolidacao", path, [.. RegraConsolidacaoCodigo.Rol]);
-        List<ItemDeAvaliacao> itensDeAvaliacao = LerItensDeAvaliacao(leitor, item, path);
+        List<ItemDeAvaliacao> itens = LerItensDeAvaliacao(leitor, item, path);
         List<NivelDeAtendimento>? escalaDeAtendimento = LerEscalaDeAtendimento(leitor, item, path);
-        int? ordem = leitor.InteiroOpcional(item, "ordem", path);
-        string? faseCodigo = leitor.TextoOpcional(item, "faseCodigo", path, LimitesDoEnvelope.FaseCodigo);
 
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        // Limites que hoje só o FluentValidation do comando impõe: um envelope legítimo já os
-        // satisfaz. Regra de coerência entre campos fica de fora de propósito, porque uma regra criada
-        // depois do congelamento tornaria ilegível um envelope que era válido quando nasceu.
-        return ForaDosLimites(carater, peso, notaMinima, notaMaxima, passoDoLancamento, ordem)
-            ? RecusarEtapa(leitor, path, "peso, ordem, nota máxima e passo do lançamento devem ser maiores que zero e a nota mínima não negativa.")
-            : EtapaProcesso.Reidratar(id, nome, carater, tipoEtapa!, peso, notaMinima, ordem, faseCodigo, notaMaxima, passoDoLancamento, formaDeAvaliacao, regraConsolidacao, itensDeAvaliacao, escalaDeAtendimento);
+        return (new(peso, notaMinima, notaMaxima, passoDoLancamento, formaDeAvaliacao, regraConsolidacao, escalaDeAtendimento), itens);
     }
 
-    private static bool ForaDosLimites(CaraterEtapa carater, decimal? peso, decimal? notaMinima, decimal? notaMaxima, decimal? passoDoLancamento, int? ordem) =>
-        carater == CaraterEtapa.Nenhum
-        || peso is <= 0
-        || notaMinima is < 0
-        || notaMaxima is <= 0
-        || passoDoLancamento is <= 0
-        || ordem is <= 0;
+    // Limites que hoje só o FluentValidation do comando impõe: um envelope legítimo já os
+    // satisfaz. Regra de coerência entre campos fica de fora de propósito, porque uma regra criada
+    // depois do congelamento tornaria ilegível um envelope que era válido quando nasceu.
+    private static EtapaProcesso? ReidratarDentroDosLimites(
+        LeitorEnvelope leitor,
+        string path,
+        Guid id,
+        IdentificacaoDaEtapa identificacao,
+        DeclaracaoDaAvaliacaoDaEtapa avaliacao,
+        List<ItemDeAvaliacao> itens) =>
+        ForaDosLimites(identificacao, avaliacao)
+            ? RecusarEtapa(leitor, path, "peso, ordem, nota máxima e passo do lançamento devem ser maiores que zero e a nota mínima não negativa.")
+            : EtapaProcesso.Reidratar(id, identificacao, avaliacao, itens);
+
+    private static bool ForaDosLimites(IdentificacaoDaEtapa identificacao, DeclaracaoDaAvaliacaoDaEtapa avaliacao) =>
+        identificacao.Carater == CaraterEtapa.Nenhum
+        || avaliacao.Peso is <= 0
+        || avaliacao.NotaMinima is < 0
+        || avaliacao.NotaMaxima is <= 0
+        || avaliacao.PassoDoLancamento is <= 0
+        || identificacao.Ordem is <= 0;
 
     private static decimal? LerDecimalDaEtapa(LeitorEnvelope leitor, JsonObject item, string chave, string path) =>
         leitor.DecimalOpcional(item, chave, EscritaCanonica.EscalaPadrao, path, LimitesDoEnvelope.PrecisaoEtapa);

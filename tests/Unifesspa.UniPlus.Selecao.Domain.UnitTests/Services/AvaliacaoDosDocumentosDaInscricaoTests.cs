@@ -372,7 +372,10 @@ public sealed class AvaliacaoDosDocumentosDaInscricaoTests
 
     private static FaseCronograma Fase(int ordem, string codigo) =>
         FaseCronograma.Reidratar(
-            Guid.CreateVersion7(), ordem, Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false, coletaInscricao: ordem == 1, coletaSolicitacaoIsencao: false,
-            inicio: null, fim: null, [], faseConcluinteCodigo: null, emiteParecerIndividual: false, [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps);
+            Guid.CreateVersion7(),
+            new OrigemCanonicaDaFase(
+                Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: ordem == 1, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase([], EmiteParecerIndividual: false, RegraRecurso: null),
+            []);
 }

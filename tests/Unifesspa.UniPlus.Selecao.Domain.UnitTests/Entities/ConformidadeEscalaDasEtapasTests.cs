@@ -31,8 +31,8 @@ public sealed class ConformidadeEscalaDasEtapasTests
         decimal? notaMinima = null, decimal? notaMaxima = null, decimal? passo = null, bool notaDoEnem = false,
         bool semForma = false) =>
         EtapaProcesso.Criar(
-            nome, carater, Tipo(notaDoEnem), peso, notaMinima, ordem, notaMaxima: notaMaxima, passoDoLancamento: passo,
-            formaDeAvaliacao: notaDoEnem || semForma ? null : FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!;
+            new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: Tipo(notaDoEnem), Ordem: ordem, FaseCodigo: "RESULTADO_FINAL"),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: notaMinima, NotaMaxima: notaMaxima, PassoDoLancamento: passo, FormaDeAvaliacao: notaDoEnem || semForma ? null : FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     private static EtapaProcesso EtapaDaMedia(string nome = "Prova", int ordem = 1, decimal? notaMaxima = 10m) =>
         Etapa(nome, ordem, peso: 1m, notaMaxima: notaMaxima);
@@ -171,7 +171,8 @@ public sealed class ConformidadeEscalaDasEtapasTests
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         EtapaProcesso etapaSemFaseDeclarada = EtapaProcesso.Criar(
-            "Prova", CaraterEtapa.Classificatoria, Tipo(), peso: 1m, notaMinima: null, ordem: 1, formaDeAvaliacao: FormaDeAvaliacao.Objetiva).Value!;
+            new IdentificacaoDaEtapa(Nome: "Prova", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
         processo.DefinirEtapas([etapaSemFaseDeclarada], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }

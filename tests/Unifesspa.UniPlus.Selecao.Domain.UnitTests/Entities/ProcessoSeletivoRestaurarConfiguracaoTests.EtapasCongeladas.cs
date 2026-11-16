@@ -18,6 +18,24 @@ using Xunit;
 
 public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 {
+    // O definitivo vem PRIMEIRO: é a ordem em que o envelope canônico os devolve, e é ela que o casamento só
+    // por ato lia como se fosse a âncora.
+    private static FaseCronograma FaseComRecursoAncoradoNoPreliminar(ProdutoDaFase preliminar, ProdutoDaFase definitivo) => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: new Guid("eeee0000-0000-4000-8000-000000000009"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            Produtos: [definitivo, preliminar], EmiteParecerIndividual: false, RegraRecurso: RecursoAncoradoEm(preliminar)),
+        bancasRequeridas: []).Value!;
+
+    private static RegraRecursoFase RecursoAncoradoEm(ProdutoDaFase preliminar) => RegraRecursoFase.Criar(
+        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!,
+        new ArgsRegraPrazoRecurso(3m, UnidadePrazo.DiasUteis, null, null, false, null, null),
+        preliminar.Id).Value!;
+
     /// <summary>
     /// A fase publica a MESMA matéria duas vezes — preliminar e definitiva — e o recurso corre
     /// da preliminar. Quando a restauração recria os produtos (a fase congelada caiu sobre uma
@@ -34,29 +52,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO", PapelProdutoFase.Preliminar);
         ProdutoDaFase definitivo = ProdutoDaFase.Criar("RESULTADO", PapelProdutoFase.Definitivo);
 
-        FaseCronograma congelada = FaseCronograma.Criar(
-            ordem: 1,
-            faseCanonicaOrigemId: new Guid("eeee0000-0000-4000-8000-000000000009"),
-            codigo: "RESULTADO_FINAL",
-            origemData: OrigemDataFase.NoEdital,
-            agrupaEtapas: true,
-            permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            // O definitivo PRIMEIRO: é a ordem em que o envelope canônico os devolve, e é ela
-            // que o casamento só por ato lia como se fosse a âncora.
-            produtos: [definitivo, preliminar],
-            faseConcluinteCodigo: null,
-            emiteParecerIndividual: false,
-            bancasRequeridas: [],
-            regraRecurso: RegraRecursoFase.Criar(
-                ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!,
-                new ArgsRegraPrazoRecurso(3m, UnidadePrazo.DiasUteis, null, null, false, null, null),
-                preliminar.Id).Value!,
-            unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
-
-        GrafoConfiguracao grafo = Grafo(cronogramaFases: [congelada]);
+        GrafoConfiguracao grafo = Grafo(cronogramaFases: [FaseComRecursoAncoradoNoPreliminar(preliminar, definitivo)]);
 
         processo.RestaurarConfiguracaoCongelada(versao, grafo).IsSuccess.Should().BeTrue();
 
@@ -81,10 +77,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         // Nota mínima em etapa apenas classificatória: hoje o agregado recusa a declaração, e o
         // envelope antigo a carrega.
         GrafoConfiguracao grafo = Grafo(etapas: [
-            EtapaProcesso.Reidratar(
-                EtapaOriginal, "Prova", CaraterEtapa.Classificatoria,
-                TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-                1m, 20m, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva),
+            EtapaCongeladaDeProvaObjetiva(EtapaOriginal, "Prova", ordem: 1, notaMinima: 20m),
         ]);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(versao, grafo);
@@ -126,7 +119,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
             regraAjuste: null, referenciaDemografica: null, [V("RECLASSIFICAR_REGRA_EDITAL", 2), Ac(8)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
         GrafoConfiguracao invalido = new(
-            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
+            etapas: [EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Prova", ordem: 1)],
             atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [ofertaA, ofertaB],
             bonusRegional: null,
@@ -166,7 +159,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
             regraAjuste: null, referenciaDemografica: null, [cotaSemOpcao, ac], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
         GrafoConfiguracao invalido = new(
-            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
+            etapas: [EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Prova", ordem: 1)],
             atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [oferta],
             bonusRegional: null,
@@ -206,7 +199,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
             regraAjuste: null, referenciaDemografica: null, [reservaSemRemanejamento, ac], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
         GrafoConfiguracao invalido = new(
-            etapas: [EtapaProcesso.Reidratar(EtapaCongelada, "Prova", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, 1m, null, 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva)],
+            etapas: [EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Prova", ordem: 1)],
             atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
             distribuicaoVagas: [oferta],
             bonusRegional: null,

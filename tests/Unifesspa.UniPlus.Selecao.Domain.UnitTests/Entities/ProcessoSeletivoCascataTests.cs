@@ -306,29 +306,30 @@ public sealed class ProcessoSeletivoCascataTests
         ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
     }
 
-    [Fact(DisplayName = "PendenciaDeConformidade (agregador genérico) fica Ok mesmo com a cascata pendente — só PendenciaDaCascata recusa")]
-    public void PendenciaDeConformidade_IgnoraAusenciaDaCascata()
+    private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []).Value!;
+
+    private static void DefinirEtapaAtendimentoEDistribuicaoFederal(ProcessoSeletivo processo)
     {
-        // Processo estruturalmente conforme (etapas, atendimento, classificação,
-        // cronograma) — mas com oferta federal SEM cascata configurada. Antes da
-        // separação dos checklists, o item "Cascata de remanejamento" entrava na
-        // lista que o agregador genérico varre, e essa ausência derrubava
-        // PendenciaDeConformidade() com ConformidadeInsuficiente — mascarando o erro
-        // nomeado que PendenciaDaCascata() (e CA-04) prometem.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        processo.DefinirCronogramaFases(
-            [FaseCronograma.Criar(
-                ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "RESULTADO_FINAL",
-                origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: false,                 coletaInscricao: true, coletaSolicitacaoIsencao: false,
-                inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-                produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!],
-            [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(
-            [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!],
+            [EtapaProcesso.Criar(
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirAtendimentoEspecializado(
             AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas([OfertaFederalCompleta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    }
+
+    private static void DefinirClassificacaoETaxaDeclaradas(ProcessoSeletivo processo)
+    {
         processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(
                 regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
@@ -341,6 +342,23 @@ public sealed class ProcessoSeletivoCascataTests
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
+    }
+
+    [Fact(DisplayName = "PendenciaDeConformidade (agregador genérico) fica Ok mesmo com a cascata pendente — só PendenciaDaCascata recusa")]
+    public void PendenciaDeConformidade_IgnoraAusenciaDaCascata()
+    {
+        // Processo estruturalmente conforme (etapas, atendimento, classificação,
+        // cronograma) — mas com oferta federal SEM cascata configurada. Antes da
+        // separação dos checklists, o item "Cascata de remanejamento" entrava na
+        // lista que o agregador genérico varre, e essa ausência derrubava
+        // PendenciaDeConformidade() com ConformidadeInsuficiente — mascarando o erro
+        // nomeado que PendenciaDaCascata() (e CA-04) prometem.
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        processo.DefinirCronogramaFases(
+            [FaseDeResultadoFinal()],
+            [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DefinirEtapaAtendimentoEDistribuicaoFederal(processo);
+        DefinirClassificacaoETaxaDeclaradas(processo);
 
         ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo)).Should().BeNull("os itens estruturais estão todos completos — a cascata não é um deles");
         CoberturaDaCascata.PendenciaDaCascata(EstadoDaConfiguracao.De(processo)).Should().NotBeNull("a oferta federal tem SegueCascata sem cascata configurada");

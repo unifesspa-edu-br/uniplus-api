@@ -29,9 +29,8 @@ public sealed class BancasDoProcessoTests
         ProcessoConformeFactory.ProdutoPreliminarId).Value!;
 
     private static EtapaProcesso NovaEtapa(string nome, int ordem) => EtapaProcesso.Criar(
-        nome, CaraterEtapa.Classificatoria,
-        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!,
-        peso: 1m, ordem: ordem, notaMaxima: 10m, formaDeAvaliacao: FormaDeAvaliacao.Objetiva, faseCodigo: "RESULTADO_FINAL").Value!;
+        new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: "RESULTADO_FINAL"),
+        new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     /// <summary>Dá à etapa o par preliminar e definitivo e uma janela de recurso ancorada no preliminar.</summary>
     private static EtapaProcesso ComRecurso(EtapaProcesso etapa)

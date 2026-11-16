@@ -19,24 +19,36 @@ using Xunit;
 
 public sealed partial class PoliticaDeOrdenacaoTests
 {
+    private static FaseCronograma FaseDeAlfaFase() => FaseCronograma.Reidratar(
+        id: IdFixo(1),
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "ALFA_FASE", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 2, Inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ALFA_FASE", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []);
+
+    private static FaseCronograma FaseDeZetaFase() => FaseCronograma.Reidratar(
+        id: IdFixo(2),
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: "ZETA_FASE", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ZETA_FASE", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: []);
+
     [Fact(DisplayName = "cronogramaFases.fases: Ordem governa sobre o conteúdo — oráculo de sequência exata")]
     public void CronogramaFases_Fases_OrdemGovernaSobreConteudo()
     {
         // Id CONTRÁRIO à Ordem também: ZETA_FASE (Ordem 1) recebe o Id MAIOR, ALFA_FASE (Ordem 2)
         // o MENOR — se o Id decidisse a posição, o resultado seria [ALFA_FASE, ZETA_FASE], o mesmo
         // "errado" que o código (proxy de conteúdo) daria.
-        FaseCronograma faseZeta = FaseCronograma.Reidratar(
-            id: IdFixo(2), ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ZETA_FASE",
-            origemData: OrigemDataFase.NoEdital, agrupaEtapas: true,
-            permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("ZETA_FASE", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps);
-        FaseCronograma faseAlfa = FaseCronograma.Reidratar(
-            id: IdFixo(1), ordem: 2, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: "ALFA_FASE",
-            origemData: OrigemDataFase.NoEdital, agrupaEtapas: true,
-            permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 2, 28, 0, 0, 0, TimeSpan.Zero),
-            produtos: [ProdutoDaFase.Criar("ALFA_FASE", PapelProdutoFase.Definitivo)], faseConcluinteCodigo: null, emiteParecerIndividual: false, bancasRequeridas: [], regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps);
+        FaseCronograma faseZeta = FaseDeZetaFase();
+        FaseCronograma faseAlfa = FaseDeAlfaFase();
 
         new[] { faseZeta, faseAlfa }.OrderBy(static f => f.Codigo, StringComparer.Ordinal).Select(static f => f.Codigo)
             .Should().Equal(["ALFA_FASE", "ZETA_FASE"], "pré-condição: ordenar pelo código (proxy de conteúdo) dá o oposto do oráculo de Ordem abaixo");
@@ -111,13 +123,14 @@ public sealed partial class PoliticaDeOrdenacaoTests
     }
 
     private static FaseCronograma FaseComAsBancas(string codigo, params BancaRequerida[] bancas) => FaseCronograma.Criar(
-        ordem: 1, faseCanonicaOrigemId: Guid.CreateVersion7(), codigo: codigo,
-        origemData: OrigemDataFase.NoEdital, agrupaEtapas: true, permiteComplementacao: true, coletaInscricao: true, coletaSolicitacaoIsencao: false,
-        inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
-        produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)],
-        faseConcluinteCodigo: null,
-        emiteParecerIndividual: false,
-        bancasRequeridas: bancas, regraRecurso: null, unidadeResponsavel: UnidadesDeTeste.Ceps).Value!;
+        new OrigemCanonicaDaFase(
+            OrigemId: Guid.CreateVersion7(), Codigo: codigo, OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true,
+            ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        bancasRequeridas: bancas).Value!;
 
     private static JsonArray BancasRequeridasEnvelopadas(FaseCronograma fase) =>
         EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(Montar(cronogramaFases: [fase]))))

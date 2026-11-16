@@ -69,10 +69,14 @@ public static class NiveisDeAtendimento
     /// conteúdo e não da ordem em que o cliente enviou, então regravar a mesma escala não muda o
     /// documento congelado.
     /// </summary>
-    public static IReadOnlyList<NivelDeAtendimento>? EmOrdemCanonica(IEnumerable<NivelDeAtendimento>? niveis)
+    /// <remarks>
+    /// Elemento nulo não é recusado por <see cref="Validar"/> quando a escala tem um nível completo, e
+    /// chega até aqui: ordenar a escala com um elemento nulo lança <see cref="NullReferenceException"/>.
+    /// </remarks>
+    public static IReadOnlyList<NivelDeAtendimento>? EmOrdemCanonica(IEnumerable<NivelDeAtendimento?>? niveis)
     {
         List<NivelDeAtendimento> ordenados = [.. (niveis ?? [])
-            .Select(static n => new NivelDeAtendimento(n.Rotulo.Trim(), n.Fracao))
+            .Select(static n => new NivelDeAtendimento(n!.Rotulo.Trim(), n.Fracao))
             .OrderByDescending(static n => n.Fracao)
             .ThenBy(static n => HashCanonicalComputer.NormalizeNfc(n.Rotulo), StringComparer.Ordinal)];
 
