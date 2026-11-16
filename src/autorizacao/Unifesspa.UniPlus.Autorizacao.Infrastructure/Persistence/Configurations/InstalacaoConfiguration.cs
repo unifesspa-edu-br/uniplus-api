@@ -75,7 +75,7 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
             gestor.Property<Guid>("InstalacaoId");
             gestor.Property(g => g.Emissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
             gestor.Property(g => g.ContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
-            gestor.Property(g => g.Email).HasMaxLength(PedidoDeConcessao.EmailMaxLength);
+            gestor.Property(g => g.Email).HasMaxLength(EmailDaPessoa.MaxLength);
             gestor.Property(g => g.Nome).HasMaxLength(NomeDeExibicao.MaxLength);
             gestor.HasKey("InstalacaoId", nameof(GestorDaInstalacao.Emissor), nameof(GestorDaInstalacao.ContaId));
         });

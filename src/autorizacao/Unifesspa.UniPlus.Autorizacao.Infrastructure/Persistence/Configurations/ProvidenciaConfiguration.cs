@@ -83,7 +83,7 @@ public sealed class ProvidenciaConfiguration : IEntityTypeConfiguration<Providen
         builder.Property(p => p.SolicitadaPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(p => p.SolicitadaPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(p => p.SolicitadaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
-        builder.Property(p => p.SolicitadaPorEmail).HasMaxLength(PedidoDeConcessao.EmailMaxLength);
+        builder.Property(p => p.SolicitadaPorEmail).HasMaxLength(EmailDaPessoa.MaxLength);
     }
 
     private static void ConfigurarDesfecho(EntityTypeBuilder<Providencia> builder)

@@ -71,8 +71,8 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         builder.Property(p => p.SolicitanteEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(p => p.SolicitanteContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(p => p.SolicitanteNome).HasMaxLength(NomeDeExibicao.MaxLength);
-        builder.Property(p => p.SolicitanteEmail).HasMaxLength(PedidoDeConcessao.EmailMaxLength);
-        builder.Property(p => p.BeneficiarioEmail).HasMaxLength(PedidoDeConcessao.EmailMaxLength).IsRequired();
+        builder.Property(p => p.SolicitanteEmail).HasMaxLength(EmailDaPessoa.MaxLength);
+        builder.Property(p => p.BeneficiarioEmail).HasMaxLength(EmailDaPessoa.MaxLength).IsRequired();
         builder.Property(p => p.BeneficiarioEmissor).HasMaxLength(IdentidadeMaxLength);
         builder.Property(p => p.BeneficiarioContaId).HasMaxLength(IdentidadeMaxLength);
         builder.Property(p => p.BeneficiarioNome).HasMaxLength(NomeDeExibicao.MaxLength);

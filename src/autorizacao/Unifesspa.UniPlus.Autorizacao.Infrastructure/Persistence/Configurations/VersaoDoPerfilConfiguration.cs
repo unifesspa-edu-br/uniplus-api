@@ -112,7 +112,7 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
         builder.Property(v => v.CriadaPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(v => v.CriadaPorContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(v => v.CriadaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
-        builder.Property(v => v.CriadaPorEmail).HasMaxLength(PedidoDeConcessao.EmailMaxLength).ClassificaComo(ClassificacaoDeProtecao.Pessoal);
+        builder.Property(v => v.CriadaPorEmail).HasMaxLength(EmailDaPessoa.MaxLength).ClassificaComo(ClassificacaoDeProtecao.Pessoal);
         builder.Property(v => v.CriadorTemConcessao).IsRequired();
         builder.Ignore(v => v.CriadaPor);
         builder.Property(v => v.CanceladaPorEmissor).HasMaxLength(IdentidadeMaxLength);

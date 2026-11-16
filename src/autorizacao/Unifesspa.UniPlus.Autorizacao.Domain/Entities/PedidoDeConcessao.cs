@@ -32,7 +32,6 @@ public sealed partial class PedidoDeConcessao : EntityBase
     public const int JustificativaMinLength = 10;
     public const int JustificativaMaxLength = 2000;
     public const int MotivoMaxLength = 500;
-    public const int EmailMaxLength = 254;
 
     /// <summary>As situações em que o pedido ainda pode avançar: o mesmo pedido não se repete enquanto numa delas.</summary>
     public static readonly IReadOnlyList<SituacaoDoPedido> SituacoesAtivas =

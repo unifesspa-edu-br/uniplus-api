@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -47,7 +48,7 @@ public static class IniciarInstalacaoCommandHandler
         }
 
         // O e-mail do gestor é o que a revogação da concessão pede de volta: o que não é do domínio institucional não vale.
-        if (command.Gestores.Any(g => PedidoDeConcessao.EmailNormalizado(g.Email) is { } email
+        if (command.Gestores.Any(g => EmailDaPessoa.Normalizar(g.Email) is { } email
             && !dominios.Contem(email[(email.LastIndexOf('@') + 1)..])))
         {
             return Result<InstalacaoIniciadaDto>.ValidationFailure([new FieldError("gestores", new DomainError(

@@ -73,7 +73,7 @@ public static class ListarPedidosDeConcessaoQueryHandler
         CancellationToken cancellationToken)
     {
         FiltroDePedidos filtro = new(
-            query.Fila, query.Situacao, pessoa.Identidade, pessoa.EmailVerificado ? PedidoDeConcessao.EmailNormalizado(pessoa.Email) : null);
+            query.Fila, query.Situacao, pessoa.Identidade, pessoa.EmailVerificadoNormalizado);
 
         (IReadOnlyList<PedidoComPerfil> itens, (string SortKey, Guid Id)? anterior, (string SortKey, Guid Id)? proximo) = await repository
             .ListarPaginadoAsync(filtro, query.AfterSortKey, query.AfterId, query.Limit, query.Direction, cancellationToken)

@@ -77,7 +77,7 @@ public sealed partial class PedidoDeConcessao
 
     private bool EhOBeneficiarioPeloEmail(PessoaNoToken pessoa) =>
         pessoa.EmailVerificado
-        && EmailNormalizado(pessoa.Email) is { } email
+        && EmailDaPessoa.Normalizar(pessoa.Email) is { } email
         && string.Equals(email, BeneficiarioEmail, StringComparison.Ordinal);
 
     private void DefinirBeneficiario(Identidade identidade, string? nome)
@@ -101,8 +101,8 @@ public sealed partial class PedidoDeConcessao
 
     private static string? ResolverParaSiMesmo(PessoaNoToken solicitante, IDominiosInstitucionais dominios, List<FieldError> erros)
     {
-        string? doToken = solicitante.EmailVerificado ? EmailNormalizado(solicitante.Email) : null;
-        if (doToken is null || !DominioInstitucional(doToken, dominios))
+        string? doToken = solicitante.EmailVerificadoNormalizado;
+        if (doToken is null || !EmailDaPessoa.Institucional(doToken, dominios))
         {
             erros.Add(new("beneficiarioEmail", new DomainError(
                 PedidoErrorCodes.BeneficiarioInvalido,
@@ -119,8 +119,8 @@ public sealed partial class PedidoDeConcessao
 
     private static string? ResolverParaOutraPessoa(string? emailInformado, IDominiosInstitucionais dominios, List<FieldError> erros)
     {
-        string? informado = EmailNormalizado(emailInformado);
-        if (informado is null || !DominioInstitucional(informado, dominios))
+        string? informado = EmailDaPessoa.Normalizar(emailInformado);
+        if (informado is null || !EmailDaPessoa.Institucional(informado, dominios))
         {
             erros.Add(new("beneficiarioEmail", new DomainError(
                 PedidoErrorCodes.BeneficiarioInvalido,
@@ -132,8 +132,8 @@ public sealed partial class PedidoDeConcessao
 
     private static bool ParaSiMesmo(PessoaNoToken solicitante, string? emailInformado)
     {
-        string? informado = EmailNormalizado(emailInformado);
-        string? doToken = solicitante.EmailVerificado ? EmailNormalizado(solicitante.Email) : null;
+        string? informado = EmailDaPessoa.Normalizar(emailInformado);
+        string? doToken = solicitante.EmailVerificadoNormalizado;
 
         return string.IsNullOrWhiteSpace(emailInformado) || (informado is not null && informado == doToken);
     }
@@ -145,20 +145,7 @@ public sealed partial class PedidoDeConcessao
         ArgumentNullException.ThrowIfNull(dominios);
 
         return pessoa.EmailVerificado
-            && EmailNormalizado(pessoa.Email) is { } email
-            && DominioInstitucional(email, dominios);
-    }
-
-    private static bool DominioInstitucional(string email, IDominiosInstitucionais dominios) =>
-        dominios.Contem(email[(email.LastIndexOf('@') + 1)..]);
-
-    /// <summary>O e-mail como o pedido o guarda e compara (minúsculas, formato válido); nulo se inválido.</summary>
-    public static string? EmailNormalizado(string? email)
-    {
-        Result<Email> resultado = Email.Criar(email);
-
-        return resultado.IsSuccess && resultado.Value!.Valor.Length <= EmailMaxLength && !resultado.Value.Valor.Contains('\0', StringComparison.Ordinal)
-            ? resultado.Value.Valor
-            : null;
+            && EmailDaPessoa.Normalizar(pessoa.Email) is { } email
+            && EmailDaPessoa.Institucional(email, dominios);
     }
 }
