@@ -29,6 +29,14 @@ internal static class FaseDaRetificacaoDeTeste
             new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
+    /// <summary>A mesma fase, com a mesma origem canônica, com a janela trocada: a fase como a retificação a propõe.</summary>
+    internal static FaseCronograma ComJanela(FaseCronograma fase, DateTimeOffset? inicio, DateTimeOffset? fim) =>
+        FaseCronograma.Criar(
+            new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
+            new DecisoesDeCronogramaDaFase(fase.Ordem, Inicio: inicio, Fim: fim, FaseConcluinteCodigo: fase.FaseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [.. fase.Produtos], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
+
     internal static FasesIniciadas Iniciadas(params FaseCronograma[] fases) =>
         new(fases.Select(static f => KeyValuePair.Create(f.FaseCanonicaOrigemId, f.UnidadeResponsavelOrigemId)));
 
