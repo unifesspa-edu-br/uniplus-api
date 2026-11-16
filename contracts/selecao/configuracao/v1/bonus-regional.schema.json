@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/bonus-regional.schema.json",
+  "title": "Bônus regional",
+  "description": "O acréscimo na nota do candidato que cumpre a base legal do bônus regional. O processo declara que aplica o bônus e cita a regra do catálogo e a base legal pelo código, ou declara que não o aplica.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "aplica"
+  ],
+  "properties": {
+    "aplica": {
+      "title": "Aplica o bônus",
+      "description": "Verdadeiro quando o processo aplica o bônus regional. Falso proíbe os demais campos.",
+      "type": "boolean"
+    },
+    "regra": {
+      "title": "Regra do bônus",
+      "description": "Regra do catálogo que calcula o bônus.",
+      "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
+    },
+    "fator": {
+      "title": "Fator",
+      "description": "Fator multiplicativo aplicado à nota do candidato elegível. Maior que zero, até 99,9999.",
+      "type": "number",
+      "multipleOf": 0.0001,
+      "exclusiveMinimum": 0,
+      "maximum": 99.9999
+    },
+    "teto": {
+      "title": "Teto",
+      "description": "Acréscimo máximo que o bônus pode dar, quando houver. Maior que zero, até 99,9999.",
+      "type": "number",
+      "multipleOf": 0.0001,
+      "exclusiveMinimum": 0,
+      "maximum": 99.9999
+    },
+    "fatoElegibilidadeCodigo": {
+      "title": "Fato de elegibilidade",
+      "description": "Código do fato que decide quem recebe o bônus, quando o processo o declara.",
+      "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
+    },
+    "baseLegalBonusRegionalCodigo": {
+      "title": "Base legal",
+      "description": "Código estável da base legal do bônus regional no catálogo: maiúscula inicial, depois maiúsculas, dígitos e sublinhado, de 2 a 100 caracteres.",
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{1,99}$"
+    },
+    "tipoInstrumento": {
+      "title": "Tipo do instrumento",
+      "description": "Tipo do instrumento normativo da base legal. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+      "type": "string",
+      "maxLength": 30,
+      "readOnly": true
+    },
+    "identificacao": {
+      "title": "Identificação",
+      "description": "Identificação do instrumento normativo da base legal. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+      "type": "string",
+      "maxLength": 500,
+      "readOnly": true
+    },
+    "descricao": {
+      "title": "Descrição",
+      "description": "Descrição da base legal. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+      "type": "string",
+      "maxLength": 2000,
+      "readOnly": true
+    },
+    "municipios": {
+      "title": "Municípios",
+      "description": "Municípios que a base legal contempla. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/municipio"
+      },
+      "readOnly": true
+    }
+  },
+  "$defs": {
+    "municipio": {
+      "title": "Município",
+      "description": "Um município contemplado pela base legal.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "codigoIbge": {
+          "title": "Código IBGE",
+          "description": "Código do município no IBGE, com 7 dígitos.",
+          "type": "string",
+          "pattern": "^[0-9]{7}$"
+        },
+        "nome": {
+          "title": "Nome",
+          "description": "Nome do município.",
+          "type": "string",
+          "maxLength": 150
+        },
+        "uf": {
+          "title": "UF",
+          "description": "Sigla da unidade federativa.",
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        }
+      }
+    }
+  },
+  "if": {
+    "properties": {
+      "aplica": {
+        "const": true
+      }
+    }
+  },
+  "then": {
+    "required": [
+      "regra",
+      "fator",
+      "baseLegalBonusRegionalCodigo"
+    ]
+  },
+  "else": {
+    "properties": {
+      "regra": false,
+      "fator": false,
+      "teto": false,
+      "fatoElegibilidadeCodigo": false,
+      "baseLegalBonusRegionalCodigo": false,
+      "tipoInstrumento": false,
+      "identificacao": false,
+      "descricao": false,
+      "municipios": false
+    }
+  }
+}

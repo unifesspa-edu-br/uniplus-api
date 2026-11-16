@@ -105,6 +105,16 @@
       "title": "Classificação",
       "description": "Cálculo da nota final, ordem de alocação, eliminação e desempate. Ausente no rascunho que ainda não decidiu a classificação.",
       "$ref": "classificacao.schema.json"
+    },
+    "atendimento": {
+      "title": "Atendimento especializado",
+      "description": "Condições, recursos e tipos de deficiência que o processo atende. Ausente no rascunho que ainda não decidiu o atendimento.",
+      "$ref": "atendimento.schema.json"
+    },
+    "bonusRegional": {
+      "title": "Bônus regional",
+      "description": "Declaração de que o processo aplica ou não o bônus regional e, se aplica, a regra e a base legal. Ausente no rascunho que ainda não decidiu.",
+      "$ref": "bonus-regional.schema.json"
     }
   }
 }

@@ -48,6 +48,8 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
     [InlineData("identificacao.schema.json", "properties/unidadeAdministradoraCodigo")]
     [InlineData("cronograma.schema.json", "$defs/fase/properties/unidadeResponsavelCodigo")]
     [InlineData("exigencias.schema.json", "$defs/exigencia/properties/tipoDocumentoCodigo")]
+    [InlineData("atendimento.schema.json", "$defs/condicao/properties/condicaoCodigo")]
+    [InlineData("bonus-regional.schema.json", "properties/baseLegalBonusRegionalCodigo")]
     public void Codigo_NaoEReadOnly(string arquivo, string caminho)
     {
         ArgumentNullException.ThrowIfNull(arquivo);
