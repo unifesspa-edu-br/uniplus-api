@@ -84,7 +84,7 @@ Cliente `ISchemaRegistryClient` é singleton único, criado em `Program.cs`, com
 - Schema name: `<Evento>` (sem suffix `Avro`).
 - Topic Kafka: `<dominio>_events` (snake_case, ADR-0014).
 - Subject SR: `<topic>-value` (Confluent SR convention).
-- Compatibility default: `BACKWARD`.
+- Compatibility default: `BACKWARD` (para o Avro; o subject de JSON Schema declara `NONE`, ver a emenda "JSON Schema no mesmo registro").
 
 **Estado atual** (snake-case Avro):
 
@@ -105,7 +105,7 @@ src/selecao/Selecao.Infrastructure/Messaging/EditalPublicadoToKafkaCascadeHandle
 
 - **Domain puro:** sem dep de Avro lib (apenas embedded resource).
 - **Cross-module sem coupling:** Ingresso futuro consume sem referenciar `Selecao.Domain` — pull do Apicurio.
-- **Compatibility enforced:** Apicurio rejeita mudanças que quebram BACKWARD; schema evolution é validada por mecanismo externo.
+- **Compatibility enforced (Avro):** Apicurio rejeita mudanças que quebram BACKWARD; schema evolution é validada por mecanismo externo. No JSON Schema a garantia é outra: mora no teste de contrato do repositório (ver a emenda).
 - **Operacional resiliente:** Apicurio offline no boot não trava o host; runtime Confluent recupera quando o Apicurio volta.
 - **Configurável por env:** mesmo binário roda dev (sem auth), lab (basic), standalone/HML/PROD (OAuth) sem code change.
 - **Wire format Confluent:** consumers em qualquer linguagem (Java, Python, Go) funcionam pelo padrão `[magic][schema-id][payload]`.
@@ -119,8 +119,19 @@ src/selecao/Selecao.Infrastructure/Messaging/EditalPublicadoToKafkaCascadeHandle
 
 ### Neutras
 
-- **Schema evolution policy formal não definida nesta ADR.** BACKWARD é o default Confluent — adequada para o caminho "consumers leem dados antigos com schema novo". FORWARD ou FULL serão decisão por subject quando houver caso real.
+- **Schema evolution policy formal não definida nesta ADR.** BACKWARD é o default Confluent — adequada para o caminho "consumers leem dados antigos com schema novo". FORWARD ou FULL serão decisão por subject quando houver caso real; o primeiro caso é o subject de JSON Schema do documento de configuração, com a regra `NONE` (ver a emenda).
 - **Ingresso ainda não consume.** Routing existe, mas o evento `EditalPublicado` em Kafka não tem subscriber cross-módulo até "chamada de vagas" entrar em escopo.
+
+## Emenda: JSON Schema no mesmo registro
+
+O registro na subida deixa de ser exclusivo do Avro: o mesmo mecanismo (`AddSchemaRegistry`, o `SchemaRegistrationHostedService` e o cliente único) registra também um JSON Schema, declarado por `AddJsonSchema`. A decisão é a mesma da ADR: o schema é versionado no Git, embutido como recurso, registrado de forma idempotente na subida, e a falha determinística trava o boot. O que muda para o JSON, e o que fica igual:
+
+- **Política derivada do formato, sem opção solta:** todo Avro continua com a regra do Schema Registry (`BACKWARD`) e sem repetição, porque o serializador do Confluent o registra de novo em runtime. Todo JSON Schema repete em segundo plano o registro que falhou por indisponibilidade do Schema Registry, com espera crescente até um teto, porque não há serializador que o faça, e exige a regra de compatibilidade `NONE` no subject. A subida segue sem esperar a repetição, e nada que dependa do schema fica bloqueado por ela.
+- **Regra `NONE` e o motivo:** o Apicurio 3.2.4 devolve erro 500 na segunda versão de um JSON Schema do dialeto 2020-12 quando o subject tem regra de compatibilidade (verificado em 14/11/2026; draft-07 funciona, e a regra `NONE` registra várias versões do 2020-12). O contrato continua em 2020-12 como fonte única no repositório, e a garantia de compatibilidade mora no teste de contrato, que compara a versão nova com todas as publicadas e roda como gate de CI. O Apicurio guarda a cópia publicada.
+- **Quem declara a regra:** a infraestrutura (chart ou bootstrap do Apicurio), por menor privilégio: o cliente da API não ganha papel de escrita de regra. A API só confere, antes de registrar, e trava a subida com mensagem que cita o subject, a regra encontrada e a esperada.
+- **Regra efetiva, e a exceção ao cliente único:** a conferência lê a regra **efetiva** do subject. Sem regra própria, o Apicurio devolve `NONE` na leitura simples e, ainda assim, aplica a regra global nas novas versões: a leitura simples daria um falso `NONE`. O cliente oficial (2.16) não expõe o parâmetro `defaultToGlobal`, que devolve a regra efetiva, então um leitor pequeno (`LeitorDaRegraDeCompatibilidadeDoSubject`) faz só essa leitura, com o `IHttpClientFactory` e a URL e a autenticação das mesmas opções do Schema Registry, sem segunda configuração. É a única exceção ao cliente único, e só lê: o registro continua pelo cliente oficial. Para um subject que ainda não existe, a regra efetiva é a global.
+- **Falha do leitor:** segue a mesma classificação do registro. Indisponibilidade do Schema Registry é transitória e repete (JSON); qualquer outra falha é determinística e trava a subida.
+- **Catálogo (ADR-0056):** o JSON Schema é contrato de entrada do documento de configuração, e não evento de catálogo; esta emenda não contradiz a ADR-0056.
 
 ## Confirmação
 
