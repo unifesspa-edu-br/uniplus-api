@@ -14,7 +14,7 @@ public sealed partial class PedidoDeConcessao
     public Result<AnexoDoPedido> NovoAnexo(long tamanhoDoPdf)
     {
         DomainError? recusa = PodeSerAlteradoPeloSolicitante
-            ? RecusaDoNovoAnexo()
+            ? Declaracao.RecusaDoDocumento(Termo, Situacao)
             : SituacaoInvalida("O anexo só se envia antes da primeira decisão.");
         return recusa is null ? _anexos.Novo(Id, tamanhoDoPdf) : Result<AnexoDoPedido>.Failure(recusa);
     }

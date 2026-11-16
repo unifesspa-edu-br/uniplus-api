@@ -13,9 +13,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed partial class PedidoDeConcessao
 {
-    /// <summary>O solicitante declarou, na criação, que anexaria documento; sempre verdadeiro no perfil de governança.</summary>
-    public bool AnexaraDocumento { get; private set; }
-
     /// <summary>A versão fixada na criação, com número e resumo; nula no pedido que não exige termo.</summary>
     public TermoFixado? Termo { get; private set; }
 
@@ -48,7 +45,7 @@ public sealed partial class PedidoDeConcessao
         return Result.Success();
     }
 
-    private bool EnvioEOAceite => Beneficiario.Identidade is not null && !AnexaraDocumento;
+    private bool EnvioEOAceite => Beneficiario.Identidade is not null && !Declaracao.AnexaraDocumento;
 
     private void Fixar(TermoFixado fixado, DateTimeOffset instante)
     {
@@ -92,25 +89,6 @@ public sealed partial class PedidoDeConcessao
         return new DomainError(
             PedidoErrorCodes.TermoExigido,
             "O perfil passou a dar acesso a dado pessoal ou sensível depois da criação do pedido, que não tem termo de responsabilidade fixado. O pedido foi devolvido; refaça-o para aceitar o termo.");
-    }
-
-    // No pedido protegido, o documento entra só se declarado na criação e só enquanto o pedido o aguarda; o pedido comum
-    // continua aceitando anexo até a primeira decisão.
-    private DomainError? RecusaDoNovoAnexo()
-    {
-        if (Termo is null)
-        {
-            return null;
-        }
-
-        if (!AnexaraDocumento)
-        {
-            return new DomainError(
-                PedidoErrorCodes.AnexoNaoDeclarado,
-                "O documento só se anexa ao pedido que declarou, na criação, que o anexaria. Cancele e refaça o pedido declarando o documento.");
-        }
-
-        return Situacao == SituacaoDoPedido.AguardandoDocumento ? null : SituacaoInvalida("O documento declarado já foi verificado.");
     }
 
     // Depois do documento verificado, o pedido aguarda o aceite quando o beneficiário é outra pessoa ou o termo o exige; só

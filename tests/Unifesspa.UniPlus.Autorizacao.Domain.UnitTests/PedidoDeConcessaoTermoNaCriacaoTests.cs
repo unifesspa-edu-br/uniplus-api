@@ -44,7 +44,7 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests
         PedidoDeConcessao pedido = Pedido().ParaSiMesmo().DeclarandoDocumento().Protegido().ComVigente(Vigente).Criado();
 
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
-        pedido.AnexaraDocumento.Should().BeTrue();
+        pedido.Declaracao.AnexaraDocumento.Should().BeTrue();
         pedido.AceiteDoTermo.Should().BeNull();
     }
 
@@ -103,7 +103,7 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests
 
         ExigenciaDoTermo.Do(PerfilDeGovernanca(), Catalogo).Should().BeTrue();
         ExigenciaDoTermo.Do(PerfilComum(), Catalogo).Should().BeFalse();
-        pedido.AnexaraDocumento.Should().BeTrue();
+        pedido.Declaracao.AnexaraDocumento.Should().BeTrue();
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
         pedido.Termo?.VersaoId.Should().Be(Vigente.Id);
     }

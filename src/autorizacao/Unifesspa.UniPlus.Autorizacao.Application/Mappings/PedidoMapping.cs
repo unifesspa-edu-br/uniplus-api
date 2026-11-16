@@ -18,11 +18,11 @@ public static class PedidoMapping
             new IdentidadeDto(p.Solicitante.Emissor, p.Solicitante.ContaId, p.Solicitante.Nome),
             Beneficiario(p),
             new PerfilResumoDto(p.PerfilId, perfil?.Nome ?? string.Empty),
-            NumeroDaVersao(p, perfil), Escopo(p), p.Justificativa,
-            p.ValidaAteSugerida, p.ValidaAte, perfil?.AdmitePrazo ?? false,
+            NumeroDaVersao(p, perfil), Escopo(p), p.Declaracao.Justificativa,
+            p.Declaracao.ValidaAteSugerida, p.ValidaAte, perfil?.AdmitePrazo ?? false,
             p.CriadoEm, p.EncerradoEm, p.ConcessaoId,
             Anexos(p), Decisoes(p), TrocasDeVersao(p),
-            p.AnexaraDocumento, Termo(p));
+            p.Declaracao.AnexaraDocumento, Termo(p));
     }
 
     public static PedidoResumoDto ToResumo(PedidoComPerfil item)
@@ -35,7 +35,7 @@ public static class PedidoMapping
             p.Id, p.Situacao.ToCodigo(), p.EtapaAtual?.ToCodigo(),
             Beneficiario(p),
             new PerfilResumoDto(p.PerfilId, item.PerfilNome),
-            item.Versao, Escopo(p), p.Justificativa,
+            item.Versao, Escopo(p), p.Declaracao.Justificativa,
             p.CriadoEm, p.AguardaAceiteDoTermo);
     }
 

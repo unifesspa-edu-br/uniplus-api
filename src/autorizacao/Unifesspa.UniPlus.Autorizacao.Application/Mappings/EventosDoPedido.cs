@@ -62,7 +62,7 @@ public sealed class EventosDoPedido : IEventosDaOrigem
 
         return
         [
-            new("pedido_criado", pedido.CriadoEm, solicitante, $"Justificativa: {pedido.Justificativa}"),
+            new("pedido_criado", pedido.CriadoEm, solicitante, $"Justificativa: {pedido.Declaracao.Justificativa}"),
             .. pedido.Anexos.SelectMany(a => DoAnexo(a, solicitante)),
             .. DoCancelamento(pedido, solicitante),
         ];
