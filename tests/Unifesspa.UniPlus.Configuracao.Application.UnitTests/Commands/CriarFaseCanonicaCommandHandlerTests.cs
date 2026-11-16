@@ -69,7 +69,7 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
     {
         _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>()).Returns(false);
 
-        var comando = new CriarFaseCanonicaCommand("HOMOLOGACAO", Nome: "Homologação", AgrupaEtapas: true, OrigemData: "NO_EDITAL");
+        var comando = new CriarFaseCanonicaCommand("HOMOLOGACAO_INSCRICOES", Nome: "Homologação", AgrupaEtapas: true, OrigemData: "NO_EDITAL");
 
         Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
             comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);

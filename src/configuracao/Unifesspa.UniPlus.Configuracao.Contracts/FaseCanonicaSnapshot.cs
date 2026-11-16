@@ -17,7 +17,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// congelado como qualquer outro atributo desta lista.
 /// </remarks>
 /// <param name="OrigemId">Id (Guid v7) da fase viva de origem, no momento do congelamento.</param>
-/// <param name="Codigo">Código canônico congelado (ex.: "HOMOLOGACAO").</param>
+/// <param name="Codigo">Código canônico congelado (ex.: "HOMOLOGACAO_INSCRICOES").</param>
 /// <param name="AgrupaEtapas">Sinalizador de agrupamento de etapas pontuadas congelado.</param>
 /// <param name="PermiteComplementacao">Sinalizador de complementação documental congelado.</param>
 /// <param name="ColetaInscricao">Sinalizador de coleta de inscrição congelado.</param>

@@ -17,7 +17,7 @@ public sealed class PrecedenciaFaseTests
 {
     private static Result<PrecedenciaFase> Criar(
         string antecessora = "INSCRICAO",
-        string sucessora = "HOMOLOGACAO",
+        string sucessora = "HOMOLOGACAO_INSCRICOES",
         bool permiteSobreposicao = false,
         IReadOnlyList<PrecedenciaFase>? arestasVivas = null) =>
         PrecedenciaFase.Criar(antecessora, sucessora, permiteSobreposicao, arestasVivas ?? []);
@@ -30,11 +30,11 @@ public sealed class PrecedenciaFaseTests
     [Fact(DisplayName = "Aresta válida preenche os campos e fica ativa com Guid v7")]
     public void Criar_Valida_Aceita()
     {
-        PrecedenciaFase aresta = Criar("INSCRICAO", "HOMOLOGACAO", permiteSobreposicao: true).Value!;
+        PrecedenciaFase aresta = Criar("INSCRICAO", "HOMOLOGACAO_INSCRICOES", permiteSobreposicao: true).Value!;
 
         aresta.Id.Should().NotBe(Guid.Empty);
         aresta.AntecessoraCodigo.Should().Be("INSCRICAO");
-        aresta.SucessoraCodigo.Should().Be("HOMOLOGACAO");
+        aresta.SucessoraCodigo.Should().Be("HOMOLOGACAO_INSCRICOES");
         aresta.PermiteSobreposicao.Should().BeTrue();
         aresta.IsDeleted.Should().BeFalse();
     }
@@ -69,13 +69,13 @@ public sealed class PrecedenciaFaseTests
         r.Error!.Code.Should().Be(PrecedenciaFaseErrorCodes.SucessoraForaDoConjuntoCanonico);
     }
 
+    // A janela corre dentro das inscrições (UNI-REQ-0106), então a aresta que a
+    // liga à coleta permite sobreposição. Referenciá-la nos dois sentidos é o que
+    // prova que o código entrou também nas duas CHECKs de precedencias_entre_fases — sem
+    // elas a fase existiria no cadastro e nenhuma aresta poderia apontar para ela.
     [Fact(DisplayName = "Solicitação de isenção é aceita como antecessora e como sucessora")]
     public void Criar_SolicitacaoIsencaoNosDoisSentidos_Aceita()
     {
-        // A janela corre dentro das inscrições (UNI-REQ-0106), então a aresta que a
-        // liga à coleta permite sobreposição. Referenciá-la nos dois sentidos é o que
-        // prova que o código entrou também nas duas CHECKs de precedencias_entre_fases — sem
-        // elas a fase existiria no cadastro e nenhuma aresta poderia apontar para ela.
         Result<PrecedenciaFase> comoSucessora = Criar(
             antecessora: "INSCRICAO",
             sucessora: FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
@@ -83,7 +83,7 @@ public sealed class PrecedenciaFaseTests
 
         Result<PrecedenciaFase> comoAntecessora = Criar(
             antecessora: FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
-            sucessora: "HOMOLOGACAO");
+            sucessora: "HOMOLOGACAO_INSCRICOES");
 
         comoSucessora.IsSuccess.Should().BeTrue();
         comoSucessora.Value!.PermiteSobreposicao.Should().BeTrue();
@@ -157,10 +157,10 @@ public sealed class PrecedenciaFaseTests
     [Fact(DisplayName = "Aresta duplicada (mesmo par já vivo) é rejeitada")]
     public void Criar_ArestaDuplicada_Falha()
     {
-        PrecedenciaFase existente = Aresta("INSCRICAO", "HOMOLOGACAO");
+        PrecedenciaFase existente = Aresta("INSCRICAO", "HOMOLOGACAO_INSCRICOES");
 
         Result<PrecedenciaFase> r = Criar(
-            "INSCRICAO", "HOMOLOGACAO", arestasVivas: [existente]);
+            "INSCRICAO", "HOMOLOGACAO_INSCRICOES", arestasVivas: [existente]);
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(PrecedenciaFaseErrorCodes.ArestaDuplicada);
@@ -169,7 +169,7 @@ public sealed class PrecedenciaFaseTests
     [Fact(DisplayName = "Mesma antecessora com sucessora diferente não é duplicata")]
     public void Criar_MesmaAntecessoraSucessoraDiferente_Aceita()
     {
-        PrecedenciaFase existente = Aresta("INSCRICAO", "HOMOLOGACAO");
+        PrecedenciaFase existente = Aresta("INSCRICAO", "HOMOLOGACAO_INSCRICOES");
 
         Result<PrecedenciaFase> r = Criar(
             "INSCRICAO", "ENSALAMENTO", arestasVivas: [existente]);
@@ -182,10 +182,10 @@ public sealed class PrecedenciaFaseTests
     [Fact(DisplayName = "Aresta que fecha ciclo direto (A→B, B→A) é rejeitada")]
     public void Criar_CicloDireto_Falha()
     {
-        PrecedenciaFase existente = Aresta("INSCRICAO", "HOMOLOGACAO");
+        PrecedenciaFase existente = Aresta("INSCRICAO", "HOMOLOGACAO_INSCRICOES");
 
         Result<PrecedenciaFase> r = Criar(
-            "HOMOLOGACAO", "INSCRICAO", arestasVivas: [existente]);
+            "HOMOLOGACAO_INSCRICOES", "INSCRICAO", arestasVivas: [existente]);
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(PrecedenciaFaseErrorCodes.CicloDetectado);
@@ -194,8 +194,8 @@ public sealed class PrecedenciaFaseTests
     [Fact(DisplayName = "Aresta que fecha ciclo transitivo (A→B→C, C→A) é rejeitada")]
     public void Criar_CicloTransitivo_Falha()
     {
-        PrecedenciaFase ab = Aresta("INSCRICAO", "HOMOLOGACAO");
-        PrecedenciaFase bc = Aresta("HOMOLOGACAO", "AVALIACAO");
+        PrecedenciaFase ab = Aresta("INSCRICAO", "HOMOLOGACAO_INSCRICOES");
+        PrecedenciaFase bc = Aresta("HOMOLOGACAO_INSCRICOES", "AVALIACAO");
 
         Result<PrecedenciaFase> r = Criar(
             "AVALIACAO", "INSCRICAO", arestasVivas: [ab, bc]);
@@ -207,8 +207,8 @@ public sealed class PrecedenciaFaseTests
     [Fact(DisplayName = "Aresta que não fecha ciclo (grafo acíclico) é aceita")]
     public void Criar_SemCiclo_Aceita()
     {
-        PrecedenciaFase ab = Aresta("INSCRICAO", "HOMOLOGACAO");
-        PrecedenciaFase bc = Aresta("HOMOLOGACAO", "AVALIACAO");
+        PrecedenciaFase ab = Aresta("INSCRICAO", "HOMOLOGACAO_INSCRICOES");
+        PrecedenciaFase bc = Aresta("HOMOLOGACAO_INSCRICOES", "AVALIACAO");
 
         Result<PrecedenciaFase> r = Criar(
             "INSCRICAO", "AVALIACAO", arestasVivas: [ab, bc]);
@@ -216,21 +216,21 @@ public sealed class PrecedenciaFaseTests
         r.IsSuccess.Should().BeTrue();
     }
 
+    private static readonly (string Antecessora, string Sucessora)[] ArestasEstruturaisDoCiclo =
+    [
+        ("INSCRICAO", "HOMOLOGACAO_INSCRICOES"),
+        ("RESULTADO_PRELIMINAR", "RECURSOS"),
+        ("RECURSOS", "RESULTADO_FINAL"),
+        ("RESULTADO_FINAL", "HABILITACAO"),
+        ("HABILITACAO", "MATRICULA"),
+        ("HETEROIDENTIFICACAO", "HOMOLOGACAO_RESULTADO_FINAL"),
+    ];
+
     [Fact(DisplayName = "As seis arestas de §3.3 formam um grafo acíclico entre si")]
     public void Criar_SeisArestasEstruturais_FormamGrafoAciclico()
     {
-        var seis = new (string Antecessora, string Sucessora)[]
-        {
-            ("INSCRICAO", "HOMOLOGACAO"),
-            ("RESULTADO_PRELIMINAR", "RECURSOS"),
-            ("RECURSOS", "RESULTADO_FINAL"),
-            ("RESULTADO_FINAL", "HABILITACAO"),
-            ("HABILITACAO", "MATRICULA"),
-            ("HETEROIDENTIFICACAO", "HOMOLOGACAO_RESULTADO_FINAL"),
-        };
-
         List<PrecedenciaFase> vivas = [];
-        foreach ((string antecessora, string sucessora) in seis)
+        foreach ((string antecessora, string sucessora) in ArestasEstruturaisDoCiclo)
         {
             Result<PrecedenciaFase> r = PrecedenciaFase.Criar(antecessora, sucessora, false, vivas);
             r.IsSuccess.Should().BeTrue($"a aresta {antecessora}→{sucessora} não deveria fechar ciclo com as anteriores");
@@ -245,14 +245,14 @@ public sealed class PrecedenciaFaseTests
     [Fact(DisplayName = "Atualizar troca PermiteSobreposicao mantendo o par imutável")]
     public void Atualizar_TrocaSobreposicao_MantemParImutavel()
     {
-        PrecedenciaFase aresta = Aresta("INSCRICAO", "HOMOLOGACAO");
+        PrecedenciaFase aresta = Aresta("INSCRICAO", "HOMOLOGACAO_INSCRICOES");
         Guid idOriginal = aresta.Id;
 
         aresta.Atualizar(true);
 
         aresta.PermiteSobreposicao.Should().BeTrue();
         aresta.AntecessoraCodigo.Should().Be("INSCRICAO");
-        aresta.SucessoraCodigo.Should().Be("HOMOLOGACAO");
+        aresta.SucessoraCodigo.Should().Be("HOMOLOGACAO_INSCRICOES");
         aresta.Id.Should().Be(idOriginal);
     }
 }

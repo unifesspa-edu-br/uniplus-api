@@ -26,7 +26,7 @@ internal static class ProcessoParaMotivos
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases(
-            [Fase(1, "INSCRICAO", InicioDaInscricao, coletaIsencao: true), Fase(2, "HOMOLOGACAO", InicioDaHomologacao, coletaIsencao: false)],
+            [Fase(1, "INSCRICAO", InicioDaInscricao, coletaIsencao: true), Fase(2, "HOMOLOGACAO_INSCRICOES", InicioDaHomologacao, coletaIsencao: false)],
             [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         if (fundamentos.Length > 0)
         {

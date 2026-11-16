@@ -76,7 +76,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void TipoUnico_PreliminarEDefinitivo_Reprova()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "HOMOLOGACAO",
+            FaseQuePublica(1, "HOMOLOGACAO_INSCRICOES",
                 ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Preliminar),
                 ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Definitivo)));
 
@@ -84,14 +84,14 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             Unicos("HOMOLOGACAO_INSCRICOES", "Homologação das inscrições"));
 
         pendencia.Should().NotBeNull();
-        pendencia!.Message.Should().Contain("Homologação das inscrições").And.Contain("na fase 'HOMOLOGACAO' (2 vezes)");
+        pendencia!.Message.Should().Contain("Homologação das inscrições").And.Contain("na fase 'HOMOLOGACAO_INSCRICOES' (2 vezes)");
     }
 
     [Fact(DisplayName = "Tipo único declarado sem papel e com papel reprova")]
     public void TipoUnico_SemPapelEComPapel_Reprova()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "HOMOLOGACAO", ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", null)),
+            FaseQuePublica(1, "HOMOLOGACAO_INSCRICOES", ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", null)),
             FaseQuePublica(2, "RESULTADO", ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Definitivo)));
 
         DomainError? pendencia = TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo),
@@ -105,7 +105,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void TipoNaoUnico_PreliminarEDefinitivo_Aceita()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "HOMOLOGACAO",
+            FaseQuePublica(1, "HOMOLOGACAO_INSCRICOES",
                 ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
                 ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
 
@@ -134,7 +134,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void TipoNaoUnico_PreliminarEDefinitivo_Publica()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "HOMOLOGACAO",
+            FaseQuePublica(1, "HOMOLOGACAO_INSCRICOES",
                 ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
                 ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)));
 
@@ -270,7 +270,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
     public void Aviso_DefinitivoEmUmLugarSo_NaoGeraAviso()
     {
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
-            FaseQuePublica(1, "HOMOLOGACAO",
+            FaseQuePublica(1, "HOMOLOGACAO_INSCRICOES",
                 ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
                 ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)));
 

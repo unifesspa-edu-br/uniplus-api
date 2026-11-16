@@ -40,7 +40,7 @@ public static class FaseCanonicaCatalogo
     [
         new(CodigoInscricao, "Inscrição"),
         new(CodigoSolicitacaoIsencao, "Solicitação de isenção"),
-        new("HOMOLOGACAO", "Homologação das inscrições"),
+        new("HOMOLOGACAO_INSCRICOES", "Homologação das inscrições"),
         new("ENSALAMENTO", "Ensalamento"),
         new(CodigoAvaliacao, "Avaliação"),
         new("CLASSIFICACAO", "Classificação"),
@@ -70,7 +70,7 @@ public static class FaseCanonicaCatalogo
     /// </summary>
     public static readonly IReadOnlyList<string> CodigosComComplementacaoPermitida =
     [
-        "HOMOLOGACAO",
+        "HOMOLOGACAO_INSCRICOES",
         "RECURSOS",
     ];
 

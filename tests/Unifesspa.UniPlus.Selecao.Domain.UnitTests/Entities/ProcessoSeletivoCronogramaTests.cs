@@ -64,7 +64,7 @@ public sealed partial class ProcessoSeletivoCronogramaTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase1 = Fase(1, "INSCRICAO").Value!;
-        FaseCronograma fase2 = Fase(1, "HOMOLOGACAO").Value!;
+        FaseCronograma fase2 = Fase(1, "HOMOLOGACAO_INSCRICOES").Value!;
 
         Result resultado = processo.DefinirCronogramaFases([fase1, fase2], [], PrecondicaoIfMatch.Ausente);
 
@@ -130,15 +130,25 @@ public sealed partial class ProcessoSeletivoCronogramaTests
     public void Precedencia_OrdemInvertida_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        FaseCronograma homologacao = Fase(1, "HOMOLOGACAO").Value!;
+        FaseCronograma homologacao = Fase(1, "HOMOLOGACAO_INSCRICOES").Value!;
         FaseCronograma inscricao = Fase(2, "INSCRICAO", coletaInscricao: true).Value!;
-        List<ArestaPrecedencia> precedencias = [Aresta("INSCRICAO", "HOMOLOGACAO")];
+        List<ArestaPrecedencia> precedencias = [Aresta("INSCRICAO", "HOMOLOGACAO_INSCRICOES")];
 
         Result resultado = processo.DefinirCronogramaFases([homologacao, inscricao], precedencias, PrecondicaoIfMatch.Ausente);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.PrecedenciaFaseViolada");
     }
+
+    private static List<ArestaPrecedencia> ArestasEstruturaisDoCiclo() =>
+    [
+        Aresta("INSCRICAO", "HOMOLOGACAO_INSCRICOES"),
+        Aresta("RESULTADO_PRELIMINAR", "RECURSOS"),
+        Aresta("RECURSOS", "RESULTADO_FINAL"),
+        Aresta("RESULTADO_FINAL", "HABILITACAO"),
+        Aresta("HABILITACAO", "MATRICULA"),
+        Aresta("HETEROIDENTIFICACAO", "HOMOLOGACAO_RESULTADO_FINAL"),
+    ];
 
     [Fact(DisplayName = "CA-08 (contraprova): a AUSÊNCIA de uma das duas fases da aresta NÃO é violação — cronograma mínimo passa")]
     public void Precedencia_FaseAusente_NaoEhViolacao()
@@ -147,36 +157,33 @@ public sealed partial class ProcessoSeletivoCronogramaTests
         // Cronograma mínimo: importação → classificação → habilitação, SEM homologação e SEM avaliação.
         FaseCronograma classificacao = Fase(1, "CLASSIFICACAO", produzResultado: true).Value!;
         FaseCronograma habilitacao = Fase(2, "HABILITACAO").Value!;
-        List<ArestaPrecedencia> precedencias =
-        [
-            Aresta("INSCRICAO", "HOMOLOGACAO"),
-            Aresta("RESULTADO_PRELIMINAR", "RECURSOS"),
-            Aresta("RECURSOS", "RESULTADO_FINAL"),
-            Aresta("RESULTADO_FINAL", "HABILITACAO"),
-            Aresta("HABILITACAO", "MATRICULA"),
-            Aresta("HETEROIDENTIFICACAO", "HOMOLOGACAO_RESULTADO_FINAL"),
-        ];
 
-        Result resultado = processo.DefinirCronogramaFases([classificacao, habilitacao], precedencias, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([classificacao, habilitacao], ArestasEstruturaisDoCiclo(), PrecondicaoIfMatch.Ausente);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
     // ── CA-09 — sobreposição de janelas ──
 
-    [Fact(DisplayName = "CA-09: janelas de fases dependentes que se sobrepõem são recusadas quando o cadastro NÃO permite sobreposição")]
-    public void Sobreposicao_NaoPermitida_Recusa()
+    private static (FaseCronograma Inscricao, FaseCronograma Homologacao) InscricaoEHomologacaoComJanelasSobrepostas()
     {
-        ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma inscricao = Fase(
             1, "INSCRICAO", coletaInscricao: true, coletaSolicitacaoIsencao: false,
             inicio: new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 6, 30, 0, 0, 0, TimeSpan.Zero)).Value!;
         FaseCronograma homologacao = Fase(
-            2, "HOMOLOGACAO",
+            2, "HOMOLOGACAO_INSCRICOES",
             inicio: new DateTimeOffset(2026, 6, 15, 0, 0, 0, TimeSpan.Zero),
             fim: new DateTimeOffset(2026, 7, 5, 0, 0, 0, TimeSpan.Zero)).Value!;
-        List<ArestaPrecedencia> precedencias = [Aresta("INSCRICAO", "HOMOLOGACAO", permiteSobreposicao: false)];
+        return (inscricao, homologacao);
+    }
+
+    [Fact(DisplayName = "CA-09: janelas de fases dependentes que se sobrepõem são recusadas quando o cadastro NÃO permite sobreposição")]
+    public void Sobreposicao_NaoPermitida_Recusa()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        (FaseCronograma inscricao, FaseCronograma homologacao) = InscricaoEHomologacaoComJanelasSobrepostas();
+        List<ArestaPrecedencia> precedencias = [Aresta("INSCRICAO", "HOMOLOGACAO_INSCRICOES", permiteSobreposicao: false)];
 
         Result resultado = processo.DefinirCronogramaFases([inscricao, homologacao], precedencias, PrecondicaoIfMatch.Ausente);
 
@@ -188,15 +195,8 @@ public sealed partial class ProcessoSeletivoCronogramaTests
     public void Sobreposicao_Permitida_Aceita()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        FaseCronograma inscricao = Fase(
-            1, "INSCRICAO", coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 6, 30, 0, 0, 0, TimeSpan.Zero)).Value!;
-        FaseCronograma homologacao = Fase(
-            2, "HOMOLOGACAO",
-            inicio: new DateTimeOffset(2026, 6, 15, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 7, 5, 0, 0, 0, TimeSpan.Zero)).Value!;
-        List<ArestaPrecedencia> precedencias = [Aresta("INSCRICAO", "HOMOLOGACAO", permiteSobreposicao: true)];
+        (FaseCronograma inscricao, FaseCronograma homologacao) = InscricaoEHomologacaoComJanelasSobrepostas();
+        List<ArestaPrecedencia> precedencias = [Aresta("INSCRICAO", "HOMOLOGACAO_INSCRICOES", permiteSobreposicao: true)];
 
         Result resultado = processo.DefinirCronogramaFases([inscricao, homologacao], precedencias, PrecondicaoIfMatch.Ausente);
 
@@ -260,7 +260,7 @@ public sealed partial class ProcessoSeletivoCronogramaTests
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = Fase(
             1,
-            "HOMOLOGACAO",
+            "HOMOLOGACAO_INSCRICOES",
             produtos:
             [
                 ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),

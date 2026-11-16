@@ -56,7 +56,7 @@ public static class FaseCanonicaSeed
             ColetaInscricao: false, AgrupaEtapas: false, PermiteComplementacao: false,
             BaseLegal: "Lei nº 12.799/2013", ColetaSolicitacaoIsencao: true),
 
-        new(SeedId(3), "HOMOLOGACAO", "Homologação das inscrições",
+        new(SeedId(3), "HOMOLOGACAO_INSCRICOES", "Homologação das inscrições",
             "Conferência das inscrições recebidas e publicação de quais foram homologadas.",
             OrigemDataFase.NoEdital,
             ColetaInscricao: false, AgrupaEtapas: false, PermiteComplementacao: true,

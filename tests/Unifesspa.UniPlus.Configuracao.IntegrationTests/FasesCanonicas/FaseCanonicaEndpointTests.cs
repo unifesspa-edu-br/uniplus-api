@@ -171,7 +171,7 @@ public sealed class FaseCanonicaEndpointTests
     [Fact(DisplayName = "POST com agrupar etapas fora da avaliação retorna 422 (coerência de domínio)")]
     public async Task Criar_AgrupaEtapasIncoerente_Retorna422()
     {
-        var body = new { codigo = "HOMOLOGACAO", nome = "Homologação", agrupaEtapas = true };
+        var body = new { codigo = "HOMOLOGACAO_INSCRICOES", nome = "Homologação", agrupaEtapas = true };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -184,7 +184,7 @@ public sealed class FaseCanonicaEndpointTests
     [InlineData("DELEGADA")]
     public async Task Criar_OrigemDataComTokenAntigo_Retorna422DeOrigemInvalida(string origemData)
     {
-        var body = new { codigo = "HOMOLOGACAO", nome = "Homologação", origemData };
+        var body = new { codigo = "HOMOLOGACAO_INSCRICOES", nome = "Homologação", origemData };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);

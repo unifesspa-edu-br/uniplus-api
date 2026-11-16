@@ -26,19 +26,19 @@ public sealed partial class ProcessoSeletivoCronogramaTests
             .Which.Error.Code.Should().Be("ProcessoSeletivo.ConclusaoDeclaradaSemPreliminar");
     }
 
+    private static ProdutoDaFase[] ProdutosPreliminarEDefinitivoDaHomologacao() =>
+    [
+        ProdutoDaFase.Criar("HOMOLOGACAO_PRELIMINAR", PapelProdutoFase.Preliminar),
+        ProdutoDaFase.Criar("HOMOLOGACAO_DEFINITIVA", PapelProdutoFase.Definitivo),
+    ];
+
     [Fact(DisplayName = "CA-09: fase que declara a SI MESMA como concluinte é recusada")]
     public void Conclusao_DeclaradaEmFaseQueSeConclui_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = Fase(
-            1,
-            "HOMOLOGACAO",
-            produtos:
-            [
-                ProdutoDaFase.Criar("HOMOLOGACAO_PRELIMINAR", PapelProdutoFase.Preliminar),
-                ProdutoDaFase.Criar("HOMOLOGACAO_DEFINITIVA", PapelProdutoFase.Definitivo),
-            ],
-            faseConcluinteCodigo: "HOMOLOGACAO").Value!;
+            1, "HOMOLOGACAO_INSCRICOES", produtos: ProdutosPreliminarEDefinitivoDaHomologacao(),
+            faseConcluinteCodigo: "HOMOLOGACAO_INSCRICOES").Value!;
 
         Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
 
@@ -257,10 +257,10 @@ public sealed partial class ProcessoSeletivoCronogramaTests
         FaseCronograma primeira = Fase(1, "INSCRICAO", coletaInscricao: true).Value!;
         processo.DefinirCronogramaFases([primeira], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        FaseCronograma segunda = Fase(1, "HOMOLOGACAO").Value!;
+        FaseCronograma segunda = Fase(1, "HOMOLOGACAO_INSCRICOES").Value!;
         Result resultado = processo.DefinirCronogramaFases([segunda], [], PrecondicaoIfMatch.Ausente);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        processo.CronogramaFases.Should().ContainSingle().Which.Codigo.Should().Be("HOMOLOGACAO");
+        processo.CronogramaFases.Should().ContainSingle().Which.Codigo.Should().Be("HOMOLOGACAO_INSCRICOES");
     }
 }

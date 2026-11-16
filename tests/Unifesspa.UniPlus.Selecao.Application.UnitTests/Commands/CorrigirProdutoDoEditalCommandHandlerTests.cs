@@ -42,7 +42,7 @@ public sealed class CorrigirProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Errata_DeItemPublicado_EAceita()
     {
         (ProdutoDaFase preliminar, _) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
         AtoDoProcesso original = Publicado(Materia, preliminar.Id);
         AtoDoProcesso? gravado = null;
         await Atos.AdicionarAsync(Arg.Do<AtoDoProcesso>(a => gravado = a), Arg.Any<CancellationToken>());
@@ -61,17 +61,23 @@ public sealed class CorrigirProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Correcao_SemPolitica_ERecusada()
     {
         (ProdutoDaFase preliminar, _) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
         AtoDoProcesso original = Publicado(Materia, preliminar.Id);
 
         await DeveRecusar(Comando(preliminar.Id, politica: false, corrige: original.Id), AtoDoProcessoErrorCodes.PoliticaDeDivulgacaoNaoConfirmada);
     }
 
+    private (ProdutoDaFase Preliminar, ProdutoDaFase Definitivo) ParNaMesmaFase()
+    {
+        (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar, definitivo));
+        return (preliminar, definitivo);
+    }
+
     [Fact(DisplayName = "A correção que aponta ato de outro item é recusada")]
     public async Task Correcao_DeAtoDeOutroItem_ERecusada()
     {
-        (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar, definitivo));
+        (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = ParNaMesmaFase();
         AtoDoProcesso doPreliminar = Publicado(Materia, preliminar.Id);
         Publicado(Materia, definitivo.Id);
 
@@ -81,8 +87,7 @@ public sealed class CorrigirProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     [Fact(DisplayName = "A correção do preliminar depois do definitivo publicado é recusada, mandando corrigir o definitivo, que continua corrigível")]
     public async Task Correcao_DoPreliminarDepoisDoDefinitivo_ERecusada()
     {
-        (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar, definitivo));
+        (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = ParNaMesmaFase();
         AtoDoProcesso doPreliminar = Publicado(Materia, preliminar.Id);
 
         (Result<AtoPublicadoDto> antes, _) = await Publicar(Comando(preliminar.Id, corrige: doPreliminar.Id));
@@ -123,7 +128,7 @@ public sealed class CorrigirProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Correcao_DepoisDeLigarCongelaNoCatalogo_MantemAClasseCongelada()
     {
         (ProdutoDaFase preliminar, _) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
         AtoDoProcesso original = Publicado(Materia, preliminar.Id);
         Tipo(Materia, resultado: true, congela: true);
 

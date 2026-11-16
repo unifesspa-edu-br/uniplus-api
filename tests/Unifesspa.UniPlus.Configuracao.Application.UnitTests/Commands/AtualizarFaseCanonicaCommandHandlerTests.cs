@@ -57,7 +57,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
     [Fact(DisplayName = "Coerência dependente do código (agrupar etapas) busca a fase por Id e só então recusa (422) sem persistir")]
     public async Task Handle_CoerenciaInvalida_BuscaPorIdERecusa422SemPersistir()
     {
-        FaseCanonica existente = Existente("HOMOLOGACAO");
+        FaseCanonica existente = Existente("HOMOLOGACAO_INSCRICOES");
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         var comando = new AtualizarFaseCanonicaCommand(

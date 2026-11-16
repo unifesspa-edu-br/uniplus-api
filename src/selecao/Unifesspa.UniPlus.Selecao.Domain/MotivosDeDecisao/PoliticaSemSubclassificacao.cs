@@ -38,7 +38,7 @@ public abstract class PoliticaSemSubclassificacao : IPoliticaDoTipoDeMotivo
 }
 
 /// <summary>Motivos da homologação das inscrições, avaliada na fase de homologação.</summary>
-public sealed class PoliticaDaHomologacaoDasInscricoes() : PoliticaSemSubclassificacao(TipoMotivoDeDecisao.HomologacaoDasInscricoes, "HOMOLOGACAO");
+public sealed class PoliticaDaHomologacaoDasInscricoes() : PoliticaSemSubclassificacao(TipoMotivoDeDecisao.HomologacaoDasInscricoes, "HOMOLOGACAO_INSCRICOES");
 
 /// <summary>Motivos da análise documental, avaliada na fase de habilitação.</summary>
 public sealed class PoliticaDaAnaliseDocumental() : PoliticaSemSubclassificacao(TipoMotivoDeDecisao.AnaliseDocumental, "HABILITACAO");

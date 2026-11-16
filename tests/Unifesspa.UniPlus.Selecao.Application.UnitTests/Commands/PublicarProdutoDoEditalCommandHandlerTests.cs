@@ -28,7 +28,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Preliminar_ComPoliticaConfirmada_GravaORegistroDoItemEEntregaOAtoAPorta()
     {
         (ProdutoDaFase preliminar, _) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
         AtoDoProcesso? gravado = null;
         await Atos.AdicionarAsync(Arg.Do<AtoDoProcesso>(a => gravado = a), Arg.Any<CancellationToken>());
         AtoNormativoPublicado? entregue = null;
@@ -37,13 +37,23 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
         (Result<AtoPublicadoDto> resposta, IEnumerable<object> mensagens) = await Publicar(Comando(preliminar.Id));
 
         resposta.IsSuccess.Should().BeTrue();
+        ConferirAtoGravado(gravado, preliminar);
+        mensagens.Should().ContainSingle().Which.Should().Be(new CopiarDocumentosDoAtoAoAcervo(ProcessoId, gravado!.Id));
+        ConferirAtoEntregue(entregue, gravado);
+    }
+
+    private void ConferirAtoGravado(AtoDoProcesso? gravado, ProdutoDaFase preliminar)
+    {
         gravado.Should().NotBeNull();
         gravado!.ItemDoEdital.Should().Be(ItensDoCronograma[preliminar.Id].Chave);
         gravado.TipoCodigo.Should().Be(Materia, "o tipo vem do item que o edital congelou");
         gravado.AtoCorrigidoId.Should().BeNull();
         gravado.PoliticaDeDivulgacaoConfirmadaPorContaId.Should().Be(ContaId);
         gravado.PoliticaDeDivulgacaoConfirmadaEm.Should().Be(Agora);
-        mensagens.Should().ContainSingle().Which.Should().Be(new CopiarDocumentosDoAtoAoAcervo(ProcessoId, gravado.Id));
+    }
+
+    private void ConferirAtoEntregue(AtoNormativoPublicado? entregue, AtoDoProcesso gravado)
+    {
         entregue!.AtoId.Should().Be(gravado.Id);
         entregue.TipoCodigo.Should().Be(Materia);
         entregue.DocumentoHash.Should().Be(Principal.HashSha256);
@@ -54,7 +64,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Item_LeORelogioUmaVez_EOInstanteVaiParaOAtoEParaAPorta()
     {
         (ProdutoDaFase preliminar, _) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
         RelogioDeLeituraContada relogio = new(Agora);
         AtoDoProcesso? gravado = null;
         await Atos.AdicionarAsync(Arg.Do<AtoDoProcesso>(a => gravado = a), Arg.Any<CancellationToken>());
@@ -71,7 +81,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Item_ConsultaOTipoNoDiaDoInstante_NaoNoDaDataDoAto()
     {
         (ProdutoDaFase preliminar, _) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
         DateOnly declarada = DataDoAto.AddDays(-5);
 
         (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(preliminar.Id) with { DataDoAto = declarada });
@@ -85,7 +95,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Produto_ForaDaVersaoVigente_ERecusado()
     {
         (ProdutoDaFase preliminar, _) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
 
         await DeveRecusar(Comando(Guid.CreateVersion7()), AtoDoProcessoErrorCodes.ProdutoNaoDeclarado);
     }
@@ -94,7 +104,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Definitivo_AntesDoPreliminar_ERecusado()
     {
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar, definitivo));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar, definitivo));
 
         await DeveRecusar(Comando(definitivo.Id), AtoDoProcessoErrorCodes.PreliminarNaoPublicado);
     }
@@ -103,7 +113,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Definitivo_ComPreliminarPublicado_EAceito()
     {
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar, definitivo));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar, definitivo));
         Publicado(Materia, preliminar.Id);
 
         (Result<AtoPublicadoDto> resposta, _) = await Publicar(Comando(definitivo.Id));
@@ -115,7 +125,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Produto_JaPublicado_ERecusado()
     {
         (ProdutoDaFase preliminar, _) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
         Publicado(Materia, preliminar.Id);
 
         await DeveRecusar(Comando(preliminar.Id), AtoDoProcessoErrorCodes.ProdutoJaPublicado);
@@ -125,7 +135,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Politica_ExigidaSoDoResultado()
     {
         (ProdutoDaFase preliminar, _) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
 
         await DeveRecusar(Comando(preliminar.Id, politica: false), AtoDoProcessoErrorCodes.PoliticaDeDivulgacaoNaoConfirmada);
 
@@ -142,7 +152,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Tipo_QueCongelaConfiguracao_ERecusado()
     {
         (ProdutoDaFase preliminar, _) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
         Congelado = Congelado with { CongelaConfiguracao = true };
 
         await DeveRecusar(Comando(preliminar.Id), AtoDoProcessoErrorCodes.TipoCongelaConfiguracao);
@@ -152,7 +162,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task RecusaDaPorta_DevolveADescartaENaoGrava()
     {
         (ProdutoDaFase preliminar, _) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
         DomainError vagaOcupada = new("AtoNormativo.ObjetoJaTemAtoVivoDoTipo", "O objeto já tem o ato RESULTADO_HOMOLOGACAO nº 1/2027 vivo.");
         Registro.RegistrarAsync(Arg.Any<AtoNormativoPublicado>(), Arg.Any<CancellationToken>()).Returns(Result.Failure(vagaOcupada));
 
@@ -168,7 +178,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task ItemPublicadoNaCorrida_EDaSelecaoENaoConsultaAPorta()
     {
         (ProdutoDaFase preliminar, _) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
         UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .Returns<Task>(_ => throw ExcecaoDeBancoDeTeste.ViolacaoDeUnicidade("ux_atos_do_processo_item_original"));
 
@@ -184,7 +194,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Definitivo_DepoisDeMarcarOTipoComoUnicoNoCatalogo_NaoEImpedido()
     {
         (ProdutoDaFase preliminar, ProdutoDaFase definitivo) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar, definitivo));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar, definitivo));
         Publicado(Materia, preliminar.Id);
         Tipo(Materia, resultado: true, unico: true);
 
@@ -199,7 +209,7 @@ public sealed class PublicarProdutoDoEditalCommandHandlerTests : ContextoDaPubli
     public async Task Resultado_DepoisDeDesligarEhResultadoNoCatalogo_AindaExigeAPolitica()
     {
         (ProdutoDaFase preliminar, _) = Par();
-        Cronograma(Fase("HOMOLOGACAO", 1, preliminar));
+        Cronograma(Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar));
         Tipo(Materia, resultado: false);
 
         await DeveRecusar(Comando(preliminar.Id, politica: false), AtoDoProcessoErrorCodes.PoliticaDeDivulgacaoNaoConfirmada);

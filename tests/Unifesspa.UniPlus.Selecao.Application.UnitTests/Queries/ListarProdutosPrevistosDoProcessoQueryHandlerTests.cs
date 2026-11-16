@@ -142,11 +142,11 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         ConfiguracaoDivulgacao ampliada = ConfiguracaoDivulgacao.Criar(
             [ConfiguracaoDivulgacao.NumeroInscricao, ConfiguracaoDivulgacao.Nome], "Lista nominal exigida pelo edital").Value!;
 
-        Cronograma([Fase("HOMOLOGACAO", 1, preliminar)], divulgacao: ampliada);
+        Cronograma([Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar)], divulgacao: ampliada);
         (await Consultar()).Value!.PoliticaDeDivulgacao.CamposPublicos
             .Should().BeEquivalentTo([ConfiguracaoDivulgacao.NumeroInscricao, ConfiguracaoDivulgacao.Nome]);
 
-        Cronograma([Fase("HOMOLOGACAO", 1, preliminar)]);
+        Cronograma([Fase("HOMOLOGACAO_INSCRICOES", 1, preliminar)]);
         (await Consultar()).Value!.PoliticaDeDivulgacao.CamposPublicos
             .Should().Equal(ConfiguracaoDivulgacao.NumeroInscricao);
     }
@@ -177,7 +177,7 @@ public sealed class ListarProdutosPrevistosDoProcessoQueryHandlerTests
         Cronograma([FaseDeOrigem(origem, "INSCRICAO", 1, null, preliminar, definitivo)]);
         AtoDoProcesso ato = Publicar(Materia, preliminar.Id);
         (ProdutoDaFase preliminarRecriado, ProdutoDaFase definitivoRecriado) = Par();
-        Cronograma([Fase("HOMOLOGACAO", 1), FaseDeOrigem(origem, "INSCRICAO", 2, null, preliminarRecriado, definitivoRecriado)]);
+        Cronograma([Fase("HOMOLOGACAO_INSCRICOES", 1), FaseDeOrigem(origem, "INSCRICAO", 2, null, preliminarRecriado, definitivoRecriado)]);
 
         ProdutoPrevistoDto doPreliminar = await ItemDaFase(preliminarRecriado.Id);
         ProdutoPrevistoDto doDefinitivo = await ItemDaFase(definitivoRecriado.Id);

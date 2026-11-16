@@ -202,6 +202,15 @@ public sealed class FaseCanonicaTests
         r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.OrigemDataInvalida);
     }
 
+    [Fact(DisplayName = "O código antigo HOMOLOGACAO, sem a qualificação, deixou de ser canônico e é recusado")]
+    public void Criar_CodigoAntigoDaHomologacao_ForaDoConjuntoCanonico()
+    {
+        Result<FaseCanonica> resultado = Criar(codigo: "HOMOLOGACAO", nome: "Homologação das inscrições");
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(FaseCanonicaErrorCodes.CodigoForaDoConjuntoCanonico);
+    }
+
     // ── Coerência agrupa_etapas ⇒ avaliação ────────────────────────────────────
 
     [Fact(DisplayName = "Agrupar etapas verdadeiro para a fase de avaliação é aceito")]
@@ -215,7 +224,7 @@ public sealed class FaseCanonicaTests
     [Fact(DisplayName = "Agrupar etapas verdadeiro para fase que não é avaliação é rejeitado")]
     public void Criar_AgrupaEtapasForaDaAvaliacao_Falha()
     {
-        Result<FaseCanonica> r = Criar(codigo: "HOMOLOGACAO", nome: "Homologação", agrupaEtapas: true);
+        Result<FaseCanonica> r = Criar(codigo: "HOMOLOGACAO_INSCRICOES", nome: "Homologação", agrupaEtapas: true);
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao);
@@ -224,7 +233,7 @@ public sealed class FaseCanonicaTests
     [Fact(DisplayName = "Agrupar etapas é falso por omissão")]
     public void Criar_SemAgrupaEtapas_DefaultFalso()
     {
-        FaseCanonica f = Criar(codigo: "HOMOLOGACAO", nome: "Homologação").Value!;
+        FaseCanonica f = Criar(codigo: "HOMOLOGACAO_INSCRICOES", nome: "Homologação").Value!;
 
         f.AgrupaEtapas.Should().BeFalse();
     }
@@ -232,7 +241,7 @@ public sealed class FaseCanonicaTests
     // ── Coerência permite_complementacao ⇒ fases permitidas ────────────────────
 
     [Theory(DisplayName = "Permitir complementação verdadeiro em fase permitida é aceito")]
-    [InlineData("HOMOLOGACAO")]
+    [InlineData("HOMOLOGACAO_INSCRICOES")]
     [InlineData("RECURSOS")]
     public void Criar_ComplementacaoFasePermitida_Aceita(string codigo)
     {
@@ -301,7 +310,7 @@ public sealed class FaseCanonicaTests
     [Fact(DisplayName = "Atualizar revalida coerência de agrupar etapas contra o código congelado")]
     public void Atualizar_AgrupaEtapasIncoerente_Falha()
     {
-        FaseCanonica f = Criar(codigo: "HOMOLOGACAO", nome: "Homologação").Value!;
+        FaseCanonica f = Criar(codigo: "HOMOLOGACAO_INSCRICOES", nome: "Homologação").Value!;
 
         Result r = f.Atualizar(
             nome: "Homologação", descricao: null,

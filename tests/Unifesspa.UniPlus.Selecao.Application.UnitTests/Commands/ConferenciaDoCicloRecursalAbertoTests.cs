@@ -126,7 +126,7 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
 
         Result resultado = Conferir(
             publicada: [publicada],
-            nova: [Fase("HOMOLOGACAO", 1, null), Fase("PROVA", 2, null, Produto(PapelProdutoFase.Preliminar))]);
+            nova: [Fase("HOMOLOGACAO_INSCRICOES", 1, null), Fase("PROVA", 2, null, Produto(PapelProdutoFase.Preliminar))]);
 
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
     }

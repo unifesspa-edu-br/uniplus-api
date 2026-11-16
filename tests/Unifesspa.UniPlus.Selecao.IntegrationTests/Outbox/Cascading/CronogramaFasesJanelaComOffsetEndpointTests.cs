@@ -60,10 +60,8 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
     /// semear qualquer um deles aqui faria aquela suíte violar a unicidade dependendo da
     /// ordem de execução.
     /// </remarks>
-    // Fase sem resultado publicado de proposito: o assunto aqui e o offset da janela,
-    // e uma fase que produz resultado exigiria tambem o tipo de ato, ruido que nao
-    // pertence a este teste. Desde que o catalogo de fases passou a nascer semeado,
-    // HOMOLOGACAO chega com produz_resultado verdadeiro e o POST responderia 422.
+    // Fase sem produto declarado de propósito: o assunto aqui é o offset da janela, e uma fase
+    // que produz resultado exigiria também o tipo de ato, ruído que não pertence a este teste.
     private const string CodigoFaseComJanela = "ENSALAMENTO";
 
     private static readonly DateTimeOffset InicioEsperadoUtc = new(2027, 1, 25, 11, 0, 0, TimeSpan.Zero);

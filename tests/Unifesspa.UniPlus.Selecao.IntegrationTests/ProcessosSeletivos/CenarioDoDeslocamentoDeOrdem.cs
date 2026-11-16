@@ -118,7 +118,7 @@ internal sealed class CenarioDoDeslocamentoDeOrdem(ProcessoSeletivoDbFixture fix
         return
         [
             Fase(1, "INSCRICAO", FaseInscricaoOrigem, []),
-            Fase(2, "HOMOLOGACAO", Guid.CreateVersion7(),
+            Fase(2, "HOMOLOGACAO_INSCRICOES", Guid.CreateVersion7(),
                 [ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Definitivo)]),
             Fase(3, "RESULTADO_PRELIMINAR", FasePreliminarOrigem, [preliminar],
                 faseConcluinteCodigo: "RESULTADO_FINAL", regraRecurso: comRecurso ? Recurso(preliminar.Id) : null),

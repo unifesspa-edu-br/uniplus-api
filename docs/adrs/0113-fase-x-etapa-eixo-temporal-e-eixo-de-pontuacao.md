@@ -92,7 +92,7 @@ ato operacional pós-deploy via endpoint admin — a mesma política já vigente
 A precedência entre fases é **dado de cadastro, não código**: `PrecedenciaFase`
 (Configuração, novo cadastro) declara arestas `(AntecessoraCodigo,
 SucessoraCodigo, PermiteSobreposicao)`, seed-governado com as seis arestas
-estruturais do ciclo — `INSCRICAO→HOMOLOGACAO`,
+estruturais do ciclo — `INSCRICAO→HOMOLOGACAO_INSCRICOES`,
 `RESULTADO_PRELIMINAR→RECURSOS`, `RECURSOS→RESULTADO_FINAL`,
 `RESULTADO_FINAL→HABILITACAO`, `HABILITACAO→MATRICULA`,
 `HETEROIDENTIFICACAO→HOMOLOGACAO_RESULTADO_FINAL` — e um endpoint admin para
@@ -309,6 +309,12 @@ Esta ADR atribuía a regra de recurso à fase e deixava à etapa só peso, cará
 A regra de recurso passa a poder morar na fase **ou** na etapa. A decisão, com as âncoras do prazo, a regra da etapa com nota do ENEM e a declaração de instância superior por janela, é da [ADR-0145](0145-recurso-por-etapa.md). A separação dos dois eixos permanece. A etapa já tem janela temporal própria (início e fim) e parecer; esta emenda diz só que a regra de recurso também pode ser da etapa, e que o instante em que o prazo corre vem do ato que ela publica ou da ciência do candidato.
 
 A segunda seção "Emenda 2" foi renumerada para "Emenda 3" em 2026-10-18, para desfazer a numeração duplicada.
+
+## Emenda 5 (2026-11-15) — a fase de homologação das inscrições passa a se chamar `HOMOLOGACAO_INSCRICOES`
+
+A fase canônica chamada `HOMOLOGACAO` homologa as inscrições, e o cadastro já tem outra fase de homologação, a do resultado final (`HOMOLOGACAO_RESULTADO_FINAL`). O nome sem qualificação não diz de qual das duas se trata e convida a regra a tratá-las como a mesma coisa. O código passa a ser `HOMOLOGACAO_INSCRICOES`, o mesmo que já nomeia o tipo de ato da homologação das inscrições.
+
+A mudança é de nome, não de comportamento: a precedência `INSCRICAO` antes da homologação, o agrupamento de etapas e a complementação permitida continuam como estavam, com o código novo. Não há dado a migrar: a migration única é gerada de novo com o catálogo semeado já com o código novo, e o código antigo deixa de ser canônico, de modo que o cadastro de fases o recusa.
 
 ## Mais informações
 
