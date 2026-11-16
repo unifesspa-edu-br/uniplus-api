@@ -1,5 +1,8 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Results;
+
 /// <summary>
 /// A identidade de quem vai receber o acesso, como o token dele a trouxe. É desconhecida até ele aceitar o pedido, e só então
 /// o pedido grava emissor, <c>contaId</c> e nome. O pedido para si mesmo já nasce com ela. Nunca carrega CPF.
@@ -43,4 +46,8 @@ public sealed record BeneficiarioDoPedido
     }
 
     public bool Eh(Identidade identidade) => Identidade is { } conhecida && conhecida == identidade;
+
+    internal static DomainError SemNome() => new(
+        PedidoErrorCodes.BeneficiarioSemNome,
+        "A sessão do beneficiário não traz o nome completo, que o aprovador precisa para julgar o pedido.");
 }

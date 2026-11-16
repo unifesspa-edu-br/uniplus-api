@@ -32,21 +32,14 @@ public sealed partial class PedidoDeConcessao
         ArgumentNullException.ThrowIfNull(dominios);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        DomainError? recusa = RecusaDoSolicitante(partes, dominios);
-        (List<FieldError> erros, string? justificativa) = ValidarCampos(perfil, escopo, catalogo, declaracao, instante);
-        (string? email, bool paraSiMesmo) = ResolverBeneficiario(partes, dominios, erros);
+        DomainError? recusa = partes.RecusaDoSolicitante(dominios);
+        (List<FieldError> erros, string? justificativa) = ValidacaoDaCriacaoDoPedido.ValidarCampos(perfil, escopo, catalogo, declaracao, instante);
+        (string? email, bool paraSiMesmo) = partes.ResolverBeneficiario(dominios, erros);
 
         return recusa is not null ? Result<PedidoDeConcessao>.Failure(recusa)
             : erros.Count > 0 ? Result<PedidoDeConcessao>.ValidationFailure(erros)
             : Result<PedidoDeConcessao>.Success(Novo(partes.Solicitante, perfil, escopo, Consolidada(declaracao, justificativa, perfil), instante, (email!, paraSiMesmo)));
     }
-
-    private static DomainError? RecusaDoSolicitante(PartesDoPedido partes, IDominiosInstitucionais dominios) =>
-        !partes.ParaSiMesmo && !PartesDoPedido.SolicitanteInstitucional(partes.Solicitante, dominios)
-            ? new DomainError(
-                PedidoErrorCodes.SolicitanteNaoInstitucional,
-                "Para pedir acesso a outra pessoa, o e-mail da sessão deve ser institucional e verificado.")
-            : null;
 
     // A justificativa já normalizada; o perfil de governança anexa sempre o documento de designação.
     private static DeclaracaoDoPedido Consolidada(DeclaracaoDoPedido declaracao, string? justificativa, Perfil perfil) =>
@@ -94,69 +87,5 @@ public sealed partial class PedidoDeConcessao
         }
 
         return paraSiMesmo ? SituacaoDoPedido.AguardandoGestor : SituacaoDoPedido.AguardandoBeneficiario;
-    }
-
-    private static IEnumerable<FieldError> ErrosDoPerfil(Perfil perfil)
-    {
-        if (!perfil.Ativo)
-        {
-            yield return new("perfilId", new DomainError(
-                PedidoErrorCodes.PerfilInativo,
-                "O perfil de acesso está desativado e não aceita pedido novo."));
-        }
-
-        if (!perfil.TemComposicaoEmVigor)
-        {
-            yield return new("perfilId", new DomainError(
-                PedidoErrorCodes.PerfilSemVersaoEmVigor,
-                "O perfil de acesso não tem versão em vigor e não aceita pedido."));
-        }
-    }
-
-    private static IEnumerable<FieldError> ErrosDoEscopo(Perfil perfil, EscopoDaConcessao escopo, ICatalogoDePermissoesConsultavel catalogo)
-    {
-        string? incoerencia = Concessao.ConferirEscopo(perfil, escopo, catalogo);
-        if (incoerencia is not null)
-        {
-            yield return new("escopo", new DomainError(PedidoErrorCodes.EscopoInvalido, incoerencia));
-        }
-    }
-
-    private static (List<FieldError> Erros, string? Justificativa) ValidarCampos(
-        Perfil perfil, EscopoDaConcessao escopo, ICatalogoDePermissoesConsultavel catalogo, DeclaracaoDoPedido declaracao, DateTimeOffset instante)
-    {
-        List<FieldError> erros = [.. ErrosDoPerfil(perfil), .. ErrosDoEscopo(perfil, escopo, catalogo)];
-        string? normalizada = TextoLivre.Normalizar(declaracao.Justificativa, JustificativaMinLength, JustificativaMaxLength);
-
-        if (normalizada is null)
-        {
-            erros.Add(new("justificativa", new DomainError(
-                PedidoErrorCodes.JustificativaInvalida,
-                $"A justificativa é obrigatória e deve ter entre {JustificativaMinLength} e {JustificativaMaxLength} caracteres.")));
-        }
-
-        ConferirValidade(declaracao.ValidaAteSugerida, perfil.AdmitePrazo, instante, "validaAteSugerida", erros);
-
-        return (erros, normalizada);
-    }
-
-    private static void ConferirValidade(
-        DateTimeOffset? data, bool admitePrazo, DateTimeOffset instante, string campo, List<FieldError> erros)
-    {
-        string? mensagem = data is { } fim ? MensagemDaValidadeInvalida(fim, admitePrazo, instante) : null;
-        if (mensagem is not null)
-        {
-            erros.Add(new(campo, new DomainError(PedidoErrorCodes.ValidadeInvalida, mensagem)));
-        }
-    }
-
-    private static string? MensagemDaValidadeInvalida(DateTimeOffset fim, bool admitePrazo, DateTimeOffset instante)
-    {
-        if (!admitePrazo)
-        {
-            return MensagensDoPrazo.PerfilSemPrazo;
-        }
-
-        return fim <= instante ? "O fim da vigência deve ser posterior ao instante atual." : null;
     }
 }

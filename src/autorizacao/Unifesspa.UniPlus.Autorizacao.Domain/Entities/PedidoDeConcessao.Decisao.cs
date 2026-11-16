@@ -105,7 +105,7 @@ public sealed partial class PedidoDeConcessao
     {
         if (aprovacao.Etapa == EtapaDoPedido.Gestor)
         {
-            ConferirValidade(aprovacao.ValidaAte, aprovacao.Perfil.AdmitePrazo, aprovacao.Instante, "validaAte", erros);
+            ValidacaoDaCriacaoDoPedido.ConferirValidade(aprovacao.ValidaAte, aprovacao.Perfil.AdmitePrazo, aprovacao.Instante, "validaAte", erros);
         }
         else if (RecusaDaValidadeNaSegundaEtapa(aprovacao) is { } recusa)
         {
