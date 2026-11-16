@@ -89,7 +89,7 @@ public sealed class DetalheDaProtecaoDoCatalogoEndpointTests : ProtecaoDoCatalog
 
         JsonElement fato = (await (await EnviarAsync(client, HttpMethod.Get, $"{Base}/fatos/{id}")).Content.ReadFromJsonAsync<JsonElement>()).GetProperty("fato");
 
-        (fato.GetProperty("dominio").GetString(), fato.GetProperty("cardinalidade").GetString(), fato.GetProperty("sistema").GetBoolean()).Should().Be(("CATEGORICO", "ESCALAR", false));
+        (fato.GetProperty("dominio").GetString(), fato.GetProperty("cardinalidade").GetString(), fato.GetProperty("semeadoPeloSistema").GetBoolean()).Should().Be(("CATEGORICO", "ESCALAR", false));
         fato.GetProperty("valores").EnumerateArray().Select(v => v.GetProperty("codigo").GetString()).Should().Equal("MULHER", "OUTRA");
         fato.GetProperty("valores")[0].GetProperty("orientacao").GetString().Should().Be("Escolha conforme se identifica.");
     }

@@ -52,7 +52,7 @@ public sealed class FatoCandidatoAdminEndpointTests
         {
             fato.RootElement.GetProperty("origem").GetString().Should().Be("DECLARADO");
             fato.RootElement.GetProperty("binding").GetString().Should().Be($"CAMPO_FORMULARIO:{codigo}");
-            fato.RootElement.GetProperty("sistema").GetBoolean().Should().BeFalse();
+            fato.RootElement.GetProperty("semeadoPeloSistema").GetBoolean().Should().BeFalse();
         }
 
         (await EnviarAsync(client, HttpMethod.Put, $"{Base}/{id}", new { nome = "Nome editado", descricao = "Descrição editada.", componenteExibicao = "MOEDA" }))

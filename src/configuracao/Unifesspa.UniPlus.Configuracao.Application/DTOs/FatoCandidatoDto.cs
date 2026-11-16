@@ -25,7 +25,7 @@ public sealed record FatoCandidatoDto(
     string ClassificacaoProtecao,
     string FinalidadeTratamento,
     string HipoteseLegal,
-    bool Sistema,
+    bool SemeadoPeloSistema,
     bool Ativo,
     IReadOnlyList<FatoValorDominioDto> Valores,
     IReadOnlyList<RegraPadraoDto> RegrasPadrao,
