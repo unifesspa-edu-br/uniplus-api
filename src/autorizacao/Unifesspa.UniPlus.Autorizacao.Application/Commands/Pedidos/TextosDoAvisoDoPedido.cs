@@ -61,7 +61,7 @@ internal static class TextosDoAvisoDoPedido
     {
         ArgumentNullException.ThrowIfNull(pedido);
 
-        return pedido.AguardaAceiteDoTermo && pedido.Beneficiario.Identidade == pedido.Solicitante.Identidade ? AceiteDoProprioTermo : Da(pedido.Situacao);
+        return pedido.AguardaAceiteDoTermo && pedido.Beneficiario.Identidade == pedido.Solicitante.Identidade ? AceiteDoProprioTermo : Da(pedido.Andamento.Situacao);
     }
 
     public static TextoDoAviso Da(SituacaoDoPedido situacao) =>

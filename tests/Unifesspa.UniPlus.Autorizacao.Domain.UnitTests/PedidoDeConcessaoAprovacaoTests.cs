@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
-using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -11,10 +10,11 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
 
 /// <summary>As etapas de aprovação do pedido: o gestor, a proteção de dados, o prazo e quem pode decidir.</summary>
-public sealed class PedidoDeConcessaoAprovacaoTests 
+public sealed class PedidoDeConcessaoAprovacaoTests
 {
     [Fact(DisplayName = "Pedido de perfil só interno vale com a aprovação do gestor, que conclui e grava o retrato avaliado")]
     public void Aprovar_PerfilInterno_ConcluiComOGestor()
@@ -25,8 +25,8 @@ public sealed class PedidoDeConcessaoAprovacaoTests
         Result<DesfechoDaAprovacao> resultado = pedido.Aprovar(Diogo.Identidade, Interno, Contexto, Agora.AddHours(1));
 
         resultado.Value.Should().Be(DesfechoDaAprovacao.Concluido);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.Aprovado);
-        pedido.EncerradoEm.Should().Be(Agora.AddHours(1));
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.Aprovado);
+        pedido.Andamento.EncerradoEm.Should().Be(Agora.AddHours(1));
         DecisaoDoPedido decisao = pedido.Decisoes.Single();
         decisao.Etapa.Should().Be(EtapaDoPedido.Gestor);
         decisao.Resultado.Should().Be(ResultadoDaDecisao.Aprovado);
@@ -43,14 +43,14 @@ public sealed class PedidoDeConcessaoAprovacaoTests
         Result<DesfechoDaAprovacao> gestor = pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora);
 
         gestor.Value.Should().Be(DesfechoDaAprovacao.AguardaProtecaoDeDados);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
-        pedido.EncerradoEm.Should().BeNull();
-        pedido.EtapaAtual.Should().Be(EtapaDoPedido.ProtecaoDeDados);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
+        pedido.Andamento.EncerradoEm.Should().BeNull();
+        pedido.Andamento.EtapaAtual.Should().Be(EtapaDoPedido.ProtecaoDeDados);
 
         Result<DesfechoDaAprovacao> protecao = pedido.Aprovar(Marlene.Identidade, Sensivel, Contexto, Agora.AddHours(1));
 
         protecao.Value.Should().Be(DesfechoDaAprovacao.Concluido);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.Aprovado);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.Aprovado);
         pedido.Decisoes.Select(d => d.Etapa).Should().Equal(EtapaDoPedido.Gestor, EtapaDoPedido.ProtecaoDeDados);
     }
 
@@ -60,7 +60,7 @@ public sealed class PedidoDeConcessaoAprovacaoTests
         Result<PedidoDeConcessao> resultado = CriarComSugestao(PerfilComum(), Agora.AddMonths(6));
 
         resultado.Value!.Declaracao.ValidaAteSugerida.Should().Be(Agora.AddMonths(6));
-        resultado.Value.ValidaAte.Should().BeNull("quem define o fim da vigência é o gestor");
+        resultado.Value.Andamento.ValidaAte.Should().BeNull("quem define o fim da vigência é o gestor");
     }
 
     [Fact(DisplayName = "Sugerir fim de vigência para perfil de governança é recusado")]
@@ -79,10 +79,10 @@ public sealed class PedidoDeConcessaoAprovacaoTests
         PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
 
         pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora, Agora.AddMonths(3)).IsSuccess.Should().BeTrue();
-        pedido.ValidaAte.Should().Be(Agora.AddMonths(3));
+        pedido.Andamento.ValidaAte.Should().Be(Agora.AddMonths(3));
 
         pedido.Aprovar(Marlene.Identidade, Sensivel, Contexto, Agora.AddHours(1)).IsSuccess.Should().BeTrue();
-        pedido.ValidaAte.Should().Be(Agora.AddMonths(3));
+        pedido.Andamento.ValidaAte.Should().Be(Agora.AddMonths(3));
     }
 
     [Fact(DisplayName = "O gestor não define fim de vigência para perfil de governança")]
@@ -103,7 +103,7 @@ public sealed class PedidoDeConcessaoAprovacaoTests
         PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
 
         Codigos(pedido.Aprovar(Diogo.Identidade, Interno, Contexto, Agora, Agora)).Should().Equal(PedidoErrorCodes.ValidadeInvalida);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
     }
 
     [Fact(DisplayName = "Prazo do gestor vencido antes da proteção de dados devolve o pedido ao gestor, com a tentativa registrada e sem prazo")]
@@ -115,8 +115,8 @@ public sealed class PedidoDeConcessaoAprovacaoTests
         Result<DesfechoDaAprovacao> resultado = pedido.Aprovar(Marlene.Identidade, Sensivel, Contexto, Agora.AddDays(2));
 
         Codigos(resultado).Should().Equal(PedidoErrorCodes.PrazoVencido);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
-        pedido.ValidaAte.Should().BeNull();
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.ValidaAte.Should().BeNull();
         pedido.Decisoes.Select(d => d.Resultado).Should().Equal(ResultadoDaDecisao.Aprovado, ResultadoDaDecisao.PrazoVencido);
         DecisaoDoPedido tentativa = pedido.Decisoes[1];
         tentativa.Etapa.Should().Be(EtapaDoPedido.ProtecaoDeDados);
@@ -132,8 +132,8 @@ public sealed class PedidoDeConcessaoAprovacaoTests
 
         Codigos(pedido.Aprovar(Marlene.Identidade, ampliado, Contexto, Agora.AddHours(1))).Should().Equal(PedidoErrorCodes.PerfilAlterado);
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
-        pedido.ValidaAte.Should().BeNull();
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.ValidaAte.Should().BeNull();
     }
 
     [Fact(DisplayName = "A proteção de dados não informa fim de vigência, que é do gestor")]
@@ -146,8 +146,8 @@ public sealed class PedidoDeConcessaoAprovacaoTests
 
         resultado.Errors.Should().ContainSingle()
             .Which.Should().Match<FieldError>(e => e.Field == "validaAte" && e.Error.Code == PedidoErrorCodes.ValidadeInvalida);
-        pedido.ValidaAte.Should().Be(Agora.AddMonths(3));
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
+        pedido.Andamento.ValidaAte.Should().Be(Agora.AddMonths(3));
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
     }
 
     [Fact(DisplayName = "Pedido que não aguarda aprovador não se aprova nem se recusa")]
@@ -169,7 +169,7 @@ public sealed class PedidoDeConcessaoAprovacaoTests
 
         Codigos(pedido.Aprovar(decisor, Interno, Contexto, Agora)).Should().Equal(PedidoErrorCodes.DecisorEParte);
         Codigos(pedido.Recusar(decisor, "Motivo.", Interno, Agora)).Should().Equal(PedidoErrorCodes.DecisorEParte);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
         pedido.Decisoes.Should().BeEmpty();
     }
 
@@ -181,7 +181,7 @@ public sealed class PedidoDeConcessaoAprovacaoTests
 
         Codigos(pedido.Aprovar(Isabella.Identidade, Sensivel, Contexto, Agora)).Should().Equal(PedidoErrorCodes.MesmoDecisorNasDuasEtapas);
         Codigos(pedido.Recusar(Isabella.Identidade, "Motivo.", Sensivel, Agora)).Should().Equal(PedidoErrorCodes.MesmoDecisorNasDuasEtapas);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
     }
 
     [Fact(DisplayName = "Quem aprovou como gestor em qualquer ciclo não decide na etapa de proteção de dados, mesmo que outro gestor tenha aprovado depois")]
@@ -206,7 +206,7 @@ public sealed class PedidoDeConcessaoAprovacaoTests
         PerfilAvaliado menosSensivel = new(Sensivel.Permissoes, "interno", false, null);
 
         Codigos(pedido.Aprovar(Marlene.Identidade, menosSensivel, Contexto, Agora)).Should().Equal(PedidoErrorCodes.PerfilAlterado);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
     }
 
     private static Result<PedidoDeConcessao> CriarComSugestao(Perfil perfil, DateTimeOffset validaAteSugerida) =>

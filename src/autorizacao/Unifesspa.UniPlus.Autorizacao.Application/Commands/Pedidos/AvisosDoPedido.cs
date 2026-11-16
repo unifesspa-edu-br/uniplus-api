@@ -77,7 +77,7 @@ public sealed class AvisosDoPedido
 
     private Task<IReadOnlyList<string>> DestinatariosAsync(
         PedidoDeConcessao pedido, SituacaoDoPedido? situacaoAnterior, CancellationToken cancellationToken) =>
-        pedido.Situacao switch
+        pedido.Andamento.Situacao switch
         {
             SituacaoDoPedido.AguardandoBeneficiario => Imediato([pedido.BeneficiarioEmail]),
             SituacaoDoPedido.AguardandoGestor => TitularesAsync(pedido, PerfisDeSistema.GestorDeAcessosId, [], cancellationToken),

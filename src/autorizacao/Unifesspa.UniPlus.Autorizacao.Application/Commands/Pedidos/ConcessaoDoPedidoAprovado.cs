@@ -82,7 +82,7 @@ public sealed class ConcessaoDoPedidoAprovado
 
         return Concessao.Conceder(
             new TitularDaConcessao(pedido.Beneficiario.Identidade!, pedido.BeneficiarioEmail), decisao.Perfil, pedido.Escopo,
-            new OrigemDaConcessao(TipoDeOrigem.Pedido, pedido.Id), new AtoDoAgente(decisao.Decisor, agora), _catalogo, pedido.ValidaAte);
+            new OrigemDaConcessao(TipoDeOrigem.Pedido, pedido.Id), new AtoDoAgente(decisao.Decisor, agora), _catalogo, pedido.Andamento.ValidaAte);
     }
 
     // A vencida não se encerra sozinha e, enquanto não revogada, o índice único recusa a nova. A revogação e a concessão

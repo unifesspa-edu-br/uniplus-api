@@ -57,8 +57,8 @@ internal sealed record PreparoDaDecisao(
     private async Task<Result<DecisaoDaEtapa>> ConferirEtapaAsync(
         PedidoDeConcessao pedido, Perfil perfil, CancellationToken cancellationToken)
     {
-        await RegistrarQuemGovernaAsync(pedido.EtapaAtual, cancellationToken).ConfigureAwait(false);
-        if (pedido.EtapaAtual is { } etapa && !Acesso.Decide(etapa))
+        await RegistrarQuemGovernaAsync(pedido.Andamento.EtapaAtual, cancellationToken).ConfigureAwait(false);
+        if (pedido.Andamento.EtapaAtual is { } etapa && !Acesso.Decide(etapa))
         {
             return Result<DecisaoDaEtapa>.Failure(PedidoHandlerErros.EtapaInvalida());
         }

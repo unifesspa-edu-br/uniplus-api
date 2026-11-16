@@ -37,7 +37,7 @@ public sealed partial class PedidoDeConcessao
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(contexto);
 
-        return EtapaAtual is { } etapa
+        return Andamento.EtapaAtual is { } etapa
             ? AprovarNaEtapa(new AprovacaoNaEtapa(decisor, etapa, perfil, contexto, instante, validaAte))
             : Result<DesfechoDaAprovacao>.Failure(SituacaoInvalida("O pedido não aguarda aprovação."));
     }
@@ -48,7 +48,7 @@ public sealed partial class PedidoDeConcessao
         ArgumentNullException.ThrowIfNull(decisor);
         ArgumentNullException.ThrowIfNull(perfil);
 
-        if (EtapaAtual is not { } etapa)
+        if (Andamento.EtapaAtual is not { } etapa)
         {
             return Result.Failure(SituacaoInvalida("O pedido não aguarda decisão."));
         }
@@ -90,7 +90,7 @@ public sealed partial class PedidoDeConcessao
                 "O perfil de acesso está desativado e não aceita aprovação.")));
         }
 
-        ValidadeDoPedido.ConferirNaEtapa(aprovacao, ValidaAte, erros);
+        ValidadeDoPedido.ConferirNaEtapa(aprovacao, Andamento.ValidaAte, erros);
         return erros;
     }
 
@@ -113,7 +113,7 @@ public sealed partial class PedidoDeConcessao
         Identidade decisor, EtapaDoPedido etapa, string? motivo, PerfilAvaliado perfil, DateTimeOffset instante)
     {
         _decisoes.Add(DecisaoDoPedido.Registrar(Id, etapa, new AtoDoAgente(decisor, instante), ResultadoDaDecisao.Recusado, motivo, perfil, null));
-        Encerrar(SituacaoDoPedido.Recusado, instante);
+        Andamento = Andamento.Encerrado(SituacaoDoPedido.Recusado, instante);
         return Result.Success();
     }
 
@@ -138,7 +138,7 @@ public sealed partial class PedidoDeConcessao
                 "O perfil mudou depois da aprovação do gestor; o pedido voltou a aguardar o gestor."));
         }
 
-        return ValidaAte is { } fim && fim <= instante
+        return Andamento.ValidaAte is { } fim && fim <= instante
             ? (ResultadoDaDecisao.PrazoVencido, new DomainError(
                 PedidoErrorCodes.PrazoVencido,
                 "O prazo definido pelo gestor venceu antes desta aprovação; o pedido voltou ao gestor para definir outro."))
@@ -149,8 +149,7 @@ public sealed partial class PedidoDeConcessao
         Identidade decisor, EtapaDoPedido etapa, PerfilAvaliado perfil, DateTimeOffset instante, ResultadoDaDecisao resultado, DomainError erro)
     {
         _decisoes.Add(DecisaoDoPedido.Registrar(Id, etapa, new AtoDoAgente(decisor, instante), resultado, null, perfil, null));
-        Situacao = SituacaoDoPedido.AguardandoGestor;
-        ValidaAte = null;
+        Andamento = Andamento.DeVoltaAoGestor();
 
         return erro;
     }
@@ -164,7 +163,7 @@ public sealed partial class PedidoDeConcessao
 
         if (naEtapaDoGestor)
         {
-            ValidaAte = aprovacao.ValidaAte?.ToUniversalTime();
+            Andamento = Andamento.ComPrazo(aprovacao.ValidaAte);
         }
 
         bool concluido = !naEtapaDoGestor || dispensa is not null || !aprovacao.Perfil.ExigeAprovacaoDeProtecaoDeDados;
@@ -173,13 +172,13 @@ public sealed partial class PedidoDeConcessao
 
     private Result<DesfechoDaAprovacao> Concluir(DateTimeOffset instante)
     {
-        Encerrar(SituacaoDoPedido.Aprovado, instante);
+        Andamento = Andamento.Encerrado(SituacaoDoPedido.Aprovado, instante);
         return Result<DesfechoDaAprovacao>.Success(DesfechoDaAprovacao.Concluido);
     }
 
     private Result<DesfechoDaAprovacao> AguardarProtecaoDeDados()
     {
-        Situacao = SituacaoDoPedido.AguardandoProtecaoDeDados;
+        Andamento = Andamento.Em(SituacaoDoPedido.AguardandoProtecaoDeDados);
         return Result<DesfechoDaAprovacao>.Success(DesfechoDaAprovacao.AguardaProtecaoDeDados);
     }
 }

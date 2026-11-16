@@ -43,13 +43,13 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
     {
         PedidoDeConcessao pedido = PedidoComAnexoEmVerificacao(PerfilDeGovernanca());
         AnexoDoPedido anexo = pedido.Anexos.Single();
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
         PedidosComAnexo pedidos = new(anexo, pedido);
         UnidadeDeTrabalhoQueConta unidade = new();
 
         IEnumerable<EnviarEmail> mensagens = await Despachar(ResultadoVerificado(anexo.Id), pedidos, unidade);
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
         pedidos.Atualizados.Should().ContainSingle().Which.Should().BeSameAs(pedido);
         unidade.Gravacoes.Should().Be(1);
         EnviarEmail aviso = mensagens.Should().ContainSingle().Subject;
@@ -69,7 +69,7 @@ public sealed class DespachoDoResultadoDaVerificacaoTests
             pedidos,
             new UnidadeDeTrabalhoQueConta());
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
         pedidos.Atualizados.Should().BeEmpty();
     }
 

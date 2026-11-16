@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
-using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -11,15 +10,17 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
+
 /// <summary>A criação do pedido e o aceite do beneficiário.</summary>
-public sealed class PedidoDeConcessaoCriacaoTests 
+public sealed class PedidoDeConcessaoCriacaoTests
 {
     [Fact(DisplayName = "Pedido para si mesmo, sem e-mail informado, nasce aguardando o gestor com a identidade do token")]
     public void Criar_ParaSiMesmo_NasceAguardandoOGestor()
     {
         PedidoDeConcessao pedido = Criar(Leandro, null);
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
         pedido.Beneficiario.Identidade.Should().Be(Leandro.Identidade);
         pedido.Beneficiario.Nome.Should().Be("Leandro Caleb Viana");
         pedido.BeneficiarioEmail.Should().Be("leandro-viana84@uniplus-test.local");
@@ -32,7 +33,7 @@ public sealed class PedidoDeConcessaoCriacaoTests
     {
         PedidoDeConcessao pedido = Criar(Leandro, " Leandro-Viana84@uniplus-test.local ");
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
         pedido.Beneficiario.Identidade.Should().Be(Leandro.Identidade);
     }
 
@@ -55,7 +56,7 @@ public sealed class PedidoDeConcessaoCriacaoTests
     {
         PedidoDeConcessao pedido = Criar(Betina, "Leandro-Viana84@uniplus-test.local");
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
         pedido.Beneficiario.Identidade.Should().BeNull();
         pedido.Beneficiario.Nome.Should().BeNull();
         pedido.BeneficiarioEmail.Should().Be("leandro-viana84@uniplus-test.local");
@@ -142,7 +143,7 @@ public sealed class PedidoDeConcessaoCriacaoTests
         Result aceite = pedido.Aceitar(Leandro, null, Agora.AddHours(1));
 
         aceite.IsSuccess.Should().BeTrue();
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
         pedido.Beneficiario.Identidade.Should().Be(Leandro.Identidade);
         pedido.Beneficiario.Nome.Should().Be("Leandro Caleb Viana");
         pedido.Beneficiario.AceitouEm.Should().Be(Agora.AddHours(1));
@@ -158,7 +159,7 @@ public sealed class PedidoDeConcessaoCriacaoTests
         Result aceite = pedido.Aceitar(Leandro with { Email = email, EmailVerificado = verificado }, null, Agora);
 
         Codigos(aceite).Should().Equal(PedidoErrorCodes.NaoEOBeneficiario);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
         pedido.Beneficiario.Identidade.Should().BeNull();
     }
 
@@ -168,7 +169,7 @@ public sealed class PedidoDeConcessaoCriacaoTests
         PedidoDeConcessao pedido = Criar(Betina, Leandro.Email);
 
         Codigos(pedido.Aceitar(Leandro with { Nome = null }, null, Agora)).Should().Equal(PedidoErrorCodes.BeneficiarioSemNome);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
     }
 
     [Fact(DisplayName = "Pedido que não aguarda o aceite não é aceito de novo")]

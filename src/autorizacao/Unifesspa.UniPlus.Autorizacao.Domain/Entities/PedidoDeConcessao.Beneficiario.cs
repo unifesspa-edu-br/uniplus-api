@@ -29,7 +29,7 @@ public sealed partial class PedidoDeConcessao
 
         Beneficiario = BeneficiarioDoPedido.AceitoPor(pessoa, instante);
         RegistrarAceiteDoTermo(instante);
-        Situacao = SituacaoDoPedido.AguardandoGestor;
+        Andamento = Andamento.Em(SituacaoDoPedido.AguardandoGestor);
 
         return Result.Success();
     }
@@ -43,7 +43,7 @@ public sealed partial class PedidoDeConcessao
             || Beneficiario.Reconhece(pessoa, BeneficiarioEmail);
     }
 
-    private DomainError? RecusaDaSituacaoNoAceite() => Situacao switch
+    private DomainError? RecusaDaSituacaoNoAceite() => Andamento.Situacao switch
     {
         SituacaoDoPedido.AguardandoBeneficiario => null,
         SituacaoDoPedido.AguardandoDocumento => new DomainError(

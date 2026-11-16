@@ -14,13 +14,13 @@ public static class PedidoMapping
         ArgumentNullException.ThrowIfNull(p);
 
         return new PedidoDeConcessaoDto(
-            p.Id, p.Situacao.ToCodigo(), p.EtapaAtual?.ToCodigo(),
+            p.Id, p.Andamento.Situacao.ToCodigo(), p.Andamento.EtapaAtual?.ToCodigo(),
             new IdentidadeDto(p.Solicitante.Emissor, p.Solicitante.ContaId, p.Solicitante.Nome),
             Beneficiario(p),
             new PerfilResumoDto(p.PerfilId, perfil?.Nome ?? string.Empty),
             NumeroDaVersao(p, perfil), Escopo(p), p.Declaracao.Justificativa,
-            p.Declaracao.ValidaAteSugerida, p.ValidaAte, perfil?.AdmitePrazo ?? false,
-            p.CriadoEm, p.EncerradoEm, p.ConcessaoId,
+            p.Declaracao.ValidaAteSugerida, p.Andamento.ValidaAte, perfil?.AdmitePrazo ?? false,
+            p.CriadoEm, p.Andamento.EncerradoEm, p.ConcessaoId,
             Anexos(p), Decisoes(p), TrocasDeVersao(p),
             p.Declaracao.AnexaraDocumento, Termo(p));
     }
@@ -32,7 +32,7 @@ public static class PedidoMapping
         PedidoDeConcessao p = item.Pedido;
 
         return new PedidoResumoDto(
-            p.Id, p.Situacao.ToCodigo(), p.EtapaAtual?.ToCodigo(),
+            p.Id, p.Andamento.Situacao.ToCodigo(), p.Andamento.EtapaAtual?.ToCodigo(),
             Beneficiario(p),
             new PerfilResumoDto(p.PerfilId, item.PerfilNome),
             item.Versao, Escopo(p), p.Declaracao.Justificativa,

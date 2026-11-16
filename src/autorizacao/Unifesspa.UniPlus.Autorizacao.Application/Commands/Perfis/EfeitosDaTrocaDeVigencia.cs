@@ -144,7 +144,7 @@ public sealed class EfeitosDaTrocaDeVigencia
         DateTimeOffset instante,
         CancellationToken cancellationToken)
     {
-        SituacaoDoPedido situacaoAnterior = pedido.Situacao;
+        SituacaoDoPedido situacaoAnterior = pedido.Andamento.Situacao;
         DesfechoDaTrocaDeVersao desfecho = pedido.AoEntrarEmVigor(troca.Nova, troca.Anterior!.Numero, troca.TemAcrescimo, instante);
 
         return await AvisarAsync(pedido, perfilNome, situacaoAnterior, troca, desfecho, cancellationToken).ConfigureAwait(false);

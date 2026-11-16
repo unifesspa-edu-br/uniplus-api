@@ -20,7 +20,7 @@ public sealed partial class PedidoDeConcessao
     public AceiteDoTermo? AceiteDoTermo { get; private set; }
 
     /// <summary>O pedido espera, do beneficiário, o aceite do termo fixado.</summary>
-    public bool AguardaAceiteDoTermo => Termo is not null && Situacao == SituacaoDoPedido.AguardandoBeneficiario;
+    public bool AguardaAceiteDoTermo => Termo is not null && Andamento.Situacao == SituacaoDoPedido.AguardandoBeneficiario;
 
     /// <summary>
     /// Fixa no pedido recém-criado a versão vigente do termo, quando o perfil o exige, e confere a versão que o cliente
@@ -84,7 +84,7 @@ public sealed partial class PedidoDeConcessao
     {
         _decisoes.Add(DecisaoDoPedido.Registrar(
             Id, aprovacao.Etapa, new AtoDoAgente(aprovacao.Decisor, aprovacao.Instante), ResultadoDaDecisao.TermoExigido, null, aprovacao.Perfil, null));
-        Encerrar(SituacaoDoPedido.Devolvido, aprovacao.Instante);
+        Andamento = Andamento.Encerrado(SituacaoDoPedido.Devolvido, aprovacao.Instante);
 
         return new DomainError(
             PedidoErrorCodes.TermoExigido,
