@@ -23,7 +23,7 @@ public sealed record PredicadoDnf
 {
     private PredicadoDnf(IReadOnlyList<ClausulaDnf> clausulas)
     {
-        Clausulas = clausulas;
+        Clausulas = Array.AsReadOnly([.. clausulas]);
     }
 
     /// <summary>O predicado sem cláusula: a regra de derivação incondicional, a âncora.</summary>
