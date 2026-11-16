@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Xunit;
@@ -18,7 +19,7 @@ public sealed class ProjecaoDosProcedimentosDeRecursoTests
 
     [Fact(DisplayName = "Sem procedimentos, a leitura é uma lista vazia")]
     public void Nenhum_ListaVazia() =>
-        ProjecaoDosProcedimentosDeRecurso.De(ProcedimentosDeRecurso.Nenhum).Should().BeEmpty();
+        ProjecaoDosProcedimentosDeRecurso.De(ProcedimentosDeRecurso.Nenhum, OrigemDaNotaDaJanela.DaFase).Should().BeEmpty();
 
     [Fact(DisplayName = "Cada procedimento projeta o tipo, o alvo de item ou de área, e a referência congelada da regra")]
     public void Procedimentos_ProjetamTipoAlvoERegra()
@@ -30,12 +31,24 @@ public sealed class ProjecaoDosProcedimentosDeRecursoTests
             ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, Regra),
         ]);
 
-        IReadOnlyList<ProcedimentoDeRecursoDto> leitura = ProjecaoDosProcedimentosDeRecurso.De(procedimentos);
+        IReadOnlyList<ProcedimentoDeRecursoDto> leitura = ProjecaoDosProcedimentosDeRecurso.De(procedimentos, new(FormaDeAvaliacao.Humana, false));
 
         ReferenciaRegraDto referencia = new(Regra.Codigo, Regra.Versao, Regra.Hash);
         leitura.Should().Equal(
-            new ProcedimentoDeRecursoDto("ANALISE_DOCUMENTAL", new AlvoDoProcedimentoDeRecursoDto(Item, null), referencia),
-            new ProcedimentoDeRecursoDto("CLASSIFICACAO", new AlvoDoProcedimentoDeRecursoDto(null, AreaDoEnem.Redacao), referencia),
-            new ProcedimentoDeRecursoDto("HOMOLOGACAO_DAS_INSCRICOES", null, referencia));
+            new ProcedimentoDeRecursoDto("ANALISE_DOCUMENTAL", new AlvoDoProcedimentoDeRecursoDto(Item, null), referencia, RegraProcedimentoRecursoCodigo.Recorrecao),
+            new ProcedimentoDeRecursoDto("CLASSIFICACAO", new AlvoDoProcedimentoDeRecursoDto(null, AreaDoEnem.Redacao), referencia, RegraProcedimentoRecursoCodigo.Recalculo),
+            new ProcedimentoDeRecursoDto("HOMOLOGACAO_DAS_INSCRICOES", null, referencia, null));
+    }
+
+    [Fact(DisplayName = "A sugestão acompanha a forma da janela e não muda a regra declarada")]
+    public void Sugestao_AcompanhaAJanelaESemAlterarODeclarado()
+    {
+        ProcedimentosDeRecurso procedimentos = ProcedimentosDeRecurso.De(
+            [ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.AnaliseDocumental, AlvoDoProcedimentoDeRecurso.DoItem(Item), Regra)]);
+
+        ProcedimentoDeRecursoDto objetiva = ProjecaoDosProcedimentosDeRecurso.De(procedimentos, new(FormaDeAvaliacao.Objetiva, false)).Single();
+
+        objetiva.Sugestao.Should().Be(RegraProcedimentoRecursoCodigo.Recalculo);
+        objetiva.Regra.Codigo.Should().Be(Regra.Codigo);
     }
 }

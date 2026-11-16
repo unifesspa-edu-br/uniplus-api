@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ProcessosSeletivos.Recursos;
 using Domain.ValueObjects;
 
 using DTOs;
@@ -75,5 +76,5 @@ internal static class ProjecaoDaFaseDoCronograma
         regraRecurso.ProdutoAncoraId,
         ProjecaoDoProcessoSeletivo.Referencia(regraRecurso.Regra),
         ProjecaoDoProcessoSeletivo.ProjetarArgumentosDoPrazo(regraRecurso.Args),
-        ProjecaoDosProcedimentosDeRecurso.De(regraRecurso.Procedimentos));
+        ProjecaoDosProcedimentosDeRecurso.De(regraRecurso.Procedimentos, OrigemDaNotaDaJanela.DaFase));
 }

@@ -21653,7 +21653,8 @@
         "required": [
           "tipoDeDecisao",
           "alvo",
-          "regra"
+          "regra",
+          "sugestao"
         ],
         "type": "object",
         "properties": {
@@ -21672,6 +21673,12 @@
           },
           "regra": {
             "$ref": "#/components/schemas/ReferenciaRegraDto"
+          },
+          "sugestao": {
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

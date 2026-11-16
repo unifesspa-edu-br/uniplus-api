@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ProcessosSeletivos.Recursos;
 using Domain.ValueObjects;
 
 using DTOs;
@@ -71,5 +72,5 @@ internal static class ProjecaoDaEtapaDoProcesso
         ProjecaoDoProcessoSeletivo.ProjetarArgumentosDoPrazo(recurso.Args),
         recurso.ProdutoAncoraId,
         etapa.Produtos.FirstOrDefault(pr => pr.Id == recurso.ProdutoAncoraId)?.AtoCodigo,
-        ProjecaoDosProcedimentosDeRecurso.De(recurso.Procedimentos));
+        ProjecaoDosProcedimentosDeRecurso.De(recurso.Procedimentos, new(etapa.FormaDeAvaliacao, etapa.DeclaraNotaDoEnem)));
 }
