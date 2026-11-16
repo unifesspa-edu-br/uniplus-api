@@ -5,13 +5,13 @@ public static class TipoConceitoErrorCodes
 {
     public const string CodigoObrigatorio = "TipoConceito.CodigoObrigatorio";
     public const string CodigoTamanho = "TipoConceito.CodigoTamanho";
-    public const string CodigoComCaractereNulo = "TipoConceito.CodigoComCaractereNulo";
+    public const string CodigoCaractereInvalido = "TipoConceito.CodigoCaractereInvalido";
     public const string CodigoJaExiste = "TipoConceito.CodigoJaExiste";
     public const string NomeObrigatorio = "TipoConceito.NomeObrigatorio";
     public const string NomeTamanho = "TipoConceito.NomeTamanho";
-    public const string NomeComCaractereNulo = "TipoConceito.NomeComCaractereNulo";
+    public const string NomeCaractereInvalido = "TipoConceito.NomeCaractereInvalido";
     public const string DescricaoTamanho = "TipoConceito.DescricaoTamanho";
-    public const string DescricaoComCaractereNulo = "TipoConceito.DescricaoComCaractereNulo";
+    public const string DescricaoCaractereInvalido = "TipoConceito.DescricaoCaractereInvalido";
     public const string NaturezaInvalida = "TipoConceito.NaturezaInvalida";
     public const string EscalaNumericaObrigatoria = "TipoConceito.EscalaNumericaObrigatoria";
     public const string EscalaNumericaInvalida = "TipoConceito.EscalaNumericaInvalida";

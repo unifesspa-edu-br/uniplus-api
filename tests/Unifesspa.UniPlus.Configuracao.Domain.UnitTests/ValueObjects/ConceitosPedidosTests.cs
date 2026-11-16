@@ -128,7 +128,7 @@ public sealed class ConceitosPedidosTests
     }
 
     [Fact(DisplayName = "O código com caractere nulo não vai ao banco e é recusado como conceito inexistente")]
-    public void CodigoComCaractereNulo_NaoEhConsultadoEEhInexistente()
+    public void CodigoCaractereInvalido_NaoEhConsultadoEEhInexistente()
     {
         ConceitosPedidos pedidos = ConceitosPedidos.De(["NOTA", "NO\0TA"]);
 

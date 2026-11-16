@@ -2557,9 +2557,9 @@
       "titulo": "Casas decimais do tipo de conceito inválidas"
     },
     {
-      "codigo": "uniplus.configuracao.tipo_conceito.codigo_com_caractere_nulo",
+      "codigo": "uniplus.configuracao.tipo_conceito.codigo_caractere_invalido",
       "status": 422,
-      "titulo": "Código do tipo de conceito contém U+0000"
+      "titulo": "Código do tipo de conceito contém o caractere nulo ou caractere que não é texto"
     },
     {
       "codigo": "uniplus.configuracao.tipo_conceito.codigo_ja_existe",
@@ -2582,9 +2582,9 @@
       "titulo": "Tipo de conceito alterado concorrentemente"
     },
     {
-      "codigo": "uniplus.configuracao.tipo_conceito.descricao_com_caractere_nulo",
+      "codigo": "uniplus.configuracao.tipo_conceito.descricao_caractere_invalido",
       "status": 422,
-      "titulo": "Descrição do tipo de conceito contém U+0000"
+      "titulo": "A descrição do tipo de conceito contém o caractere nulo, de controle ou de formatação"
     },
     {
       "codigo": "uniplus.configuracao.tipo_conceito.descricao_tamanho",
@@ -2612,9 +2612,9 @@
       "titulo": "Natureza do tipo de conceito inválida"
     },
     {
-      "codigo": "uniplus.configuracao.tipo_conceito.nome_com_caractere_nulo",
+      "codigo": "uniplus.configuracao.tipo_conceito.nome_caractere_invalido",
       "status": 422,
-      "titulo": "Nome do tipo de conceito contém U+0000"
+      "titulo": "Nome do tipo de conceito contém o caractere nulo ou caractere que não é texto"
     },
     {
       "codigo": "uniplus.configuracao.tipo_conceito.nome_obrigatorio",
