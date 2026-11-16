@@ -12,7 +12,7 @@ using Kernel.Results;
 
 using Queries.ProdutosPrevistos;
 
-using Services;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
 /// <summary>
 /// Recusa a retificação cuja configuração nova desfaz um ciclo recursal que o preliminar já publicado

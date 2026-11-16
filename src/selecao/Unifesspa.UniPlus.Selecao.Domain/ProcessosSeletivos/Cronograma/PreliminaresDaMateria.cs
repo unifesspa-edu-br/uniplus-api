@@ -1,4 +1,4 @@
-namespace Unifesspa.UniPlus.Selecao.Application.Services;
+namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// reimplementa o pareamento. Produto sem preliminar declarado para a matéria não espera nada.
 /// </para>
 /// </remarks>
-internal static class PreliminaresDaMateria
+public static class PreliminaresDaMateria
 {
     /// <summary>
     /// Os identificadores dos produtos preliminares que o definitivo <paramref name="definitivoId"/>
@@ -46,25 +46,30 @@ internal static class PreliminaresDaMateria
         ArgumentNullException.ThrowIfNull(fases);
         ArgumentNullException.ThrowIfNull(etapas);
 
-        FaseCronograma? fase = fases.FirstOrDefault(f => f.Produtos.Any(p => p.Id == definitivoId));
-        if (fase is not null)
-        {
-            string atoCodigo = fase.Produtos.First(p => p.Id == definitivoId).AtoCodigo;
-            IEnumerable<Guid> daFase = CicloRecursal.PreliminaresDoTipo(fase.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoCodigo);
+        return fases.FirstOrDefault(f => f.Produtos.Any(p => p.Id == definitivoId)) is { } fase
+            ? EsperadosNaFase(fases, fase, definitivoId)
+            : EsperadosNaEtapa(etapas, definitivoId);
+    }
 
-            // Só chega à concluinte o ciclo que a fase de origem deixa aberto: a matéria que ela
-            // fecha com o próprio definitivo não espera a concluinte.
-            IEnumerable<Guid> deOutrasFases = fases
-                .Where(f => f.Id != fase.Id
-                    && string.Equals(f.FaseConcluinteCodigo, fase.Codigo, StringComparison.Ordinal)
-                    && f.TiposComCicloAberto().Contains(atoCodigo, StringComparer.Ordinal))
-                .SelectMany(f => CicloRecursal.PreliminaresDoTipo(f.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoCodigo));
+    private static IReadOnlyList<Guid> EsperadosNaFase(IReadOnlyCollection<FaseCronograma> fases, FaseCronograma fase, Guid definitivoId)
+    {
+        string atoCodigo = fase.Produtos.First(p => p.Id == definitivoId).AtoCodigo;
+        IEnumerable<Guid> daFase = CicloRecursal.PreliminaresDoTipo(fase.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoCodigo);
 
-            return [.. daFase, .. deOutrasFases];
-        }
+        // Só chega à concluinte o ciclo que a fase de origem deixa aberto: a matéria que ela
+        // fecha com o próprio definitivo não espera a concluinte.
+        IEnumerable<Guid> deOutrasFases = fases
+            .Where(f => f.Id != fase.Id
+                && string.Equals(f.FaseConcluinteCodigo, fase.Codigo, StringComparison.Ordinal)
+                && f.TiposComCicloAberto().Contains(atoCodigo, StringComparer.Ordinal))
+            .SelectMany(f => CicloRecursal.PreliminaresDoTipo(f.Produtos.Select(static p => (p.Id, p.AtoCodigo, p.Papel)), atoCodigo));
 
-        EtapaProcesso? etapa = etapas.FirstOrDefault(e => e.Produtos.Any(p => p.Id == definitivoId));
-        if (etapa is null)
+        return [.. daFase, .. deOutrasFases];
+    }
+
+    private static IReadOnlyList<Guid> EsperadosNaEtapa(IReadOnlyCollection<EtapaProcesso> etapas, Guid definitivoId)
+    {
+        if (etapas.FirstOrDefault(e => e.Produtos.Any(p => p.Id == definitivoId)) is not { } etapa)
         {
             return [];
         }

@@ -13,10 +13,9 @@ using ProcessosSeletivos;
 
 using Queries.ProdutosPrevistos;
 
-using Services;
-
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Contracts;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
 /// <summary>
 /// Confere, antes de publicar o ato, que o item pedido é um dos que a versão vigente do edital declara e
