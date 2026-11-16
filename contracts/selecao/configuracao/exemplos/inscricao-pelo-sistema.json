@@ -87,7 +87,19 @@
           "prazoUnidade": "diasUteis",
           "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
           "admiteInstanciaSuperior": false
-        }
+        },
+        "tiposDeDecisao": [
+          "CLASSIFICACAO",
+          "HOMOLOGACAO_DAS_INSCRICOES"
+        ],
+        "regraDeHomologacao": {
+          "resultadoAtoCodigo": "RESULTADO_PRELIMINAR",
+          "alternativas": []
+        },
+        "assinantes": [
+          "0196b3c2-8a10-7c3e-b5d2-6f1e4a9c2d71",
+          "0196b3c2-8a11-7d02-9e4b-1c7a5f3b8e60"
+        ]
       },
       {
         "chave": "resultado-final",
@@ -181,6 +193,9 @@
           "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
           "admiteInstanciaSuperior": false
         }
+      ],
+      "tiposDeDecisao": [
+        "CLASSIFICACAO"
       ]
     }
   ],
@@ -371,5 +386,22 @@
         "uf": "PA"
       }
     ]
-  }
+  },
+  "motivos": [
+    {
+      "tipoCodigo": "HOMOLOGACAO_DAS_INSCRICOES",
+      "codigo": "INSCRICAO_INCOMPLETA",
+      "descricao": "Inscrição enviada sem os dados obrigatórios",
+      "sentido": "DESFAVORAVEL",
+      "congelado": false
+    },
+    {
+      "tipoCodigo": "CLASSIFICACAO",
+      "codigo": "NOTA_ABAIXO_DO_MINIMO",
+      "descricao": "Nota abaixo do mínimo da etapa",
+      "sentido": "DESFAVORAVEL",
+      "justificativaDaInclusao": "Motivo previsto no edital retificado",
+      "congelado": false
+    }
+  ]
 }

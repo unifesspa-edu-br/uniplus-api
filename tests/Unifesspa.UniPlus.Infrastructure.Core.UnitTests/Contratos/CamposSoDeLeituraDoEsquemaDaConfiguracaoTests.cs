@@ -28,6 +28,10 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
         { "cronograma.schema.json", "$defs/fase/properties/unidadeResponsavelNome" },
         { "cronograma.schema.json", "$defs/fase/properties/unidadeResponsavelSigla" },
         { "divulgacao.schema.json", "properties/regraNomeAbreviado" },
+        { "motivo.schema.json", "properties/descricao" },
+        { "motivo.schema.json", "properties/subclassificacao" },
+        { "motivo.schema.json", "properties/sentido" },
+        { "motivo.schema.json", "properties/congelado" },
     };
 
     [Theory(DisplayName = "O campo só de leitura é marcado readOnly e a descrição diz que a importação o ignora")]
@@ -50,6 +54,8 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
     [InlineData("exigencias.schema.json", "$defs/exigencia/properties/tipoDocumentoCodigo")]
     [InlineData("atendimento.schema.json", "$defs/condicao/properties/condicaoCodigo")]
     [InlineData("bonus-regional.schema.json", "properties/baseLegalBonusRegionalCodigo")]
+    [InlineData("motivo.schema.json", "properties/codigo")]
+    [InlineData("motivo.schema.json", "properties/tipoCodigo")]
     public void Codigo_NaoEReadOnly(string arquivo, string caminho)
     {
         ArgumentNullException.ThrowIfNull(arquivo);

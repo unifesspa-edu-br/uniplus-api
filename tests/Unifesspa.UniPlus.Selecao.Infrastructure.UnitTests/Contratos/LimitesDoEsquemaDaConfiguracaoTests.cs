@@ -4,6 +4,7 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 /// <summary>
@@ -38,6 +39,8 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
         (nameof(LimitesDoEnvelope.FinalidadeTratamento), LimitesDoEnvelope.FinalidadeTratamento, Exigencia, "/finalidadeTratamento", true),
         (nameof(LimitesDoEnvelope.HipoteseLegal), LimitesDoEnvelope.HipoteseLegal, Exigencia, "/hipoteseLegal", true),
         (nameof(LimitesDoEnvelope.NomeArquivoDoModelo), LimitesDoEnvelope.NomeArquivoDoModelo, Exigencia, "/modelo/properties/nomeArquivo", true),
+        (nameof(ValidacaoDoMotivo.DescricaoMaxLength), ValidacaoDoMotivo.DescricaoMaxLength, "motivo.schema.json", "/properties/descricao", true),
+        (nameof(EscolhaDosMotivos.JustificativaMaxLength), EscolhaDosMotivos.JustificativaMaxLength, "motivo.schema.json", "/properties/justificativaDaInclusao", true),
         (nameof(LimitesDoEnvelope.Justificativa), LimitesDoEnvelope.Justificativa, "divulgacao.schema.json", "/properties/justificativa", true),
         (nameof(LimitesDoEnvelope.TipoInstrumentoNormativo), LimitesDoEnvelope.TipoInstrumentoNormativo, Bonus, "/properties/tipoInstrumento", true),
         (nameof(LimitesDoEnvelope.FatoElegibilidadeBonusRegional), LimitesDoEnvelope.FatoElegibilidadeBonusRegional, Bonus, "/properties/fatoElegibilidadeCodigo", true),

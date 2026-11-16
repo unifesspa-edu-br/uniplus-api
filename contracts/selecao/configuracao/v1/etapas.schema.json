@@ -137,6 +137,11 @@
       "items": {
         "$ref": "#/$defs/recursoDaEtapa"
       }
+    },
+    "tiposDeDecisao": {
+      "title": "Tipos de decisão da etapa",
+      "description": "Tipos de decisão que a etapa toma e para os quais o processo escolhe motivos.",
+      "$ref": "comuns.schema.json#/$defs/tiposDeDecisao"
     }
   },
   "$defs": {

@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Serializacao;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 
 /// <summary>
 /// Cada enumeração do esquema da configuração tem os mesmos valores do vocabulário que o domínio aceita: um valor novo num
@@ -45,6 +46,9 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         (Predicado, "/$defs/baseLegal/properties/abrangencia", () => Codigos<TipoAbrangencia>(static v => v.ToCodigo())),
         (Predicado, "/$defs/baseLegal/properties/status", () => Codigos<StatusBaseLegal>(static v => v.ToCodigo())),
         ("divulgacao.schema.json", "/properties/camposPublicos/items", () => ConfiguracaoDivulgacao.CamposPermitidos.Select(static c => c.Codigo)),
+        (Comuns, "/$defs/tipoDeDecisao", () => TipoMotivoDeDecisaoCodigo.Codigos),
+        ("motivo.schema.json", "/properties/sentido", () => SentidoDoMotivoCodigo.Todos),
+        ("homologacao.schema.json", "/$defs/condicao/properties/tipo", () => Enum.GetValues<TipoDeCondicaoDeHomologacao>().Select(static v => v.Codigo())),
         ("etapas.schema.json", "/properties/carater", Nomes<CaraterEtapa>),
         ("etapas.schema.json", "/properties/formaDeAvaliacao", () => Codigos<FormaDeAvaliacao>(static v => ((FormaDeAvaliacao?)v).ToCodigo()!)),
         ("etapas.schema.json", "/$defs/recursoDaEtapa/properties/ancora", Nomes<AncoraDoRecurso>),

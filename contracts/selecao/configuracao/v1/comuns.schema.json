@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/comuns.schema.json",
   "title": "Definições comuns da configuração do processo seletivo",
-  "description": "Definições compartilhadas pelas partes do documento de configuração: chave local, código de catálogo, instante, produto, as propriedades do recurso, a referência a regra e a regra sem parâmetros.",
+  "description": "Definições compartilhadas pelas partes do documento de configuração: chave local, código de catálogo, identificador de conta, instante, produto, tipo de decisão, as propriedades do recurso, a referência a regra e a regra sem parâmetros.",
   "$defs": {
     "chave": {
       "title": "Chave local",
@@ -22,6 +22,14 @@
       "not": {
         "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
       }
+    },
+    "identificadorDaConta": {
+      "title": "Identificador da conta",
+      "description": "Identificador da conta da pessoa no Uni+, texto opaco e estável que o provedor de identidade atribui (o sub do token). Nunca é CPF, e-mail, telefone nem nome, e quem o escreve não o monta a partir deles. O esquema só descreve a forma: não exige nem proíbe a forma de UUID e recusa o texto vazio, o que tem espaço nas pontas e o que passa de 255 caracteres. Que o valor é uma conta existente é conferência do domínio contra o cadastro de assinantes, que recusa o código desconhecido pela posição.",
+      "type": "string",
+      "pattern": "^\\S(?:.*\\S)?$",
+      "minLength": 1,
+      "maxLength": 255
     },
     "instante": {
       "title": "Instante",
@@ -163,6 +171,27 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {}
+    },
+    "tipoDeDecisao": {
+      "title": "Tipo de decisão",
+      "description": "Tipo de decisão que a fase ou a etapa toma e para a qual escolhe motivos.",
+      "enum": [
+        "ISENCAO_DA_TAXA",
+        "HOMOLOGACAO_DAS_INSCRICOES",
+        "ANALISE_DOCUMENTAL",
+        "HETEROIDENTIFICACAO",
+        "AVALIACAO_BIOPSICOSSOCIAL",
+        "CLASSIFICACAO"
+      ]
+    },
+    "tiposDeDecisao": {
+      "title": "Tipos de decisão",
+      "description": "Tipos de decisão declarados, cada um uma única vez.",
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/tipoDeDecisao"
+      }
     }
   }
 }

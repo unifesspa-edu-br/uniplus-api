@@ -100,6 +100,25 @@
           "title": "Regra de recurso",
           "description": "Prazo e efeito suspensivo do recurso. A presença desta regra é o que faz a fase admitir recurso.",
           "$ref": "#/$defs/regraRecurso"
+        },
+        "tiposDeDecisao": {
+          "title": "Tipos de decisão da fase",
+          "description": "Tipos de decisão que a fase toma e para os quais o processo escolhe motivos.",
+          "$ref": "comuns.schema.json#/$defs/tiposDeDecisao"
+        },
+        "regraDeHomologacao": {
+          "title": "Regra de homologação",
+          "description": "Como a fase homologa as inscrições. Exige o tipo HOMOLOGACAO_DAS_INSCRICOES entre os tipos de decisão da fase.",
+          "$ref": "homologacao.schema.json"
+        },
+        "assinantes": {
+          "title": "Assinantes da fase",
+          "description": "Pessoas que assinam o documento da fase, em ordem, cada uma citada pelo identificador da conta dela no Uni+. O documento não traz o nome nem qualquer dado pessoal: o nome vem do cadastro de assinantes na emissão. A pessoa aparece uma única vez.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "comuns.schema.json#/$defs/identificadorDaConta"
+          }
         }
       }
     },

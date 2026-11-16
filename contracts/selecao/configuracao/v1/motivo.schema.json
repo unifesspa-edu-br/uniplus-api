@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/motivo.schema.json",
+  "title": "Motivo de decisão do processo",
+  "description": "Um motivo do catálogo que o processo escolheu para um tipo de decisão. A identidade é o par tipo e código do catálogo; o descritivo é cópia do catálogo e, depois de congelado, não acompanha mais as mudanças dele.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "tipoCodigo",
+    "codigo"
+  ],
+  "properties": {
+    "tipoCodigo": {
+      "title": "Tipo de decisão",
+      "description": "Tipo de decisão a que o motivo pertence.",
+      "$ref": "comuns.schema.json#/$defs/tipoDeDecisao"
+    },
+    "codigo": {
+      "title": "Código do motivo",
+      "$ref": "#/$defs/codigoDoMotivo"
+    },
+    "descricao": {
+      "title": "Descrição do motivo",
+      "description": "Descrição do motivo no catálogo, de até 500 caracteres. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é o código.",
+      "type": "string",
+      "maxLength": 500,
+      "readOnly": true
+    },
+    "subclassificacao": {
+      "title": "Subclassificação",
+      "description": "Subclassificação do motivo no catálogo, de até 64 caracteres. Campo só de leitura: ignorado na importação.",
+      "type": "string",
+      "maxLength": 64,
+      "readOnly": true
+    },
+    "sentido": {
+      "title": "Sentido do motivo",
+      "description": "Se o motivo sustenta a decisão favorável ou a desfavorável. Campo só de leitura: ignorado na importação.",
+      "enum": [
+        "FAVORAVEL",
+        "DESFAVORAVEL"
+      ],
+      "readOnly": true
+    },
+    "justificativaDaInclusao": {
+      "title": "Justificativa da inclusão",
+      "description": "Por que o motivo entrou no processo depois da publicação, de até 1000 caracteres. Ausente nas inclusões feitas antes dela.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000
+    },
+    "congelado": {
+      "title": "Congelado",
+      "description": "Se o motivo já foi congelado numa versão publicada. Campo só de leitura: ignorado na importação.",
+      "type": "boolean",
+      "readOnly": true
+    }
+  },
+  "$defs": {
+    "codigoDoMotivo": {
+      "title": "Código do motivo",
+      "description": "Código do motivo no catálogo: maiúscula inicial, depois maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres.",
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+    }
+  }
+}
