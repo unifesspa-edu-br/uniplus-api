@@ -57,6 +57,25 @@ Se você tem um `docker/docker-compose.override.yml` de antes desta mudança, ap
 a API e o `ambiente-init` agora vivem no `docker-compose.yml`, e o override antigo sobrepõe os valores deles.
 Se o `.env` é antigo e falta uma chave, o compose para e nomeia a chave (copie-a do `.env.example`).
 
+### Base local pronta
+
+O `docker compose up` já sobe com uma base pronta, restaurada na primeira subida (volume do Postgres vazio) a partir de
+`docker/base-local/`: dois processos seletivos de exemplo, os perfis de operação com concessões às personas, as 60 personas no Keycloak
+e a base de CEP no Geo. Não há passo extra além de `cp .env.example .env`.
+
+- **Processos:** `psm-teste-multicurso-2027` (56 inscrições das personas; a inscrição fecha em 16/11/2026 às 16:25, horário de Belém, e depois
+  disso aparece encerrada) e `psm-2027` (Medicina; inscrição aberta até 18/11/2026 às 23:59:59).
+- **Pessoas:** as 60 personas fictícias do portal, com e-mail `{usuário}-uniplus-dev@unifesspa.edu.br` (os avisos vão só ao Mailpit) e a
+  senha de desenvolvimento do `.env.example`. Gestores de acessos: `diogo.souza` e `leandro.viana`; Representantes do controlador:
+  `betina.neves` e `caroline.jesus`; Encarregado de dados: `marlene.martins`.
+- **O que vem:** bancos `uniplus` e `keycloak` (`docker/base-local/dumps/`), arquivos do MinIO e o Geo (`geo/geo-api-database.tar.xz`, comprimido
+  com xz). Os dumps do `uniplus` e do `keycloak` são restaurados juntos: as concessões guardam o id da conta no Keycloak.
+- **Reiniciar do zero:** `docker compose down -v && docker compose up`. A restauração só acontece com o volume vazio, e leva alguns
+  minutos na primeira subida (o Geo tem 1,6 milhão de logradouros).
+- **Se a primeira subida for interrompida ou falhar** (disco cheio, `Ctrl+C`), o Postgres e o MinIO não repetem a restauração sobre um
+  volume já iniciado: rode `docker compose down -v` e suba de novo.
+- **Versão da base:** vale para a migration `Inicial` da `main`. Quando a migration for regerada, os dumps precisam ser gerados de novo.
+
 ## Serviços e portas
 
 Cada porta publicada vem de uma variável (coluna "Variável"), com o padrão abaixo. Para trocá-la sem editar
