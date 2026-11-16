@@ -835,40 +835,13 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
             return Result.Failure(recusa);
         }
 
-        // As recusas de estado acima saem de imediato; as do valor são independentes e acumulam,
-        // cada uma no seu campo (ADR-0125).
-        List<FieldError> erros = [];
-        void Recusar(string campo, string codigoErro, string mensagem) => erros.Add(new(campo, new DomainError(codigoErro, mensagem)));
-
-        string codigoNormalizado = codigo?.Trim() ?? string.Empty;
-        if (codigoNormalizado.Length == 0)
+        Result<NovoValorDoFato> novo = ConferenciaDosValoresDoFato.ConferirNovo(codigo, descricao, orientacao, ordem, Origem, CodigosDosValores);
+        if (novo.IsFailure)
         {
-            Recusar("codigo", FatoValorDominioErrorCodes.CodigoObrigatorio, "Código do valor de domínio é obrigatório.");
-        }
-        else if (codigoNormalizado.Length > FatoValorDominio.CodigoMaxLength)
-        {
-            Recusar("codigo", FatoValorDominioErrorCodes.CodigoTamanho,
-                $"Código do valor de domínio deve ter no máximo {FatoValorDominio.CodigoMaxLength} caracteres.");
-        }
-        else if (_valoresDominioDeclarados.Any(v => string.Equals(v.Codigo, codigoNormalizado, StringComparison.Ordinal)))
-        {
-            Recusar("codigo", FatoValorDominioErrorCodes.CodigoDuplicado,
-                $"Já existe um valor de domínio com o código '{codigoNormalizado}' neste fato.");
+            return Result.ValidationFailure(novo.Errors);
         }
 
-        (string? descricaoNormalizada, string? orientacaoNormalizada) = ValidarTextosDoValor(descricao, orientacao, erros);
-
-        if (ordem < 0)
-        {
-            Recusar("ordem", FatoValorDominioErrorCodes.OrdemInvalida, "Ordem do valor de domínio não pode ser negativa.");
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result.ValidationFailure(erros);
-        }
-
-        _valoresDominioDeclarados.Add(FatoValorDominio.Criar(Id, codigoNormalizado, descricaoNormalizada, ordem, ativo, orientacaoNormalizada));
+        _valoresDominioDeclarados.Add(FatoValorDominio.Criar(Id, novo.Value.Codigo, novo.Value.Textos.Descricao, novo.Value.Ordem, ativo, novo.Value.Textos.Orientacao));
         Aprovacao.AoEditarItem(protecaoMudou: false);
         return Result.Success();
     }
@@ -880,24 +853,17 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// </summary>
     public Result CorrigirValor(string codigo, string? descricao, string? orientacao)
     {
-        if (RecusaDeEstadoParaValores() is { } recusa)
+        Result<FatoValorDominio> alvo = ValorEditavel(codigo);
+        if (alvo.IsFailure)
         {
-            return Result.Failure(recusa);
+            return Result.Failure(alvo.Error!);
         }
-
-        if (ValorPorCodigo(codigo) is not { } valor)
+        Result<TextosDoValor> textos = ConferenciaDosValoresDoFato.ConferirTextos(Origem, descricao, orientacao);
+        if (textos.IsFailure)
         {
-            return Result.Failure(ValorNaoEncontrado);
+            return Result.ValidationFailure(textos.Errors);
         }
-
-        List<FieldError> erros = [];
-        (string? descricaoNormalizada, string? orientacaoNormalizada) = ValidarTextosDoValor(descricao, orientacao, erros);
-        if (erros.Count > 0)
-        {
-            return Result.ValidationFailure(erros);
-        }
-
-        valor.CorrigirTextos(descricaoNormalizada, orientacaoNormalizada);
+        alvo.Value!.CorrigirTextos(textos.Value.Descricao, textos.Value.Orientacao);
         Aprovacao.AoEditarItem(protecaoMudou: false);
         return Result.Success();
     }
@@ -910,125 +876,48 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     public Result ReordenarValores(IReadOnlyList<string> codigosEmOrdem)
     {
         ArgumentNullException.ThrowIfNull(codigosEmOrdem);
-
         if (RecusaDeEstadoParaValores() is { } recusa)
         {
             return Result.Failure(recusa);
         }
-
-        string[] informados = [.. codigosEmOrdem.Select(static c => c?.Trim() ?? string.Empty)];
-        Dictionary<string, FatoValorDominio> porCodigo = _valoresDominioDeclarados.ToDictionary(static v => v.Codigo, StringComparer.Ordinal);
-        HashSet<string> informadosSet = new(informados, StringComparer.Ordinal);
-        List<FieldError> erros = [];
-
-        if (informados.Any(static c => c.Length == 0))
+        Result<string[]> ordem = ConferenciaDosValoresDoFato.ConferirOrdem(codigosEmOrdem, CodigosDosValores);
+        if (ordem.IsFailure)
         {
-            erros.Add(new("codigos", new DomainError(
-                FatoValorDominioErrorCodes.OrdemComCodigoDesconhecido,
-                "A ordem tem um código em branco; informe o código de cada valor do fato.")));
+            return Result.ValidationFailure(ordem.Errors);
         }
 
-        string[] estranhos = [.. informados.Where(c => c.Length > 0 && !porCodigo.ContainsKey(c)).Distinct(StringComparer.Ordinal)];
-        if (estranhos.Length > 0)
-        {
-            erros.Add(new("codigos", new DomainError(
-                FatoValorDominioErrorCodes.OrdemComCodigoDesconhecido,
-                $"O fato não tem os valores: {string.Join(", ", estranhos)}.")));
-        }
-
-        string[] repetidos = [.. informados.Where(static c => c.Length > 0).GroupBy(static c => c, StringComparer.Ordinal)
-            .Where(static g => g.Count() > 1).Select(static g => g.Key)];
-        if (repetidos.Length > 0)
-        {
-            erros.Add(new("codigos", new DomainError(
-                FatoValorDominioErrorCodes.OrdemComCodigoRepetido,
-                $"Valores repetidos na ordem: {string.Join(", ", repetidos)}.")));
-        }
-
-        string[] ausentes = [.. porCodigo.Keys.Where(c => !informadosSet.Contains(c)).Order(StringComparer.Ordinal)];
-        if (ausentes.Length > 0)
-        {
-            erros.Add(new("codigos", new DomainError(
-                FatoValorDominioErrorCodes.OrdemSemTodosOsValores,
-                $"A ordem deve trazer todos os valores do fato, ativos e desativados; faltam: {string.Join(", ", ausentes)}.")));
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result.ValidationFailure(erros);
-        }
-
-        // Valor na posição em que já está não é regravado: sem mudança, o EF não marca a linha e a
-        // versão do fato não avança.
-        for (int posicao = 0; posicao < informados.Length; posicao++)
-        {
-            porCodigo[informados[posicao]].DefinirOrdem(posicao);
-        }
-
-        Aprovacao.AoEditarItem(protecaoMudou: false);
+        AplicarOrdemDosValores(ordem.Value!);
         return Result.Success();
     }
 
-    /// <summary>
-    /// As recusas de estado comuns a tudo que mexe nos valores: só o fato do administrador, categórico,
-    /// de fonte global e que não seja agregado tem valores próprios.
-    /// </summary>
-    private DomainError? RecusaDeEstadoParaValores()
+    private IReadOnlyCollection<string> CodigosDosValores => [.. _valoresDominioDeclarados.Select(static v => v.Codigo)];
+
+    // Valor na posição em que já está não é regravado: sem mudança, o EF não marca a linha e a
+    // versão do fato não avança.
+    private void AplicarOrdemDosValores(string[] codigosEmOrdem)
     {
-        if (RecusaSeSistema() is { } recusa)
+        foreach ((int posicao, string codigo) in codigosEmOrdem.Index())
         {
-            return recusa;
+            ValorPorCodigo(codigo)!.DefinirOrdem(posicao);
         }
 
-        if (Dominio != DominioFato.Categorico)
-        {
-            return new DomainError(
-                FatoValorDominioErrorCodes.NaoPermitidoForaDeCategorico,
-                "Só fato categórico tem valores de domínio próprios.");
-        }
-
-        if (FatoDeMembroAgregado is { } membro)
-        {
-            return new DomainError(
-                FatoCandidatoErrorCodes.AgregadoNaoTemValoresProprios,
-                $"Os valores do agregado são os do fato de membro '{membro}'; mantenha-os nele.");
-        }
-
-        if (FonteValores != FonteValoresFato.Global)
-        {
-            return new DomainError(
-                FatoValorDominioErrorCodes.NaoPermitidoForaDeFonteGlobal,
-                "Valores de domínio só são declarados no catálogo quando a fonte dos valores é global; "
-                + "nas demais fontes, os valores vêm do processo.");
-        }
-
-        return null;
+        Aprovacao.AoEditarItem(protecaoMudou: false);
     }
 
-    /// <summary>A descrição e a orientação normalizadas; as recusas acumulam em <paramref name="erros"/>, cada uma no seu campo (ADR-0125).</summary>
-    private (string? Descricao, string? Orientacao) ValidarTextosDoValor(string? descricao, string? orientacao, List<FieldError> erros)
+    private Result<FatoValorDominio> ValorEditavel(string codigo)
     {
-        string? descricaoNormalizada = string.IsNullOrWhiteSpace(descricao) ? null : descricao.Trim();
-        if (descricaoNormalizada is { Length: > FatoValorDominio.DescricaoMaxLength })
+        if (RecusaDeEstadoParaValores() is { } recusa)
         {
-            erros.Add(new("descricao", new DomainError(FatoValorDominioErrorCodes.DescricaoTamanho,
-                $"Descrição do valor de domínio deve ter no máximo {FatoValorDominio.DescricaoMaxLength} caracteres.")));
-        }
-        else if (Origem == OrigemFato.Declarado && descricaoNormalizada is null)
-        {
-            erros.Add(new("descricao", new DomainError(FatoValorDominioErrorCodes.DescricaoObrigatoria,
-                "Descrição do valor de domínio é obrigatória quando a origem do fato é DECLARADO.")));
+            return Result<FatoValorDominio>.Failure(recusa);
         }
 
-        string? orientacaoNormalizada = string.IsNullOrWhiteSpace(orientacao) ? null : orientacao.Trim();
-        if (orientacaoNormalizada is { Length: > FatoValorDominio.OrientacaoMaxLength })
-        {
-            erros.Add(new("orientacao", new DomainError(FatoValorDominioErrorCodes.OrientacaoTamanho,
-                $"Orientação do valor de domínio deve ter no máximo {FatoValorDominio.OrientacaoMaxLength} caracteres.")));
-        }
-
-        return (descricaoNormalizada, orientacaoNormalizada);
+        return ValorPorCodigo(codigo) is { } valor
+            ? Result<FatoValorDominio>.Success(valor)
+            : Result<FatoValorDominio>.Failure(ValorNaoEncontrado);
     }
+
+    private DomainError? RecusaDeEstadoParaValores() =>
+        ConferenciaDosValoresDoFato.RecusaDeEstado(RecusaSeSistema(), Dominio, FatoDeMembroAgregado, FonteValores);
 
     private static readonly DomainError ValorNaoEncontrado =
         new(FatoValorDominioErrorCodes.NaoEncontrado, "Valor de domínio não encontrado neste fato.");
