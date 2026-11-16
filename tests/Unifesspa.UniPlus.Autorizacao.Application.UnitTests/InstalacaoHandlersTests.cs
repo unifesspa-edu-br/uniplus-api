@@ -80,7 +80,7 @@ public sealed class InstalacaoHandlersTests
         Instalacao instalacao = Iniciada(tamanho: 2048);
 
         (Result<InstalacaoDto> resposta, IEnumerable<object> mensagens) = await ConfirmarDocumentoDaInstalacaoCommandHandler.Handle(
-            new ConfirmarDocumentoDaInstalacaoCommand(instalacao.Id, "etag"), new RepositorioDoExecutor(instalacao), new UnidadeDeTrabalho(), new Usuario(Executor), CancellationToken.None);
+            new ConfirmarDocumentoDaInstalacaoCommand(instalacao.Id, "etag"), new ConfirmacaoDoDocumentoDeDesignacao(new RepositorioDoExecutor(instalacao), new UnidadeDeTrabalho()), new Usuario(Executor), CancellationToken.None);
 
         resposta.IsSuccess.Should().BeTrue();
         mensagens.Should().ContainSingle().Which.Should().BeOfType<PedidoDeVerificacaoDeArquivo>()
