@@ -10,13 +10,19 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 internal sealed record CampoTextual(string Nome, int Maximo, string ErroTamanho, string ErroCaractere, FormaDoTexto Forma)
 {
+    /// <summary>Tamanho mínimo, depois de normalizado.</summary>
+    public int Minimo { get; init; } = 1;
+
+    /// <summary>O nome do campo é feminino: a mensagem de ausência diz "obrigatória".</summary>
+    public bool Feminino { get; init; }
+
     /// <summary>O texto normalizado, ou <see langword="null"/> quando ausente ou recusado.</summary>
     public string? Obrigatorio(string? valor, string caminho, string erroObrigatorio, List<FieldError> erros)
     {
         ArgumentNullException.ThrowIfNull(erros);
         if (string.IsNullOrWhiteSpace(valor))
         {
-            erros.Add(new(caminho, new DomainError(erroObrigatorio, $"{Nome} é obrigatório.")));
+            erros.Add(new(caminho, new DomainError(erroObrigatorio, $"{Nome} é {(Feminino ? "obrigatória" : "obrigatório")}.")));
             return null;
         }
 
@@ -30,6 +36,11 @@ internal sealed record CampoTextual(string Nome, int Maximo, string ErroTamanho,
     private string? Normalizar(string valor, string caminho, List<FieldError> erros)
     {
         SituacaoDoTexto situacao = Tentar(valor.Trim(), out string normalizado);
+        if (situacao == SituacaoDoTexto.Valido && normalizado.Length < Minimo)
+        {
+            situacao = SituacaoDoTexto.TamanhoExcedido;
+        }
+
         DomainError? recusa = Recusa(situacao);
         if (recusa is not null)
         {
@@ -49,9 +60,13 @@ internal sealed record CampoTextual(string Nome, int Maximo, string ErroTamanho,
     private DomainError? Recusa(SituacaoDoTexto situacao) => situacao switch
     {
         SituacaoDoTexto.Valido => null,
-        SituacaoDoTexto.TamanhoExcedido => new(ErroTamanho, $"{Nome} deve ter no máximo {Maximo} caracteres."),
+        SituacaoDoTexto.TamanhoExcedido => new(ErroTamanho, MensagemDoTamanho()),
         _ => new(ErroCaractere, MensagemDoCaractere()),
     };
+
+    private string MensagemDoTamanho() => Minimo > 1
+        ? $"{Nome} deve ter entre {Minimo} e {Maximo} caracteres."
+        : $"{Nome} deve ter no máximo {Maximo} caracteres.";
 
     private string MensagemDoCaractere() => Forma switch
     {
