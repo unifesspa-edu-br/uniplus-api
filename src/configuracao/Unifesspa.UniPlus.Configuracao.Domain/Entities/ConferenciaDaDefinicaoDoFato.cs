@@ -281,4 +281,7 @@ internal static class ConferenciaDaDefinicaoDoFato
         PrefixosBindingPorOrigem.TryGetValue(origem, out IReadOnlyList<string>? prefixos)
             ? prefixos
             : throw new ArgumentOutOfRangeException(nameof(origem), origem, "Origem de fato fora do domínio fechado.");
+
+    /// <summary>As recusas que existem entre as conferidas, na ordem em que foram dadas.</summary>
+    internal static IEnumerable<FieldError> Presentes(params FieldError?[] recusas) => recusas.OfType<FieldError>();
 }

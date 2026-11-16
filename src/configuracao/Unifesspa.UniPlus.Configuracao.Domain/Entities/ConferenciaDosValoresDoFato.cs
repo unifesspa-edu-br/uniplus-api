@@ -4,6 +4,8 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
+using static Unifesspa.UniPlus.Configuracao.Domain.Entities.ConferenciaDaDefinicaoDoFato;
+
 /// <summary>
 /// As conferências dos valores de domínio de um fato categórico do administrador (ADR-0116): o estado
 /// do fato que os comporta, o valor novo, os textos e a ordem. Só confere e devolve as recusas, cada
@@ -65,8 +67,6 @@ internal static class ConferenciaDosValoresDoFato
     }
 
     private static FieldError Recusa(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
-
-    private static IEnumerable<FieldError> Presentes(params FieldError?[] recusas) => recusas.OfType<FieldError>();
 
     private static FieldError? RecusaDaOrdem(int ordem) =>
         ordem < 0 ? Recusa("ordem", FatoValorDominioErrorCodes.OrdemInvalida, "Ordem do valor de domínio não pode ser negativa.") : null;
