@@ -181,7 +181,7 @@
               "title": "Nome do arquivo",
               "description": "Nome do arquivo do modelo.",
               "type": "string",
-              "maxLength": 255
+              "maxLength": 120
             },
             "formato": {
               "title": "Formato",

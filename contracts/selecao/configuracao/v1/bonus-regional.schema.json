@@ -37,8 +37,9 @@
     },
     "fatoElegibilidadeCodigo": {
       "title": "Fato de elegibilidade",
-      "description": "Código do fato que decide quem recebe o bônus, quando o processo o declara.",
-      "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
+      "description": "Código do fato que decide quem recebe o bônus, quando o processo o declara, de 1 a 60 caracteres.",
+      "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo",
+      "maxLength": 60
     },
     "baseLegalBonusRegionalCodigo": {
       "title": "Base legal",
