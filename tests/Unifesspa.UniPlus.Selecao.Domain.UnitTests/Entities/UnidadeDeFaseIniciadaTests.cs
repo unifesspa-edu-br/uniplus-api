@@ -77,29 +77,6 @@ public sealed class UnidadeDeFaseIniciadaTests
         resultado.Error!.Code.Should().Be("FaseCronograma.UnidadeDeFaseIniciadaNaoMuda");
     }
 
-    [Fact(DisplayName = "O fechamento recusa a unidade trocada numa fase que começou depois da edição")]
-    public void Fechamento_UnidadeTrocadaEmFaseQueComecou_Recusa()
-    {
-        FaseCronograma fase = ProcessoConformeFactory.FaseConforme();
-        ProcessoSeletivo processo = ProcessoComCronograma(ComUnidade(fase, UnidadesDeTeste.Cga));
-        FasesIniciadas iniciadas = new([KeyValuePair.Create<Guid, Guid?>(fase.FaseCanonicaOrigemId, UnidadesDeTeste.Ceps.OrigemId)]);
-
-        iniciadas.RecusaDaTroca(processo.CronogramaFases)!.Code
-            .Should().Be("FaseCronograma.UnidadeDeFaseIniciadaNaoMuda");
-        FasesIniciadas.Nenhuma.RecusaDaTroca(processo.CronogramaFases).Should().BeNull();
-    }
-
-    [Fact(DisplayName = "O conjunto de fases iniciadas responde só pelas fases que recebeu")]
-    public void FasesIniciadas_ContemSoAsRecebidas()
-    {
-        Guid iniciada = Guid.CreateVersion7();
-        FasesIniciadas conjunto = new([KeyValuePair.Create<Guid, Guid?>(iniciada, null)]);
-
-        conjunto.Contem(iniciada).Should().BeTrue();
-        conjunto.Contem(Guid.CreateVersion7()).Should().BeFalse();
-        FasesIniciadas.Nenhuma.Contem(iniciada).Should().BeFalse();
-    }
-
     private static ProcessoSeletivo ProcessoComCronograma(FaseCronograma fase)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(

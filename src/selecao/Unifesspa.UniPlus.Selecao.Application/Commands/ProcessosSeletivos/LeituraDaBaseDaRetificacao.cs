@@ -5,6 +5,7 @@ using Abstractions;
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.ProcessosSeletivos.Publicacao;
+using Domain.ProcessosSeletivos.Retificacao;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -68,7 +69,9 @@ public sealed class LeituraDaBaseDaRetificacao(
         FasesIniciadas iniciadas = await fasesIniciadas
             .ObterAsync(processo.Id, instante, cancellationToken).ConfigureAwait(false);
 
-        return iniciadas.RecusaDaAlteracao(processo.CronogramaFases) ?? iniciadas.RecusaDaRemocaoDaEtapa(processo.Etapas);
+        return ConferenciaDasFasesIniciadas.Conferir(iniciadas, processo.CronogramaFases, processo.Etapas) is [{ } primeira, ..]
+            ? primeira.Error
+            : null;
     }
 
     // A versão nova é coerente sozinha, mas não pode desfazer o ciclo de recurso que um preliminar já publicado abriu e

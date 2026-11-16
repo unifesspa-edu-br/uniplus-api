@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -47,8 +48,7 @@ internal static class RegrasDoCronograma
         Dictionary<Guid, FaseCronograma> novasPorOrigem = PorOrigem(fases);
         List<DocumentoExigido> documentosQueFicam = DocumentosQueFicam(estado, antigasPorOrigem, novasPorOrigem);
 
-        return iniciadas.RecusaDaAlteracao(fases)
-            ?? RecusaDaEtapaPodada(iniciadas, estado, antigasPorOrigem, novasPorOrigem)
+        return RecusaDaFaseOuEtapaIniciada(iniciadas, estado, fases, antigasPorOrigem, novasPorOrigem)
             ?? RecusaDasFasesQueSaemOuMudam(estado, antigasPorOrigem, novasPorOrigem, documentosQueFicam)
             ?? RecusaDaAncoraNoFimDaInscricao(fases, documentosQueFicam)
             ?? PermutacaoCiclicaDeOrdem.Recusa(antigasPorOrigem, novasPorOrigem)
@@ -70,17 +70,19 @@ internal static class RegrasDoCronograma
     }
 
     // A etapa da fase que sai vai junto na poda: se ela já começou, a remoção da fase a levaria sem que ninguém a conferisse.
-    private static DomainError? RecusaDaEtapaPodada(
+    private static DomainError? RecusaDaFaseOuEtapaIniciada(
         FasesIniciadas iniciadas,
         EstadoDaConfiguracao estado,
+        IReadOnlyList<FaseCronograma> fases,
         Dictionary<Guid, FaseCronograma> antigasPorOrigem,
         Dictionary<Guid, FaseCronograma> novasPorOrigem)
     {
         HashSet<string> codigosRemovidos = [.. antigasPorOrigem.Values
             .Where(f => !novasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId))
             .Select(static f => f.Codigo)];
+        List<EtapaProcesso> etapasQueFicam = [.. estado.Etapas.Where(e => e.FaseCodigo is not { } codigo || !codigosRemovidos.Contains(codigo))];
 
-        return iniciadas.RecusaDaRemocaoDaEtapa(estado.Etapas.Where(e => e.FaseCodigo is not { } codigo || !codigosRemovidos.Contains(codigo)));
+        return ConferenciaDasFasesIniciadas.Conferir(iniciadas, fases, etapasQueFicam) is [{ } primeira, ..] ? primeira.Error : null;
     }
 
     // A conclusão do ciclo recursal roda sobre o conjunto candidato, não sobre o agregado

@@ -24,7 +24,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
         iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
-        iniciadas.RecusaDaRemocao([])!.Code.Should().Be("FaseCronograma.FaseIniciadaNaoSaiDoCronograma");
+        iniciadas.CodigosDasFasesRemovidas([]).Should().ContainSingle().Which.Should().Be(fase.Codigo);
     }
 
     [Fact(DisplayName = "A fase iniciada só pelo primeiro ato, com a janela ainda futura, não sai do cronograma")]
@@ -35,7 +35,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
-        iniciadas.RecusaDaRemocao([])!.Code.Should().Be("FaseCronograma.FaseIniciadaNaoSaiDoCronograma");
+        iniciadas.CodigosDasFasesRemovidas([]).Should().ContainSingle().Which.Should().Be(fase.Codigo);
     }
 
     [Fact(DisplayName = "A fase que ainda não começou pode sair do cronograma")]
@@ -45,18 +45,18 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
-        iniciadas.RecusaDaRemocao([]).Should().BeNull();
+        iniciadas.CodigosDasFasesRemovidas([]).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A remoção é conferida contra a versão vigente, e não contra a de vigência futura")]
     public async Task Remocao_VersaoDeVigenciaFutura_NaoLivraAFase()
     {
-        (Guid processoId, _, _) = await _cenario.PublicadoAsync("PS remocao e versao futura");
+        (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS remocao e versao futura");
         await SucederAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), f => f["faseCanonicaOrigemId"] = Guid.CreateVersion7());
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
-        iniciadas.RecusaDaRemocao([])!.Code.Should().Be("FaseCronograma.FaseIniciadaNaoSaiDoCronograma");
+        iniciadas.CodigosDasFasesRemovidas([]).Should().ContainSingle().Which.Should().Be(fase.Codigo);
     }
 
     [Fact(DisplayName = "A fase iniciada que a versão vigente já não traz não conta como removida")]
@@ -72,7 +72,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
         iniciadas.Contem(fase.FaseCanonicaOrigemId).Should().BeTrue();
-        iniciadas.RecusaDaRemocao([]).Should().BeNull();
+        iniciadas.CodigosDasFasesRemovidas([]).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A janela de uma etapa inicia a fase que a contém, ainda que a janela da fase seja futura")]
@@ -112,7 +112,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
 
         iniciadas.ContemEtapa(etapa.Id).Should().BeTrue();
         iniciadas.ContemEtapa(irma).Should().BeFalse("a abertura de uma etapa não inicia as outras da fase");
-        iniciadas.RecusaDaRemocaoDaEtapa([])!.Code.Should().Be("FaseCronograma.EtapaIniciadaNaoSaiDoCronograma");
+        iniciadas.EtapasRemovidas([]).Should().ContainSingle().Which.Id.Should().Be(etapa.Id);
     }
 
     [Fact(DisplayName = "A etapa com a avaliação lançada, sem janela, está iniciada, e a irmã sem registro não")]
@@ -149,7 +149,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
         iniciadas.ContemEtapa(etapa.Id).Should().BeFalse();
-        iniciadas.RecusaDaRemocaoDaEtapa([]).Should().BeNull();
+        iniciadas.EtapasRemovidas([]).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A janela de uma versão de vigência futura não inicia a etapa")]

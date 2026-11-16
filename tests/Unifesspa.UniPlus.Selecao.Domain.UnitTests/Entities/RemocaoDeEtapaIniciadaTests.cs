@@ -12,54 +12,6 @@ public sealed class RemocaoDeEtapaIniciadaTests
 {
     private const string Codigo = "FaseCronograma.EtapaIniciadaNaoSaiDoCronograma";
 
-    [Fact(DisplayName = "Remover uma etapa iniciada é recusado, citando a etapa")]
-    public void Remover_EtapaIniciada_Recusa()
-    {
-        (EtapaProcesso prova, EtapaProcesso heteroidentificacao, EtapaProcesso analise) = TresEtapas();
-
-        DomainError? recusa = Iniciadas(heteroidentificacao).RecusaDaRemocaoDaEtapa([prova, analise]);
-
-        recusa!.Code.Should().Be(Codigo);
-        recusa.Message.Should().Contain("Heteroidentificação");
-    }
-
-    [Fact(DisplayName = "Remover uma etapa que ainda não começou é aceito")]
-    public void Remover_EtapaNaoIniciada_Aceita()
-    {
-        (EtapaProcesso prova, EtapaProcesso heteroidentificacao, _) = TresEtapas();
-
-        FasesIniciadas.Nenhuma.RecusaDaRemocaoDaEtapa([prova, heteroidentificacao]).Should().BeNull();
-    }
-
-    [Fact(DisplayName = "A etapa irmã de uma etapa iniciada sai, porque a abertura de uma etapa não inicia as outras da fase")]
-    public void Remover_IrmaDeEtapaIniciada_Aceita()
-    {
-        (EtapaProcesso prova, EtapaProcesso heteroidentificacao, _) = TresEtapas();
-
-        Iniciadas(heteroidentificacao).RecusaDaRemocaoDaEtapa([prova, heteroidentificacao]).Should().BeNull();
-    }
-
-    [Fact(DisplayName = "Remover e recolocar a etapa iniciada na mesma retificação não é remoção")]
-    public void Recolocar_EtapaIniciada_Aceita()
-    {
-        (EtapaProcesso prova, EtapaProcesso heteroidentificacao, EtapaProcesso analise) = TresEtapas();
-        FasesIniciadas iniciadas = Iniciadas(heteroidentificacao);
-
-        iniciadas.RecusaDaRemocaoDaEtapa([prova, analise])!.Code.Should().Be(Codigo);
-        iniciadas.RecusaDaRemocaoDaEtapa([prova, analise, heteroidentificacao]).Should().BeNull();
-    }
-
-    [Fact(DisplayName = "A etapa iniciada que a versão vigente já não traz não é removida pela retificação")]
-    public void Remover_EtapaIniciadaForaDaVersaoVigente_NaoRecusa()
-    {
-        (EtapaProcesso prova, EtapaProcesso heteroidentificacao, _) = TresEtapas();
-        FasesIniciadas iniciadas = new([], etapas: [new EtapaIniciada(heteroidentificacao.Id, heteroidentificacao.Nome, NaVersaoVigente: false)]);
-
-        iniciadas.RecusaDaRemocaoDaEtapa([prova]).Should().BeNull();
-        iniciadas.ContemEtapa(heteroidentificacao.Id).Should().BeTrue();
-        FasesIniciadas.Nenhuma.ContemEtapa(heteroidentificacao.Id).Should().BeFalse();
-    }
-
     [Fact(DisplayName = "Remover a fase de uma etapa iniciada, que a poda levaria junto, é recusado")]
     public void RemoverFase_ComEtapaIniciada_Recusa()
     {
@@ -77,10 +29,6 @@ public sealed class RemocaoDeEtapaIniciadaTests
 
     private static FasesIniciadas Iniciadas(EtapaProcesso etapa) =>
         new([], etapas: [new EtapaIniciada(etapa.Id, etapa.Nome, NaVersaoVigente: true)]);
-
-    private static (EtapaProcesso Prova, EtapaProcesso Heteroidentificacao, EtapaProcesso Analise) TresEtapas() =>
-        (Etapa("Prova", CaraterEtapa.Classificatoria, 1m), Etapa("Heteroidentificação", CaraterEtapa.Eliminatoria, null),
-            Etapa("Análise documental", CaraterEtapa.Eliminatoria, null));
 
     private static FaseCronograma FaseNoCronograma(int ordem, string codigo) =>
         FaseCronograma.Criar(

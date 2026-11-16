@@ -63,27 +63,6 @@ public sealed class RemocaoDeFaseIniciadaTests
         resultado.Error!.Code.Should().Be(CodigoDaTroca);
     }
 
-    [Fact(DisplayName = "A fase iniciada que a versão vigente já não traz não é removida pela retificação")]
-    public void Remover_FaseIniciadaForaDaVersaoVigente_NaoRecusa()
-    {
-        (FaseCronograma habilitacao, FaseCronograma classificacao) = DuasFases();
-        FasesIniciadas iniciadas = new(
-            [KeyValuePair.Create<Guid, Guid?>(habilitacao.FaseCanonicaOrigemId, UnidadesDeTeste.Ceps.OrigemId)]);
-
-        iniciadas.RecusaDaRemocao([classificacao]).Should().BeNull();
-    }
-
-    [Fact(DisplayName = "O fechamento confere a remoção sobre o cronograma do rascunho")]
-    public void Fechamento_FaseIniciadaForaDoRascunho_Recusa()
-    {
-        (FaseCronograma habilitacao, FaseCronograma classificacao) = DuasFases();
-        FasesIniciadas iniciadas = Iniciadas(habilitacao);
-
-        iniciadas.RecusaDaAlteracao([classificacao])!.Code.Should().Be(CodigoDaRemocao);
-        iniciadas.RecusaDaAlteracao([classificacao, habilitacao]).Should().BeNull();
-        FasesIniciadas.Nenhuma.RecusaDaAlteracao([classificacao]).Should().BeNull();
-    }
-
     private static FasesIniciadas Iniciadas(FaseCronograma fase) => new(
         [KeyValuePair.Create<Guid, Guid?>(fase.FaseCanonicaOrigemId, UnidadesDeTeste.Ceps.OrigemId)],
         [KeyValuePair.Create(fase.FaseCanonicaOrigemId, fase.Codigo)]);

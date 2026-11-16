@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Entities;
 
-using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 
 /// <summary>Uma etapa que já começou, pela identidade dela, e se a versão publicada vigente ainda a traz.</summary>
@@ -72,51 +71,34 @@ public sealed record FasesIniciadas
             && publicada != fase.UnidadeResponsavelOrigemId;
     }
 
-    // A unidade que conduz a fase decide as ações dela, e a fase que já começou tem ato e registro feitos sob a
-    // unidade publicada: trocá-la deixaria o que já aconteceu sem a unidade que o conduziu. A comparação é com a
-    // versão publicada, e não com o rascunho anterior, para que retirar e reinserir a fase não contorne a regra.
-    /// <summary>A recusa da troca de unidade numa fase iniciada, citando a primeira fase trocada; nula se não há troca.</summary>
-    public DomainError? RecusaDaTroca(IEnumerable<FaseCronograma> fases)
+    /// <summary>As fases, entre as informadas, que já começaram e cuja unidade não é a publicada.</summary>
+    public IEnumerable<FaseCronograma> FasesComUnidadeTrocada(IEnumerable<FaseCronograma> fases)
     {
         ArgumentNullException.ThrowIfNull(fases);
 
-        return fases.FirstOrDefault(UnidadeTrocada) is { } fase
-            ? new DomainError(
-                "FaseCronograma.UnidadeDeFaseIniciadaNaoMuda",
-                $"A fase '{fase.Codigo}' (ordem {fase.Ordem}) já começou, e a unidade responsável por ela não muda.")
-            : null;
+        return fases.Where(UnidadeTrocada);
     }
 
-    /// <summary>A recusa de trocar a unidade ou de remover do cronograma uma fase iniciada; nula se não há nenhuma das duas.</summary>
-    public DomainError? RecusaDaAlteracao(IEnumerable<FaseCronograma> fases) => RecusaDaTroca(fases) ?? RecusaDaRemocao(fases);
-
-    // Remover a fase numa retificação e recolocá-la com outra unidade na seguinte contornaria a recusa da troca. Só conta
-    // a fase que a versão publicada vigente ainda traz: a que já saiu de uma versão anterior não é removida agora.
-    /// <summary>A recusa da remoção de uma fase iniciada do cronograma, citando a primeira removida; nula se não há remoção.</summary>
-    public DomainError? RecusaDaRemocao(IEnumerable<FaseCronograma> fases)
+    /// <summary>
+    /// O código das fases iniciadas que a versão publicada vigente ainda traz e que não estão entre as informadas. A
+    /// fase que já saiu de uma versão anterior não conta como removida agora.
+    /// </summary>
+    public IEnumerable<string> CodigosDasFasesRemovidas(IEnumerable<FaseCronograma> fases)
     {
         ArgumentNullException.ThrowIfNull(fases);
 
         HashSet<Guid> restantes = [.. fases.Select(static f => f.FaseCanonicaOrigemId)];
 
-        return _codigosNaVersaoVigente.FirstOrDefault(f => !restantes.Contains(f.Key)) is { Value: { } codigo }
-            ? new DomainError(
-                "FaseCronograma.FaseIniciadaNaoSaiDoCronograma",
-                $"A fase '{codigo}' já começou, e ela não sai do cronograma.")
-            : null;
+        return _codigosNaVersaoVigente.Where(f => !restantes.Contains(f.Key)).Select(static f => f.Value);
     }
 
-    /// <summary>A recusa da remoção de uma etapa iniciada, citando a primeira removida; nula se não há remoção.</summary>
-    public DomainError? RecusaDaRemocaoDaEtapa(IEnumerable<EtapaProcesso> etapas)
+    /// <summary>As etapas iniciadas que a versão publicada vigente ainda traz e que não estão entre as informadas.</summary>
+    public IEnumerable<EtapaIniciada> EtapasRemovidas(IEnumerable<EtapaProcesso> etapas)
     {
         ArgumentNullException.ThrowIfNull(etapas);
 
         HashSet<Guid> restantes = [.. etapas.Select(static e => e.Id)];
 
-        return _etapas.Values.FirstOrDefault(e => e.NaVersaoVigente && !restantes.Contains(e.Id)) is { } removida
-            ? new DomainError(
-                "FaseCronograma.EtapaIniciadaNaoSaiDoCronograma",
-                $"A etapa '{removida.Nome}' já começou, e ela não sai do cronograma.")
-            : null;
+        return _etapas.Values.Where(e => e.NaVersaoVigente && !restantes.Contains(e.Id));
     }
 }
