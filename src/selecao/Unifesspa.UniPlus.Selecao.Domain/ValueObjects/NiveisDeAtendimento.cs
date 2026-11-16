@@ -14,54 +14,72 @@ public static class NiveisDeAtendimento
     public const string NivelDuplicado = "NivelDeAtendimento.Duplicado";
     public const string SemNivelCompleto = "NivelDeAtendimento.SemNivelCompleto";
 
-    /// <summary>Acumula toda violação da escala (ADR-0125); a escala ausente ou vazia não declara nada.</summary>
+    /// <summary>Acumula toda violação da escala (ADR-0125), inclusive o elemento nulo; a escala ausente ou vazia não declara nada.</summary>
     public static List<FieldError> Validar(IReadOnlyList<NivelDeAtendimento?>? niveis)
     {
-        List<FieldError> erros = [];
         if (niveis is null || niveis.Count == 0)
         {
-            return erros;
+            return [];
         }
 
         HashSet<string> rotulos = new(StringComparer.Ordinal);
-        for (int i = 0; i < niveis.Count; i++)
-        {
-            if (niveis[i] is not { } nivel)
-            {
-                continue;
-            }
+        List<FieldError> erros =
+            [.. Enumerable.Range(0, niveis.Count).SelectMany(i => ValidarNivel($"escalaDeAtendimento[{i}]", niveis[i], rotulos))];
+        erros.AddRange(FaltaDoNivelCompleto(niveis));
+        return erros;
+    }
 
-            string campo = $"escalaDeAtendimento[{i}]";
-            string rotulo = nivel.Rotulo?.Trim() ?? string.Empty;
-            if (rotulo.Length is 0 or > NivelDeAtendimento.RotuloMaxLength)
-            {
-                erros.Add(new($"{campo}.rotulo", new DomainError(
-                    RotuloInvalido,
-                    $"O rótulo do nível de atendimento é obrigatório e deve ter no máximo {NivelDeAtendimento.RotuloMaxLength} caracteres.")));
-            }
-            else if (!rotulos.Add(HashCanonicalComputer.NormalizeNfc(rotulo)))
-            {
-                erros.Add(new($"{campo}.rotulo", new DomainError(
-                    NivelDuplicado,
-                    $"O nível '{rotulo}' aparece mais de uma vez na escala de atendimento.")));
-            }
-
-            if (nivel.Fracao is < 0m or > 1m)
-            {
-                erros.Add(new($"{campo}.fracao", new DomainError(
-                    FracaoInvalida,
-                    "A fração do nível de atendimento deve estar entre 0 e 1.")));
-            }
-        }
-
+    private static IEnumerable<FieldError> FaltaDoNivelCompleto(IReadOnlyList<NivelDeAtendimento?> niveis)
+    {
         if (!niveis.Any(static n => n?.Fracao == 1m))
         {
-            erros.Add(new("escalaDeAtendimento", new DomainError(
+            yield return new("escalaDeAtendimento", new DomainError(
                 SemNivelCompleto,
-                "A escala de atendimento precisa de um nível que valha a pontuação inteira do item (fração 1).")));
+                "A escala de atendimento precisa de um nível que valha a pontuação inteira do item (fração 1)."));
+        }
+    }
+
+    private static IEnumerable<FieldError> ValidarNivel(string campo, NivelDeAtendimento? nivel, HashSet<string> rotulos)
+    {
+        if (nivel is null)
+        {
+            yield return new(campo, new DomainError(
+                RotuloInvalido,
+                "O nível de atendimento não pode ser nulo: informe o rótulo e a fração."));
+            yield break;
         }
 
-        return erros;
+        foreach (FieldError erro in ValidarRotulo(campo, nivel.Rotulo, rotulos).Concat(ValidarFracao(campo, nivel.Fracao)))
+        {
+            yield return erro;
+        }
+    }
+
+    private static IEnumerable<FieldError> ValidarFracao(string campo, decimal fracao)
+    {
+        if (fracao is < 0m or > 1m)
+        {
+            yield return new($"{campo}.fracao", new DomainError(
+                FracaoInvalida,
+                "A fração do nível de atendimento deve estar entre 0 e 1."));
+        }
+    }
+
+    private static IEnumerable<FieldError> ValidarRotulo(string campo, string? rotuloInformado, HashSet<string> rotulos)
+    {
+        string rotulo = rotuloInformado?.Trim() ?? string.Empty;
+        if (rotulo.Length is 0 or > NivelDeAtendimento.RotuloMaxLength)
+        {
+            yield return new($"{campo}.rotulo", new DomainError(
+                RotuloInvalido,
+                $"O rótulo do nível de atendimento é obrigatório e deve ter no máximo {NivelDeAtendimento.RotuloMaxLength} caracteres."));
+        }
+        else if (!rotulos.Add(HashCanonicalComputer.NormalizeNfc(rotulo)))
+        {
+            yield return new($"{campo}.rotulo", new DomainError(
+                NivelDuplicado,
+                $"O nível '{rotulo}' aparece mais de uma vez na escala de atendimento."));
+        }
     }
 
     /// <summary>
@@ -69,10 +87,6 @@ public static class NiveisDeAtendimento
     /// conteúdo e não da ordem em que o cliente enviou, então regravar a mesma escala não muda o
     /// documento congelado.
     /// </summary>
-    /// <remarks>
-    /// Elemento nulo não é recusado por <see cref="Validar"/> quando a escala tem um nível completo, e
-    /// chega até aqui: ordenar a escala com um elemento nulo lança <see cref="NullReferenceException"/>.
-    /// </remarks>
     public static IReadOnlyList<NivelDeAtendimento>? EmOrdemCanonica(IEnumerable<NivelDeAtendimento?>? niveis)
     {
         List<NivelDeAtendimento> ordenados = [.. (niveis ?? [])

@@ -232,20 +232,22 @@ public sealed class EtapaProcessoRecusasTests
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: escala),
             itens: null);
 
-    [Fact(DisplayName = "A escala com um nível completo e um elemento nulo não é recusada: o nulo é ignorado")]
-    public void ValidarFormaBasica_EscalaComNivelCompletoEElementoNulo_NaoRecusa()
+    [Fact(DisplayName = "A escala com um nível completo e um elemento nulo é recusada na posição do nulo")]
+    public void ValidarFormaBasica_EscalaComNivelCompletoEElementoNulo_RecusaNaPosicao()
     {
         List<FieldError> erros = FormaBasicaComEscala([new NivelDeAtendimento("Atendeu", 1m), null]);
 
-        erros.Should().BeEmpty();
+        Pares(erros).Should().Equal(("escalaDeAtendimento[1]", NiveisDeAtendimento.RotuloInvalido));
     }
 
-    [Fact(DisplayName = "A escala só com elemento nulo é recusada por não ter nível completo")]
-    public void ValidarFormaBasica_EscalaSoComElementoNulo_RecusaPorFaltaDeNivelCompleto()
+    [Fact(DisplayName = "A escala só com elemento nulo é recusada na posição e por não ter nível completo")]
+    public void ValidarFormaBasica_EscalaSoComElementoNulo_RecusaNaPosicaoEPorFaltaDeNivelCompleto()
     {
         List<FieldError> erros = FormaBasicaComEscala([null]);
 
-        Pares(erros).Should().Equal(("escalaDeAtendimento", NiveisDeAtendimento.SemNivelCompleto));
+        Pares(erros).Should().Equal(
+            ("escalaDeAtendimento[0]", NiveisDeAtendimento.RotuloInvalido),
+            ("escalaDeAtendimento", NiveisDeAtendimento.SemNivelCompleto));
     }
 
     [Fact(DisplayName = "O elemento nulo ocupa índice: a recusa do nível seguinte cita a posição real")]
@@ -254,12 +256,13 @@ public sealed class EtapaProcessoRecusasTests
         List<FieldError> erros = FormaBasicaComEscala([null, new NivelDeAtendimento("Excedeu", 1.5m)]);
 
         Pares(erros).Should().Equal(
+            ("escalaDeAtendimento[0]", NiveisDeAtendimento.RotuloInvalido),
             ("escalaDeAtendimento[1].fracao", NiveisDeAtendimento.FracaoInvalida),
             ("escalaDeAtendimento", NiveisDeAtendimento.SemNivelCompleto));
     }
 
-    [Fact(DisplayName = "Criar com a escala só de elemento nulo e itens recusa só por falta de nível completo")]
-    public void Criar_EscalaSoComElementoNuloComItens_RecusaPorFaltaDeNivelCompleto()
+    [Fact(DisplayName = "Criar com a escala só de elemento nulo e itens recusa o nulo e a falta de nível completo")]
+    public void Criar_EscalaSoComElementoNuloComItens_RecusaONuloEAFaltaDeNivelCompleto()
     {
         Result<EtapaProcesso> resultado = Criar(new()
         {
@@ -268,29 +271,32 @@ public sealed class EtapaProcessoRecusasTests
             Escala = [null!],
         });
 
-        Pares(resultado.Errors).Should().Equal(("escalaDeAtendimento", NiveisDeAtendimento.SemNivelCompleto));
+        Pares(resultado.Errors).Should().Equal(
+            ("escalaDeAtendimento[0]", NiveisDeAtendimento.RotuloInvalido),
+            ("escalaDeAtendimento", NiveisDeAtendimento.SemNivelCompleto));
     }
 
-    [Fact(DisplayName = "Criar com a escala só de elemento nulo e sem itens recusa a falta de nível e a falta de itens, nesta ordem")]
-    public void Criar_EscalaSoComElementoNuloSemItens_RecusaFaltaDeNivelCompletoEDeItens()
+    [Fact(DisplayName = "Criar com a escala só de elemento nulo e sem itens recusa o nulo, a falta de nível e a falta de itens, nesta ordem")]
+    public void Criar_EscalaSoComElementoNuloSemItens_RecusaONuloAFaltaDeNivelCompletoEDeItens()
     {
         Result<EtapaProcesso> resultado = Criar(new() { Forma = FormaDeAvaliacao.Humana, Escala = [null!] });
 
         Pares(resultado.Errors).Should().Equal(
+            ("escalaDeAtendimento[0]", NiveisDeAtendimento.RotuloInvalido),
             ("escalaDeAtendimento", NiveisDeAtendimento.SemNivelCompleto),
             ("escalaDeAtendimento", EtapaProcesso.EscalaSemItens));
     }
 
-    [Fact(DisplayName = "Criar com um nível completo e um elemento nulo passa a validação e falha ao ordenar a escala")]
-    public void Criar_EscalaComNivelCompletoEElementoNulo_LancaNullReferenceAoOrdenar()
+    [Fact(DisplayName = "Criar com um nível completo e um elemento nulo recusa o nulo em vez de lançar ao ordenar")]
+    public void Criar_EscalaComNivelCompletoEElementoNulo_RecusaONulo()
     {
-        Action act = () => Criar(new()
+        Result<EtapaProcesso> resultado = Criar(new()
         {
             Forma = FormaDeAvaliacao.Humana,
             Itens = [Item("Clareza", 10m)],
             Escala = [new("Atendeu", 1m), null!],
         });
 
-        act.Should().Throw<NullReferenceException>();
+        Pares(resultado.Errors).Should().Equal(("escalaDeAtendimento[1]", NiveisDeAtendimento.RotuloInvalido));
     }
 }
