@@ -19,6 +19,7 @@ public static class TipoConceitoErrorCodes
     public const string ValoresCategoricosInsuficientes = "TipoConceito.ValoresCategoricosInsuficientes";
     public const string ValorCategoricoCodigoInvalido = "TipoConceito.ValorCategoricoCodigoInvalido";
     public const string ValorCategoricoRotuloInvalido = "TipoConceito.ValorCategoricoRotuloInvalido";
+    public const string ValorCategoricoContaComoAprovacaoObrigatoria = "TipoConceito.ValorCategoricoContaComoAprovacaoObrigatoria";
     public const string ValorCategoricoDuplicado = "TipoConceito.ValorCategoricoDuplicado";
     public const string ParametrosIncompativeisComANatureza = "TipoConceito.ParametrosIncompativeisComANatureza";
     public const string NaoEncontrado = "TipoConceito.NaoEncontrado";

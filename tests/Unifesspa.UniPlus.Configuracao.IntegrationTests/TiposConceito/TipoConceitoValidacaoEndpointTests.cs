@@ -60,6 +60,18 @@ public sealed class TipoConceitoValidacaoEndpointTests
         (await ErrosAsync(resposta)).Should().Equal(("valores", $"{Prefixo}valores_categoricos_insuficientes"));
     }
 
+    [Fact(DisplayName = "POST de categórico com valor sem o campo contaComoAprovacao retorna 422 no campo do valor")]
+    public async Task Criar_ValorSemContaComoAprovacao_Retorna422()
+    {
+        object[] valores = [new { codigo = "DEFERIDO", rotulo = "Deferido", contaComoAprovacao = true }, new { codigo = "INDEFERIDO", rotulo = "Indeferido" }];
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using HttpResponseMessage resposta = await PostarAsync(client, Categorico().Com("valores", valores));
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await ErrosAsync(resposta)).Should().Equal(("valores[1].contaComoAprovacao", $"{Prefixo}valor_categorico_conta_como_aprovacao_obrigatoria"));
+    }
+
     [Theory(DisplayName = "POST com definição incoerente retorna 422 no campo da violação")]
     [InlineData("natureza_desconhecida", "natureza", "natureza_invalida")]
     [InlineData("escala_invertida", "numerico", "escala_numerica_invalida")]

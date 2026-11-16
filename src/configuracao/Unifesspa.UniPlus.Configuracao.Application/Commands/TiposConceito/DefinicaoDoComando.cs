@@ -27,6 +27,6 @@ internal static class DefinicaoDoComando
             natureza,
             numerico is null ? null : new EscalaInformada(numerico.EscalaMinima, numerico.EscalaMaxima, numerico.CasasDecimais),
             valores is null ? null : [.. valores.Select(static valor => valor is null
-                ? new ValorInformado(null, null, false)
+                ? new ValorInformado(null, null, null)
                 : new ValorInformado(valor.Codigo, valor.Rotulo, valor.ContaComoAprovacao))]);
 }

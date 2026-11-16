@@ -42,9 +42,23 @@ public sealed partial class ValorCategorico
         string? rotulo = CamposDoTipoConceito.RotuloDoValor.Obrigatorio(
             informado.Rotulo, $"{campo}.rotulo", TipoConceitoErrorCodes.ValorCategoricoRotuloInvalido, erros);
 
-        return codigo is null || rotulo is null
+        bool? aprovacao = ConferirAprovacao(informado.ContaComoAprovacao, $"{campo}.contaComoAprovacao", erros);
+
+        return codigo is null || rotulo is null || aprovacao is null
             ? null
-            : new ValorCategorico(codigo, rotulo, informado.ContaComoAprovacao, indice + 1);
+            : new ValorCategorico(codigo, rotulo, aprovacao.Value, indice + 1);
+    }
+
+    private static bool? ConferirAprovacao(bool? informada, string caminho, List<FieldError> erros)
+    {
+        if (informada is null)
+        {
+            erros.Add(new(caminho, new DomainError(
+                TipoConceitoErrorCodes.ValorCategoricoContaComoAprovacaoObrigatoria,
+                "Informe se o valor conta como aprovação.")));
+        }
+
+        return informada;
     }
 
     private static string? ConferirCodigo(string? informado, string caminho, List<FieldError> erros)

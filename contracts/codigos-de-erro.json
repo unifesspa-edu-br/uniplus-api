@@ -2637,6 +2637,11 @@
       "titulo": "Código do valor categórico inválido"
     },
     {
+      "codigo": "uniplus.configuracao.tipo_conceito.valor_categorico_conta_como_aprovacao_obrigatoria",
+      "status": 422,
+      "titulo": "É obrigatório informar se o valor categórico conta como aprovação"
+    },
+    {
       "codigo": "uniplus.configuracao.tipo_conceito.valor_categorico_duplicado",
       "status": 422,
       "titulo": "Valor categórico repetido no tipo de conceito"
