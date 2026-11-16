@@ -38,7 +38,7 @@ public sealed class AvisoDePedidoDevolvido
         DestinatarioDoAviso[] partes =
         [
             new(pedido.Solicitante.Identidade, pedido.Solicitante.Email ?? string.Empty),
-            new(pedido.Beneficiario ?? new Identidade(EmissorDoPapel, PapelDoBeneficiario), pedido.BeneficiarioEmail),
+            new(pedido.Beneficiario.Identidade ?? new Identidade(EmissorDoPapel, PapelDoBeneficiario), pedido.BeneficiarioEmail),
         ];
 
         return _emissor.EmitirAsync(new PedidoDeAviso(modelo, pedido.Id, versao.Id.ToString("N"), partes, []), cancellationToken);

@@ -143,8 +143,8 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
         string? email = filtro.EmailVerificado;
 
         return p => (p.Solicitante.Emissor == emissor && p.Solicitante.ContaId == contaId)
-            || (p.BeneficiarioEmissor == emissor && p.BeneficiarioContaId == contaId)
-            || (p.BeneficiarioContaId == null && email != null && p.BeneficiarioEmail == email);
+            || (p.Beneficiario.Emissor == emissor && p.Beneficiario.ContaId == contaId)
+            || (p.Beneficiario.ContaId == null && email != null && p.BeneficiarioEmail == email);
     }
 
     private static IQueryable<PedidoDeConcessao> FiltrarPorSituacao(IQueryable<PedidoDeConcessao> consulta, SituacaoDoPedido? situacao) =>

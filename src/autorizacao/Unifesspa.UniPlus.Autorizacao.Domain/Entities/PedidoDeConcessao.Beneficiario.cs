@@ -27,8 +27,7 @@ public sealed partial class PedidoDeConcessao
             return recusa;
         }
 
-        DefinirBeneficiario(pessoa.Identidade, NomeDeExibicao.Normalizar(pessoa.Nome));
-        BeneficiarioAceitouEm = instante;
+        Beneficiario = BeneficiarioDoPedido.Aceito(pessoa.Identidade, NomeDeExibicao.Normalizar(pessoa.Nome), instante);
         RegistrarAceiteDoTermo(instante);
         Situacao = SituacaoDoPedido.AguardandoGestor;
 
@@ -41,8 +40,8 @@ public sealed partial class PedidoDeConcessao
         ArgumentNullException.ThrowIfNull(pessoa);
 
         return Solicitante.Eh(pessoa.Identidade)
-            || (Beneficiario is { } beneficiario && pessoa.Identidade == beneficiario)
-            || (Beneficiario is null && EhOBeneficiarioPeloEmail(pessoa));
+            || Beneficiario.Eh(pessoa.Identidade)
+            || (Beneficiario.Identidade is null && EhOBeneficiarioPeloEmail(pessoa));
     }
 
     private DomainError? RecusaDoAceite(PessoaNoToken pessoa)
@@ -73,19 +72,12 @@ public sealed partial class PedidoDeConcessao
     };
 
     private bool EhOBeneficiario(PessoaNoToken pessoa) =>
-        Beneficiario is { } conhecido ? pessoa.Identidade == conhecido : EhOBeneficiarioPeloEmail(pessoa);
+        Beneficiario.Identidade is not null ? Beneficiario.Eh(pessoa.Identidade) : EhOBeneficiarioPeloEmail(pessoa);
 
     private bool EhOBeneficiarioPeloEmail(PessoaNoToken pessoa) =>
         pessoa.EmailVerificado
         && EmailDaPessoa.Normalizar(pessoa.Email) is { } email
         && string.Equals(email, BeneficiarioEmail, StringComparison.Ordinal);
-
-    private void DefinirBeneficiario(Identidade identidade, string? nome)
-    {
-        BeneficiarioEmissor = identidade.Emissor;
-        BeneficiarioContaId = identidade.ContaId;
-        BeneficiarioNome = nome;
-    }
 
     private static DomainError SemNome() => new(
         PedidoErrorCodes.BeneficiarioSemNome,

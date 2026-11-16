@@ -19,10 +19,10 @@ public sealed class PedidoDeConcessaoCriacaoTests : PedidoDeConcessaoTestBase
         PedidoDeConcessao pedido = Criar(Leandro, null);
 
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
-        pedido.Beneficiario.Should().Be(Leandro.Identidade);
-        pedido.BeneficiarioNome.Should().Be("Leandro Caleb Viana");
+        pedido.Beneficiario.Identidade.Should().Be(Leandro.Identidade);
+        pedido.Beneficiario.Nome.Should().Be("Leandro Caleb Viana");
         pedido.BeneficiarioEmail.Should().Be("leandro-viana84@uniplus-test.local");
-        pedido.BeneficiarioAceitouEm.Should().BeNull();
+        pedido.Beneficiario.AceitouEm.Should().BeNull();
         pedido.Solicitante.Identidade.Should().Be(Leandro.Identidade);
     }
 
@@ -32,7 +32,7 @@ public sealed class PedidoDeConcessaoCriacaoTests : PedidoDeConcessaoTestBase
         PedidoDeConcessao pedido = Criar(Leandro, " Leandro-Viana84@uniplus-test.local ");
 
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
-        pedido.Beneficiario.Should().Be(Leandro.Identidade);
+        pedido.Beneficiario.Identidade.Should().Be(Leandro.Identidade);
     }
 
     [Fact(DisplayName = "Pedido para si mesmo exige o e-mail verificado da sessão")]
@@ -55,8 +55,8 @@ public sealed class PedidoDeConcessaoCriacaoTests : PedidoDeConcessaoTestBase
         PedidoDeConcessao pedido = Criar(Betina, "Leandro-Viana84@uniplus-test.local");
 
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
-        pedido.Beneficiario.Should().BeNull();
-        pedido.BeneficiarioNome.Should().BeNull();
+        pedido.Beneficiario.Identidade.Should().BeNull();
+        pedido.Beneficiario.Nome.Should().BeNull();
         pedido.BeneficiarioEmail.Should().Be("leandro-viana84@uniplus-test.local");
         pedido.Solicitante.Identidade.Should().Be(Betina.Identidade);
     }
@@ -142,9 +142,9 @@ public sealed class PedidoDeConcessaoCriacaoTests : PedidoDeConcessaoTestBase
 
         aceite.IsSuccess.Should().BeTrue();
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
-        pedido.Beneficiario.Should().Be(Leandro.Identidade);
-        pedido.BeneficiarioNome.Should().Be("Leandro Caleb Viana");
-        pedido.BeneficiarioAceitouEm.Should().Be(Agora.AddHours(1));
+        pedido.Beneficiario.Identidade.Should().Be(Leandro.Identidade);
+        pedido.Beneficiario.Nome.Should().Be("Leandro Caleb Viana");
+        pedido.Beneficiario.AceitouEm.Should().Be(Agora.AddHours(1));
     }
 
     [Theory(DisplayName = "Só o e-mail verificado do beneficiário aceita o pedido")]
@@ -158,7 +158,7 @@ public sealed class PedidoDeConcessaoCriacaoTests : PedidoDeConcessaoTestBase
 
         Codigos(aceite).Should().Equal(PedidoErrorCodes.NaoEOBeneficiario);
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
-        pedido.Beneficiario.Should().BeNull();
+        pedido.Beneficiario.Identidade.Should().BeNull();
     }
 
     [Fact(DisplayName = "Aceite sem nome completo na sessão não libera o gestor")]

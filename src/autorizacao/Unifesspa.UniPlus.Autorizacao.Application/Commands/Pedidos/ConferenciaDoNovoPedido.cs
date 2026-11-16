@@ -92,7 +92,7 @@ public sealed class ConferenciaDoNovoPedido
             return PedidoHandlerErros.UnidadeInexistente(unidade);
         }
 
-        return pedido.Beneficiario is { } beneficiario
+        return pedido.Beneficiario.Identidade is { } beneficiario
             && await _papeis.TemPapelIncompativelAsync(beneficiario, pedido.PerfilId, agora, cancellationToken).ConfigureAwait(false)
             ? PedidoHandlerErros.PapeisIncompativeis()
             : null;

@@ -94,5 +94,5 @@ public sealed class AprovacaoDoPedido
 
     private async Task<ContextoDaAprovacao> ContextoAsync(DecisaoDaEtapa decisao, DateTimeOffset agora, CancellationToken cancellationToken) =>
         new(decisao.Avaliado.Governanca == TipoDeGovernanca.RepresentanteDoControlador
-            && await _papel.HaOutroVigenteAsync(decisao.Pedido.Beneficiario, agora, cancellationToken).ConfigureAwait(false));
+            && await _papel.HaOutroVigenteAsync(decisao.Pedido.Beneficiario.Identidade, agora, cancellationToken).ConfigureAwait(false));
 }

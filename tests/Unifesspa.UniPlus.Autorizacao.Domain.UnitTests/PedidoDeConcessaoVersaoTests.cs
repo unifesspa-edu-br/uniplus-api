@@ -60,7 +60,7 @@ public sealed class PedidoDeConcessaoVersaoTests
         pedido.AoEntrarEmVigor(nova, 1, comAcrescimo: false, Troca).Should().Be(DesfechoDaTrocaDeVersao.VersaoAtualizada);
 
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
-        pedido.Beneficiario.Should().BeNull();
+        pedido.Beneficiario.Identidade.Should().BeNull();
         pedido.VersaoId.Should().Be(nova.Id);
         UnicaTroca(pedido, 1, nova.Numero, DesfechoDaTrocaDeVersao.VersaoAtualizada);
     }

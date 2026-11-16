@@ -220,7 +220,7 @@ public sealed partial class PedidoDeConcessao
 
     private void ConferirPessoasDistintas(Identidade decisor, EtapaDoPedido etapa, List<FieldError> erros)
     {
-        if (Solicitante.Eh(decisor) || (Beneficiario is { } beneficiario && decisor == beneficiario))
+        if (Solicitante.Eh(decisor) || Beneficiario.Eh(decisor))
         {
             erros.Add(new("decisor", new DomainError(
                 PedidoErrorCodes.DecisorEParte,

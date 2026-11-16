@@ -50,14 +50,8 @@ public sealed partial class PedidoDeConcessao : EntityBase
     /// <summary>E-mail institucional do beneficiário, em minúsculas; é como o pedido o encontra até ele aceitar.</summary>
     public string BeneficiarioEmail { get; private set; } = string.Empty;
 
-    public string? BeneficiarioEmissor { get; private set; }
-
-    public string? BeneficiarioContaId { get; private set; }
-
-    public string? BeneficiarioNome { get; private set; }
-
-    /// <summary>Instante do aceite do beneficiário; nulo antes dele e no pedido para si mesmo que não passa pelo aceite.</summary>
-    public DateTimeOffset? BeneficiarioAceitouEm { get; private set; }
+    /// <summary>A identidade do beneficiário, desconhecida até o aceite.</summary>
+    public BeneficiarioDoPedido Beneficiario { get; private set; } = null!;
 
     public Guid PerfilId { get; private set; }
 
@@ -84,11 +78,6 @@ public sealed partial class PedidoDeConcessao : EntityBase
     public IReadOnlyList<DecisaoDoPedido> Decisoes => _decisoes;
 
     public IReadOnlyList<AnexoDoPedido> Anexos => _anexos;
-
-    /// <summary>A identidade do beneficiário; nula enquanto ele não aceitou.</summary>
-    public Identidade? Beneficiario => BeneficiarioEmissor is { } emissor && BeneficiarioContaId is { } contaId
-        ? new Identidade(emissor, contaId, BeneficiarioNome)
-        : null;
 
     public EscopoDaConcessao Escopo => UnidadeId is { } unidade
         ? EscopoDaConcessao.DaUnidade(unidade)
