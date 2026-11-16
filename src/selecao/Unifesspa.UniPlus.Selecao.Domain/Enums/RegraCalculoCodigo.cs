@@ -10,6 +10,6 @@ public static class RegraCalculoCodigo
     /// <summary>Nota = Σ(nota_etapa × peso) / Σ(peso) — divisor derivado das etapas que compõem a nota.</summary>
     public const string FormulaMediaPonderada = "FORMULA-MEDIA-PONDERADA";
 
-    /// <summary>Sem cálculo local — classificação vem do sistema federal (SiSU/MEC). INV-B8: dispensa arredondamento e eliminação locais.</summary>
+    /// <summary>Sem cálculo local — classificação vem do sistema federal (SiSU/MEC). dispensa arredondamento e eliminação locais.</summary>
     public const string ClassificacaoImportada = "CLASSIFICACAO-IMPORTADA";
 }

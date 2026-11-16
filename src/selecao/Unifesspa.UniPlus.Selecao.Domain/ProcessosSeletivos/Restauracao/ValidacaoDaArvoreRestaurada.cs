@@ -29,7 +29,7 @@ internal static class ValidacaoDaArvoreRestaurada
     /// As checagens estruturais da árvore de satisfação restaurada,
     /// equivalentes ao que <c>NoExigencia.CriarGrupo</c> já garante na ESCRITA (grupo não
     /// vazio, ciclo, fase comum, cardinalidade por tipo) mais o que só a RAIZ consegue
-    /// provar (INV-B6-símile: <c>DocumentoExigidoId</c> de folha existe em
+    /// provar (<c>DocumentoExigidoId</c> de folha existe em
     /// <c>grafo.DocumentosExigidos</c>) e o que só o BANCO garante na escrita normal (Id
     /// único, <c>Ordem</c> única entre raízes e entre irmãos — <c>ux_nos_da_arvore_de_exigencias_raiz_ordem</c>/
     /// <c>ux_nos_da_arvore_de_exigencias_irmaos_ordem</c>, <c>NoExigenciaConfiguration</c>). Sem esta

@@ -16,8 +16,8 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// tipados de cada regra de eliminação conforme o código, repassa <c>BaseadoEmEnem</c> e
 /// congela as referências — a invariante ENEM×eliminação e a coerência de arredondamento são
 /// validadas por <see cref="ConfiguracaoClassificacao.Criar"/>, que depende da regra de
-/// cálculo já resolvida (é ela que distingue classificação local de importada, INV-B8); a que
-/// depende de OUTRA dimensão do agregado (INV-B4) é garantida pela raiz
+/// cálculo já resolvida (é ela que distingue classificação local de importada); a que
+/// depende de OUTRA dimensão do agregado é garantida pela raiz
 /// (<see cref="ProcessoSeletivo.DefinirClassificacao"/>).
 /// </summary>
 /// <remarks>

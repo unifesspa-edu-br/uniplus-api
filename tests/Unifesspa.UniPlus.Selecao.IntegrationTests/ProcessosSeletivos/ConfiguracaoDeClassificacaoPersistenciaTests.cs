@@ -126,7 +126,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
             "o discriminador gravado é o que a leitura usa para voltar à variante certa");
     }
 
-    [Fact(DisplayName = "Persiste e recarrega classificação CLASSIFICACAO-IMPORTADA sem arredondamento (INV-B8)")]
+    [Fact(DisplayName = "Persiste e recarrega classificação CLASSIFICACAO-IMPORTADA sem arredondamento")]
     public async Task PersisteERecarrega_Importada_SemArredondamento()
     {
         ProcessoSeletivo processo = NovoProcesso("PS 2026 — Transferência", TiposDeProcessoDeTeste.TransferenciaExterna);

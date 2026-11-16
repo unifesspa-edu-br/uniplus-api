@@ -303,7 +303,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     ];
 
     /// <summary>
-    /// As 8 modalidades federais (SegueCascata) + AC — INV-6 exige o conjunto completo sob Lei
+    /// As 8 modalidades federais (SegueCascata) + AC — a Lei 12.711 exige o conjunto completo sob Lei
     /// 12.711. Sem <c>quantidadeDeclarada</c>: sob o ramo federal, DENTRO_DA_RESERVA_LEGAL e RESTANTE_DAS_VAGAS_OFERTADAS
     /// são CALCULADAS pela fórmula do art. 10 — declarar quantidade aqui é recusado
     /// (QuantidadeCalculadaNaoInformavel).

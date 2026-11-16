@@ -23,11 +23,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// preciso, o vocabulário de fatos antes de travar o processo; depois do 404, do If-Match e do
 /// teto, resolve cada critério no catálogo já lido, monta os args tipados conforme o código da
 /// regra e congela a referência — a
-/// existência do <c>etapa_ref</c> no processo (INV-B6) é garantida pela raiz
+/// existência do <c>etapa_ref</c> no processo é garantida pela raiz
 /// (<see cref="ProcessoSeletivo.DefinirCriteriosDesempate"/>). Quando algum critério referencia
 /// <c>DESEMPATE-PREDICADO-FATO</c>, resolve também o vocabulário fechado de fatos do candidato
 /// (<see cref="IFatoCandidatoReader"/>, ADR-0111) para que
-/// <see cref="CriterioDesempate.Criar"/> valide a condição contra ele (fecha o INV-B6 do
+/// <see cref="CriterioDesempate.Criar"/> valide a condição contra ele (fecha a integridade da referência à etapa do
 /// <c>Fato</c>). As recusas de todos os critérios se acumulam, cada uma no campo do item,
 /// granularidade nunca coberta pelo FluentValidation.
 /// </summary>

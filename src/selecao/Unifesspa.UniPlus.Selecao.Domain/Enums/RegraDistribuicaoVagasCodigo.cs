@@ -4,8 +4,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// Códigos canônicos das regras de <c>tipo=regra_distribuicao_vagas</c> do
 /// <c>regras_do_catalogo</c> (Story #772) que o domínio de distribuição de vagas
 /// (Story #773) precisa reconhecer para aplicar invariantes específicas —
-/// ex.: só o ramo federal exige referência demográfica (INV-5) e as 8
-/// modalidades federais + AC (INV-6).
+/// ex.: só o ramo federal exige referência demográfica e as 8
+/// modalidades federais + AC.
 /// </summary>
 public static class RegraDistribuicaoVagasCodigo
 {
@@ -14,7 +14,7 @@ public static class RegraDistribuicaoVagasCodigo
 
     /// <summary>
     /// A mesma fórmula de <see cref="Lei12711"/> (art. 10) com uma décima modalidade — <c>AC_PCD</c>,
-    /// retirada da ampla concorrência — no rol admitido. As 9 modalidades da INV-6 continuam
+    /// retirada da ampla concorrência — no rol admitido. As 9 modalidades federais continuam
     /// obrigatórias; a diferença é só a folga adicional que esta variação reconhece.
     /// </summary>
     public const string Lei12711ComAcPcd = "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA";

@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// (<c>Fato</c> tipado mas não validado contra o vocabulário fechado de
 /// fatos do candidato): <c>CriterioDesempate.Criar</c> agora confere a
 /// condição contra o vocabulário resolvido do catálogo <c>fatos_do_candidato</c>
-/// (#846), fechando o INV-B6.
+/// (#846), fechando a integridade da referência à etapa.
 /// </para>
 /// </remarks>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$tipo")]
@@ -37,7 +37,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 [JsonDerivedType(typeof(ArgsDesempateMaiorNotaAreaEnem), "maiorNotaAreaEnem")]
 public abstract record ArgsCriterioDesempate;
 
-/// <summary>Ordena o subgrupo pela nota da etapa referenciada (deve existir no mesmo processo — INV-B6).</summary>
+/// <summary>Ordena o subgrupo pela nota da etapa referenciada (deve existir no mesmo processo).</summary>
 public sealed record ArgsDesempateMaiorNotaEtapa(Guid EtapaRef) : ArgsCriterioDesempate;
 
 /// <summary>Ordena por data de nascimento — nascido mais cedo vence. Sem args.</summary>

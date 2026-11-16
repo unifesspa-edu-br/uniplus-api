@@ -192,7 +192,7 @@ internal static class PassosDoEnvelopeFechado
     }
 
     // Passos 10 a 13 — derivação (egresso de escola pública quando COR_RACA=PRETA), cascata de
-    // remanejamento (matriz 8×7, fallback AC: INV-CASCATA exige cobrir as 8 modalidades da distribuição),
+    // remanejamento (matriz 8×7, fallback AC: a cascata exige cobrir as 8 modalidades da distribuição),
     // documentos exigidos (vazio satisfaz vacuamente a base legal das exigências) e divulgação.
     internal static async Task DeclararRegrasEDocumentosAsync(Cenario c)
     {

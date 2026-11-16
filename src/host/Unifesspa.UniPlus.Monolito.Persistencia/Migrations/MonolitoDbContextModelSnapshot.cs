@@ -14730,8 +14730,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Codigo = "DISTRIBUICAO-LEI-12711",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             EsquemaArgs = "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]}",
-                            Hash = "9392c688038aa3cc1649f9cc2f4050fa81432849c959034074521ccab15fd697",
-                            Invariantes = "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"INV-3a: LB_EP≥0 e LI_EP≥0\",\"INV-3b: AC≥0\",\"INV-3c: VR_final+RETIRADAS+AC=VO_base\",\"modalidade fora de modalidades_admitidas é recusada\"]",
+                            Hash = "0c9cb052e8f4fadb46c4205519cf46f915d4a5b09d782d31bd9c01205c3ef4ee",
+                            Invariantes = "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"LB_EP≥0 e LI_EP≥0\",\"AC≥0\",\"VR_final+RETIRADAS+AC=VO_base\",\"modalidade fora de modalidades_admitidas é recusada\"]",
                             Tipo = "regra_distribuicao_vagas",
                             Versao = "v1"
                         },
@@ -14742,8 +14742,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Codigo = "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             EsquemaArgs = "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\",\"AC_PCD\"]}",
-                            Hash = "be513c1eeb7343fa4a56a4f739cfc7836475af25d9399c71beb2b1c285498fb7",
-                            Invariantes = "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"INV-3a: LB_EP≥0 e LI_EP≥0\",\"INV-3b: AC≥0\",\"INV-3c: VR_final+RETIRADAS+AC=VO_base\",\"AC_PCD retira de AC, como qualquer outra retirada federal\",\"modalidade fora de modalidades_admitidas é recusada\"]",
+                            Hash = "50c9e9dfa2be05960325c6a154d47f0b32704c3c7227740d08c1468af3634d67",
+                            Invariantes = "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"LB_EP≥0 e LI_EP≥0\",\"AC≥0\",\"VR_final+RETIRADAS+AC=VO_base\",\"AC_PCD retira de AC, como qualquer outra retirada federal\",\"modalidade fora de modalidades_admitidas é recusada\"]",
                             Tipo = "regra_distribuicao_vagas",
                             Versao = "v1"
                         },

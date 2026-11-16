@@ -40,7 +40,7 @@ public abstract record ArgsRegraEliminacao
     public virtual Guid? EtapaReferenciada() => null;
 }
 
-/// <summary>Elimina quando a nota da etapa referenciada é menor que <see cref="NotaMinima"/>. A etapa deve existir no mesmo processo (INV-B4).</summary>
+/// <summary>Elimina quando a nota da etapa referenciada é menor que <see cref="NotaMinima"/>. A etapa deve existir no mesmo processo.</summary>
 public sealed record ArgsElimNotaMinimaEtapa(Guid EtapaRef, decimal NotaMinima) : ArgsRegraEliminacao
 {
     public override bool ExigeEnem() => false;

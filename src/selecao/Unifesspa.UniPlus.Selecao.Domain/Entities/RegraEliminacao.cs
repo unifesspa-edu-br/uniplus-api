@@ -30,7 +30,7 @@ public sealed class RegraEliminacao : EntityBase
     /// <summary>
     /// Cria a regra de eliminação validando que <paramref name="args"/> é a
     /// variante correta para o <see cref="ReferenciaRegra.Codigo"/>
-    /// referenciado — a existência do <c>etapa_ref</c> no processo (INV-B4) é
+    /// referenciado — a existência do <c>etapa_ref</c> no processo é
     /// validada pela raiz, que tem acesso às etapas.
     /// </summary>
     public static Result<RegraEliminacao> Criar(ReferenciaRegra regra, ArgsRegraEliminacao args)

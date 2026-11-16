@@ -278,7 +278,7 @@ public sealed class EnvelopeCodecRoundTripTests
 
     /// <summary>
     /// O corpus rico (<see cref="CorpusEnvelopeProcessoRico.ProcessoRico"/>) tem as 8 modalidades
-    /// federais de <c>DistribuicaoLei12711</c> como <c>SegueCascata</c> (INV-12) e, desde a
+    /// federais de <c>DistribuicaoLei12711</c> como <c>SegueCascata</c> e, desde a
     /// Story #575, carrega a cascata que as cobre (sem ela <c>Publicar</c> recusaria com
     /// <c>ProcessoSeletivo.CascataOrigemAusente</c>) — é por isso que este teste, como todos
     /// os outros desta classe que publicam o corpus rico, já exercita o estado
@@ -297,7 +297,7 @@ public sealed class EnvelopeCodecRoundTripTests
         EnvelopeReidratado envelope = AssertRoundTrip(processo, versao, congelado);
 
         envelope.Grafo.CascataRemanejamento.Should().NotBeNull(
-            "o corpus rico tem a cascata configurada (INV-12: as 8 federais de DistribuicaoLei12711 são " +
+            "o corpus rico tem a cascata configurada (as 8 federais de DistribuicaoLei12711 são " +
             "SegueCascata) — a reidratação tem de reconstruí-la, não perdê-la");
         envelope.Grafo.CascataRemanejamento!.FallbackCodigo.Should().Be("AC");
         envelope.Grafo.CascataRemanejamento.Destinos.Should().HaveCount(56,

@@ -26,7 +26,7 @@ public sealed class VagaOfertada : EntityBase
 
     /// <summary>
     /// Cria a linha do quadro. A modalidade precisa ter sido validada
-    /// previamente (INV-2 em <see cref="ModalidadeSelecionada.Criar"/>) — esta
+    /// previamente (em <see cref="ModalidadeSelecionada.Criar"/>) — esta
     /// factory só valida a quantidade, que é sempre não-negativa por
     /// construção (a calculadora e o ramo institucional já recusam valores
     /// negativos antes de chegar aqui).

@@ -36,7 +36,7 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Uma restauração que falha numa validação TARDIA não altera NADA")]
     public void RestauracaoQueFalha_NaoAlteraEstado()
     {
-        // A falha é TARDIA de propósito: a checagem de classificação (INV-B4, EtapaRef de
+        // A falha é TARDIA de propósito: a checagem de classificação (EtapaRef de
         // eliminação) só roda depois de etapas/distribuição/desempate já terem sido
         // percorridos em ValidarGrafo. Um caso trivial (etapas vazias) passaria mesmo numa
         // implementação que aplicasse etapas e distribuição antes de chegar à classificação

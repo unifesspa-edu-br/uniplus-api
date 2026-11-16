@@ -94,7 +94,7 @@ public static class RegrasDaDistribuicaoDeVagas
         "Com 2 opções de curso, cadastre pelo menos dois cursos.");
 
     /// <summary>
-    /// Aplicabilidade da concorrência dupla (Lei 14.723/2023, INV-B7):
+    /// Aplicabilidade da concorrência dupla (Lei 14.723/2023):
     /// DERIVADA — <see langword="true"/> sse alguma modalidade selecionada em
     /// <see cref="ProcessoSeletivo.DistribuicaoVagas"/> tem
     /// <see cref="NaturezaLegalModalidade.CotaReservada"/>. Nunca um toggle

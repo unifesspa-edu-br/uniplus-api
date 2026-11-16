@@ -73,7 +73,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             "o rótulo TipoProcesso (PSIQ, não-ENEM) não pode sobrepor o dado declarado no command");
     }
 
-    [Fact(DisplayName = "Handle com CLASSIFICACAO-IMPORTADA sem arredondamento resolve e persiste (INV-B8)")]
+    [Fact(DisplayName = "Handle com CLASSIFICACAO-IMPORTADA sem arredondamento resolve e persiste")]
     public async Task Handle_Importada_SemArredondamento_Persiste()
     {
         ProcessoSeletivo processo = NovoProcesso("SiSU 2026", TiposDeProcessoDeTeste.SiSU);

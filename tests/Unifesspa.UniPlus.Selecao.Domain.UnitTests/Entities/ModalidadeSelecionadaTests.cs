@@ -95,7 +95,7 @@ public sealed class ModalidadeSelecionadaTests
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.CodigoObrigatorio");
     }
 
-    [Fact(DisplayName = "Criar com natureza legal Nenhuma falha (INV-2)")]
+    [Fact(DisplayName = "Criar com natureza legal Nenhuma falha")]
     public void Criar_NaturezaLegalNenhuma_Falha()
     {
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
@@ -107,7 +107,7 @@ public sealed class ModalidadeSelecionadaTests
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.NaturezaLegalObrigatoria");
     }
 
-    [Fact(DisplayName = "Criar com composição de vagas Nenhuma falha (INV-2)")]
+    [Fact(DisplayName = "Criar com composição de vagas Nenhuma falha")]
     public void Criar_ComposicaoVagasNenhuma_Falha()
     {
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
@@ -119,7 +119,7 @@ public sealed class ModalidadeSelecionadaTests
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ComposicaoVagasObrigatoria");
     }
 
-    [Fact(DisplayName = "Criar com base legal vazia falha (INV-2)")]
+    [Fact(DisplayName = "Criar com base legal vazia falha")]
     public void Criar_BaseLegalVazia_Falha()
     {
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(
@@ -155,7 +155,7 @@ public sealed class ModalidadeSelecionadaTests
         resultado.Error!.Code.Should().Be("ModalidadeSelecionada.ComposicaoOrigemIndevida");
     }
 
-    [Fact(DisplayName = "Criar cota reservada sem SEGUE_CASCATA falha (INV-12)")]
+    [Fact(DisplayName = "Criar cota reservada sem SEGUE_CASCATA falha")]
     public void Criar_CotaReservadaSemCascata_Falha()
     {
         Result<ModalidadeSelecionada> resultado = ModalidadeSelecionada.Criar(

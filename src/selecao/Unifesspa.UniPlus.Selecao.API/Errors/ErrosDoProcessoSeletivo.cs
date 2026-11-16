@@ -22,7 +22,7 @@ internal static class ErrosDoProcessoSeletivo
         // Configuração do Processo Seletivo (UNI-REQ-0014/0015).
         // Invariantes do agregado-raiz nesta fatia: etapas e atendimento
         // especializado (ADR-0067). Vagas/bônus/desempate/classificação entram
-        // nas fatias F2–F4 sobre o catálogo de regras, com seus próprios códigos.
+        // depois, sobre o catálogo de regras, com seus próprios códigos.
         new("ProcessoSeletivo.NaoEncontrado", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.processo_seletivo.nao_encontrado", "Processo Seletivo não encontrado")),
         new("ProcessoSeletivo.OcorrenciaSimuladaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ocorrencia_simulada_invalida", "Ocorrência simulada sem identidade própria no grupo")),
         new("ProcessoSeletivo.LocalidadeAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.localidade_ausente", "Localidade que rege a contagem dos prazos não declarada")),

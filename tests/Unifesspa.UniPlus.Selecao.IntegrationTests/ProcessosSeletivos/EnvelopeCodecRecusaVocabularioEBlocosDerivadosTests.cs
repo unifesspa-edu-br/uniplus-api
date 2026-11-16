@@ -87,7 +87,7 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
     [InlineData("AMPLA", "DESTINO_UNICO")]
     [InlineData("AMPLA", "SEGUE_CASCATA")]
     [InlineData("AMPLA", "CRUZADO")]
-    // Uma cota reservada da Lei 12.711 que foge da cascata legal (INV-12).
+    // Uma cota reservada da Lei 12.711 que foge da cascata legal.
     [InlineData("COTA_RESERVADA", null)]
     [InlineData("COTA_RESERVADA", "DESTINO_UNICO")]
     // Uma ação afirmativa que não remaneja para lugar nenhum, ou que segue a cascata da lei.

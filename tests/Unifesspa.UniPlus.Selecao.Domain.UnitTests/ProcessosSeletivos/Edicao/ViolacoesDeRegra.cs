@@ -129,7 +129,7 @@ internal sealed record ViolacaoDeRegra(
         ReferenciaRegra.De(CriterioDesempateCodigo.MaiorIdade, "v1", new string('f', 64)),
         new ArgsDesempateMaiorIdade()).Value!;
 
-    // A regra de eliminação cita uma etapa que o processo não tem (INV-B4).
+    // A regra de eliminação cita uma etapa que o processo não tem.
     private static ConfiguracaoClassificacao ClassificacaoQueEliminaPorEtapaInexistente() => ConfiguracaoClassificacao.Criar(
         ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
         ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),

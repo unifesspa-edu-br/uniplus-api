@@ -163,7 +163,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         recarregado.BonusRegional.Teto.Should().Be(5m);
     }
 
-    [Fact(DisplayName = "Atualizar dados da MESMA etapa (Id preservado) mantém o desempate referenciando-a (INV-B6)")]
+    [Fact(DisplayName = "Atualizar dados da MESMA etapa (Id preservado) mantém o desempate referenciando-a")]
     public async Task AtualizarEtapaMesmoId_MantemDesempateReferenciado()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSVR", TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());

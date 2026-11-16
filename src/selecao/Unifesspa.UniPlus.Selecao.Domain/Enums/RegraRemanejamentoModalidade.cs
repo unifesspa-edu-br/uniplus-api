@@ -11,7 +11,7 @@ public enum RegraRemanejamentoModalidade
     /// <summary>Modalidade não remaneja (ex.: AC, suplementar institucional).</summary>
     Nenhuma = 0,
 
-    /// <summary>Segue a cascata legal 8×7 da Lei 12.711 — obrigatória para <see cref="NaturezaLegalModalidade.CotaReservada"/> (INV-12).</summary>
+    /// <summary>Segue a cascata legal 8×7 da Lei 12.711 — obrigatória para <see cref="NaturezaLegalModalidade.CotaReservada"/>.</summary>
     SegueCascata = 1,
 
     /// <summary>Remaneja para um destino único e fixo (<see cref="ModalidadeSelecionada.RemanejamentoDestino"/>).</summary>

@@ -36,7 +36,7 @@ public sealed class CriterioDesempate : EntityBase, IParteDoProcesso
     /// Cria o critério validando que <paramref name="args"/> é a variante
     /// correta para o <see cref="ReferenciaRegra.Codigo"/> referenciado — a
     /// única invariante que esta entidade consegue garantir sozinha; a
-    /// existência do <c>etapa_ref</c> no processo (INV-B6) é validada pela
+    /// existência do <c>etapa_ref</c> no processo é validada pela
     /// raiz, que tem acesso às etapas, e a das áreas do ENEM citadas no quadro
     /// de pesos por área, pela raiz, que tem acesso à classificação.
     /// </summary>

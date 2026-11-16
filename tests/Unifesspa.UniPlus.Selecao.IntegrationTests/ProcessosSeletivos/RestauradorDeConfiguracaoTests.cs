@@ -95,7 +95,7 @@ public sealed class RestauradorDeConfiguracaoTests
     /// <summary>
     /// Story #575: o corpus rico (<see cref="CorpusEnvelopeProcessoRico.ProcessoRico"/>) tem a cascata
     /// de remanejamento configurada (as 8 federais de <c>DistribuicaoLei12711</c> são
-    /// <c>SegueCascata</c>, INV-12), então <see cref="Restaurar_ReporEProvar"/> já a exercita
+    /// <c>SegueCascata</c>), então <see cref="Restaurar_ReporEProvar"/> já a exercita
     /// no round-trip de descarte — mas só implicitamente, via a comparação de bytes. Este
     /// teste é a prova EXPLÍCITA: a cascata reposta na raiz VIVA é a mesma que a versão
     /// congelou, não uma sombra vazia que só coincide nos bytes agregados.

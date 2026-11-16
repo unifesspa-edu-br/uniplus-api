@@ -50,7 +50,7 @@ public static class RegrasDoDesempate
 
     /// <summary>
     /// As invariantes que um critério de desempate só cumpre diante do processo — ordem única,
-    /// <c>etapa_ref</c> existente (INV-B6) e área do ENEM presente no quadro de pesos por área
+    /// <c>etapa_ref</c> existente e área do ENEM presente no quadro de pesos por área
     /// da classificação —, acumuladas (ADR-0125), cada uma no campo do item:
     /// <c>criterios[i].ordem</c>, <c>criterios[i].etapaRef</c>, <c>criterios[i].areas[j]</c> e
     /// <c>criterios[i].regraCodigo</c> quando a classificação não tem quadro.
@@ -87,7 +87,7 @@ public static class RegrasDoDesempate
             {
                 erros.Add(new(CampoDoCriterioDesempate(indice, "etapaRef"), new DomainError(
                     "ProcessoSeletivo.EtapaRefDesempateInexistente",
-                    $"O critério de desempate na ordem {criterio.Ordem} referencia a etapa {args.EtapaRef}, que não existe neste processo (INV-B6).")));
+                    $"O critério de desempate na ordem {criterio.Ordem} referencia a etapa {args.EtapaRef}, que não existe neste processo.")));
             }
         }
 

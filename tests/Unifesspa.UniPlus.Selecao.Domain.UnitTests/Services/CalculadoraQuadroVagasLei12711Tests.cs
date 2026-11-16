@@ -70,7 +70,7 @@ public sealed class CalculadoraQuadroVagasLei12711Tests
         quadro.ConferenciaDaReservaLegal.ExcedenteSobreAReservaLegal.Should().Be(1);
     }
 
-    [Theory(DisplayName = "V4/INV-1 — PR fora de [0,5; 1] não é responsabilidade da calculadora (contrato do chamador)")]
+    [Theory(DisplayName = "PR fora de [0,5; 1] não é responsabilidade da calculadora (contrato do chamador)")]
     [InlineData(0.6, 24)]
     public void Pr_EscalaVrNominal(double pr, int vrEsperado)
     {

@@ -12,7 +12,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDoProcesso
 
 /// <summary>
 /// Bônus regional e critérios de desempate do <see cref="ProcessoSeletivo"/> (Story #774):
-/// o vínculo com a raiz, a ordem dos critérios e a integridade da referência às etapas (INV-B6).
+/// o vínculo com a raiz, a ordem dos critérios e a integridade da referência às etapas.
 /// </summary>
 public sealed class ProcessoSeletivoBonusEDesempateTests
 {
@@ -69,7 +69,7 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.OrdemDesempateDuplicada");
     }
 
-    [Fact(DisplayName = "DefinirCriteriosDesempate com etapa_ref existente no processo tem sucesso (INV-B6)")]
+    [Fact(DisplayName = "DefinirCriteriosDesempate com etapa_ref existente no processo tem sucesso")]
     public void DefinirCriteriosDesempate_EtapaRefExistente_Sucesso()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -81,7 +81,7 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
         result.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "DefinirCriteriosDesempate com etapa_ref inexistente no processo é recusado (INV-B6)")]
+    [Fact(DisplayName = "DefinirCriteriosDesempate com etapa_ref inexistente no processo é recusado")]
     public void DefinirCriteriosDesempate_EtapaRefInexistente_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -93,7 +93,7 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefDesempateInexistente");
     }
 
-    [Fact(DisplayName = "DefinirEtapas recusa remover uma etapa referenciada por critério de desempate (INV-B6)")]
+    [Fact(DisplayName = "DefinirEtapas recusa remover uma etapa referenciada por critério de desempate")]
     public void DefinirEtapas_RemoverEtapaReferenciadaPorDesempate_Recusa()
     {
         ProcessoSeletivo processo = ProcessoComCriterioNaEtapa(out EtapaProcesso redacao);

@@ -99,8 +99,8 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
     }
 
     // Só exercita o cenário mínimo de derivação: a regra institucional evita que a matriz das
-    // 8 federais + AC (INV-6), validada por ConfiguracaoDistribuicaoVagas.Criar, entre no teste.
-    [Fact(DisplayName = "ConcorrenciaDuplaAplicavel é derivada (true) quando há modalidade de cota reservada (INV-B7)")]
+    // 8 federais + AC, validada por ConfiguracaoDistribuicaoVagas.Criar, entre no teste.
+    [Fact(DisplayName = "ConcorrenciaDuplaAplicavel é derivada (true) quando há modalidade de cota reservada")]
     public void ConcorrenciaDuplaAplicavel_ComCotaReservada_Verdadeira()
     {
         ProcessoSeletivo processo = NovoProcesso();

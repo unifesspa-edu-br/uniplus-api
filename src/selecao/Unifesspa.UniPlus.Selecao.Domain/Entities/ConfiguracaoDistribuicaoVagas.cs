@@ -39,7 +39,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
 
     /// <summary>
     /// Snapshot da referência de reserva demográfica (Censo e percentuais): obrigatório na Lei de Cotas
-    /// (INV-5) e ausente no quadro fixado no edital.
+    /// e ausente no quadro fixado no edital.
     /// </summary>
     public ReferenciaReservaDemograficaSnapshot? ReferenciaDemografica { get; private set; }
 

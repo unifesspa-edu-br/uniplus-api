@@ -296,7 +296,7 @@ internal static class CorpusEnvelopeProcessoRico
         ]).Value!;
 
     // Cascata de remanejamento (Story #575): as 8 modalidades federais de
-    // DistribuicaoLei12711 já são SegueCascata (INV-12) — sem uma cascata que as cubra,
+    // DistribuicaoLei12711 já são SegueCascata — sem uma cascata que as cubra,
     // Publicar() recusa com ProcessoSeletivo.CascataOrigemAusente (PendenciaDaCascata).
     // A matriz legal completa (8×7, fallback AC) é o que mantém este corpus PUBLICÁVEL.
     internal static void DefinirCascataEDocumentos(ProcessoSeletivo processo, int variante, bool permutar, bool comArvoreSatisfacao)

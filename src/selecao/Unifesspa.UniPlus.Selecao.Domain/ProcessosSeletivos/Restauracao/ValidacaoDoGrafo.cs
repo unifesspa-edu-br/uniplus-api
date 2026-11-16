@@ -139,7 +139,7 @@ internal static class ValidacaoDoGrafo
                 "Cada critério de desempate deve ter uma ordem única dentro do processo.");
         }
 
-        // INV-B6 — contra as etapas DO GRAFO. Se o codec regenerasse o etapa.Id em vez
+        // Contra as etapas DO GRAFO. Se o codec regenerasse o etapa.Id em vez
         // de preservá-lo, é aqui que a restauração pararia: o etapaRef congelado deixa
         // de resolver.
         IEnumerable<CriterioDesempate> porEtapa = grafo.CriteriosDesempate
@@ -151,7 +151,7 @@ internal static class ValidacaoDoGrafo
             {
                 return new DomainError(
                     "ProcessoSeletivo.EtapaRefDesempateInexistente",
-                    $"O critério de desempate na ordem {criterio.Ordem} referencia a etapa {args.EtapaRef}, que não existe na configuração restaurada (INV-B6).");
+                    $"O critério de desempate na ordem {criterio.Ordem} referencia a etapa {args.EtapaRef}, que não existe na configuração restaurada.");
             }
         }
 
@@ -170,12 +170,12 @@ internal static class ValidacaoDoGrafo
         // ValidarGrafo ser chamado.
         foreach (RegraEliminacao regra in grafo.Classificacao.RegrasEliminacao)
         {
-            // INV-B4 — mesma proteção do INV-B6, para a eliminação que cita uma etapa.
+            // Mesma proteção, para a eliminação que cita uma etapa.
             if (regra.Args.EtapaReferenciada() is { } etapaRef && !idsEtapas.Contains(etapaRef))
             {
                 return new DomainError(
                     "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
-                    $"A regra de eliminação referencia a etapa {etapaRef}, que não existe na configuração restaurada (INV-B4).");
+                    $"A regra de eliminação referencia a etapa {etapaRef}, que não existe na configuração restaurada.");
             }
 
             if (RegrasDasEtapas.AusenciaNaEtapaDoEnem(regra.Args, grafo.Etapas))

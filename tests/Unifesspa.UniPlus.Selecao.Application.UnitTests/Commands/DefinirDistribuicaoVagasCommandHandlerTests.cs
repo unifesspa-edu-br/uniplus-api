@@ -100,7 +100,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         Guid ofertaCursoId = Guid.CreateVersion7();
         Guid referenciaId = Guid.CreateVersion7();
 
-        // INV-6: a Lei 12.711 exige as 8 modalidades federais + AC.
+        // A Lei 12.711 exige as 8 modalidades federais + AC.
         (string Codigo, Guid Id)[] federaisMaisAc =
         [
             .. ModalidadesFederaisLei12711.Codigos.Select(codigo => (codigo, Guid.CreateVersion7())),

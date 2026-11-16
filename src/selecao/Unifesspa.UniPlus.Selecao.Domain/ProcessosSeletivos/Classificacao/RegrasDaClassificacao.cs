@@ -105,7 +105,7 @@ internal static class RegrasDaClassificacao
             {
                 erros.Add(new(campo, new DomainError(
                     "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
-                    $"A regra de eliminação referencia a etapa {etapaRef}, que não existe neste processo (INV-B4).")));
+                    $"A regra de eliminação referencia a etapa {etapaRef}, que não existe neste processo.")));
             }
             else if (RegrasDasEtapas.AusenciaNaEtapaDoEnem(regra.Args, estado.Etapas))
             {

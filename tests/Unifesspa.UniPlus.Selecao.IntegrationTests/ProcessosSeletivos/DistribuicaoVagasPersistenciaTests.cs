@@ -66,7 +66,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         ReferenciaReservaDemograficaSnapshot demografica = ReferenciaReservaDemograficaSnapshot.Criar(
             Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022 (IBGE)").Value!;
 
-        // INV-6: a Lei 12.711 exige as 8 modalidades federais + AC. "V" (PcD
+        // A Lei 12.711 exige as 8 modalidades federais + AC. "V" (PcD
         // retirada da AC) é uma 10ª modalidade além das obrigatórias.
         List<ModalidadeSelecionada> modalidades =
         [

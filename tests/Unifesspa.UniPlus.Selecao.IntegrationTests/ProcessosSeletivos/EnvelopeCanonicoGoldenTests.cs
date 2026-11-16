@@ -213,7 +213,7 @@ public sealed class EnvelopeCanonicoGoldenTests
 
     // As duas regras (ELIM-CORTE-REDACAO e ELIM-ZERO-EM-AREA) não referenciam etapa nos seus args:
     // o teste isola a única variável que quer variar, a ordem de criação. O cálculo local exige
-    // regra de precisão declarada (INV-B8).
+    // regra de precisão declarada.
     private static Result<ConfiguracaoClassificacao> ClassificacaoComEliminacoes(bool corteRedacaoPrimeiro)
     {
         RegraEliminacao primeira = corteRedacaoPrimeiro ? CriarCorteNaRedacao() : CriarZeroEmArea();

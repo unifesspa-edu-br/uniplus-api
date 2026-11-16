@@ -82,7 +82,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
             "a recusa do grupo se acumula com as demais checagens de forma (ADR-0125)");
     }
 
-    [Theory(DisplayName = "Criar com PR fora de [0,5; 1] falha (INV-1)")]
+    [Theory(DisplayName = "Criar com PR fora de [0,5; 1] falha")]
     [InlineData(0.49)]
     [InlineData(1.01)]
     public void Criar_PercentualDaReservaLegalForaDoLimite_Falha(double pr)
@@ -157,7 +157,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Errors.Select(e => e.Error.Code).Should().Contain("ConfiguracaoDistribuicaoVagas.RemanejamentoParNaoSelecionado");
     }
 
-    [Fact(DisplayName = "Criar Lei 12.711 sem referência demográfica falha (INV-5)")]
+    [Fact(DisplayName = "Criar Lei 12.711 sem referência demográfica falha")]
     public void Criar_Lei12711SemDemografica_Falha()
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
@@ -168,7 +168,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaObrigatoria");
     }
 
-    [Fact(DisplayName = "Criar Lei 12.711 faltando uma modalidade federal falha (INV-6)")]
+    [Fact(DisplayName = "Criar Lei 12.711 faltando uma modalidade federal falha")]
     public void Criar_Lei12711FaltandoFederal_Falha()
     {
         List<ModalidadeSelecionada> modalidades = [.. AsOitoFederaisMaisAc().Where(m => m.Codigo != ModalidadesFederaisLei12711.LiEp)];

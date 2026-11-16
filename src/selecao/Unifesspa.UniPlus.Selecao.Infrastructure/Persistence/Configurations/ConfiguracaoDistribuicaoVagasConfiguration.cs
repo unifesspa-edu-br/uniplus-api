@@ -70,7 +70,7 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
         ConfigurarOfertaCurso(builder);
     }
 
-    // Só na Lei 12.711 (INV-5): colunas nulas quando a distribuição é de quadro fixado.
+    // Só na Lei 12.711: colunas nulas quando a distribuição é de quadro fixado.
     private static void ConfigurarReferenciaDemografica(EntityTypeBuilder<ConfiguracaoDistribuicaoVagas> builder)
     {
         builder.OwnsOne(c => c.ReferenciaDemografica, demografica =>

@@ -43,8 +43,8 @@ internal static class CoerenciaDosCamposDaModalidade
     }
 
     /// <summary>
-    /// As invariantes que cruzam campos entre si — origem × composição (INV-4), natureza ×
-    /// remanejamento (INV-3) e argumentos por regra (INV-5).
+    /// As invariantes que cruzam campos entre si — origem × composição, natureza ×
+    /// remanejamento e argumentos por regra.
     /// </summary>
     /// <remarks>
     /// Cada checagem só roda quando o token de que depende foi reconhecido: sobre um token

@@ -90,8 +90,8 @@ public sealed class ModalidadeSelecionada : EntityBase
     /// <summary>
     /// Cria a modalidade selecionada a partir do snapshot lido de
     /// <c>ModalidadeView</c>, validando as invariantes que dependem só dos
-    /// próprios campos (INV-2, INV-12 e a coerência interna de composição e
-    /// remanejamento).
+    /// próprios campos (natureza, composição e base legal completas, cascata legal da cota
+    /// reservada e a coerência interna de composição e remanejamento).
     /// </summary>
     public static Result<ModalidadeSelecionada> Criar(
         Guid modalidadeOrigemId,
@@ -135,26 +135,26 @@ public sealed class ModalidadeSelecionada : EntityBase
                 $"A quantidade de vagas declarada para {codigo} não pode ser negativa ({quantidadeDeclarada})."));
         }
 
-        // INV-2: natureza_legal, composicao_vagas e base_legal completos.
+        // Natureza legal, composição de vagas e base legal completas.
         if (naturezaLegal == NaturezaLegalModalidade.Nenhuma)
         {
             return Result<ModalidadeSelecionada>.Failure(new DomainError(
                 "ModalidadeSelecionada.NaturezaLegalObrigatoria",
-                $"Natureza legal da modalidade {codigo} é obrigatória (INV-2)."));
+                $"Natureza legal da modalidade {codigo} é obrigatória."));
         }
 
         if (composicaoVagas == ComposicaoVagasModalidade.Nenhuma)
         {
             return Result<ModalidadeSelecionada>.Failure(new DomainError(
                 "ModalidadeSelecionada.ComposicaoVagasObrigatoria",
-                $"Composição de vagas da modalidade {codigo} é obrigatória (INV-2)."));
+                $"Composição de vagas da modalidade {codigo} é obrigatória."));
         }
 
         if (string.IsNullOrWhiteSpace(baseLegal))
         {
             return Result<ModalidadeSelecionada>.Failure(new DomainError(
                 "ModalidadeSelecionada.BaseLegalObrigatoria",
-                $"Base legal da modalidade {codigo} é obrigatória (INV-2)."));
+                $"Base legal da modalidade {codigo} é obrigatória."));
         }
 
         // Coerência RETIRADA_DE_OUTRA_MODALIDADE: exige origem; as demais composições não a têm.
@@ -173,14 +173,14 @@ public sealed class ModalidadeSelecionada : EntityBase
                 $"Modalidade {codigo} só declara código de origem quando a composição é RETIRADA_DE_OUTRA_MODALIDADE."));
         }
 
-        // INV-12: cota reservada da Lei 12.711 obriga a cascata legal — o admin
+        // Cota reservada da Lei 12.711 obriga a cascata legal — o admin
         // não pode trocar por destino único ou remanejamento cruzado.
         if (naturezaLegal == NaturezaLegalModalidade.CotaReservada
             && regraRemanejamento != RegraRemanejamentoModalidade.SegueCascata)
         {
             return Result<ModalidadeSelecionada>.Failure(new DomainError(
                 "ModalidadeSelecionada.CotaReservadaExigeCascata",
-                $"Modalidade {codigo} é cota reservada da Lei 12.711 e deve seguir a cascata legal (INV-12)."));
+                $"Modalidade {codigo} é cota reservada da Lei 12.711 e deve seguir a cascata legal."));
         }
 
         // Coerência do remanejamento: cada regra exige seus próprios campos e

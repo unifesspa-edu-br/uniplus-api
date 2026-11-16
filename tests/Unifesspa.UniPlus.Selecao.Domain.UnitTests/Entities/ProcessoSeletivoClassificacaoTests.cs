@@ -14,7 +14,7 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDoProcesso
 
 /// <summary>
 /// Classificação do <see cref="ProcessoSeletivo"/> — 15º bloco canônico (Story #775): o vínculo
-/// com a raiz, a integridade da referência das eliminações às etapas (INV-B4) e a
+/// com a raiz, a integridade da referência das eliminações às etapas e a
 /// indistinguibilidade entre tipos de processo.
 /// </summary>
 /// <remarks>
@@ -38,7 +38,7 @@ public sealed class ProcessoSeletivoClassificacaoTests
         processo.Classificacao!.ProcessoSeletivoId.Should().Be(processo.Id);
     }
 
-    [Fact(DisplayName = "DefinirClassificacao com etapa_ref de eliminação existente no processo tem sucesso (INV-B4)")]
+    [Fact(DisplayName = "DefinirClassificacao com etapa_ref de eliminação existente no processo tem sucesso")]
     public void DefinirClassificacao_EtapaRefEliminacaoExistente_Sucesso()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -50,7 +50,7 @@ public sealed class ProcessoSeletivoClassificacaoTests
         result.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "DefinirEtapas remover etapa referenciada por eliminação da classificação é recusado (INV-B4 sobrevive)")]
+    [Fact(DisplayName = "DefinirEtapas remover etapa referenciada por eliminação da classificação é recusado (a restrição sobrevive)")]
     public void DefinirEtapas_RemoverEtapaReferenciadaPorClassificacao_Recusa()
     {
         ProcessoSeletivo processo = ProcessoComEliminacaoNaEtapa(out _);
@@ -72,7 +72,7 @@ public sealed class ProcessoSeletivoClassificacaoTests
         result.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "DefinirClassificacao com etapa_ref de eliminação inexistente no processo é recusado (INV-B4)")]
+    [Fact(DisplayName = "DefinirClassificacao com etapa_ref de eliminação inexistente no processo é recusado")]
     public void DefinirClassificacao_EtapaRefEliminacaoInexistente_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();

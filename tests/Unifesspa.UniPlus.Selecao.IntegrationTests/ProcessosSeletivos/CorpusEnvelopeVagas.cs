@@ -71,8 +71,8 @@ internal static class CorpusEnvelopeVagas
     ]).Value!;
 
     /// <summary>
-    /// Oferta sob a Lei 12.711: exige a referência demográfica (INV-5) e as 8 modalidades
-    /// federais + AC (INV-6). É o ramo com <c>referenciaDemografica</c> preenchida. As duas ofertas
+    /// Oferta sob a Lei 12.711: exige a referência demográfica e as 8 modalidades
+    /// federais + AC. É o ramo com <c>referenciaDemografica</c> preenchida. As duas ofertas
     /// do processo rico são deste ramo, porque os cursos de um processo ofertam as mesmas cotas da
     /// lei; as variantes de remanejamento que as cotas não usam ficam na oferta institucional.
     /// </summary>
@@ -108,7 +108,7 @@ internal static class CorpusEnvelopeVagas
             regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
             baseLegal: "Lei 12.711/2012 art. 1º").Value!;
 
-    // As 8 federais. Todas cota reservada ⇒ INV-12 obriga SEGUE_CASCATA.
+    // As 8 federais. Toda cota reservada obriga SEGUE_CASCATA.
     internal static IEnumerable<ModalidadeSelecionada> ModalidadesFederais() =>
         new[] { "LB_PPI", "LB_Q", "LB_PCD", "LB_EP", "LI_PPI", "LI_Q", "LI_PCD", "LI_EP" }
             .Select(static (codigo, indice) => ModalidadeFederal(codigo, indice + 2));

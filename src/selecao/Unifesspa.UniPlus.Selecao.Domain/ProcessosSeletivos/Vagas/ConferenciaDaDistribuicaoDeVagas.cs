@@ -157,7 +157,7 @@ public static class ConferenciaDaDistribuicaoDeVagas
     private static FieldError? ReferenciaDemograficaAusente(DistribuicaoDeVagasDeclarada declarada) =>
         declarada.ReferenciaDemografica is null
             ? Recusa("referenciaDemografica", DistribuicaoDeVagasErrorCodes.ReferenciaDemograficaObrigatoria,
-                "A distribuição pelo ramo federal (Lei 12.711) exige a referência de reserva demográfica (INV-5).")
+                "A distribuição pelo ramo federal (Lei 12.711) exige a referência de reserva demográfica.")
             : null;
 
     private static FieldError? RegraDeAjusteAusente(DistribuicaoDeVagasDeclarada declarada) =>
@@ -180,7 +180,7 @@ public static class ConferenciaDaDistribuicaoDeVagas
         string[] faltantes = [.. ModalidadesFederaisLei12711.CodigosComAc.Where(c => !informados.Contains(c, StringComparer.Ordinal))];
         return faltantes.Length > 0
             ? Recusa("modalidades", DistribuicaoDeVagasErrorCodes.ModalidadesFederaisIncompletas,
-                $"A distribuição pela Lei 12.711 exige as 8 modalidades federais e AC; faltam: {string.Join(", ", faltantes)} (INV-6).")
+                $"A distribuição pela Lei 12.711 exige as 8 modalidades federais e AC; faltam: {string.Join(", ", faltantes)}.")
             : null;
     }
 
