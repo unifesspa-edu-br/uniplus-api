@@ -21,4 +21,17 @@ public sealed record FatosDaExecucao
 
     /// <summary>Os formulários que já receberam ao menos um envio de candidato; o rascunho não conta.</summary>
     public IReadOnlySet<CodigoDoFormulario> FormulariosComEnvio { get; init; } = new HashSet<CodigoDoFormulario>();
+
+    /// <summary>
+    /// Por oferta de curso (pela origem), as modalidades de concorrência (pela origem) em que alguma inscrição
+    /// enviada concorre, na primeira e na segunda opção. O rascunho não conta.
+    /// </summary>
+    public IReadOnlyDictionary<Guid, IReadOnlySet<Guid>> ModalidadesConcorridasPorOferta { get; init; } =
+        new Dictionary<Guid, IReadOnlySet<Guid>>();
+
+    /// <summary>Se há inscrição enviada no processo.</summary>
+    public bool HaInscricaoEnviada { get; init; }
+
+    /// <summary>Se há pedido de isenção da taxa feito.</summary>
+    public bool HaPedidoDeIsencao { get; init; }
 }
