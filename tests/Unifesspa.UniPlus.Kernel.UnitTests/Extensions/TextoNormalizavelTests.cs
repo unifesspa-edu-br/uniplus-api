@@ -67,4 +67,11 @@ public sealed class TextoNormalizavelTests
     [Fact(DisplayName = "TentarNfcDeTextoDeVariasLinhas aplica o limite depois do NFC")]
     public void TentarNfcDeTextoDeVariasLinhas_PassaDoLimite_TamanhoExcedido() =>
         TextoNormalizavel.TentarNfcDeTextoDeVariasLinhas(new string('b', 39) + "\u0344", 40, out _).Should().Be(SituacaoDoTexto.TamanhoExcedido);
+
+    [Theory(DisplayName = "AparadoEmNfc apara e compõe o texto; o que não se normaliza fica só aparado")]
+    [InlineData(" PO\u0301S ", "PÓS")]
+    [InlineData("PÓS", "PÓS")]
+    [InlineData(" \uD800 ", "\uD800")]
+    public void AparadoEmNfc_ApararECompor(string texto, string esperado) =>
+        TextoNormalizavel.AparadoEmNfc(texto).Should().Be(esperado);
 }

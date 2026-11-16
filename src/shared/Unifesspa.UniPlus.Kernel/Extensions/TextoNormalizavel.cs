@@ -25,6 +25,17 @@ public static class TextoNormalizavel
     /// </summary>
     private const int FatorMaximoDeDecomposicao = 4;
 
+    /// <summary>
+    /// O texto aparado e em NFC — a forma em que um código de referência é gravado e comparado. O texto
+    /// que não se normaliza fica só aparado: não pode ser um código gravado, e a recusa é de quem o grava.
+    /// </summary>
+    public static string AparadoEmNfc(string texto)
+    {
+        ArgumentNullException.ThrowIfNull(texto);
+        string aparado = texto.Trim();
+        return TentarNormalizar(aparado, out string normalizado) ? normalizado : aparado;
+    }
+
     /// <summary>O texto em NFC, ou <see langword="false"/> quando ele não pode ser normalizado.</summary>
     public static bool TentarNormalizar(string texto, out string normalizado)
     {

@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Entradas;
 using Unifesspa.UniPlus.Regras.Formularios;
@@ -50,20 +51,32 @@ internal static class EscritaDoModelo
         List<FieldError> erros = [.. ModeloFormulario.NoConteudo(
             daSecao.Concat(conteudo.Erros).Concat(ConferenciaDoModelo.Conferir(conteudo, catalogo, versoes.ToDictionary(static v => v.VersaoId), existentes)))];
 
-        // O texto que o banco não grava não é consultado: a recusa dele é a do modelo. O código é
-        // comparado aparado, a forma em que o modelo e o cadastro de tipo de processo o gravam.
-        string? tipo = string.IsNullOrWhiteSpace(tipoProcessoCodigo) || !ModeloFormulario.EhGravavel(tipoProcessoCodigo)
-            ? null
-            : tipoProcessoCodigo.Trim();
-        if (tipo is not null
-            && !string.Equals(tipo, tipoProcessoAnterior, StringComparison.Ordinal)
+        await ConferirTipoDeProcessoAsync(tipoProcessoCodigo, tipoProcessoAnterior, tipoProcessoReader, erros, cancellationToken).ConfigureAwait(false);
+
+        return (conteudo, catalogo, erros);
+    }
+
+    // O texto que o banco não grava não é consultado: a recusa dele é a do modelo. O código é
+    // comparado na forma em que o cadastro de tipo de processo o grava (TextoNormalizavel.AparadoEmNfc).
+    private static async Task ConferirTipoDeProcessoAsync(
+        string? tipoProcessoCodigo,
+        string? tipoProcessoAnterior,
+        ITipoProcessoReader tipoProcessoReader,
+        List<FieldError> erros,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(tipoProcessoCodigo) || !ModeloFormulario.EhGravavel(tipoProcessoCodigo))
+        {
+            return;
+        }
+
+        string tipo = TextoNormalizavel.AparadoEmNfc(tipoProcessoCodigo);
+        if (!string.Equals(tipo, tipoProcessoAnterior, StringComparison.Ordinal)
             && await tipoProcessoReader.ObterAtivoPorCodigoAsync(tipo, cancellationToken).ConfigureAwait(false) is null)
         {
             erros.Add(new("tipoProcessoCodigo", new DomainError(
                 ModeloFormularioErrorCodes.TipoProcessoInexistente, $"O tipo de processo '{tipo}' não existe ou está desativado.")));
         }
-
-        return (conteudo, catalogo, erros);
     }
 
     /// <summary>

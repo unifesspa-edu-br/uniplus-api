@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 public sealed class TipoEtapaRepository : ITipoEtapaRepository
@@ -44,7 +45,10 @@ public sealed class TipoEtapaRepository : ITipoEtapaRepository
     public Task<bool> CodigoExisteAsync(string codigo, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(codigo);
-        return _dbContext.TiposEtapa.AsNoTracking()
-            .AnyAsync(tipo => tipo.Codigo == codigo.Trim(), cancellationToken);
+        // O cadastro guarda o código em NFC e a igualdade do banco é ordinal: a consulta normaliza antes,
+        // porque o EF não traduziria a normalização para SQL. Texto que nem normaliza não é código cadastrado.
+        return TextoNormalizavel.TentarNormalizar(codigo.Trim(), out string codigoNormalizado)
+            ? _dbContext.TiposEtapa.AsNoTracking().AnyAsync(tipo => tipo.Codigo == codigoNormalizado, cancellationToken)
+            : Task.FromResult(false);
     }
 }

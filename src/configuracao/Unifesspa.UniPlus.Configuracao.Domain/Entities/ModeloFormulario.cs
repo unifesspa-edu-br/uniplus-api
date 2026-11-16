@@ -203,9 +203,9 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         ArgumentNullException.ThrowIfNull(conteudo);
         ArgumentNullException.ThrowIfNull(derivacoes);
 
-        ConteudoDoModelo normalizado = Normalizar(conteudo);
+        ConteudoDoModelo normalizado = FormaGravadaDoModelo.Normalizar(conteudo);
         List<FieldError> erros = ConferirCadastro(codigo, nome, descricao, tipoProcessoCodigo, finalidade);
-        erros.AddRange(NoConteudo(ConferirNormalizado(finalidade, normalizado, derivacoes)));
+        erros.AddRange(NoConteudo(ConferenciaDoConteudoDoModelo.ConferirNormalizado(finalidade, normalizado, derivacoes)));
         if (erros.Count > 0)
         {
             return Result<ModeloFormulario>.ValidationFailure(erros);
@@ -213,7 +213,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
 
         ModeloFormulario modelo = new()
         {
-            Codigo = Normalizar(codigo!),
+            Codigo = FormaGravadaDoModelo.Normalizar(codigo!),
             Finalidade = finalidade,
             Ativo = false,
         };
@@ -232,9 +232,9 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         ArgumentNullException.ThrowIfNull(conteudo);
         ArgumentNullException.ThrowIfNull(derivacoes);
 
-        ConteudoDoModelo normalizado = Normalizar(conteudo);
+        ConteudoDoModelo normalizado = FormaGravadaDoModelo.Normalizar(conteudo);
         List<FieldError> erros = ConferirDescritivo(nome, descricao, tipoProcessoCodigo);
-        erros.AddRange(NoConteudo(ConferirNormalizado(Finalidade, normalizado, derivacoes)));
+        erros.AddRange(NoConteudo(ConferenciaDoConteudoDoModelo.ConferirNormalizado(Finalidade, normalizado, derivacoes)));
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(erros);
@@ -284,265 +284,24 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     public static ConteudoDoModelo NaFormaGravada(ConteudoDoModelo conteudo)
     {
         ArgumentNullException.ThrowIfNull(conteudo);
-        return Normalizar(conteudo);
+        return FormaGravadaDoModelo.Normalizar(conteudo);
     }
 
     /// <summary>O código na forma em que é gravado: aparado e em NFC.</summary>
-    public static string CodigoNaFormaGravada(string? codigo) => Normalizar(codigo);
+    public static string CodigoNaFormaGravada(string? codigo) => FormaGravadaDoModelo.Normalizar(codigo);
 
     /// <summary>As recusas do conteúdo apontam o campo dentro dele, no caminho da escrita.</summary>
     public static IEnumerable<FieldError> NoConteudo(IEnumerable<FieldError> erros) =>
         erros.Select(static e => e with { Field = string.IsNullOrEmpty(e.Field) ? "conteudo" : $"conteudo.{e.Field}" });
 
-    /// <summary>
-    /// O cabeçalho, a forma de cada etapa, item, grupo e termo, o teto de itens e os pressupostos acumulam; a
-    /// estrutura por finalidade e o grafo de coleta só são conferidos sobre partes bem formadas, porque
-    /// dependem delas.
-    /// </summary>
-    private static List<FieldError> ConferirNormalizado(
-        FinalidadeFormulario finalidade, ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
-    {
-        List<FieldError> erros = [.. TextosNaoGravaveis(conteudo)];
-        erros.AddRange(FormaDoCabecalho.ValidarTitulo(conteudo.Titulo));
-
-        for (int i = 0; i < conteudo.Etapas.Count; i++)
-        {
-            EtapaDoModelo etapa = conteudo.Etapas[i];
-            erros.AddRange(FormaDaEtapa.Conferir(etapa.Codigo, etapa.Ordem, etapa.Tipo, etapa.Titulo, etapa.Descricao, etapa.Aviso, etapa.Exibicao is not null)
-                .Select(e => e with { Field = $"etapas[{i}].{e.Field}" }));
-        }
-
-        List<FieldError> excesso = FormaDoItem.ValidarQuantidade(
-            FormaDoItem.QuantidadeNoTeto(conteudo.Itens.Count, conteudo.Grupos.Select(static g => g.Subitens.Count)));
-        erros.AddRange(excesso);
-        if (excesso.Count == 0)
-        {
-            for (int i = 0; i < conteudo.Itens.Count; i++)
-            {
-                erros.AddRange(FormaDoCampo(conteudo.Itens[i], $"itens[{i}]"));
-            }
-
-            erros.AddRange(Impedimento.ConferirFinalidade(finalidade, conteudo.Itens.Select(static i => i.Impedimento)));
-
-            for (int i = 0; i < conteudo.Grupos.Count; i++)
-            {
-                GrupoDoModelo grupo = conteudo.Grupos[i];
-                erros.AddRange(FormaDoGrupo.Conferir(
-                        grupo.Codigo, grupo.Ordem, grupo.Rotulo, grupo.Minimo, grupo.Maximo,
-                        [.. grupo.Subitens.Select(static s => ((string?)s.FatoCodigo, s.EtapaCodigo, s.Impedimento is not null))],
-                        grupo.Exibicao?.FatosCitados ?? [], grupo.Obrigatoriedade)
-                    .Select(e => e with { Field = $"grupos[{i}].{e.Field}" }));
-                if (grupo.IncluiCandidato)
-                {
-                    erros.AddRange(CandidatoComoMembro.Conferir(
-                            grupo.Minimo, [.. grupo.Subitens.Select(static s => (s.FatoCodigo, s.Exibicao is not null, s.Obrigatoriedade, s.Restricoes))])
-                        .Select(e => e with { Field = $"grupos[{i}].{e.Field}" }));
-                }
-
-                for (int j = 0; j < grupo.Subitens.Count; j++)
-                {
-                    erros.AddRange(FormaDoCampo(grupo.Subitens[j], $"grupos[{i}].subitens[{j}]"));
-                }
-            }
-        }
-
-        for (int i = 0; i < conteudo.Termos.Count; i++)
-        {
-            erros.AddRange(FormaDoTermo.ValidarFormaBasica(conteudo.Termos[i].Codigo, conteudo.Termos[i].Ordem)
-                .Select(e => e with { Field = $"termos[{i}].{e.Field}" }));
-        }
-
-        erros.AddRange(FormaDoTermo.ConferirUnicidade([.. conteudo.Termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]));
-        erros.AddRange(ConferirPressupostos(finalidade, conteudo));
-
-        // A estrutura depende da finalidade, recusada no cadastro.
-        if (erros.Count > 0 || FormaDoCabecalho.ValidarFinalidade(finalidade).Count > 0)
-        {
-            return erros;
-        }
-
-        EtapaEstrutura[] estrutura = [.. conteudo.Etapas.Select(static e => new EtapaEstrutura(e.Codigo, e.Ordem, e.Tipo, e.Bloco))];
-        erros.AddRange(EstruturaFormulario.ValidarEtapas(finalidade, estrutura));
-        if (erros.Count > 0)
-        {
-            return erros;
-        }
-
-        erros.AddRange(EstruturaFormulario.ValidarItens(
-            estrutura,
-            [
-                .. conteudo.Itens.Select(static i => new ItemEstrutura(i.FatoCodigo, i.Ordem, i.EtapaCodigo)),
-                .. conteudo.Grupos.Select(static g => new ItemEstrutura(g.Codigo, g.Ordem, g.EtapaCodigo)),
-            ],
-            secaoObrigatoria: true));
-        if (erros.Count > 0)
-        {
-            return erros;
-        }
-
-        if (ConferirGrafo(conteudo, derivacoes) is { } recusa)
-        {
-            erros.Add(new(string.Empty, recusa));
-        }
-
-        return erros;
-    }
-
-    /// <summary>A forma de um campo do modelo, item ou campo de grupo, no caminho dele.</summary>
-    private static IEnumerable<FieldError> FormaDoCampo(ItemDoModelo campo, string caminho) =>
-        FormaDoItem.Conferir(
-                campo.FatoCodigo, campo.Ordem, campo.Rotulo, campo.TipoRenderizacao, campo.Formato, campo.Ajuda,
-                campo.Exibicao?.FatosCitados ?? [], campo.Obrigatoriedade, campo.Restricoes, campo.Impedimento)
-            .Select(e => e with { Field = $"{caminho}.{e.Field}" });
-
-    /// <summary>
-    /// O grafo de coleta pelas regras do formulário: os pressupostos são os fatos conhecidos antes dele,
-    /// e as derivações, as do catálogo. Depois, o campo opcional que alimenta derivação ou negação.
-    /// </summary>
-    private static DomainError? ConferirGrafo(ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
-    {
-        ItemDoGrafo[] itens = [.. conteudo.Itens.Select(ParaGrafo)];
-        EtapaDoGrafo[] etapas = [.. conteudo.Etapas.Select(static e => new EtapaDoGrafo(e.Codigo, e.Ordem, e.FatosCitados))];
-        GrupoDoGrafo[] grupos = [.. conteudo.Grupos.Select(static g => new GrupoDoGrafo(
-            g.Codigo, g.Ordem, g.EtapaCodigo, g.FatosCitados, [.. g.Subitens.OrderBy(static s => s.Ordem).Select(ParaGrafo)]))];
-        HashSet<string> pressupostos = new(conteudo.Pressupostos, StringComparer.Ordinal);
-
-        if (GrafoDoFormulario.ValidarColeta(itens, etapas, pressupostos, derivacoes, grupos) is { } coleta)
-        {
-            return coleta;
-        }
-
-        DependenciasDoFormulario dependencias = GrafoDoFormulario.Dependencias(itens, pressupostos, derivacoes);
-        if (conteudo.Termos.Select(t => GrafoDoFormulario.CitacaoInvalidaDoTermo(new TermoDoGrafo(t.Codigo, t.FatosCitados), dependencias))
-                .FirstOrDefault(static e => e is not null) is { } termo)
-        {
-            return termo;
-        }
-
-        // O documento do conjunto padrão cita só o que o modelo coleta, como o termo.
-        for (int i = 0; i < conteudo.Documentos.Count; i++)
-        {
-            if (conteudo.Documentos[i].FatosCitados.FirstOrDefault(f => dependencias.Conferir(f, DependenciasDoFormulario.PosicaoDosTermos) is not null) is { } citado)
-            {
-                return new DomainError(
-                    GrafoFormularioErrorCodes.CitaFatoNaoConhecido,
-                    $"A condição do documento exigido '{conteudo.Documentos[i].TipoDocumentoCodigo}' (documentosExigidos[{i}]) cita '{citado}', que o modelo não coleta nem deriva, nem é conhecido antes dele.");
-            }
-        }
-
-        return CampoQueAlimentaRegra.PrimeiroOpcional(
-            conteudo.Itens.OrderBy(static i => i.Ordem)
-                .Concat(conteudo.Grupos.OrderBy(static g => g.Ordem).SelectMany(static g => g.Subitens.OrderBy(static s => s.Ordem)))
-                .Select(static i => (i.FatoCodigo, i.Obrigatoriedade.Tipo)),
-            CampoQueAlimentaRegra.Fatos(
-                DependenciasCitadas(conteudo, derivacoes), CondicoesDasRegras(conteudo),
-                conteudo.Itens.Where(static i => i.Impedimento is not null).Select(static i => i.FatoCodigo)));
-    }
-
-    private static ItemDoGrafo ParaGrafo(ItemDoModelo campo) => new(campo.FatoCodigo, campo.Ordem, campo.EtapaCodigo, campo.FatosCitados);
-
-    /// <summary>Os campos do modelo, itens e campos de grupo.</summary>
-    private static IEnumerable<ItemDoModelo> Campos(ConteudoDoModelo conteudo) =>
-        conteudo.Itens.Concat(conteudo.Grupos.SelectMany(static g => g.Subitens));
-
-    /// <summary>
-    /// As dependências dos derivados que as regras do modelo citam, direta ou transitivamente — só elas
-    /// alimentam regra no formulário, e não todas as derivações do catálogo.
-    /// </summary>
-    private static List<string> DependenciasCitadas(ConteudoDoModelo conteudo, IReadOnlyDictionary<string, IReadOnlyCollection<string>> derivacoes)
-    {
-        HashSet<string> visitados = new(StringComparer.Ordinal);
-        Stack<string> pendentes = new(TodosOsCitados(conteudo));
-        List<string> dependencias = [];
-        while (pendentes.TryPop(out string? fato))
-        {
-            if (!visitados.Add(fato) || !derivacoes.TryGetValue(fato, out IReadOnlyCollection<string>? deps))
-            {
-                continue;
-            }
-
-            foreach (string dependencia in deps)
-            {
-                dependencias.Add(dependencia);
-                pendentes.Push(dependencia);
-            }
-        }
-
-        return dependencias;
-    }
-
-    private static IEnumerable<string> TodosOsCitados(ConteudoDoModelo conteudo) =>
-        Campos(conteudo).SelectMany(static i => i.FatosCitados)
-            .Concat(conteudo.Grupos.SelectMany(static g => g.FatosCitados))
-            .Concat(conteudo.Etapas.SelectMany(static e => e.FatosCitados))
-            .Concat(conteudo.Termos.SelectMany(static t => t.FatosCitados))
-            .Concat(conteudo.Documentos.SelectMany(static d => d.FatosCitados));
-
-    /// <summary>As condições de todas as regras do modelo, com o operador — a negação é o que importa aqui.</summary>
-    private static IEnumerable<(string Fato, Operador Operador)> CondicoesDasRegras(ConteudoDoModelo conteudo)
-    {
-        IEnumerable<PredicadoDnf?> predicados = Campos(conteudo)
-            .SelectMany(static i => new[] { i.Exibicao, i.Obrigatoriedade.Predicado, i.Impedimento?.Quando }
-                .Concat(i.Restricoes.OfType<OpcoesPermitidas>().SelectMany(static o => o.Entradas.Select(static e => e.Quando))))
-            .Concat(conteudo.Grupos.SelectMany(static g => new[] { g.Exibicao, g.Obrigatoriedade.Predicado }))
-            .Concat(conteudo.Etapas.Select(static e => e.Exibicao))
-            .Concat(conteudo.Termos.SelectMany(static t => new[] { t.Exibicao, t.Obrigatoriedade.Predicado }))
-            .Concat(conteudo.Documentos.Select(static d => d.Quando));
-        return predicados.OfType<PredicadoDnf>()
-            .SelectMany(static p => p.Clausulas)
-            .SelectMany(static c => c.Condicoes)
-            .Select(static c => (c.Fato, c.Operador));
-    }
-
-    /// <summary>
-    /// Pressuposto é fato coletado pela inscrição (UNI-REQ-0144): o modelo de inscrição não tem, e o
-    /// fato não é pressuposto e item do mesmo modelo.
-    /// </summary>
-    private static IEnumerable<FieldError> ConferirPressupostos(FinalidadeFormulario finalidade, ConteudoDoModelo conteudo)
-    {
-        if (finalidade == FinalidadeFormulario.Inscricao && conteudo.Pressupostos.Count > 0)
-        {
-            yield return new("pressupostos", new DomainError(
-                ModeloFormularioErrorCodes.PressupostoNaInscricao,
-                "O modelo de inscrição não tem pressupostos: nenhum formulário é respondido antes dele."));
-            yield break;
-        }
-
-        HashSet<string> vistos = new(StringComparer.Ordinal);
-        HashSet<string> itens = new(conteudo.Itens.Select(static i => i.FatoCodigo), StringComparer.Ordinal);
-        for (int i = 0; i < conteudo.Pressupostos.Count; i++)
-        {
-            string fato = conteudo.Pressupostos[i];
-            if (fato.Length == 0)
-            {
-                yield return new($"pressupostos[{i}]", new DomainError(
-                    ModeloFormularioErrorCodes.PressupostoEmBranco, "O pressuposto nomeia um fato."));
-                continue;
-            }
-
-            if (!vistos.Add(fato))
-            {
-                yield return new($"pressupostos[{i}]", new DomainError(
-                    ModeloFormularioErrorCodes.PressupostoRepetido, $"O fato '{fato}' aparece mais de uma vez entre os pressupostos."));
-            }
-
-            if (itens.Contains(fato))
-            {
-                yield return new($"pressupostos[{i}]", new DomainError(
-                    ModeloFormularioErrorCodes.PressupostoTambemItem,
-                    $"O fato '{fato}' é item do modelo e não pode ser também pressuposto: ou o formulário o coleta, ou o recebe da inscrição."));
-            }
-        }
-    }
-
     private static List<FieldError> ValidarCodigo(string? codigo)
     {
-        List<FieldError> erros = [.. NaoGravavel("codigo", codigo)];
+        List<FieldError> erros = [.. TextosGravaveisDoModelo.NaoGravavel("codigo", codigo)];
         if (string.IsNullOrWhiteSpace(codigo))
         {
             erros.Add(new("codigo", new DomainError(ModeloFormularioErrorCodes.CodigoObrigatorio, "O código do modelo é obrigatório.")));
         }
-        else if (Normalizar(codigo).Length > CodigoMaxLength)
+        else if (FormaGravadaDoModelo.Normalizar(codigo).Length > CodigoMaxLength)
         {
             erros.Add(new("codigo", new DomainError(
                 ModeloFormularioErrorCodes.CodigoTamanho, $"O código do modelo deve ter no máximo {CodigoMaxLength} caracteres.")));
@@ -553,7 +312,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
 
     private static List<FieldError> ValidarDescritivo(string? nome, string? descricao, string? tipoProcessoCodigo)
     {
-        List<FieldError> erros = [.. NaoGravavel("nome", nome), .. NaoGravavel("descricao", descricao), .. NaoGravavel("tipoProcessoCodigo", tipoProcessoCodigo)];
+        List<FieldError> erros = [.. TextosGravaveisDoModelo.NaoGravavel("nome", nome), .. TextosGravaveisDoModelo.NaoGravavel("descricao", descricao), .. TextosGravaveisDoModelo.NaoGravavel("tipoProcessoCodigo", tipoProcessoCodigo)];
         if (string.IsNullOrWhiteSpace(nome))
         {
             erros.Add(new("nome", new DomainError(ModeloFormularioErrorCodes.NomeObrigatorio, "O nome do modelo é obrigatório.")));
@@ -592,7 +351,7 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
     {
         Nome = nome.Trim();
         Descricao = FormaDoItem.TextoOpcional(descricao);
-        TipoProcessoCodigo = FormaDoItem.TextoOpcional(tipoProcessoCodigo);
+        TipoProcessoCodigo = FormaDoItem.TextoOpcional(tipoProcessoCodigo) is { } tipo ? TextoNormalizavel.AparadoEmNfc(tipo) : null;
         Conteudo = conteudo with
         {
             Etapas = [.. conteudo.Etapas.OrderBy(static e => e.Ordem)],
@@ -608,148 +367,8 @@ public sealed class ModeloFormulario : EntityBase, IAuditableEntity
         campo with { Restricoes = [.. campo.Restricoes.OrderBy(static r => r.Tipo)] };
 
     /// <summary>
-    /// A forma em que o conteúdo é conferido e gravado: textos aparados, códigos em NFC, ausente como
-    /// vazio — a forma do item recusa o vazio. Mantém as posições, inclusive das restrições, para que
-    /// cada recusa aponte o índice que veio.
-    /// </summary>
-    private static ConteudoDoModelo Normalizar(ConteudoDoModelo conteudo) => new(
-        FormaDoItem.TextoOpcional(conteudo.Titulo),
-        [.. (conteudo.Etapas ?? []).Select(static e => e with
-        {
-            Codigo = Normalizar(e.Codigo),
-            Titulo = (e.Titulo ?? string.Empty).Trim(),
-            Descricao = FormaDoItem.TextoOpcional(e.Descricao),
-            Aviso = FormaDoItem.TextoOpcional(e.Aviso),
-        })],
-        [.. (conteudo.Itens ?? []).Select(NormalizarCampo)],
-        [.. (conteudo.Termos ?? []).Select(static t => t with { Codigo = Normalizar(t.Codigo) })],
-        [.. (conteudo.Pressupostos ?? []).Select(static p => Normalizar(p))],
-        [.. (conteudo.Grupos ?? []).Select(static g => g with
-        {
-            Codigo = Normalizar(g.Codigo),
-            EtapaCodigo = g.EtapaCodigo is null ? null : Normalizar(g.EtapaCodigo),
-            Rotulo = (g.Rotulo ?? string.Empty).Trim(),
-            Subitens = [.. (g.Subitens ?? []).Select(NormalizarCampo)],
-        })],
-        [.. (conteudo.DocumentosExigidos ?? []).Select(static d => d with
-        {
-            FaseCodigo = Normalizar(d.FaseCodigo),
-            TipoDocumentoCodigo = Normalizar(d.TipoDocumentoCodigo),
-            PorOpcao = d.PorOpcao is { } porOpcao
-                ? new ExigenciaPorOpcao(Normalizar(porOpcao.FatoCodigo), [.. porOpcao.Exceto.Select(static v => Normalizar(v))])
-                : null,
-        })]);
-
-    private static ItemDoModelo NormalizarCampo(ItemDoModelo campo) => campo with
-    {
-        FatoCodigo = Normalizar(campo.FatoCodigo),
-        EtapaCodigo = campo.EtapaCodigo is null ? null : Normalizar(campo.EtapaCodigo),
-        Rotulo = (campo.Rotulo ?? string.Empty).Trim(),
-        Formato = FormaDoItem.TextoOpcional(campo.Formato),
-        Ajuda = FormaDoItem.TextoOpcional(campo.Ajuda),
-        Restricoes = campo.Restricoes ?? [],
-    };
-
-    /// <summary>O código aparado e em NFC; o que não se normaliza fica como veio, para a recusa de texto não gravável.</summary>
-    private static string Normalizar(string? codigo)
-    {
-        string aparado = (codigo ?? string.Empty).Trim();
-        return TextoNormalizavel.TentarNormalizar(aparado, out string normalizado) ? normalizado : aparado;
-    }
-
-    /// <summary>
-    /// Os textos do conteúdo que o banco não grava — com caractere nulo, ou que não são Unicode
-    /// válido —, inclusive os valores e os fatos citados pelas regras: o conteúdo é um documento
-    /// jsonb, e o Postgres o recusaria só na gravação.
-    /// </summary>
-    private static IEnumerable<FieldError> TextosNaoGravaveis(ConteudoDoModelo conteudo)
-    {
-        IEnumerable<(string Campo, string? Texto)> textos = new (string, string?)[] { ("titulo", conteudo.Titulo) }
-            .Concat(conteudo.Etapas.SelectMany(static (e, i) => new (string, string?)[]
-                {
-                    ($"etapas[{i}].codigo", e.Codigo), ($"etapas[{i}].titulo", e.Titulo),
-                    ($"etapas[{i}].descricao", e.Descricao), ($"etapas[{i}].aviso", e.Aviso),
-                }.Concat(TextosDoPredicado($"etapas[{i}].exibicao", e.Exibicao))))
-            .Concat(conteudo.Itens.SelectMany(static (item, i) => TextosDoCampo($"itens[{i}]", item)))
-            .Concat(conteudo.Grupos.SelectMany(static (g, i) => new (string, string?)[]
-                {
-                    ($"grupos[{i}].codigo", g.Codigo), ($"grupos[{i}].etapaCodigo", g.EtapaCodigo), ($"grupos[{i}].rotulo", g.Rotulo),
-                }
-                .Concat(TextosDoPredicado($"grupos[{i}].exibicao", g.Exibicao))
-                .Concat(TextosDoPredicado($"grupos[{i}].obrigatoriedade", g.Obrigatoriedade.Predicado))
-                .Concat(g.Subitens.SelectMany((s, j) => TextosDoCampo($"grupos[{i}].subitens[{j}]", s)))))
-            .Concat(conteudo.Termos.SelectMany(static (t, i) => new (string, string?)[] { ($"termos[{i}].codigo", t.Codigo) }
-                .Concat(TextosDoPredicado($"termos[{i}].exibicao", t.Exibicao))
-                .Concat(TextosDoPredicado($"termos[{i}].obrigatoriedade", t.Obrigatoriedade.Predicado))))
-            .Concat(conteudo.Documentos.SelectMany(static (d, i) => new (string, string?)[]
-                {
-                    ($"documentosExigidos[{i}].faseCodigo", d.FaseCodigo), ($"documentosExigidos[{i}].tipoDocumentoCodigo", d.TipoDocumentoCodigo),
-                    ($"documentosExigidos[{i}].consequenciaIndeferimento", d.ConsequenciaIndeferimento),
-                }
-                .Concat(TextosDoPredicado($"documentosExigidos[{i}].quando", d.Quando))
-                .Concat(d.PorOpcao is { } porOpcao
-                    ? porOpcao.Exceto.Select((v, j) => ($"documentosExigidos[{i}].porOpcao.exceto[{j}]", (string?)v))
-                        .Prepend(($"documentosExigidos[{i}].porOpcao.fatoCodigo", porOpcao.FatoCodigo))
-                    : [])
-                .Concat(d.BasesLegais.SelectMany((b, j) => new (string, string?)[]
-                {
-                    ($"documentosExigidos[{i}].basesLegais[{j}].referencia", b.Referencia), ($"documentosExigidos[{i}].basesLegais[{j}].abrangencia", b.Abrangencia),
-                    ($"documentosExigidos[{i}].basesLegais[{j}].status", b.Status), ($"documentosExigidos[{i}].basesLegais[{j}].observacao", b.Observacao),
-                }))))
-            .Concat(conteudo.Pressupostos.Select(static (p, i) => ($"pressupostos[{i}]", (string?)p)));
-        return textos.SelectMany(static t => NaoGravavel(t.Campo, t.Texto)).DistinctBy(static e => e.Field);
-    }
-
-    private static IEnumerable<(string Campo, string? Texto)> TextosDoCampo(string caminho, ItemDoModelo campo) =>
-        new (string, string?)[]
-        {
-            ($"{caminho}.fatoCodigo", campo.FatoCodigo), ($"{caminho}.etapaCodigo", campo.EtapaCodigo),
-            ($"{caminho}.rotulo", campo.Rotulo), ($"{caminho}.formato", campo.Formato), ($"{caminho}.ajuda", campo.Ajuda),
-        }
-        .Concat(TextosDoPredicado($"{caminho}.exibicao", campo.Exibicao))
-        .Concat(TextosDoPredicado($"{caminho}.obrigatoriedade", campo.Obrigatoriedade.Predicado))
-        .Concat(campo.Restricoes.SelectMany((r, j) => TextosDaRestricao($"{caminho}.restricoes[{j}]", r)))
-        .Concat(campo.Impedimento is { } impedimento
-            ? TextosDoPredicado($"{caminho}.impedimento.quando", impedimento.Quando).Append(($"{caminho}.impedimento.mensagem", impedimento.Mensagem))
-            : []);
-
-    private static IEnumerable<(string Campo, string? Texto)> TextosDaRestricao(string campo, RestricaoValor restricao) => restricao switch
-    {
-        OpcoesPermitidas opcoes => opcoes.Entradas.SelectMany((e, k) => e.Valores.Select(v => ($"{campo}.entradas[{k}].valores", (string?)v))
-            .Concat(TextosDoPredicado($"{campo}.entradas[{k}].quando", e.Quando))),
-        OpcoesDasRespostas respostas => respostas.Fatos.Select(f => ($"{campo}.fatos", (string?)f)),
-        MunicipiosDaUf daUf => [($"{campo}.fatos", daUf.FatoUf)],
-        _ => [],
-    };
-
-    private static IEnumerable<(string Campo, string? Texto)> TextosDoPredicado(string campo, PredicadoDnf? predicado) =>
-        (predicado?.Clausulas ?? []).SelectMany(static c => c.Condicoes)
-            .SelectMany(c => new[] { (campo, (string?)c.Fato) }.Concat(TextosDoValor(c.Valor).Select(v => (campo, (string?)v))));
-
-    private static IEnumerable<string> TextosDoValor(JsonElement valor) => valor.ValueKind switch
-    {
-        JsonValueKind.String => [valor.GetString()!],
-        JsonValueKind.Array => valor.EnumerateArray().SelectMany(TextosDoValor),
-        JsonValueKind.Object => valor.EnumerateObject().SelectMany(static p => TextosDoValor(p.Value).Prepend(p.Name)),
-        _ => [],
-    };
-
-    /// <summary>
     /// O texto que o banco grava: sem caractere nulo e Unicode válido. Quem consulta o banco com um
     /// texto recebido confere isto antes, para a recusa ser a do modelo e não um erro do banco.
     /// </summary>
-    public static bool EhGravavel(string texto)
-    {
-        ArgumentNullException.ThrowIfNull(texto);
-        return !texto.Contains('\0', StringComparison.Ordinal) && TextoNormalizavel.TentarNormalizar(texto, out _);
-    }
-
-    private static IEnumerable<FieldError> NaoGravavel(string campo, string? texto)
-    {
-        if (texto is not null && !EhGravavel(texto))
-        {
-            yield return new(campo, new DomainError(
-                ModeloFormularioErrorCodes.TextoNaoGravavel, "O texto contém o caractere nulo (U+0000) ou não é Unicode válido."));
-        }
-    }
+    public static bool EhGravavel(string texto) => TextosGravaveisDoModelo.EhGravavel(texto);
 }

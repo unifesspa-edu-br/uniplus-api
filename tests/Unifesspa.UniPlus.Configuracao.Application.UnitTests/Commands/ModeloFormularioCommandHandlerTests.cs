@@ -369,15 +369,17 @@ public sealed class ModeloFormularioCommandHandlerTests
         ]);
     }
 
-    [Fact(DisplayName = "O tipo de processo é conferido na forma em que o cadastro o grava, sem normalizar a grafia")]
-    public async Task Criar_TipoNaGrafiaDoCadastro_Aceita()
+    [Fact(DisplayName = "O tipo de processo é conferido e guardado na forma em que o cadastro o grava (NFC), ainda que chegue decomposto")]
+    public async Task Criar_TipoDecomposto_ConsultaEGuardaONormalizado()
     {
-        const string Decomposto = "ADMISSA\u0303O";
-        _tipos.ObterAtivoPorCodigoAsync(Decomposto, Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.NewGuid(), Decomposto, "Admissão", null));
+        const string Composto = "ADMISSÃO";
+        _tipos.ObterAtivoPorCodigoAsync(Composto, Arg.Any<CancellationToken>()).Returns(new TipoProcessoView(Guid.NewGuid(), Composto, "Admissão", null));
 
-        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0)), tipo: $" {Decomposto} ");
+        Result<Guid> resultado = await CriarAsync(Conteudo(Item("CERTIFICADO", 0)), tipo: " ADMISSA\u0303O ");
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        await _repository.Received(1).AdicionarAsync(
+            Arg.Is<ModeloFormulario>(m => m.TipoProcessoCodigo == Composto), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Corrida de concorrência (xmin) na gravação descarta o rastreamento e devolve conflito")]
