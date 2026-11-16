@@ -55,43 +55,43 @@ public sealed class PedidoDeConcessaoVersaoTests
         PedidoDeConcessao pedido = Criar(PerfilNaVersao1(), paraSiMesmo: false);
         pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
 
-        VersaoDoPerfil nova = NovaVersao(comAcrescimo: false);
+        TrocaDeVigencia troca = NovaTroca(comAcrescimo: false);
 
-        pedido.AoEntrarEmVigor(nova, 1, comAcrescimo: false, Troca).Should().Be(DesfechoDaTrocaDeVersao.VersaoAtualizada);
+        pedido.AoEntrarEmVigor(troca, Troca).Should().Be(DesfechoDaTrocaDeVersao.VersaoAtualizada);
 
         pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
         pedido.Beneficiario.Identidade.Should().BeNull();
-        pedido.VersaoId.Should().Be(nova.Id);
-        UnicaTroca(pedido, 1, nova.Numero, DesfechoDaTrocaDeVersao.VersaoAtualizada);
+        pedido.VersaoId.Should().Be(troca.Nova.Id);
+        UnicaTroca(pedido, 1, troca.Nova.Numero, DesfechoDaTrocaDeVersao.VersaoAtualizada);
     }
 
     [Fact(DisplayName = "Sem acréscimo, o pedido que aguarda o gestor só passa para a versão nova")]
     public void AoEntrarEmVigor_SemAcrescimo_AguardandoGestor_TrocaAVersao()
     {
         PedidoDeConcessao pedido = Criar(PerfilNaVersao1(), paraSiMesmo: true);
-        VersaoDoPerfil nova = NovaVersao(comAcrescimo: false);
+        TrocaDeVigencia troca = NovaTroca(comAcrescimo: false);
 
-        pedido.AoEntrarEmVigor(nova, 1, comAcrescimo: false, Troca).Should().Be(DesfechoDaTrocaDeVersao.VersaoAtualizada);
+        pedido.AoEntrarEmVigor(troca, Troca).Should().Be(DesfechoDaTrocaDeVersao.VersaoAtualizada);
 
         pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
-        pedido.VersaoId.Should().Be(nova.Id);
+        pedido.VersaoId.Should().Be(troca.Nova.Id);
         pedido.Decisoes.Should().BeEmpty();
-        UnicaTroca(pedido, 1, nova.Numero, DesfechoDaTrocaDeVersao.VersaoAtualizada);
+        UnicaTroca(pedido, 1, troca.Nova.Numero, DesfechoDaTrocaDeVersao.VersaoAtualizada);
     }
 
     [Fact(DisplayName = "Sem acréscimo, o pedido que espera a proteção de dados volta ao gestor e perde o prazo definido")]
     public void AoEntrarEmVigor_SemAcrescimo_AguardandoProtecaoDeDados_VoltaAoGestor()
     {
         PedidoDeConcessao pedido = AguardandoProtecaoDeDados(Agora.AddDays(90));
-        VersaoDoPerfil nova = NovaVersao(comAcrescimo: false);
+        TrocaDeVigencia troca = NovaTroca(comAcrescimo: false);
 
-        pedido.AoEntrarEmVigor(nova, 1, comAcrescimo: false, Troca).Should().Be(DesfechoDaTrocaDeVersao.VoltouAoGestor);
+        pedido.AoEntrarEmVigor(troca, Troca).Should().Be(DesfechoDaTrocaDeVersao.VoltouAoGestor);
 
         pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
         pedido.Andamento.ValidaAte.Should().BeNull();
-        pedido.VersaoId.Should().Be(nova.Id);
+        pedido.VersaoId.Should().Be(troca.Nova.Id);
         pedido.Decisoes.Should().ContainSingle("a aprovação já dada fica na trilha");
-        UnicaTroca(pedido, 1, nova.Numero, DesfechoDaTrocaDeVersao.VoltouAoGestor);
+        UnicaTroca(pedido, 1, troca.Nova.Numero, DesfechoDaTrocaDeVersao.VoltouAoGestor);
     }
 
     [Fact(DisplayName = "O pedido de governança que espera o documento só passa para a versão nova e continua esperando")]
@@ -100,9 +100,9 @@ public sealed class PedidoDeConcessaoVersaoTests
         Perfil governanca = PerfisDeTeste.DeGovernanca(
             "Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], Catalogo);
         PedidoDeConcessao pedido = PedidoDeConcessao.Criar(new PartesDoPedido(Betina, null), governanca, EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
-        VersaoDoPerfil nova = NovaVersao(comAcrescimo: false);
+        TrocaDeVigencia troca = NovaTroca(comAcrescimo: false);
 
-        pedido.AoEntrarEmVigor(nova, 1, comAcrescimo: false, Troca).Should().Be(DesfechoDaTrocaDeVersao.VersaoAtualizada);
+        pedido.AoEntrarEmVigor(troca, Troca).Should().Be(DesfechoDaTrocaDeVersao.VersaoAtualizada);
 
         pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
     }
@@ -114,15 +114,15 @@ public sealed class PedidoDeConcessaoVersaoTests
     public void AoEntrarEmVigor_ComAcrescimo_Devolve(SituacaoDoPedido situacao)
     {
         PedidoDeConcessao pedido = PedidoEm(situacao, out Guid versaoDoPedido);
-        VersaoDoPerfil nova = NovaVersao(comAcrescimo: true);
+        TrocaDeVigencia troca = NovaTroca(comAcrescimo: true);
 
-        pedido.AoEntrarEmVigor(nova, 1, comAcrescimo: true, Troca).Should().Be(DesfechoDaTrocaDeVersao.Devolvido);
+        pedido.AoEntrarEmVigor(troca, Troca).Should().Be(DesfechoDaTrocaDeVersao.Devolvido);
 
         pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.Devolvido);
         pedido.Andamento.EncerradoEm.Should().Be(Troca);
         pedido.Andamento.Ativo.Should().BeFalse();
         pedido.VersaoId.Should().Be(versaoDoPedido, "o pedido nunca chegou a seguir a versão nova");
-        UnicaTroca(pedido, 1, nova.Numero, DesfechoDaTrocaDeVersao.Devolvido);
+        UnicaTroca(pedido, 1, troca.Nova.Numero, DesfechoDaTrocaDeVersao.Devolvido);
     }
 
     [Theory(DisplayName = "O pedido que já terminou fica como está e não grava troca")]
@@ -137,7 +137,7 @@ public sealed class PedidoDeConcessaoVersaoTests
         DateTimeOffset? encerradoEm = pedido.Andamento.EncerradoEm;
         int trocasAntes = pedido.TrocasDeVersao.Count;
 
-        pedido.AoEntrarEmVigor(NovaVersao(comAcrescimo: true), 1, comAcrescimo: true, Troca)
+        pedido.AoEntrarEmVigor(NovaTroca(comAcrescimo: true), Troca)
             .Should().Be(DesfechoDaTrocaDeVersao.Inalterado);
 
         pedido.Andamento.Situacao.Should().Be(terminal);
@@ -212,14 +212,15 @@ public sealed class PedidoDeConcessaoVersaoTests
     }
 
     private static bool EncerrarDevolvido(PedidoDeConcessao pedido) =>
-        pedido.AoEntrarEmVigor(NovaVersao(comAcrescimo: true), 1, comAcrescimo: true, Agora) == DesfechoDaTrocaDeVersao.Devolvido;
+        pedido.AoEntrarEmVigor(NovaTroca(comAcrescimo: true), Agora) == DesfechoDaTrocaDeVersao.Devolvido;
 
-    private static VersaoDoPerfil NovaVersao(bool comAcrescimo)
+    private static TrocaDeVigencia NovaTroca(bool comAcrescimo)
     {
         Perfil perfil = PerfisDeTeste.Vigente("Acompanhamento", "Acompanha os atendimentos.", [Consultar], Catalogo);
+        VersaoDoPerfil anterior = perfil.VersaoVigente!;
         PerfisDeTeste.NovaVersaoVigente(perfil, comAcrescimo ? [Consultar, Analisar] : [Consultar], Catalogo);
 
-        return perfil.VersaoVigente!;
+        return new TrocaDeVigencia(anterior, perfil.VersaoVigente!);
     }
 
     private static Perfil PerfilNaVersao1() =>

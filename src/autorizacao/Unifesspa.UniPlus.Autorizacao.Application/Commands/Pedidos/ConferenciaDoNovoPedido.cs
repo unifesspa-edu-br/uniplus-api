@@ -59,15 +59,12 @@ public sealed class ConferenciaDoNovoPedido
 
         DateTimeOffset agora = _clock.GetUtcNow();
         Result<PedidoDeConcessao> criado = PedidoDeConcessao.Criar(
-            new PartesDoPedido(solicitante, command.BeneficiarioEmail), lido.Value!, Escopo(command.UnidadeId), Declaracao(command), _dominios, _catalogo, agora);
+            new PartesDoPedido(solicitante, command.BeneficiarioEmail), lido.Value!, EscopoDaConcessao.Da(command.UnidadeId), Declaracao(command), _dominios, _catalogo, agora);
 
         return criado.IsFailure
             ? Result<NovoPedido>.ValidationFailure(criado.Errors)
             : await ConcluirAsync(command, new NovoPedido(criado.Value!, lido.Value!), agora, cancellationToken).ConfigureAwait(false);
     }
-
-    private static EscopoDaConcessao Escopo(Guid? unidadeId) =>
-        unidadeId is { } unidade ? EscopoDaConcessao.DaUnidade(unidade) : EscopoDaConcessao.DaInstituicao();
 
     private static DeclaracaoDoPedido Declaracao(CriarPedidoDeConcessaoCommand command) =>
         new(command.Justificativa ?? string.Empty, command.ValidaAteSugerida, command.AnexaraDocumento);

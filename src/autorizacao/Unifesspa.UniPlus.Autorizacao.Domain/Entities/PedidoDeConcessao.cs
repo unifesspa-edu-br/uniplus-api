@@ -64,9 +64,7 @@ public sealed class PedidoDeConcessao : EntityBase
 
     public IReadOnlyList<AnexoDoPedido> Anexos => _anexos;
 
-    public EscopoDaConcessao Escopo => UnidadeId is { } unidade
-        ? EscopoDaConcessao.DaUnidade(unidade)
-        : EscopoDaConcessao.DaInstituicao();
+    public EscopoDaConcessao Escopo => EscopoDaConcessao.Da(UnidadeId);
 
     // Construtor de materialização do EF Core.
     private PedidoDeConcessao()
@@ -186,7 +184,7 @@ public sealed class PedidoDeConcessao : EntityBase
     {
         ArgumentNullException.ThrowIfNull(pessoa);
 
-        DomainError? recusaDoAceite = RecusaDaSituacaoNoAceite() ?? Beneficiario.RecusaDoAceite(pessoa, BeneficiarioEmail);
+        DomainError? recusaDoAceite = Andamento.RecusaDoAceite() ?? Beneficiario.RecusaDoAceite(pessoa, BeneficiarioEmail);
         Result? recusa = recusaDoAceite is { } erro ? Result.Failure(erro) : ApresentacaoDoTermo.Conferir(termoApresentado, Termo?.VersaoId);
         if (recusa is not null)
         {
@@ -208,15 +206,6 @@ public sealed class PedidoDeConcessao : EntityBase
         return Solicitante.Eh(pessoa.Identidade)
             || Beneficiario.Reconhece(pessoa, BeneficiarioEmail);
     }
-
-    private DomainError? RecusaDaSituacaoNoAceite() => Andamento.Situacao switch
-    {
-        SituacaoDoPedido.AguardandoBeneficiario => null,
-        SituacaoDoPedido.AguardandoDocumento => new DomainError(
-            PedidoErrorCodes.AnexoNaoVerificado,
-            "O documento declarado ainda não foi verificado; o aceite e a decisão esperam a verificação."),
-        _ => SituacaoInvalida("O pedido não aguarda o aceite do beneficiário."),
-    };
 
     /// <summary>A versão fixada na criação, com número e resumo; nula no pedido que não exige termo.</summary>
     public TermoFixado? Termo { get; private set; }
@@ -367,16 +356,21 @@ public sealed class PedidoDeConcessao : EntityBase
             return Result<DesfechoDaAprovacao>.ValidationFailure(erros);
         }
 
-        // Defesa contra estado corrompido: a máquina de estados não leva ao gestor o pedido com termo e sem aceite.
-        if (Termo is not null && AceiteDoTermo is null)
+        if (RecusaDoTermoSemAceite() is { } recusa)
         {
-            return Result<DesfechoDaAprovacao>.Failure(SituacaoInvalida("O pedido com termo fixado só se decide depois do aceite do beneficiário."));
+            return Result<DesfechoDaAprovacao>.Failure(recusa);
         }
 
         return aprovacao.Devolucao(_decisoes, Andamento, Termo) is { } devolucao
             ? Result<DesfechoDaAprovacao>.Failure(Devolver(aprovacao, devolucao))
             : RegistrarAprovacao(aprovacao);
     }
+
+    // Defesa contra estado corrompido: a máquina de estados não leva ao gestor o pedido com termo e sem aceite.
+    private DomainError? RecusaDoTermoSemAceite() =>
+        Termo is not null && AceiteDoTermo is null
+            ? SituacaoInvalida("O pedido com termo fixado só se decide depois do aceite do beneficiário.")
+            : null;
 
     private Result RecusarNaEtapa(RecusaNaEtapa recusa)
     {
@@ -407,12 +401,7 @@ public sealed class PedidoDeConcessao : EntityBase
         _decisoes.Add(DecisaoDoPedido.Registrar(
             Id, aprovacao.Etapa, aprovacao.Ato, ResultadoDaDecisao.Aprovado, null, aprovacao.Perfil, aprovacao.Dispensa));
 
-        if (aprovacao.Etapa == EtapaDoPedido.Gestor)
-        {
-            Andamento = Andamento.ComPrazo(aprovacao.ValidaAte);
-        }
-
-        Andamento = aprovacao.Conclui ? Andamento.Encerrado(SituacaoDoPedido.Aprovado, aprovacao.Instante) : Andamento.Em(SituacaoDoPedido.AguardandoProtecaoDeDados);
+        Andamento = Andamento.DepoisDaAprovacao(aprovacao);
 
         return Result<DesfechoDaAprovacao>.Success(aprovacao.Desfecho);
     }
@@ -429,21 +418,19 @@ public sealed class PedidoDeConcessao : EntityBase
     /// pode seguir com permissão que ninguém aprovou. Sem acréscimo, a aprovação do gestor que já tinha sido dada perde
     /// o efeito e o pedido volta a ele; nas demais etapas o pedido só passa para a versão nova. Cada efeito grava uma troca.
     /// </summary>
-    /// <param name="nova">A versão que entrou em vigor.</param>
-    /// <param name="numeroAnterior">O número da versão que deixou de ser a em vigor.</param>
-    /// <param name="comAcrescimo">A versão nova acrescenta permissão à anterior.</param>
-    public DesfechoDaTrocaDeVersao AoEntrarEmVigor(VersaoDoPerfil nova, int numeroAnterior, bool comAcrescimo, DateTimeOffset instante)
+    public DesfechoDaTrocaDeVersao AoEntrarEmVigor(TrocaDeVigencia troca, DateTimeOffset instante)
     {
-        ArgumentNullException.ThrowIfNull(nova);
+        ArgumentNullException.ThrowIfNull(troca);
 
         if (!Andamento.Ativo)
         {
             return DesfechoDaTrocaDeVersao.Inalterado;
         }
 
-        DesfechoDaTrocaDeVersao desfecho = Andamento.DesfechoDaTroca(comAcrescimo);
-        Aplicar(desfecho, nova, instante);
-        _trocasDeVersao.Add(TrocaDeVersaoDoPedido.Registrar(Id, numeroAnterior, nova.Numero, desfecho, instante));
+        DesfechoDaTrocaDeVersao desfecho = Andamento.DesfechoDaTroca(troca.TemAcrescimo);
+        Andamento = Andamento.DepoisDaTroca(desfecho, instante);
+        VersaoId = desfecho == DesfechoDaTrocaDeVersao.Devolvido ? VersaoId : troca.Nova.Id;
+        _trocasDeVersao.Add(TrocaDeVersaoDoPedido.Registrar(Id, troca.Anterior!.Numero, troca.Nova.Numero, desfecho, instante));
 
         return desfecho;
     }
@@ -461,22 +448,6 @@ public sealed class PedidoDeConcessao : EntityBase
         {
             throw new InvalidOperationException(
                 $"O pedido {Id} segue a versão {VersaoId} e o perfil {perfil.Id} tem outra em vigor.");
-        }
-    }
-
-    private void Aplicar(DesfechoDaTrocaDeVersao desfecho, VersaoDoPerfil nova, DateTimeOffset instante)
-    {
-        if (desfecho == DesfechoDaTrocaDeVersao.Devolvido)
-        {
-            Andamento = Andamento.Encerrado(SituacaoDoPedido.Devolvido, instante);
-            return;
-        }
-
-        VersaoId = nova.Id;
-
-        if (desfecho == DesfechoDaTrocaDeVersao.VoltouAoGestor)
-        {
-            Andamento = Andamento.DeVoltaAoGestor();
         }
     }
 }

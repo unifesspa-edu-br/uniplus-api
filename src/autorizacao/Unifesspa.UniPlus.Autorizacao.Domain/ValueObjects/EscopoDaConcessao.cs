@@ -10,5 +10,8 @@ public sealed record EscopoDaConcessao(TipoDeEscopo Tipo, Guid? UnidadeId)
 {
     public static EscopoDaConcessao DaUnidade(Guid unidadeId) => new(TipoDeEscopo.Unidade, unidadeId);
 
+    /// <summary>O escopo da unidade, ou o da instituição quando não há unidade.</summary>
+    public static EscopoDaConcessao Da(Guid? unidadeId) => unidadeId is { } unidade ? DaUnidade(unidade) : DaInstituicao();
+
     public static EscopoDaConcessao DaInstituicao() => new(TipoDeEscopo.Instituicao, null);
 }
