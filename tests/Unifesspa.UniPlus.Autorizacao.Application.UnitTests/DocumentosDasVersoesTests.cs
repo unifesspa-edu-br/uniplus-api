@@ -62,8 +62,8 @@ public sealed class DocumentosDasVersoesTests
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         Cenario cenario = new(perfil);
         DocumentoDaVersao recusado = perfil.VersaoPendente!.Documento!;
-        perfil.ConfirmarDocumento(perfil.VersaoPendente.Id, "etag", PerfisDeTeste.Instante);
-        perfil.RegistrarDocumentoRecusado(recusado.Id, PerfisDeTeste.Instante);
+        DocumentosDoPerfil.Confirmar(perfil, perfil.VersaoPendente.Id, "etag", PerfisDeTeste.Instante);
+        DocumentosDoPerfil.RegistrarRecusado(perfil, recusado.Id, PerfisDeTeste.Instante);
 
         Result<EnvioDoDocumentoDto> resultado = await cenario.Documentos.NovoAsync(perfil.Id, perfil.VersaoPendente.Id, 4096, CancellationToken.None);
 

@@ -82,8 +82,8 @@ public sealed class ResultadoDoDocumentoDaVersao
     private static DesfechoDoResultadoDaVersao Aplicar(Perfil perfil, ResultadoDaVerificacaoDeArquivo resultado, DateTimeOffset agora)
     {
         bool aplicado = resultado.Veredicto == VeredictoDaVerificacao.Verificado
-            ? perfil.RegistrarDocumentoVerificado(resultado.ArquivoId, resultado.HashSha256!, agora)
-            : perfil.RegistrarDocumentoRecusado(resultado.ArquivoId, agora);
+            ? DocumentosDoPerfil.RegistrarVerificado(perfil, resultado.ArquivoId, resultado.HashSha256!, agora)
+            : DocumentosDoPerfil.RegistrarRecusado(perfil, resultado.ArquivoId, agora);
 
         return aplicado ? DesfechoDoResultadoDaVersao.Aplicado : DesfechoDoResultadoDaVersao.Ignorado;
     }

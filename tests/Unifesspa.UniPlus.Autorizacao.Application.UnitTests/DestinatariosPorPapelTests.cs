@@ -118,8 +118,8 @@ public sealed class DestinatariosPorPapelTests
         CatalogoMutavelDeTeste catalogo = new();
         Perfil perfil = PerfisDeTeste.Pendente("Acompanhamento", "Acompanha os processos.", [CatalogoMutavelDeTeste.Dados], catalogo);
         VersaoDoPerfil versao = perfil.VersaoPendente!;
-        DocumentoDaVersao documento = PerfisDeTeste.Garantir(perfil.ConfirmarDocumento(versao.Id, "etag", PerfisDeTeste.Instante));
-        perfil.RegistrarDocumentoVerificado(documento.Id, new string('a', 64), PerfisDeTeste.Instante).Should().BeTrue();
+        DocumentoDaVersao documento = PerfisDeTeste.Garantir(DocumentosDoPerfil.Confirmar(perfil, versao.Id, "etag", PerfisDeTeste.Instante));
+        DocumentosDoPerfil.RegistrarVerificado(perfil, documento.Id, new string('a', 64), PerfisDeTeste.Instante).Should().BeTrue();
         PerfisDeTeste.Decidir(perfil, versao, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.Autoria(PerfisDeTeste.Gestor), catalogo).Concluida.Should().BeTrue();
 
         return perfil;

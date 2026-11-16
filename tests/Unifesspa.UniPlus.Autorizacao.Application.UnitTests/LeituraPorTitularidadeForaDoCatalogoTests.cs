@@ -60,8 +60,8 @@ public sealed class LeituraPorTitularidadeForaDoCatalogoTests
     private static VersaoDoPerfil ComDocumentoVerificado(Perfil perfil)
     {
         VersaoDoPerfil versao = perfil.VersaoPendente!;
-        DocumentoDaVersao documento = PerfisDeTeste.Garantir(perfil.ConfirmarDocumento(versao.Id, "etag-de-teste", PerfisDeTeste.Instante));
-        perfil.RegistrarDocumentoVerificado(documento.Id, new string('a', 64), PerfisDeTeste.Instante);
+        DocumentoDaVersao documento = PerfisDeTeste.Garantir(DocumentosDoPerfil.Confirmar(perfil, versao.Id, "etag-de-teste", PerfisDeTeste.Instante));
+        DocumentosDoPerfil.RegistrarVerificado(perfil, documento.Id, new string('a', 64), PerfisDeTeste.Instante);
 
         return versao;
     }

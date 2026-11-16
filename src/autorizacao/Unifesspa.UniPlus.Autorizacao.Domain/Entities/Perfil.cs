@@ -134,7 +134,7 @@ public sealed partial class Perfil : EntityBase
         return AlcanceDasPermissoes.De(ComposicaoEmVigor, catalogo);
     }
 
-    private Result<VersaoDoPerfil> ObterVersao(Guid versaoId) =>
+    internal Result<VersaoDoPerfil> ObterVersao(Guid versaoId) =>
         _versoes.Find(v => v.Id == versaoId) is { } versao
             ? Result<VersaoDoPerfil>.Success(versao)
             : Result<VersaoDoPerfil>.Failure(PerfilErros.VersaoNaoEncontrada());

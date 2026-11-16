@@ -142,8 +142,8 @@ public static class PerfisDeTeste
         ArgumentNullException.ThrowIfNull(perfil);
 
         VersaoDoPerfil versao = perfil.VersaoPendente!;
-        DocumentoDaVersao documento = Garantir(perfil.ConfirmarDocumento(versao.Id, "etag-de-teste", Instante));
-        perfil.RegistrarDocumentoVerificado(documento.Id, new string('a', 64), Instante);
+        DocumentoDaVersao documento = Garantir(DocumentosDoPerfil.Confirmar(perfil, versao.Id, "etag-de-teste", Instante));
+        DocumentosDoPerfil.RegistrarVerificado(perfil, documento.Id, new string('a', 64), Instante);
 
         DesfechoDaVersao desfecho = Decidir(perfil, versao, EtapaDaVersao.GestaoDeAcessos, AutoriaDoGestor, catalogo);
 

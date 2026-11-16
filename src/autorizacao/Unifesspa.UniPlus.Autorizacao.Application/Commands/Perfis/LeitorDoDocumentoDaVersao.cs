@@ -93,6 +93,6 @@ public sealed class LeitorDoDocumentoDaVersao
 
         return perfil is null
             ? Result<DocumentoDaVersao>.Failure(PerfilHandlerErros.NaoEncontrado(perfilId))
-            : perfil.DocumentoParaLeitura(versaoId);
+            : DocumentosDoPerfil.ParaLeitura(perfil, versaoId);
     }
 }

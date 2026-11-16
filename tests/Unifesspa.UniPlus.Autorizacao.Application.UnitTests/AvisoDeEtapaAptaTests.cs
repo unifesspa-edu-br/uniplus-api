@@ -107,10 +107,10 @@ public sealed class AvisoDeEtapaAptaTests
         CatalogoMutavelDeTeste catalogo = new();
         Perfil perfil = PerfisDeTeste.Pendente("Acompanhamento", "Acompanha os processos.", [Dados], catalogo);
         VersaoDoPerfil versao = perfil.VersaoPendente!;
-        DocumentoDaVersao documento = PerfisDeTeste.Garantir(perfil.ConfirmarDocumento(versao.Id, "etag", PerfisDeTeste.Instante));
+        DocumentoDaVersao documento = PerfisDeTeste.Garantir(DocumentosDoPerfil.Confirmar(perfil, versao.Id, "etag", PerfisDeTeste.Instante));
         if (verificar)
         {
-            perfil.RegistrarDocumentoVerificado(documento.Id, Sha, PerfisDeTeste.Instante).Should().BeTrue();
+            DocumentosDoPerfil.RegistrarVerificado(perfil, documento.Id, Sha, PerfisDeTeste.Instante).Should().BeTrue();
         }
 
         return (perfil, versao);
