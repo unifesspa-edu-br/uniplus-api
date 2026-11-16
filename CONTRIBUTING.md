@@ -46,6 +46,24 @@ novo não altera o estado. Para trocar uma porta ou subir um segundo ambiente, e
 `COMPOSE_PROJECT_NAME`) no `.env`. Detalhes e o procedimento manual em
 [`docs/guia-instalacao-gestores-ambiente-local.md`](docs/guia-instalacao-gestores-ambiente-local.md).
 
+#### Base local pronta e o que invalida os dumps
+
+O ambiente sobe com uma base pronta, restaurada na primeira subida a partir dos dumps de `docker/base-local`
+(descrição em [`docs/setup-ambiente-local.md`](docs/setup-ambiente-local.md)). Os dumps guardam o estado do banco da
+migration, do Keycloak, dos perfis e das portas do dia em que foram gerados. O PR que mudar qualquer um destes precisa
+**regerar os dumps de `docker/base-local` e refazer a prova do compose** (`cp .env.example .env` e `docker compose up` em
+projeto limpo: API saudável, logins, perfis, processos e Geo):
+
+- **a migration:** regerá-la (o que o projeto faz quando o modelo muda). A migration nova tem outro nome, a API sobe sobre o banco restaurado,
+  enxerga a antiga, que não existe mais no código, tenta aplicar a nova sobre tabelas existentes e o `docker compose up` deixa de funcionar.
+  Uma migration incremental criada sobre a atual se aplica sobre o dump sem esse problema, mas regere os dumps assim mesmo para a base
+  refletir o modelo;
+- **o Keycloak:** realm, clients, `docker/keycloak/personas.json` ou as contas técnicas;
+- **os perfis e as permissões:** o catálogo, os perfis de operação e as concessões estão no dump;
+- **as portas e as credenciais gravadas nos dumps:** `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`, `KEYCLOAK_PORT`, `MINIO_PORT` e as
+  quatro `*_WEB_PORT`. O restaurador recusa a subida quando o `.env` tem outros valores, e a lista dele precisa acompanhar qualquer variável
+  nova que entre em dado gravado.
+
 ### Subir a stack completa (backend + frontend)
 
 Para subir **tudo** — infra + as 3 APIs + o gateway + os 4 frontends Angular
