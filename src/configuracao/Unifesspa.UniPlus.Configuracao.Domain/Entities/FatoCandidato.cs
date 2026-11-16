@@ -14,7 +14,6 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 
 using static Unifesspa.UniPlus.Configuracao.Domain.Entities.ConferenciaDaDefinicaoDoFato;
-using static Unifesspa.UniPlus.Configuracao.Domain.Entities.CriacaoDoFato;
 
 /// <summary>
 /// Um fato do candidato no catálogo <c>fatos_do_candidato</c> (UNI-REQ-0143, ADR-0136):
@@ -188,101 +187,6 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     }
 
     /// <summary>
-    /// Factory canônica: valida o código, o nome, o domínio, a origem, a cardinalidade, a fonte
-    /// dos valores, o formato, o ponto de resolução, o vínculo, o escopo e a proteção de dados. As
-    /// violações independentes são acumuladas (ADR-0125); a que depende de outro campo só é
-    /// conferida quando esse campo é válido.
-    /// </summary>
-    public static Result<FatoCandidato> Criar(
-        string codigo,
-        string nome,
-        string? descricao,
-        DominioFato dominio,
-        OrigemFato origem,
-        CardinalidadeFato cardinalidade,
-        FonteValoresFato? fonteValores,
-        FormatoTexto? formato,
-        string pontoResolucao,
-        string binding,
-        EscopoFato escopo,
-        ClassificacaoDeProtecao classificacaoProtecao,
-        string finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal,
-        bool sistema,
-        ComponenteDeExibicao? componenteExibicao = null) =>
-        CriacaoDoFato.Criar(
-            codigo, nome, descricao, dominio, origem, cardinalidade, fonteValores, formato, pontoResolucao, binding,
-            escopo, classificacaoProtecao, finalidadeTratamento, hipoteseLegal, sistema, componenteExibicao);
-
-    /// <summary>
-    /// Cadastro de fato pelo administrador (ADR-0136): sempre declarado, com o vínculo ao campo de
-    /// formulário gerado a partir do código, e nunca de sistema.
-    /// </summary>
-    public static Result<FatoCandidato> CriarDoAdministrador(
-        string codigo,
-        string nome,
-        string? descricao,
-        DominioFato dominio,
-        CardinalidadeFato cardinalidade,
-        FonteValoresFato? fonteValores,
-        FormatoTexto? formato,
-        string pontoResolucao,
-        EscopoFato escopo,
-        ClassificacaoDeProtecao classificacaoProtecao,
-        string finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal,
-        ComponenteDeExibicao? componenteExibicao = null) =>
-        CriacaoDoFato.CriarDoAdministrador(
-            codigo, nome, descricao, dominio, cardinalidade, fonteValores, formato, pontoResolucao, escopo,
-            classificacaoProtecao, finalidadeTratamento, hipoteseLegal, componenteExibicao);
-
-    /// <summary>
-    /// Cadastro de derivado por regra pelo administrador (ADR-0136): booleano, verdadeiro quando
-    /// alguma regra ativa, ou categórico de valores próprios, com a união das contribuições. As
-    /// regras padrão vêm depois, por <see cref="DefinirRegrasPadrao"/>, porque citam os valores que
-    /// o categórico ainda vai receber.
-    /// </summary>
-    public static Result<FatoCandidato> CriarDerivadoDoAdministrador(
-        string codigo,
-        string nome,
-        string? descricao,
-        DominioFato dominio,
-        string pontoResolucao,
-        EscopoFato escopo,
-        ClassificacaoDeProtecao classificacaoProtecao,
-        string finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal,
-        ComponenteDeExibicao? componenteExibicao = null) =>
-        CriacaoDoFato.CriarDerivadoDoAdministrador(
-            codigo, nome, descricao, dominio, pontoResolucao, escopo, classificacaoProtecao, finalidadeTratamento,
-            hipoteseLegal, componenteExibicao);
-
-    /// <summary>
-    /// Cadastro do agregado sobre grupo repetível pelo administrador (ADR-0138, UNI-REQ-0146): o
-    /// vínculo <c>AGREGACAO_GRUPO:</c> aponta o fato de membro, que precisa existir, estar ativo e ser
-    /// fato declarado de membro de grupo de domínio que agrega. O domínio, a cardinalidade e a fonte
-    /// dos valores saem do fato de membro — booleano dá "existe membro que…", categórico dá "valores
-    /// presentes" —, e o agregado não tem valores próprios. Não protege menos nem resolve antes do
-    /// fato de membro. As recusas se acumulam (ADR-0125); sem fato de membro válido, as que
-    /// dependem dele não são conferidas.
-    /// </summary>
-    public static Result<FatoCandidato> CriarAgregadoDoAdministrador(
-        string codigo,
-        string nome,
-        string? descricao,
-        string fatoDeMembroCodigo,
-        CatalogoDeFatos catalogo,
-        string pontoResolucao,
-        ClassificacaoDeProtecao classificacaoProtecao,
-        string finalidadeTratamento,
-        HipoteseLegalTratamento hipoteseLegal,
-        ComponenteDeExibicao? componenteExibicao = null) =>
-        CriacaoDoFato.CriarAgregadoDoAdministrador(
-            codigo, nome, descricao, fatoDeMembroCodigo, catalogo, pontoResolucao, classificacaoProtecao,
-            finalidadeTratamento, hipoteseLegal, componenteExibicao);
-
-
-    /// <summary>
     /// Substitui as regras padrão do derivado por regra do administrador, conferidas contra o
     /// catálogo (<see cref="ValidadorRegrasPadrao"/>). Lista vazia remove as regras.
     /// </summary>
@@ -291,19 +195,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         ArgumentNullException.ThrowIfNull(regras);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        if (RecusaSeSistema() is { } recusa)
-        {
-            return Result.Failure(recusa);
-        }
-
-        if (!DerivadoPorRegra)
-        {
-            return Result.Failure(new DomainError(
-                FatoCandidatoErrorCodes.RegrasPadraoSoEmDerivadoPorRegra,
-                "Só o fato derivado por regra tem regras padrão."));
-        }
-
-        Result validacao = ValidadorRegrasPadrao.Validar(this, regras, catalogo);
+        Result validacao = ConferenciaDasRegrasPadraoDoFato.Conferir(this, regras, catalogo);
         if (validacao.IsFailure)
         {
             return validacao;
@@ -356,73 +248,15 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         ArgumentNullException.ThrowIfNull(definicao);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        return SemeadoPeloSistema ? AlterarProtecaoDoFatoDeSistema(definicao, catalogo) : AlterarDefinicaoDoFatoDoAdministrador(definicao, catalogo);
+        return SemeadoPeloSistema
+            ? RedefinicaoDoFato.DoFatoDeSistema(this, definicao, catalogo)
+            : RedefinicaoDoFato.DoAdministrador(this, definicao, catalogo);
     }
-
-    private Result AlterarDefinicaoDoFatoDoAdministrador(DefinicaoDoFato definicao, CatalogoDeFatos catalogo)
-    {
-        ProtecaoDeDados protecaoAnterior = Protecao;
-        EixosDaDefinicao anteriores = Eixos;
-        List<FieldError> erros = ErrosDaProposta(new ConferenciaDaRedefinicaoDoFato(definicao, this).Propor(), catalogo);
-        if (erros.Count > 0)
-        {
-            AplicarEixos(anteriores);
-            return Result.ValidationFailure(erros);
-        }
-
-        Aprovacao.AoEditarItem(Protecao != protecaoAnterior);
-        return Result.Success();
-    }
-
-    private List<FieldError> ErrosDaProposta(PropostaDaRedefinicao proposta, CatalogoDeFatos catalogo) =>
-    [
-        .. proposta.Erros,
-        .. ConferenciaDasDependenciasDoFato.NovasRecusas(
-            this, catalogo, () => AplicarEixos(proposta.Propostos), proposta.PontoValido, proposta.ProtecaoValida),
-    ];
 
     /// <summary>A proteção de dados do fato: a classificação, a finalidade e a hipótese legal.</summary>
     public ProtecaoDeDados Protecao => new(ClassificacaoProtecao, FinalidadeTratamento, HipoteseLegal);
 
-    private Result AlterarProtecaoDoFatoDeSistema(DefinicaoDoFato definicao, CatalogoDeFatos catalogo)
-    {
-        if (RedefinicaoDoFatoDeSistema.Recusa(definicao, Eixos) is { } recusa)
-        {
-            return recusa;
-        }
-
-        ProtecaoDeDados anterior = Protecao;
-        Result troca = TrocarProtecao(definicao.ClassificacaoProtecao, definicao.FinalidadeTratamento, definicao.HipoteseLegal, catalogo);
-        if (troca.IsFailure)
-        {
-            return troca;
-        }
-
-        Aprovacao.AoEditarItem(Protecao != anterior);
-        return Result.Success();
-    }
-
-    /// <summary>
-    /// Troca a proteção do fato conferindo o que ele próprio exige — o mínimo do domínio e a coerência da
-    /// hipótese com a classificação — e o que depende dele: só a recusa que a troca causa conta (ADR-0125).
-    /// O fato não muda quando há recusa. Quem chama decide o que a troca faz com a aprovação.
-    /// </summary>
-    private Result TrocarProtecao(
-        ClassificacaoDeProtecao classificacao, string finalidade, HipoteseLegalTratamento hipotese, CatalogoDeFatos catalogo)
-    {
-        Result<ProtecaoDeDados> protecao = ValidarProtecao(Dominio, classificacao, finalidade, hipotese);
-        if (protecao.IsFailure)
-        {
-            return Result.ValidationFailure(protecao.Errors);
-        }
-
-        ProtecaoDeDados anterior = Protecao;
-        List<FieldError> novas = ConferenciaDasDependenciasDoFato.NovasRecusas(this, catalogo, () => AplicarProtecao(protecao.Value));
-        AplicarProtecao(novas.Count == 0 ? protecao.Value : anterior);
-        return novas.Count == 0 ? Result.Success() : Result.ValidationFailure(novas);
-    }
-
-    private void AplicarProtecao(ProtecaoDeDados protecao)
+    internal void AplicarProtecao(ProtecaoDeDados protecao)
     {
         ClassificacaoProtecao = protecao.Classificacao;
         FinalidadeTratamento = protecao.Finalidade;
@@ -439,23 +273,8 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// A proteção de dados recomenda o ajuste da proteção do fato e indica a classificação correta, que precisa
     /// respeitar o mínimo do domínio do fato.
     /// </summary>
-    public Result RecomendarAjusteDaProtecao(ClassificacaoDeProtecao recomendada, string? justificativa, string ator, DateTimeOffset em)
-    {
-        Result recusa = AprovacaoDaProtecao.ConferirRecomendacao(recomendada, ClassificacaoProtecao, HipoteseLegal);
-        if (recusa.IsFailure)
-        {
-            return recusa;
-        }
-
-        Result<ProtecaoDeDados> noMinimoDoDominio = ValidarProtecao(
-            Dominio, recomendada, FinalidadeTratamento, HipoteseLegal);
-        if (noMinimoDoDominio.Errors.FirstOrDefault(static e => e.Field == "classificacaoProtecao") is { } abaixo)
-        {
-            return Result.ValidationFailure([abaixo with { Field = "classificacaoRecomendada" }]);
-        }
-
-        return Aprovacao.RecomendarAjuste(recomendada, justificativa, ator, em);
-    }
+    public Result RecomendarAjusteDaProtecao(ClassificacaoDeProtecao recomendada, string? justificativa, string ator, DateTimeOffset em) =>
+        TrocaDaProtecaoDoFato.Recomendar(this, recomendada, justificativa, ator, em);
 
     /// <summary>A proteção de dados reprova a proteção do fato, sem recomendar classificação, e explica o motivo.</summary>
     public Result ReprovarProtecao(string? justificativa, string ator, DateTimeOffset em) => Aprovacao.Reprovar(justificativa, ator, em);
@@ -470,19 +289,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     {
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        Result<ClassificacaoDeProtecao> recomendada = Aprovacao.RecomendacaoAAceitar();
-        if (recomendada.IsFailure)
-        {
-            return Result.Failure(recomendada.Error!);
-        }
-
-        Result troca = TrocarProtecao(recomendada.Value, FinalidadeTratamento, HipoteseLegal, catalogo);
-        if (troca.IsFailure)
-        {
-            return troca;
-        }
-
-        return Aprovacao.AceitarRecomendacao(recomendada.Value, ator, em);
+        return TrocaDaProtecaoDoFato.Aceitar(this, ator, em, catalogo);
     }
 
     /// <summary>

@@ -81,7 +81,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     [Fact(DisplayName = "O derivado por regra do catálogo é resolvido com as respostas e decide a exibição")]
     public async Task Handle_DerivadoDoCatalogo_DecideAExibicao()
     {
-        FatoCandidato perfil = FatoCandidato.CriarDerivadoDoAdministrador(
+        FatoCandidato perfil = CriacaoDoFato.CriarDerivadoDoAdministrador(
             "PERFIL", "Perfil", "Descrição do fato.", DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         perfil.DefinirRegrasPadrao([RegraDerivacao.CriarBooleana(Quando("CERTIFICADO", true))], new CatalogoDeFatos([_certificado, perfil], []))
             .IsSuccess.Should().BeTrue();
@@ -141,7 +141,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
     [Fact(DisplayName = "A resposta fora das opções que o catálogo oferta não vale, como no renderizável que o front interpreta")]
     public async Task Handle_RespostaForaDaOferta_NaoVale()
     {
-        FatoCandidato cor = FatoCandidato.CriarDoAdministrador(
+        FatoCandidato cor = CriacaoDoFato.CriarDoAdministrador(
             "COR_RACA", "Cor ou raça", "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Global, null, "INSCRICAO",
             EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese).Value!;
         cor.AdicionarValorDominio("PRETA", "Preta", 0, ativo: true).IsSuccess.Should().BeTrue();
@@ -235,7 +235,7 @@ public sealed class PreVisualizarModeloFormularioQueryHandlerTests
         PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!)]).Value!;
 
     private static FatoCandidato Declarado(string codigo) =>
-        FatoCandidato.CriarDoAdministrador(
+        CriacaoDoFato.CriarDoAdministrador(
             codigo, codigo, "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
 }

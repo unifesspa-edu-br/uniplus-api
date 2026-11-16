@@ -268,7 +268,7 @@ public sealed class SementePsrMedicina2027Tests
     {
         SementePsrMedicina2027.FatoDaSemente invalido = new(
             99,
-            _ => FatoCandidato.CriarDoAdministrador(
+            _ => CriacaoDoFato.CriarDoAdministrador(
                 "codigo fora do padrao", "Fato inválido", "Descrição", DominioFato.Booleano, CardinalidadeFato.Escalar,
                 null, null, "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Finalidade",
                 HipoteseLegalTratamento.CumprimentoObrigacaoLegal),

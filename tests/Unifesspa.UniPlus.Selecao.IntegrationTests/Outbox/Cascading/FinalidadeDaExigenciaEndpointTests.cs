@@ -77,7 +77,7 @@ public sealed class FinalidadeDaExigenciaEndpointTests
     /// <summary>Grava no catálogo o fato da isenção e o tipo de documento; devolve o tipo de documento.</summary>
     private async Task<Guid> SemearCatalogoAsync(string fato, string codigoDoDocumento)
     {
-        FatoCandidato bolsista = FatoCandidato.CriarDoAdministrador(
+        FatoCandidato bolsista = CriacaoDoFato.CriarDoAdministrador(
             fato, "Bolsista", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
             "RESULTADO_FINAL", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, "Isenção da taxa",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;

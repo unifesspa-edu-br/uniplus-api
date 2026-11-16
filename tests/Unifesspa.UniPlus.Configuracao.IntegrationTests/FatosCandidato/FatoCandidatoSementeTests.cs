@@ -42,7 +42,7 @@ public sealed class FatoCandidatoSementeTests
         // coerência binding × origem, ponto de resolução canônico).
         foreach (FatoCandidatoSeedItem item in FatoCandidatoSeed.Itens)
         {
-            Result<FatoCandidato> resultado = FatoCandidato.Criar(
+            Result<FatoCandidato> resultado = CriacaoDoFato.Criar(
                 item.Codigo,
                 item.Nome,
                 item.Descricao,

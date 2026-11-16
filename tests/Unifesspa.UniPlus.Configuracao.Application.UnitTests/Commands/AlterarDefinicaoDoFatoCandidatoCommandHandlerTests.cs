@@ -247,10 +247,10 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
         FatoCandidato optou = Declarado("OPTOU");
         FatoCandidato opcaoPelasCotas = Declarado(OpcaoPelasCotasDaLei.Fato);
         FatoCandidato membro = Declarado("CATEGORIA_RENDA", DominioFato.Categorico, FonteValoresFato.Global, EscopoFato.MembroGrupo, pontoDoMembro);
-        FatoCandidato perfil = FatoCandidato.CriarDerivadoDoAdministrador(
+        FatoCandidato perfil = CriacaoDoFato.CriarDerivadoDoAdministrador(
             "PERFIL", "PERFIL", "Descrição do fato.", DominioFato.Booleano, "INSCRICAO", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
-        FatoCandidato agregado = FatoCandidato.CriarAgregadoDoAdministrador(
+        FatoCandidato agregado = CriacaoDoFato.CriarAgregadoDoAdministrador(
             "CATEGORIAS_RENDA", "CATEGORIAS_RENDA", "Descrição do fato.", "CATEGORIA_RENDA", new CatalogoDeFatos([membro], []), "INSCRICAO",
             ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
         perfil.DefinirRegrasPadrao([RegraBooleana("RENDA")], new CatalogoDeFatos([renda, perfil], [])).IsSuccess.Should().BeTrue();
@@ -271,7 +271,7 @@ public sealed class AlterarDefinicaoDoFatoCandidatoCommandHandlerTests
         FonteValoresFato? fonte = null,
         EscopoFato escopo = EscopoFato.Candidato,
         string ponto = "INSCRICAO") =>
-        FatoCandidato.CriarDoAdministrador(
+        CriacaoDoFato.CriarDoAdministrador(
             codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, fonte, null, ponto, escopo,
             ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese).Value!;
 

@@ -69,7 +69,7 @@ public sealed class FatoCandidatoGravacaoTests
     public async Task CorrecaoEReordenacaoConcorrentesDosValores_SegundaRecusada()
     {
         string codigo = CodigoUnico();
-        FatoCandidato fato = FatoCandidato.Criar(
+        FatoCandidato fato = CriacaoDoFato.Criar(
             codigo, "Fato com valores", "Descrição do fato.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
             FonteValoresFato.Global, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
@@ -199,7 +199,7 @@ public sealed class FatoCandidatoGravacaoTests
     private static FatoCandidato NovoFatoCategoricoComDoisValores()
     {
         string codigo = CodigoUnico();
-        FatoCandidato fato = FatoCandidato.Criar(
+        FatoCandidato fato = CriacaoDoFato.Criar(
             codigo, "Fato com valores", "Descrição do fato.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar,
             FonteValoresFato.Global, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;
@@ -218,7 +218,7 @@ public sealed class FatoCandidatoGravacaoTests
     private static FatoCandidato NovoFatoDoAdministrador()
     {
         string codigo = CodigoUnico();
-        return FatoCandidato.Criar(
+        return CriacaoDoFato.Criar(
             codigo, "Fato do administrador", "Descrição do fato.", DominioFato.Booleano, OrigemFato.Declarado, CardinalidadeFato.Escalar,
             fonteValores: null, formato: null, "INSCRICAO", $"CAMPO_FORMULARIO:{codigo}", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, "Teste", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: false).Value!;

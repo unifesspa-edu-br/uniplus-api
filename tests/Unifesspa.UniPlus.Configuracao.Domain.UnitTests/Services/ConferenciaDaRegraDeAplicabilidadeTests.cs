@@ -144,7 +144,7 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
     }
 
     private static FatoCandidato Derivado(string codigo, DominioFato dominio = DominioFato.Booleano) =>
-        FatoCandidato.CriarDerivadoDoAdministrador(
+        CriacaoDoFato.CriarDerivadoDoAdministrador(
             codigo, codigo, "Descrição do fato.", dominio, "INSCRICAO", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese).Value!;
 
@@ -153,7 +153,7 @@ public sealed class ConferenciaDaRegraDeAplicabilidadeTests
         DominioFato dominio = DominioFato.Booleano,
         string ponto = "INSCRICAO",
         FormatoTexto? formato = null) =>
-        FatoCandidato.CriarDoAdministrador(
+        CriacaoDoFato.CriarDoAdministrador(
             codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar,
             dominio == DominioFato.Categorico ? FonteValoresFato.Global : null, formato, ponto, EscopoFato.Candidato,
             ClassificacaoDeProtecao.Sensivel, Finalidade, Hipotese).Value!;

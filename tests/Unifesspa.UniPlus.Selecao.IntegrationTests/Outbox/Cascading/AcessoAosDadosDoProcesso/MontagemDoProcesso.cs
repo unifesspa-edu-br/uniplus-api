@@ -100,7 +100,7 @@ internal sealed class MontagemDoProcesso(CascadingFixture fixture, RequisicoesAu
     private async Task<string> SemearFatoIdentificadorDeMembroAsync()
     {
         string codigo = $"RG_RESPONSAVEL_{Guid.NewGuid():N}"[..30].ToUpperInvariant();
-        Result<FatoCandidato> criado = FatoCandidato.CriarDoAdministrador(
+        Result<FatoCandidato> criado = CriacaoDoFato.CriarDoAdministrador(
             codigo, "RG do responsável", "Descrição do fato.", DominioFato.Texto, CardinalidadeFato.Escalar, fonteValores: null, formato: FormatoTexto.Livre,
             "INSCRICAO", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Identificador, "Identificação do responsável legal",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal);

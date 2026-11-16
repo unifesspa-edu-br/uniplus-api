@@ -155,22 +155,22 @@ public static class SementePsrMedicina2027
         // pelo menos um ano do ensino médio num município da área ou, se concluiu por certificação,
         // residiu num deles no período que o edital fixa (itens 1.5, 1.6 e 13). O endereço atual não
         // conta. Quem recebe o acréscimo é a configuração do processo que decide, citando o pedido.
-        new(11, _ => FatoCandidato.CriarDoAdministrador(
+        new(11, _ => CriacaoDoFato.CriarDoAdministrador(
                 "SOLICITA_FATOR_ATENUACAO", "Solicita o Fator de Atenuação das Desigualdades de Acesso", "Se o candidato pede o Fator de Atenuação das Desigualdades de Acesso previsto no edital.", DominioFato.Booleano,
                 CardinalidadeFato.Escalar, null, null, PontoInscricao, EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Pessoal, FinalidadeDoFator, HipoteseLegal),
             Sem()),
-        new(13, _ => FatoCandidato.CriarDoAdministrador(
+        new(13, _ => CriacaoDoFato.CriarDoAdministrador(
                 "MUNICIPIO_RESIDENCIA_FATOR_ATENUACAO", "Município de residência para o Fator de Atenuação", "O município da área de abrangência do edital em que o candidato residiu no período que o edital fixa, entre os que o edital lista.", DominioFato.Categorico,
                 CardinalidadeFato.Escalar, FonteValoresFato.MunicipiosBonus, null, PontoInscricao, EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Pessoal, FinalidadeDoFator, HipoteseLegal),
             Sem()),
-        new(16, _ => FatoCandidato.CriarDoAdministrador(
+        new(16, _ => CriacaoDoFato.CriarDoAdministrador(
                 "MUNICIPIO_ENSINO_MEDIO_FATOR_ATENUACAO", "Município do ensino médio para o Fator de Atenuação", "O município da área de influência do edital em que o candidato cursou pelo menos um ano do ensino médio, entre os que o edital lista.", DominioFato.Categorico,
                 CardinalidadeFato.Escalar, FonteValoresFato.MunicipiosBonus, null, PontoInscricao, EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Pessoal, FinalidadeDoFator, HipoteseLegal),
             Sem()),
-        new(17, _ => FatoCandidato.CriarDoAdministrador(
+        new(17, _ => CriacaoDoFato.CriarDoAdministrador(
                 "CAMINHO_FATOR_ATENUACAO", "Caminho do Fator de Atenuação", "Por qual vínculo com a área do edital pede o Fator de Atenuação quem concluiu o ensino médio por certificação: o ensino médio cursado ou a residência no período.", DominioFato.Categorico,
                 CardinalidadeFato.Escalar, FonteValoresFato.Global, null, PontoInscricao, EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Pessoal, FinalidadeDoFator, HipoteseLegal),
@@ -180,29 +180,29 @@ public static class SementePsrMedicina2027
         // Inscrição: o pedido de atendimento especializado nas etapas presenciais, que abre as
         // perguntas da condição e do recurso, e a descrição da condição que não consta da lista.
         // A saúde que a resposta pode revelar faz dos dois um dado sensível.
-        new(14, _ => FatoCandidato.CriarDoAdministrador(
+        new(14, _ => CriacaoDoFato.CriarDoAdministrador(
                 "SOLICITA_ATENDIMENTO_ESPECIALIZADO", "Solicita atendimento especializado", "Se o candidato pede atendimento especializado em alguma etapa presencial do processo seletivo.", DominioFato.Booleano,
                 CardinalidadeFato.Escalar, null, null, PontoInscricao, EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Sensivel, FinalidadeDoAtendimento, HipoteseLegal),
             Sem()),
-        new(15, _ => FatoCandidato.CriarDoAdministrador(
+        new(15, _ => CriacaoDoFato.CriarDoAdministrador(
                 "DESCRICAO_OUTRA_CONDICAO_ATENDIMENTO", "Descrição da outra condição de atendimento", "A condição específica, que não consta da lista, pela qual o candidato pede atendimento especializado.", DominioFato.Texto,
                 CardinalidadeFato.Escalar, null, FormatoTexto.Livre, PontoInscricao, EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Sensivel, FinalidadeDoAtendimento, HipoteseLegal),
             Sem()),
 
         // Habilitação: o que o edital pede de quem é convocado (itens 9.16, 9.21 e 9.24).
-        new(6, _ => FatoCandidato.CriarDoAdministrador(
+        new(6, _ => CriacaoDoFato.CriarDoAdministrador(
                 "CERTIFICADO_EM_EMITIDO", "Certificado de conclusão do ensino médio já emitido", "Se o certificado de conclusão do ensino médio já foi emitido. Sem ele, a habilitação pede a declaração de conclusão e o termo de responsabilidade.", DominioFato.Booleano,
                 CardinalidadeFato.Escalar, null, null, PontoHabilitacao, EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Pessoal, FinalidadeDaHabilitacao, HipoteseLegal),
             Sem()),
-        new(7, _ => FatoCandidato.CriarDoAdministrador(
+        new(7, _ => CriacaoDoFato.CriarDoAdministrador(
                 "HABILITACAO_POR_PROCURADOR", "Habilitação feita por procurador", "Se a habilitação é feita por procurador, que apresenta a procuração e o próprio documento de identificação.", DominioFato.Booleano,
                 CardinalidadeFato.Escalar, null, null, PontoHabilitacao, EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Pessoal, FinalidadeDaHabilitacao, HipoteseLegal),
             Sem()),
-        new(8, _ => FatoCandidato.CriarDoAdministrador(
+        new(8, _ => CriacaoDoFato.CriarDoAdministrador(
                 "VINCULO_OUTRA_IES_PUBLICA_OU_PROUNI", "Vínculo com outra instituição pública de ensino superior ou com o ProUni", "Se o candidato tem matrícula ativa em outra instituição pública de ensino superior ou é bolsista do ProUni.",
                 DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, PontoHabilitacao, EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Pessoal, FinalidadeDaHabilitacao, HipoteseLegal),
@@ -210,7 +210,7 @@ public static class SementePsrMedicina2027
 
         // Habilitação: a categoria de renda de cada membro da composição familiar (edital, item
         // 9.39.2) e as categorias presentes na família, que os documentos de renda citam.
-        new(9, _ => FatoCandidato.CriarDoAdministrador(
+        new(9, _ => CriacaoDoFato.CriarDoAdministrador(
                 "CATEGORIA_RENDA", "Categoria de renda", "As fontes de renda do membro da composição familiar, que definem os documentos de renda que ele apresenta.", DominioFato.Categorico, CardinalidadeFato.Multivalorado,
                 FonteValoresFato.Global, null, PontoHabilitacao, EscopoFato.MembroGrupo,
                 ClassificacaoDeProtecao.Pessoal, FinalidadeDaFamilia, HipoteseLegal),
@@ -219,7 +219,7 @@ public static class SementePsrMedicina2027
              ("AUTONOMO_OU_PROFISSIONAL_LIBERAL", "Autônomo ou profissional liberal"),
              ("ALUGUEL_OU_ARRENDAMENTO", "Renda de aluguel ou arrendamento"), ("SEM_RENDA", "Sem renda"),
              ("DESEMPREGADO", "Desempregado")]),
-        new(10, catalogo => FatoCandidato.CriarAgregadoDoAdministrador(
+        new(10, catalogo => CriacaoDoFato.CriarAgregadoDoAdministrador(
                 "CATEGORIAS_RENDA_FAMILIA", "Categorias de renda presentes na família", "As categorias de renda que aparecem entre os membros da composição familiar, calculadas a partir das respostas de cada membro.", "CATEGORIA_RENDA", catalogo,
                 PontoHabilitacao, ClassificacaoDeProtecao.Pessoal, FinalidadeDaFamilia, HipoteseLegal),
             Sem()),
