@@ -296,6 +296,29 @@ public static class RegraCatalogoSeed
             """{"corretores_distintos":3,"naturezas_do_conceito":["numerico"]}""",
             """["mais de um avaliador corrige cada candidato na etapa, cada um sem conhecer a nota do outro","a nota da etapa é a combinação das correções independentes, na forma que o edital determina"]""",
             "UNI-REQ-0097 (dupla correção) e edital do processo seletivo"),
+
+        // regra_procedimento_recurso — como o recurso de uma matéria é revisado. Rol fechado: o edital escolhe
+        // um procedimento e a escolha congela com a configuração; o esquema_args é o que a versão declara de si
+        // (o que revisa, a evidência e de onde vêm os corretores) e não admite parâmetro que descreva passos.
+        new(SeedId(33), RegraProcedimentoRecursoCodigo.Recorrecao, VersaoV1, TipoRegra.RegraProcedimentoRecurso,
+            """{"revisa":"desempenho avaliado por pessoas","evidencia":"nova correção cega do material","corretores":"os_da_regra_de_consolidacao_da_etapa"}""",
+            """["a revisão é uma nova correção do material, feita sem conhecer a nota anterior","os corretores são os da regra de consolidação da etapa"]""",
+            "UNI-REQ-0383 (procedimento de recurso por matéria) e UNI-REQ-0097 (correção cega)"),
+
+        new(SeedId(34), RegraProcedimentoRecursoCodigo.Conferencia, VersaoV1, TipoRegra.RegraProcedimentoRecurso,
+            """{"revisa":"comprovação de um fato e aplicação da pontuação prevista por tabela","evidencia":"o documento e a tabela","corretores":"os_da_regra_de_consolidacao_da_etapa_quando_ha_consolidacao_humana"}""",
+            """["a revisão confere o documento contra a tabela do edital","há corretores só quando a etapa tem consolidação humana; do contrário, nenhum"]""",
+            "UNI-REQ-0383 (procedimento de recurso por matéria)"),
+
+        new(SeedId(35), RegraProcedimentoRecursoCodigo.CorrecaoMaterial, VersaoV1, TipoRegra.RegraProcedimentoRecurso,
+            """{"revisa":"erro de registro (transcrição, soma, presença)","evidencia":"o registro e a evidência do erro","corretores":"nenhum"}""",
+            """["a correção tem sempre um motivo da lista da etapa, sem a opção outro","não é saída genérica para o que a derivação da nota não explica"]""",
+            "UNI-REQ-0383 (procedimento de recurso por matéria) e UNI-REQ-0281"),
+
+        new(SeedId(36), RegraProcedimentoRecursoCodigo.Recalculo, VersaoV1, TipoRegra.RegraProcedimentoRecurso,
+            """{"revisa":"cálculo sobre insumos já conferidos (gabarito, média ponderada do ENEM, classificação)","evidencia":"os insumos congelados e o boletim","corretores":"nenhum"}""",
+            """["o recálculo parte dos insumos congelados, sem nova correção","a nota do ENEM é recalculada à vista do boletim"]""",
+            "UNI-REQ-0383 (procedimento de recurso por matéria)"),
     ];
 }
 

@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261116114754_Inicial")]
+    [Migration("20261116121905_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -14764,6 +14764,54 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Hash = "94fe3353ad79b0f23dc3d0c732e8c631a518dd5505ecb17bbaf2c010faa93616",
                             Invariantes = "[\"mais de um avaliador corrige cada candidato na etapa, cada um sem conhecer a nota do outro\",\"a nota da etapa é a combinação das correções independentes, na forma que o edital determina\"]",
                             Tipo = "regra_consolidacao",
+                            Versao = "v1"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0a00000-0000-7000-8000-000000000033"),
+                            BaseLegal = "UNI-REQ-0383 (procedimento de recurso por matéria) e UNI-REQ-0097 (correção cega)",
+                            Codigo = "PROCEDIMENTO-RECURSO-RECORRECAO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EsquemaArgs = "{\"revisa\":\"desempenho avaliado por pessoas\",\"evidencia\":\"nova correção cega do material\",\"corretores\":\"os_da_regra_de_consolidacao_da_etapa\"}",
+                            Hash = "12fbd97326cecd1be695fdff12583b28c547a5e8f45581bb9345c751e0af1f8c",
+                            Invariantes = "[\"a revisão é uma nova correção do material, feita sem conhecer a nota anterior\",\"os corretores são os da regra de consolidação da etapa\"]",
+                            Tipo = "regra_procedimento_recurso",
+                            Versao = "v1"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0a00000-0000-7000-8000-000000000034"),
+                            BaseLegal = "UNI-REQ-0383 (procedimento de recurso por matéria)",
+                            Codigo = "PROCEDIMENTO-RECURSO-CONFERENCIA",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EsquemaArgs = "{\"revisa\":\"comprovação de um fato e aplicação da pontuação prevista por tabela\",\"evidencia\":\"o documento e a tabela\",\"corretores\":\"os_da_regra_de_consolidacao_da_etapa_quando_ha_consolidacao_humana\"}",
+                            Hash = "96d5cb93c70e98fe9c406e47efd9326ea1bcbe7673cce33c2f7fbdc37ed743da",
+                            Invariantes = "[\"a revisão confere o documento contra a tabela do edital\",\"há corretores só quando a etapa tem consolidação humana; do contrário, nenhum\"]",
+                            Tipo = "regra_procedimento_recurso",
+                            Versao = "v1"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0a00000-0000-7000-8000-000000000035"),
+                            BaseLegal = "UNI-REQ-0383 (procedimento de recurso por matéria) e UNI-REQ-0281",
+                            Codigo = "PROCEDIMENTO-RECURSO-CORRECAO-MATERIAL",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EsquemaArgs = "{\"revisa\":\"erro de registro (transcrição, soma, presença)\",\"evidencia\":\"o registro e a evidência do erro\",\"corretores\":\"nenhum\"}",
+                            Hash = "986fe794c2961f5cffc83831fb9af35360dc1b6f558e2f3eb6f9ae394ed1ce88",
+                            Invariantes = "[\"a correção tem sempre um motivo da lista da etapa, sem a opção outro\",\"não é saída genérica para o que a derivação da nota não explica\"]",
+                            Tipo = "regra_procedimento_recurso",
+                            Versao = "v1"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0a00000-0000-7000-8000-000000000036"),
+                            BaseLegal = "UNI-REQ-0383 (procedimento de recurso por matéria)",
+                            Codigo = "PROCEDIMENTO-RECURSO-RECALCULO",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EsquemaArgs = "{\"revisa\":\"cálculo sobre insumos já conferidos (gabarito, média ponderada do ENEM, classificação)\",\"evidencia\":\"os insumos congelados e o boletim\",\"corretores\":\"nenhum\"}",
+                            Hash = "4c0dbd2782ac794f979b7d76b6752c87b39c36a796f5fa95345d79928f198700",
+                            Invariantes = "[\"o recálculo parte dos insumos congelados, sem nova correção\",\"a nota do ENEM é recalculada à vista do boletim\"]",
+                            Tipo = "regra_procedimento_recurso",
                             Versao = "v1"
                         });
                 });

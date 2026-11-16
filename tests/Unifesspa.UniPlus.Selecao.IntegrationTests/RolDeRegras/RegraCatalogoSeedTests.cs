@@ -319,6 +319,23 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         }
     }
 
+    [Fact(DisplayName = "O rol de procedimentos de recurso semeia os quatro procedimentos, na versão v1, cada um com o hash recomputável")]
+    public async Task ProcedimentosDeRecurso_SemeadosComHashRecomputavel()
+    {
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
+
+        List<RegraCatalogo> procedimentos = await context.RolDeRegras.AsNoTracking()
+            .Where(r => r.Tipo == TipoRegra.RegraProcedimentoRecurso)
+            .ToListAsync(CancellationToken.None);
+
+        procedimentos.Select(r => r.Codigo).Should().BeEquivalentTo(RegraProcedimentoRecursoCodigo.Rol);
+        procedimentos.Should().OnlyContain(r => r.Versao == RegraCatalogoSeed.VersaoV1);
+        foreach (RegraCatalogo regra in procedimentos)
+        {
+            RegraCatalogoSeed.Itens.Single(i => i.Codigo == regra.Codigo).ComputarHash().Should().Be(regra.Hash, regra.Codigo);
+        }
+    }
+
     [Fact(DisplayName = "A avaliação única exige um corretor e aceita as duas naturezas; a correção independente exige três e só a numérica")]
     public async Task RegraDeConsolidacao_DeclaraCorretoresENaturezas()
     {
