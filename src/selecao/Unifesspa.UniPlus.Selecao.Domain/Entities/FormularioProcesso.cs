@@ -229,6 +229,21 @@ public static class FormularioProcessoErrorCodes
     /// <summary>Formulário que pede a edição do ENEM num processo cuja classificação não é baseada em ENEM.</summary>
     public const string EdicaoDoEnemSemClassificacaoEnem = "ProcessoSeletivo.EdicaoDoEnemSemClassificacaoEnem";
 
+    /// <summary>O processo com inscrição pelo sistema não tem formulário obrigatório na fase que coleta inscrição.</summary>
+    public const string InscricaoSemFormularioObrigatorio = "FormularioProcesso.InscricaoSemFormularioObrigatorio";
+
+    /// <summary>O processo de resultado importado tem formulário na fase que coleta inscrição.</summary>
+    public const string InscricaoEmResultadoImportado = "FormularioProcesso.InscricaoEmResultadoImportado";
+
+    /// <summary>Formulário obrigatório numa fase da janela de isenção que não coleta inscrição.</summary>
+    public const string FormularioDaIsencaoObrigatorio = "FormularioProcesso.FormularioDaIsencaoObrigatorio";
+
+    /// <summary>O processo que cobra taxa não tem formulário facultativo na fase da janela de isenção.</summary>
+    public const string TaxaSemFormularioDeIsencao = "FormularioProcesso.TaxaSemFormularioDeIsencao";
+
+    /// <summary>A primeira fase depois da importação não tem o formulário obrigatório dos dados básicos que faltam.</summary>
+    public const string PosImportacaoSemFormularioObrigatorio = "FormularioProcesso.PosImportacaoSemFormularioObrigatorio";
+
     /// <summary>A fase do cronograma é usada por um formulário e não pode sair.</summary>
     public const string FaseReferenciadaPorFormulario = "ProcessoSeletivo.FaseReferenciadaPorFormulario";
 }

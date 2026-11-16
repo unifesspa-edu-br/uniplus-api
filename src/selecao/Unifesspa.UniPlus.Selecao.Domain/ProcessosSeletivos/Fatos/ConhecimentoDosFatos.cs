@@ -24,6 +24,10 @@ public sealed record ConhecimentoDosFatos(
         return NoPonto(fato, ponto, []);
     }
 
+    /// <summary>O código do grupo repetível de que o fato é campo, em qualquer formulário, ou nulo.</summary>
+    public string? GrupoDoCampo(string fato) =>
+        Coletas.Select(coleta => coleta.GrupoDoCampo(fato)).FirstOrDefault(static grupo => grupo is not null);
+
     /// <summary>
     /// O ponto de uso da exigência de documento: o formulário que a entrega, na fase dela. Nulo quando o
     /// processo não tem o formulário na fase da exigência, que é recusa da conferência das exigências.
@@ -68,9 +72,12 @@ public sealed record ConhecimentoDosFatos(
     /// </summary>
     private ConhecimentoDoFatoNoPonto DaOrigem(string fato, PontoDeUso ponto)
     {
-        if (Coletas.FirstOrDefault(coleta => coleta.Produz(fato)) is { } produtor)
+        ColetaDoFormulario[] produtores = [.. Coletas.Where(coleta => coleta.Produz(fato))];
+        if (produtores.Length > 0)
         {
-            return ProdutorNoPonto(produtor, ponto);
+            return produtores.Any(produtor => AlcanceDasRespostas.Alcanca(ponto, produtor.Formulario, Cronograma))
+                ? ConhecimentoDoFatoNoPonto.Conhecido
+                : ConhecimentoDoFatoNoPonto.RespostaNaoAlcancada;
         }
 
         bool situadoNoCatalogo = Catalogo.FaseDoCatalogoPorFato.ContainsKey(fato) || Catalogo.DependenciasDosDerivados.ContainsKey(fato);
@@ -78,11 +85,6 @@ public sealed record ConhecimentoDosFatos(
             ? ConhecimentoDoFatoNoPonto.Conhecido
             : ConhecimentoDoFatoNoPonto.ForaDoProcesso;
     }
-
-    private ConhecimentoDoFatoNoPonto ProdutorNoPonto(ColetaDoFormulario produtor, PontoDeUso ponto) =>
-        AlcanceDasRespostas.Alcanca(ponto, produtor.Formulario, Cronograma)
-            ? ConhecimentoDoFatoNoPonto.Conhecido
-            : ConhecimentoDoFatoNoPonto.RespostaNaoAlcancada;
 
     private ConhecimentoDoFatoNoPonto FaseDoCatalogoNoPonto(string fato, PontoDeUso ponto)
     {

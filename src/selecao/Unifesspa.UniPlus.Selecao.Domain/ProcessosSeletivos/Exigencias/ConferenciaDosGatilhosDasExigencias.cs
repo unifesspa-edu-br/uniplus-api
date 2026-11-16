@@ -38,7 +38,7 @@ public static class ConferenciaDosGatilhosDasExigencias
             return Recusa(noPonto);
         }
 
-        string? grupoDoCampo = conhecimento.Coletas.Select(coleta => coleta.GrupoDoCampo(fato)).FirstOrDefault(static grupo => grupo is not null);
+        string? grupoDoCampo = conhecimento.GrupoDoCampo(fato);
         return grupoDoCampo is null || string.Equals(grupoDoCampo, gatilho.GrupoDeRepeticao, StringComparison.Ordinal)
             ? null
             : new DomainError(
