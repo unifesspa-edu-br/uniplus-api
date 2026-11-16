@@ -10,5 +10,5 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 public static class RegraAjusteDistribuicaoVagasCodigo
 {
     /// <summary>Reconciliação do estouro por arredondamento — art. 11 §único (Portaria MEC 18/2012).</summary>
-    public const string ReconciliacaoArt11ParagrafoUnico = "RECONCILIACAO-VAGAS-ART11-PU";
+    public const string ReconciliacaoArt11ParagrafoUnico = "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO";
 }

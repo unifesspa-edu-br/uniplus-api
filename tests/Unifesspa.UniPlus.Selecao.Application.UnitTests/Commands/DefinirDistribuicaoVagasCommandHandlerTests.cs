@@ -295,9 +295,9 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId));
         mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Lei12711, "v1", Arg.Any<CancellationToken>())
             .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Lei12711));
-        mocks.RegraCatalogoReader.ObterAsync("RECONCILIACAO-VAGAS-ART11-PU", "v1", Arg.Any<CancellationToken>())
+        mocks.RegraCatalogoReader.ObterAsync("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", Arg.Any<CancellationToken>())
             .Returns(RegraCatalogo.Criar(
-                "RECONCILIACAO-VAGAS-ART11-PU", "v1", TipoRegra.RegraAjusteDistribuicaoVagas, Json("{}"), Json("[]"), "art. 11 §único"));
+                "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", TipoRegra.RegraAjusteDistribuicaoVagas, Json("{}"), Json("[]"), "art. 11 §único"));
         mocks.ReferenciaReservaDemograficaReader.ObterPorIdAsync(referenciaId, Arg.Any<CancellationToken>())
             .Returns(new ReferenciaReservaDemograficaView(referenciaId, "2022", 79m, 1.5m, 8.5m, "Censo 2022"));
         foreach ((string codigo, Guid id) in federaisMaisAc)
@@ -312,7 +312,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             processo.Id,
             [new ConfiguracaoDistribuicaoVagasInput(
                 ofertaCursoId, 50, 0.5m, RegraDistribuicaoVagasCodigo.Lei12711, "v1",
-                "RECONCILIACAO-VAGAS-ART11-PU", "v1", referenciaId,
+                "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", referenciaId,
                 [.. federaisMaisAc.Select(f => f.Id)], [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(

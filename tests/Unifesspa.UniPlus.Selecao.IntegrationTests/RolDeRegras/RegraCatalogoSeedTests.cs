@@ -45,10 +45,10 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         // publicando versão nova, e as duas convivem — a antiga porque processos publicados a
         // referenciam, a nova porque é a que passa a valer.
         regras.Select(r => (r.Codigo, r.Versao)).Should().OnlyHaveUniqueItems();
-        regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-LEI-12711" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
-        regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-LEI-12711-COM-AC-PCD" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
-        regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-PSIQ" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
-        regras.Should().Contain(r => r.Codigo == "DISTRIB-VAGAS-COM-AC-PCD" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO-LEI-12711" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO-POR-ACRESCIMO-INDIGENA-E-QUILOMBOLA" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
+        regras.Should().Contain(r => r.Codigo == "DISTRIBUICAO-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA" && r.Tipo == TipoRegra.RegraDistribuicaoVagas);
         regras.Should().NotContain(r => r.Codigo == "DISTRIB-VAGAS-COM-PCD-PURO",
             "a reserva de pessoa com deficiência sem as cotas da lei passou a ser AC_PCD");
         regras.Should().Contain(r => r.Codigo == "FORMULA-MEDIA-PONDERADA" && r.Tipo == TipoRegra.RegraCalculo);
@@ -269,11 +269,11 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
 
         foreach (string codigo in new[]
         {
-            "DISTRIB-VAGAS-LEI-12711",
-            "DISTRIB-VAGAS-LEI-12711-COM-AC-PCD",
-            "DISTRIB-VAGAS-INSTITUCIONAL",
-            "DISTRIB-VAGAS-PSIQ",
-            "DISTRIB-VAGAS-COM-AC-PCD",
+            "DISTRIBUICAO-LEI-12711",
+            "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA",
+            "DISTRIBUICAO-INSTITUCIONAL",
+            "DISTRIBUICAO-POR-ACRESCIMO-INDIGENA-E-QUILOMBOLA",
+            "DISTRIBUICAO-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA",
         })
         {
             RegraCatalogo? v1 = await reader.ObterAsync(codigo, "v1", CancellationToken.None);

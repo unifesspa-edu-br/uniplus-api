@@ -44,7 +44,7 @@ internal static class DistribuicaoDeVagasDeTeste
         VagasOfertadasBase = 50,
         PercentualDaReservaLegal = 0.5m,
         ReferenciaDemografica = Demografica(),
-        RegraDeAjuste = Regra("RECONCILIACAO-VAGAS-ART11-PU"),
+        RegraDeAjuste = Regra("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO"),
         Modalidades = AsOitoFederaisMaisAmplaConcorrencia(),
     };
 

@@ -115,7 +115,7 @@ internal static class ApoioDaCoerenciaDaConsequencia
                 voBase: 40,
                 pr: 0.5m,
                 regraDistribuicao: ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Lei12711, "v1", HashFixo),
-                regraAjuste: ReferenciaRegra.De("RECONCILIACAO-VAGAS-ART11-PU", "v1", HashFixo),
+                regraAjuste: ReferenciaRegra.De("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", HashFixo),
                 referenciaDemografica: ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!,
                 modalidades: modalidadesFederais, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
             processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

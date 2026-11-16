@@ -511,8 +511,8 @@ definir_distribuicao_vagas() {
         --arg reserva "$RESERVA_DEMOGRAFICA_ID" --argjson modalidades "$modalidades" '
         [$ofertas[] | {
             ofertaCursoId: ., voBase: 30, pr: 0.5,
-            regraDistribuicaoCodigo: "DISTRIB-VAGAS-LEI-12711-COM-AC-PCD", regraDistribuicaoVersao: "v1",
-            regraAjusteCodigo: "RECONCILIACAO-VAGAS-ART11-PU", regraAjusteVersao: "v1",
+            regraDistribuicaoCodigo: "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA", regraDistribuicaoVersao: "v1",
+            regraAjusteCodigo: "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", regraAjusteVersao: "v1",
             referenciaReservaDemograficaId: $reserva,
             modalidadeIds: $modalidades,
             quadro: [{modalidadeId: "70da1000-0000-7000-8000-000000000010", quantidade: 2}]

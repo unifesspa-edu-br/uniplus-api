@@ -13,7 +13,7 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
     private readonly DefinirDistribuicaoVagasCommandValidator _validator = new();
 
     private static ConfiguracaoDistribuicaoVagasInput ItemValido() => new(
-        Guid.CreateVersion7(), 50, 0.5m, "DISTRIB-VAGAS-LEI-12711", "v1", null, null, null, [Guid.CreateVersion7()], []);
+        Guid.CreateVersion7(), 50, 0.5m, "DISTRIBUICAO-LEI-12711", "v1", null, null, null, [Guid.CreateVersion7()], []);
 
     [Fact(DisplayName = "Lista de distribuição vazia atravessa a validação de forma — quem recusa é o domínio")]
     public void Validar_ListaVazia_AtravessaOValidator()

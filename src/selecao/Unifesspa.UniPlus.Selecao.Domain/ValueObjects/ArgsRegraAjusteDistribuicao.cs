@@ -10,7 +10,7 @@ using System.Text.Json.Serialization;
 /// </summary>
 /// <remarks>
 /// <para>
-/// As variantes espelham os motores que <c>RECONCILIACAO-VAGAS-ART11-PU</c> declara em
+/// As variantes espelham os motores que <c>RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO</c> declara em
 /// <c>esquema_args.motores_nao_art10</c>, e a vedação que ela também declara vale aqui: são
 /// motores de distribuição institucional, nunca da Lei 12.711 — lá a reconciliação está
 /// embutida na calculadora, com cap no VO e prioridade da reserva de baixa renda.

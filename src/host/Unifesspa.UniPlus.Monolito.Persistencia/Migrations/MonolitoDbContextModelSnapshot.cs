@@ -14554,10 +14554,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000017"),
                             BaseLegal = "Portaria MEC 18/2012 art. 11, parágrafo único (red. PN 2.027/2023) — cap nas vagas da oferta + prioridade do inciso III (LB) sobre o inciso IV (LI); art. 10 II (mínimo 50%, piso)",
-                            Codigo = "RECONCILIACAO-VAGAS-ART11-PU",
+                            Codigo = "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{\"reconciliacao_federal\":\"CAP_VO + PRIORIDADE_LB (art. 11 §único, embutida em DISTRIB-VAGAS-LEI-12711)\",\"motores_nao_art10\":\"REDUZIR_DE | REDUZIR_PROPORCIONAL_EM (apenas distribuições institucionais; clamp >=0; VEDADOS à Lei 12.711)\"}",
-                            Hash = "ad2d8012ddc1f2ea4d763034899d07590c4a49901744b852dca2e70cede8b1e9",
+                            EsquemaArgs = "{\"reconciliacao_federal\":\"CAP_VO + PRIORIDADE_LB (art. 11 §único, embutida em DISTRIBUICAO-LEI-12711)\",\"motores_nao_art10\":\"REDUZIR_DE | REDUZIR_PROPORCIONAL_EM (apenas distribuições institucionais; clamp >=0; VEDADOS à Lei 12.711)\"}",
+                            Hash = "a32d7703bfe58a9c8e8b813f510190079541d2edc7df168767d1dc6d280e252f",
                             Invariantes = "[\"cap em VO: a reserva nunca excede as vagas da oferta (art. 11 §único I)\",\"prioridade LB>LI: na escassez a LI cede primeiro (art. 11 §único II)\",\"estouro sobre o nominal 50% (VR) e LEGAL — piso (art. 10 II), absorvido pela AC\",\"curso pequeno e determinístico por lei (capa, não bloqueia)\"]",
                             Tipo = "regra_ajuste_distribuicao_vagas",
                             Versao = "v1"
@@ -14626,10 +14626,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000023"),
                             BaseLegal = "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)",
-                            Codigo = "DISTRIB-VAGAS-LEI-12711",
+                            Codigo = "DISTRIBUICAO-LEI-12711",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             EsquemaArgs = "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\"]}",
-                            Hash = "369e630525f26995a637d305851b4dfb0a713b8de8038a5874846ac512d7d375",
+                            Hash = "9392c688038aa3cc1649f9cc2f4050fa81432849c959034074521ccab15fd697",
                             Invariantes = "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"INV-3a: LB_EP≥0 e LI_EP≥0\",\"INV-3b: AC≥0\",\"INV-3c: VR_final+RETIRADAS+AC=VO_base\",\"modalidade fora de modalidades_admitidas é recusada\"]",
                             Tipo = "regra_distribuicao_vagas",
                             Versao = "v1"
@@ -14638,10 +14638,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000027"),
                             BaseLegal = "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)",
-                            Codigo = "DISTRIB-VAGAS-LEI-12711-COM-AC-PCD",
+                            Codigo = "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             EsquemaArgs = "{\"pr_minimo\":\"numeric (piso 0,5 — art. 10 II; teto 1,0)\",\"modo_arredondamento\":\"teto (ceil) em todas as sub-reservas EXCETO LI_Q (floor) — art. 11\",\"ordem_garantia_minima\":[\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_PCD\",\"LI_EP\"],\"sub_reservas\":[\"PPI\",\"Q\",\"PCD\",\"EP\"],\"entradas_por_edital\":[\"VO_base\",\"PR\",\"ReferenciaReservaDemografica\"],\"modalidades_admitidas\":[\"AC\",\"LB_PPI\",\"LB_Q\",\"LB_PCD\",\"LB_EP\",\"LI_PPI\",\"LI_Q\",\"LI_PCD\",\"LI_EP\",\"AC_PCD\"]}",
-                            Hash = "a0097d270c2fcd478ff8fb41a419275b328d0e13b6124dc179b6d224b83c8d08",
+                            Hash = "be513c1eeb7343fa4a56a4f739cfc7836475af25d9399c71beb2b1c285498fb7",
                             Invariantes = "[\"VR=ceil(VO×PR)\",\"VRRI=ceil(VR×0,5)\",\"VRSI=VR−VRRI\",\"sub-reservas ceil EXCETO LI_Q=floor (art. 11)\",\"garantia mín-1 ordenada I-VII condicional à disponibilidade (art. 10 §2º), LI_Q fora\",\"INV-3a: LB_EP≥0 e LI_EP≥0\",\"INV-3b: AC≥0\",\"INV-3c: VR_final+RETIRADAS+AC=VO_base\",\"AC_PCD retira de AC, como qualquer outra retirada federal\",\"modalidade fora de modalidades_admitidas é recusada\"]",
                             Tipo = "regra_distribuicao_vagas",
                             Versao = "v1"
@@ -14650,10 +14650,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000024"),
                             BaseLegal = "Res. Unifesspa 532/2021 (vagas PcD/Indígena/Quilombola); Portaria MEC 18/2012 art. 12 (reservas suplementares e outras ações afirmativas)",
-                            Codigo = "DISTRIB-VAGAS-INSTITUCIONAL",
+                            Codigo = "DISTRIBUICAO-INSTITUCIONAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             EsquemaArgs = "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"quadro institucional não nomeado por regra própria\",\"modalidades_admitidas\":null}",
-                            Hash = "a9f0f1cb005bf1fa891094b1271df22c0bf95605658659cd8a3f37f3e157e1dc",
+                            Hash = "8f4d35f5c49346e23cc09ee4fb5702a6012ee5e87f3238ad3fa072cb72cd7290",
                             Invariantes = "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"a soma das quantidades declaradas é o total publicado, e fecha no VO_base\",\"modalidades_admitidas nulo: rol aberto, para o certame institucional que ainda não tem regra própria\"]",
                             Tipo = "regra_distribuicao_vagas",
                             Versao = "v1"
@@ -14662,10 +14662,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000025"),
                             BaseLegal = "Res. Unifesspa 532/2021-CONSEPE, art. 2º (vagas por acréscimo para candidatos indígenas e quilombolas)",
-                            Codigo = "DISTRIB-VAGAS-PSIQ",
+                            Codigo = "DISTRIBUICAO-POR-ACRESCIMO-INDIGENA-E-QUILOMBOLA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             EsquemaArgs = "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"Processo Seletivo Indígena e Quilombola\",\"modalidades_admitidas\":[\"AC_I\",\"AC_Q\"]}",
-                            Hash = "010df079f624fb7a3306eed54285fa5ad1f9e3be8f43195527c67b99b1534398",
+                            Hash = "93c600a89c74c5ad32149eb93a27a1b4c2866bf345001a3ccde6d9c7532424e6",
                             Invariantes = "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"certame exclusivo: não há ampla concorrência\",\"rol composto só de vagas por acréscimo — sem outro conjunto ao qual se somem, a soma delas é o total publicado\"]",
                             Tipo = "regra_distribuicao_vagas",
                             Versao = "v1"
@@ -14674,10 +14674,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000026"),
                             BaseLegal = "Res. Unifesspa 532/2021-CONSEPE, art. 1º (reserva de vaga para pessoa com deficiência); Portaria MEC 18/2012 art. 12",
-                            Codigo = "DISTRIB-VAGAS-COM-AC-PCD",
+                            Codigo = "DISTRIBUICAO-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             EsquemaArgs = "{\"quadro_fixo_por_modalidade\":\"objeto {codigo: quantidade} fixado por edital (NÃO art. 10)\",\"aplicacao\":\"quadro fixo sem as cotas federais — AC_PCD como reserva de pessoa com deficiência fora do regime federal\",\"modalidades_admitidas\":[\"AC\",\"AC_PCD\"]}",
-                            Hash = "2bef4de324234a2d63164008d2e6dec6b4bb8901d816ee04f6824cbcc0027f80",
+                            Hash = "a3a91f6878959362fc9418213a79d6bb816f458ade41cc7751641d1d7413d36c",
                             Invariantes = "[\"quadro fixo por edital (não recalculado pelo art. 10)\",\"certame sem as cotas da Lei 12.711\",\"AC_PCD retira de AC: o par fecha no VO_base\"]",
                             Tipo = "regra_distribuicao_vagas",
                             Versao = "v1"

@@ -149,7 +149,7 @@ public static class ConferenciaDaDistribuicaoDeVagas
     private static FieldError? RegraDeAjusteAusente(DistribuicaoDeVagasDeclarada declarada) =>
         declarada.RegraDeAjuste is null
             ? Recusa("regraDeAjuste", DistribuicaoDeVagasErrorCodes.RegraAjusteObrigatoria,
-                "A distribuição pelo ramo federal (Lei 12.711) exige a regra de ajuste (RECONCILIACAO-VAGAS-ART11-PU).")
+                "A distribuição pelo ramo federal (Lei 12.711) exige a regra de ajuste (RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO).")
             : null;
 
     // Os motores são da distribuição institucional. Na Lei de Cotas a reconciliação é a do art. 11,

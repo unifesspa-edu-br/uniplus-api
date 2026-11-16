@@ -32,7 +32,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     private static readonly string[] RolLei12711ComAcPcd = [.. RolLei12711, "AC_PCD"];
 
     private static ReferenciaRegra RegraAjuste() =>
-        ReferenciaRegra.De("RECONCILIACAO-VAGAS-ART11-PU", "v1", new string('c', 64));
+        ReferenciaRegra.De("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", new string('c', 64));
 
     private static ReferenciaReservaDemograficaSnapshot Demografica() =>
         ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!;

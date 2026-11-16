@@ -33,7 +33,7 @@ public sealed class ProcessoSeletivoCascataTests
         ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd, "v1", HashFixo);
 
     private static ReferenciaRegra RegraAjuste() =>
-        ReferenciaRegra.De("RECONCILIACAO-VAGAS-ART11-PU", "v1", HashFixo);
+        ReferenciaRegra.De("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", HashFixo);
 
     private static ReferenciaReservaDemograficaSnapshot Demografica() =>
         ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!;

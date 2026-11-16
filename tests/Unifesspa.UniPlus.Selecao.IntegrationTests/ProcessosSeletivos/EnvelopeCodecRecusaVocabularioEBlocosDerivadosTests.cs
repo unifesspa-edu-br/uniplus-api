@@ -22,14 +22,14 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
 
     /// <summary>
     /// As factories têm ramos <c>default</c> que engolem código desconhecido: um
-    /// <c>DISTRIB-VAGAS-XPTO</c> passaria como <b>institucional</b>
+    /// <c>DISTRIBUICAO-XPTO</c> passaria como <b>institucional</b>
     /// (<c>ConfiguracaoDistribuicaoVagas:116</c> só testa <c>== Lei12711</c>), e um
     /// <c>FORMULA-XPTO</c> como <b>cálculo local</b> (<c>ConfiguracaoClassificacao:632</c>
     /// só testa <c>== ClassificacaoImportada</c>). Os dois fariam round-trip perfeito
     /// reconstruindo uma configuração <b>diferente da congelada</b>.
     /// </summary>
     [Theory(DisplayName = "Código de regra fora do rol é recusado — o ramo default das factories o aceitaria")]
-    [InlineData("distribuicao.0.regraDistribuicao", "DISTRIB-VAGAS-XPTO")]
+    [InlineData("distribuicao.0.regraDistribuicao", "DISTRIBUICAO-XPTO")]
     [InlineData("classificacao.regraCalculo", "FORMULA-XPTO")]
     [InlineData("classificacao.regraArredondamento", "PRECISAO-XPTO")]
     [InlineData("classificacao.regraOrdemAlocacao", "ALOCACAO-XPTO")]

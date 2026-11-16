@@ -51,7 +51,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
 
     /// <summary>
     /// Regra que rege a capagem em <c>VO</c> e a prioridade legal entre
-    /// sub-reservas na escassez (<c>RECONCILIACAO-VAGAS-ART11-PU</c>) —
+    /// sub-reservas na escassez (<c>RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO</c>) —
     /// obrigatória no ramo federal, opcional no institucional (quadro fixo não
     /// reconcilia). Só a referência é congelada aqui (ADR-0115); os motores de
     /// ajuste não-federais que o cadastro da regra também descreve não são
@@ -344,7 +344,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
         {
             return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
                 "ConfiguracaoDistribuicaoVagas.RegraAjusteObrigatoria",
-                "A distribuição pelo ramo federal (Lei 12.711) exige a regra de ajuste (RECONCILIACAO-VAGAS-ART11-PU)."));
+                "A distribuição pelo ramo federal (Lei 12.711) exige a regra de ajuste (RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO)."));
         }
 
         Result<QuadroMontado> quadro;

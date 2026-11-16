@@ -10,27 +10,27 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 public static class RegraDistribuicaoVagasCodigo
 {
     /// <summary>Distribuição pela Lei 12.711/2012 (art. 10, red. Lei 14.723/2023) — percentuais demográficos + garantias mínimas.</summary>
-    public const string Lei12711 = "DISTRIB-VAGAS-LEI-12711";
+    public const string Lei12711 = "DISTRIBUICAO-LEI-12711";
 
     /// <summary>
     /// A mesma fórmula de <see cref="Lei12711"/> (art. 10) com uma décima modalidade — <c>AC_PCD</c>,
     /// retirada da ampla concorrência — no rol admitido. As 9 modalidades da INV-6 continuam
     /// obrigatórias; a diferença é só a folga adicional que esta variação reconhece.
     /// </summary>
-    public const string Lei12711ComAcPcd = "DISTRIB-VAGAS-LEI-12711-COM-AC-PCD";
+    public const string Lei12711ComAcPcd = "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA";
 
     /// <summary>Distribuição institucional (Res. Unifesspa 532/2021 + art. 12) — quadro fixo por edital, fora do art. 10.</summary>
-    public const string Institucional = "DISTRIB-VAGAS-INSTITUCIONAL";
+    public const string Institucional = "DISTRIBUICAO-INSTITUCIONAL";
 
     /// <summary>Processo Seletivo Indígena e Quilombola — quadro fixo, exclusivo de vagas por acréscimo.</summary>
-    public const string Psiq = "DISTRIB-VAGAS-PSIQ";
+    public const string Psiq = "DISTRIBUICAO-POR-ACRESCIMO-INDIGENA-E-QUILOMBOLA";
 
     /// <summary>
     /// Quadro fixo com ampla concorrência e a reserva de pessoa com deficiência (<c>AC_PCD</c>),
     /// sem as cotas federais — o processo que reserva vaga de PcD fora do regime da Lei 12.711,
     /// como o PSE Educação do Campo (UNI-REQ-0140).
     /// </summary>
-    public const string ComAcPcd = "DISTRIB-VAGAS-COM-AC-PCD";
+    public const string ComAcPcd = "DISTRIBUICAO-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA";
 
     /// <summary>
     /// Todo código reconhecido — partição fechada com <see cref="EhQuadroFixo"/>: uma regra nova

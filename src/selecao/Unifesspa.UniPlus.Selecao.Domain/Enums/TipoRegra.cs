@@ -59,10 +59,10 @@ public enum TipoRegra
     /// <summary>Enquadramento em cota (ex.: <c>RENDA-PER-CAPITA-LEI-12711</c>).</summary>
     RegraElegibilidade = 8,
 
-    /// <summary>Cálculo do quadro de vagas reservadas (ex.: <c>DISTRIB-VAGAS-LEI-12711</c>, <c>DISTRIB-VAGAS-INSTITUCIONAL</c>).</summary>
+    /// <summary>Cálculo do quadro de vagas reservadas (ex.: <c>DISTRIBUICAO-LEI-12711</c>, <c>DISTRIBUICAO-INSTITUCIONAL</c>).</summary>
     RegraDistribuicaoVagas = 9,
 
-    /// <summary>Reconciliação do estouro por arredondamento na distribuição (ex.: <c>RECONCILIACAO-VAGAS-ART11-PU</c>).</summary>
+    /// <summary>Reconciliação do estouro por arredondamento na distribuição (ex.: <c>RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO</c>).</summary>
     RegraAjusteDistribuicaoVagas = 10,
 
     /// <summary>Prazo/janela/instâncias do recurso (P-D cronograma).</summary>

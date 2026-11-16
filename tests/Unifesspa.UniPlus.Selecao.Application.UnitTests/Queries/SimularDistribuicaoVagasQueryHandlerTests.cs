@@ -189,9 +189,9 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         mocks.OfertaCursoReader.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(NovaOferta(ofertaCursoId));
         mocks.RegraCatalogoReader.ObterAsync(RegraDistribuicaoVagasCodigo.Lei12711, "v1", Arg.Any<CancellationToken>())
             .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Lei12711));
-        mocks.RegraCatalogoReader.ObterAsync("RECONCILIACAO-VAGAS-ART11-PU", "v1", Arg.Any<CancellationToken>())
+        mocks.RegraCatalogoReader.ObterAsync("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", Arg.Any<CancellationToken>())
             .Returns(RegraCatalogo.Criar(
-                "RECONCILIACAO-VAGAS-ART11-PU", "v1", TipoRegra.RegraAjusteDistribuicaoVagas, Json("{}"), Json("[]"), "art. 11 §único"));
+                "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", TipoRegra.RegraAjusteDistribuicaoVagas, Json("{}"), Json("[]"), "art. 11 §único"));
         // PPI 50%, Quilombola 10%, PcD 10% — mesmos percentuais do caso "sem retiradas
         // nem suplementos" documentado na issue #1282 (VO=40, PR=0,5 -> VR=20).
         mocks.ReferenciaReservaDemograficaReader.ObterPorIdAsync(referenciaId, Arg.Any<CancellationToken>())
@@ -208,7 +208,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
             processoId,
             [new ConfiguracaoDistribuicaoVagasInput(
                 ofertaCursoId, 40, 0.5m, RegraDistribuicaoVagasCodigo.Lei12711, "v1",
-                "RECONCILIACAO-VAGAS-ART11-PU", "v1", referenciaId,
+                "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", referenciaId,
                 [.. federaisMaisAc.Select(f => f.Id)], [])]);
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(

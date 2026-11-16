@@ -161,9 +161,9 @@ public static class RegraCatalogoSeed
             "Lei 12.711/2012 art. 1º parágrafo único (red. Lei 14.723/2023) — renda familiar bruta per capita ≤ 1 SM (ensino superior); PN MEC 18/2012 art. 6º-7º — apuração da renda mensal per capita + exclusões obrigatórias"),
 
         // regra_ajuste_distribuicao_vagas — reconciliação do estouro
-        new(SeedId(17), "RECONCILIACAO-VAGAS-ART11-PU", VersaoV1, TipoRegra.RegraAjusteDistribuicaoVagas,
+        new(SeedId(17), "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", VersaoV1, TipoRegra.RegraAjusteDistribuicaoVagas,
             """
-            {"reconciliacao_federal":"CAP_VO + PRIORIDADE_LB (art. 11 §único, embutida em DISTRIB-VAGAS-LEI-12711)","motores_nao_art10":"REDUZIR_DE | REDUZIR_PROPORCIONAL_EM (apenas distribuições institucionais; clamp >=0; VEDADOS à Lei 12.711)"}
+            {"reconciliacao_federal":"CAP_VO + PRIORIDADE_LB (art. 11 §único, embutida em DISTRIBUICAO-LEI-12711)","motores_nao_art10":"REDUZIR_DE | REDUZIR_PROPORCIONAL_EM (apenas distribuições institucionais; clamp >=0; VEDADOS à Lei 12.711)"}
             """,
             """
             ["cap em VO: a reserva nunca excede as vagas da oferta (art. 11 §único I)","prioridade LB>LI: na escassez a LI cede primeiro (art. 11 §único II)","estouro sobre o nominal 50% (VR) e LEGAL — piso (art. 10 II), absorvido pela AC","curso pequeno e determinístico por lei (capa, não bloqueia)"]
@@ -225,7 +225,7 @@ public static class RegraCatalogoSeed
             AlgoritmoContagemPrazoCodigo.BaseLegalDeclaradaPeloEdital),
 
         // As cinco entradas abaixo declaram MODALIDADES_ADMITIDAS: o conjunto exato que a
-        // regra reconhece, sem folga — a folga de AC_PCD dentro de DISTRIB-VAGAS-LEI-12711 é
+        // regra reconhece, sem folga — a folga de AC_PCD dentro de DISTRIBUICAO-LEI-12711 é
         // o que a variação -COM-AC-PCD isola como regra própria. Sem o rol, qualquer
         // modalidade era aceita sob qualquer regra, e uma calculada fora do art. 10 falhava
         // com "não aparece no quadro calculado" — sintoma interno, não a causa.
@@ -238,7 +238,7 @@ public static class RegraCatalogoSeed
             """,
             "Portaria Normativa MEC nº 18/2012 art. 10 e 11 (red. PN 2.027/2023) — distribuição e arredondamento das vagas reservadas; Lei 12.711/2012 (red. Lei 14.723/2023)"),
 
-        // A mesma fórmula de DISTRIB-VAGAS-LEI-12711, com AC_PCD (retirada da ampla
+        // A mesma fórmula de DISTRIBUICAO-LEI-12711, com AC_PCD (retirada da ampla
         // concorrência) como décima modalidade do rol. Ofertar AC_PCD junto das cotas é
         // válido: a exclusividade entre cota da lei e ação afirmativa vale por inscrição, não
         // por oferta (UNI-REQ-0142).
