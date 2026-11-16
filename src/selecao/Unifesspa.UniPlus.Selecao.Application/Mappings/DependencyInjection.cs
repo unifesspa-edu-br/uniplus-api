@@ -87,6 +87,10 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<AvaliacaoDaInscricaoDoCandidato>();
         services.AddScoped<ConsultaDaInscricaoDoCandidato>();
         services.AddScoped<FormularioDaInscricao>();
+        services.AddScoped<PreparoDoEnvio>();
+        services.AddScoped<AvaliacaoDoEnvio>();
+        services.AddScoped<GravacaoDoEnvio>();
+        services.AddScoped<EnvioDaInscricao>();
     }
 
     // Todo comando que publica (versão, ato avulso, item do edital) lê o relógio uma só vez por esta leitura.

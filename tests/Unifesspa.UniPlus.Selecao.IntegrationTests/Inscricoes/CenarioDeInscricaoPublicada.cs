@@ -89,12 +89,21 @@ internal sealed class CenarioDeInscricaoPublicada
     public async Task<Result<ReciboDaInscricaoDto>> EnviarAsync(UniPlusDbContext db, Guid processoId, InscricaoRequest pedido, string etag, string numero) =>
         await SubmeterInscricaoCommandHandler.Handle(
             new SubmeterInscricaoCommand(processoId, pedido, PrecondicaoIfMatch.DeTags([etag])),
-            NovoRepositorioDeInscricao(db),
-            ProcessoSeletivoRepositoryDeTeste.Criar(db), new CertameDivulgadoRepository(db), Substitute.For<IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), GeoQueConfirma(),
-            GeradorQueDevolve(numero), db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), DentroDoPeriodo, CancellationToken.None);
+            new InscricaoAtivaDoCandidato(NovoRepositorioDeInscricao(db)), PeriodoDe(db), EnvioDe(db, numero),
+            UsuarioComCpf(PersonasDeTeste.FernandaDrumond), DentroDoPeriodo, CancellationToken.None);
 
     internal static VersaoDaInscricao VersaoDaInscricaoDe(UniPlusDbContext db) =>
         new(new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs);
+
+    private EnvioDaInscricao EnvioDe(UniPlusDbContext db, string numero)
+    {
+        IDocumentoDaInscricaoRepository documentos = Substitute.For<IDocumentoDaInscricaoRepository>();
+        IInscricaoRepository inscricoes = NovoRepositorioDeInscricao(db);
+        return new EnvioDaInscricao(
+            new PreparoDoEnvio(VersaoDaInscricaoDe(db)),
+            new AvaliacaoDoEnvio(GeoQueConfirma(), Fuso(), documentos),
+            new GravacaoDoEnvio(inscricoes, documentos, GeradorQueDevolve(numero), new GravacaoDaInscricao(inscricoes, db)));
+    }
 
     internal static PeriodoDaInscricao PeriodoDe(UniPlusDbContext db) =>
         new(new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs, Fuso());
