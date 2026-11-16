@@ -5,13 +5,13 @@ public static class TipoEtapaErrorCodes
 {
     public const string CodigoObrigatorio = "TipoEtapa.CodigoObrigatorio";
     public const string CodigoTamanho = "TipoEtapa.CodigoTamanho";
-    public const string CodigoComCaractereNulo = "TipoEtapa.CodigoComCaractereNulo";
+    public const string CodigoCaractereInvalido = "TipoEtapa.CodigoCaractereInvalido";
     public const string CodigoJaExiste = "TipoEtapa.CodigoJaExiste";
     public const string NomeObrigatorio = "TipoEtapa.NomeObrigatorio";
     public const string NomeTamanho = "TipoEtapa.NomeTamanho";
-    public const string NomeComCaractereNulo = "TipoEtapa.NomeComCaractereNulo";
+    public const string NomeCaractereInvalido = "TipoEtapa.NomeCaractereInvalido";
     public const string DescricaoTamanho = "TipoEtapa.DescricaoTamanho";
-    public const string DescricaoComCaractereNulo = "TipoEtapa.DescricaoComCaractereNulo";
+    public const string DescricaoCaractereInvalido = "TipoEtapa.DescricaoCaractereInvalido";
     public const string AdmitePontuacaoObrigatorio = "TipoEtapa.AdmitePontuacaoObrigatorio";
     public const string AdmiteEliminacaoObrigatorio = "TipoEtapa.AdmiteEliminacaoObrigatorio";
     public const string SemCaraterAdmitido = "TipoEtapa.SemCaraterAdmitido";

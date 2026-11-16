@@ -28,9 +28,9 @@ public sealed class TipoProcessoTests
     }
 
     [Theory(DisplayName = "Recusa U+0000 em todos os campos textuais na criação")]
-    [InlineData("codigo", TipoProcessoErrorCodes.CodigoComCaractereNulo)]
-    [InlineData("nome", TipoProcessoErrorCodes.NomeComCaractereNulo)]
-    [InlineData("descricao", TipoProcessoErrorCodes.DescricaoComCaractereNulo)]
+    [InlineData("codigo", TipoProcessoErrorCodes.CodigoCaractereInvalido)]
+    [InlineData("nome", TipoProcessoErrorCodes.NomeCaractereInvalido)]
+    [InlineData("descricao", TipoProcessoErrorCodes.DescricaoCaractereInvalido)]
     public void Criar_CampoComCaractereNulo_Recusa(string campo, string codigoEsperado)
     {
         string invalido = $"valor{(char)0}invalido";
@@ -48,8 +48,8 @@ public sealed class TipoProcessoTests
     }
 
     [Theory(DisplayName = "Recusa U+0000 nos campos editáveis na atualização")]
-    [InlineData("nome", TipoProcessoErrorCodes.NomeComCaractereNulo)]
-    [InlineData("descricao", TipoProcessoErrorCodes.DescricaoComCaractereNulo)]
+    [InlineData("nome", TipoProcessoErrorCodes.NomeCaractereInvalido)]
+    [InlineData("descricao", TipoProcessoErrorCodes.DescricaoCaractereInvalido)]
     public void Atualizar_CampoComCaractereNulo_Recusa(string campo, string codigoEsperado)
     {
         TipoProcesso tipo = TipoProcesso.Criar("CODIGO_VALIDO", "Nome válido", "Descrição válida").Value!;
@@ -64,6 +64,24 @@ public sealed class TipoProcessoTests
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(codigoEsperado);
+    }
+
+    [Theory(DisplayName = "Código e nome de uma linha recusam tabulação, quebra de linha e formatação")]
+    [InlineData("CODIGO\tA")]
+    [InlineData("CODIGO\nA")]
+    [InlineData("CODIGO\u202EA")]
+    public void Criar_CodigoENomeComInvisivel_Recusam(string texto)
+    {
+        TipoProcesso.Criar(texto, "Nome válido", null).Error!.Code.Should().Be(TipoProcessoErrorCodes.CodigoCaractereInvalido);
+        TipoProcesso.Criar("CODIGO_VALIDO", texto, null).Error!.Code.Should().Be(TipoProcessoErrorCodes.NomeCaractereInvalido);
+    }
+
+    [Fact(DisplayName = "A descrição aceita várias linhas e tabulação e recusa os demais controles")]
+    public void Criar_DescricaoDeVariasLinhas_AceitaEControleRecusa()
+    {
+        TipoProcesso.Criar("CODIGO_VALIDO", "Nome válido", "linha 1\r\nlinha\t2").IsSuccess.Should().BeTrue();
+        TipoProcesso.Criar("CODIGO_VALIDO", "Nome válido", "linha\u0007")
+            .Error!.Code.Should().Be(TipoProcessoErrorCodes.DescricaoCaractereInvalido);
     }
 
     [Theory(DisplayName = "Código ou nome nulos não lançam — devolvem a violação de domínio")]

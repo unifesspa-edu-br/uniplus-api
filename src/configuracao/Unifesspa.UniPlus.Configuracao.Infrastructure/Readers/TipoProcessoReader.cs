@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Extensions;
 
 /// <summary>Reader cross-módulo dos tipos ativos; não expõe itens desativados.</summary>
 internal sealed class TipoProcessoReader : ITipoProcessoReader
@@ -36,8 +37,10 @@ internal sealed class TipoProcessoReader : ITipoProcessoReader
     public async Task<TipoProcessoView?> ObterAtivoPorCodigoAsync(string codigo, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(codigo);
+
+        string codigoNormalizado = TextoNormalizavel.AparadoEmNfc(codigo);
         TipoProcesso? tipo = await _dbContext.TiposProcesso.AsNoTracking()
-            .FirstOrDefaultAsync(tipo => tipo.Codigo == codigo.Trim() && tipo.Ativo, cancellationToken).ConfigureAwait(false);
+            .FirstOrDefaultAsync(tipo => tipo.Codigo == codigoNormalizado && tipo.Ativo, cancellationToken).ConfigureAwait(false);
         return tipo is null ? null : ParaView(tipo);
     }
 

@@ -43,9 +43,9 @@ public sealed class TipoEtapaTests
     }
 
     [Theory(DisplayName = "Recusa U+0000 em todos os campos textuais na criação")]
-    [InlineData("codigo", TipoEtapaErrorCodes.CodigoComCaractereNulo)]
-    [InlineData("nome", TipoEtapaErrorCodes.NomeComCaractereNulo)]
-    [InlineData("descricao", TipoEtapaErrorCodes.DescricaoComCaractereNulo)]
+    [InlineData("codigo", TipoEtapaErrorCodes.CodigoCaractereInvalido)]
+    [InlineData("nome", TipoEtapaErrorCodes.NomeCaractereInvalido)]
+    [InlineData("descricao", TipoEtapaErrorCodes.DescricaoCaractereInvalido)]
     public void Criar_CampoComCaractereNulo_Recusa(string campo, string codigoEsperado)
     {
         string invalido = $"valor{(char)0}invalido";
@@ -62,9 +62,27 @@ public sealed class TipoEtapaTests
         result.Error!.Code.Should().Be(codigoEsperado);
     }
 
+    [Theory(DisplayName = "Código e nome de uma linha recusam tabulação, quebra de linha e formatação")]
+    [InlineData("CODIGO\tA")]
+    [InlineData("CODIGO\nA")]
+    [InlineData("CODIGO\u202EA")]
+    public void Criar_CodigoENomeComInvisivel_Recusam(string texto)
+    {
+        TipoEtapa.Criar(texto, "Nome válido", null, true, true).Error!.Code.Should().Be(TipoEtapaErrorCodes.CodigoCaractereInvalido);
+        TipoEtapa.Criar("CODIGO_VALIDO", texto, null, true, true).Error!.Code.Should().Be(TipoEtapaErrorCodes.NomeCaractereInvalido);
+    }
+
+    [Fact(DisplayName = "A descrição aceita várias linhas e tabulação e recusa os demais controles")]
+    public void Criar_DescricaoDeVariasLinhas_AceitaEControleRecusa()
+    {
+        TipoEtapa.Criar("CODIGO_VALIDO", "Nome válido", "linha 1\r\nlinha\t2", true, true).IsSuccess.Should().BeTrue();
+        TipoEtapa.Criar("CODIGO_VALIDO", "Nome válido", "linha\u0007", true, true)
+            .Error!.Code.Should().Be(TipoEtapaErrorCodes.DescricaoCaractereInvalido);
+    }
+
     [Theory(DisplayName = "Recusa U+0000 nos campos editáveis na atualização")]
-    [InlineData("nome", TipoEtapaErrorCodes.NomeComCaractereNulo)]
-    [InlineData("descricao", TipoEtapaErrorCodes.DescricaoComCaractereNulo)]
+    [InlineData("nome", TipoEtapaErrorCodes.NomeCaractereInvalido)]
+    [InlineData("descricao", TipoEtapaErrorCodes.DescricaoCaractereInvalido)]
     public void Atualizar_CampoComCaractereNulo_Recusa(string campo, string codigoEsperado)
     {
         TipoEtapa tipo = TipoEtapa.Criar("CODIGO_VALIDO", "Nome válido", "Descrição válida", true, true).Value!;

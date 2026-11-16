@@ -40,6 +40,18 @@ public sealed class ObrigatoriedadeLegalCriarTests
         HashCanonicalComputer.IsValidHashShape(regra.Hash).Should().BeTrue();
     }
 
+    [Fact(DisplayName = "Criar e Atualizar com o código do tipo decomposto guardam o código em NFC")]
+    public void CriarEAtualizar_TipoProcessoDecomposto_GuardaNormalizado()
+    {
+        ObrigatoriedadeLegal regra = Nova(tipoProcessoCodigo: " PO\u0301S ").Value!;
+        regra.TipoProcessoCodigo.Should().Be("PÓS");
+
+        Result atualizado = regra.Atualizar("ADMISSA\u0303O", regra.Categoria, regra.RegraCodigo, PredicadoBase, TextoBase, regra.VigenciaInicio, regra.VigenciaFim);
+
+        atualizado.IsSuccess.Should().BeTrue(atualizado.Error?.Message);
+        regra.TipoProcessoCodigo.Should().Be("ADMISSÃO");
+    }
+
     [Theory(DisplayName = "TipoProcessoCodigo estruturalmente válido é aceito; a atividade é validada pelo catálogo no handler")]
     [InlineData("*")]
     [InlineData("SiSU")]

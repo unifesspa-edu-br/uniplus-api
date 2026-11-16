@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
-using System.Text;
-
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
@@ -21,7 +19,18 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     private const int CodigoMaxLength = 64;
     private const int NomeMaxLength = 200;
     private const int DescricaoMaxLength = 1000;
-    private const char CaractereNulo = (char)0;
+
+    private static readonly CampoTextual CampoCodigo = new(
+        "Código do tipo de etapa", CodigoMaxLength,
+        TipoEtapaErrorCodes.CodigoTamanho, TipoEtapaErrorCodes.CodigoCaractereInvalido, FormaDoTexto.UmaLinha);
+
+    private static readonly CampoTextual CampoNome = new(
+        "Nome do tipo de etapa", NomeMaxLength,
+        TipoEtapaErrorCodes.NomeTamanho, TipoEtapaErrorCodes.NomeCaractereInvalido, FormaDoTexto.UmaLinha);
+
+    private static readonly CampoTextual CampoDescricao = new(
+        "Descrição do tipo de etapa", DescricaoMaxLength,
+        TipoEtapaErrorCodes.DescricaoTamanho, TipoEtapaErrorCodes.DescricaoCaractereInvalido, FormaDoTexto.VariasLinhas);
 
     private readonly List<TipoConceito> _conceitosAdmitidos = [];
 
@@ -74,33 +83,13 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
     /// </summary>
     public static Result<string> ValidarCodigo(string? codigo)
     {
-        if (string.IsNullOrWhiteSpace(codigo))
-        {
-            return Result<string>.ValidationFailure([new("codigo", new DomainError(
-                TipoEtapaErrorCodes.CodigoObrigatorio, "Código do tipo de etapa é obrigatório."))]);
-        }
+        List<FieldError> erros = [];
 
-        // NFC além do Trim: sem normalizar aqui, duas grafias Unicode do mesmo texto (forma
-        // composta e decomposta) cadastrariam como códigos DIFERENTES — o índice único do banco
-        // é ordinal/binário, então as duas colidiriam com a checagem de duplicidade e, pior,
-        // um lookup por código (TipoEtapaReader) feito com a outra forma nunca encontraria este
-        // registro, mesmo sendo textualmente "o mesmo" código.
-        string codigoNormalizado = codigo.Trim().Normalize(NormalizationForm.FormC);
-        if (codigoNormalizado.Contains(CaractereNulo))
-        {
-            return Result<string>.ValidationFailure([new("codigo", new DomainError(
-                TipoEtapaErrorCodes.CodigoComCaractereNulo,
-                "Código do tipo de etapa não pode conter o caractere nulo (U+0000)."))]);
-        }
-
-        if (codigoNormalizado.Length > CodigoMaxLength)
-        {
-            return Result<string>.ValidationFailure([new("codigo", new DomainError(
-                TipoEtapaErrorCodes.CodigoTamanho,
-                $"Código do tipo de etapa deve ter no máximo {CodigoMaxLength} caracteres."))]);
-        }
-
-        return Result<string>.Success(codigoNormalizado);
+        // O NFC, além do Trim, é do campo: sem normalizar, duas grafias Unicode do mesmo texto (forma
+        // composta e decomposta) cadastrariam como códigos DIFERENTES — o índice único do banco é
+        // ordinal/binário, e um lookup por código com a outra forma nunca encontraria este registro.
+        string? normalizado = CampoCodigo.Obrigatorio(codigo, "codigo", TipoEtapaErrorCodes.CodigoObrigatorio, erros);
+        return erros.Count > 0 ? Result<string>.ValidationFailure(erros) : Result<string>.Success(normalizado!);
     }
 
     /// <summary>
@@ -118,49 +107,19 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
         string? nome, string? descricao, bool? admitePontuacao, bool? admiteEliminacao)
     {
         List<FieldError> erros = [];
+        string? nomeNormalizado = CampoNome.Obrigatorio(nome, "nome", TipoEtapaErrorCodes.NomeObrigatorio, erros);
+        string? descricaoNormalizada = CampoDescricao.Opcional(descricao, "descricao", erros);
+        ConferirDeclaracoes(admitePontuacao, admiteEliminacao, erros);
+        ConferirCaraterAdmitido(admitePontuacao, admiteEliminacao, erros);
 
-        string? nomeNormalizado = null;
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            erros.Add(new("nome", new DomainError(
-                TipoEtapaErrorCodes.NomeObrigatorio, "Nome do tipo de etapa é obrigatório.")));
-        }
-        else
-        {
-            nomeNormalizado = nome.Trim().Normalize(NormalizationForm.FormC);
-            if (nomeNormalizado.Contains(CaractereNulo))
-            {
-                erros.Add(new("nome", new DomainError(
-                    TipoEtapaErrorCodes.NomeComCaractereNulo,
-                    "Nome do tipo de etapa não pode conter o caractere nulo (U+0000).")));
-                nomeNormalizado = null;
-            }
-            else if (nomeNormalizado.Length > NomeMaxLength)
-            {
-                erros.Add(new("nome", new DomainError(
-                    TipoEtapaErrorCodes.NomeTamanho,
-                    $"Nome do tipo de etapa deve ter no máximo {NomeMaxLength} caracteres.")));
-                nomeNormalizado = null;
-            }
-        }
+        return erros.Count > 0
+            ? Result<(string, string?, bool, bool)>.ValidationFailure(erros)
+            : Result<(string, string?, bool, bool)>.Success(
+                (nomeNormalizado!, descricaoNormalizada, admitePontuacao!.Value, admiteEliminacao!.Value));
+    }
 
-        string? descricaoNormalizada = NormalizarOpcional(descricao);
-        if (descricaoNormalizada is not null)
-        {
-            if (descricaoNormalizada.Contains(CaractereNulo))
-            {
-                erros.Add(new("descricao", new DomainError(
-                    TipoEtapaErrorCodes.DescricaoComCaractereNulo,
-                    "Descrição do tipo de etapa não pode conter o caractere nulo (U+0000).")));
-            }
-            else if (descricaoNormalizada.Length > DescricaoMaxLength)
-            {
-                erros.Add(new("descricao", new DomainError(
-                    TipoEtapaErrorCodes.DescricaoTamanho,
-                    $"Descrição do tipo de etapa deve ter no máximo {DescricaoMaxLength} caracteres.")));
-            }
-        }
-
+    private static void ConferirDeclaracoes(bool? admitePontuacao, bool? admiteEliminacao, List<FieldError> erros)
+    {
         if (admitePontuacao is null)
         {
             erros.Add(new("admitePontuacao", new DomainError(
@@ -174,23 +133,18 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
                 TipoEtapaErrorCodes.AdmiteEliminacaoObrigatorio,
                 "É obrigatório declarar se o tipo de etapa admite eliminar candidato.")));
         }
+    }
 
-        // Um tipo que não compõe nota nem elimina não configura etapa nenhuma: toda etapa
-        // do certame declara um caráter, e nenhum caráter sobraria para escolher.
+    // Um tipo que não compõe nota nem elimina não configura etapa nenhuma: toda etapa do certame declara um
+    // caráter, e nenhum caráter sobraria para escolher.
+    private static void ConferirCaraterAdmitido(bool? admitePontuacao, bool? admiteEliminacao, List<FieldError> erros)
+    {
         if (admitePontuacao == false && admiteEliminacao == false)
         {
             erros.Add(new("admitePontuacao", new DomainError(
                 TipoEtapaErrorCodes.SemCaraterAdmitido,
                 "O tipo de etapa deve admitir compor a nota final, eliminar candidato, ou os dois.")));
         }
-
-        if (erros.Count > 0)
-        {
-            return Result<(string, string?, bool, bool)>.ValidationFailure(erros);
-        }
-
-        return Result<(string, string?, bool, bool)>.Success(
-            (nomeNormalizado!, descricaoNormalizada, admitePontuacao!.Value, admiteEliminacao!.Value));
     }
 
     /// <summary>
@@ -295,7 +249,4 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
         Ativo = false;
         return Result.Success();
     }
-
-    private static string? NormalizarOpcional(string? valor) =>
-        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim().Normalize(NormalizationForm.FormC);
 }

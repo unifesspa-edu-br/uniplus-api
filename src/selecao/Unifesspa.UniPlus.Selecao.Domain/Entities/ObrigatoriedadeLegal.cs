@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
@@ -204,7 +205,7 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
         DateOnly? vigenciaInicio,
         DateOnly? vigenciaFim)
     {
-        TipoProcessoCodigo = ValidacaoDaObrigatoriedadeLegal.Aparar(tipoProcessoCodigo);
+        TipoProcessoCodigo = TextoNormalizavel.AparadoEmNfc(ValidacaoDaObrigatoriedadeLegal.Aparar(tipoProcessoCodigo));
         Categoria = categoria;
         RegraCodigo = ValidacaoDaObrigatoriedadeLegal.Aparar(regraCodigo);
         Predicado = predicado!;

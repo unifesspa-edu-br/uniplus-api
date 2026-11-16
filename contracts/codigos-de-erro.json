@@ -2812,9 +2812,9 @@
       "titulo": "Declaração de que o tipo de etapa compõe a nota final é obrigatória"
     },
     {
-      "codigo": "uniplus.configuracao.tipo_etapa.codigo_com_caractere_nulo",
+      "codigo": "uniplus.configuracao.tipo_etapa.codigo_caractere_invalido",
       "status": 422,
-      "titulo": "Código do tipo de etapa contém U+0000"
+      "titulo": "Código do tipo de etapa contém o caractere nulo ou caractere que não é texto"
     },
     {
       "codigo": "uniplus.configuracao.tipo_etapa.codigo_ja_existe",
@@ -2857,9 +2857,9 @@
       "titulo": "Tipo de etapa alterado concorrentemente"
     },
     {
-      "codigo": "uniplus.configuracao.tipo_etapa.descricao_com_caractere_nulo",
+      "codigo": "uniplus.configuracao.tipo_etapa.descricao_caractere_invalido",
       "status": 422,
-      "titulo": "Descrição do tipo de etapa contém U+0000"
+      "titulo": "A descrição do tipo de etapa contém o caractere nulo, de controle ou de formatação"
     },
     {
       "codigo": "uniplus.configuracao.tipo_etapa.descricao_tamanho",
@@ -2877,9 +2877,9 @@
       "titulo": "Tipo de etapa não encontrado"
     },
     {
-      "codigo": "uniplus.configuracao.tipo_etapa.nome_com_caractere_nulo",
+      "codigo": "uniplus.configuracao.tipo_etapa.nome_caractere_invalido",
       "status": 422,
-      "titulo": "Nome do tipo de etapa contém U+0000"
+      "titulo": "Nome do tipo de etapa contém o caractere nulo ou caractere que não é texto"
     },
     {
       "codigo": "uniplus.configuracao.tipo_etapa.nome_obrigatorio",
@@ -2907,9 +2907,9 @@
       "titulo": "Tipo de etapa não admite nenhum caráter de etapa"
     },
     {
-      "codigo": "uniplus.configuracao.tipo_processo.codigo_com_caractere_nulo",
+      "codigo": "uniplus.configuracao.tipo_processo.codigo_caractere_invalido",
       "status": 422,
-      "titulo": "Código do tipo de processo seletivo contém U+0000"
+      "titulo": "Código do tipo de processo seletivo contém o caractere nulo ou caractere que não é texto"
     },
     {
       "codigo": "uniplus.configuracao.tipo_processo.codigo_ja_existe",
@@ -2937,9 +2937,9 @@
       "titulo": "Tipo de processo seletivo alterado concorrentemente"
     },
     {
-      "codigo": "uniplus.configuracao.tipo_processo.descricao_com_caractere_nulo",
+      "codigo": "uniplus.configuracao.tipo_processo.descricao_caractere_invalido",
       "status": 422,
-      "titulo": "Descrição do tipo de processo seletivo contém U+0000"
+      "titulo": "A descrição do tipo de processo seletivo contém o caractere nulo, de controle ou de formatação"
     },
     {
       "codigo": "uniplus.configuracao.tipo_processo.descricao_tamanho",
@@ -2962,9 +2962,9 @@
       "titulo": "Tipo de processo seletivo não encontrado"
     },
     {
-      "codigo": "uniplus.configuracao.tipo_processo.nome_com_caractere_nulo",
+      "codigo": "uniplus.configuracao.tipo_processo.nome_caractere_invalido",
       "status": 422,
-      "titulo": "Nome do tipo de processo seletivo contém U+0000"
+      "titulo": "Nome do tipo de processo seletivo contém o caractere nulo ou caractere que não é texto"
     },
     {
       "codigo": "uniplus.configuracao.tipo_processo.nome_obrigatorio",
