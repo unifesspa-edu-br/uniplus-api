@@ -4,19 +4,26 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ImportacaoDoResultado;
 
 /// <summary>
 /// A pergunta única que decide se uma regra é válida: o fato que ela cita é conhecido no ponto onde ela
 /// é usada? (UNI-REQ-0144, UNI-REQ-0077.) O fato é conhecido quando (1) o produtor é o formulário do
 /// ponto ou um que ele alcança, (2) a fase do catálogo é igual ou anterior ao momento do ponto e (3) o
 /// derivado tem todas as dependências conhecidas pelas mesmas condições; o ciclo não é conhecido. O fato
-/// que nenhum formulário produz e o catálogo situa numa fase é resolvido pelo sistema nela.
+/// que nenhum formulário produz e o catálogo situa numa fase é resolvido pelo sistema nela. O dado que um
+/// relatório da importação traz em toda linha, inteiro quando é parte de dado básico, é resposta anterior a
+/// todos os formulários, e o fato "veio na importação" do dado básico é conhecido quando algum relatório
+/// declara o dado inteiro, mesmo em coluna opcional, que pode vir preenchida.
 /// </summary>
 public sealed record ConhecimentoDosFatos(
     IReadOnlyList<ColetaDoFormulario> Coletas,
     CatalogoDosFatosCitados Catalogo,
     IReadOnlyCollection<FaseCronograma> Cronograma)
 {
+    /// <summary>Os relatórios da importação do resultado; nenhum no processo que não declara importação.</summary>
+    public RelatoriosConsiderados Relatorios { get; init; } = RelatoriosConsiderados.Nenhum;
+
     public ConhecimentoDoFatoNoPonto NoPonto(string fato, PontoDeUso ponto)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(fato);
@@ -48,9 +55,17 @@ public sealed record ConhecimentoDosFatos(
         return Coletas
             .Where(coleta => coleta.Formulario.Codigo != ponto.Formulario?.Codigo && AlcanceDasRespostas.Alcanca(ponto, coleta.Formulario, Cronograma))
             .SelectMany(static coleta => coleta.FatosProduzidos)
+            .Concat(FatosDaImportacao)
             .Where(fato => NoPonto(fato, ponto) == ConhecimentoDoFatoNoPonto.Conhecido)
             .ToHashSet(StringComparer.Ordinal);
     }
+
+    /// <summary>Os fatos que os relatórios trazem em toda linha e os fatos de presença dos dados que eles trazem inteiros.</summary>
+    private IEnumerable<string> FatosDaImportacao =>
+        Relatorios.Considerados.SelectMany(static leiaute => leiaute.Dados)
+            .Where(static dado => dado.Presenca == PresencaDoDadoNoArquivo.EmTodaLinha)
+            .Select(static dado => dado.FatoCodigo)
+            .Concat(Catalogo.PresencasNaImportacao.Select(static presenca => presenca.Fato));
 
     private ConhecimentoDoFatoNoPonto NoPonto(string fato, PontoDeUso ponto, HashSet<string> emAvaliacao)
     {
@@ -67,8 +82,9 @@ public sealed record ConhecimentoDosFatos(
     }
 
     /// <summary>
-    /// O formulário que produz o fato é o do ponto ou um que ele alcança. Sem formulário produtor, o fato
-    /// declarado não existe no processo, e o derivado ou o resolvido pelo sistema vale pelo catálogo.
+    /// O formulário que produz o fato é o do ponto ou um que ele alcança. Sem formulário produtor, o fato vale
+    /// pela importação, quando um relatório o traz, ou pelo catálogo: o declarado não existe no processo, e o
+    /// derivado ou o resolvido pelo sistema vale pelo catálogo.
     /// </summary>
     private ConhecimentoDoFatoNoPonto DaOrigem(string fato, PontoDeUso ponto)
     {
@@ -80,6 +96,23 @@ public sealed record ConhecimentoDosFatos(
                 : ConhecimentoDoFatoNoPonto.RespostaNaoAlcancada;
         }
 
+        return DaImportacao(fato) ?? DoCatalogo(fato);
+    }
+
+    private ConhecimentoDoFatoNoPonto? DaImportacao(string fato)
+    {
+        if (Catalogo.PresencasNaImportacao.FirstOrDefault(presenca => string.Equals(presenca.Fato, fato, StringComparison.Ordinal)) is { } presenca)
+        {
+            return Relatorios.DeclaramTodosEmAlgum(presenca.FatosDoDadoBasico) ? ConhecimentoDoFatoNoPonto.Conhecido : ConhecimentoDoFatoNoPonto.ForaDoProcesso;
+        }
+
+        IReadOnlySet<string>? dadoBasico = Catalogo.PresencasNaImportacao.FirstOrDefault(presenca => presenca.FatosDoDadoBasico.Contains(fato))?.FatosDoDadoBasico;
+        bool trazido = dadoBasico is null ? Relatorios.Traz(fato) : Relatorios.TrazTodosEmAlgum(dadoBasico);
+        return trazido ? ConhecimentoDoFatoNoPonto.Conhecido : null;
+    }
+
+    private ConhecimentoDoFatoNoPonto DoCatalogo(string fato)
+    {
         bool situadoNoCatalogo = Catalogo.FaseDoCatalogoPorFato.ContainsKey(fato) || Catalogo.DependenciasDosDerivados.ContainsKey(fato);
         return situadoNoCatalogo && !Catalogo.FatosDeclarados.Contains(fato)
             ? ConhecimentoDoFatoNoPonto.Conhecido
