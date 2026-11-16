@@ -16448,6 +16448,7 @@
       "BaseLegalBonusRegionalDto": {
         "required": [
           "id",
+          "codigo",
           "tipoInstrumento",
           "identificacao",
           "descricao",
@@ -16459,6 +16460,9 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
           },
           "tipoInstrumento": {
             "type": "string"

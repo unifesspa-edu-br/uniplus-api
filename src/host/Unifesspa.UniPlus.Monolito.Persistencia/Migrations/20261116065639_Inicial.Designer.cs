@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261116064026_Inicial")]
+    [Migration("20261116065639_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -3101,6 +3101,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("codigo");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -3151,6 +3157,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                     b.HasKey("Id")
                         .HasName("pk_bases_legais_do_bonus_regional");
+
+                    b.HasIndex("Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_bases_legais_do_bonus_regional_codigo_vivo")
+                        .HasFilter("is_deleted = false");
 
                     b.HasIndex("TipoInstrumento")
                         .HasDatabaseName("ix_bases_legais_do_bonus_regional_tipo_instrumento");

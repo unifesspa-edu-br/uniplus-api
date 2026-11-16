@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
@@ -17,6 +18,9 @@ public sealed class BaseLegalBonusRegional : SoftDeletableEntity, IAuditableEnti
     private const int DescricaoMaxLength = 2000;
 
     private readonly List<BaseLegalBonusRegionalMunicipio> _municipios = [];
+
+    /// <summary>Código estável do ato, formado na criação e nunca alterado (o documento de configuração referencia por ele).</summary>
+    public CodigoBaseLegalBonusRegional Codigo { get; private set; } = null!;
 
     public TipoInstrumentoNormativo TipoInstrumento { get; private set; }
     public string Identificacao { get; private set; } = string.Empty;
@@ -142,15 +146,33 @@ public sealed class BaseLegalBonusRegional : SoftDeletableEntity, IAuditableEnti
         IEnumerable<(string? CodigoIbge, string? Nome, string? Uf)>? municipios)
     {
         Result<(TipoInstrumentoNormativo TipoInstrumento, string Identificacao, string Descricao, IReadOnlyList<BaseLegalBonusRegionalMunicipio> Municipios)> validacao = ValidarCampos(tipoInstrumentoCodigo, identificacao, descricao, municipios);
-        if (validacao.IsFailure)
+        Result<CodigoBaseLegalBonusRegional>? codigo = FormarCodigo(validacao, tipoInstrumentoCodigo, identificacao);
+
+        IReadOnlyList<FieldError> erros = RecusasDaCriacao(validacao, codigo);
+        if (erros.Count > 0)
         {
-            return Result<BaseLegalBonusRegional>.ValidationFailure(validacao.Errors);
+            return Result<BaseLegalBonusRegional>.ValidationFailure(erros);
         }
 
-        BaseLegalBonusRegional baseLegal = new BaseLegalBonusRegional();
+        BaseLegalBonusRegional baseLegal = new BaseLegalBonusRegional { Codigo = codigo!.Value! };
         baseLegal.AplicarCampos(validacao.Value);
         return Result<BaseLegalBonusRegional>.Success(baseLegal);
     }
+
+    private static IReadOnlyList<FieldError> RecusasDaCriacao(
+        Result<(TipoInstrumentoNormativo TipoInstrumento, string Identificacao, string Descricao, IReadOnlyList<BaseLegalBonusRegionalMunicipio> Municipios)> validacao,
+        Result<CodigoBaseLegalBonusRegional>? codigo) =>
+        codigo is { IsFailure: true } ? [.. validacao.Errors, new FieldError("identificacao", codigo.Error!)] : validacao.Errors;
+
+    // O código só depende do tipo e da identificação: se algum dos dois já foi recusado, o motivo está na validação e não há
+    // código a formar.
+    private static Result<CodigoBaseLegalBonusRegional>? FormarCodigo(
+        Result<(TipoInstrumentoNormativo TipoInstrumento, string Identificacao, string Descricao, IReadOnlyList<BaseLegalBonusRegionalMunicipio> Municipios)> validacao,
+        string? tipoInstrumentoCodigo,
+        string? identificacao) =>
+        validacao.Errors.Any(e => e.Field is "tipoInstrumento" or "identificacao")
+            ? null
+            : CodigoBaseLegalBonusRegional.Gerar(TipoInstrumentoNormativoCodigo.FromCodigo(tipoInstrumentoCodigo), identificacao!.Trim());
 
     public Result Atualizar(
         string? tipoInstrumentoCodigo,

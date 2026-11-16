@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 
 public interface IBaseLegalBonusRegionalRepository
@@ -17,6 +18,9 @@ public interface IBaseLegalBonusRegionalRepository
         int limit,
         PaginationDirection direction,
         CancellationToken cancellationToken);
+
+    /// <summary>Indica se alguma base legal viva já tem o código.</summary>
+    Task<bool> CodigoExisteAsync(CodigoBaseLegalBonusRegional codigo, CancellationToken cancellationToken);
 
     Task AdicionarAsync(BaseLegalBonusRegional entity, CancellationToken cancellationToken);
 

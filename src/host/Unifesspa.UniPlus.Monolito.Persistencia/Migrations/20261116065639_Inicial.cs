@@ -165,6 +165,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
+                    codigo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     tipo_instrumento = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
                     identificacao = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     descricao = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
@@ -5821,6 +5822,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 table: "bases_da_permissao_concedida",
                 column: "ordem_na_trilha",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "ix_bases_legais_do_bonus_regional_codigo_vivo",
+                schema: "configuracao",
+                table: "bases_legais_do_bonus_regional",
+                column: "codigo",
+                unique: true,
+                filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
                 name: "ix_bases_legais_do_bonus_regional_tipo_instrumento",

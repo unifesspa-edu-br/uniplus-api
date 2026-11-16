@@ -33,6 +33,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
 
     private static BaseLegalBonusRegionalView BaseLegalValida() => new(
         BaseLegalId,
+        "PORTARIA_UNIFESSPA_NO_2514_2023",
         "PORTARIA",
         "Portaria Unifesspa nº 2514/2023",
         "Institui inclusão regional",

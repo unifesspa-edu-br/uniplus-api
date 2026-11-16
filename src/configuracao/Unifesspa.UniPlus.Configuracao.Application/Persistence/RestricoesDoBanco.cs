@@ -9,6 +9,8 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Persistence;
 /// </summary>
 public static class RestricoesDoBanco
 {
+    public const string BaseLegalBonusRegionalCodigoVivo = "ix_bases_legais_do_bonus_regional_codigo_vivo";
+
     public const string CalendarioDeDiasUteisVigenteUnico = "ex_calendarios_de_dias_uteis_vigente_unico";
 
     public const string DiaNaoUtilUnicidade = "ix_dias_nao_uteis_unicidade";

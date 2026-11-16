@@ -485,6 +485,7 @@ configuracao.atos_da_protecao_do_catalogo.item_id: Interno
 configuracao.atos_da_protecao_do_catalogo.item_nome: Interno
 configuracao.atos_da_protecao_do_catalogo.justificativa: Interno
 configuracao.atos_da_protecao_do_catalogo.ordem_de_registro: Interno
+configuracao.bases_legais_do_bonus_regional.codigo: Interno
 configuracao.bases_legais_do_bonus_regional.created_at: Interno
 configuracao.bases_legais_do_bonus_regional.created_by: Pessoal
 configuracao.bases_legais_do_bonus_regional.deleted_at: Interno

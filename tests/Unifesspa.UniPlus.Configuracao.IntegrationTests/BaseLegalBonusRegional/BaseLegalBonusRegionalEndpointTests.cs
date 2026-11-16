@@ -83,26 +83,43 @@ public sealed class BaseLegalBonusRegionalEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact(DisplayName = "POST do mesmo ato duas vezes: o segundo é recusado com 409 e o código de erro do código já existente")]
+    public async Task Criar_MesmoAto_Retorna409()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        object body = MunicipioCorpo(identificacao: IdentificacaoUnica());
+        (await EnviarPostAdmin(client, body)).StatusCode.Should().Be(HttpStatusCode.Created);
+
+        HttpResponseMessage segundo = await EnviarPostAdmin(client, body);
+
+        segundo.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await segundo.Content.ReadAsStringAsync()).Should().Contain("uniplus.configuracao.base_legal_bonus_regional.codigo_ja_existe");
+    }
+
     [Fact(DisplayName = "POST cria (201) e o GET subsequente retorna os campos e os municípios")]
     public async Task Criar_ComAuthEIdempotency_Retorna201EPersiste()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        object body = MunicipioCorpo(identificacao: "Portaria Unifesspa nº 2514/2023");
+        string identificacao = IdentificacaoUnica();
 
-        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
+        HttpResponseMessage criar = await EnviarPostAdmin(client, MunicipioCorpo(identificacao: identificacao));
 
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
         id.Should().NotBe(Guid.Empty);
-
         HttpResponseMessage obter = await client.GetAsync(
             new Uri($"/api/configuracao/base-legal-bonus-regional/{id}", UriKind.Relative));
         obter.StatusCode.Should().Be(HttpStatusCode.OK);
 
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        JsonElement root = doc.RootElement;
+        ConferirBaseLegalCriada(doc.RootElement, identificacao);
+    }
+
+    private static void ConferirBaseLegalCriada(JsonElement root, string identificacao)
+    {
         root.GetProperty("tipoInstrumento").GetString().Should().Be("PORTARIA");
-        root.GetProperty("identificacao").GetString().Should().Be("Portaria Unifesspa nº 2514/2023");
+        root.GetProperty("identificacao").GetString().Should().Be(identificacao);
+        root.GetProperty("codigo").GetString().Should().StartWith("PORTARIA_TESTE_");
         root.GetProperty("municipios").GetArrayLength().Should().Be(1);
         root.GetProperty("municipios")[0].GetProperty("codigoIbge").GetString().Should().Be("1504208");
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
@@ -318,13 +335,16 @@ public sealed class BaseLegalBonusRegionalEndpointTests
             "soft-delete tira o registro de circulação — o filtro global !IsDeleted esconde a linha");
     }
 
+    // O código da base legal é único entre as vivas e o banco do teste é compartilhado: cada criação usa um ato próprio.
+    private static string IdentificacaoUnica() => $"Portaria Teste {Guid.NewGuid():N}";
+
     private static object MunicipioCorpo(
-        string identificacao = "Portaria Unifesspa nº 2514/2023",
+        string? identificacao = null,
         object[]? municipios = null,
         string tipoInstrumento = "PORTARIA") => new
         {
             tipoInstrumento,
-            identificacao,
+            identificacao = identificacao ?? IdentificacaoUnica(),
             descricao = "Institui inclusão regional",
             municipios = municipios ?? [new { codigoIbge = "1504208", nome = "Marabá", uf = "PA" }],
         };

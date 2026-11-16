@@ -857,6 +857,31 @@
       "titulo": "O operador da condição não é reconhecido"
     },
     {
+      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_formato_invalido",
+      "status": 422,
+      "titulo": "Código da base legal de bônus regional fora do formato"
+    },
+    {
+      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_ja_existe",
+      "status": 409,
+      "titulo": "Já existe uma base legal de bônus regional com este código"
+    },
+    {
+      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_nao_encontrado",
+      "status": 422,
+      "titulo": "Nenhuma base legal de bônus regional viva tem o código informado"
+    },
+    {
+      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_obrigatorio",
+      "status": 422,
+      "titulo": "Código da base legal de bônus regional é obrigatório"
+    },
+    {
+      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_tamanho",
+      "status": 422,
+      "titulo": "Código da base legal de bônus regional passa do tamanho máximo"
+    },
+    {
       "codigo": "uniplus.configuracao.base_legal_bonus_regional.descricao_caractere_nulo",
       "status": 422,
       "titulo": "Descrição da base legal de bônus regional não pode conter o caractere nulo"
