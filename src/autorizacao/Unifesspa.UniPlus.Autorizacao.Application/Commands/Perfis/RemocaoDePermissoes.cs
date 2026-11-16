@@ -71,5 +71,5 @@ public sealed class RemocaoDePermissoes
 
     private async Task<DesfechoDaOperacao<PerfilDto>> RemoverDoPerfilAsync(
         Perfil perfil, PedidoDeRemocao pedido, CancellationToken cancellationToken) =>
-        await _efeitos.AplicarAsync(perfil, perfil.Remover(pedido, _catalogo), pedido.Autoria.Pessoa, cancellationToken).ConfigureAwait(false);
+        await _efeitos.AplicarAsync(perfil, ProposicaoDaVersao.Remover(perfil, pedido, _catalogo), pedido.Autoria.Pessoa, cancellationToken).ConfigureAwait(false);
 }

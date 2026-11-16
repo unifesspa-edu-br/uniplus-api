@@ -98,7 +98,7 @@ public sealed class PropostasDeVersao
         Perfil perfil, PropostaDeVersao proposta, CancellationToken cancellationToken)
     {
         ContextoDaVersao contexto = await _leitor.LerAsync(perfil.Id, proposta.Conteudo.Nome, cancellationToken).ConfigureAwait(false);
-        DesfechoDaVersao desfecho = perfil.Propor(proposta, contexto, _catalogo);
+        DesfechoDaVersao desfecho = ProposicaoDaVersao.Propor(perfil, proposta, contexto, _catalogo);
         DesfechoDaOperacao<PerfilDto> efeitos = await _efeitos
             .AplicarAsync(perfil, desfecho, proposta.Autoria.Pessoa, cancellationToken)
             .ConfigureAwait(false);

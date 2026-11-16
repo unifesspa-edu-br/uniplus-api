@@ -26,7 +26,7 @@ public sealed class PerfilRemocaoTests
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Publicar], _catalogo);
         VersaoDoPerfil anterior = perfil.VersaoVigente!;
 
-        DesfechoDaVersao desfecho = perfil.Remover(Pedido([Publicar]), _catalogo);
+        DesfechoDaVersao desfecho = ProposicaoDaVersao.Remover(perfil, Pedido([Publicar]), _catalogo);
 
         desfecho.Concluida.Should().BeTrue();
         desfecho.Troca!.Removidas.Should().Equal(Publicar);
@@ -41,7 +41,7 @@ public sealed class PerfilRemocaoTests
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Publicar], _catalogo);
         VersaoDoPerfil anterior = perfil.VersaoVigente!;
 
-        perfil.Remover(Pedido([Publicar]), _catalogo);
+        ProposicaoDaVersao.Remover(perfil, Pedido([Publicar]), _catalogo);
 
         VersaoDoPerfil remocao = perfil.VersaoVigente!;
         remocao.Origem.Should().Be(OrigemDaVersao.Remocao);
@@ -59,8 +59,8 @@ public sealed class PerfilRemocaoTests
         Perfil institucional = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], _catalogo);
         Perfil deUnidade = PerfisDeTeste.Vigente("Operador", Descricao, ["unidade:inscricoes:operar"], _catalogo);
 
-        institucional.Remover(Pedido([Consultar]), _catalogo).Concluida.Should().BeTrue();
-        deUnidade.Remover(Pedido(["unidade:inscricoes:operar"]), _catalogo).Concluida.Should().BeTrue();
+        ProposicaoDaVersao.Remover(institucional, Pedido([Consultar]), _catalogo).Concluida.Should().BeTrue();
+        ProposicaoDaVersao.Remover(deUnidade, Pedido(["unidade:inscricoes:operar"]), _catalogo).Concluida.Should().BeTrue();
 
         institucional.ComposicaoEmVigor.Should().BeEmpty();
         institucional.VersaoVigente!.Alcance.Should().Be(TipoDeEscopo.Instituicao);
@@ -73,8 +73,8 @@ public sealed class PerfilRemocaoTests
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar, Publicar, Exportar], _catalogo);
         VersaoDoPerfil instituidora = perfil.VersaoVigente!;
 
-        perfil.Remover(Pedido([Exportar]), _catalogo).Concluida.Should().BeTrue();
-        perfil.Remover(Pedido([Publicar]), _catalogo).Concluida.Should().BeTrue();
+        ProposicaoDaVersao.Remover(perfil, Pedido([Exportar]), _catalogo).Concluida.Should().BeTrue();
+        ProposicaoDaVersao.Remover(perfil, Pedido([Publicar]), _catalogo).Concluida.Should().BeTrue();
 
         VersaoDoPerfil segunda = perfil.VersaoVigente!;
         segunda.Numero.Should().Be(3);
@@ -89,7 +89,7 @@ public sealed class PerfilRemocaoTests
         VersaoDoPerfil pendente = PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(
             perfil, PerfisDeTeste.Conteudo("Analista", Descricao, [Consultar, Publicar, Exportar], _catalogo), PerfisDeTeste.SemContexto, PerfisDeTeste.AutoriaDoAutor, Agora, _catalogo));
 
-        DesfechoDaVersao desfecho = perfil.Remover(Pedido([Publicar], Agora.AddDays(3)), _catalogo);
+        DesfechoDaVersao desfecho = ProposicaoDaVersao.Remover(perfil, Pedido([Publicar], Agora.AddDays(3)), _catalogo);
 
         desfecho.Cancelada.Should().BeSameAs(pendente);
         pendente.Situacao.Should().Be(SituacaoDaVersao.Cancelada);
@@ -105,7 +105,7 @@ public sealed class PerfilRemocaoTests
         VersaoDoPerfil pendente = PerfisDeTeste.Garantir(PerfisDeTeste.CriarVersao(
             perfil, PerfisDeTeste.Conteudo("Analista", Descricao, [Consultar, Publicar, Exportar], _catalogo), PerfisDeTeste.SemContexto, PerfisDeTeste.AutoriaDoAutor, Agora, _catalogo));
 
-        DesfechoDaVersao desfecho = perfil.Remover(Pedido([Publicar], Agora.AddDays(VersaoDoPerfil.PrazoDaAprovacaoEmDias)), _catalogo);
+        DesfechoDaVersao desfecho = ProposicaoDaVersao.Remover(perfil, Pedido([Publicar], Agora.AddDays(VersaoDoPerfil.PrazoDaAprovacaoEmDias)), _catalogo);
 
         desfecho.Cancelada.Should().BeNull();
         pendente.Situacao.Should().Be(SituacaoDaVersao.Expirada);
@@ -120,12 +120,12 @@ public sealed class PerfilRemocaoTests
         Perfil semVigente = PerfisDeTeste.Pendente("Pendente", Descricao, [Consultar], _catalogo);
         Perfil vigente = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], _catalogo);
 
-        governanca.Remover(Pedido([Consultar]), _catalogo).Erro!.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);
-        inativo.Remover(Pedido([Consultar]), _catalogo).Erro!.Code.Should().Be(PerfilErrorCodes.Inativo);
-        semVigente.Remover(Pedido([Consultar]), _catalogo).Erro!.Code.Should().Be(PerfilErrorCodes.SemVersaoEmVigor);
-        vigente.Remover(Pedido([]), _catalogo).Erro!.Code.Should().Be(PerfilErrorCodes.RemocaoInvalida);
-        vigente.Remover(Pedido([Exportar]), _catalogo).Erro!.Code.Should().Be(PerfilErrorCodes.RemocaoInvalida);
-        vigente.Remover(Pedido([Consultar], motivo: null), _catalogo).Erro!.Code.Should().Be(PerfilErrorCodes.MotivoInvalido);
+        ProposicaoDaVersao.Remover(governanca, Pedido([Consultar]), _catalogo).Erro!.Code.Should().Be(PerfilErrorCodes.GovernancaImutavel);
+        ProposicaoDaVersao.Remover(inativo, Pedido([Consultar]), _catalogo).Erro!.Code.Should().Be(PerfilErrorCodes.Inativo);
+        ProposicaoDaVersao.Remover(semVigente, Pedido([Consultar]), _catalogo).Erro!.Code.Should().Be(PerfilErrorCodes.SemVersaoEmVigor);
+        ProposicaoDaVersao.Remover(vigente, Pedido([]), _catalogo).Erro!.Code.Should().Be(PerfilErrorCodes.RemocaoInvalida);
+        ProposicaoDaVersao.Remover(vigente, Pedido([Exportar]), _catalogo).Erro!.Code.Should().Be(PerfilErrorCodes.RemocaoInvalida);
+        ProposicaoDaVersao.Remover(vigente, Pedido([Consultar], motivo: null), _catalogo).Erro!.Code.Should().Be(PerfilErrorCodes.MotivoInvalido);
         vigente.VersaoVigente!.Numero.Should().Be(1);
     }
 

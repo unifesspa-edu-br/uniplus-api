@@ -164,7 +164,7 @@ public sealed class PerfilPropostaTests
 
     private DesfechoDaVersao Propor(
         Perfil perfil, string nome, string[] permissoes, string? motivo = Motivo, ContextoDaVersao? contexto = null) =>
-        perfil.Propor(
+        ProposicaoDaVersao.Propor(perfil,
             new PropostaDeVersao(
                 PerfisDeTeste.Conteudo(nome, Descricao, permissoes, _catalogo),
                 motivo,

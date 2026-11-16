@@ -46,9 +46,10 @@ public sealed class ComposicaoDoPerfilSoPelosDonosTests
         + $@"|{Persistencia}Migrations\..+"
         + $@"|{LeitoresDoRetrato})(\+|$)";
 
-    // Dono da leitura da composição em vigor: o perfil, quem presta a concessão e o pedido à versão, e a projeção.
+    // Dono da leitura da composição em vigor: o perfil, a proposição de versão que parte dela, quem presta a concessão e o pedido
+    // à versão, e a projeção.
     private const string DonosDaVersaoVigente =
-        $@"^({Dominio}(Perfil|Concessao|PedidoDeConcessao)"
+        $@"^({Dominio}(Perfil|ProposicaoDaVersao|Concessao|PedidoDeConcessao)"
         + @"|Unifesspa\.UniPlus\.Autorizacao\.Application\.Mappings\.(PerfilMapping|VersaoMapping))(\+|$)";
 
     private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(Assemblies()).Build();

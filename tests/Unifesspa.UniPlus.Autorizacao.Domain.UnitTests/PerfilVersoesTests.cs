@@ -85,7 +85,7 @@ public sealed class PerfilVersoesTests
     {
         Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
 
-        DesfechoDaVersao desfecho = perfil.Propor(
+        DesfechoDaVersao desfecho = ProposicaoDaVersao.Propor(perfil,
             new PropostaDeVersao(
                 PerfisDeTeste.Conteudo("Analista", Descricao, [Unidade], Catalogo),
                 Motivo,
