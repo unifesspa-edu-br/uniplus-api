@@ -7,6 +7,14 @@
 # Só dados de desenvolvimento; os segredos são os de desenvolvimento do .env.example.
 set -euo pipefail
 usuario="${POSTGRES_USER:-uniplus}"
+
+# Os dumps gravam o admin do Keycloak (admin/admin) e o emissor das concessões (http://localhost:8080/realms/unifesspa).
+# Com outros valores no docker/.env o admin seria sobrescrito e as concessões apontariam para um emissor inexistente.
+if [ "${KEYCLOAK_ADMIN:-admin}" != "admin" ] || [ "${KEYCLOAK_ADMIN_PASSWORD:-admin}" != "admin" ] || [ "${KEYCLOAK_PORT:-8080}" != "8080" ]; then
+    echo "[base-local] ERRO: a base pronta exige KEYCLOAK_ADMIN=admin, KEYCLOAK_ADMIN_PASSWORD=admin e KEYCLOAK_PORT=8080 no docker/.env." >&2
+    echo "[base-local] Use esses valores no docker/.env ou, para subir sem a base pronta, remova do serviço postgres do docker-compose.yml as três linhas de volume em ./base-local. Depois rode 'docker compose down -v' e suba de novo." >&2
+    exit 1
+fi
 restaurar() { # $1=banco $2=dump (arquivo ou diretório) $3...=opções extras do pg_restore
     local banco="$1" dump="$2"; shift 2
     echo "[base-local] restaurando $banco"
