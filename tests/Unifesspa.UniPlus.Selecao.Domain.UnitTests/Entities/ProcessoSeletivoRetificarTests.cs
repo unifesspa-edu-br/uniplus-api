@@ -259,19 +259,18 @@ public sealed class ProcessoSeletivoRetificarTests
         segunda.Value!.NumeroVersao.Should().Be(3, "o topo da cadeia de configuração avança com a última retificação");
     }
 
-    [Fact(DisplayName = "Retificar — versão corrente de OUTRO processo é recusada: a cadeia não atravessa certames")]
-    public void Retificar_VersaoDeOutroProcesso_Recusa()
+    [Fact(DisplayName = "Retificar — versão corrente de OUTRO processo é erro de programação: lança, sem mutar nada")]
+    public void Retificar_VersaoDeOutroProcesso_Lanca()
     {
         RelogioManual clock = Relogio();
         ProcessoSeletivo processo = NovoProcessoPublicado(clock, out _);
         clock.Avancar(TimeSpan.FromMinutes(1));
 
-        Result<VersaoConfiguracao> resultado = processo.Retificar(
+        Func<Result<VersaoConfiguracao>> retificar = () => processo.Retificar(
             NovosDados(), VersaoQualquer(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
             motivo: "Correção de datas", clock: clock, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("VersaoConfiguracao.VersaoAnteriorDeOutroProcesso");
+        retificar.Should().Throw<ArgumentException>().WithParameterName("versaoAtual");
         processo.DequeueDomainEvents().Should().BeEmpty("nada é mutado quando a versão informada não é deste certame");
     }
 

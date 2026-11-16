@@ -80,35 +80,43 @@ internal static class TransicoesDaVersao
         ArgumentNullException.ThrowIfNull(pedido);
         ArgumentNullException.ThrowIfNull(versaoAtual);
 
-        if (estado.Status != StatusProcesso.Publicado)
+        if (RecusaDoStatusOuDoMotivo(estado, motivo) is { } recusa)
         {
-            return TransicaoInvalida($"Só é possível retificar um processo publicado — status atual: {estado.Status}.");
+            return Result<VersaoEmitida>.Failure(recusa);
         }
 
-        if (string.IsNullOrWhiteSpace(motivo))
-        {
-            return Falha("ProcessoSeletivo.MotivoRetificacaoObrigatorio", "O motivo da retificação é obrigatório.");
-        }
-
-        // A cadeia de versões não atravessa certames: a numeração deriva dela.
-        if (versaoAtual.ProcessoSeletivoId != estado.ProcessoId)
-        {
-            return Falha("VersaoConfiguracao.VersaoAnteriorDeOutroProcesso", "A versão corrente informada pertence a outro Processo Seletivo.");
-        }
-
-        // Uma versão vinculante congelada com configuração incompleta é irreparável, como na publicação.
-        if (ProntidaoParaCongelar.PrimeiraPendencia(ProntidaoParaCongelar.Portoes.Para(estado, pedido)) is { } pendencia)
-        {
-            return Result<VersaoEmitida>.Failure(pendencia);
-        }
-
-        (VersaoConfiguracao versao, ProcessoPublicadoEvent evento) = EmissaoDeVersao.Suceder(estado.ProcessoId, versaoAtual, pedido);
-        return Result<VersaoEmitida>.Success(new VersaoEmitida(versao, evento, encerraSessao));
+        ConferirQueAVersaoEDoProcesso(versaoAtual, estado);
+        return ProntidaoParaCongelar.PrimeiraPendencia(ProntidaoParaCongelar.Portoes.Para(estado, pedido)) is { } pendencia
+            ? Result<VersaoEmitida>.Failure(pendencia)
+            : Result<VersaoEmitida>.Success(Emitir(estado, pedido, versaoAtual, encerraSessao));
     }
 
-    private static Result<VersaoEmitida> TransicaoInvalida(string mensagem) =>
-        Falha("ProcessoSeletivo.TransicaoInvalida", mensagem);
+    private static DomainError? RecusaDoStatusOuDoMotivo(EstadoDaConfiguracao estado, string motivo)
+    {
+        if (estado.Status != StatusProcesso.Publicado)
+        {
+            return ErroDeTransicao($"Só é possível retificar um processo publicado — status atual: {estado.Status}.");
+        }
 
-    private static Result<VersaoEmitida> Falha(string codigo, string mensagem) =>
-        Result<VersaoEmitida>.Failure(new DomainError(codigo, mensagem));
+        return string.IsNullOrWhiteSpace(motivo)
+            ? new DomainError("ProcessoSeletivo.MotivoRetificacaoObrigatorio", "O motivo da retificação é obrigatório.")
+            : null;
+    }
+
+    // A cadeia de versões não atravessa certames: a numeração deriva dela. A versão corrente vem do
+    // repositório do próprio processo, então outra é erro de programação, não de entrada.
+    private static void ConferirQueAVersaoEDoProcesso(VersaoConfiguracao versaoAtual, EstadoDaConfiguracao estado) =>
+        ArgumentOutOfRangeException.ThrowIfNotEqual(versaoAtual.ProcessoSeletivoId, estado.ProcessoId, nameof(versaoAtual));
+
+    private static VersaoEmitida Emitir(
+        EstadoDaConfiguracao estado, PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, bool encerraSessao)
+    {
+        (VersaoConfiguracao versao, ProcessoPublicadoEvent evento) = EmissaoDeVersao.Suceder(estado.ProcessoId, versaoAtual, pedido);
+        return new VersaoEmitida(versao, evento, encerraSessao);
+    }
+
+    private static DomainError ErroDeTransicao(string mensagem) => new("ProcessoSeletivo.TransicaoInvalida", mensagem);
+
+    private static Result<VersaoEmitida> TransicaoInvalida(string mensagem) =>
+        Result<VersaoEmitida>.Failure(ErroDeTransicao(mensagem));
 }
