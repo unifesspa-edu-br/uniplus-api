@@ -103,7 +103,7 @@ Pelo marco acima, sem publicação que os cite. Como não há produção, os pro
 
 | Origem | Prefixos aceitos | Referência |
 |---|---|---|
-| `Declarado` | `CAMPO_FORMULARIO:` | código do próprio fato, coletado por um campo de algum formulário do processo; no processo, cada fato tem um único campo que o produz, em uma única finalidade, e as demais finalidades o reaproveitam (UNI-REQ-0144); substitui `CAMPO_INSCRICAO:`, porque o processo passa a ter um formulário por finalidade |
+| `Declarado` | `CAMPO_FORMULARIO:` | código do próprio fato, coletado por um campo de algum formulário do processo; no processo, cada fato tem um único campo que o produz, em um único formulário, e os demais formulários que o alcançam o reaproveitam (UNI-REQ-0144, ADR-0171); substitui `CAMPO_INSCRICAO:`, porque o processo passa a ter um formulário por finalidade |
 | `Derivado` | `ATRIBUTO_CANDIDATO:` | atributo calculado por código do sistema |
 | `Derivado` | `CLASSIFICACAO:` | resultado da classificação, como o grupo de vagas da convocação (UNI-REQ-0147); só em fato de sistema |
 | `Derivado` | `REGRA_DERIVACAO:` | código do próprio fato, cuja regra é copiada do padrão do catálogo para o processo |
