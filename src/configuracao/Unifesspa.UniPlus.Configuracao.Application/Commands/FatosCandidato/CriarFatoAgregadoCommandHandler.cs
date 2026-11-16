@@ -24,7 +24,7 @@ public static class CriarFatoAgregadoCommandHandler
 
         IReadOnlyList<FatoCandidato> fatos = await repository.ListarTodosAsync(cancellationToken).ConfigureAwait(false);
         IReadOnlyList<PrecedenciaFase> precedencias = await precedenciaRepository.ListarVivasAsync(cancellationToken).ConfigureAwait(false);
-        Result<FatoCandidato> criar = FatoCandidato.CriarAgregadoDoAdministrador(
+        Result<FatoCandidato> criar = CriacaoDoFato.CriarAgregadoDoAdministrador(
             command.Codigo, command.Nome, command.Descricao, command.FatoDeMembro, new CatalogoDeFatos(fatos, precedencias),
             command.PontoResolucao,
             TokensDoFato.Classificacao(command.ClassificacaoProtecao) ?? ClassificacaoDeProtecao.Nenhuma,

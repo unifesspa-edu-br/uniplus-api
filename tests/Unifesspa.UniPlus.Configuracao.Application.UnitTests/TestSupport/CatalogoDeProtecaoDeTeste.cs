@@ -66,7 +66,7 @@ internal static class CatalogoDeProtecaoDeTeste
             codigo, nome, null, "SAUDE", null, null, null, classificacao, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
 
     public static FatoCandidato NovoFato(string codigo = "TEM_RENDA", string nome = "Tem renda") =>
-        FatoCandidato.CriarDoAdministrador(
+        CriacaoDoFato.CriarDoAdministrador(
             codigo, nome, "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO", EscopoFato.Candidato,
             ClassificacaoDeProtecao.Pessoal, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
 

@@ -140,7 +140,7 @@ public sealed class AprovacaoDaProtecaoCicloTests
 
     private static FatoCandidato FatoSolicitado()
     {
-        FatoCandidato fato = FatoCandidato.CriarDoAdministrador(
+        FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
             "TEM_RENDA", "Tem renda", "Se o candidato tem renda.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null, "INSCRICAO",
             EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, TipoDocumentoNaAprovacaoBuilder.Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         fato.SolicitarAprovacaoDaProtecao(TipoDocumentoNaAprovacaoBuilder.Isabella, TipoDocumentoNaAprovacaoBuilder.Segunda);

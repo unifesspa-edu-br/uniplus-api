@@ -105,7 +105,7 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
 
     private static FatoCandidato CorRacaComAjusteRecomendado()
     {
-        FatoCandidato corRaca = FatoCandidato.Criar(
+        FatoCandidato corRaca = CriacaoDoFato.Criar(
             "COR_RACA", "Cor ou raça", "Descrição do fato.", DominioFato.Categorico, OrigemFato.Declarado, CardinalidadeFato.Escalar, FonteValoresFato.Global,
             null, "INSCRICAO", "CAMPO_FORMULARIO:COR_RACA", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal, sistema: true).Value!;

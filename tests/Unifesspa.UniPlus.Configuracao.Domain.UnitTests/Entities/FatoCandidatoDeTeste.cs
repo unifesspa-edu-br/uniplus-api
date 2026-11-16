@@ -36,7 +36,7 @@ internal static class FatoCandidatoDeTeste
         HipoteseLegalTratamento hipotese = HipoteseLegalTratamento.CumprimentoObrigacaoLegal,
         bool sistema = false,
         EscopoFato escopo = EscopoFato.Candidato) =>
-        FatoCandidato.Criar(
+        CriacaoDoFato.Criar(
             codigo, nome, descricao, dominio, origem, cardinalidade,
             dominio == DominioFato.Categorico ? fonteValores : null,
             formato,

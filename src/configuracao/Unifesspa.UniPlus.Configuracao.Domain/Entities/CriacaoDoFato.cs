@@ -20,9 +20,15 @@ using static Unifesspa.UniPlus.Configuracao.Domain.Entities.ConferenciaDaDefinic
 /// derivado por regra e agregado sobre grupo repetível), com os eixos que cada um infere e a
 /// conferência do agregado contra o fato de membro. As violações independentes acumulam (ADR-0125).
 /// </summary>
-internal static class CriacaoDoFato
+public static class CriacaoDoFato
 {
-    internal static Result<FatoCandidato> Criar(
+    /// <summary>
+    /// Factory canônica: valida o código, o nome, o domínio, a origem, a cardinalidade, a fonte
+    /// dos valores, o formato, o ponto de resolução, o vínculo, o escopo e a proteção de dados. As
+    /// violações independentes são acumuladas (ADR-0125); a que depende de outro campo só é
+    /// conferida quando esse campo é válido.
+    /// </summary>
+    public static Result<FatoCandidato> Criar(
         string codigo,
         string nome,
         string? descricao,
@@ -121,7 +127,11 @@ internal static class CriacaoDoFato
             sistema));
     }
 
-    internal static Result<FatoCandidato> CriarDoAdministrador(
+    /// <summary>
+    /// Cadastro de fato pelo administrador (ADR-0136): sempre declarado, com o vínculo ao campo de
+    /// formulário gerado a partir do código, e nunca de sistema.
+    /// </summary>
+    public static Result<FatoCandidato> CriarDoAdministrador(
         string codigo,
         string nome,
         string? descricao,
@@ -140,7 +150,13 @@ internal static class CriacaoDoFato
             $"{PrefixoBindingDeclarado}:{codigo?.Trim()}", escopo, classificacaoProtecao, finalidadeTratamento, hipoteseLegal,
             sistema: false, componenteExibicao);
 
-    internal static Result<FatoCandidato> CriarDerivadoDoAdministrador(
+    /// <summary>
+    /// Cadastro de derivado por regra pelo administrador (ADR-0136): booleano, verdadeiro quando
+    /// alguma regra ativa, ou categórico de valores próprios, com a união das contribuições. As
+    /// regras padrão vêm depois, por <see cref="FatoCandidato.DefinirRegrasPadrao"/>, porque citam os valores que
+    /// o categórico ainda vai receber.
+    /// </summary>
+    public static Result<FatoCandidato> CriarDerivadoDoAdministrador(
         string codigo,
         string nome,
         string? descricao,
@@ -170,7 +186,16 @@ internal static class CriacaoDoFato
             [.. recusasDoDominio, .. criado.Errors.Where(static e => e.Field is not ("dominio" or "formato" or "fonteValores"))]);
     }
 
-    internal static Result<FatoCandidato> CriarAgregadoDoAdministrador(
+    /// <summary>
+    /// Cadastro do agregado sobre grupo repetível pelo administrador (ADR-0138, UNI-REQ-0146): o
+    /// vínculo <c>AGREGACAO_GRUPO:</c> aponta o fato de membro, que precisa existir, estar ativo e ser
+    /// fato declarado de membro de grupo de domínio que agrega. O domínio, a cardinalidade e a fonte
+    /// dos valores saem do fato de membro — booleano dá "existe membro que…", categórico dá "valores
+    /// presentes" —, e o agregado não tem valores próprios. Não protege menos nem resolve antes do
+    /// fato de membro. As recusas se acumulam (ADR-0125); sem fato de membro válido, as que
+    /// dependem dele não são conferidas.
+    /// </summary>
+    public static Result<FatoCandidato> CriarAgregadoDoAdministrador(
         string codigo,
         string nome,
         string? descricao,

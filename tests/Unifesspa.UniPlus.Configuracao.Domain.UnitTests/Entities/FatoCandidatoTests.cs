@@ -27,7 +27,7 @@ public sealed class FatoCandidatoTests
 
     [Fact(DisplayName = "Criar booleano com fonte dos valores é recusado")]
     public void Criar_BooleanoComFonte_Recusa() =>
-        FatoCandidato.Criar("PCD", "Pessoa com deficiência", "Descrição do fato.", DominioFato.Booleano, OrigemFato.Declarado,
+        CriacaoDoFato.Criar("PCD", "Pessoa com deficiência", "Descrição do fato.", DominioFato.Booleano, OrigemFato.Declarado,
             CardinalidadeFato.Escalar, FonteValoresFato.Processo, formato: null, PontoResolucaoInscricao, "CAMPO_FORMULARIO:PCD",
             EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal,
             sistema: false)
@@ -107,7 +107,7 @@ public sealed class FatoCandidatoTests
     [Fact(DisplayName = "Fato do administrador é declarado, com vínculo ao campo gerado a partir do código, e não é de sistema")]
     public void CriarDoAdministrador_DeclaradoComVinculoDoCodigo()
     {
-        FatoCandidato fato = FatoCandidato.CriarDoAdministrador(
+        FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
             " ANO_CONCLUSAO ", "Ano de conclusão", "Descrição do fato.", DominioFato.Numerico, CardinalidadeFato.Escalar, null, null,
             PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
@@ -141,7 +141,7 @@ public sealed class FatoCandidatoTests
     [InlineData(ComponenteDeExibicao.Moeda, true)]
     public void ComponenteDeExibicao_SoDoVocabularioFechado(ComponenteDeExibicao componente, bool aceito)
     {
-        Result<FatoCandidato> resultado = FatoCandidato.CriarDoAdministrador(
+        Result<FatoCandidato> resultado = CriacaoDoFato.CriarDoAdministrador(
             "RENDA_BRUTA_FAMILIAR", "Renda bruta familiar", Descricao, DominioFato.Numerico, CardinalidadeFato.Escalar, null, null,
             PontoResolucaoInscricao, EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal, Finalidade,
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal, componente);

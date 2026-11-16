@@ -42,7 +42,7 @@ public sealed class RegrasPadraoTests
 
     [Fact(DisplayName = "Derivado por regra de domínio texto é recusado no domínio")]
     public void CriarDerivado_Texto_Recusa() =>
-        FatoCandidato.CriarDerivadoDoAdministrador(
+        CriacaoDoFato.CriarDerivadoDoAdministrador(
                 "NOME_DERIVADO", "Nome", "Descrição do fato.", DominioFato.Texto, "INSCRICAO", EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)
             .Errors.Should().ContainSingle()
@@ -52,7 +52,7 @@ public sealed class RegrasPadraoTests
     [InlineData(DominioFato.Nenhum, FatoCandidatoErrorCodes.DominioObrigatorio)]
     [InlineData((DominioFato)(-1), FatoCandidatoErrorCodes.DominioInvalido)]
     public void CriarDerivado_DominioAusenteOuInvalido_RecusaComOCodigoDoDominio(DominioFato dominio, string codigo) =>
-        FatoCandidato.CriarDerivadoDoAdministrador(
+        CriacaoDoFato.CriarDerivadoDoAdministrador(
                 "DERIVADO", "Derivado", "Descrição do fato.", dominio, "INSCRICAO", EscopoFato.Candidato,
                 ClassificacaoDeProtecao.Pessoal, Finalidade, Hipotese)
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(("dominio", codigo));
@@ -231,7 +231,7 @@ public sealed class RegrasPadraoTests
         DominioFato dominio = DominioFato.Booleano,
         string ponto = "INSCRICAO",
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Sensivel) =>
-        FatoCandidato.CriarDerivadoDoAdministrador(
+        CriacaoDoFato.CriarDerivadoDoAdministrador(
             codigo, codigo, "Descrição do fato.", dominio, ponto, EscopoFato.Candidato, classificacao, Finalidade, Hipotese).Value!;
 
     private static FatoCandidato Declarado(
@@ -241,7 +241,7 @@ public sealed class RegrasPadraoTests
         ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Pessoal,
         FormatoTexto? formato = null,
         EscopoFato escopo = EscopoFato.Candidato) =>
-        FatoCandidato.CriarDoAdministrador(
+        CriacaoDoFato.CriarDoAdministrador(
             codigo, codigo, "Descrição do fato.", dominio, CardinalidadeFato.Escalar, null, formato, ponto, escopo,
             classificacao, Finalidade, Hipotese).Value!;
 

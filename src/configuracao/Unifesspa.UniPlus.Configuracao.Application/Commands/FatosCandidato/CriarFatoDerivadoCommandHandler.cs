@@ -20,7 +20,7 @@ public static class CriarFatoDerivadoCommandHandler
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         // Ausente é "não informado" e token desconhecido é "fora do vocabulário": o agregado recusa cada um no campo.
-        Result<FatoCandidato> criar = FatoCandidato.CriarDerivadoDoAdministrador(
+        Result<FatoCandidato> criar = CriacaoDoFato.CriarDerivadoDoAdministrador(
             command.Codigo, command.Nome, command.Descricao,
             TokensDoFato.Dominio(command.Dominio) ?? DominioFato.Nenhum,
             command.PontoResolucao,

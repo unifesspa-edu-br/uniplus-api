@@ -162,7 +162,7 @@ public sealed class GrupoRepetivelEndpointTests
     {
         string sufixo = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
         string sobGuarda = $"SOB_GUARDA_{sufixo}";
-        FatoCandidato campoDeMembro = FatoCandidato.CriarDoAdministrador(
+        FatoCandidato campoDeMembro = CriacaoDoFato.CriarDoAdministrador(
             sobGuarda, "Sob guarda", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
             "RESULTADO_FINAL", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
@@ -240,11 +240,11 @@ public sealed class GrupoRepetivelEndpointTests
 
     private async Task<Guid> SemearCatalogoDoAgregadoAsync(string membro, string agregado, string sufixo)
     {
-        FatoCandidato fatoDeMembro = FatoCandidato.CriarDoAdministrador(
+        FatoCandidato fatoDeMembro = CriacaoDoFato.CriarDoAdministrador(
             membro, "Categoria de renda", "Descrição do fato.", DominioFato.Categorico, CardinalidadeFato.Escalar, FonteValoresFato.Processo, formato: null,
             "RESULTADO_FINAL", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
-        FatoCandidato fatoAgregado = FatoCandidato.CriarAgregadoDoAdministrador(
+        FatoCandidato fatoAgregado = CriacaoDoFato.CriarAgregadoDoAdministrador(
             agregado, "Categorias de renda da família", "Descrição do fato.", membro, new CatalogoDeFatos([fatoDeMembro], []),
             "RESULTADO_FINAL", ClassificacaoDeProtecao.Pessoal, "Composição familiar", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
         return await SemearNoCatalogoAsync(fatoDeMembro, $"DECL_RURAL_{sufixo}", "Declaração de trabalhador rural", fatoAgregado);
@@ -274,7 +274,7 @@ public sealed class GrupoRepetivelEndpointTests
     private async Task<string> SemearFatoDeMembroAsync()
     {
         string codigo = $"MEMBRO_{Guid.NewGuid():N}"[..30].ToUpperInvariant();
-        FatoCandidato fato = FatoCandidato.CriarDoAdministrador(
+        FatoCandidato fato = CriacaoDoFato.CriarDoAdministrador(
             codigo, "Trabalha no campo", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, fonteValores: null, formato: null,
             "INSCRICAO", EscopoFato.MembroGrupo, ClassificacaoDeProtecao.Pessoal, "Composição familiar",
             HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;

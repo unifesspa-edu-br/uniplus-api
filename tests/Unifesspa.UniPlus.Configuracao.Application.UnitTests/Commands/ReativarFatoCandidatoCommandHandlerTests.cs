@@ -19,7 +19,7 @@ public sealed class ReativarFatoCandidatoCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static FatoCandidato Declarado() =>
-        FatoCandidato.CriarDoAdministrador(
+        CriacaoDoFato.CriarDoAdministrador(
             "OPTOU", "Optou", "Descrição do fato.", DominioFato.Booleano, CardinalidadeFato.Escalar, null, null,
             "INSCRICAO", EscopoFato.Candidato, ClassificacaoDeProtecao.Pessoal,
             "Enquadramento na reserva de vagas.", HipoteseLegalTratamento.CumprimentoObrigacaoLegal).Value!;
