@@ -57,6 +57,8 @@ Controller MVC mapeia `Result` para HTTP via extension `result.ToActionResult(_m
 
 Falhas inesperadas (DbUpdateException, NullReferenceException de bug) sobem para `GlobalExceptionMiddleware` que retorna `uniplus.internal.unexpected` 500. Esse caminho é o exception fallback, não o canal regular.
 
+> **Emenda (2026-11-15) — invariante interno não vira código público.** Fluxo esperado é o que um cliente HTTP alcança: só ele ganha `DomainError` no registro de erros, com código público e página no portal. A violação de invariante que nenhum cliente alcança — argumento obrigatório de fábrica ou de construtor que o chamador já recebe validado de outra fonte, como o dado de um cadastro que o exige — lança `ArgumentException` ou `ArgumentNullException`, e o que escapar sobe ao `GlobalExceptionMiddleware` como erro interno inesperado. A emenda não alcança as guardas de banco da cadeia de versões da [ADR-0102](0102-invariantes-coerencia-processo-guard-rails-422.md): elas continuam virando `DomainError`, nunca 500.
+
 ## Consequências
 
 ### Positivas
