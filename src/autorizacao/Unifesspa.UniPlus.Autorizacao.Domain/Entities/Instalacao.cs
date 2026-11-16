@@ -182,6 +182,9 @@ public sealed class Instalacao : EntityBase
         return true;
     }
 
+    /// <summary>Indica se a instalação aceita o envio do código: com o documento verificado, o primeiro, e enquanto se aguarda o código, o reenvio.</summary>
+    public bool AceitaEnvioDoCodigo => Situacao is SituacaoDaInstalacao.DocumentoVerificado or SituacaoDaInstalacao.AguardandoCodigo;
+
     /// <summary>Indica se o próximo envio de código é o reenvio de um código já enviado e ainda não confirmado.</summary>
     public bool CodigoJaEnviado => Situacao == SituacaoDaInstalacao.AguardandoCodigo;
 
@@ -194,17 +197,12 @@ public sealed class Instalacao : EntityBase
     {
         ArgumentNullException.ThrowIfNull(resumo);
 
-        if (Situacao is not (SituacaoDaInstalacao.DocumentoVerificado or SituacaoDaInstalacao.AguardandoCodigo))
+        if (!AceitaEnvioDoCodigo)
         {
             return Result.Failure(SituacaoInvalida());
         }
 
-        if (Situacao == SituacaoDaInstalacao.DocumentoVerificado)
-        {
-            Tentativas = 0;
-            CodigoEnviadoEm = instante;
-        }
-
+        CodigoEnviadoEm ??= instante;
         CodigoResumo = resumo;
         CodigoExpiraEm = instante + PrazoDoCodigo;
         Situacao = SituacaoDaInstalacao.AguardandoCodigo;
@@ -225,23 +223,10 @@ public sealed class Instalacao : EntityBase
 
         if (instante >= CodigoExpiraEm)
         {
-            Situacao = SituacaoDaInstalacao.Expirada;
-            CodigoResumo = null;
-            return ResultadoDaTentativaDeInstalacao.Expirada;
+            return Expirar();
         }
 
-        if (codigoConfere)
-        {
-            return ResultadoDaTentativaDeInstalacao.Aceita;
-        }
-
-        Tentativas++;
-        if (Tentativas >= MaximoDeTentativas)
-        {
-            Cancelar(instante);
-        }
-
-        return ResultadoDaTentativaDeInstalacao.CodigoErrado;
+        return codigoConfere ? ResultadoDaTentativaDeInstalacao.Aceita : RecusarCodigoErrado(instante);
     }
 
     /// <summary>Confirma a instalação, depois do código aceito. O código vale uma vez: o resumo é descartado.</summary>
@@ -268,6 +253,24 @@ public sealed class Instalacao : EntityBase
         Situacao = SituacaoDaInstalacao.Cancelada;
         CanceladaEm = instante;
         CodigoResumo = null;
+    }
+
+    private ResultadoDaTentativaDeInstalacao Expirar()
+    {
+        Situacao = SituacaoDaInstalacao.Expirada;
+        CodigoResumo = null;
+        return ResultadoDaTentativaDeInstalacao.Expirada;
+    }
+
+    private ResultadoDaTentativaDeInstalacao RecusarCodigoErrado(DateTimeOffset instante)
+    {
+        Tentativas++;
+        if (Tentativas >= MaximoDeTentativas)
+        {
+            Cancelar(instante);
+        }
+
+        return ResultadoDaTentativaDeInstalacao.CodigoErrado;
     }
 
     private static Result ETagAusente() => Result.ValidationFailure([new FieldError("etag", new DomainError(

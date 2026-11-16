@@ -223,6 +223,7 @@ public sealed class InstalacaoTests
         instalacao.EnviarCodigo(Resumo, Agora).IsSuccess.Should().BeTrue();
 
         instalacao.Situacao.Should().Be(SituacaoDaInstalacao.AguardandoCodigo);
+        instalacao.CodigoEnviadoEm.Should().Be(Agora);
         instalacao.CodigoExpiraEm.Should().Be(Agora.AddHours(2));
         instalacao.CodigoResumo.Should().Equal(Resumo);
         instalacao.Tentativas.Should().Be(0);
