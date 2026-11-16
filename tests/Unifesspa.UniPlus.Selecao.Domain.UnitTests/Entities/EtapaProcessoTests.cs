@@ -107,7 +107,7 @@ public sealed partial class EtapaProcessoTests
     // ── Como a nota da etapa é obtida ──
 
     private static ReferenciaRegra RegraDeConsolidacao(string codigo = RegraConsolidacaoCodigo.AvaliacaoUnica) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string('c', 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string('c', 64));
 
     private static TipoEtapaSnapshot TipoEtapaDoEnem() =>
         TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!;

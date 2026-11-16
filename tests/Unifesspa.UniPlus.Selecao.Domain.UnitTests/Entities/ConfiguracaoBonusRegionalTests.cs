@@ -13,7 +13,7 @@ public sealed class ConfiguracaoBonusRegionalTests
     private static readonly (string CodigoIbge, string Nome, string Uf)[] MunicipioValido = [("1504208", "Marabá", "PA")];
 
     private static ReferenciaRegra RegraMultiplicativo() =>
-        ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!;
+        ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64));
 
     private static Result<ConfiguracaoBonusRegional> Criar(
         decimal fator = 1.20m,
@@ -71,7 +71,7 @@ public sealed class ConfiguracaoBonusRegionalTests
     [Fact(DisplayName = "Criar com regra de código diferente de BONUS-MULTIPLICATIVO falha")]
     public void Criar_RegraInvalida_Falha()
     {
-        ReferenciaRegra regraErrada = ReferenciaRegra.Criar("FORMULA-MEDIA-PONDERADA", "v1", new string('b', 64)).Value!;
+        ReferenciaRegra regraErrada = ReferenciaRegra.De("FORMULA-MEDIA-PONDERADA", "v1", new string('b', 64));
 
         Result<ConfiguracaoBonusRegional> resultado = Criar(regra: regraErrada);
 
@@ -111,7 +111,7 @@ public sealed class ConfiguracaoBonusRegionalTests
     [Fact(DisplayName = "ADR-0125: violações independentes acumulam num único lote")]
     public void Criar_RegraEFatorETetoInvalidos_AcumulaAsTresViolacoes()
     {
-        ReferenciaRegra regraErrada = ReferenciaRegra.Criar("FORMULA-MEDIA-PONDERADA", "v1", new string('b', 64)).Value!;
+        ReferenciaRegra regraErrada = ReferenciaRegra.De("FORMULA-MEDIA-PONDERADA", "v1", new string('b', 64));
 
         Result<ConfiguracaoBonusRegional> resultado = Criar(fator: 0m, teto: 0m, regra: regraErrada);
 

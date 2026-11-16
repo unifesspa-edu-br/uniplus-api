@@ -11,16 +11,16 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class ConfiguracaoClassificacaoTests
 {
     private static ReferenciaRegra RegraCalculoMediaPonderada() =>
-        ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)).Value!;
+        ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64));
 
     private static ReferenciaRegra RegraCalculoImportada() =>
-        ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!;
+        ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64));
 
     private static ReferenciaRegra RegraArredondamento() =>
-        ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('c', 64)).Value!;
+        ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('c', 64));
 
     private static ReferenciaRegra RegraOrdemAlocacao() =>
-        ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)).Value!;
+        ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64));
 
     [Fact(DisplayName = "Criar com FORMULA-MEDIA-PONDERADA e arredondamento tem sucesso")]
     public void Criar_MediaPonderadaComArredondamento_Sucesso()
@@ -229,7 +229,7 @@ public sealed class ConfiguracaoClassificacaoTests
 
     private static RegraEliminacao Eliminacao(string codigoRegra) =>
         RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(codigoRegra, "v1", new string('a', 64)).Value!,
+            ReferenciaRegra.De(codigoRegra, "v1", new string('a', 64)),
             ArgsDaRegra(codigoRegra)).Value!;
 
     private static ArgsRegraEliminacao ArgsDaRegra(string codigoRegra) => codigoRegra switch
@@ -311,7 +311,7 @@ public sealed class ConfiguracaoClassificacaoTests
 
     private static RegraEliminacao AusenciaNaEtapa(Guid etapaId) =>
         RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", new string('a', 64)).Value!,
+            ReferenciaRegra.De(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", new string('a', 64)),
             new ArgsElimAusenciaNaEtapa(etapaId)).Value!;
 
     [Fact(DisplayName = "A eliminação por ausência repetida para a mesma etapa é recusada no próprio item; etapas distintas valem")]
@@ -489,7 +489,7 @@ public sealed class ConfiguracaoClassificacaoTests
     [InlineData(RegraCalculoCodigo.ClassificacaoImportada, false, false)]
     public void ExigeQuadroPesoAreaEnem_SoNaMediaPonderadaDoEnem(string regraCalculo, bool baseadoEmEnem, bool esperado)
     {
-        ReferenciaRegra regra = ReferenciaRegra.Criar(regraCalculo, "v1", new string('f', 64)).Value!;
+        ReferenciaRegra regra = ReferenciaRegra.De(regraCalculo, "v1", new string('f', 64));
 
         ConfiguracaoClassificacao.ExigeQuadroPesoAreaEnem(regra, baseadoEmEnem).Should().Be(esperado);
     }
@@ -589,7 +589,7 @@ public sealed class ConfiguracaoClassificacaoTests
 
     private static RegraEliminacao CorteEm(string area, decimal minimo = 400m) =>
         RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", new string('a', 64)).Value!,
+            ReferenciaRegra.De(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", new string('a', 64)),
             new ArgsElimCorteEmArea(area, minimo)).Value!;
 
     private static Result<ConfiguracaoClassificacao> CriarEnemLocal(params RegraEliminacao[] eliminacoes) =>

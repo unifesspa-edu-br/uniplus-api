@@ -59,13 +59,13 @@ internal static class ProcessosDeInscricaoDeTeste
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(
                 Guid.CreateVersion7(), 40, 1m,
-                ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
+                ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)),
                 null, null, modalidades ?? [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!],
             FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!, null, null,
-            ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)).Value!, [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
+            ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)), null, null,
+            ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma faseDaInscricao = FaseDeResultadoFinal();
@@ -92,7 +92,7 @@ internal static class ProcessosDeInscricaoDeTeste
         if (fatoDoFator is not null)
         {
             ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-                ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('d', 64)).Value!, 1.20m, null, fatoDoFator,
+                ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('d', 64)), 1.20m, null, fatoDoFator,
                 Guid.CreateVersion7(), "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")]).Value!;
             processo.DefinirBonusRegional(aplica: true, bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         }

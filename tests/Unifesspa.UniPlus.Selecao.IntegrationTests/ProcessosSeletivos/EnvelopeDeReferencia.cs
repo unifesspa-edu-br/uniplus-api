@@ -42,7 +42,7 @@ internal static class EnvelopeDeReferencia
     internal static readonly SnapshotPublicacaoCanonicalizer Canonicalizer = new();
 
     internal static ReferenciaRegra Regra(string codigo, string hashSeed) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(hashSeed[0], 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(hashSeed[0], 64));
 
     internal static ProcessoSeletivo ProcessoDeReferencia()
     {

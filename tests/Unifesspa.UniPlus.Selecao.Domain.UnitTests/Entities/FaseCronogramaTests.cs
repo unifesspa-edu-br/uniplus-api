@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed partial class FaseCronogramaTests
 {
     private static ReferenciaRegra RegraAncorada() =>
-        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
+        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
 
     private static RegraRecursoFase Recurso(Guid produtoAncoraId) =>
         RegraRecursoFase.Criar(RegraAncorada(), ArgsValidos(), produtoAncoraId).Value!;

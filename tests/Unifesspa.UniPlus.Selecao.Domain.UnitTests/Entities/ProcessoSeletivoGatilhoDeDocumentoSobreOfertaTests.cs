@@ -47,8 +47,8 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
 
     private static ConfiguracaoDistribuicaoVagas DistribuicaoCom(params string[] codigosModalidade)
     {
-        ReferenciaRegra regra = ReferenciaRegra.Criar(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", string.Concat(Enumerable.Repeat("ab01234567", 7))[..64]).Value!;
+        ReferenciaRegra regra = ReferenciaRegra.De(
+            RegraDistribuicaoVagasCodigo.Institucional, "v1", string.Concat(Enumerable.Repeat("ab01234567", 7))[..64]);
         return ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoOrigemId: Guid.CreateVersion7(),
             voBase: codigosModalidade.Length * 10,

@@ -130,6 +130,9 @@ public sealed class RegraCatalogo : EntityBase
         }
     }
 
+    /// <summary>A identidade content-addressable desta regra, a que cada dimensão da configuração embute.</summary>
+    public ReferenciaRegra Referencia() => ReferenciaRegra.De(Codigo, Versao, Hash);
+
     /// <summary>
     /// Recomputa o hash a partir do estado atual — exposto para os testes de
     /// determinismo/round-trip (recomputar deve bater com o <see cref="Hash"/>

@@ -114,7 +114,7 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
     private static ConfiguracaoDistribuicaoVagas Oferta(Guid ofertaCursoId, int voBase, IReadOnlyList<ModalidadeSelecionada> modalidades) =>
         ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoId, voBase, pr: 1m,
-            ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
+            ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)),
             regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     private static ModalidadeSelecionada Ac(int quantidade) => ModalidadeSelecionada.Criar(

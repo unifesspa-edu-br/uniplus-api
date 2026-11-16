@@ -136,7 +136,7 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
             AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         string hashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
-        ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", hashFixo).Value!;
+        ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", hashFixo);
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(),
             codigo: "AC",
@@ -162,8 +162,8 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
             modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", hashFixo).Value!;
-        ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", hashFixo).Value!;
+        ReferenciaRegra regraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", hashFixo);
+        ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", hashFixo);
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
             regraCalculo: regraCalculo,
             regraArredondamento: null,

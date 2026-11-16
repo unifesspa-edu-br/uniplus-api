@@ -52,7 +52,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
         EtapaProcesso etapa = processo.Etapas.Single();
         etapa.FormaDeAvaliacao.Should().Be(FormaDeAvaliacao.Humana);
         etapa.RegraConsolidacao.Should().Be(
-            ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash).Value);
+            ReferenciaRegra.De(regra.Codigo, regra.Versao, regra.Hash));
     }
 
     [Fact(DisplayName = "A regra de consolidação só aceita regra do tipo consolidação")]

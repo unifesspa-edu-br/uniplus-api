@@ -320,8 +320,8 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             new GrafoConfiguracao(
                 [.. processo.Etapas], AtendimentoEspecializado.Criar([], [], []).Value!, [.. processo.DistribuicaoVagas], processo.BonusRegional,
                 [.. processo.CriteriosDesempate], ConfiguracaoClassificacao.Criar(
-                    ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!, null, null,
-                    ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)).Value!, [],
+                    ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)), null, null,
+                    ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)), [],
                     baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
                 [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
                 numeroDeOpcoesDeCurso: 1),

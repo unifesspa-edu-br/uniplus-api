@@ -12,19 +12,19 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class ConfiguracaoDistribuicaoVagasTests
 {
     private static ReferenciaRegra RegraLei12711() =>
-        ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Lei12711, "v1", new string('a', 64)).Value!;
+        ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Lei12711, "v1", new string('a', 64));
 
     private static ReferenciaRegra RegraInstitucional() =>
-        ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('b', 64)).Value!;
+        ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('b', 64));
 
     private static ReferenciaRegra RegraPsiq() =>
-        ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Psiq, "v1", new string('d', 64)).Value!;
+        ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Psiq, "v1", new string('d', 64));
 
     private static ReferenciaRegra RegraComAcPcd() =>
-        ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.ComAcPcd, "v1", new string('e', 64)).Value!;
+        ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.ComAcPcd, "v1", new string('e', 64));
 
     private static ReferenciaRegra RegraLei12711ComAcPcd() =>
-        ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd, "v1", new string('f', 64)).Value!;
+        ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd, "v1", new string('f', 64));
 
     private static readonly string[] RolLei12711 =
         ["AC", "LB_PPI", "LB_Q", "LB_PCD", "LB_EP", "LI_PPI", "LI_Q", "LI_PCD", "LI_EP"];
@@ -32,7 +32,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     private static readonly string[] RolLei12711ComAcPcd = [.. RolLei12711, "AC_PCD"];
 
     private static ReferenciaRegra RegraAjuste() =>
-        ReferenciaRegra.Criar("RECONCILIACAO-VAGAS-ART11-PU", "v1", new string('c', 64)).Value!;
+        ReferenciaRegra.De("RECONCILIACAO-VAGAS-ART11-PU", "v1", new string('c', 64));
 
     private static ReferenciaReservaDemograficaSnapshot Demografica() =>
         ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!;

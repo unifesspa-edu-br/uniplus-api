@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class ProcessoConformeFactory
 {
     internal static ReferenciaRegra Regra(string codigo, string hashSeed) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(hashSeed[0], 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(hashSeed[0], 64));
 
     /// <summary>
     /// Uma oferta de curso da distribuição: ampla concorrência única, com as vagas todas nela.

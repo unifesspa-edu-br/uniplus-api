@@ -76,8 +76,8 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!;
+        ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(
+            RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo);
         ModalidadeSelecionada ac = ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(),
             codigo: "AC",
@@ -261,7 +261,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(
                 Guid.CreateVersion7(), 40, 1m,
-                ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
+                ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo),
                 null, null, [ModalidadeDe("AC", NaturezaLegalModalidade.Ampla), ModalidadeDe("LI_EP", NaturezaLegalModalidade.CotaReservada)],
                 ofertaCurso: OfertaCursoDeTeste.Medicina).Value!],
             FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

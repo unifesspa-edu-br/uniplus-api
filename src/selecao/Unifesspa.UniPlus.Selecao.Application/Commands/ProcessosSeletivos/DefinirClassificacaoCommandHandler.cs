@@ -269,7 +269,7 @@ public static class DefinirClassificacaoCommandHandler
                 $"A regra {codigo}/{versao} não é do tipo esperado."));
         }
 
-        return ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
+        return Result<ReferenciaRegra>.Success(regra.Referencia());
     }
 
     private static async Task<Result<RegraEliminacao>> ResolverEliminacaoAsync(
@@ -300,13 +300,7 @@ public static class DefinirClassificacaoCommandHandler
             return Result<RegraEliminacao>.Failure(argsResult.Error!);
         }
 
-        Result<ReferenciaRegra> referenciaRegraResult = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
-        if (referenciaRegraResult.IsFailure)
-        {
-            return Result<RegraEliminacao>.Failure(referenciaRegraResult.Error!);
-        }
-
-        return RegraEliminacao.Criar(referenciaRegraResult.Value!, argsResult.Value!);
+        return RegraEliminacao.Criar(regra.Referencia(), argsResult.Value!);
     }
 
     private static Result<ArgsRegraEliminacao> MontarArgs(RegraEliminacaoInput input) =>

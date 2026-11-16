@@ -181,7 +181,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         Result distribuida = processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(
                 Guid.CreateVersion7(), 40, 1m,
-                ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
+                ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)),
                 null, null,
                 [
                     Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula, 30),
@@ -193,7 +193,7 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         distribuida.IsSuccess.Should().BeTrue(distribuida.Error?.Message);
 
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(
-            ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)).Value!, 1.20m, null, null,
+            ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)), 1.20m, null, null,
             Guid.CreateVersion7(), "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
             [("1504208", "Marabá", "PA")]).Value!;
         Result definido = processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente);
@@ -212,10 +212,10 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         // não teria o que oferecer.
         Result classificada = processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(
-                ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('c', 64)).Value!,
-                ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('d', 64)).Value!,
+                ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('c', 64)),
+                ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('d', 64)),
                 2,
-                ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('f', 64)).Value!,
+                ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('f', 64)),
                 [], baseadoEmEnem: true, Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Resolucao, Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!,
             PrecondicaoIfMatch.Ausente);
         classificada.IsSuccess.Should().BeTrue(classificada.Error?.Message);

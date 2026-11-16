@@ -109,7 +109,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
 
     private static ReferenciaRegra RegraDeRecursoAncorada() =>
-        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)).Value!;
+        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64));
 
     /// <summary>Produto preliminar de <see cref="FaseComRecurso"/> — a âncora do prazo.</summary>
     private static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000004");

@@ -7662,21 +7662,6 @@
       "titulo": "A unidade da suspensividade não é declarável"
     },
     {
-      "codigo": "uniplus.selecao.referencia_regra.codigo_obrigatorio",
-      "status": 422,
-      "titulo": "Código da regra referenciada obrigatório"
-    },
-    {
-      "codigo": "uniplus.selecao.referencia_regra.hash_invalido",
-      "status": 422,
-      "titulo": "Hash da regra referenciada inválido"
-    },
-    {
-      "codigo": "uniplus.selecao.referencia_regra.versao_obrigatoria",
-      "status": 422,
-      "titulo": "Versão da regra referenciada obrigatória"
-    },
-    {
       "codigo": "uniplus.selecao.referencia_reserva_demografica_snapshot.base_legal_obrigatoria",
       "status": 422,
       "titulo": "Base legal é obrigatória"

@@ -58,8 +58,8 @@ internal static class ApoioDaPublicacaoDoProcessoSeletivo
         processo.DefinirAtendimentoEspecializado(
             AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!;
+        ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(
+            RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo);
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(),
             codigo: "AC",
@@ -85,10 +85,10 @@ internal static class ApoioDaPublicacaoDoProcessoSeletivo
             modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(
-            RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!;
-        ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.Criar(
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!;
+        ReferenciaRegra regraCalculo = ReferenciaRegra.De(
+            RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo);
+        ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.De(
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo);
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
             regraCalculo: regraCalculo,
             regraArredondamento: null,

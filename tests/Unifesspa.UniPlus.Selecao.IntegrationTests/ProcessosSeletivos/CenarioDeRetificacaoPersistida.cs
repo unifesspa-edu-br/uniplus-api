@@ -39,7 +39,7 @@ internal sealed class CenarioDeRetificacaoPersistida
     public UniPlusDbContext CriarDbContext() => _fixture.CreateDbContext();
 
     private static ReferenciaRegra Regra(string codigo, string hashChar) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(hashChar[0], 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(hashChar[0], 64));
 
     public static ProcessoSeletivo NovoProcessoConforme(string nome)
     {

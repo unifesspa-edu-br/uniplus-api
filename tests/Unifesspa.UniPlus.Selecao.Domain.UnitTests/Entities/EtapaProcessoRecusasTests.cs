@@ -37,7 +37,7 @@ public sealed class EtapaProcessoRecusasTests
         admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: doEnem).Value!;
 
     private static ReferenciaRegra Regra(string codigo = RegraConsolidacaoCodigo.AvaliacaoUnica) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string('c', 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string('c', 64));
 
     private static ItemDeAvaliacaoDeclarado Item(string rotulo, decimal pontuacao) => new(null, rotulo, pontuacao);
 

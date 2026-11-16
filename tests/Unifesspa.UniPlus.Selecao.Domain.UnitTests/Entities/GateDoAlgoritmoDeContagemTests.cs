@@ -39,14 +39,14 @@ public sealed class GateDoAlgoritmoDeContagemTests
     private static ProcessoSeletivo Processo(RegraRecursoFase? regraRecurso) =>
         ProcessoConformeFactory.Criar(fase: ProcessoConformeFactory.FaseConforme(regraRecurso));
 
-    private static ReferenciaRegra Algoritmo() => ReferenciaRegra.Criar(
-        AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1", new string('b', 64)).Value!;
+    private static ReferenciaRegra Algoritmo() => ReferenciaRegra.De(
+        AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1", new string('b', 64));
 
     private static RegraRecursoFase RegraDeRecurso(
         UnidadePrazo prazoUnidade = UnidadePrazo.DiasUteis,
         decimal prazoValor = 2m,
         UnidadePrazo? suspensividadeUnidade = null) => RegraRecursoFase.Criar(
-            ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)).Value!,
+            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
             new ArgsRegraPrazoRecurso(
                 PrazoValor: prazoValor,
                 PrazoUnidade: prazoUnidade,
@@ -218,7 +218,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
         etagAntes.Should().NotBeNull("pré-condição: a sessão está aberta e tem ETag");
 
         processo.DefinirAlgoritmoContagemPrazo(
-            ReferenciaRegra.Criar(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, "v1", new string('d', 64)).Value!,
+            ReferenciaRegra.De(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, "v1", new string('d', 64)),
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         processo.ETagDaSessaoEditorial.Should().NotBe(etagAntes);

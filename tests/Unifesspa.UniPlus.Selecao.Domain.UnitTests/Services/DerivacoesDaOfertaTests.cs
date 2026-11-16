@@ -150,7 +150,7 @@ public sealed class DerivacoesDaOfertaTests
     private static ConfiguracaoDistribuicaoVagas Oferta(params ModalidadeSelecionada[] modalidades) =>
         ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), voBase: 10 * modalidades.Length, pr: 1m,
-            ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
+            ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)),
             regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     private static ModalidadeSelecionada Modalidade(

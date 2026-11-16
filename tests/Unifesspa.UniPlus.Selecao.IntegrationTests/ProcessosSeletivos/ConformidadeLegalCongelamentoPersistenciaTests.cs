@@ -47,7 +47,7 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
     }
 
     private static ReferenciaRegra Regra(string codigo, string hashChar) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(hashChar[0], 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(hashChar[0], 64));
 
     private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(

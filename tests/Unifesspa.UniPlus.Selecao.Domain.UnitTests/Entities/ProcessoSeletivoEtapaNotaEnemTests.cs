@@ -37,7 +37,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
     private static ReferenciaRegra RegraDoRecurso =>
-        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
+        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
 
     private static ArgsRegraPrazoRecurso PrazoDoRecurso => new(
         PrazoValor: 48m, PrazoUnidade: UnidadePrazo.Horas,
@@ -52,7 +52,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, RegraDoRecurso, PrazoDoRecurso, Guid.CreateVersion7()).Value!;
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     private static ConfiguracaoClassificacao ClassificacaoMediaPonderada(bool baseadoEmEnem) =>
         ConfiguracaoClassificacao.Criar(

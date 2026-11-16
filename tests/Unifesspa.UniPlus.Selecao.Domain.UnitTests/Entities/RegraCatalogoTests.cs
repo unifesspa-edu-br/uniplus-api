@@ -36,6 +36,16 @@ public sealed class RegraCatalogoTests
         regra.Tipo.Should().Be(TipoRegra.RegraBonus);
     }
 
+    [Fact(DisplayName = "Referencia devolve a identidade content-addressable da regra")]
+    public void Referencia_DaRegraCriada_ReproduzCodigoVersaoEHash()
+    {
+        RegraCatalogo regra = CriarValida();
+
+        ReferenciaRegra referencia = regra.Referencia();
+
+        referencia.Should().Be(ReferenciaRegra.De(regra.Codigo, regra.Versao, regra.Hash));
+    }
+
     [Theory(DisplayName = "Criar recusa código/versão/base legal vazios")]
     [InlineData("", "v1", "base", "codigo")]
     [InlineData("  ", "v1", "base", "codigo")]

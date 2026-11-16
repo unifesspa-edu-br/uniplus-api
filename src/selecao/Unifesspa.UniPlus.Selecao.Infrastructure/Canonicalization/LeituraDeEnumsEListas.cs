@@ -168,7 +168,7 @@ internal static class LeituraDeEnumsEListas
     /// <para>
     /// O que resta verificável <b>sem</b> estado vivo é o que se verifica: o código pertence
     /// ao rol da forma <c>1.1</c>, a versão e o código não são brancos e cabem nas colunas, e
-    /// o hash tem o shape content-addressable (<c>ReferenciaRegra.Criar</c>). A prova de que
+    /// o hash tem o shape content-addressable (<c>ReferenciaRegra.De</c>). A prova de que
     /// a tripla <i>existiu</i> é o hash do <b>envelope</b>, que cobre os três campos.
     /// </para>
     /// </remarks>
@@ -251,7 +251,6 @@ internal static class LeituraDeEnumsEListas
                 $"O hash em '{path}' não é um SHA-256 em hexadecimal minúsculo (64 caracteres).");
         }
 
-        Result<ReferenciaRegra> referencia = ReferenciaRegra.Criar(codigo, versao, hash);
-        return referencia.IsFailure ? leitor.Propagar<ReferenciaRegra>(referencia.Error!) : referencia.Value!;
+        return ReferenciaRegra.De(codigo, versao, hash);
     }
 }

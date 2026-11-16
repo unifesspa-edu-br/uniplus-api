@@ -126,18 +126,18 @@ internal sealed record ViolacaoDeRegra(
 
     private static CriterioDesempate CriterioMaiorIdade(int ordem) => CriterioDesempate.Criar(
         ordem,
-        ReferenciaRegra.Criar(CriterioDesempateCodigo.MaiorIdade, "v1", new string('f', 64)).Value!,
+        ReferenciaRegra.De(CriterioDesempateCodigo.MaiorIdade, "v1", new string('f', 64)),
         new ArgsDesempateMaiorIdade()).Value!;
 
     // A regra de eliminação cita uma etapa que o processo não tem (INV-B4).
     private static ConfiguracaoClassificacao ClassificacaoQueEliminaPorEtapaInexistente() => ConfiguracaoClassificacao.Criar(
-        ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)).Value!,
-        ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)).Value!,
+        ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
+        ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
         2,
-        ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)).Value!,
+        ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
         [
             RegraEliminacao.Criar(
-                ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
+                ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)),
                 new ArgsElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m)).Value!,
         ],
         false,

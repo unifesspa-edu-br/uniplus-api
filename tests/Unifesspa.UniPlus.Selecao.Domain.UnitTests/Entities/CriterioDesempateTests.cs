@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class CriterioDesempateTests
 {
     private static ReferenciaRegra Regra(string codigo) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string('a', 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string('a', 64));
 
     private static CondicaoDnf CondicaoProfessorRural() =>
         CondicaoDnf.Criar("PROFESSOR_RURAL", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;

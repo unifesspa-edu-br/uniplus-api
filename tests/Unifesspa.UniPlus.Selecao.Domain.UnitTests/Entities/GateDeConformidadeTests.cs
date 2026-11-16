@@ -26,7 +26,7 @@ public sealed class GateDeConformidadeTests
     private static readonly string HashFixo = new('a', 64);
 
     private static ReferenciaRegra Regra(string codigo, string hashSeed) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(hashSeed[0], 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(hashSeed[0], 64));
 
     private static ProcessoSeletivo ProcessoConforme(bool declararTaxa = true) =>
         ProcessoConformeFactory.Criar(declararTaxa);

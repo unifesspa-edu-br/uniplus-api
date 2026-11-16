@@ -248,13 +248,7 @@ public static class DefinirCriteriosDesempateCommandHandler
             return (Recusado(argsResult.Errors), null);
         }
 
-        Result<ReferenciaRegra> referenciaRegraResult = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
-        if (referenciaRegraResult.IsFailure)
-        {
-            return (Recusado(referenciaRegraResult.Errors.Select(static erro => erro with { Field = "regraCodigo" })), argsResult.Value);
-        }
-
-        return (CriterioDesempate.Criar(input.Ordem, referenciaRegraResult.Value!, argsResult.Value!, vocabularioFatos), argsResult.Value);
+        return (CriterioDesempate.Criar(input.Ordem, regra.Referencia(), argsResult.Value!, vocabularioFatos), argsResult.Value);
     }
 
     private static Result<ArgsCriterioDesempate> Recusa(string campo, DomainError erro) =>

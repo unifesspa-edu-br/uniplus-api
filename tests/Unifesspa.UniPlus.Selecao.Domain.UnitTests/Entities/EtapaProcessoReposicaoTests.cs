@@ -42,7 +42,7 @@ public sealed class EtapaProcessoReposicaoTests
 
     private static RecursoDaEtapa Janela(Guid produtoAncoraId) => RecursoDaEtapa.Criar(
         AncoraDoRecurso.AtoPublicado,
-        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!,
+        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
         new ArgsRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
         produtoAncoraId).Value!;
 

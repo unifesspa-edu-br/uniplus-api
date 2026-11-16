@@ -193,7 +193,7 @@ internal static class LeituraDoCalendario
     /// de o bloco existir.
     /// </para>
     /// <para>
-    /// A referência é reconstruída por <see cref="ReferenciaRegra.Criar"/>, e não por
+    /// A referência é reconstruída por <see cref="ReferenciaRegra.De"/>, e não por
     /// atribuição direta, pela mesma razão da localidade: um envelope adulterado com hash
     /// fora de forma é malformado, e reidratá-lo daria ao processo restaurado uma
     /// referência que o domínio recusaria criar.

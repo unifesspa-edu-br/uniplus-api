@@ -191,7 +191,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
     private static ConfiguracaoDistribuicaoVagas DistribuicaoDeVagasCom(ModalidadeSelecionada[] modalidades) =>
         ConfiguracaoDistribuicaoVagas.Criar(
             Guid.CreateVersion7(), 10 * modalidades.Length, 1m,
-            ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
+            ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)),
             null, null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     private void DeclararFatosDaOpcaoPelasCotas()

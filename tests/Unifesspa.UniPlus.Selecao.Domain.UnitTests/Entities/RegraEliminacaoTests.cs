@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public sealed class RegraEliminacaoTests
 {
     private static ReferenciaRegra Regra(string codigo) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string('a', 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string('a', 64));
 
     [Fact(DisplayName = "Criar ELIM-NOTA-MINIMA-ETAPA com args compatíveis tem sucesso")]
     public void Criar_NotaMinimaEtapa_Sucesso()

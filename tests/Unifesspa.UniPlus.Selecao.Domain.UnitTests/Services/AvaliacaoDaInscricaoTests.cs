@@ -195,7 +195,7 @@ public sealed class AvaliacaoDaInscricaoTests
 
     private static ConfiguracaoBonusRegional Bonus(string? fatoElegibilidade) =>
         ConfiguracaoBonusRegional.Criar(
-            ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)).Value!, 1.20m, null, fatoElegibilidade, Guid.CreateVersion7(),
+            ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)), 1.20m, null, fatoElegibilidade, Guid.CreateVersion7(),
             "PORTARIA", "Portaria de teste", "Inclusão regional", [("1504208", "Marabá", "PA")]).Value!;
 
     private static ConfiguracaoAvaliavel Configuracao(bool derivaModalidade, bool rendaSoParaBaixaRenda = false, bool municipioDoBonus = false, bool municipioNoGrupo = false)

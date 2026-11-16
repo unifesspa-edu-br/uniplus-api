@@ -84,12 +84,6 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
                 $"A regra {input.RegraDistribuicaoCodigo}/{input.RegraDistribuicaoVersao} não é do tipo regra_distribuicao_vagas."));
         }
 
-        Result<ReferenciaRegra> referenciaRegraResult = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
-        if (referenciaRegraResult.IsFailure)
-        {
-            return Result<ConfiguracaoDistribuicaoVagas>.Failure(referenciaRegraResult.Error!);
-        }
-
         Result<ReferenciaRegra?> regraAjusteResult = await ResolverRegraAjusteAsync(
             input, regraCatalogoReader, cancellationToken).ConfigureAwait(false);
         if (regraAjusteResult.IsFailure)
@@ -178,7 +172,7 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
             input.OfertaCursoId,
             input.VoBase,
             input.Pr,
-            referenciaRegraResult.Value!,
+            regra.Referencia(),
             regraAjusteResult.Value,
             demografica,
             modalidades,
@@ -221,9 +215,6 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
                 $"A regra {input.RegraAjusteCodigo}/{input.RegraAjusteVersao} não é do tipo regra_ajuste_distribuicao_vagas."));
         }
 
-        Result<ReferenciaRegra> referencia = ReferenciaRegra.Criar(regraAjuste.Codigo, regraAjuste.Versao, regraAjuste.Hash);
-        return referencia.IsFailure
-            ? Result<ReferenciaRegra?>.Failure(referencia.Error!)
-            : Result<ReferenciaRegra?>.Success(referencia.Value);
+        return Result<ReferenciaRegra?>.Success(regraAjuste.Referencia());
     }
 }

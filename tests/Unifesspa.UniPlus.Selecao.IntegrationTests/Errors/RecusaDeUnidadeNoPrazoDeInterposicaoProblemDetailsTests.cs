@@ -97,8 +97,8 @@ public sealed class RecusaDeUnidadeNoPrazoDeInterposicaoProblemDetailsTests
         UnidadePrazo? susp1Unidade = null,
         UnidadePrazo? susp2Unidade = null)
     {
-        ReferenciaRegra regra = ReferenciaRegra.Criar(
-            RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
+        ReferenciaRegra regra = ReferenciaRegra.De(
+            RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
 
         ArgsRegraPrazoRecurso args = new(
             PrazoValor: prazoValor,

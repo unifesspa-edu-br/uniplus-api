@@ -26,8 +26,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public sealed class RecursoDaEtapaTests
 {
-    private static readonly ReferenciaRegra Regra = ReferenciaRegra.Criar(
-        RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
+    private static readonly ReferenciaRegra Regra = ReferenciaRegra.De(
+        RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
 
     private static readonly Guid Ancora = Guid.CreateVersion7();
 
@@ -189,8 +189,8 @@ public sealed class RecursoDaEtapaTests
     [Fact(DisplayName = "Recusa regra de código diferente do prazo ancorado em ato")]
     public void Recusa_RegraDeOutroCodigo()
     {
-        ReferenciaRegra outra = ReferenciaRegra.Criar(
-            "RECURSO-PRAZO-OUTRA-CONTAGEM", "v1", new string('b', 64)).Value!;
+        ReferenciaRegra outra = ReferenciaRegra.De(
+            "RECURSO-PRAZO-OUTRA-CONTAGEM", "v1", new string('b', 64));
 
         Result<RecursoDaEtapa> resultado = RecursoDaEtapa.Criar(
             AncoraDoRecurso.AtoPublicado, outra, Args(), Ancora);

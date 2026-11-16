@@ -21,7 +21,7 @@ internal static class ApoioDaConformidadeDoCronograma
     internal static readonly string HashFixo = new('a', 64);
 
     internal static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     internal static ConfiguracaoDistribuicaoVagas Distribuicao(int voBase) =>
         ConfiguracaoDistribuicaoVagas.Criar(

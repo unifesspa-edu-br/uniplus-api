@@ -134,7 +134,7 @@ public sealed class FatoDeElegibilidadeGateTests
         processo.DefinirBonusRegional(
             aplica: true,
             ConfiguracaoBonusRegional.Criar(
-                ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", HashFixo).Value!,
+                ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", HashFixo),
                 1.20m, null, Fato, Guid.CreateVersion7(), "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso",
                 [("1504208", "Marabá", "PA")]).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

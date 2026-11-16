@@ -234,8 +234,7 @@ public sealed class EnvelopeCodecTiposTests
     /// <c>leitor.Valor</c>) — mas <c>CondicaoDnf.Criar</c> recusa uma string em branco como
     /// forma incoerente com o operador, com o código de domínio (não o genérico
     /// <c>EnvelopeMalformado</c>): é a mesma família de recusa nomeada (nunca 500), só que
-    /// mais específica — <c>ReferenciaRegra.Criar</c> já propaga seu próprio código pelo
-    /// mesmo caminho (<see cref="LeitorEnvelope.Propagar{T}"/>).
+    /// mais específica, propagada pelo mesmo caminho (<see cref="LeitorEnvelope.Propagar{T}"/>).
     /// </summary>
     [Fact(DisplayName = "Texto vazio em criteriosDesempate.args.valor é recusado pelo código de domínio de CondicaoDnf")]
     public void TextoVazio_NoValorDoPredicado_RecusaComCodigoDeDominio()

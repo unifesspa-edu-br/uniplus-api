@@ -21,7 +21,7 @@ public sealed class AncoraDoRecursoDaFaseTests
     private const string Resultado = "RESULTADO_CLASSIFICACAO";
 
     private static RegraRecursoFase Recurso(Guid produtoAncoraId) => RegraRecursoFase.Criar(
-        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!,
+        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
         new ArgsRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
         produtoAncoraId).Value!;
 

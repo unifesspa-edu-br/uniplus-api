@@ -24,7 +24,7 @@ public sealed class BancasDoProcessoTests
     private static readonly Guid Tipo = new("0197d6f0-0000-7000-8000-00000000b4c1");
 
     private static RegraRecursoFase RegraDeRecurso() => RegraRecursoFase.Criar(
-        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)).Value!,
+        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
         new ArgsRegraPrazoRecurso(2m, UnidadePrazo.DiasUteis, null, null, false, null, null),
         ProcessoConformeFactory.ProdutoPreliminarId).Value!;
 

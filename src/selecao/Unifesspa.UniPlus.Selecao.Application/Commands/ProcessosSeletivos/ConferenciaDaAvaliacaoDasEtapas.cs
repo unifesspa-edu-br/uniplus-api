@@ -116,11 +116,7 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
                 $"A regra {codigo}/{versao}, declarada pela etapa '{etapa.Nome}', não é uma regra de consolidação do catálogo."))]);
         }
 
-        Result<ReferenciaRegra> referencia = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
-        return referencia.IsSuccess
-            ? referencia
-            : Result<ReferenciaRegra>.ValidationFailure(
-                [.. referencia.Errors.Select(erro => new FieldError("regraConsolidacao", erro.Error))]);
+        return Result<ReferenciaRegra>.Success(regra.Referencia());
     }
 
     private static FieldError RecusaDaFormaDesconhecida(EtapaProcessoInput etapa) =>

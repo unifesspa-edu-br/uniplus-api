@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class DistribuicaoDeVagasDeTeste
 {
     internal static ReferenciaRegra Regra(string codigo) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string('a', 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string('a', 64));
 
     internal static ReferenciaReservaDemograficaSnapshot Demografica() =>
         ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!;

@@ -139,7 +139,7 @@ internal static partial class CorpusEnvelope
     internal const string Ator = "corpus-tests";
 
     internal static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     /// <summary>
     /// Convenção de contagem do corpus. Como as demais referências daqui, o hash é semente

@@ -111,14 +111,14 @@ public sealed class ProcessoSeletivoClassificacaoTests
 
     private static RegraEliminacao EliminacaoPorNotaMinimaNaEtapa(Guid etapaId) =>
         RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)).Value!,
+            ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)),
             new ArgsElimNotaMinimaEtapa(etapaId, 4m)).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoEnemComCorteEmArea() =>
         NovaClassificacao(
             [
                 RegraEliminacao.Criar(
-                    ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", new string('e', 64)).Value!,
+                    ReferenciaRegra.De(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", new string('e', 64)),
                     new ArgsElimCorteEmArea("REDACAO", 400m)).Value!,
             ],
             baseadoEmEnem: true);
@@ -126,10 +126,10 @@ public sealed class ProcessoSeletivoClassificacaoTests
     private static ConfiguracaoClassificacao NovaClassificacao(
         IReadOnlyList<RegraEliminacao>? regrasEliminacao = null, bool baseadoEmEnem = false) =>
         ConfiguracaoClassificacao.Criar(
-            ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)).Value!,
-            ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)).Value!,
+            ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
+            ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
             2,
-            ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)).Value!,
+            ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
             regrasEliminacao ?? [],
             baseadoEmEnem,
             baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,

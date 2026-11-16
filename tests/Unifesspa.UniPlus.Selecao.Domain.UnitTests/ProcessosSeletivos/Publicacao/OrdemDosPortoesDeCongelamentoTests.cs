@@ -107,7 +107,7 @@ public sealed class OrdemDosPortoesDeCongelamentoTests
     }
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     private static Guid ProdutoPreliminar { get; } = new("77770000-0000-4000-8000-000000000003");
 

@@ -26,7 +26,7 @@ public sealed class JanelasRecursaisDaEtapaTests
 
     private static RecursoDaEtapa Janela(AncoraDoRecurso ancora, Guid produtoAncoraId, decimal horas = 48m) => RecursoDaEtapa.Criar(
         ancora,
-        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!,
+        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
         new ArgsRegraPrazoRecurso(horas, UnidadePrazo.Horas, null, null, false, null, null),
         produtoAncoraId).Value!;
 

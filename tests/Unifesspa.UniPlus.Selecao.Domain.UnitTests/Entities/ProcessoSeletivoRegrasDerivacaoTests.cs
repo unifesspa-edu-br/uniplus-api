@@ -76,7 +76,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
             ofertaCursoOrigemId: Guid.CreateVersion7(),
             voBase: codigos.Length * 10,
             pr: 1m,
-            regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
+            regraDistribuicao: ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)),
             regraAjuste: null,
             referenciaDemografica: null,
             modalidades: modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;

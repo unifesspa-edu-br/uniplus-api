@@ -36,7 +36,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     }
 
     private static ReferenciaRegra Regra(string codigo, string hashSeed) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(hashSeed[0], 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(hashSeed[0], 64));
 
     private static CondicaoDnf CondicaoProfessorRural() =>
         CondicaoDnf.Criar("PROFESSOR_RURAL", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;

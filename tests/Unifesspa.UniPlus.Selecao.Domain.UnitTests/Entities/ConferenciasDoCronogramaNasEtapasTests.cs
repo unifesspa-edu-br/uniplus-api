@@ -24,8 +24,8 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
     private static ProcessoSeletivo ProcessoConforme(FaseCronograma? fase = null) =>
         ProcessoConformeFactory.Criar(fase: fase);
 
-    private static ReferenciaRegra Algoritmo() => ReferenciaRegra.Criar(
-        AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1", new string('b', 64)).Value!;
+    private static ReferenciaRegra Algoritmo() => ReferenciaRegra.De(
+        AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1", new string('b', 64));
 
     private static ContextoDeContagemDePrazos ComCalendario() => new(
         CalendarioDiasUteisCongelado.Criar(
@@ -47,7 +47,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
 
     private static RecursoDaEtapa Janela(Guid produtoAncoraId) => RecursoDaEtapa.Criar(
         AncoraDoRecurso.AtoPublicado,
-        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)).Value!,
+        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
         new ArgsRegraPrazoRecurso(2m, UnidadePrazo.DiasUteis, null, null, false, null, null),
         produtoAncoraId).Value!;
 

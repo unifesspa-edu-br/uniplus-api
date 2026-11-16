@@ -47,7 +47,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     private static readonly SnapshotPublicacaoCanonicalizer Canonicalizador = new();
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     private static DadosEdital Dados() => DadosEdital.Criar(
         numero: "001/2026",

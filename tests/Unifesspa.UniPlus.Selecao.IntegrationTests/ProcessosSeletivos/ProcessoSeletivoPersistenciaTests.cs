@@ -51,7 +51,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
         [
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: 0.25m, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: ReferenciaRegra.Criar(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('c', 64)).Value!, EscalaDeAtendimento: null)).Value!,
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: 0.25m, FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('c', 64)), EscalaDeAtendimento: null)).Value!,
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 2, FaseCodigo: null),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2m, NotaMinima: 5m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,

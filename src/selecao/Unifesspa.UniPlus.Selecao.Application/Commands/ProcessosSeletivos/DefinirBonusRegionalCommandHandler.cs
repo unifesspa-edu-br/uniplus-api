@@ -120,12 +120,6 @@ public static class DefinirBonusRegionalCommandHandler
                 $"A regra {command.RegraCodigo}/{command.RegraVersao} não é do tipo regra_bonus."));
         }
 
-        Result<ReferenciaRegra> referenciaRegraResult = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
-        if (referenciaRegraResult.IsFailure)
-        {
-            return Result<MutacaoAceita>.Failure(referenciaRegraResult.Error!);
-        }
-
         // Reader cross-módulo (ADR-0056): o filtro global de soft-delete de Configuração já
         // faz um Id inexistente e um desativado colapsarem no mesmo null — CA-02 não precisa
         // distinguir os dois casos.
@@ -140,7 +134,7 @@ public static class DefinirBonusRegionalCommandHandler
         }
 
         Result<ConfiguracaoBonusRegional> bonusResult = ConfiguracaoBonusRegional.Criar(
-            referenciaRegraResult.Value!,
+            regra.Referencia(),
             command.Fator.Value,
             command.Teto,
             command.FatoElegibilidadeCodigo,

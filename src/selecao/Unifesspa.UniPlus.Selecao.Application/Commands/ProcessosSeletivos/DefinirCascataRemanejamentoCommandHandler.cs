@@ -144,17 +144,11 @@ public static class DefinirCascataRemanejamentoCommandHandler
                 $"A regra {command.RegraCodigo}/{command.RegraVersao} não é do tipo criterio_remanejamento."));
         }
 
-        Result<ReferenciaRegra> referenciaRegraResult = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
-        if (referenciaRegraResult.IsFailure)
-        {
-            return Result<MutacaoAceita>.Failure(referenciaRegraResult.Error!);
-        }
-
         // ValidarForma já confirmou que o resultado será sucesso — Criar não deveria voltar a
         // falhar (mesmos dados, checagem determinística), mas ainda é a fonte de verdade da
         // construção (mesmo padrão de Campus.ValidarAtualizacao/Campus.Atualizar).
         Result<ConfiguracaoCascataRemanejamento> cascataResult = ConfiguracaoCascataRemanejamento.Criar(
-            referenciaRegraResult.Value!, command.FallbackCodigo!, destinos);
+            regra.Referencia(), command.FallbackCodigo!, destinos);
         if (cascataResult.IsFailure)
         {
             return Result<MutacaoAceita>.ValidationFailure(cascataResult.Errors);

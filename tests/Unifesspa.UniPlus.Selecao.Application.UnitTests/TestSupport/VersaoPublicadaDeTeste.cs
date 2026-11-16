@@ -40,8 +40,8 @@ internal static class VersaoPublicadaDeTeste
             new GrafoConfiguracao(
                 [.. grafoDe.Etapas], AtendimentoEspecializado.Criar([], [], []).Value!, [.. grafoDe.DistribuicaoVagas], grafoDe.BonusRegional,
                 [.. grafoDe.CriteriosDesempate], ConfiguracaoClassificacao.Criar(
-                    ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)).Value!, null, null,
-                    ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)).Value!, [],
+                    ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)), null, null,
+                    ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)), [],
                     baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
                 [.. grafoDe.CronogramaFases], [.. grafoDe.DocumentosExigidos], [], null,
                 numeroDeOpcoesDeCurso: 1),

@@ -45,7 +45,7 @@ public sealed class CascataDeRemanejamentoNaRetificacaoTests
         List<DestinoRemanejamento> destinos = [.. pares.Select(p => DestinoRemanejamento.Criar(p.Origem, 1, p.Destino).Value!)];
 
         return ConfiguracaoCascataRemanejamento.Criar(
-            ReferenciaRegra.Criar(RegraRemanejamentoCodigo.Cascata, "v1", new string('9', 64)).Value!,
+            ReferenciaRegra.De(RegraRemanejamentoCodigo.Cascata, "v1", new string('9', 64)),
             "AC",
             destinos).Value!;
     }

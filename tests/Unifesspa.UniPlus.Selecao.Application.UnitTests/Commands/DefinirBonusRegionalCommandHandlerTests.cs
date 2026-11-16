@@ -73,7 +73,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
-            Domain.ValueObjects.ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!,
+            Domain.ValueObjects.ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)),
             1.20m, null, null, BaseLegalId, "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional",
             [("1504208", "Marabá", "PA")]).Value!, PrecondicaoIfMatch.Ausente);
 
@@ -276,8 +276,8 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
             AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         string hashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
-        Domain.ValueObjects.ReferenciaRegra regraDistribuicao = Domain.ValueObjects.ReferenciaRegra.Criar(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", hashFixo).Value!;
+        Domain.ValueObjects.ReferenciaRegra regraDistribuicao = Domain.ValueObjects.ReferenciaRegra.De(
+            RegraDistribuicaoVagasCodigo.Institucional, "v1", hashFixo);
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(),
             codigo: "AC",
@@ -303,10 +303,10 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
             modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        Domain.ValueObjects.ReferenciaRegra regraCalculo = Domain.ValueObjects.ReferenciaRegra.Criar(
-            RegraCalculoCodigo.ClassificacaoImportada, "v1", hashFixo).Value!;
-        Domain.ValueObjects.ReferenciaRegra regraOrdemAlocacao = Domain.ValueObjects.ReferenciaRegra.Criar(
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", hashFixo).Value!;
+        Domain.ValueObjects.ReferenciaRegra regraCalculo = Domain.ValueObjects.ReferenciaRegra.De(
+            RegraCalculoCodigo.ClassificacaoImportada, "v1", hashFixo);
+        Domain.ValueObjects.ReferenciaRegra regraOrdemAlocacao = Domain.ValueObjects.ReferenciaRegra.De(
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", hashFixo);
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
             regraCalculo: regraCalculo,
             regraArredondamento: null,

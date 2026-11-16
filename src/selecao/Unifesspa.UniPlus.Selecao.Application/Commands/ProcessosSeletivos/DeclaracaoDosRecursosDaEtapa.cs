@@ -92,7 +92,7 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
             ? Result<ReferenciaRegra>.Failure(new DomainError(
                 "RecursoDaEtapa.RegraCatalogoInvalida",
                 $"A regra {declarado.RegraCodigo}/{declarado.RegraVersao} não é uma regra de prazo de recurso do catálogo."))
-            : ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
+            : Result<ReferenciaRegra>.Success(regra.Referencia());
     }
 
     private static ArgsRegraPrazoRecurso ArgumentosDoPrazo(RecursoDaEtapaInput declarado) =>

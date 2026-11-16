@@ -78,7 +78,7 @@ public sealed class FatoDeElegibilidadeDoAcrescimoTests
         processo.DefinirBonusRegional(
             aplica: true,
             ConfiguracaoBonusRegional.Criar(
-                ReferenciaRegra.Criar(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)).Value!,
+                ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)),
                 1.20m, null, fatoElegibilidade, Guid.NewGuid(), "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso",
                 [("1504208", "Marabá", "PA")]).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

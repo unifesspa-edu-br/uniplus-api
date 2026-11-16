@@ -211,7 +211,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
     private static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000003");
 
     private static RegraRecursoFase RecursoEmDiasUteis(decimal prazo) => RegraRecursoFase.Criar(
-        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)).Value!,
+        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)),
         new ArgsRegraPrazoRecurso(
             PrazoValor: prazo,
             PrazoUnidade: UnidadePrazo.DiasUteis,

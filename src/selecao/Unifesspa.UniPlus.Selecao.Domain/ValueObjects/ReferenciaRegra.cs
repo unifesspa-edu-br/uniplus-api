@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-using Unifesspa.UniPlus.Kernel.Results;
-
 /// <summary>
 /// Referência imutável a uma regra do <c>regras_do_catalogo</c> pela sua identidade
 /// content-addressable — <c>(codigo, versao, hash)</c>. É o que cada dimensão
@@ -40,32 +38,24 @@ public sealed record ReferenciaRegra
     public string Hash { get; }
 
     /// <summary>
-    /// Cria a referência validando que <paramref name="codigo"/> e
-    /// <paramref name="versao"/> não são vazios e que <paramref name="hash"/>
-    /// tem o formato de um SHA-256 hex minúsculo (64 chars).
+    /// Monta a referência a partir de uma identidade já conferida: <paramref name="codigo"/> e
+    /// <paramref name="versao"/> não vazios e <paramref name="hash"/> no formato de um SHA-256
+    /// hexadecimal minúsculo (64 caracteres).
     /// </summary>
-    public static Result<ReferenciaRegra> Criar(string codigo, string versao, string hash)
+    /// <exception cref="ArgumentException">
+    /// A identidade viola o formato: a referência vem de uma regra do catálogo ou de um envelope cuja leitura
+    /// já conferiu os três campos, e valor fora do formato aqui é defeito de quem chama.
+    /// </exception>
+    public static ReferenciaRegra De(string codigo, string versao, string hash)
     {
-        if (string.IsNullOrWhiteSpace(codigo))
-        {
-            return Result<ReferenciaRegra>.Failure(new DomainError(
-                "ReferenciaRegra.CodigoObrigatorio", "Código da regra é obrigatório."));
-        }
-
-        if (string.IsNullOrWhiteSpace(versao))
-        {
-            return Result<ReferenciaRegra>.Failure(new DomainError(
-                "ReferenciaRegra.VersaoObrigatoria", "Versão da regra é obrigatória."));
-        }
-
+        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        ArgumentException.ThrowIfNullOrWhiteSpace(versao);
+        ArgumentException.ThrowIfNullOrWhiteSpace(hash);
         if (!HashCanonicalComputer.IsValidHashShape(hash))
         {
-            return Result<ReferenciaRegra>.Failure(new DomainError(
-                "ReferenciaRegra.HashInvalido",
-                "Hash da regra deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres)."));
+            throw new ArgumentException("O hash da regra deve ser um SHA-256 em hexadecimal minúsculo (64 caracteres).", nameof(hash));
         }
 
-        return Result<ReferenciaRegra>.Success(
-            new ReferenciaRegra(codigo.Trim(), versao.Trim(), hash));
+        return new ReferenciaRegra(codigo.Trim(), versao.Trim(), hash);
     }
 }

@@ -64,14 +64,7 @@ public static class DefinirAlgoritmoContagemPrazoCommandHandler
                 $"A regra {command.Codigo}/{command.Versao} não é uma entrada de algoritmo de contagem do catálogo de regras."));
         }
 
-        Result<ReferenciaRegra> referenciaResult = ReferenciaRegra.Criar(
-            regraCatalogo.Codigo, regraCatalogo.Versao, regraCatalogo.Hash);
-        if (referenciaResult.IsFailure)
-        {
-            return Result<MutacaoAceita>.Failure(referenciaResult.Error!);
-        }
-
-        Result definirResult = processo.DefinirAlgoritmoContagemPrazo(referenciaResult.Value!, command.Precondicao);
+        Result definirResult = processo.DefinirAlgoritmoContagemPrazo(regraCatalogo.Referencia(), command.Precondicao);
         if (definirResult.IsFailure)
         {
             return Result<MutacaoAceita>.Failure(definirResult.Error!);

@@ -143,8 +143,8 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
 
     private static void DefinirDistribuicaoDoSplitQuery(GrafoDeTodasAsColecoes grafo)
     {
-        ReferenciaRegra regraDistribuicao = ReferenciaRegra.Criar(
-            RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixoTeste).Value!;
+        ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(
+            RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixoTeste);
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             grafo.ModalidadeOrigemId, "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
             null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null,
@@ -158,13 +158,13 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
     private static void DefinirClassificacaoDoSplitQuery(ProcessoSeletivo processo, EtapaProcesso etapa)
     {
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            ReferenciaRegra.Criar(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", HashFixoTeste).Value!,
+            ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", HashFixoTeste),
             new ArgsElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixoTeste).Value!,
-            ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixoTeste).Value!,
+            ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixoTeste),
+            ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixoTeste),
             2,
-            ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixoTeste).Value!, [eliminacao], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
+            ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixoTeste), [eliminacao], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 

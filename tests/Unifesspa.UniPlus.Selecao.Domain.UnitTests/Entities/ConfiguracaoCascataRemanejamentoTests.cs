@@ -21,7 +21,7 @@ public sealed class ConfiguracaoCascataRemanejamentoTests
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
 
     private static ReferenciaRegra RegraCascata() =>
-        ReferenciaRegra.Criar(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo).Value!;
+        ReferenciaRegra.De(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo);
 
     private static DestinoRemanejamento Destino(string origem, int ordem, string destino) =>
         DestinoRemanejamento.Criar(origem, ordem, destino).Value!;

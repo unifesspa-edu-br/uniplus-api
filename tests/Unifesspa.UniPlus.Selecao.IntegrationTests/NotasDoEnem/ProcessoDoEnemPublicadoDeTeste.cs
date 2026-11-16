@@ -86,10 +86,10 @@ internal static class ProcessoDoEnemPublicadoDeTeste
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         Exigir(processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(
-                regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixo).Value!,
-                regraArredondamento: ReferenciaRegra.Criar(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixo).Value!,
+                regraCalculo: ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixo),
+                regraArredondamento: ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixo),
                 casasArredondamento: 2,
-                regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!,
+                regraOrdemAlocacao: ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
                 regrasEliminacao: [],
                 baseadoEmEnem: true,
                 resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
@@ -123,7 +123,7 @@ internal static class ProcessoDoEnemPublicadoDeTeste
 
         return ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoOrigemId, 40, 1m,
-            ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
+            ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo),
             null, null, [modalidade], grupoAreaEnem: grupoAreaEnem, ofertaCurso: ofertaCurso).Value!;
     }
 

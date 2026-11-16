@@ -49,8 +49,8 @@ public sealed class ObterProcessoSeletivoQueryHandlerAlgoritmoContagemTests
     [Fact(DisplayName = "A convenção declarada é projetada com a identidade completa — código, versão e hash")]
     public async Task Handle_ProjetaAConvencaoDeclarada()
     {
-        ReferenciaRegra algoritmo = ReferenciaRegra.Criar(
-            AlgoritmoContagemPrazoCodigo.AvancaDataUtil, "v1", HashDaConvencao).Value!;
+        ReferenciaRegra algoritmo = ReferenciaRegra.De(
+            AlgoritmoContagemPrazoCodigo.AvancaDataUtil, "v1", HashDaConvencao);
 
         ProcessoSeletivoDto? dto = await ObterDtoAsync(algoritmo);
 

@@ -56,8 +56,8 @@ public sealed class RegraRecursoFaseTests
     /// </summary>
     private static readonly Guid ProdutoAncoraId = new("77770000-0000-4000-8000-000000000001");
 
-    private static ReferenciaRegra RegraAncorada() => ReferenciaRegra.Criar(
-        RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!;
+    private static ReferenciaRegra RegraAncorada() => ReferenciaRegra.De(
+        RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
 
     [Fact(DisplayName = "CA-01: referencia a regra por SÍMBOLO (RegraPrazoRecursoCodigo.AncoradoEmAto), não literal solto")]
     public void ReferenciaRegraPorSimbolo()
@@ -71,8 +71,8 @@ public sealed class RegraRecursoFaseTests
     [Fact(DisplayName = "CA-02 (contraprova): referenciar qualquer OUTRA regra do catálogo é recusado")]
     public void RegraDeTipoIncompativel_Recusa()
     {
-        ReferenciaRegra outraRegra = ReferenciaRegra.Criar(
-            "BONUS-MULTIPLICATIVO", "v1", new string('b', 64)).Value!;
+        ReferenciaRegra outraRegra = ReferenciaRegra.De(
+            "BONUS-MULTIPLICATIVO", "v1", new string('b', 64));
 
         Result<RegraRecursoFase> resultado = RegraRecursoFase.Criar(outraRegra, ArgsBase(), ProdutoAncoraId);
 

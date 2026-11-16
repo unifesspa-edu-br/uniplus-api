@@ -28,7 +28,7 @@ internal static class OfertasDeTeste
     public static ConfiguracaoDistribuicaoVagas DistribuicaoDoCurso(Guid ofertaCursoId, string cursoNome, params string[] codigos) =>
         ConfiguracaoDistribuicaoVagas.Criar(
             ofertaCursoId, voBase: 10 * codigos.Length, pr: 1m,
-            ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)).Value!,
+            ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)),
             regraAjuste: null, referenciaDemografica: null, [.. codigos.Select(Modalidade)],
             ofertaCurso: OfertaCursoSnapshot.Criar(cursoNome, "Bacharelado", "Campus Universitário de Marabá", ["MATUTINO"]).Value!).Value!;
 

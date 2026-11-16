@@ -36,7 +36,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     internal sealed record Resultado(Guid ProcessoId, Guid AtoId, Guid VersaoId);
 
     private static ReferenciaRegra Regra(string codigo, char hashChar) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(hashChar, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(hashChar, 64));
 
     /// <summary>
     /// Processo com as quatro dimensões estruturalmente obrigatórias

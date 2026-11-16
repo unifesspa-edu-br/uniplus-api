@@ -66,7 +66,7 @@ internal static class ApoioDaCoerenciaDaConsequencia
             }
         }
 
-        ReferenciaRegra regraCascata = ReferenciaRegra.Criar(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo).Value!;
+        ReferenciaRegra regraCascata = ReferenciaRegra.De(RegraRemanejamentoCodigo.Cascata, "v1", HashFixo);
         return ConfiguracaoCascataRemanejamento.Criar(regraCascata, ModalidadesFederaisLei12711.Ac, destinos).Value!;
     }
 
@@ -114,8 +114,8 @@ internal static class ApoioDaCoerenciaDaConsequencia
                 ofertaCursoOrigemId: Guid.CreateVersion7(),
                 voBase: 40,
                 pr: 0.5m,
-                regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Lei12711, "v1", HashFixo).Value!,
-                regraAjuste: ReferenciaRegra.Criar("RECONCILIACAO-VAGAS-ART11-PU", "v1", HashFixo).Value!,
+                regraDistribuicao: ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Lei12711, "v1", HashFixo),
+                regraAjuste: ReferenciaRegra.De("RECONCILIACAO-VAGAS-ART11-PU", "v1", HashFixo),
                 referenciaDemografica: ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!,
                 modalidades: modalidadesFederais, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
             processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -127,7 +127,7 @@ internal static class ApoioDaCoerenciaDaConsequencia
                 ofertaCursoOrigemId: Guid.CreateVersion7(),
                 voBase: modalidade.QuantidadeDeclarada ?? 40,
                 pr: 1m,
-                regraDistribuicao: ReferenciaRegra.Criar(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo).Value!,
+                regraDistribuicao: ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo),
                 regraAjuste: null,
                 referenciaDemografica: null,
                 modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
@@ -135,10 +135,10 @@ internal static class ApoioDaCoerenciaDaConsequencia
         }
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo: ReferenciaRegra.Criar(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo).Value!,
+            regraCalculo: ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
             regraArredondamento: null,
             casasArredondamento: null,
-            regraOrdemAlocacao: ReferenciaRegra.Criar(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo).Value!,
+            regraOrdemAlocacao: ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
             regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

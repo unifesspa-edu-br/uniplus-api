@@ -32,7 +32,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         bancasRequeridas: []).Value!;
 
     private static RegraRecursoFase RecursoAncoradoEm(ProdutoDaFase preliminar) => RegraRecursoFase.Criar(
-        ReferenciaRegra.Criar(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)).Value!,
+        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
         new ArgsRegraPrazoRecurso(3m, UnidadePrazo.DiasUteis, null, null, false, null, null),
         preliminar.Id).Value!;
 

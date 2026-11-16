@@ -96,7 +96,7 @@ internal static class CenarioDeConformidadeLegal
             ofertaCursoOrigemId: Guid.CreateVersion7(),
             voBase: 40,
             pr: 0.6m,
-            regraDistribuicao: ReferenciaRegra.Criar("DISTRIBUICAO-PADRAO", "v1", new string('a', 64)).Value!,
+            regraDistribuicao: ReferenciaRegra.De("DISTRIBUICAO-PADRAO", "v1", new string('a', 64)),
             regraAjuste: null,
             referenciaDemografica: null,
             modalidades: modalidades,

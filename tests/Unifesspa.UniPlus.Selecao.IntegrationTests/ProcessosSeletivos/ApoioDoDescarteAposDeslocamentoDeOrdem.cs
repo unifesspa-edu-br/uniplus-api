@@ -140,7 +140,7 @@ internal static class ApoioDoDescarteAposDeslocamentoDeOrdem
         regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()];
 
     internal static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     internal static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext db, Guid processoId) =>
         await db.ProcessosSeletivos

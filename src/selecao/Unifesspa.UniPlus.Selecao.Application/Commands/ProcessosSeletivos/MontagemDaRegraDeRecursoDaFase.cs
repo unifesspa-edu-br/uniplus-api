@@ -75,10 +75,7 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
                 $"A regra {declarada.RegraCodigo}/{declarada.RegraVersao} não é a regra {RegraPrazoRecursoCodigo.AncoradoEmAto} do tipo regra_prazo_recurso."));
         }
 
-        Result<ReferenciaRegra> referencia = ReferenciaRegra.Criar(regra.Codigo, regra.Versao, regra.Hash);
-        return referencia.IsFailure
-            ? InterrupcaoDaFase.Com<ReferenciaRegra>(campo, referencia.Error!)
-            : referencia;
+        return Result<ReferenciaRegra>.Success(regra.Referencia());
     }
 
     // Entre os PRELIMINARES: a fase publica o mesmo ato em dois papéis, e é da publicação preliminar que o

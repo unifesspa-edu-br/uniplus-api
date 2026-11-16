@@ -137,7 +137,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
             itens: null);
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     private static ProcessoSeletivo ProcessoConforme(TipoProcessoSnapshot tipo)
     {

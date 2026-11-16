@@ -95,7 +95,7 @@ public sealed class OrdemDasRecusasDoGrafoTests
     }
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
+        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     private static EtapaProcesso Etapa(Guid id, int ordem, CaraterEtapa carater = CaraterEtapa.Eliminatoria, decimal? peso = null) =>
         EtapaProcesso.Reidratar(
