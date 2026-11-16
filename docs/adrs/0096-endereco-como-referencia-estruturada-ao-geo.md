@@ -124,3 +124,7 @@ São escolhas técnicas internas à opção aprovada — não reabrem a decisão
 - Insumo: `CepResolvidoDto` / `CepResolucao` e `GET /api/cep/{cep}` (módulo Geo).
 - Modelo a espelhar: `ReferenciaCidadeGeo` (`src/shared/Unifesspa.UniPlus.Kernel/Domain/Cidades/`).
 - Story de implementação (backend): #726. Ajuste de frontend: uniplus-web#412.
+
+## Emenda (2026-11-15) — município que decide regra é conferido no servidor
+
+"O backend não consulta o Geo" vale para a referência de endereço e de município que é só informação do cadastro. O município que decide regra do processo seletivo, como o local de aplicação da prova presencial (UNI-REQ-0407), é conferido no servidor contra o Geo, em falha fechada, como fixa a emenda de 2026-11-15 da [ADR-0090](0090-modulo-geo-localidades.md).

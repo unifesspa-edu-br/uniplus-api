@@ -244,3 +244,11 @@ Em "Forma do fato", o escopo deixa de ser só `CANDIDATO` ou `MEMBRO_GRUPO`: pas
 - **Sobre o recurso, não sobre o candidato.** O fato de escopo `Recurso` é respondido sobre o recurso apresentado, e não sobre quem recorre. O formulário de recurso coleta campos configuráveis, que não são fatos do candidato, e não entram no cadastro do candidato nem nas regras que o avaliam.
 - **Único escopo do formulário de recurso.** O formulário de recurso coleta só fato de escopo `Recurso`. O cadastro recusa, no formulário de recurso, fato de escopo `Candidato`.
 - **Citação em regra.** O fato de escopo `Recurso` segue as demais regras de forma, classificação e proteção do catálogo. Regra configurada de fato de escopo `Candidato` não o cita, como já ocorre com o escopo `MEMBRO_GRUPO`.
+
+## Emenda (2026-11-15) — fonte `MUNICIPIOS_PROVA_PRESENCIAL`
+
+O fato de sistema que coleta a cidade de prova (UNI-REQ-0407) tem como fonte dos valores os municípios de aplicação que o processo declara.
+
+- **Valores.** Cada valor é um município pelo código do IBGE, com o nome e a UF que o Geo devolveu na conferência, congelados na publicação (ADR-0090, emenda de 2026-11-15).
+- **Escolha do candidato.** É conferida contra a lista congelada, sem nova consulta ao Geo, e só aceita município declarado.
+- **Presença no formulário.** O processo com prova presencial tem o campo num formulário da inscrição, pedido a todo candidato; o processo sem prova presencial não tem o campo em formulário algum.

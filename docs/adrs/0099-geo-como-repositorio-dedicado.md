@@ -110,3 +110,7 @@ ou uso de namespace de internals Geo neste repositório, seja o namespace antigo
 - Esta ADR refina a [ADR-0090](0090-modulo-geo-localidades.md).
 - Contrato Geo canônico: `contracts/openapi.geo.json` no repositório dedicado e
   endpoint runtime `GET /openapi/geo.json`.
+
+## Nota (2026-11-15)
+
+"Sem chamada backend obrigatória ao Geo" vale para a composição da referência de localidade. A conferência do município que decide regra do edital é obrigatória e em falha fechada, como fixa a emenda de 2026-11-15 da [ADR-0090](0090-modulo-geo-localidades.md).
