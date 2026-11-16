@@ -97,3 +97,14 @@ A decisão permanece: a etapa declara a forma de avaliação e a regra de consol
 - **Corretores da regra de consolidação.** O número de **corretores distintos** é dado da versão da regra de consolidação: `CONSOLIDACAO-CORRECAO-INDEPENDENTE`, 3; `CONSOLIDACAO-AVALIACAO-UNICA`, 1; sem consolidação humana, 0.
 
 Nenhum outro trecho desta ADR muda.
+
+## Emenda 2 (2026-11-16) — a regra de consolidação segue a natureza do conceito da etapa
+
+**Contexto.** A etapa passa a ser avaliada por um conceito, numérico ou categórico (ADR-0169), e combinar notas por média não faz sentido para "apto" e "inapto". Esta emenda especifica a disposição "Corretores da regra de consolidação" da emenda 1: o número de corretores distintos, que ali é dado da versão, passa a ser um de vários metadados que a versão declara de si. Não altera as quantidades fixadas na emenda 1.
+
+**Decisão.** Distingue-se o que a versão da regra declara do que o edital escolhe.
+
+- **A versão da regra declara, no `esquema_args`, e fixa por versão:** as naturezas de conceito a que se aplica (`naturezas_do_conceito`) e os corretores distintos. A avaliação única aceita as duas naturezas e a correção independente só a numérica. A consolidação categórica, regra nova do rol, declara também o critério (unanimidade, maioria simples ou maioria absoluta) e o tratamento do empate e da falta de unanimidade. Variar um desses valores é versão nova da regra, nunca parâmetro do edital nem valor fixo no código.
+- **O edital escolhe** qual regra e qual versão do rol a etapa referencia. A etapa com regra de consolidação declara conceito, e a regra cujas naturezas não incluem a do conceito é recusada.
+
+**Consequências.** A versão nova de uma regra pode ampliar as naturezas sem alcançar a versão que um edital publicado já congelou. A etapa com regra de consolidação e sem conceito é pendência tolerada em rascunho e cobrada na publicação e na retificação. Cada código de recusa novo tem página no portal de desenvolvedores.

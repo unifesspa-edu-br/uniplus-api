@@ -47,4 +47,10 @@ public static class ConceitoDaEtapaErrorCodes
 
     /// <summary>A etapa de nota do ENEM declara conceito, e a nota dela vem do INEP.</summary>
     public const string EtapaDoEnemNaoDeclaraConceito = "ConceitoDaEtapa.EtapaDoEnemNaoDeclaraConceito";
+
+    /// <summary>A regra de consolidação escolhida não se aplica à natureza do conceito da etapa.</summary>
+    public const string ConsolidacaoIncompativel = "ConceitoDaEtapa.ConsolidacaoIncompativel";
+
+    /// <summary>A etapa com regra de consolidação não declara o conceito com que é avaliada.</summary>
+    public const string ConsolidacaoSemConceito = "ConceitoDaEtapa.ConsolidacaoSemConceito";
 }
