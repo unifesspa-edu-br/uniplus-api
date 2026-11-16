@@ -77,7 +77,7 @@ internal sealed class PedidoDeConcessaoBuilder
         PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
             new PartesDoPedido(_solicitante, _paraSiMesmo ? null : _beneficiario.Email),
             _perfil, EscopoDe(_perfil), new DeclaracaoDoPedido(Justificativa, null, _anexara), Dominios, Catalogo, Agora).Value!;
-        bool exigido = _protegido || PedidoDeConcessao.ExigeTermo(_perfil, Catalogo);
+        bool exigido = _protegido || ExigenciaDoTermo.Do(_perfil, Catalogo);
 
         pedido.FixarTermo(new TermoNaCriacao(exigido ? Vigente : null, exigido ? Vigente.Id : null, exigido), Agora).IsSuccess.Should().BeTrue();
         return pedido;

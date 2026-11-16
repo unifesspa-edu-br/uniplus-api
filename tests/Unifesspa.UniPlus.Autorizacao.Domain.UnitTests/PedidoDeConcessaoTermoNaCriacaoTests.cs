@@ -100,8 +100,8 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests : PedidoDeConcessaoTest
     {
         PedidoDeConcessao pedido = Pedido().DoPerfil(PerfilDeGovernanca()).ComVigente(Vigente).Criado();
 
-        PedidoDeConcessao.ExigeTermo(PerfilDeGovernanca(), Catalogo).Should().BeTrue();
-        PedidoDeConcessao.ExigeTermo(PerfilComum(), Catalogo).Should().BeFalse();
+        ExigenciaDoTermo.Do(PerfilDeGovernanca(), Catalogo).Should().BeTrue();
+        ExigenciaDoTermo.Do(PerfilComum(), Catalogo).Should().BeFalse();
         pedido.AnexaraDocumento.Should().BeTrue();
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
         pedido.TermoVersaoId.Should().Be(Vigente.Id);
