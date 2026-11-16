@@ -47,7 +47,7 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
         builder.Property(i => i.ExecutorEmissor).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(i => i.ExecutorContaId).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(i => i.ExecutorNome).ClassificaComo(ClassificacaoDeProtecao.Pessoal).HasMaxLength(NomeDeExibicao.MaxLength);
-        builder.Property(i => i.NumeroDoDocumento).HasMaxLength(Instalacao.NumeroDoDocumentoMaxLength).IsRequired();
+        builder.Property(i => i.NumeroDoDocumento).HasMaxLength(DocumentoDeDesignacao.NumeroMaxLength).IsRequired();
         builder.Property(i => i.TamanhoDoPdf).IsRequired();
         builder.Property(i => i.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
         builder.Property(i => i.DocumentoETag).HasColumnName("documento_etag").HasMaxLength(ETagDoArmazenamento.MaxLength);

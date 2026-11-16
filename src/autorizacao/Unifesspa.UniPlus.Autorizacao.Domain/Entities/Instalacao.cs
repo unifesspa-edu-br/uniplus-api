@@ -23,8 +23,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class Instalacao : EntityBase
 {
-    public const int NumeroDoDocumentoMaxLength = 60;
-    public const long TamanhoMaximoDoPdfBytes = 10L * 1024 * 1024;
     public const int MaximoDeTentativas = 5;
     public static readonly TimeSpan PrazoDoCodigo = TimeSpan.FromHours(2);
 
@@ -38,7 +36,6 @@ public sealed class Instalacao : EntityBase
     ];
 
     private const string PrefixoDasChaves = "autorizacao/instalacao";
-    private const int QuantidadeDeGestores = 2;
 
     private readonly List<GestorDaInstalacao> _gestores = [];
 
@@ -51,7 +48,7 @@ public sealed class Instalacao : EntityBase
 
     public string NumeroDoDocumento { get; private set; } = string.Empty;
 
-    /// <summary>Tamanho declarado do PDF, em bytes; é o limite do pedido ao verificador, no máximo <see cref="TamanhoMaximoDoPdfBytes"/>.</summary>
+    /// <summary>Tamanho declarado do PDF, em bytes; é o limite do pedido ao verificador, no máximo <see cref="DocumentoDeDesignacao.TamanhoMaximoDoPdfBytes"/>.</summary>
     public long TamanhoDoPdf { get; private set; }
 
     public SituacaoDaInstalacao Situacao { get; private set; }
@@ -90,6 +87,18 @@ public sealed class Instalacao : EntityBase
     {
     }
 
+    private Instalacao(Identidade executor, DocumentoDeDesignacao documento, IEnumerable<GestorDaInstalacao> gestores, DateTimeOffset instante)
+    {
+        ExecutorEmissor = executor.Emissor;
+        ExecutorContaId = executor.ContaId;
+        ExecutorNome = executor.Nome;
+        NumeroDoDocumento = documento.Numero;
+        TamanhoDoPdf = documento.TamanhoDoPdf;
+        Situacao = SituacaoDaInstalacao.AguardandoDocumento;
+        IniciadaEm = instante;
+        _gestores.AddRange(gestores);
+    }
+
     /// <summary>
     /// Inicia a instalação, aguardando o PDF. Acumula toda violação independente (ADR-0125). Que
     /// não haja gestor ativo e que não haja outra pendência do executor são do handler.
@@ -104,75 +113,13 @@ public sealed class Instalacao : EntityBase
         DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(executor);
-        ArgumentNullException.ThrowIfNull(gestores);
-        ArgumentException.ThrowIfNullOrWhiteSpace(emissorAceito);
 
-        List<FieldError> erros = [];
+        Result<IReadOnlyList<GestorDaInstalacao>> designados = GestoresDesignados.Conferir(executor, gestores, emissorAceito);
+        Result<DocumentoDeDesignacao> documento = DocumentoDeDesignacao.Conferir(numeroDoDocumento, tamanhoDoPdf);
 
-        List<Identidade> conferidos = [];
-        List<string> emails = [];
-        foreach (IdentidadeInformada gestor in gestores)
-        {
-            if (gestor is { Emissor: { } emissor, ContaId: { } contaId }
-                && string.Equals(emissor, emissorAceito, StringComparison.Ordinal)
-                && Guid.TryParseExact(contaId, "D", out Guid guid)
-                && guid != Guid.Empty
-                && EmailDaPessoa.Normalizar(gestor.Email) is { } email)
-            {
-                conferidos.Add(new Identidade(emissor, guid.ToString("D"), NomeDeExibicao.Normalizar(gestor.Nome)));
-                emails.Add(email);
-            }
-        }
-
-        bool gestoresValidos = gestores.Count == QuantidadeDeGestores
-            && conferidos.Count == QuantidadeDeGestores
-            && conferidos.Distinct().Count() == QuantidadeDeGestores;
-        if (!gestoresValidos)
-        {
-            erros.Add(new("gestores", new DomainError(
-                InstalacaoErrorCodes.GestoresInvalidos,
-                "Informe exatamente dois gestores distintos, cada um pelo emissor aceito, pelo contaId no formato UUID e pelo e-mail institucional.")));
-        }
-        else if (conferidos.Contains(executor))
-        {
-            erros.Add(new("gestores", new DomainError(
-                InstalacaoErrorCodes.ExecutorEntreGestores,
-                "Quem executa a instalação não pode estar entre os gestores instalados.")));
-        }
-
-        string? numero = NormalizarNumero(numeroDoDocumento);
-        if (numero is null)
-        {
-            erros.Add(new("numeroDoDocumento", new DomainError(
-                InstalacaoErrorCodes.DocumentoInvalido,
-                $"O número do documento de designação é obrigatório e deve ter até {NumeroDoDocumentoMaxLength} caracteres.")));
-        }
-
-        if (tamanhoDoPdf is < 1 or > TamanhoMaximoDoPdfBytes)
-        {
-            erros.Add(new("tamanhoDoPdf", new DomainError(
-                InstalacaoErrorCodes.DocumentoInvalido,
-                "O PDF do documento de designação deve ter de 1 byte a 10 MB.")));
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<Instalacao>.ValidationFailure(erros);
-        }
-
-        Instalacao instalacao = new()
-        {
-            ExecutorEmissor = executor.Emissor,
-            ExecutorContaId = executor.ContaId,
-            ExecutorNome = executor.Nome,
-            NumeroDoDocumento = numero!,
-            TamanhoDoPdf = tamanhoDoPdf,
-            Situacao = SituacaoDaInstalacao.AguardandoDocumento,
-            IniciadaEm = instante,
-        };
-        instalacao._gestores.AddRange(conferidos.Select((g, posicao) => new GestorDaInstalacao(g.Emissor, g.ContaId, emails[posicao], g.Nome)));
-
-        return Result<Instalacao>.Success(instalacao);
+        return designados.IsFailure || documento.IsFailure
+            ? Result<Instalacao>.ValidationFailure([.. designados.Errors, .. documento.Errors])
+            : Result<Instalacao>.Success(new Instalacao(executor, documento.Value!, designados.Value!, instante));
     }
 
     /// <summary>Chave do PDF no bucket de envio, onde o cliente o sobe pela URL assinada.</summary>
@@ -330,19 +277,4 @@ public sealed class Instalacao : EntityBase
     private static DomainError SituacaoInvalida() => new(
         InstalacaoErrorCodes.SituacaoInvalida,
         "A instalação não está na situação que este passo exige.");
-
-    // O caractere nulo cabe no tamanho, mas a coluna textual do banco não o armazena.
-    private static string? NormalizarNumero(string? numero)
-    {
-        if (string.IsNullOrWhiteSpace(numero))
-        {
-            return null;
-        }
-
-        string normalizado = numero.Trim();
-
-        return normalizado.Contains('\0', StringComparison.Ordinal) || normalizado.Length > NumeroDoDocumentoMaxLength
-            ? null
-            : normalizado;
-    }
 }
