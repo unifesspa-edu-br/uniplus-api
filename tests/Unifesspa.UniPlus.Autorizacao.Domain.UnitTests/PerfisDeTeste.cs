@@ -74,7 +74,7 @@ public static class PerfisDeTeste
     {
         ArgumentNullException.ThrowIfNull(perfil);
 
-        DesfechoDaVersao desfecho = perfil.Propor(new PropostaDeVersao(conteudo, null, null, autoria, instante), contexto, catalogo);
+        DesfechoDaVersao desfecho = ProposicaoDaVersao.Propor(perfil, new PropostaDeVersao(conteudo, null, null, autoria, instante), contexto, catalogo);
 
         return desfecho.Concluida && desfecho.Criada is { } criada
             ? Result<VersaoDoPerfil>.Success(criada)
@@ -131,7 +131,7 @@ public static class PerfisDeTeste
     private static TrocaDeVigencia? Retirar(Perfil perfil, string[] retiradas, ICatalogoDePermissoesConsultavel catalogo) =>
         retiradas.Length == 0
             ? null
-            : perfil.Remover(new PedidoDeRemocao(retiradas, "Permissão concedida por engano.", null, AutoriaDoGestor, Instante), catalogo).Troca!;
+            : ProposicaoDaVersao.Remover(perfil, new PedidoDeRemocao(retiradas, "Permissão concedida por engano.", null, AutoriaDoGestor, Instante), catalogo).Troca!;
 
     /// <summary>
     /// Leva a versão pendente do perfil à vigência pelo caminho real: o envio e a verificação do documento, a aprovação

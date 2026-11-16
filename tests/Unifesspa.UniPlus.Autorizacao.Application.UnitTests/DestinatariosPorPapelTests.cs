@@ -66,7 +66,7 @@ public sealed class DestinatariosPorPapelTests
     public async Task RemocaoInterna_AvisaORepresentante()
     {
         Perfil perfil = PerfisDeTeste.Vigente("Análise de atendimento", "Analisa os pedidos.", [Interna, Removida], new CatalogoDeTeste());
-        TrocaDeVigencia troca = perfil.Remover(Remocao(), new CatalogoDeTeste()).Troca!;
+        TrocaDeVigencia troca = ProposicaoDaVersao.Remover(perfil, Remocao(), new CatalogoDeTeste()).Troca!;
 
         IReadOnlyList<EnviarEmail> avisos = await Versao().DaRemocaoAsync(perfil, troca, PerfisDeTeste.Gestor, CancellationToken.None);
 

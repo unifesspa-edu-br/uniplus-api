@@ -112,7 +112,7 @@ public sealed partial class Perfil : EntityBase
         ArgumentNullException.ThrowIfNull(catalogo);
 
         Perfil perfil = new();
-        Result<VersaoDoPerfil> versao = VersaoDoPerfil.Criar(perfil.Id, 1, conteudo, autoria, ClasseDe(conteudo, null, catalogo), instante);
+        Result<VersaoDoPerfil> versao = VersaoDoPerfil.Criar(perfil.Id, 1, conteudo, autoria, ProposicaoDaVersao.ClasseDe(conteudo, null, catalogo), instante);
         if (versao.IsFailure)
         {
             return Result<Perfil>.ValidationFailure(versao.Errors);
@@ -121,29 +121,6 @@ public sealed partial class Perfil : EntityBase
         perfil.Acrescentar(versao.Value!);
 
         return Result<Perfil>.Success(perfil);
-    }
-
-    // Cria uma versão nova, pendente, com o documento esperando o envio, para a proposta que não retira permissão. Sem
-    // versão vigente (a primeira foi cancelada, recusada ou expirou) é uma nova primeira versão: não há o que comparar e
-    // o nome pode mudar. A pendente que já passou do prazo expira antes e não bloqueia.
-    private Result<VersaoDoPerfil> CriarVersao(
-        ConteudoDaVersao conteudo,
-        ContextoDaVersao contexto,
-        AutoriaDaVersao autoria,
-        DateTimeOffset instante,
-        ICatalogoDePermissoesConsultavel catalogo)
-    {
-        ArgumentNullException.ThrowIfNull(conteudo);
-        ArgumentNullException.ThrowIfNull(contexto);
-        ArgumentNullException.ThrowIfNull(autoria);
-        ArgumentNullException.ThrowIfNull(catalogo);
-
-        MaterializarExpiracao(instante);
-        DomainError? recusa = RecusaDaCriacao(contexto);
-
-        return recusa is null
-            ? CriarEAcrescentar(conteudo, contexto, autoria, instante, catalogo)
-            : Result<VersaoDoPerfil>.Failure(recusa);
     }
 
     /// <summary>
@@ -162,84 +139,10 @@ public sealed partial class Perfil : EntityBase
             ? Result<VersaoDoPerfil>.Success(versao)
             : Result<VersaoDoPerfil>.Failure(PerfilErros.VersaoNaoEncontrada());
 
-    private Result<VersaoDoPerfil> CriarEAcrescentar(
-        ConteudoDaVersao conteudo,
-        ContextoDaVersao contexto,
-        AutoriaDaVersao autoria,
-        DateTimeOffset instante,
-        ICatalogoDePermissoesConsultavel catalogo)
-    {
-        Result<VersaoDoPerfil> criada = CriarSobre(VersaoVigente, ProximoNumero(), conteudo, contexto, autoria, instante, catalogo);
-        if (criada.IsSuccess)
-        {
-            Acrescentar(criada.Value!);
-        }
-
-        return criada;
-    }
-
-    // A versão proposta, conferida contra aquela sobre a qual vai valer: a vigente, ou a que a remoção da mesma proposta
-    // deixa em vigor.
-    private Result<VersaoDoPerfil> CriarSobre(
-        VersaoDoPerfil? sobre,
-        int numero,
-        ConteudoDaVersao conteudo,
-        ContextoDaVersao contexto,
-        AutoriaDaVersao autoria,
-        DateTimeOffset instante,
-        ICatalogoDePermissoesConsultavel catalogo)
-    {
-        Result<VersaoDoPerfil> criada = VersaoDoPerfil.Criar(Id, numero, conteudo, autoria, ClasseDe(conteudo, sobre, catalogo), instante);
-        DomainError? recusa = criada.IsSuccess ? RecusaContra(sobre, criada.Value!, contexto, catalogo) : null;
-
-        return recusa is null ? criada : Result<VersaoDoPerfil>.Failure(recusa);
-    }
-
-    private static ClasseDaVersao ClasseDe(
-        ConteudoDaVersao conteudo, VersaoDoPerfil? vigente, ICatalogoDePermissoesConsultavel catalogo)
-    {
-        IReadOnlyList<string> codigos = conteudo.Codigos();
-        DiferencaDaVersao diferenca = DiferencaDaVersao.Calcular(codigos, vigente?.Codigos(), catalogo);
-
-        return new ClasseDaVersao(AlcanceDasPermissoes.De(codigos, catalogo) ?? TipoDeEscopo.Instituicao, diferenca.ExigeProtecaoDeDados);
-    }
-
-    private int ProximoNumero() => _versoes.Max(static v => v.Numero) + 1;
-
-    private DomainError? RecusaDaCriacao(ContextoDaVersao contexto) =>
-        RecusaDoEstado() ?? RecusaDoContexto(contexto);
-
-    private DomainError? RecusaDoEstado()
-    {
-        if (Governanca is not null)
-        {
-            return PerfilErros.GovernancaImutavel();
-        }
-
-        if (!Ativo)
-        {
-            return PerfilErros.Inativo();
-        }
-
-        return VersaoPendente is not null ? PerfilErros.VersaoPendenteExistente() : null;
-    }
-
-    private static DomainError? RecusaDoContexto(ContextoDaVersao contexto)
-    {
-        if (contexto.JanelaDeMigracaoAberta)
-        {
-            return PerfilErros.JanelaDeMigracaoAberta();
-        }
-
-        return contexto.NomeEmUsoPorOutroPerfil ? PerfilErros.NomeDuplicado() : null;
-    }
-
-    private static DomainError? RecusaContra(
-        VersaoDoPerfil? sobre, VersaoDoPerfil versao, ContextoDaVersao contexto, ICatalogoDePermissoesConsultavel catalogo) =>
-        ConferenciasDaVersao.DaCriacao(versao, sobre);
+    internal int ProximoNumero() => _versoes.Max(static v => v.Numero) + 1;
 
     // Sem versão vigente o perfil se identifica pela última pendente.
-    private void Acrescentar(VersaoDoPerfil versao)
+    internal void Acrescentar(VersaoDoPerfil versao)
     {
         _versoes.Add(versao);
 
