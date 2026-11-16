@@ -33,14 +33,18 @@ public static class SelecaoApplicationServiceRegistration
         AddPublicacao(services);
         AddAcessoAoCampoEAoDocumentoDaInscricao(services);
         AddSalvamentoDoRascunho(services);
+        AddRotinaPeriodicaEPortaDePermissao(services);
 
+        return services;
+    }
+
+    private static void AddRotinaPeriodicaEPortaDePermissao(IServiceCollection services)
+    {
         // Escopo por execução da rotina periódica: os repositórios e o DbContext são do escopo.
         services.AddScoped<RemocaoDeArquivosPendentesVencidos>();
 
         // A porta lida do catálogo do módulo, para o projetor saber qual permissão atende a cada par.
         services.AddSingleton<IPortaDePermissaoPorPar, PortaDePermissaoPorPar<PermissaoSelecao>>();
-
-        return services;
     }
 
     // O serviço de definição e a montagem das fases não guardam estado de uma edição para outra: as portas entram
