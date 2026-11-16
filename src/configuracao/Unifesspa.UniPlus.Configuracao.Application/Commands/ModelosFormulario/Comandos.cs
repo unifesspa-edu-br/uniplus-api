@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>Cadastra um modelo de formulário, ativo; o código e a finalidade não mudam depois.</summary>
+/// <summary>Cadastra um modelo de formulário, desativado até a ativação; o código e a finalidade não mudam depois.</summary>
 public sealed record CriarModeloFormularioCommand(
     string Codigo,
     string Nome,

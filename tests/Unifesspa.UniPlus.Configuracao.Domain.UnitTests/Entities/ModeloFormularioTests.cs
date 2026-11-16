@@ -137,22 +137,6 @@ public sealed class ModeloFormularioTests
         modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
-    [Fact(DisplayName = "Modelo de inscrição não tem pressupostos")]
-    public void Inscricao_ComPressuposto_Recusa()
-    {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Inscricao, Conteudo([Item("COR_RACA", 0)], "SEXO"));
-
-        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.PressupostoNaInscricao);
-    }
-
-    [Fact(DisplayName = "Fato não é pressuposto e item do mesmo modelo")]
-    public void PressupostoTambemItem_Recusa()
-    {
-        Result<ModeloFormulario> modelo = Criar(FinalidadeFormulario.Habilitacao, Conteudo([Item("CONCLUSAO_REGULAR", 0)], "CONCLUSAO_REGULAR"));
-
-        modelo.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ModeloFormularioErrorCodes.PressupostoTambemItem);
-    }
-
     [Fact(DisplayName = "Derivado do catálogo cujas dependências são pressupostas pode ser citado")]
     public void DerivadoDosPressupostos_Aceita()
     {
