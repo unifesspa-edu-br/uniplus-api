@@ -1,0 +1,289 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/exigencias.schema.json",
+  "title": "Documentos exigidos",
+  "description": "As exigências de documentos do processo e a árvore que combina os documentos que satisfazem a exigência do candidato.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "exigencias": {
+      "title": "Exigências",
+      "description": "Documentos que o processo exige.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/exigencia"
+      }
+    },
+    "arvoreDeSatisfacao": {
+      "title": "Árvore de satisfação",
+      "description": "Raízes da árvore de satisfação das exigências.",
+      "type": "array",
+      "items": {
+        "$ref": "arvore-de-satisfacao.schema.json"
+      }
+    }
+  },
+  "$defs": {
+    "exigencia": {
+      "title": "Exigência de documento",
+      "description": "Um documento que o processo exige, onde é exigido, se é obrigatório, em que condição e como é entregue. O tipo de documento é citado pelo código do catálogo.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chave"
+      ],
+      "properties": {
+        "chave": {
+          "title": "Chave da exigência",
+          "description": "Chave local da exigência, única no documento. A árvore de satisfação a cita por ela.",
+          "$ref": "comuns.schema.json#/$defs/chave"
+        },
+        "tipoDocumentoCodigo": {
+          "title": "Tipo de documento",
+          "description": "Código do tipo de documento no catálogo, de 1 a 60 caracteres.",
+          "allOf": [
+            {
+              "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
+            }
+          ],
+          "maxLength": 60
+        },
+        "tipoDocumentoNome": {
+          "title": "Nome do tipo de documento",
+          "description": "Nome do tipo de documento no catálogo, copiado na exportação. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+          "type": "string",
+          "maxLength": 200,
+          "readOnly": true
+        },
+        "tipoDocumentoCategoria": {
+          "title": "Categoria do tipo de documento",
+          "description": "Categoria do tipo de documento no catálogo. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+          "type": "string",
+          "maxLength": 60,
+          "readOnly": true
+        },
+        "classificacaoProtecao": {
+          "title": "Classificação de proteção",
+          "description": "Classificação do tipo de documento quanto à proteção de dados. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+          "enum": [
+            "PUBLICO",
+            "INTERNO",
+            "PESSOAL",
+            "IDENTIFICADOR",
+            "SENSIVEL"
+          ],
+          "readOnly": true
+        },
+        "finalidadeTratamento": {
+          "title": "Finalidade do tratamento",
+          "description": "Finalidade do tratamento de dados do tipo de documento. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+          "type": "string",
+          "maxLength": 500,
+          "readOnly": true
+        },
+        "hipoteseLegal": {
+          "title": "Hipótese legal",
+          "description": "Hipótese legal do tratamento de dados do tipo de documento. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+          "type": "string",
+          "maxLength": 40,
+          "readOnly": true
+        },
+        "fatosComprovados": {
+          "title": "Fatos comprovados",
+          "description": "Códigos dos fatos do candidato que o documento comprova. Campo só de leitura: ignorado na importação, porque vem do catálogo pelo código.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "readOnly": true
+        },
+        "faseChave": {
+          "title": "Fase em que é exigido",
+          "description": "Chave local da fase do cronograma em que o documento é exigido.",
+          "$ref": "comuns.schema.json#/$defs/chave"
+        },
+        "etapaChave": {
+          "title": "Etapa em que é exigido",
+          "description": "Chave local da etapa em que o documento é exigido, quando a exigência é de uma etapa.",
+          "$ref": "comuns.schema.json#/$defs/chave"
+        },
+        "finalidade": {
+          "title": "Finalidade do formulário",
+          "description": "Finalidade do formulário a que a exigência pertence, quando houver.",
+          "enum": [
+            "INSCRICAO",
+            "ISENCAO_TAXA",
+            "HABILITACAO"
+          ]
+        },
+        "aplicabilidade": {
+          "title": "Aplicabilidade",
+          "description": "GERAL vale para todos os candidatos; CONDICIONAL vale só quando a condição de gatilho é verdadeira.",
+          "enum": [
+            "Geral",
+            "Condicional"
+          ]
+        },
+        "obrigatorio": {
+          "title": "Obrigatório",
+          "description": "Se a entrega do documento é obrigatória.",
+          "type": "boolean"
+        },
+        "consequenciaIndeferimento": {
+          "title": "Consequência do indeferimento",
+          "description": "O que acontece quando o documento é indeferido.",
+          "enum": [
+            "ELIMINA",
+            "RECLASSIFICA_AC",
+            "REMOVE_VANTAGEM",
+            "PENDENCIA_REENVIO"
+          ]
+        },
+        "condicaoGatilho": {
+          "title": "Condição de gatilho",
+          "description": "Predicado que torna a exigência aplicável, quando ela é condicional.",
+          "$ref": "comuns.schema.json#/$defs/predicado"
+        },
+        "basesLegais": {
+          "title": "Bases legais",
+          "description": "Embasamento normativo da exigência.",
+          "type": "array",
+          "items": {
+            "$ref": "comuns.schema.json#/$defs/baseLegal"
+          }
+        },
+        "idadeMaximaEmissao": {
+          "title": "Idade máxima de emissão",
+          "description": "Quanto tempo o documento pode ter desde a emissão, contado a partir da referência.",
+          "$ref": "#/$defs/idadeMaximaEmissao"
+        },
+        "formatosPermitidos": {
+          "title": "Formatos permitidos",
+          "description": "Os formatos de arquivo aceitos para a entrega do documento: qualquer um ou uma lista com o tamanho máximo de cada formato.",
+          "$ref": "#/$defs/formatosPermitidos"
+        },
+        "tamanhoMaximoBytes": {
+          "title": "Tamanho máximo",
+          "description": "Tamanho máximo do arquivo, em bytes, para os formatos sem limite próprio.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "modelo": {
+          "title": "Modelo do documento",
+          "description": "Modelo de documento que a exigência oferece ao candidato, descrito na exportação. Campo só de leitura: ignorado na importação, porque o modelo é um arquivo enviado em separado.",
+          "type": "object",
+          "additionalProperties": false,
+          "readOnly": true,
+          "properties": {
+            "nomeArquivo": {
+              "title": "Nome do arquivo",
+              "description": "Nome do arquivo do modelo.",
+              "type": "string",
+              "maxLength": 255
+            },
+            "formato": {
+              "title": "Formato",
+              "description": "Formato do arquivo do modelo.",
+              "type": "string",
+              "maxLength": 30
+            },
+            "hashSha256": {
+              "title": "Resumo do conteúdo",
+              "description": "Resumo SHA-256 do conteúdo do modelo, em hexadecimal.",
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    },
+    "idadeMaximaEmissao": {
+      "title": "Idade máxima de emissão",
+      "description": "Quanto tempo o documento pode ter desde a emissão, contado a partir da referência.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "valor": {
+          "title": "Valor",
+          "description": "Quantidade de unidades, maior que zero.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "unidade": {
+          "title": "Unidade",
+          "description": "Unidade do valor.",
+          "enum": [
+            "DIAS",
+            "MESES",
+            "ANOS"
+          ]
+        },
+        "referenciaTipo": {
+          "title": "Referência",
+          "description": "Instante de onde a idade é contada.",
+          "enum": [
+            "FIM_INSCRICAO",
+            "INICIO_FASE",
+            "FIM_FASE",
+            "DATA_ESPECIFICA",
+            "DATA_SUBMISSAO"
+          ]
+        },
+        "data": {
+          "title": "Data",
+          "description": "Data da referência, quando ela é uma data específica.",
+          "type": "string",
+          "format": "date"
+        },
+        "referenciaFaseChave": {
+          "title": "Fase da referência",
+          "description": "Chave local da fase de onde a idade é contada, quando a referência é o início ou o fim de uma fase.",
+          "$ref": "comuns.schema.json#/$defs/chave"
+        }
+      }
+    },
+    "formatosPermitidos": {
+      "title": "Formatos permitidos",
+      "description": "Os formatos de arquivo aceitos para a entrega do documento: qualquer um ou uma lista com o tamanho máximo de cada formato.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "qualquer": {
+          "title": "Qualquer formato",
+          "description": "Verdadeiro quando o documento aceita qualquer formato.",
+          "type": "boolean"
+        },
+        "lista": {
+          "title": "Lista de formatos",
+          "description": "Formatos aceitos, quando não é qualquer um.",
+          "type": "array",
+          "items": {
+            "title": "Formato aceito",
+            "description": "Um formato e o tamanho máximo aceito para ele.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "formato": {
+                "title": "Formato",
+                "description": "Formato do arquivo.",
+                "enum": [
+                  "PDF",
+                  "JPEG",
+                  "PNG"
+                ]
+              },
+              "tamanhoMaximoBytesMax": {
+                "title": "Tamanho máximo",
+                "description": "Tamanho máximo do arquivo nesse formato, em bytes.",
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

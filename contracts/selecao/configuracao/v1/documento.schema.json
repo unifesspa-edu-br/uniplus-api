@@ -95,6 +95,11 @@
         }
       },
       "readOnly": true
+    },
+    "documentosExigidos": {
+      "title": "Documentos exigidos",
+      "description": "As exigências de documentos do processo e a árvore de satisfação delas. Lista vazia ou ausente é válida: há processos sem comprovação documental.",
+      "$ref": "exigencias.schema.json"
     }
   }
 }

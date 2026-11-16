@@ -311,6 +311,53 @@
           }
         }
       }
+    },
+    "semParametros": {
+      "title": "Regra sem parâmetros",
+      "description": "A regra não tem parâmetros.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {}
+    },
+    "baseLegal": {
+      "title": "Base legal",
+      "description": "Embasamento da exigência: a norma, a abrangência dela e se a referência já foi resolvida.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "referencia": {
+          "title": "Referência",
+          "description": "Citação da norma que fundamenta a exigência.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "abrangencia": {
+          "title": "Abrangência",
+          "description": "Esfera da norma.",
+          "enum": [
+            "FEDERAL",
+            "ESTADUAL",
+            "MUNICIPAL",
+            "INTERNA_NORMA",
+            "INTERNA_EDITAL"
+          ]
+        },
+        "status": {
+          "title": "Situação",
+          "description": "Se a referência foi resolvida ou ainda está pendente.",
+          "enum": [
+            "PENDENTE",
+            "RESOLVIDO"
+          ]
+        },
+        "observacao": {
+          "title": "Observação",
+          "description": "Nota livre sobre a base legal.",
+          "type": "string",
+          "maxLength": 1000
+        }
+      }
     }
   }
 }
