@@ -34,7 +34,7 @@ public sealed class DefinirEtapasNotaDoEnemTests
             .Returns(RegraCatalogo.Criar(
                 "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
                 JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement,
-                "Lei 9.784/1999, art. 59").Value!);
+                "Lei 9.784/1999, art. 59"));
 
         DefinirEtapasCommand command = new(
             processo.Id,

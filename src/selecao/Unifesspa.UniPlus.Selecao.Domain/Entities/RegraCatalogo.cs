@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using System.Text.Json;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
-using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -91,12 +90,15 @@ public sealed class RegraCatalogo : EntityBase
     }
 
     /// <summary>
-    /// Factory canônica (usada pelo seeder do catálogo): valida a definição,
-    /// desanexa os payloads jsonb do <see cref="JsonDocument"/> de origem
-    /// (<see cref="JsonElement.Clone"/>, para uma entidade imutável não segurar
-    /// um documento externo) e computa o hash.
+    /// Factory canônica (usada pelo seeder do catálogo): confere a definição, desanexa os payloads
+    /// jsonb do <see cref="JsonDocument"/> de origem (<see cref="JsonElement.Clone"/>, para uma
+    /// entidade imutável não segurar um documento externo) e computa o hash.
     /// </summary>
-    public static Result<RegraCatalogo> Criar(
+    /// <exception cref="ArgumentException">
+    /// A definição viola uma invariante: o catálogo é semeado por código, e definição inválida é
+    /// defeito de quem semeia, não recusa a devolver a quem chama.
+    /// </exception>
+    public static RegraCatalogo Criar(
         string codigo,
         string versao,
         TipoRegra tipo,
@@ -104,52 +106,28 @@ public sealed class RegraCatalogo : EntityBase
         JsonElement invariantes,
         string baseLegal)
     {
-        if (string.IsNullOrWhiteSpace(codigo))
-        {
-            return Result<RegraCatalogo>.Failure(new DomainError(
-                "RegraCatalogo.CodigoObrigatorio", "Código da regra é obrigatório."));
-        }
+        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        ArgumentException.ThrowIfNullOrWhiteSpace(versao);
+        ArgumentException.ThrowIfNullOrWhiteSpace(baseLegal);
+        ArgumentOutOfRangeException.ThrowIfEqual(tipo, TipoRegra.Nenhuma);
+        ExigirForma(esquemaArgs, JsonValueKind.Object, nameof(esquemaArgs));
+        ExigirForma(invariantes, JsonValueKind.Array, nameof(invariantes));
 
-        if (string.IsNullOrWhiteSpace(versao))
-        {
-            return Result<RegraCatalogo>.Failure(new DomainError(
-                "RegraCatalogo.VersaoObrigatoria", "Versão da regra é obrigatória."));
-        }
-
-        if (tipo == TipoRegra.Nenhuma)
-        {
-            return Result<RegraCatalogo>.Failure(new DomainError(
-                "RegraCatalogo.TipoObrigatorio", "Tipo da regra é obrigatório."));
-        }
-
-        if (esquemaArgs.ValueKind != JsonValueKind.Object)
-        {
-            return Result<RegraCatalogo>.Failure(new DomainError(
-                "RegraCatalogo.EsquemaArgsInvalido",
-                "esquema_args deve ser um objeto JSON (schema dos argumentos)."));
-        }
-
-        if (invariantes.ValueKind != JsonValueKind.Array)
-        {
-            return Result<RegraCatalogo>.Failure(new DomainError(
-                "RegraCatalogo.InvariantesInvalidas",
-                "invariantes deve ser um array JSON de pré/pós-condições."));
-        }
-
-        if (string.IsNullOrWhiteSpace(baseLegal))
-        {
-            return Result<RegraCatalogo>.Failure(new DomainError(
-                "RegraCatalogo.BaseLegalObrigatoria",
-                "Base legal é obrigatória (lei + artigo/§ ou decisão institucional)."));
-        }
-
-        return Result<RegraCatalogo>.Success(new RegraCatalogo(
+        return new RegraCatalogo(
             codigo.Trim(),
             versao.Trim(),
             tipo,
             esquemaArgs.Clone(),
             invariantes.Clone(),
-            baseLegal.Trim()));
+            baseLegal.Trim());
+    }
+
+    private static void ExigirForma(JsonElement valor, JsonValueKind esperada, string parametro)
+    {
+        if (valor.ValueKind != esperada)
+        {
+            throw new ArgumentException($"{parametro} deve ser {(esperada == JsonValueKind.Object ? "um objeto" : "um array")} JSON.", parametro);
+        }
     }
 
     /// <summary>

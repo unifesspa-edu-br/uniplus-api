@@ -21,7 +21,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
 {
     private static RegraCatalogo RegraDoCatalogo(string codigo, TipoRegra tipo) => RegraCatalogo.Criar(
         codigo, "v1", tipo, JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement,
-        "Decisão institucional da Unifesspa").Value!;
+        "Decisão institucional da Unifesspa");
 
     private static DefinirEtapasCommand RedacaoHumana(
         ProcessoSeletivo processo, string? forma, string? regraCodigo, string? regraVersao = "v1") => new(

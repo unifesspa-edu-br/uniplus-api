@@ -25,7 +25,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
     }
 
     private static RegraCatalogo RegraDistribuicao(string codigo, string esquemaArgs = "{}") => RegraCatalogo.Criar(
-        codigo, "v1", TipoRegra.RegraDistribuicaoVagas, Json(esquemaArgs), Json("[]"), "base legal").Value!;
+        codigo, "v1", TipoRegra.RegraDistribuicaoVagas, Json(esquemaArgs), Json("[]"), "base legal");
 
     private sealed record Mocks(
         IProcessoSeletivoRepository Repository,
@@ -191,7 +191,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
             .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Lei12711));
         mocks.RegraCatalogoReader.ObterAsync("RECONCILIACAO-VAGAS-ART11-PU", "v1", Arg.Any<CancellationToken>())
             .Returns(RegraCatalogo.Criar(
-                "RECONCILIACAO-VAGAS-ART11-PU", "v1", TipoRegra.RegraAjusteDistribuicaoVagas, Json("{}"), Json("[]"), "art. 11 §único").Value!);
+                "RECONCILIACAO-VAGAS-ART11-PU", "v1", TipoRegra.RegraAjusteDistribuicaoVagas, Json("{}"), Json("[]"), "art. 11 §único"));
         // PPI 50%, Quilombola 10%, PcD 10% — mesmos percentuais do caso "sem retiradas
         // nem suplementos" documentado na issue #1282 (VO=40, PR=0,5 -> VR=20).
         mocks.ReferenciaReservaDemograficaReader.ObterPorIdAsync(referenciaId, Arg.Any<CancellationToken>())

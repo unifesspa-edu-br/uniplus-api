@@ -39,7 +39,7 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
         string codigo = AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial,
         TipoRegra tipo = TipoRegra.AlgoritmoContagemPrazo)
     {
-        RegraCatalogo regra = RegraCatalogo.Criar(codigo, "v1", tipo, Json("{}"), Json("[]"), "base legal").Value!;
+        RegraCatalogo regra = RegraCatalogo.Criar(codigo, "v1", tipo, Json("{}"), Json("[]"), "base legal");
 
         // O hash da entrada real é derivado da definição; aqui só precisa ser um valor
         // distinto e reconhecível, para que o teste consiga afirmar de ONDE ele veio.

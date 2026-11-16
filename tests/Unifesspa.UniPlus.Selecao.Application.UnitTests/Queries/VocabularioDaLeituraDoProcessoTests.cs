@@ -97,7 +97,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
         regras.ObterAsync(RegraDistribuicaoVagasCodigo.Institucional, "v1", Arg.Any<CancellationToken>())
             .Returns(RegraCatalogo.Criar(
                 RegraDistribuicaoVagasCodigo.Institucional, "v1", TipoRegra.RegraDistribuicaoVagas,
-                Json("{}"), Json("[]"), "base legal").Value!);
+                Json("{}"), Json("[]"), "base legal"));
         IOfertaCursoReader ofertas = Substitute.For<IOfertaCursoReader>();
         ofertas.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(new OfertaCursoView(
             ofertaCursoId, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),

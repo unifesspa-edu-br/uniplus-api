@@ -38,7 +38,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
     private static RegraCatalogo RegraCascataValida() => RegraCatalogo.Criar(
         RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
         Json("""{"fallbackCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q","LB_PCD"]}]}"""),
-        Json("[]"), "ADR-0120").Value!;
+        Json("[]"), "ADR-0120");
 
     private sealed record Mocks(
         IProcessoSeletivoRepository Repository, IRegraCatalogoReader RegraCatalogoReader, IUnitOfWork UnitOfWork);
@@ -139,7 +139,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
         RegraCatalogo regraTipoErrado = RegraCatalogo.Criar(
-            RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.RegraCalculo, Json("{}"), Json("[]"), "base legal").Value!;
+            RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.RegraCalculo, Json("{}"), Json("[]"), "base legal");
         mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
             .Returns(regraTipoErrado);
 
@@ -226,7 +226,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         RegraCatalogo regraComDuasOrigens = RegraCatalogo.Criar(
             RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
             Json("""{"fallbackCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q"]},{"origem":"LB_Q","destinos":["LB_PPI"]}]}"""),
-            Json("[]"), "ADR-0120").Value!;
+            Json("[]"), "ADR-0120");
         mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
             .Returns(regraComDuasOrigens);
 
@@ -255,7 +255,7 @@ public sealed class DefinirCascataRemanejamentoCommandHandlerTests
         RegraCatalogo regraComOrigemRepetida = RegraCatalogo.Criar(
             RegraRemanejamentoCodigo.Cascata, "v1", TipoRegra.CriterioRemanejamento,
             Json("""{"fallbackCodigo":"AC","ordens":[{"origem":"LB_PPI","destinos":["LB_Q"]},{"origem":"LB_PPI","destinos":["LB_Q"]}]}"""),
-            Json("[]"), "ADR-0120").Value!;
+            Json("[]"), "ADR-0120");
         mocks.RegraCatalogoReader.ObterAsync(RegraRemanejamentoCodigo.Cascata, "v1", Arg.Any<CancellationToken>())
             .Returns(regraComOrigemRepetida);
 

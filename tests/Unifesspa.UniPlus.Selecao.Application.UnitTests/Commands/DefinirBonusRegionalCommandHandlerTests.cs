@@ -28,7 +28,7 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
     }
 
     private static RegraCatalogo Regra(string codigo, TipoRegra tipo) =>
-        RegraCatalogo.Criar(codigo, "v1", tipo, Json("{}"), Json("[]"), "base legal").Value!;
+        RegraCatalogo.Criar(codigo, "v1", tipo, Json("{}"), Json("[]"), "base legal");
 
     private static BaseLegalBonusRegionalView BaseLegalValida() => new(
         BaseLegalId,

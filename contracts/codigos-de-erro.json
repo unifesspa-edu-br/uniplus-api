@@ -7717,39 +7717,9 @@
       "titulo": "O tipo de referência temporal é obrigatório"
     },
     {
-      "codigo": "uniplus.selecao.regra_catalogo.base_legal_obrigatoria",
-      "status": 422,
-      "titulo": "Base legal da regra obrigatória"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_catalogo.codigo_obrigatorio",
-      "status": 422,
-      "titulo": "Código da regra obrigatório"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_catalogo.esquema_args_invalido",
-      "status": 422,
-      "titulo": "esquema_args deve ser um objeto JSON"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_catalogo.invariantes_invalidas",
-      "status": 422,
-      "titulo": "invariantes deve ser um array JSON"
-    },
-    {
       "codigo": "uniplus.selecao.regra_catalogo.nao_encontrada",
       "status": 404,
       "titulo": "Regra não encontrada no catálogo na versão pedida"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_catalogo.tipo_obrigatorio",
-      "status": 422,
-      "titulo": "Tipo da regra obrigatório"
-    },
-    {
-      "codigo": "uniplus.selecao.regra_catalogo.versao_obrigatoria",
-      "status": 422,
-      "titulo": "Versão da regra obrigatória"
     },
     {
       "codigo": "uniplus.selecao.regra_derivacao_configurada.contribui_em_branco",

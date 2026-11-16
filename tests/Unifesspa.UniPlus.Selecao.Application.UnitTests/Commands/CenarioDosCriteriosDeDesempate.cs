@@ -99,7 +99,7 @@ internal sealed class CenarioDosCriteriosDeDesempate
             command, Repository, RegraCatalogoReader, FatoCandidatoReader, UnitOfWork, CancellationToken.None);
 
     private static RegraCatalogo Regra(string codigo, TipoRegra tipo) =>
-        RegraCatalogo.Criar(codigo, "v1", tipo, Json("{}"), Json("[]"), "base legal").Value!;
+        RegraCatalogo.Criar(codigo, "v1", tipo, Json("{}"), Json("[]"), "base legal");
 
     private static JsonElement Json(string raw)
     {

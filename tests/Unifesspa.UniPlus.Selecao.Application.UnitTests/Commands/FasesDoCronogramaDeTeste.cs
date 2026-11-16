@@ -77,5 +77,5 @@ internal static class FasesDoCronogramaDeTeste
     private static RegraCatalogo RegraDoCatalogo(string codigo, TipoRegra tipo, string baseLegal) =>
         RegraCatalogo.Criar(
             codigo, "v1", tipo,
-            JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, baseLegal).Value!;
+            JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, baseLegal);
 }

@@ -4,7 +4,6 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -21,7 +20,7 @@ public sealed class RegraCatalogoTests
         return document.RootElement.Clone();
     }
 
-    private static Result<RegraCatalogo> CriarValida() => RegraCatalogo.Criar(
+    private static RegraCatalogo CriarValida() => RegraCatalogo.Criar(
         "BONUS-MULTIPLICATIVO", "v1", TipoRegra.RegraBonus,
         Json("""{"fator":"numeric","teto":"numeric|null"}"""),
         Json("""["nota_final × fator, após os pesos"]"""),
@@ -30,55 +29,46 @@ public sealed class RegraCatalogoTests
     [Fact(DisplayName = "Criar com definição válida computa hash content-addressable")]
     public void Criar_Valida_ComputaHash()
     {
-        Result<RegraCatalogo> resultado = CriarValida();
+        RegraCatalogo regra = CriarValida();
 
-        resultado.IsSuccess.Should().BeTrue();
-        RegraCatalogo regra = resultado.Value!;
         HashCanonicalComputer.IsValidHashShape(regra.Hash).Should().BeTrue();
         regra.RecomputeHash().Should().Be(regra.Hash, "recomputar a partir do estado deve bater com o hash gravado");
         regra.Tipo.Should().Be(TipoRegra.RegraBonus);
     }
 
     [Theory(DisplayName = "Criar recusa código/versão/base legal vazios")]
-    [InlineData("", "v1", "base")]
-    [InlineData("  ", "v1", "base")]
-    [InlineData("R", "", "base")]
-    [InlineData("R", "v1", "")]
-    public void Criar_CamposObrigatoriosVazios_Falha(string codigo, string versao, string baseLegal)
+    [InlineData("", "v1", "base", "codigo")]
+    [InlineData("  ", "v1", "base", "codigo")]
+    [InlineData("R", "", "base", "versao")]
+    [InlineData("R", "v1", "", "baseLegal")]
+    public void Criar_CamposObrigatoriosVazios_LancaArgumentException(string codigo, string versao, string baseLegal, string parametro)
     {
-        Result<RegraCatalogo> resultado = RegraCatalogo.Criar(
-            codigo, versao, TipoRegra.RegraBonus, Json("{}"), Json("[]"), baseLegal);
+        Action criar = () => RegraCatalogo.Criar(codigo, versao, TipoRegra.RegraBonus, Json("{}"), Json("[]"), baseLegal);
 
-        resultado.IsFailure.Should().BeTrue();
+        criar.Should().Throw<ArgumentException>().WithParameterName(parametro);
     }
 
     [Fact(DisplayName = "Criar recusa tipo Nenhuma (sentinela)")]
-    public void Criar_TipoNenhuma_Falha()
+    public void Criar_TipoNenhuma_LancaArgumentOutOfRange()
     {
-        Result<RegraCatalogo> resultado = RegraCatalogo.Criar(
-            "R", "v1", TipoRegra.Nenhuma, Json("{}"), Json("[]"), "base");
+        Action criar = () => RegraCatalogo.Criar("R", "v1", TipoRegra.Nenhuma, Json("{}"), Json("[]"), "base");
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RegraCatalogo.TipoObrigatorio");
+        criar.Should().Throw<ArgumentOutOfRangeException>().WithParameterName("tipo");
     }
 
     [Fact(DisplayName = "Criar recusa esquema_args que não é objeto JSON")]
-    public void Criar_EsquemaArgsNaoObjeto_Falha()
+    public void Criar_EsquemaArgsNaoObjeto_LancaArgumentException()
     {
-        Result<RegraCatalogo> resultado = RegraCatalogo.Criar(
-            "R", "v1", TipoRegra.RegraBonus, Json("[]"), Json("[]"), "base");
+        Action criar = () => RegraCatalogo.Criar("R", "v1", TipoRegra.RegraBonus, Json("[]"), Json("[]"), "base");
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RegraCatalogo.EsquemaArgsInvalido");
+        criar.Should().Throw<ArgumentException>().WithParameterName("esquemaArgs");
     }
 
     [Fact(DisplayName = "Criar recusa invariantes que não é array JSON")]
-    public void Criar_InvariantesNaoArray_Falha()
+    public void Criar_InvariantesNaoArray_LancaArgumentException()
     {
-        Result<RegraCatalogo> resultado = RegraCatalogo.Criar(
-            "R", "v1", TipoRegra.RegraBonus, Json("{}"), Json("{}"), "base");
+        Action criar = () => RegraCatalogo.Criar("R", "v1", TipoRegra.RegraBonus, Json("{}"), Json("{}"), "base");
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("RegraCatalogo.InvariantesInvalidas");
+        criar.Should().Throw<ArgumentException>().WithParameterName("invariantes");
     }
 }

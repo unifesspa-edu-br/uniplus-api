@@ -29,7 +29,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
     }
 
     private static RegraCatalogo RegraDistribuicao(string codigo) => RegraCatalogo.Criar(
-        codigo, "v1", TipoRegra.RegraDistribuicaoVagas, Json("{}"), Json("[]"), "base legal").Value!;
+        codigo, "v1", TipoRegra.RegraDistribuicaoVagas, Json("{}"), Json("[]"), "base legal");
 
     private sealed record Mocks(
         IProcessoSeletivoRepository Repository,
@@ -297,7 +297,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Lei12711));
         mocks.RegraCatalogoReader.ObterAsync("RECONCILIACAO-VAGAS-ART11-PU", "v1", Arg.Any<CancellationToken>())
             .Returns(RegraCatalogo.Criar(
-                "RECONCILIACAO-VAGAS-ART11-PU", "v1", TipoRegra.RegraAjusteDistribuicaoVagas, Json("{}"), Json("[]"), "art. 11 §único").Value!);
+                "RECONCILIACAO-VAGAS-ART11-PU", "v1", TipoRegra.RegraAjusteDistribuicaoVagas, Json("{}"), Json("[]"), "art. 11 §único"));
         mocks.ReferenciaReservaDemograficaReader.ObterPorIdAsync(referenciaId, Arg.Any<CancellationToken>())
             .Returns(new ReferenciaReservaDemograficaView(referenciaId, "2022", 79m, 1.5m, 8.5m, "Censo 2022"));
         foreach ((string codigo, Guid id) in federaisMaisAc)
@@ -367,7 +367,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.OfertaCursoReader.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(NovaOferta(Guid.CreateVersion7()));
         RegraCatalogo regraErrada = RegraCatalogo.Criar(
-            "FORMULA-MEDIA-PONDERADA", "v1", TipoRegra.RegraCalculo, Json("{}"), Json("[]"), "base").Value!;
+            "FORMULA-MEDIA-PONDERADA", "v1", TipoRegra.RegraCalculo, Json("{}"), Json("[]"), "base");
         mocks.RegraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(regraErrada);
 

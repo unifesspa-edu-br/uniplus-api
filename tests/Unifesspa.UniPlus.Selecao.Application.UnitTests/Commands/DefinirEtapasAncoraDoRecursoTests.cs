@@ -32,11 +32,11 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        Result<RegraCatalogo> regra = RegraCatalogo.Criar(
+        RegraCatalogo regra = RegraCatalogo.Criar(
             "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
             JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999, art. 59");
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
-        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(regra.Value!);
+        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(regra);
 
         EtapaProcessoInput Etapa(Guid? id, bool comAncora) => new(
             "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, id,
@@ -90,11 +90,11 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         IRegistroCodecsEnvelope codecs = Substitute.For<IRegistroCodecsEnvelope>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        Result<RegraCatalogo> regra = RegraCatalogo.Criar(
+        RegraCatalogo regra = RegraCatalogo.Criar(
             "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
             JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999, art. 59");
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
-        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(regra.Value!);
+        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(regra);
 
         EtapaProcessoInput Etapa(Guid? id, bool comAncora) => new(
             "Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, id,
@@ -160,11 +160,11 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        Result<RegraCatalogo> regra = RegraCatalogo.Criar(
+        RegraCatalogo regra = RegraCatalogo.Criar(
             "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
             JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement, "Lei 9.784/1999, art. 59");
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
-        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(regra.Value!);
+        regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>()).Returns(regra);
 
         EtapaProcessoInput Etapa(Guid? id, string nome) => new(
             nome, CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, id,
@@ -210,13 +210,13 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
-        Result<RegraCatalogo> regra = RegraCatalogo.Criar(
+        RegraCatalogo regra = RegraCatalogo.Criar(
             "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
             JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement,
             "Lei 9.784/1999, art. 59");
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(regra.Value!);
+            .Returns(regra);
 
         // O ato é resultado — a conferência do produto passa —, mas carrega a flag que torna
         // a âncora indevida. As três flags são independentes no catálogo: garantir que o ato
@@ -261,13 +261,13 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
-        Result<RegraCatalogo> regra = RegraCatalogo.Criar(
+        RegraCatalogo regra = RegraCatalogo.Criar(
             "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
             JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement,
             "Lei 9.784/1999, art. 59");
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(regra.Value!);
+            .Returns(regra);
 
         ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
         tipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
@@ -315,18 +315,17 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-        Result<RegraCatalogo> regra = RegraCatalogo.Criar(
+        RegraCatalogo regra = RegraCatalogo.Criar(
             "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1", TipoRegra.RegraPrazoRecurso,
             JsonDocument.Parse("{}").RootElement, JsonDocument.Parse("[]").RootElement,
             "Lei 9.784/1999, art. 59");
-        regra.IsSuccess.Should().BeTrue(regra.Error?.Message);
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
         tipoAtoPublicadoReader.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
         regraCatalogoReader
             .ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
-            .Returns(regra.Value!);
+            .Returns(regra);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         DefinirEtapasCommand command = new(

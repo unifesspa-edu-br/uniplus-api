@@ -111,13 +111,12 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
             using JsonDocument esquema = JsonDocument.Parse("""{"fonte_pesos":["etapa"]}""");
             using JsonDocument invariantes = JsonDocument.Parse("""["divisor = Σ(peso)"]""");
 
-            Result<RegraCatalogo> v2 = RegraCatalogo.Criar(
+            RegraCatalogo v2 = RegraCatalogo.Criar(
                 "FORMULA-MEDIA-PONDERADA", "v2", TipoRegra.RegraCalculo,
                 esquema.RootElement, invariantes.RootElement, "Revisão da fórmula (nova versão)");
-            v2.IsSuccess.Should().BeTrue();
-            v2Id = v2.Value!.Id;
+            v2Id = v2.Id;
 
-            writeContext.RolDeRegras.Add(v2.Value!);
+            writeContext.RolDeRegras.Add(v2);
             await writeContext.SaveChangesAsync(CancellationToken.None);
         }
 

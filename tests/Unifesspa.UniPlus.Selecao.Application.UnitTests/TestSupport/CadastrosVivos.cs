@@ -70,18 +70,13 @@ internal static class CadastrosVivos
         using JsonDocument esquema = JsonDocument.Parse("{}");
         using JsonDocument invariantes = JsonDocument.Parse("[]");
 
-        Result<RegraCatalogo> resultado = RegraCatalogo.Criar(
+        return RegraCatalogo.Criar(
             codigo,
             "v1",
             TipoRegra.CriterioDesempate,
             esquema.RootElement.Clone(),
             invariantes.RootElement.Clone(),
             "Regra de teste");
-
-        return resultado.IsSuccess
-            ? resultado.Value!
-            : throw new InvalidOperationException(
-                $"Dublê de regra de desempate inválido para '{codigo}': {resultado.Error?.Message}");
     }
 
     public static IModalidadeReader Modalidades(params string[] codigos)
