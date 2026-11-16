@@ -53,7 +53,7 @@ public sealed partial class PedidoDeConcessao
             return Result.Failure(SituacaoInvalida("O pedido não aguarda decisão."));
         }
 
-        string? motivoNormalizado = NormalizarTexto(motivo, 1, MotivoMaxLength);
+        string? motivoNormalizado = MotivosDaVersao.Normalizar(motivo);
         List<FieldError> erros = ErrosDaRecusa(decisor, etapa, motivoNormalizado);
         return erros.Count > 0
             ? Result.ValidationFailure(erros)
@@ -137,7 +137,7 @@ public sealed partial class PedidoDeConcessao
         {
             erros.Add(new("motivo", new DomainError(
                 PedidoErrorCodes.MotivoInvalido,
-                $"O motivo da recusa é obrigatório e deve ter até {MotivoMaxLength} caracteres.")));
+                $"O motivo da recusa é obrigatório e deve ter até {MotivosDaVersao.MaxLength} caracteres.")));
         }
 
         return erros;
