@@ -77,7 +77,7 @@ A [ADR-0157](0157-perfis-de-acesso-versionados-e-aprovados.md) trata do acesso p
 
 - Domínio: a publicação do edital é recusada com erro nomeado sem opção de quem recorre, sem banca ou com regra de deliberação incompleta, e com janela ancorada em ciência individual.
 - Domínio: recurso fora da opção da janela, fora do prazo, ou contra ato com publicação não confirmada é recusado; publicação confirmada no início da contagem ou depois não aceita recursos.
-- Domínio: o definitivo com recursos é recusado sem documento conferido; o definitivo do novo ciclo não espera os recursos do ciclo substituído.
+- Domínio: o definitivo com recursos é recusado sem documento conferido; o definitivo espera o julgamento de cada unidade, que reúne os recursos de todos os ciclos, inclusive os do ciclo substituído, que nunca são descartados (emenda 1).
 - Recursos, versões, votos e documento das decisões são entidades forenses, append-only e fora do soft delete ([ADR-0063](0063-entidades-forensics-isentas-de-soft-delete.md)).
 - O desenho cabe nos limites da [ADR-0156](0156-limites-de-tamanho-e-complexidade-do-codigo.md): a regra de deliberação é um avaliador por critério, desempate e encerramento, e não uma árvore de condições num só método.
 

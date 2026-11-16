@@ -2,10 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using NSubstitute;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
-using Unifesspa.UniPlus.Selecao.Application.Queries.ProdutosPrevistos;
-using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -13,209 +13,74 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A retificação não desfaz o ciclo de recurso que o preliminar publicado abriu: enquanto o definitivo da
-/// matéria não saiu, o preliminar e o definitivo continuam no cronograma, ainda fechando o mesmo ciclo.
+/// A conferência do ciclo recursal aberto lê os atos publicados do processo e a versão publicada vigente e
+/// entrega ao domínio os itens cuja primeira publicação existe; a regra em si é testada no domínio.
 /// </summary>
 public sealed class ConferenciaDoCicloRecursalAbertoTests
 {
     private const string Materia = "RESULTADO_PROVA";
-    private const string NomeDaMateria = "Resultado da prova";
-    private static readonly DateTimeOffset Agora = new(2027, 1, 20, 12, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset Instante = new(2027, 1, 20, 12, 0, 0, TimeSpan.Zero);
 
-    private readonly Guid _processoId = Guid.CreateVersion7();
-    private readonly List<AtoDoProcesso> _atos = [];
-    private readonly Dictionary<string, Guid> _origens = [];
-
-    [Fact(DisplayName = "Preliminar publicado e retificação que retira o definitivo da fase é recusada, nomeando a matéria")]
-    public void PreliminarPublicado_RetiraODefinitivo_ERecusada()
+    [Fact(DisplayName = "O preliminar que o registro de atos mostra publicado e cujo definitivo não saiu recusa a retirada do par, nomeando a matéria")]
+    public async Task PreliminarPublicadoNosAtos_ProcessoSemOPar_RecusaPorMateria()
     {
-        ProdutoDaFase preliminar = Produto(PapelProdutoFase.Preliminar);
-        ProdutoDaFase definitivo = Produto(PapelProdutoFase.Definitivo);
-        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, definitivo);
-        Publicar(publicada, preliminar);
+        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado();
+        cenario.ComPreliminarPublicadoEDefinitivoPendente();
 
-        Result resultado = Conferir(
-            publicada: [publicada],
-            nova: [Fase("PROVA", 1, null, preliminar)]);
+        Result resultado = await ConferirAsync(cenario);
 
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
-        resultado.Error.Message.Should().Contain(NomeDaMateria).And.Contain("Publique o definitivo antes de retificar");
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+        recusa.Field.Should().Be($"cronograma.ciclosRecursais[{Materia}]");
+        recusa.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
     }
 
-    [Fact(DisplayName = "Preliminar publicado e retificação que leva o definitivo para outro ciclo é recusada")]
-    public void PreliminarPublicado_MudaODefinitivoDeCiclo_ERecusada()
+    [Fact(DisplayName = "Sem item do edital publicado nos atos a conferência aceita sem ler a versão publicada")]
+    public async Task SemItemPublicadoNosAtos_AceitaSemReidratarAVersao()
     {
-        ProdutoDaFase preliminar = Produto(PapelProdutoFase.Preliminar);
-        ProdutoDaFase definitivo = Produto(PapelProdutoFase.Definitivo);
-        ProdutoDaFase definitivoDeOutraFase = Produto(PapelProdutoFase.Definitivo);
-        FaseCronograma prova = Fase("PROVA", 1, "RESULTADO", preliminar);
-        Publicar(prova, preliminar);
+        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado();
+        cenario.ComPreliminarPublicadoEDefinitivoPendente();
+        cenario.Servicos.Atos.ListarDoProcessoAsync(cenario.Processo.Id, Arg.Any<CancellationToken>()).Returns([]);
 
-        Result resultado = Conferir(
-            publicada: [prova, Fase("RESULTADO", 2, null, definitivo), Fase("RECURSOS", 3, null)],
-            nova: [Fase("PROVA", 1, "RECURSOS", preliminar), Fase("RESULTADO", 2, null), Fase("RECURSOS", 3, null, definitivoDeOutraFase)]);
+        Result resultado = await ConferirAsync(cenario);
 
-        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
+        resultado.IsSuccess.Should().BeTrue();
+        cenario.Servicos.Codecs.DidNotReceiveWithAnyArgs().Reidratar(default!);
     }
 
-    [Fact(DisplayName = "Com o definitivo já publicado a retificação que retira os dois itens é aceita")]
-    public void DefinitivoPublicado_RetiraOsItens_EAceita()
+    [Fact(DisplayName = "O ato publicado de um item que a versão publicada não declara não abre ciclo e a conferência aceita")]
+    public async Task AtoDeItemForaDaVersaoPublicada_NaoAbreCiclo_Aceita()
     {
-        ProdutoDaFase preliminar = Produto(PapelProdutoFase.Preliminar);
-        ProdutoDaFase definitivo = Produto(PapelProdutoFase.Definitivo);
-        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, definitivo);
-        Publicar(publicada, preliminar);
-        Publicar(publicada, definitivo);
+        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado();
+        cenario.ComPreliminarPublicadoEDefinitivoPendente();
+        cenario.Servicos.Atos.ListarDoProcessoAsync(cenario.Processo.Id, Arg.Any<CancellationToken>())
+            .Returns([AtoDeOutroItem(cenario.Processo.Id)]);
 
-        Result resultado = Conferir(
-            publicada: [publicada],
-            nova: [Fase("PROVA", 1, null)]);
+        Result resultado = await ConferirAsync(cenario);
 
         resultado.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Com o preliminar não publicado a retificação que retira o par é aceita")]
-    public void PreliminarNaoPublicado_RetiraOPar_EAceita()
+    private static async Task<Result> ConferirAsync(CenarioDeRetificacaoPublicada cenario)
     {
-        ProdutoDaFase preliminar = Produto(PapelProdutoFase.Preliminar);
-        ProdutoDaFase definitivo = Produto(PapelProdutoFase.Definitivo);
+        VersaoConfiguracao vigente = (await cenario.Servicos.Repositorio.ObterVersaoAtualAsync(cenario.Processo.Id, CancellationToken.None))!;
 
-        Result resultado = Conferir(
-            publicada: [Fase("PROVA", 1, null, preliminar, definitivo)],
-            nova: [Fase("PROVA", 1, null)]);
-
-        resultado.IsSuccess.Should().BeTrue();
+        return await ConferenciaDoCicloRecursalAberto.ConferirAsync(
+            cenario.Servicos.Atos, cenario.Servicos.Codecs, cenario.Processo, vigente, CancellationToken.None);
     }
 
-    [Fact(DisplayName = "Preliminar publicado e retificação que mantém o par no mesmo ciclo é aceita")]
-    public void PreliminarPublicado_MantemOPar_EAceita()
+    private static AtoDoProcesso AtoDeOutroItem(Guid processoId)
     {
-        ProdutoDaFase preliminar = Produto(PapelProdutoFase.Preliminar);
-        ProdutoDaFase definitivo = Produto(PapelProdutoFase.Definitivo);
-        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, definitivo);
-        Publicar(publicada, preliminar);
-
-        Result resultado = Conferir(
-            publicada: [publicada],
-            nova: [Fase("PROVA", 1, null, preliminar, definitivo)]);
-
-        resultado.IsSuccess.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Preliminar publicado e cronograma novo com os mesmos itens, de identificadores diferentes, é aceita")]
-    public void PreliminarPublicado_ItensComIdentificadoresNovosNoMesmoLugar_EAceita()
-    {
-        ProdutoDaFase preliminar = Produto(PapelProdutoFase.Preliminar);
-        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, Produto(PapelProdutoFase.Definitivo));
-        Publicar(publicada, preliminar);
-
-        Result resultado = Conferir(
-            publicada: [publicada],
-            nova: [Fase("PROVA", 2, null, Produto(PapelProdutoFase.Preliminar), Produto(PapelProdutoFase.Definitivo))]);
-
-        resultado.IsSuccess.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Preliminar publicado e fase deslocada com produtos de Id novo, sem o definitivo, é recusada")]
-    public void PreliminarPublicado_FaseDeslocadaComProdutosRecriados_RetiraODefinitivo_ERecusada()
-    {
-        ProdutoDaFase preliminar = Produto(PapelProdutoFase.Preliminar);
-        FaseCronograma publicada = Fase("PROVA", 1, null, preliminar, Produto(PapelProdutoFase.Definitivo));
-        Publicar(publicada, preliminar);
-
-        Result resultado = Conferir(
-            publicada: [publicada],
-            nova: [Fase("HOMOLOGACAO_INSCRICOES", 1, null), Fase("PROVA", 2, null, Produto(PapelProdutoFase.Preliminar))]);
-
-        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
-    }
-
-    [Fact(DisplayName = "Preliminar publicado numa etapa renomeada, com o mesmo par, é aceita")]
-    public void PreliminarPublicado_EtapaRenomeada_EAceita()
-    {
-        Guid etapaId = Guid.CreateVersion7();
-        ProdutoDaEtapa preliminar = ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar);
-        EtapaProcesso publicada = Etapa(etapaId, "Prova objetiva", preliminar, ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo));
-        Publicar(IdentidadeDoItemDoEdital.DaEtapa(publicada, preliminar));
-
-        Result resultado = ConferenciaDoCicloRecursalAberto.Conferir(
-            [], [publicada],
-            [], [Etapa(etapaId, "Prova objetiva (reaplicação)", ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar), ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo))],
-            CadeiasDosProdutosPrevistos.De(_atos));
-
-        resultado.IsSuccess.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Preliminar publicado e retirada do par de uma de duas etapas de mesmo nome é recusada")]
-    public void PreliminarPublicado_RetiraOParDeUmaDeDuasEtapasHomonimas_ERecusada()
-    {
-        Guid primeira = Guid.CreateVersion7();
-        Guid segunda = Guid.CreateVersion7();
-        ProdutoDaEtapa preliminar = ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar);
-        EtapaProcesso primeiraPublicada = Etapa(primeira, "Prova", preliminar, ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo));
-        Publicar(IdentidadeDoItemDoEdital.DaEtapa(primeiraPublicada, preliminar));
-
-        Result resultado = ConferenciaDoCicloRecursalAberto.Conferir(
-            [],
-            [
-                primeiraPublicada,
-                Etapa(segunda, "Prova", ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar), ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo)),
-            ],
-            [],
-            [
-                Etapa(primeira, "Prova"),
-                Etapa(segunda, "Prova", ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar), ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo)),
-            ],
-            CadeiasDosProdutosPrevistos.De(_atos));
-
-        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
-    }
-
-    private Result Conferir(FaseCronograma[] publicada, FaseCronograma[] nova) =>
-        ConferenciaDoCicloRecursalAberto.Conferir(publicada, [], nova, [], CadeiasDosProdutosPrevistos.De(_atos));
-
-    private static ProdutoDaFase Produto(PapelProdutoFase papel) => ProdutoDaFase.Criar(Materia, papel);
-
-    // A mesma fase, em versões diferentes do cronograma, tem a mesma fase canônica de origem.
-    private FaseCronograma Fase(string codigo, int ordem, string? faseConcluinteCodigo, params ProdutoDaFase[] produtos) =>
-        FaseCronograma.Criar(
-            new OrigemCanonicaDaFase(OrigemDe(codigo), codigo, OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(ordem, Inicio: Agora, Fim: Agora.AddDays(10), FaseConcluinteCodigo: faseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
+        ProdutoDaFase preliminar = ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar);
+        FaseCronograma fase = FaseCronograma.Criar(
+            new OrigemCanonicaDaFase(Guid.CreateVersion7(), "ANALISE", OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(1, Inicio: Instante, Fim: Instante.AddDays(10), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [preliminar], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
-    private Guid OrigemDe(string codigo)
-    {
-        if (!_origens.TryGetValue(codigo, out Guid origem))
-        {
-            origem = Guid.CreateVersion7();
-            _origens[codigo] = origem;
-        }
-
-        return origem;
-    }
-
-    private void Publicar(FaseCronograma fase, ProdutoDaFase produto) =>
-        Publicar(IdentidadeDoItemDoEdital.DaFase(fase, produto));
-
-    private static EtapaProcesso Etapa(Guid id, string nome, params ProdutoDaEtapa[] produtos)
-    {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe("PROVA_OBJETIVA"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        typeof(EtapaProcesso).GetProperty(nameof(EtapaProcesso.Id))!.SetValue(etapa, id);
-        etapa.DefinirProdutos(produtos).IsSuccess.Should().BeTrue();
-        return etapa;
-    }
-
-    private void Publicar(IdentidadeDoItemDoEdital item)
-    {
-        AtoDoProcesso ato = AtoDoProcesso.Registrar(
+        return AtoDoProcesso.Registrar(
             new NovoAtoDoProcesso(
-                Guid.CreateVersion7(), _processoId, Materia, NomeDaMateria, "1/2027", new DateOnly(2027, 1, 20), "Diretor do CEPS", "ceps", "psm-medicina-2027",
-                Guid.CreateVersion7(), [], ItemDoEdital: item),
-            Agora).Value!;
-        _atos.Add(ato);
+                Guid.CreateVersion7(), processoId, Materia, "Resultado da prova", "1/2027", new DateOnly(2027, 1, 20),
+                "Diretor do CEPS", "ceps", "ps-eixos", Guid.CreateVersion7(), [], ItemDoEdital: IdentidadeDoItemDoEdital.DaFase(fase, preliminar)),
+            Instante).Value!;
     }
 }
