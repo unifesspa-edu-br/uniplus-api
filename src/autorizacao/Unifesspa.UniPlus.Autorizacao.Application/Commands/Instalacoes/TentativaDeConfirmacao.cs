@@ -85,7 +85,7 @@ public sealed partial class TentativaDeConfirmacao
         await _instalacoes.AdicionarTentativaAsync(TentativaDeInstalacao.Registrar(instalacaoId, autor, resultado, agora), cancellationToken)
             .ConfigureAwait(false);
 
-        DomainError? falha = await GravacaoDaConfirmacao.GravarAsync(_unitOfWork, cancellationToken).ConfigureAwait(false);
+        DomainError? falha = await GravacaoDaInstalacao.GravarAsync(_unitOfWork, cancellationToken).ConfigureAwait(false);
 
         return Result<Instalacao>.Failure(falha ?? InstalacaoHandlerErros.CodigoInvalido());
     }

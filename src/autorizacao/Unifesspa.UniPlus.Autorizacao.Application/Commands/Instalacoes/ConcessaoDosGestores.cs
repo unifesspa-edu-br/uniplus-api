@@ -84,7 +84,7 @@ public sealed class ConcessaoDosGestores
         instalacao.Cancelar(agora);
         await RegistrarTentativaAsync(instalacao, autor, ResultadoDaTentativaDeInstalacao.JaHaviaGestor, agora, cancellationToken).ConfigureAwait(false);
 
-        DomainError? falha = await GravacaoDaConfirmacao.GravarAsync(_unitOfWork, cancellationToken).ConfigureAwait(false);
+        DomainError? falha = await GravacaoDaInstalacao.GravarAsync(_unitOfWork, cancellationToken).ConfigureAwait(false);
 
         return Result.Failure(falha is null ? InstalacaoHandlerErros.JaHaGestor() : InstalacaoHandlerErros.JaHaGestorAoIniciar());
     }
@@ -103,7 +103,7 @@ public sealed class ConcessaoDosGestores
         await AdicionarAsync(concessoes.Value!, cancellationToken).ConfigureAwait(false);
         await _termos.AdicionarExcecaoDaInstalacaoAsync(TermoNaInstalacao.Registrar(instalacao.Id, vigente, agora), cancellationToken).ConfigureAwait(false);
         await RegistrarTentativaAsync(instalacao, autor, ResultadoDaTentativaDeInstalacao.Aceita, agora, cancellationToken).ConfigureAwait(false);
-        DomainError? falha = await GravacaoDaConfirmacao.GravarAsync(_unitOfWork, cancellationToken).ConfigureAwait(false);
+        DomainError? falha = await GravacaoDaInstalacao.GravarAsync(_unitOfWork, cancellationToken).ConfigureAwait(false);
 
         return falha is null ? Result.Success() : Result.Failure(falha);
     }

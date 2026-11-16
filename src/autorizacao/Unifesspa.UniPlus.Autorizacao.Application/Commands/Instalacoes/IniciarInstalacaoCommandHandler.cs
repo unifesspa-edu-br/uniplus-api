@@ -80,24 +80,14 @@ public static class IniciarInstalacaoCommandHandler
             .GerarUrlDeEnvioAsync(instalacao.ChaveDeEnvio, TipoDeMidiaDoPdf, PrazoDoEnvio, cancellationToken)
             .ConfigureAwait(false);
 
-        try
+        // Cancelamento e nova pendência vão numa única gravação: se a segunda falhar, a anterior não fica
+        // cancelada sozinha. O índice único parcial admite uma pendente por executor.
+        Instalacao? anterior = await instalacaoRepository.ObterPendenteDoExecutorAsync(executor, cancellationToken).ConfigureAwait(false);
+        anterior?.Cancelar(agora);
+        await instalacaoRepository.AdicionarAsync(instalacao, cancellationToken).ConfigureAwait(false);
+        if (await GravacaoDaInstalacao.GravarAsync(unitOfWork, cancellationToken).ConfigureAwait(false) is { } falha)
         {
-            // Cancelamento e nova pendência vão numa única gravação: se a segunda falhar, a anterior não fica
-            // cancelada sozinha. O índice único parcial admite uma pendente por executor.
-            Instalacao? anterior = await instalacaoRepository.ObterPendenteDoExecutorAsync(executor, cancellationToken).ConfigureAwait(false);
-            if (anterior is not null)
-            {
-                anterior.Cancelar(agora);
-            }
-
-            await instalacaoRepository.AdicionarAsync(instalacao, cancellationToken).ConfigureAwait(false);
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (InstalacaoViolacoes.EhPendenciaDuplicada(ex) || ViolacoesDeGravacao.EhConflitoDeConcorrencia(ex))
-        {
-            // Duas iniciações simultâneas do mesmo executor: a que perdeu a corrida recomeça, em vez de 500.
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<InstalacaoIniciadaDto>.Failure(InstalacaoHandlerErros.ConflitoDeConcorrencia());
+            return Result<InstalacaoIniciadaDto>.Failure(falha);
         }
 
         return Result<InstalacaoIniciadaDto>.Success(new InstalacaoIniciadaDto(
