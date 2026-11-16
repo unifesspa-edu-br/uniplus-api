@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -11,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>A criação do pedido e o aceite do beneficiário.</summary>
-public sealed class PedidoDeConcessaoCriacaoTests : PedidoDeConcessaoTestBase
+public sealed class PedidoDeConcessaoCriacaoTests 
 {
     [Fact(DisplayName = "Pedido para si mesmo, sem e-mail informado, nasce aguardando o gestor com a identidade do token")]
     public void Criar_ParaSiMesmo_NasceAguardandoOGestor()

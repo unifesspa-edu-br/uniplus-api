@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -9,7 +10,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
 
 /// <summary>A ordem documento verificado, aceite do termo e gestor, e quem aceita.</summary>
-public sealed class PedidoDeConcessaoTermoNoAceiteTests : PedidoDeConcessaoTestBase
+public sealed class PedidoDeConcessaoTermoNoAceiteTests 
 {
     [Fact(DisplayName = "Pedido próprio protegido com documento: o aceite espera a verificação e só então vai ao gestor")]
     public void Aceitar_ParaSiComDocumento_DepoisDaVerificacao()

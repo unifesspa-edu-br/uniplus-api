@@ -25,9 +25,9 @@ public sealed class FixacaoDoTermoTests
     {
         VersaoDoTermo vigente = TermosDeTeste.Publicada();
         _termos.ObterVigenteSobTravaCompartilhadaAsync(Arg.Any<CancellationToken>()).Returns(vigente);
-        PedidoDeConcessao pedido = Novo(PedidoDeConcessaoTestBase.PerfilDeGovernanca());
+        PedidoDeConcessao pedido = Novo(ApoioDoPedido.PerfilDeGovernanca());
 
-        Result resultado = await FixarAsync(pedido, PedidoDeConcessaoTestBase.PerfilDeGovernanca(), vigente.Id);
+        Result resultado = await FixarAsync(pedido, ApoioDoPedido.PerfilDeGovernanca(), vigente.Id);
 
         resultado.IsSuccess.Should().BeTrue();
         pedido.TermoVersaoId.Should().Be(vigente.Id);
@@ -36,7 +36,7 @@ public sealed class FixacaoDoTermoTests
     [Fact(DisplayName = "O pedido não protegido não lê a vigência do termo")]
     public async Task Fixar_NaoProtegido_NaoTrava()
     {
-        Result resultado = await FixarAsync(Novo(PedidoDeConcessaoTestBase.PerfilComum()), PedidoDeConcessaoTestBase.PerfilComum(), null);
+        Result resultado = await FixarAsync(Novo(ApoioDoPedido.PerfilComum()), ApoioDoPedido.PerfilComum(), null);
 
         resultado.IsSuccess.Should().BeTrue();
         await _termos.DidNotReceive().ObterVigenteSobTravaCompartilhadaAsync(Arg.Any<CancellationToken>());
@@ -59,16 +59,16 @@ public sealed class FixacaoDoTermoTests
     }
 
     private Task<Result> FixarAsync(PedidoDeConcessao pedido, Perfil perfil, Guid? apresentada) =>
-        new FixacaoDoTermo(_termos, PedidoDeConcessaoTestBase.Catalogo)
+        new FixacaoDoTermo(_termos, ApoioDoPedido.Catalogo)
             .FixarAsync(pedido, perfil, apresentada, DateTimeOffset.UtcNow, CancellationToken.None);
 
     private static PedidoDeConcessao Novo(Perfil perfil) =>
         PedidoDeConcessao.Criar(
-            new PartesDoPedido(PedidoDeConcessaoTestBase.Betina, PedidoDeConcessaoTestBase.Leandro.Email),
+            new PartesDoPedido(ApoioDoPedido.Betina, ApoioDoPedido.Leandro.Email),
             perfil,
-            PedidoDeConcessaoTestBase.EscopoDe(perfil),
-            new DeclaracaoDoPedido(PedidoDeConcessaoTestBase.Justificativa),
-            PedidoDeConcessaoTestBase.Dominios,
-            PedidoDeConcessaoTestBase.Catalogo,
+            ApoioDoPedido.EscopoDe(perfil),
+            new DeclaracaoDoPedido(ApoioDoPedido.Justificativa),
+            ApoioDoPedido.Dominios,
+            ApoioDoPedido.Catalogo,
             DateTimeOffset.UtcNow).Value!;
 }

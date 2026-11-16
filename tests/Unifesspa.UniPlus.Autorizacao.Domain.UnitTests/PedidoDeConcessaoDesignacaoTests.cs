@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -13,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
 
 /// <summary>O pedido de perfil com designação, o documento e a dispensa da segunda etapa na designação do primeiro Representante do controlador.</summary>
-public sealed class PedidoDeConcessaoDesignacaoTests : PedidoDeConcessaoTestBase
+public sealed class PedidoDeConcessaoDesignacaoTests 
 {
     [Fact(DisplayName = "Pedido de perfil com designação nasce aguardando o documento, fora das etapas de decisão e do aceite")]
     public void Criar_PerfilComDesignacao_NasceAguardandoODocumento()

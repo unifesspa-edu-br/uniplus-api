@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using System.Reflection;
 
 using AwesomeAssertions;
@@ -11,7 +12,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
 
 /// <summary>O anexo declarado, a aprovação com documento pendente e o perfil que passa a exigir o termo.</summary>
-public sealed class PedidoDeConcessaoTermoNaDecisaoTests : PedidoDeConcessaoTestBase
+public sealed class PedidoDeConcessaoTermoNaDecisaoTests 
 {
     [Fact(DisplayName = "Pedido protegido sem documento declarado não recebe anexo")]
     public void NovoAnexo_ProtegidoSemDeclaracao_Recusa() =>

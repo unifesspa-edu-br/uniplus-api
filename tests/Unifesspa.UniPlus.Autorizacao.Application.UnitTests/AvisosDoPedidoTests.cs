@@ -53,7 +53,7 @@ public sealed class AvisosDoPedidoTests
 
         EnviarEmail aviso = (await Avisar(pedido, SituacaoDoPedido.AguardandoDocumento)).Should().ContainSingle().Subject;
 
-        aviso.Destinatario.Should().Be(PedidoDeConcessaoTestBase.Betina.Email);
+        aviso.Destinatario.Should().Be(ApoioDoPedido.Betina.Email);
         aviso.Finalidade.Should().Be("pedido.aceite_do_termo_pendente");
         aviso.Assunto.Should().Be("Seu pedido de acesso aguarda o aceite do termo de responsabilidade");
         aviso.CorpoTexto.Should().Contain("Aguardando o aceite do termo de responsabilidade").And.NotContain("em seu nome");

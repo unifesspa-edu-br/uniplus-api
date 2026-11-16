@@ -23,10 +23,10 @@ public sealed class ValidacaoEmDoisPassosTests
     public async Task CampoInvalido_ETermoInvalido_SoErrosDeCampo_TermoNaoConferido_PorDecisao()
     {
         ITermoDeResponsabilidadeRepository termos = Substitute.For<ITermoDeResponsabilidadeRepository>();
-        Perfil perfil = PedidoDeConcessaoTestBase.PerfilDeGovernanca();
-        CriarPedidoDeConcessaoCommand comando = new(PedidoDeConcessaoTestBase.Leandro.Email, perfil.Id, null, "curta", TermoVersaoApresentadaId: Guid.NewGuid());
+        Perfil perfil = ApoioDoPedido.PerfilDeGovernanca();
+        CriarPedidoDeConcessaoCommand comando = new(ApoioDoPedido.Leandro.Email, perfil.Id, null, "curta", TermoVersaoApresentadaId: Guid.NewGuid());
 
-        Result<NovoPedido> resultado = await Conferencia(perfil, termos).ConferirAsync(comando, PedidoDeConcessaoTestBase.Betina, CancellationToken.None);
+        Result<NovoPedido> resultado = await Conferencia(perfil, termos).ConferirAsync(comando, ApoioDoPedido.Betina, CancellationToken.None);
 
         resultado.Errors.Select(e => e.Error.Code).Should().Equal(PedidoErrorCodes.JustificativaInvalida);
         await termos.DidNotReceive().ObterVigenteSobTravaCompartilhadaAsync(Arg.Any<CancellationToken>());
@@ -40,10 +40,10 @@ public sealed class ValidacaoEmDoisPassosTests
         return new ConferenciaDoNovoPedido(
             new PerfilParaPedir(concessoes, Substitute.For<IJanelaDeMigracaoRepository>(), TimeProvider.System),
             Substitute.For<ILeitorDeUnidade>(),
-            PedidoDeConcessaoTestBase.Dominios,
-            PedidoDeConcessaoTestBase.Catalogo,
+            ApoioDoPedido.Dominios,
+            ApoioDoPedido.Catalogo,
             Substitute.For<IIncompatibilidadeDosPapeis>(),
-            new FixacaoDoTermo(termos, PedidoDeConcessaoTestBase.Catalogo),
+            new FixacaoDoTermo(termos, ApoioDoPedido.Catalogo),
             TimeProvider.System);
     }
 }

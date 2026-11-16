@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -16,7 +17,7 @@ using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBui
 /// pedido, na aprovação do gestor, na segunda etapa do pedido que já trazia o prazo de antes da regra e na própria
 /// concessão; o Encarregado de dados continua com prazo opcional.
 /// </summary>
-public sealed class PrazoDoRepresentanteTests : PedidoDeConcessaoTestBase
+public sealed class PrazoDoRepresentanteTests 
 {
     private static readonly OrigemDaConcessao Origem = new(TipoDeOrigem.Pedido, Guid.NewGuid());
 
