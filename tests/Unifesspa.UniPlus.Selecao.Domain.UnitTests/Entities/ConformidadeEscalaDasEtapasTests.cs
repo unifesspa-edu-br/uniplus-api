@@ -45,23 +45,27 @@ public sealed class ConformidadeEscalaDasEtapasTests
     }
 
     private static ConfiguracaoClassificacao ClassificacaoComEliminacao(Guid etapaRef, decimal notaMinima) =>
-        ConfiguracaoClassificacao.Criar(
-            ProcessoConformeFactory.Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
-            ProcessoConformeFactory.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
-            2,
-            ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
-            [RegraEliminacao.Criar(
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ProcessoConformeFactory.Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
+            RegraArredondamento = ProcessoConformeFactory.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
+            RegrasEliminacao = [RegraEliminacao.Criar(
                 ProcessoConformeFactory.Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "e"),
                 new ArgsElimNotaMinimaEtapa(etapaRef, notaMinima)).Value!],
-            baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
+            EscalaNotaFinal = 100m,
+        }).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoSemEliminacao() =>
-        ConfiguracaoClassificacao.Criar(
-            ProcessoConformeFactory.Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
-            ProcessoConformeFactory.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
-            2,
-            ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
-            [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ProcessoConformeFactory.Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
+            RegraArredondamento = ProcessoConformeFactory.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
+            EscalaNotaFinal = 100m,
+        }).Value!;
 
     /// <summary>
     /// A etapa de nota do ENEM só convive com classificação baseada em ENEM pela média, e a
@@ -70,14 +74,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
     private static ProcessoSeletivo ProcessoComEtapaDoEnem(EtapaProcesso enem)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(
-                ProcessoConformeFactory.Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
-                ProcessoConformeFactory.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
-                2,
-                ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
-                [], baseadoEmEnem: true, QuadroPesoAreaEnemDeTeste.Resolucao, QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!,
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoDoEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([EtapaDaMedia(), enem], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         return processo;
     }
@@ -274,4 +271,17 @@ public sealed class ConformidadeEscalaDasEtapasTests
         retificar.IsFailure.Should().BeTrue();
         retificar.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
     }
+
+    private static ConfiguracaoClassificacao ClassificacaoDoEnem() =>
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ProcessoConformeFactory.Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
+            RegraArredondamento = ProcessoConformeFactory.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+            EscalaNotaFinal = 100m,
+        }).Value!;
 }

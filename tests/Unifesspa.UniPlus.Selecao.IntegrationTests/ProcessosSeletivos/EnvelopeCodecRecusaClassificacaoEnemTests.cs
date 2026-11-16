@@ -192,10 +192,11 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
     }
 
     private static ConfiguracaoClassificacao ClassificacaoSemEnem() =>
-        ConfiguracaoClassificacao.Criar(
-            CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'), null, null,
-            CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'), [],
-            baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
+            RegraOrdemAlocacao = CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
+        }).Value!;
 
     /// <summary>
     /// Como <see cref="ReidratarComEnvelopeAdulterado"/>, mas com um não-caractere (U+FFFE) no

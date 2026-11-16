@@ -130,20 +130,19 @@ internal sealed record ViolacaoDeRegra(
         new ArgsDesempateMaiorIdade()).Value!;
 
     // A regra de eliminação cita uma etapa que o processo não tem.
-    private static ConfiguracaoClassificacao ClassificacaoQueEliminaPorEtapaInexistente() => ConfiguracaoClassificacao.Criar(
-        ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
-        ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
-        2,
-        ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
-        [
+    private static ConfiguracaoClassificacao ClassificacaoQueEliminaPorEtapaInexistente() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+    {
+        RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
+        RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
+        CasasArredondamento = 2,
+        RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
+        RegrasEliminacao = [
             RegraEliminacao.Criar(
                 ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)),
                 new ArgsElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m)).Value!,
         ],
-        false,
-        null,
-        [],
-        escalaNotaFinal: 100m).Value!;
+        EscalaNotaFinal = 100m,
+    }).Value!;
 
     private static ConfiguracaoDerivacaoFato Derivado(string codigo) =>
         ConfiguracaoDerivacaoFato.Criar(codigo, [RegraDerivacaoConfigurada.Criar(0, "AC", []).Value!]).Value!;

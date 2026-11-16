@@ -55,26 +55,25 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     private static ConfiguracaoClassificacao ClassificacaoMediaPonderada(bool baseadoEmEnem) =>
-        ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-            Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
-            2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            [],
-            baseadoEmEnem,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [], escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            BaseadoEmEnem = baseadoEmEnem,
+            ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
+            QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
+            EscalaNotaFinal = 100m,
+        }).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoImportadaDoEnem() =>
-        ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
-            null,
-            null,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            [],
-            baseadoEmEnem: true,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            BaseadoEmEnem = true,
+        }).Value!;
 
     [Fact(DisplayName = "A etapa declara nota do ENEM pelo atributo do tipo congelado")]
     public void DeclaraNotaDoEnem_PeloAtributoDoTipo()

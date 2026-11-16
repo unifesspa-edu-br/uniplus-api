@@ -65,12 +65,11 @@ internal static class ProcessoBaseDeEnvelope
 
     private static void DefinirClassificacaoImportada(ProcessoSeletivo processo) =>
         processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(
-                regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-                regraArredondamento: null,
-                casasArredondamento: null,
-                regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-                regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
+            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+            {
+                RegraCalculo = CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+                RegraOrdemAlocacao = CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            }).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
     /// <summary>A fase única do processo mínimo: sem bancas e sem recurso, com um produto definitivo.</summary>

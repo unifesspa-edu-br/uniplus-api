@@ -110,15 +110,11 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
         processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            regrasEliminacao: [],
-            baseadoEmEnem: false,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        }).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseDeInscricao();
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

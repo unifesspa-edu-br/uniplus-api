@@ -48,15 +48,17 @@ internal sealed class CenarioDosCriteriosDeDesempate
     public static ProcessoSeletivo ProcessoComClassificacaoEnem()
     {
         ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
-            ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
-            2,
-            ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
-            [],
-            baseadoEmEnem: true,
-            QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
+            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+            EscalaNotaFinal = 100m,
+        }).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
     }
 

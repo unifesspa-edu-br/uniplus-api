@@ -43,9 +43,7 @@ public sealed class ConformidadeCronogramaTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente);
+        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente);
         processo.DefinirCronogramaFases(
             [Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
         DeclararNaoCobra(processo);
@@ -69,9 +67,7 @@ public sealed class ConformidadeCronogramaTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", tipo, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente);
+        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente);
         processo.DefinirCronogramaFases(
             [Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
         DeclararNaoCobra(processo);
@@ -87,9 +83,7 @@ public sealed class ConformidadeCronogramaTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente);
+        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente);
         // Só a fase de matrícula — nenhuma produz resultado.
         processo.DefinirCronogramaFases([Fase(1, "MATRICULA").Value!], [], PrecondicaoIfMatch.Ausente);
         DeclararNaoCobra(processo);
@@ -118,10 +112,7 @@ public sealed class ConformidadeCronogramaTests
             [ApoioDaPublicacaoDoProcessoSeletivo.EtapaDaProvaObjetiva("Prova", CaraterEtapa.Classificatoria, 1m)], PrecondicaoIfMatch.Ausente);
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
-            Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'd'), 2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!, PrecondicaoIfMatch.Ausente);
+        processo.DefinirClassificacao(ClassificacaoMediaPonderada(), PrecondicaoIfMatch.Ausente);
         DeclararNaoCobra(processo);
 
         return processo;
@@ -135,9 +126,7 @@ public sealed class ConformidadeCronogramaTests
             "Story #851 §3.5: lista vazia é estado válido — um processo sem prova (SiSU) não tem etapa");
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente);
+        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente);
         processo.DefinirCronogramaFases([Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
         DeclararNaoCobra(processo);
 
@@ -160,4 +149,21 @@ public sealed class ConformidadeCronogramaTests
             "prova que o guard estrutural do domínio intercepta o divisor zero antes mesmo do gate de publicação");
         definirEtapas.Error!.Code.Should().Be("ProcessoSeletivo.NenhumaEtapaComponeNota");
     }
+
+    private static ConfiguracaoClassificacao ClassificacaoImportada() =>
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        }).Value!;
+
+    private static ConfiguracaoClassificacao ClassificacaoMediaPonderada() =>
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'd'),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+            EscalaNotaFinal = 100m,
+        }).Value!;
 }

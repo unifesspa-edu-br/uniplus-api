@@ -23,15 +23,12 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
     private static ProcessoSeletivo ProcessoComClassificacaoImportadaSemQuadro()
     {
         ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('a', 64)),
-            null,
-            null,
-            ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
-            [],
-            baseadoEmEnem: true,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('a', 64)),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
+            BaseadoEmEnem = true,
+        }).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
     }
 

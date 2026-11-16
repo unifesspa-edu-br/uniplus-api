@@ -88,9 +88,11 @@ internal static class ApoioDoDescarteAposDeslocamentoDeOrdem
         },
         new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
-    internal static ConfiguracaoClassificacao Classificacao() => ConfiguracaoClassificacao.Criar(
-        Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-        Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
+    internal static ConfiguracaoClassificacao Classificacao() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+    {
+        RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+        RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+    }).Value!;
 
     internal static Result<VersaoConfiguracao> Publicar(
         ProcessoSeletivo processo,

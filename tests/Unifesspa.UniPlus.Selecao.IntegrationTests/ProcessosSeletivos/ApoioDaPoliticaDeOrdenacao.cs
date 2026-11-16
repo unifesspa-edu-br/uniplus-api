@@ -101,15 +101,11 @@ internal static class ApoioDaPoliticaDeOrdenacao
             processo.DefinirCriteriosDesempate(criteriosDesempate, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         }
 
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            regrasEliminacao: [],
-            baseadoEmEnem: false,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        }).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

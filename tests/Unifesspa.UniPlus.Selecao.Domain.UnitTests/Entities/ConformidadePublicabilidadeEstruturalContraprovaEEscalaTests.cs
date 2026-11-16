@@ -294,10 +294,16 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     {
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica)]);
         processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(
-                Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'), Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'), 2,
-                Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: true,
-                resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao, quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: null).Value!,
+            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+            {
+                RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
+                RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+                CasasArredondamento = 2,
+                RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+                BaseadoEmEnem = true,
+                ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+                QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+            }).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue("o rascunho aceita a classificação sem a escala");
 
         SoEstesItensVermelhos(processo, "classificacao_escala_nota_final_nao_declarada");

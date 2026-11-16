@@ -87,12 +87,17 @@ public sealed class ObterProcessoSeletivoQueryHandlerClassificacaoTests
         ReferenciaRegra regraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64));
         ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64));
 
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo, regraArredondamento, casasArredondamento: 2, regraOrdemAlocacao, [],
-            baseadoEmEnem,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
-            escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = regraCalculo,
+            RegraArredondamento = regraArredondamento,
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = regraOrdemAlocacao,
+            BaseadoEmEnem = baseadoEmEnem,
+            ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
+            QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
+            EscalaNotaFinal = 100m,
+        }).Value!;
 
         Result resultado = processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente);
         resultado.IsSuccess.Should().BeTrue();

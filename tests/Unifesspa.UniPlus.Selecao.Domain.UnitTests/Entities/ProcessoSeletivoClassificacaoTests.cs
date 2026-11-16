@@ -125,13 +125,16 @@ public sealed class ProcessoSeletivoClassificacaoTests
 
     private static ConfiguracaoClassificacao NovaClassificacao(
         IReadOnlyList<RegraEliminacao>? regrasEliminacao = null, bool baseadoEmEnem = false) =>
-        ConfiguracaoClassificacao.Criar(
-            ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
-            ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
-            2,
-            ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
-            regrasEliminacao ?? [],
-            baseadoEmEnem,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [], escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
+            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
+            RegrasEliminacao = regrasEliminacao ?? [],
+            BaseadoEmEnem = baseadoEmEnem,
+            ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
+            QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
+            EscalaNotaFinal = 100m,
+        }).Value!;
 }

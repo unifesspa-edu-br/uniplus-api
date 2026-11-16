@@ -100,12 +100,11 @@ internal static class ProcessoSeletivoPublicacaoSeeder
 
     private static void DefinirClassificacaoImportada(ProcessoSeletivo processo)
     {
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
+        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        }).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 

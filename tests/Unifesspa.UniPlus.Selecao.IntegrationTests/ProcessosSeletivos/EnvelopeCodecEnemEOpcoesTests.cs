@@ -104,15 +104,17 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
         // O cadastro grava a resolução em NFC; o operador pode enviá-la decomposta.
         string doCadastro = "Resolução 805/2024".Normalize(System.Text.NormalizationForm.FormC);
         string enviada = doCadastro.Normalize(System.Text.NormalizationForm.FormD);
-        ProcessoSeletivo processo = ProcessoMinimo(ConfiguracaoClassificacao.Criar(
-            regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
-            regraArredondamento: CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
-            casasArredondamento: 2,
-            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
-            regrasEliminacao: [],
-            baseadoEmEnem: true,
-            resolucaoPesoAreaEnem: enviada,
-            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!, etapaDeNotaDoEnem: false);
+        ProcessoSeletivo processo = ProcessoMinimo(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = CorpusEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
+            RegraArredondamento = CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = enviada,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+            EscalaNotaFinal = 100m,
+        }).Value!, etapaDeNotaDoEnem: false);
         processo.Classificacao!.ResolucaoPesoAreaEnem.Should().Be(doCadastro, "congelada na forma do cadastro");
         processo.DefinirOpcoesDeclaradas(
             "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
@@ -137,15 +139,17 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     [Fact(DisplayName = "A etapa de nota do ENEM congelada no envelope volta declarando a nota do ENEM")]
     public void EtapaDeNotaDoEnem_CongelarPublicarRestaurar_ContinuaDeclarandoAnotaDoEnem()
     {
-        ProcessoSeletivo processo = ProcessoMinimo(ConfiguracaoClassificacao.Criar(
-            regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
-            regraArredondamento: CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
-            casasArredondamento: 2,
-            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
-            regrasEliminacao: [],
-            baseadoEmEnem: true,
-            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
-            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!, etapaDeNotaDoEnem: true);
+        ProcessoSeletivo processo = ProcessoMinimo(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = CorpusEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
+            RegraArredondamento = CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+            EscalaNotaFinal = 100m,
+        }).Value!, etapaDeNotaDoEnem: true);
         processo.DefinirOpcoesDeclaradas(
             "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
@@ -259,15 +263,12 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
 
     /// <summary>Corpus mínimo sem ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA — os dois valores de <c>baseadoEmEnem</c> continuam válidos.</summary>
     private static ProcessoSeletivo ProcessoSemEliminacaoEnem(bool baseadoEmEnem) =>
-        ProcessoMinimo(ConfiguracaoClassificacao.Criar(
-            regraCalculo: CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, '2'),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
-            regrasEliminacao: [],
-            baseadoEmEnem: baseadoEmEnem,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, etapaDeNotaDoEnem: false);
+        ProcessoMinimo(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = CorpusEnvelope.Regra(RegraCalculoCodigo.ClassificacaoImportada, '2'),
+            RegraOrdemAlocacao = CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
+            BaseadoEmEnem = baseadoEmEnem,
+        }).Value!, etapaDeNotaDoEnem: false);
 
     private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(

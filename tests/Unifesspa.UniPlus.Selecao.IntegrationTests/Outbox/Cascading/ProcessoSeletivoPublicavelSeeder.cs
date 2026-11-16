@@ -100,12 +100,11 @@ internal static class ProcessoSeletivoPublicavelSeeder
             RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo);
         ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.De(
             RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo);
-        Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(
-            regraCalculo: regraCalculo,
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: regraOrdemAlocacao,
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null);
+        Result<ConfiguracaoClassificacao> classificacaoResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = regraCalculo,
+            RegraOrdemAlocacao = regraOrdemAlocacao,
+        });
         classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
         Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!, PrecondicaoIfMatch.Ausente);
         classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);

@@ -46,15 +46,18 @@ public sealed class ProcessoSeletivoRestaurarConfiguracaoEquivalenciaTests
         RegraEliminacao EliminacaoEnem() => RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimCorteEmArea, 'a'), new ArgsElimCorteEmArea("REDACAO", 400m)).Value!;
 
-        ConfiguracaoClassificacao ClassificacaoEnemValida() => ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
-            regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
-            casasArredondamento: 2,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
-            regrasEliminacao: [EliminacaoEnem()],
-            baseadoEmEnem: true,
-            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
-            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao ClassificacaoEnemValida() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
+            RegrasEliminacao = [EliminacaoEnem()],
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+            EscalaNotaFinal = 100m,
+        }).Value!;
 
         GrafoConfiguracao GrafoComClassificacaoEnem() => new(
             etapas: [EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Prova", ordem: 1)],

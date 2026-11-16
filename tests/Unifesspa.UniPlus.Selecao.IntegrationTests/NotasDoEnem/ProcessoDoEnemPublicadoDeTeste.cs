@@ -86,15 +86,17 @@ internal static class ProcessoDoEnemPublicadoDeTeste
             new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         Exigir(processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(
-                regraCalculo: ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixo),
-                regraArredondamento: ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixo),
-                casasArredondamento: 2,
-                regraOrdemAlocacao: ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
-                regrasEliminacao: [],
-                baseadoEmEnem: true,
-                resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
-                quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!,
+            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+            {
+                RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixo),
+                RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixo),
+                CasasArredondamento = 2,
+                RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+                BaseadoEmEnem = true,
+                ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+                QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+                EscalaNotaFinal = 100m,
+            }).Value!,
             PrecondicaoIfMatch.Curinga));
 
         Exigir(processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Curinga));

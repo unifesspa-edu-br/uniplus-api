@@ -335,10 +335,11 @@ public sealed class ProcessoSeletivoCascataTests
     private static void DefinirClassificacaoETaxaDeclaradas(ProcessoSeletivo processo)
     {
         processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(
-                regraCalculo: ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
-                regraArredondamento: null, casasArredondamento: null,
-                regraOrdemAlocacao: ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo), regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
+            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+            {
+                RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
+                RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+            }).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         // Issue #1112: item estrutural novo — declarado para manter os demais itens Ok, já que
         // este teste isola a ausência de cascata como a ÚNICA pendência.

@@ -57,12 +57,11 @@ internal static class CorpusFitness
                 new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!,
         ], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente);
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        }).Value!, PrecondicaoIfMatch.Ausente);
         processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente);
 
         DadosEdital dados = DadosEdital.Criar(

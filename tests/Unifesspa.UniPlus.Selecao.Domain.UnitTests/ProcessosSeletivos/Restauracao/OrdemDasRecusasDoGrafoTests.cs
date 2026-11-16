@@ -132,15 +132,15 @@ public sealed class OrdemDasRecusasDoGrafoTests
         RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, 'e'), new ArgsElimNotaMinimaEtapa(etapaRef, 4m)).Value!;
 
     private static ConfiguracaoClassificacao Classificacao(IReadOnlyList<RegraEliminacao> eliminacoes) =>
-        ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
-            regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
-            casasArredondamento: 2,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
-            regrasEliminacao: eliminacoes,
-            baseadoEmEnem: false,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
+            RegrasEliminacao = eliminacoes,
+            EscalaNotaFinal = 100m,
+        }).Value!;
 
     private static FaseCronograma Fase(int ordem, bool agrupaEtapas, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Reidratar(
         Guid.CreateVersion7(),

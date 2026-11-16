@@ -85,15 +85,17 @@ internal sealed class CenarioDoEnemDeTeste
         DivulgacaoDeTeste.ConfigurarDivulgada(Processos, Codecs, _versaoDivulgada, _grafo, fim);
 
     private static ConfiguracaoClassificacao ClassificacaoPelosPesosDoEnem() =>
-        ConfiguracaoClassificacao.Criar(
-            regraCalculo: ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
-            regraArredondamento: ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
-            casasArredondamento: 2,
-            regraOrdemAlocacao: ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
-            regrasEliminacao: [],
-            baseadoEmEnem: true,
-            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
-            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
+            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+            EscalaNotaFinal = 100m,
+        }).Value!;
 
     /// <summary>O processo vivo não pode ser lido: o escopo é o da versão divulgada.</summary>
     public void ProcessoVivoNaoFoiConsultado() =>

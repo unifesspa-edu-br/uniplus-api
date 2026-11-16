@@ -319,10 +319,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
             new GrafoConfiguracao(
                 [.. processo.Etapas], AtendimentoEspecializado.Criar([], [], []).Value!, [.. processo.DistribuicaoVagas], processo.BonusRegional,
-                [.. processo.CriteriosDesempate], ConfiguracaoClassificacao.Criar(
-                    ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)), null, null,
-                    ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)), [],
-                    baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
+                [.. processo.CriteriosDesempate], ClassificacaoImportada(),
                 [.. processo.CronogramaFases], [.. processo.DocumentosExigidos], [], null,
                 numeroDeOpcoesDeCurso: 1),
             DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,
@@ -330,4 +327,11 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             tiposDeAtoCongelados: new Dictionary<string, TipoDeAtoCongelado>(StringComparer.Ordinal) { [congelado.Codigo] = congelado })));
         return codecs;
     }
+
+    private static ConfiguracaoClassificacao ClassificacaoImportada() =>
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)),
+        }).Value!;
 }

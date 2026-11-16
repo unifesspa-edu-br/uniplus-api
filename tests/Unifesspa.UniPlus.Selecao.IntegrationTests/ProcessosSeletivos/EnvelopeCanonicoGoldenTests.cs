@@ -214,20 +214,21 @@ public sealed class EnvelopeCanonicoGoldenTests
     // As duas regras (ELIM-CORTE-REDACAO e ELIM-ZERO-EM-AREA) não referenciam etapa nos seus args:
     // o teste isola a única variável que quer variar, a ordem de criação. O cálculo local exige
     // regra de precisão declarada.
-    private static Result<ConfiguracaoClassificacao> ClassificacaoComEliminacoes(bool corteRedacaoPrimeiro)
-    {
-        RegraEliminacao primeira = corteRedacaoPrimeiro ? CriarCorteNaRedacao() : CriarZeroEmArea();
-        RegraEliminacao segunda = corteRedacaoPrimeiro ? CriarZeroEmArea() : CriarCorteNaRedacao();
-
-        return ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
-            regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "d"),
-            casasArredondamento: 2,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-            regrasEliminacao: [primeira, segunda], baseadoEmEnem: true,
-            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
-            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(inverterOrdem: !corteRedacaoPrimeiro), escalaNotaFinal: 100m);
-    }
+    private static Result<ConfiguracaoClassificacao> ClassificacaoComEliminacoes(bool corteRedacaoPrimeiro) =>
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "d"),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+            RegrasEliminacao = corteRedacaoPrimeiro
+                ? [CriarCorteNaRedacao(), CriarZeroEmArea()]
+                : [CriarZeroEmArea(), CriarCorteNaRedacao()],
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(inverterOrdem: !corteRedacaoPrimeiro),
+            EscalaNotaFinal = 100m,
+        });
 
     private static RegraEliminacao CriarCorteNaRedacao() => RegraEliminacao.Criar(
         Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "e"),

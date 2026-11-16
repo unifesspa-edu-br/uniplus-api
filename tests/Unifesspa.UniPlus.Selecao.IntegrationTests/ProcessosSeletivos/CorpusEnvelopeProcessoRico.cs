@@ -164,15 +164,18 @@ internal static class CorpusEnvelopeProcessoRico
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
     internal static void DefinirClassificacao(ProcessoSeletivo processo, int variante, bool permutar) =>
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-            regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, '2'),
-            casasArredondamento: 3,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
-            regrasEliminacao: RegrasDeEliminacao(variante),
-            baseadoEmEnem: true,
-            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
-            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(inverterOrdem: permutar), escalaNotaFinal: 100m).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, '2'),
+            CasasArredondamento = 3,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
+            RegrasEliminacao = RegrasDeEliminacao(variante),
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(inverterOrdem: permutar),
+            EscalaNotaFinal = 100m,
+        }).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
     internal static List<RegraEliminacao> RegrasDeEliminacao(int variante) =>
     [

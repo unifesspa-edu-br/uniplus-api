@@ -29,10 +29,12 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     private const string ItemDasEdicoes = "classificacao_edicao_enem_nao_declarada";
 
     private static ConfiguracaoClassificacao ClassificacaoImportadaDoEnem() =>
-        ConfiguracaoClassificacao.Criar(
-            ProcessoConformeFactory.Regra(RegraCalculoCodigo.ClassificacaoImportada, "a"), null, null,
-            ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"), [],
-            baseadoEmEnem: true, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ProcessoConformeFactory.Regra(RegraCalculoCodigo.ClassificacaoImportada, "a"),
+            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+            BaseadoEmEnem = true,
+        }).Value!;
 
     private static ProcessoSeletivo ProcessoDoEnem()
     {
@@ -128,10 +130,11 @@ public sealed class EdicaoDoEnemNaInscricaoTests
     }
 
     private static ConfiguracaoClassificacao ClassificacaoImportadaSemEnem() =>
-        ConfiguracaoClassificacao.Criar(
-            ProcessoConformeFactory.Regra(RegraCalculoCodigo.ClassificacaoImportada, "a"), null, null,
-            ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"), [],
-            baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ProcessoConformeFactory.Regra(RegraCalculoCodigo.ClassificacaoImportada, "a"),
+            RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+        }).Value!;
 
     [Fact(DisplayName = "A classificação que deixa de ser baseada em ENEM retira as edições do ENEM declaradas")]
     public void DefinirClassificacao_DeixaDeSerEnem_RetiraAsEdicoes()

@@ -48,10 +48,11 @@ public sealed class PreliminaresDaMateriaTests
     private static GrafoConfiguracao Grafo(FaseCronograma[] fases, EtapaProcesso[] etapas) => new(
         etapas, AtendimentoEspecializado.Criar([], [], []).Value!, [], null, [], Classificacao(), fases, [], [], null, numeroDeOpcoesDeCurso: 1);
 
-    private static ConfiguracaoClassificacao Classificacao() => ConfiguracaoClassificacao.Criar(
-        ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)), null, null,
-        ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)), [],
-        baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
+    private static ConfiguracaoClassificacao Classificacao() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+    {
+        RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)),
+        RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)),
+    }).Value!;
 
     [Fact(DisplayName = "Definitivo da fase espera os preliminares do mesmo tipo de ato na própria fase")]
     public void Esperados_DefinitivoDaFase_EsperaOsPreliminaresDoMesmoTipo()

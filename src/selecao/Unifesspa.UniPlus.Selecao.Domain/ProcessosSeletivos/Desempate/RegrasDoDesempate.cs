@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -228,7 +229,7 @@ public static class RegrasDoDesempate
     }
 
     internal static HashSet<string> AreasAceitasNoDesempate(ConfiguracaoClassificacao classificacao) =>
-        ConfiguracaoClassificacao.AreasEmTodosOsGrupos(classificacao.QuadroPesoAreaEnem);
+        ConferenciasDoQuadroDePesosPorArea.AreasEmTodosOsGrupos(classificacao.QuadroPesoAreaEnem);
 
     /// <summary>
     /// Toda área recusada — pela forma ou por estar fora do quadro — deixa o operador sem saber
@@ -262,7 +263,7 @@ public static class RegrasDoDesempate
 
     internal static DomainError ComAreasAceitas(DomainError erro, ConfiguracaoClassificacao? classificacao) =>
         classificacao is not null && classificacao.TemQuadroPesoAreaEnem
-            ? erro with { Message = $"{erro.Message} Áreas aceitas: {ConfiguracaoClassificacao.ListarAreas(classificacao.QuadroPesoAreaEnem, AreasAceitasNoDesempate(classificacao))}." }
+            ? erro with { Message = $"{erro.Message} Áreas aceitas: {ConferenciasDoQuadroDePesosPorArea.ListarAreas(classificacao.QuadroPesoAreaEnem, AreasAceitasNoDesempate(classificacao))}." }
             : erro;
 
     /// <summary>

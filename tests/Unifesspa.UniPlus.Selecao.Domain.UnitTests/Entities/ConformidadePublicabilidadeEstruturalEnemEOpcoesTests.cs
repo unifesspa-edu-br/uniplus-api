@@ -244,10 +244,14 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
         ProcessoSeletivo processo = ProcessoConformeComEtapaQueCompoeNota();
         processo.DefinirDistribuicaoVagas([OfertaAmpla(10, grupoAreaEnem: null)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(
-                Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'), Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'), 2,
-                Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false,
-                resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!,
+            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+            {
+                RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
+                RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+                CasasArredondamento = 2,
+                RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+                EscalaNotaFinal = 100m,
+            }).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Select(static i => i.Codigo).Should().NotContain(
@@ -263,10 +267,12 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     {
         ProcessoSeletivo processo = ProcessoConforme([OfertaAmpla(10, grupoAreaEnem: null)]);
         processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(
-                Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-                Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: true,
-                resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
+            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+            {
+                RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+                RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+                BaseadoEmEnem = true,
+            }).Value!,
             PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();

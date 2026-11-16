@@ -39,10 +39,11 @@ internal static class VersaoPublicadaDeTeste
         codecs.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
             new GrafoConfiguracao(
                 [.. grafoDe.Etapas], AtendimentoEspecializado.Criar([], [], []).Value!, [.. grafoDe.DistribuicaoVagas], grafoDe.BonusRegional,
-                [.. grafoDe.CriteriosDesempate], ConfiguracaoClassificacao.Criar(
-                    ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)), null, null,
-                    ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)), [],
-                    baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
+                [.. grafoDe.CriteriosDesempate], ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+                {
+                    RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('b', 64)),
+                    RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('d', 64)),
+                }).Value!,
                 [.. grafoDe.CronogramaFases], [.. grafoDe.DocumentosExigidos], [], null,
                 numeroDeOpcoesDeCurso: 1),
             DadosEdital.Criar("001/2027", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!,

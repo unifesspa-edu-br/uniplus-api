@@ -49,9 +49,18 @@ internal static class LeituraDaClassificacao
             return null;
         }
 
-        Result<ConfiguracaoClassificacao> classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo, regraArredondamento, casas, regraOrdem, eliminacoes!, baseadoEmEnem,
-            resolucaoPesoAreaEnem, quadro!, escalaNotaFinal);
+        Result<ConfiguracaoClassificacao> classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = regraCalculo,
+            RegraArredondamento = regraArredondamento,
+            CasasArredondamento = casas,
+            RegraOrdemAlocacao = regraOrdem,
+            RegrasEliminacao = eliminacoes!,
+            BaseadoEmEnem = baseadoEmEnem,
+            ResolucaoPesoAreaEnem = resolucaoPesoAreaEnem,
+            QuadroPesoAreaEnem = quadro!,
+            EscalaNotaFinal = escalaNotaFinal,
+        });
 
         return classificacao.IsFailure
             ? leitor.Propagar<ConfiguracaoClassificacao>(classificacao.Error!)

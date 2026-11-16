@@ -75,15 +75,18 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
             Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "7"),
             new ArgsElimAusenciaNaEtapa(etapa.Id)).Value!;
 
-        Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.FormulaMediaPonderada, "d"),
-            Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "e"),
-            2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "f"),
-            [notaMinima, corteRedacao, zeroEmArea, faltaEmDiaDeProva, ausenciaNaEtapa],
-            baseadoEmEnem: true,
-            QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m);
+        Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "d"),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "e"),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "f"),
+            RegrasEliminacao = [notaMinima, corteRedacao, zeroEmArea, faltaEmDiaDeProva, ausenciaNaEtapa],
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+            EscalaNotaFinal = 100m,
+        });
         configResult.IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -135,15 +138,11 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.ClassificacaoImportada, "1"),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "2"),
-            [],
-            baseadoEmEnem: false,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: null);
+        Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, "1"),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "2"),
+        });
         configResult.IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -171,15 +170,14 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ConfiguracaoClassificacao original = ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
-            Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
-            2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-            [],
-            baseadoEmEnem: false,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao original = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+            EscalaNotaFinal = 100m,
+        }).Value!;
         processo.DefinirClassificacao(original, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await _cenario.PersistirAsync(processo);
@@ -192,15 +190,18 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
             RegraEliminacao eliminacao = RegraEliminacao.Criar(
                 Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "d"),
                 new ArgsElimCorteEmArea("REDACAO", 350m)).Value!;
-            ConfiguracaoClassificacao nova = ConfiguracaoClassificacao.Criar(
-                Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
-                Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, "e"),
-                4,
-                Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-                [eliminacao],
-                baseadoEmEnem: true,
-                QuadroPesoAreaEnemDeTeste.Resolucao,
-                QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!;
+            ConfiguracaoClassificacao nova = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+            {
+                RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
+                RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, "e"),
+                CasasArredondamento = 4,
+                RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+                RegrasEliminacao = [eliminacao],
+                BaseadoEmEnem = true,
+                ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+                QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+                EscalaNotaFinal = 100m,
+            }).Value!;
 
             Result result = carregado.DefinirClassificacao(nova, PrecondicaoIfMatch.Ausente);
             result.IsSuccess.Should().BeTrue();
@@ -230,15 +231,15 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"), new ArgsElimNotaMinimaEtapa(etapa.Id, 3m)).Value!;
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
-            Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
-            2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
-            [eliminacao],
-            baseadoEmEnem: false,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
+            RegrasEliminacao = [eliminacao],
+            EscalaNotaFinal = 100m,
+        }).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await _cenario.PersistirAsync(processo);
@@ -289,15 +290,17 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente);
 
-        Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.FormulaMediaPonderada, "1"),
-            Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "2"),
-            2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "3"),
-            [],
-            baseadoEmEnem: baseadoEmEnem,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [], escalaNotaFinal: 100m);
+        Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "1"),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "2"),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "3"),
+            BaseadoEmEnem = baseadoEmEnem,
+            ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
+            QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
+            EscalaNotaFinal = 100m,
+        });
         configResult.IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 

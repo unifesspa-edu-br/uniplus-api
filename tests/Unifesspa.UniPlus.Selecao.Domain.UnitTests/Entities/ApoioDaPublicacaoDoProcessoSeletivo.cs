@@ -85,12 +85,11 @@ internal static class ApoioDaPublicacaoDoProcessoSeletivo
             RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo);
         ReferenciaRegra regraOrdemAlocacao = ReferenciaRegra.De(
             RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo);
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo: regraCalculo,
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: regraOrdemAlocacao,
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
+        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = regraCalculo,
+            RegraOrdemAlocacao = regraOrdemAlocacao,
+        }).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
 

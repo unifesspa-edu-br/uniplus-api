@@ -139,12 +139,11 @@ internal static class CorpusEnvelopeEntrada
             distribuicaoVagas: [DistribuicaoInstitucional()],
             bonusRegional: null,
             criteriosDesempate: [],
-            classificacao: ConfiguracaoClassificacao.Criar(
-                regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
-                regraArredondamento: null,
-                casasArredondamento: null,
-                regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
-                regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
+            classificacao: ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+            {
+                RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
+                RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
+            }).Value!,
             cronogramaFases: [FaseCronogramaConforme(variante)],
             documentosExigidos: [],
             nosExigencia: [],
@@ -165,12 +164,11 @@ internal static class CorpusEnvelopeEntrada
         distribuicaoVagas: [DistribuicaoInstitucional()],
         bonusRegional: null,
         criteriosDesempate: [],
-        classificacao: ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!,
+        classificacao: ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
+        }).Value!,
         cronogramaFases: [FaseCronogramaConforme(variante)],
         documentosExigidos: [],
         nosExigencia: [],

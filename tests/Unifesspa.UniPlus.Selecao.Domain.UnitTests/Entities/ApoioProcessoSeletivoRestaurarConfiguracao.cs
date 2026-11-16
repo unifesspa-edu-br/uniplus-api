@@ -178,26 +178,29 @@ internal static class ApoioProcessoSeletivoRestaurarConfiguracao
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     internal static ConfiguracaoClassificacao Classificacao(IReadOnlyList<RegraEliminacao> eliminacoes) =>
-        ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
-            regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
-            casasArredondamento: 2,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
-            regrasEliminacao: eliminacoes,
-            baseadoEmEnem: false,
-            resolucaoPesoAreaEnem: null,
-            quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
+            RegrasEliminacao = eliminacoes,
+            EscalaNotaFinal = 100m,
+        }).Value!;
 
     internal static ConfiguracaoClassificacao ClassificacaoEnemMediaPonderada(IReadOnlyList<RegraEliminacao>? eliminacoes = null) =>
-        ConfiguracaoClassificacao.Criar(
-            regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
-            regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
-            casasArredondamento: 2,
-            regraOrdemAlocacao: Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
-            regrasEliminacao: eliminacoes ?? [],
-            baseadoEmEnem: true,
-            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
-            quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'b'),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'c'),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'd'),
+            RegrasEliminacao = eliminacoes ?? [],
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+            EscalaNotaFinal = 100m,
+        }).Value!;
 
     internal static DadosEdital Dados() => DadosEdital.Criar(
         "001/2026",

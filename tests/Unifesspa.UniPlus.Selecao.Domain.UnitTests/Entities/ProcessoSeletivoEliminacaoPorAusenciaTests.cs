@@ -37,17 +37,20 @@ public sealed class ProcessoSeletivoEliminacaoPorAusenciaTests
             itens: null);
 
     private static ConfiguracaoClassificacao ClassificacaoComAusenciaEm(Guid etapaId, bool baseadoEmEnem = false) =>
-        ConfiguracaoClassificacao.Criar(
-            ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
-            ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
-            2,
-            ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
-            [RegraEliminacao.Criar(
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)),
+            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('b', 64)),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
+            RegrasEliminacao = [RegraEliminacao.Criar(
                 ReferenciaRegra.De(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", new string('d', 64)),
                 new ArgsElimAusenciaNaEtapa(etapaId)).Value!],
-            baseadoEmEnem,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [], escalaNotaFinal: 100m).Value!;
+            BaseadoEmEnem = baseadoEmEnem,
+            ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
+            QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
+            EscalaNotaFinal = 100m,
+        }).Value!;
 
     [Fact(DisplayName = "Eliminação por ausência em etapa sem nota é aceita")]
     public void DefinirClassificacao_AusenciaEmEtapaSemNota_Sucesso()

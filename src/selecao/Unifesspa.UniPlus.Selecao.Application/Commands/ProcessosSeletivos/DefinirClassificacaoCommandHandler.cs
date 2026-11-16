@@ -150,16 +150,18 @@ public static class DefinirClassificacaoCommandHandler
             }
         }
 
-        Result<ConfiguracaoClassificacao> configuracaoResult = ConfiguracaoClassificacao.Criar(
-            regraCalculoResult.Value!,
-            regraArredondamento,
-            command.CasasArredondamento,
-            regraOrdemAlocacaoResult.Value!,
-            regrasEliminacao,
-            command.BaseadoEmEnem,
-            resolucaoPesoAreaEnem,
-            quadroPesoAreaEnem,
-            command.EscalaNotaFinal);
+        Result<ConfiguracaoClassificacao> configuracaoResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = regraCalculoResult.Value!,
+            RegraArredondamento = regraArredondamento,
+            CasasArredondamento = command.CasasArredondamento,
+            RegraOrdemAlocacao = regraOrdemAlocacaoResult.Value!,
+            RegrasEliminacao = regrasEliminacao,
+            BaseadoEmEnem = command.BaseadoEmEnem,
+            ResolucaoPesoAreaEnem = resolucaoPesoAreaEnem,
+            QuadroPesoAreaEnem = quadroPesoAreaEnem,
+            EscalaNotaFinal = command.EscalaNotaFinal,
+        });
 
         // A recusa da resolução — forma inválida ou cadastro que não a resolve — sai junto com
         // as do domínio (ADR-0125), sem as que são só consequência dela.

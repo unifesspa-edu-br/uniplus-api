@@ -145,10 +145,11 @@ public sealed class ProcessoSeletivoPublicarTests
             "distribuicaoVagas" => processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente),
             "bonusRegional" => processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente),
             "criteriosDesempate" => processo.DefinirCriteriosDesempate([], PrecondicaoIfMatch.Ausente),
-            "classificacao" => processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
-                ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
-                null, null,
-                ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!, PrecondicaoIfMatch.Ausente),
+            "classificacao" => processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+            {
+                RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
+                RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+            }).Value!, PrecondicaoIfMatch.Ausente),
             "cronogramaFases" => processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente),
             "documentosExigidos" => processo.DefinirDocumentosExigidos([], PrecondicaoIfMatch.Ausente),
             _ => throw new InvalidOperationException("Dimensão desconhecida."),

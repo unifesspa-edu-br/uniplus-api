@@ -301,12 +301,11 @@ public sealed class DefinirBonusRegionalCommandHandlerTests
             RegraCalculoCodigo.ClassificacaoImportada, "v1", hashFixo);
         Domain.ValueObjects.ReferenciaRegra regraOrdemAlocacao = Domain.ValueObjects.ReferenciaRegra.De(
             RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", hashFixo);
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            regraCalculo: regraCalculo,
-            regraArredondamento: null,
-            casasArredondamento: null,
-            regraOrdemAlocacao: regraOrdemAlocacao,
-            regrasEliminacao: [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
+        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = regraCalculo,
+            RegraOrdemAlocacao = regraOrdemAlocacao,
+        }).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         FaseCronograma faseConforme = FaseDeResultadoFinal();

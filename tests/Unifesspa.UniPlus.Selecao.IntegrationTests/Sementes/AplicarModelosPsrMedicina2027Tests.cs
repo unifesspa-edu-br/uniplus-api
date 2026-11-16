@@ -206,12 +206,17 @@ public sealed class AplicarModelosPsrMedicina2027Tests
         // A classificação pelas notas do ENEM e a edição que a inscrição pergunta: sem ela o formulário
         // não teria o que oferecer.
         Result classificada = processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(
-                ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('c', 64)),
-                ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('d', 64)),
-                2,
-                ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('f', 64)),
-                [], baseadoEmEnem: true, Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Resolucao, Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!,
+            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+            {
+                RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('c', 64)),
+                RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", new string('d', 64)),
+                CasasArredondamento = 2,
+                RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('f', 64)),
+                BaseadoEmEnem = true,
+                ResolucaoPesoAreaEnem = Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Resolucao,
+                QuadroPesoAreaEnem = Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Completo(),
+                EscalaNotaFinal = 100m,
+            }).Value!,
             PrecondicaoIfMatch.Ausente);
         classificada.IsSuccess.Should().BeTrue(classificada.Error?.Message);
         Result edicoes = processo.DefinirOpcoesDeclaradas(

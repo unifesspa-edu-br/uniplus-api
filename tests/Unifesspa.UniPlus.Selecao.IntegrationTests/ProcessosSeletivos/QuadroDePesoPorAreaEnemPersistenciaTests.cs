@@ -77,15 +77,7 @@ public sealed class QuadroDePesoPorAreaEnemPersistenciaTests
             ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
-            ConfiguracaoClassificacao semEnem = ConfiguracaoClassificacao.Criar(
-                Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
-                Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
-                2,
-                Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-                [],
-                baseadoEmEnem: false,
-                resolucaoPesoAreaEnem: null,
-                quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
+            ConfiguracaoClassificacao semEnem = ClassificacaoSemEnem();
             carregado.DefinirClassificacao(semEnem, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);
@@ -143,15 +135,7 @@ public sealed class QuadroDePesoPorAreaEnemPersistenciaTests
     {
         ProcessoSeletivo processo = NovoProcesso("PS 2027 — Medicina", TiposDeProcessoDeTeste.PSVR);
 
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
-            Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
-            2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-            [],
-            baseadoEmEnem: true,
-            QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnemDeTeste.Completo(), escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao classificacao = ClassificacaoDoEnem();
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         return processo;
@@ -178,4 +162,27 @@ public sealed class QuadroDePesoPorAreaEnemPersistenciaTests
 
         return total;
     }
+
+    private static ConfiguracaoClassificacao ClassificacaoSemEnem() =>
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+            EscalaNotaFinal = 100m,
+        }).Value!;
+
+    private static ConfiguracaoClassificacao ClassificacaoDoEnem() =>
+        ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+            BaseadoEmEnem = true,
+            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+            EscalaNotaFinal = 100m,
+        }).Value!;
 }

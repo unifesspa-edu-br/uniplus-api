@@ -89,11 +89,15 @@ internal sealed class ApoioDaPersistenciaDoProcessoSeletivo
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", HashFixoTeste),
             new ArgsElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
-            ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixoTeste),
-            ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixoTeste),
-            2,
-            ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixoTeste), [eliminacao], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: 100m).Value!;
+        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixoTeste),
+            RegraArredondamento = ReferenciaRegra.De(RegraArredondamentoCodigo.PrecisaoTruncar, "v1", HashFixoTeste),
+            CasasArredondamento = 2,
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixoTeste),
+            RegrasEliminacao = [eliminacao],
+            EscalaNotaFinal = 100m,
+        }).Value!;
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 
