@@ -28,9 +28,7 @@ public static class ObterInstalacaoQueryHandler
             return Result<InstalacaoDto>.Failure(InstalacaoHandlerErros.AutorNaoIdentificado());
         }
 
-        Instalacao? instalacao = await repository
-            .ObterDoExecutorAsync(query.Id, executor, cancellationToken)
-            .ConfigureAwait(false);
+        Instalacao? instalacao = await repository.ObterDoExecutorAsync(query.Id, executor, cancellationToken).ConfigureAwait(false);
 
         return instalacao is null
             ? Result<InstalacaoDto>.Failure(InstalacaoHandlerErros.NaoEncontrada())
