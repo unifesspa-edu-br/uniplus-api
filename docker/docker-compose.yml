@@ -14,11 +14,18 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql
       - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql
+      # Base local pronta (processos, perfis, concessões, personas, Geo): restaurada na 1ª subida, com o volume vazio.
+      - ./base-local/restaura-base-local.sh:/docker-entrypoint-initdb.d/zz-restaura-base-local.sh:ro
+      - ./base-local/dumps:/base-local/dumps:ro
+      - ./base-local/geo:/base-local/geo:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:?defina POSTGRES_USER no docker/.env}"]
+      # Em TCP (-h): durante o initdb, onde a base é restaurada, o Postgres só escuta no socket; sem -h o healthcheck
+      # passaria cedo e o Keycloak e a API subiriam antes do fim da restauração.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${POSTGRES_USER:?defina POSTGRES_USER no docker/.env}"]
       interval: 5s
       timeout: 5s
-      retries: 5
+      # A restauração (principalmente a do Geo, 1,6 milhão de logradouros) leva minutos: até 10 minutos antes de desistir.
+      retries: 120
 
   redis:
     image: redis:8-alpine
@@ -70,6 +77,16 @@ services:
       /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:29092 --create --if-not-exists
       --topic autorizacao_registros_de_acesso --partitions 1 --replication-factor 1
 
+  # Arquivos do MinIO da base local pronta (PDFs de edital e designações), extraídos no volume vazio antes do MinIO subir.
+  minio-restaura:
+    image: alpine:3.22
+    volumes:
+      - minio_data:/data
+      - ./base-local/minio:/base-local/minio:ro
+    command: >
+      sh -c 'if [ -f /base-local/minio/minio-data.tar.gz ] && [ -z "$$(ls -A /data)" ]; then
+      tar xzf /base-local/minio/minio-data.tar.gz -C /data; fi'
+
   minio:
     image: ghcr.io/unifesspa-edu-br/minio:RELEASE.2025-09-07T16-13-09Z@sha256:52dfd5c0bbd38d3219f2058c7af216d9f9a27a994b7b5baad09bbd38866015ff
     restart: unless-stopped
@@ -80,6 +97,9 @@ services:
     ports:
       - "${MINIO_PORT:-9000}:9000"
       - "${MINIO_CONSOLE_PORT:-9001}:9001"
+    depends_on:
+      minio-restaura:
+        condition: service_completed_successfully
     volumes:
       - minio_data:/data
     healthcheck:
