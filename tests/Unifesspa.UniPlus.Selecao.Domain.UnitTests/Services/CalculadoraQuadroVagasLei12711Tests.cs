@@ -15,6 +15,19 @@ public sealed class CalculadoraQuadroVagasLei12711Tests
     private static ReferenciaReservaDemograficaSnapshot Demografica(decimal ppi, decimal quilombola, decimal pcd) =>
         ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", ppi, quilombola, pcd, "Censo 2022").Value!;
 
+    private static Dictionary<string, int> QuadroLimpoEsperado() => new(StringComparer.Ordinal)
+    {
+        [ModalidadesFederaisLei12711.LbPpi] = 5,
+        [ModalidadesFederaisLei12711.LbQ] = 1,
+        [ModalidadesFederaisLei12711.LbPcd] = 1,
+        [ModalidadesFederaisLei12711.LbEp] = 3,
+        [ModalidadesFederaisLei12711.LiPpi] = 5,
+        [ModalidadesFederaisLei12711.LiQ] = 1,
+        [ModalidadesFederaisLei12711.LiPcd] = 1,
+        [ModalidadesFederaisLei12711.LiEp] = 3,
+        [ModalidadesFederaisLei12711.Ac] = 20,
+    };
+
     [Fact(DisplayName = "V1/CA-02 — caso limpo sem estouro: VO=40, PR=0,5, ppi=50, q=10, pcd=10")]
     public void Calcula_QuadroLimpo_SemEstouro()
     {
@@ -23,14 +36,7 @@ public sealed class CalculadoraQuadroVagasLei12711Tests
 
         resultado.IsSuccess.Should().BeTrue();
         QuadroVagasCalculado quadro = resultado.Value!;
-        quadro.Quadro[ModalidadesFederaisLei12711.LbPpi].Should().Be(5);
-        quadro.Quadro[ModalidadesFederaisLei12711.LbQ].Should().Be(1);
-        quadro.Quadro[ModalidadesFederaisLei12711.LbPcd].Should().Be(1);
-        quadro.Quadro[ModalidadesFederaisLei12711.LbEp].Should().Be(3);
-        quadro.Quadro[ModalidadesFederaisLei12711.LiPpi].Should().Be(5);
-        quadro.Quadro[ModalidadesFederaisLei12711.LiQ].Should().Be(1);
-        quadro.Quadro[ModalidadesFederaisLei12711.LiPcd].Should().Be(1);
-        quadro.Quadro[ModalidadesFederaisLei12711.LiEp].Should().Be(3);
+        quadro.Quadro.Should().BeEquivalentTo(QuadroLimpoEsperado());
         quadro.Ac.Should().Be(20);
         quadro.Estouro.Should().Be(0);
         quadro.CapadoEmVo.Should().BeFalse();
@@ -243,5 +249,45 @@ public sealed class CalculadoraQuadroVagasLei12711Tests
         quadro.Ac.Should().Be(20);
         quadro.SuplementaresTotal.Should().Be(3);
         quadro.TotalPublicado.Should().Be(43);
+    }
+
+    [Theory(DisplayName = "As vagas cortadas pela escassez são a demanda das sub-reservas que as vagas ofertadas não comportaram")]
+    [InlineData(3, 1, 100, 0, 0, 5)]
+    [InlineData(3, 0.5, 79, 1.5, 8.5, 4)]
+    [InlineData(2, 0.5, 79, 1.5, 8.5, 5)]
+    public void Escassez_InformaAsVagasCortadas(int vagasOfertadasBase, decimal percentual, decimal ppi, decimal quilombola, decimal pcd, int cortadas)
+    {
+        QuadroVagasCalculado quadro = CalculadoraQuadroVagasLei12711.Calcular(
+            vagasOfertadasBase, percentual, Demografica(ppi, quilombola, pcd), SemRetiradas, SemSuplementares).Value!;
+
+        quadro.VagasCortadasPorEscassez.Should().Be(cortadas);
+        quadro.CapadoEmVo.Should().BeTrue();
+        quadro.Quadro.Where(static par => par.Key != ModalidadesFederaisLei12711.Ac).Sum(static par => par.Value)
+            .Should().BeLessThanOrEqualTo(vagasOfertadasBase);
+    }
+
+    [Fact(DisplayName = "Sem escassez nenhuma vaga é cortada e o quadro não é considerado capado")]
+    public void SemEscassez_NaoCortaVagas()
+    {
+        QuadroVagasCalculado quadro = CalculadoraQuadroVagasLei12711.Calcular(
+            40, 0.5m, Demografica(50, 10, 10), SemRetiradas, SemSuplementares).Value!;
+
+        quadro.VagasCortadasPorEscassez.Should().Be(0);
+        quadro.CapadoEmVo.Should().BeFalse();
+    }
+
+    [Theory(DisplayName = "A fronteira da escassez: demanda igual às vagas ofertadas não corta; um a mais corta e a quilombola sem recorte de renda é servida por último")]
+    [InlineData(10, 30, 20, 10, 0, 1)]
+    [InlineData(8, 30, 20, 10, 1, 0)]
+    [InlineData(10, 30, 50, 10, 3, 0)]
+    public void FronteiraDaEscassez_CortaSoAQuePassaDasVagasOfertadas(
+        int vagasOfertadasBase, decimal ppi, decimal quilombola, decimal pcd, int cortadas, int quilombolaSemRecorteDeRenda)
+    {
+        QuadroVagasCalculado quadro = CalculadoraQuadroVagasLei12711.Calcular(
+            vagasOfertadasBase, 1m, Demografica(ppi, quilombola, pcd), SemRetiradas, SemSuplementares).Value!;
+
+        quadro.VagasCortadasPorEscassez.Should().Be(cortadas);
+        quadro.CapadoEmVo.Should().Be(cortadas > 0);
+        quadro.Quadro[ModalidadesFederaisLei12711.LiQ].Should().Be(quilombolaSemRecorteDeRenda);
     }
 }

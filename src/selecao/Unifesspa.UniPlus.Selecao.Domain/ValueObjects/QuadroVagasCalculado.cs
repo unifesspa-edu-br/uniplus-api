@@ -5,7 +5,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// (<see cref="Services.CalculadoraQuadroVagasLei12711"/>) — a quantidade por
 /// modalidade (as 8 sub-reservas federais, a ampla concorrência, e as
 /// modalidades de retirada/suplemento informadas) mais os derivados que o
-/// envelope congela junto do quadro (ADR-0115).
+/// envelope congela junto do quadro (ADR-0115). <see cref="VagasCortadasPorEscassez"/>
+/// diz quantas vagas a escassez deixou de conceder às sub-reservas; zero sem escassez.
 /// </summary>
 /// <remarks>
 /// Não é construído via <c>Criar</c>/<see cref="Kernel.Results.Result{T}"/>
@@ -18,8 +19,12 @@ public sealed record QuadroVagasCalculado(
     int VrNominal,
     int VrFinal,
     int Estouro,
-    bool CapadoEmVo,
+    int VagasCortadasPorEscassez,
     int Ac,
     int RetiradasTotal,
     int SuplementaresTotal,
-    int TotalPublicado);
+    int TotalPublicado)
+{
+    /// <summary>Houve escassez: as vagas ofertadas não comportaram a demanda das sub-reservas.</summary>
+    public bool CapadoEmVo => VagasCortadasPorEscassez > 0;
+}
