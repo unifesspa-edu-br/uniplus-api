@@ -48,137 +48,66 @@ public sealed partial class PedidoDeConcessao
         ArgumentNullException.ThrowIfNull(decisor);
         ArgumentNullException.ThrowIfNull(perfil);
 
-        if (Andamento.EtapaAtual is not { } etapa)
-        {
-            return Result.Failure(SituacaoInvalida("O pedido não aguarda decisão."));
-        }
-
-        string? motivoNormalizado = MotivosDaVersao.Normalizar(motivo);
-        List<FieldError> erros = ErrosDaRecusa(decisor, etapa, motivoNormalizado);
-        return erros.Count > 0
-            ? Result.ValidationFailure(erros)
-            : RegistrarRecusa(decisor, etapa, motivoNormalizado, perfil, instante);
+        return Andamento.EtapaAtual is { } etapa
+            ? RecusarNaEtapa(new RecusaNaEtapa(decisor, etapa, MotivosDaVersao.Normalizar(motivo), perfil, instante))
+            : Result.Failure(SituacaoInvalida("O pedido não aguarda decisão."));
     }
 
     private Result<DesfechoDaAprovacao> AprovarNaEtapa(AprovacaoNaEtapa aprovacao)
     {
-        List<FieldError> erros = ErrosDaAprovacao(aprovacao);
+        List<FieldError> erros = aprovacao.Recusas(Segregacao, Andamento.ValidaAte);
         if (erros.Count > 0)
         {
             return Result<DesfechoDaAprovacao>.ValidationFailure(erros);
         }
 
-        if (RecusaPeloTermo(aprovacao) is { } recusa)
+        // Defesa contra estado corrompido: a máquina de estados não leva ao gestor o pedido com termo e sem aceite.
+        if (Termo is not null && AceiteDoTermo is null)
         {
-            return Result<DesfechoDaAprovacao>.Failure(recusa);
+            return Result<DesfechoDaAprovacao>.Failure(SituacaoInvalida("O pedido com termo fixado só se decide depois do aceite do beneficiário."));
         }
 
-        return DevolverAoGestorSeMudou(aprovacao.Decisor, aprovacao.Etapa, aprovacao.Perfil, aprovacao.Instante) is { } devolucao
-            ? Result<DesfechoDaAprovacao>.Failure(devolucao)
+        return aprovacao.Devolucao(_decisoes, Andamento, Termo) is { } devolucao
+            ? Result<DesfechoDaAprovacao>.Failure(Devolver(aprovacao, devolucao))
             : RegistrarAprovacao(aprovacao);
     }
 
-    private List<FieldError> ErrosDaAprovacao(AprovacaoNaEtapa aprovacao)
+    private Result RecusarNaEtapa(RecusaNaEtapa recusa)
     {
-        List<FieldError> erros = [];
-        Segregacao.Conferir(aprovacao.Decisor, aprovacao.Etapa, erros);
-
-        if (!aprovacao.Perfil.Ativo)
+        List<FieldError> erros = recusa.Recusas(Segregacao);
+        if (erros.Count > 0)
         {
-            erros.Add(new("perfilId", new DomainError(
-                PedidoErrorCodes.PerfilInativo,
-                "O perfil de acesso está desativado e não aceita aprovação.")));
+            return Result.ValidationFailure(erros);
         }
 
-        ValidadeDoPedido.ConferirNaEtapa(aprovacao, Andamento.ValidaAte, erros);
-        return erros;
-    }
+        _decisoes.Add(DecisaoDoPedido.Registrar(Id, recusa.Etapa, recusa.Ato, ResultadoDaDecisao.Recusado, recusa.Motivo, recusa.Perfil, null));
+        Andamento = Andamento.Encerrado(SituacaoDoPedido.Recusado, recusa.Instante);
 
-    private List<FieldError> ErrosDaRecusa(Identidade decisor, EtapaDoPedido etapa, string? motivoNormalizado)
-    {
-        List<FieldError> erros = [];
-        Segregacao.Conferir(decisor, etapa, erros);
-
-        if (motivoNormalizado is null)
-        {
-            erros.Add(new("motivo", new DomainError(
-                PedidoErrorCodes.MotivoInvalido,
-                $"O motivo da recusa é obrigatório e deve ter até {MotivosDaVersao.MaxLength} caracteres.")));
-        }
-
-        return erros;
-    }
-
-    private Result RegistrarRecusa(
-        Identidade decisor, EtapaDoPedido etapa, string? motivo, PerfilAvaliado perfil, DateTimeOffset instante)
-    {
-        _decisoes.Add(DecisaoDoPedido.Registrar(Id, etapa, new AtoDoAgente(decisor, instante), ResultadoDaDecisao.Recusado, motivo, perfil, null));
-        Andamento = Andamento.Encerrado(SituacaoDoPedido.Recusado, instante);
         return Result.Success();
     }
 
-    // Nenhuma etapa concede o que a anterior não avaliou: o gestor decide de novo sobre o perfil de agora, e o prazo que
-    // venceu volta ao gestor porque só ele o define. A tentativa fica registrada com quem a fez e o perfil que ele viu.
-    private DomainError? DevolverAoGestorSeMudou(Identidade decisor, EtapaDoPedido etapa, PerfilAvaliado perfil, DateTimeOffset instante)
+    // A tentativa fica registrada com quem a fez e o perfil que ele viu. O pedido volta ao gestor, ou, no perfil que passou a
+    // exigir o termo depois da criação, é devolvido: nenhuma concessão protegida nasce sem o aceite do termo (ADR-0162).
+    private DomainError Devolver(AprovacaoNaEtapa aprovacao, DevolucaoNaAprovacao devolucao)
     {
-        if (etapa != EtapaDoPedido.ProtecaoDeDados || MotivoDaDevolucao(perfil, instante) is not { } motivo)
-        {
-            return null;
-        }
+        _decisoes.Add(DecisaoDoPedido.Registrar(Id, aprovacao.Etapa, aprovacao.Ato, devolucao.Resultado, null, aprovacao.Perfil, null));
+        Andamento = devolucao.VoltaAoGestor ? Andamento.DeVoltaAoGestor() : Andamento.Encerrado(SituacaoDoPedido.Devolvido, aprovacao.Instante);
 
-        return DevolverAoGestor(decisor, etapa, perfil, instante, motivo.Resultado, motivo.Erro);
-    }
-
-    private (ResultadoDaDecisao Resultado, DomainError Erro)? MotivoDaDevolucao(PerfilAvaliado perfil, DateTimeOffset instante)
-    {
-        if (!_decisoes.MesmoPerfilQueOGestorAvaliou(perfil))
-        {
-            return (ResultadoDaDecisao.PerfilAlterado, new DomainError(
-                PedidoErrorCodes.PerfilAlterado,
-                "O perfil mudou depois da aprovação do gestor; o pedido voltou a aguardar o gestor."));
-        }
-
-        return Andamento.ValidaAte is { } fim && fim <= instante
-            ? (ResultadoDaDecisao.PrazoVencido, new DomainError(
-                PedidoErrorCodes.PrazoVencido,
-                "O prazo definido pelo gestor venceu antes desta aprovação; o pedido voltou ao gestor para definir outro."))
-            : null;
-    }
-
-    private DomainError DevolverAoGestor(
-        Identidade decisor, EtapaDoPedido etapa, PerfilAvaliado perfil, DateTimeOffset instante, ResultadoDaDecisao resultado, DomainError erro)
-    {
-        _decisoes.Add(DecisaoDoPedido.Registrar(Id, etapa, new AtoDoAgente(decisor, instante), resultado, null, perfil, null));
-        Andamento = Andamento.DeVoltaAoGestor();
-
-        return erro;
+        return devolucao.Erro;
     }
 
     private Result<DesfechoDaAprovacao> RegistrarAprovacao(AprovacaoNaEtapa aprovacao)
     {
-        bool naEtapaDoGestor = aprovacao.Etapa == EtapaDoPedido.Gestor;
-        string? dispensa = naEtapaDoGestor ? aprovacao.Contexto.MotivoDaDispensa(aprovacao.Perfil) : null;
         _decisoes.Add(DecisaoDoPedido.Registrar(
-            Id, aprovacao.Etapa, new AtoDoAgente(aprovacao.Decisor, aprovacao.Instante), ResultadoDaDecisao.Aprovado, null, aprovacao.Perfil, dispensa));
+            Id, aprovacao.Etapa, aprovacao.Ato, ResultadoDaDecisao.Aprovado, null, aprovacao.Perfil, aprovacao.Dispensa));
 
-        if (naEtapaDoGestor)
+        if (aprovacao.Etapa == EtapaDoPedido.Gestor)
         {
             Andamento = Andamento.ComPrazo(aprovacao.ValidaAte);
         }
 
-        bool concluido = !naEtapaDoGestor || dispensa is not null || !aprovacao.Perfil.ExigeAprovacaoDeProtecaoDeDados;
-        return concluido ? Concluir(aprovacao.Instante) : AguardarProtecaoDeDados();
-    }
+        Andamento = aprovacao.Conclui ? Andamento.Encerrado(SituacaoDoPedido.Aprovado, aprovacao.Instante) : Andamento.Em(SituacaoDoPedido.AguardandoProtecaoDeDados);
 
-    private Result<DesfechoDaAprovacao> Concluir(DateTimeOffset instante)
-    {
-        Andamento = Andamento.Encerrado(SituacaoDoPedido.Aprovado, instante);
-        return Result<DesfechoDaAprovacao>.Success(DesfechoDaAprovacao.Concluido);
-    }
-
-    private Result<DesfechoDaAprovacao> AguardarProtecaoDeDados()
-    {
-        Andamento = Andamento.Em(SituacaoDoPedido.AguardandoProtecaoDeDados);
-        return Result<DesfechoDaAprovacao>.Success(DesfechoDaAprovacao.AguardaProtecaoDeDados);
+        return Result<DesfechoDaAprovacao>.Success(aprovacao.Desfecho);
     }
 }

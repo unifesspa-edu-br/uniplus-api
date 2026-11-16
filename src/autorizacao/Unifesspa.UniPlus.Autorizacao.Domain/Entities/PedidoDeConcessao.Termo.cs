@@ -65,32 +65,6 @@ public sealed partial class PedidoDeConcessao
         }
     }
 
-    // Defesa contra estado corrompido: a máquina de estados não leva ao gestor o pedido com termo e sem aceite. E o perfil
-    // que passou a exigir o termo depois da criação devolve o pedido, que não tem versão fixada: nenhuma concessão protegida
-    // nasce sem aceite do termo (ADR-0162).
-    private DomainError? RecusaPeloTermo(AprovacaoNaEtapa aprovacao)
-    {
-        if (Termo is not null && AceiteDoTermo is null)
-        {
-            return SituacaoInvalida("O pedido com termo fixado só se decide depois do aceite do beneficiário.");
-        }
-
-        return aprovacao.Etapa == EtapaDoPedido.Gestor && Termo is null && ExigenciaDoTermo.Do(aprovacao.Perfil)
-            ? DevolverPorTermoExigido(aprovacao)
-            : null;
-    }
-
-    private DomainError DevolverPorTermoExigido(AprovacaoNaEtapa aprovacao)
-    {
-        _decisoes.Add(DecisaoDoPedido.Registrar(
-            Id, aprovacao.Etapa, new AtoDoAgente(aprovacao.Decisor, aprovacao.Instante), ResultadoDaDecisao.TermoExigido, null, aprovacao.Perfil, null));
-        Andamento = Andamento.Encerrado(SituacaoDoPedido.Devolvido, aprovacao.Instante);
-
-        return new DomainError(
-            PedidoErrorCodes.TermoExigido,
-            "O perfil passou a dar acesso a dado pessoal ou sensível depois da criação do pedido, que não tem termo de responsabilidade fixado. O pedido foi devolvido; refaça-o para aceitar o termo.");
-    }
-
     // Depois do documento verificado, o pedido aguarda o aceite quando o beneficiário é outra pessoa ou o termo o exige; só
     // então vai ao gestor.
     private SituacaoDoPedido EtapaSeguinteAoDocumento() =>
