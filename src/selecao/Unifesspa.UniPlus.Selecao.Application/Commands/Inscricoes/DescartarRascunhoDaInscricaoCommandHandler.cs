@@ -1,15 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 
-using Abstractions;
-
 using Domain.Entities;
-using Domain.Interfaces;
 
-using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
+using Services;
+
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
 /// Remove fisicamente o rascunho do dono do token. O rascunho não tem número nem comprovante, e guardar
@@ -20,92 +17,38 @@ public static class DescartarRascunhoDaInscricaoCommandHandler
 {
     public static async Task<Result> Handle(
         DescartarRascunhoDaInscricaoCommand command,
-        IInscricaoRepository inscricaoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        IResolvedorFusoInstitucional resolvedorFuso,
-        TimeProvider timeProvider,
-        IUnitOfWork unitOfWork,
+        InscricaoAtivaDoCandidato inscricaoAtiva,
+        PeriodoDaInscricao periodo,
+        DescarteDoRascunho descarte,
         IUserContext userContext,
-        IDocumentoDaInscricaoRepository documentoRepository,
+        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(inscricaoRepository);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(resolvedorFuso);
+        ArgumentNullException.ThrowIfNull(inscricaoAtiva);
+        ArgumentNullException.ThrowIfNull(periodo);
+        ArgumentNullException.ThrowIfNull(descarte);
         ArgumentNullException.ThrowIfNull(timeProvider);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(userContext);
-        ArgumentNullException.ThrowIfNull(documentoRepository);
 
-        if (userContext.Cpf is not { } cpfDoToken)
-        {
-            return Result.Failure(new DomainError(
-                "Inscricao.CpfAusenteNoToken",
-                "O token não traz o claim cpf — só um candidato autenticado com CPF pode descartar a inscrição."));
-        }
+        Result<Inscricao> inscricao = await inscricaoAtiva
+            .ObterAsync(command.ProcessoSeletivoId, userContext, "descartar a inscrição", cancellationToken).ConfigureAwait(false);
+        return inscricao.IsFailure
+            ? Result.Failure(inscricao.Error!)
+            : await DescartarNoPeriodoAsync(command, inscricao.Value!, periodo, descarte, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
+    }
 
-        Result<Cpf> cpf = Cpf.Criar(cpfDoToken);
-        if (cpf.IsFailure)
-        {
-            return Result.Failure(new DomainError(
-                "Inscricao.CpfAusenteNoToken", "O claim cpf do token não é um CPF válido."));
-        }
-
-        Inscricao? inscricao = await inscricaoRepository
-            .ObterAtivaPorProcessoECpfAsync(command.ProcessoSeletivoId, cpf.Value!, cancellationToken)
-            .ConfigureAwait(false);
-        if (inscricao is null)
-        {
-            return Result.Failure(Inscricao.NaoEncontrada);
-        }
-
-        if (inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono)
-        {
-            return Result.Failure(erroDono);
-        }
-
+    private static async Task<Result> DescartarNoPeriodoAsync(
+        DescartarRascunhoDaInscricaoCommand command,
+        Inscricao inscricao,
+        PeriodoDaInscricao periodo,
+        DescarteDoRascunho descarte,
+        DateTimeOffset instante,
+        CancellationToken cancellationToken)
+    {
         // Com as inscrições encerradas o rascunho não tem ação (AcoesPermitidas): a mesma regra da lista.
-        DomainError? foraDoPeriodo = await Services.PeriodoDaInscricaoResolver.ConferirAsync(
-            command.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso,
-            timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-        if (foraDoPeriodo is not null)
-        {
-            return Result.Failure(foraDoPeriodo);
-        }
-
-        // O If-Match que o candidato tem é o do rascunho já levado à versão divulgada, que é o que a
-        // leitura devolve; conferir contra o gravado recusaria para sempre o ETag que ele recebeu.
-        Result adotada = await Services.VersaoDaInscricaoResolver
-            .AdotarAsync(inscricao, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
-            .ConfigureAwait(false);
-        if (adotada.IsFailure)
-        {
-            return Result.Failure(adotada.Error!);
-        }
-
-        if (inscricao.ConferirDescarte(command.Precondicao) is { } recusa)
-        {
-            return Result.Failure(recusa);
-        }
-
-        // Os registros dos arquivos caem em cascata com a inscrição; os objetos do armazenamento saem pela rotina, depois do commit.
-        IReadOnlyList<ArquivoDaApresentacao> arquivos = await documentoRepository
-            .ListarArquivosDaInscricaoAsync(inscricao.Id, cancellationToken).ConfigureAwait(false);
-
-        foreach (ArquivoDaApresentacao arquivo in arquivos)
-        {
-            // A URL de envio ainda vale até ExpiraEm: um PUT nela recria o objeto no bucket de envio.
-            await Services.AgendaDeLimpezaDoArquivoDoCandidato.AgendarAsync(documentoRepository, arquivo, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
-        }
-
-        await inscricaoRepository.RemoverAsync(inscricao, cancellationToken).ConfigureAwait(false);
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
-        return Result.Success();
+        DomainError? foraDoPeriodo = await periodo.ConferirAsync(command.ProcessoSeletivoId, instante, cancellationToken).ConfigureAwait(false);
+        return foraDoPeriodo is not null
+            ? Result.Failure(foraDoPeriodo)
+            : await descarte.DescartarAsync(inscricao, command.Precondicao, cancellationToken).ConfigureAwait(false);
     }
 }

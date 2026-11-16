@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// formulário em que está, com o corpo lido e a identidade das ocorrências de grupo conferida.
 /// </summary>
 public sealed class RascunhoDoCandidato(
-    IInscricaoRepository inscricoes,
+    InscricaoAtivaDoCandidato inscricaoAtiva,
     ICertameDivulgadoRepository certames,
     IProcessoSeletivoRepository processos,
     IRegistroCodecsEnvelope codecs,
@@ -60,7 +60,7 @@ public sealed class RascunhoDoCandidato(
     /// </summary>
     private async Task<Result<InscricaoNoPeriodo>> EditavelAsync(Guid processoSeletivoId, IUserContext userContext, CancellationToken cancellationToken)
     {
-        Result<Inscricao> inscricao = await DoCandidatoAsync(processoSeletivoId, userContext, cancellationToken).ConfigureAwait(false);
+        Result<Inscricao> inscricao = await inscricaoAtiva.ObterAsync(processoSeletivoId, userContext, "salvar a inscrição", cancellationToken).ConfigureAwait(false);
         if (inscricao.IsFailure)
         {
             return Result<InscricaoNoPeriodo>.ValidationFailure(inscricao.Errors);
@@ -71,18 +71,6 @@ public sealed class RascunhoDoCandidato(
             processoSeletivoId, certames, processos, codecs, fuso, instante, cancellationToken).ConfigureAwait(false);
         recusa ??= inscricao.Value!.ConferirAindaEmRascunho();
         return recusa is null ? Result<InscricaoNoPeriodo>.Success(new InscricaoNoPeriodo(inscricao.Value!, instante)) : Result<InscricaoNoPeriodo>.Failure(recusa);
-    }
-
-    private async Task<Result<Inscricao>> DoCandidatoAsync(Guid processoSeletivoId, IUserContext userContext, CancellationToken cancellationToken)
-    {
-        Result<Cpf> cpf = InscricaoDoDono.CpfDoToken(userContext, "salvar a inscrição");
-        if (cpf.IsFailure)
-        {
-            return Result<Inscricao>.Failure(cpf.Error!);
-        }
-
-        Inscricao? inscricao = await inscricoes.ObterAtivaPorProcessoECpfAsync(processoSeletivoId, cpf.Value!, cancellationToken).ConfigureAwait(false);
-        return InscricaoDoDono.DoDono(inscricao, userContext);
     }
 
     private async Task<Result<ContextoDaVersaoFixada>> ContextoDaVersaoAsync(
