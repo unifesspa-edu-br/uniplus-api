@@ -8,9 +8,6 @@ public static class FormulariosDeclaradosErrorCodes
     /// <summary>A exigência de documento cita um formulário que o processo não tem.</summary>
     public const string ExigenciaEmFormularioInexistente = "FormularioProcesso.ExigenciaEmFormularioInexistente";
 
-    /// <summary>A exigência de documento é entregue por formulário facultativo, que o candidato pode não enviar.</summary>
-    public const string ExigenciaEmFormularioFacultativo = "FormularioProcesso.ExigenciaEmFormularioFacultativo";
-
     /// <summary>A exigência de documento é de uma fase, e o formulário que a entrega é de outra.</summary>
     public const string ExigenciaEmFormularioDeOutraFase = "FormularioProcesso.ExigenciaEmFormularioDeOutraFase";
 
