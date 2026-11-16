@@ -14,34 +14,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-/// <summary>
-/// O descarte de uma sessão editorial que <b>deslocou as ordens do cronograma</b>, contra
-/// Postgres real.
-/// </summary>
-/// <remarks>
-/// <para>
-/// É o cruzamento de duas reconciliações que não conversam: <c>ProcessoSeletivo.AplicarGrafo</c>
-/// casa fase por <c>Ordem</c>, e <c>FaseCronograma.AtualizarDe</c> casa produto por
-/// <c>AtoCodigo</c> dentro da fase. Inserir uma fase no meio do cronograma faz a fase congelada
-/// de uma ordem cair sobre uma fase viva diferente, e o produto congelado — que carrega
-/// <c>Id</c> — passa a atravessar a fronteira da fase que o congelou.
-/// </para>
-/// <para>
-/// O teste precisa de banco: o estrago é do identity map do EF e das linhas de
-/// <c>produtos_da_fase</c>, e nenhuma das duas coisas existe num agregado em memória. A
-/// mutação intermediária tem de ser <c>DefinirCronogramaFases</c> — e não outra reposição —
-/// porque é ela que preserva o <c>Id</c> dos produtos ao renumerar as fases, que é a
-/// pré-condição do defeito.
-/// </para>
-/// </remarks>
-public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
-{
-    private static readonly string HashFixo = string.Concat(Enumerable.Repeat("de01234567", 7))[..64];
-    private static readonly DateTimeOffset Agora = new(2026, 3, 1, 12, 0, 0, TimeSpan.Zero);
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoDescarteAposDeslocamentoDeOrdem;
 
+/// <remarks>Contra Postgres real: o estrago do descarte é do identity map do EF e das linhas de produtos da fase.</remarks>
+public sealed class DescarteQueInseriuFaseNoMeioRepoeProdutosEAncoraPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
+{
     private readonly ProcessoSeletivoDbFixture _fixture;
 
-    public DescarteAposDeslocamentoDeOrdemPersistenciaTests(ProcessoSeletivoDbFixture fixture) =>
+    public DescarteQueInseriuFaseNoMeioRepoeProdutosEAncoraPersistenciaTests(ProcessoSeletivoDbFixture fixture) =>
         _fixture = fixture;
 
     [Fact(DisplayName = "Descartar a sessão que inseriu uma fase no meio repõe os produtos nas fases que os congelaram, sem duplicar identidade")]
@@ -299,106 +279,6 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         }
     }
 
-    [Fact(DisplayName = "Depois do descarte que recria os produtos, o item já publicado continua barrado para uma segunda publicação original")]
-    public async Task Descarte_RecriaOsProdutos_ItemJaPublicadoContinuaBarrado()
-    {
-        Guid processoId;
-        Guid versaoId;
-        Guid produtoPreliminarId;
-        Guid produtoFinalId;
-        Guid documentoId;
-        VersaoConfiguracao versao;
-        Guid faseInscricaoOrigem = Guid.CreateVersion7();
-        Guid fasePreliminarOrigem = Guid.CreateVersion7();
-        Guid faseFinalOrigem = Guid.CreateVersion7();
-
-        await using (UniPlusDbContext db = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo processo = NovoProcesso($"PS item publicado {Guid.CreateVersion7()}");
-            processo.DefinirCronogramaFases(
-                [
-                    Fase(1, "INSCRICAO", faseInscricaoOrigem, []),
-                    Fase(2, "RESULTADO_PRELIMINAR", fasePreliminarOrigem,
-                        [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
-                        faseConcluinteCodigo: "RESULTADO_FINAL"),
-                    Fase(3, "RESULTADO_FINAL", faseFinalOrigem,
-                        [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]),
-                ],
-                [],
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-            Result<VersaoConfiguracao> publicacao = Publicar(processo);
-            publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
-            processo.ClearDomainEvents();
-            versao = publicacao.Value!;
-
-            await db.ProcessosSeletivos.AddAsync(processo);
-            await db.AddAsync(versao);
-            DocumentoAPublicar documento = Documento(processo.Id);
-            await db.AddAsync(documento);
-            await db.SaveChangesAsync();
-
-            ProdutoDaFase preliminar = ProdutoDe(processo, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar);
-            AtoDoProcesso publicado = AtoDoItem(
-                processo.Id, documento.Id, IdentidadeDoItemDoEdital.DaFase(
-                    processo.CronogramaFases.Single(f => f.Codigo == "RESULTADO_PRELIMINAR"), preliminar));
-            await db.AddAsync(publicado);
-            await db.SaveChangesAsync();
-
-            processoId = processo.Id;
-            versaoId = versao.Id;
-            produtoPreliminarId = preliminar.Id;
-            produtoFinalId = ProdutoDe(processo, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo).Id;
-            documentoId = documento.Id;
-        }
-
-        await using (UniPlusDbContext sessao = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo tracked = await CarregarAsync(sessao, processoId);
-            tracked.AbrirRetificacao("Insere a homologação no meio do cronograma", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(tracked), "teste", Agora)
-                .IsSuccess.Should().BeTrue();
-            tracked.DefinirCronogramaFases(
-                [
-                    Fase(1, "INSCRICAO", faseInscricaoOrigem, []),
-                    Fase(2, "HOMOLOGACAO", Guid.CreateVersion7(),
-                        [ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Definitivo)]),
-                    Fase(3, "RESULTADO_PRELIMINAR", fasePreliminarOrigem,
-                        [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
-                        faseConcluinteCodigo: "RESULTADO_FINAL"),
-                    Fase(4, "RESULTADO_FINAL", faseFinalOrigem,
-                        [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]),
-                ],
-                [],
-                PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-            await sessao.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext descarte = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivo tracked = await CarregarAsync(descarte, processoId);
-            VersaoConfiguracao versaoDoBanco = await descarte.Set<VersaoConfiguracao>().FirstAsync(v => v.Id == versaoId);
-            tracked.RestaurarConfiguracaoCongelada(
-                versaoDoBanco,
-                GrafoCongelado(faseInscricaoOrigem, fasePreliminarOrigem, faseFinalOrigem, produtoPreliminarId, produtoFinalId))
-                .IsSuccess.Should().BeTrue();
-            tracked.DescartarRetificacao(PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-            await descarte.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext verificacao = _fixture.CreateDbContext();
-        ProcessoSeletivo reposto = await CarregarAsync(verificacao, processoId);
-        FaseCronograma fasePreliminar = reposto.CronogramaFases.Single(f => f.Codigo == "RESULTADO_PRELIMINAR");
-        ProdutoDaFase recriado = fasePreliminar.Produtos.Single();
-        recriado.Id.Should().NotBe(produtoPreliminarId, "pré-condição: o descarte sobre a fase deslocada recria o produto com identidade nova");
-
-        AtoDoProcesso segunda = AtoDoItem(processoId, documentoId, IdentidadeDoItemDoEdital.DaFase(fasePreliminar, recriado));
-        await verificacao.AddAsync(segunda);
-        Func<Task> salvar = async () => await verificacao.SaveChangesAsync();
-
-        (await salvar.Should().ThrowAsync<DbUpdateException>())
-            .Which.InnerException!.Message.Should().Contain("ux_atos_do_processo_item_original");
-    }
-
     /// <summary>
     /// O grafo congelado do cenário da âncora: igual ao de <see cref="GrafoCongelado"/>, com a
     /// fase preliminar declarando a regra de recurso ancorada no produto congelado.
@@ -437,73 +317,6 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
         processo.CronogramaFases.Single(f => f.Codigo == codigo).RegraRecurso!.ProdutoAncoraId;
 
     /// <summary>
-    /// O grafo tal como o codec o entrega ao descarte: fases e produtos reidratados com os
-    /// <c>Id</c>s congelados no envelope.
-    /// </summary>
-    private static GrafoConfiguracao GrafoCongelado(
-        Guid faseInscricaoOrigem,
-        Guid fasePreliminarOrigem,
-        Guid faseFinalOrigem,
-        Guid produtoPreliminarId,
-        Guid produtoFinalId) => new(
-        etapas: [],
-        atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
-        distribuicaoVagas: [Distribuicao()],
-        bonusRegional: null,
-        criteriosDesempate: [],
-        classificacao: Classificacao(),
-        cronogramaFases:
-        [
-            FaseReidratada(1, "INSCRICAO", faseInscricaoOrigem, [], null),
-            FaseReidratada(2, "RESULTADO_PRELIMINAR", fasePreliminarOrigem,
-                [ProdutoDaFase.Reidratar(produtoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
-                "RESULTADO_FINAL"),
-            FaseReidratada(3, "RESULTADO_FINAL", faseFinalOrigem,
-                [ProdutoDaFase.Reidratar(produtoFinalId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)],
-                null),
-        ],
-        documentosExigidos: [],
-        nosExigencia: [],
-        referenciaTemporalFatos: null,
-        configuracaoTaxaInscricao: ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-        localidade: LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
-        numeroDeOpcoesDeCurso: 1);
-
-    private static ProcessoSeletivo NovoProcesso(string nome)
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas([Distribuicao()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(Classificacao(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-
-        return processo;
-    }
-
-    private static ConfiguracaoDistribuicaoVagas Distribuicao() => ConfiguracaoDistribuicaoVagas.Criar(
-        Guid.CreateVersion7(), 40, 1m, Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-        null, null,
-        [
-            ModalidadeSelecionada.Criar(
-                Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
-                null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
-                quantidadeDeclarada: 40).Value!,
-        ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-
-    private static ConfiguracaoClassificacao Classificacao() => ConfiguracaoClassificacao.Criar(
-        Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-        Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
-
-    /// <summary>
     /// Calendário vigente mínimo — um feriado nacional basta. Só o cenário do prazo de recurso
     /// precisa dele: sem calendário, a publicação recusaria por uma pendência que não é a
     /// testada ali.
@@ -514,73 +327,6 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             "2026",
             [DiaNaoUtilCongelado.Criar(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null).Value!]).Value,
         FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
-
-    private static Result<VersaoConfiguracao> Publicar(
-        ProcessoSeletivo processo,
-        ContextoDeContagemDePrazos? contexto = null) => processo.Publicar(
-        DadosEdital.Criar(
-            "001/2026",
-            new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-            Guid.CreateVersion7()).Value!,
-        "{}"u8.ToArray(),
-        "1.1",
-        "canonical-json/sha256@v1",
-        HashFixo,
-        "teste",
-        TimeProvider.System,
-        contexto ?? ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-    private static DocumentoAPublicar Documento(Guid processoId)
-    {
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(
-            processoId, FinalidadeDoDocumento.DocumentoDeAto, "lista.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-        documento.Confirmar(2048, new string('c', 64), TimeProvider.System).IsSuccess.Should().BeTrue();
-        return documento;
-    }
-
-    private static AtoDoProcesso AtoDoItem(Guid processoId, Guid documentoId, IdentidadeDoItemDoEdital item) =>
-        AtoDoProcesso.Registrar(
-            new NovoAtoDoProcesso(
-                Guid.CreateVersion7(), processoId, "RESULTADO_CLASSIFICACAO", "Resultado da classificação", "1/2026", new DateOnly(2026, 1, 20),
-                "Diretor do CEPS", "ceps", "ps-item-publicado", documentoId, [], ItemDoEdital: item),
-            TimeProvider.System.GetUtcNow()).Value!;
-
-    private static ProdutoDaFase ProdutoDe(ProcessoSeletivo processo, string atoCodigo, PapelProdutoFase papel) =>
-        processo.CronogramaFases.SelectMany(f => f.Produtos).Single(p => p.AtoCodigo == atoCodigo && p.Papel == papel);
-
-    private static FaseCronograma Fase(
-        int ordem,
-        string codigo,
-        Guid faseCanonicaOrigemId,
-        IReadOnlyList<ProdutoDaFase> produtos,
-        string? faseConcluinteCodigo = null,
-        RegraRecursoFase? regraRecurso = null) =>
-        FaseCronograma.Criar(
-            ordem, faseCanonicaOrigemId, codigo, OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: null, fim: null,
-            produtos, faseConcluinteCodigo, emiteParecerIndividual: false,
-            bancasRequeridas: BancasDaFase(regraRecurso), regraRecurso, UnidadesDeTeste.Ceps).Value!;
-
-    private static FaseCronograma FaseReidratada(
-        int ordem,
-        string codigo,
-        Guid faseCanonicaOrigemId,
-        IReadOnlyList<ProdutoDaFase> produtos,
-        string? faseConcluinteCodigo,
-        RegraRecursoFase? regraRecurso = null) =>
-        FaseCronograma.Reidratar(
-            Guid.CreateVersion7(), ordem, faseCanonicaOrigemId, codigo, OrigemDataFase.NaExecucao,
-            agrupaEtapas: false, permiteComplementacao: false,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            inicio: null, fim: null,
-            produtos, faseConcluinteCodigo, emiteParecerIndividual: false,
-            bancasRequeridas: BancasDaFase(regraRecurso), regraRecurso, UnidadesDeTeste.Ceps);
-
-    private static BancaRequerida[] BancasDaFase(RegraRecursoFase? regraRecurso) =>
-        regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()];
 
     private static RegraRecursoFase Recurso(Guid produtoAncoraId) => RegraRecursoFase.Criar(
         Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),
@@ -593,21 +339,4 @@ public sealed class DescarteAposDeslocamentoDeOrdemPersistenciaTests : IClassFix
             SuspensividadeSegundaInstanciaValor: null,
             SuspensividadeSegundaInstanciaUnidade: null),
         produtoAncoraId).Value!;
-
-    private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.Criar(codigo, "v1", new string(semente, 64)).Value!;
-
-    private static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext db, Guid processoId) =>
-        await db.ProcessosSeletivos
-            .Include(p => p.DistribuicaoVagas).ThenInclude(d => d.Modalidades)
-            .Include(p => p.Classificacao)
-            .Include(p => p.AtendimentoEspecializado)
-            .Include(p => p.CronogramaFases).ThenInclude(f => f.Produtos)
-            .Include(p => p.CronogramaFases).ThenInclude(f => f.BancasRequeridas).ThenInclude(b => b.RecorteDeCompetencia)
-            .Include(p => p.CronogramaFases).ThenInclude(f => f.RegraRecurso)
-            .Include(p => p.ConfiguracaoTaxaInscricao)
-            .Include(p => p.CriteriosDesempate)
-            .Include(p => p.Rascunho)
-            .AsSplitQuery()
-            .FirstAsync(p => p.Id == processoId);
 }
