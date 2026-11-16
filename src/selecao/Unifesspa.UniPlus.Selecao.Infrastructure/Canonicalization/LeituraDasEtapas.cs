@@ -183,7 +183,7 @@ internal static class LeituraDasEtapas
 
     private static EtapaProcesso? DefinirRecursos(LeitorEnvelope leitor, EtapaProcesso etapa, JsonObject item, string path)
     {
-        List<RecursoDaEtapa>? recursos = LerRecursosDaEtapa(leitor, item, path);
+        List<RecursoDaEtapa>? recursos = LeituraDosRecursosDaEtapa.Ler(leitor, item, path);
         if (recursos is null)
         {
             return null;
@@ -202,7 +202,7 @@ internal static class LeituraDasEtapas
         Guid id = leitor.Identificador(item, "id", path);
         string nome = leitor.TextoNaoVazio(item, "nome", path, LimitesDoEnvelope.EtapaNome);
         CaraterEtapa carater = leitor.Enumeracao<CaraterEtapa>(item, "carater", path);
-        TipoEtapaSnapshot? tipoEtapa = LerTipoEtapaDaEtapa(leitor, item, path);
+        TipoEtapaSnapshot? tipoEtapa = LeituraDoTipoDaEtapa.Ler(leitor, item, path);
         (DeclaracaoDaAvaliacaoDaEtapa avaliacao, List<ItemDeAvaliacao> itens) = LerAvaliacaoDaEtapa(leitor, item, path);
         (int? ordem, string? faseCodigo) = (
             leitor.InteiroOpcional(item, "ordem", path), leitor.TextoOpcional(item, "faseCodigo", path, LimitesDoEnvelope.FaseCodigo));
@@ -302,99 +302,5 @@ internal static class LeituraDasEtapas
         BancaLida? lida = BancaLida.Ler(leitor, itemBanca, pathBanca);
 
         return lida is null ? null : BancaDaEtapa.Criar(lida.TipoBancaOrigemId, lida.Codigo, lida.Nome, lida.Regra);
-    }
-
-    private static List<RecursoDaEtapa>? LerRecursosDaEtapa(LeitorEnvelope leitor, JsonObject item, string path)
-    {
-        JsonArray? array = leitor.Array(item, "recursos", path);
-        string pathRecursos = $"{path}.recursos";
-        List<RecursoDaEtapa> recursos = [];
-        for (int j = 0; array is not null && j < array.Count; j++)
-        {
-            RecursoDaEtapa? recurso = LerRecursoDaEtapa(leitor, leitor.ItemObjeto(array, j, pathRecursos), $"{pathRecursos}[{j}]");
-            if (recurso is null)
-            {
-                return null;
-            }
-
-            recursos.Add(recurso);
-        }
-
-        return recursos;
-    }
-
-    private static RecursoDaEtapa? LerRecursoDaEtapa(LeitorEnvelope leitor, JsonObject itemRecurso, string pathRecurso)
-    {
-        leitor.ExigirChaves(itemRecurso, pathRecurso, "ancora", "regra", "args", "produtoAncoraId");
-        AncoraDoRecurso ancora = leitor.Enumeracao<AncoraDoRecurso>(itemRecurso, "ancora", pathRecurso);
-
-        // A referência vem inteira e conferida contra o código de regra esperado.
-        ReferenciaRegra regra = leitor.Regra(itemRecurso, "regra", pathRecurso, RegraPrazoRecursoCodigo.AncoradoEmAto);
-
-        // A âncora por ciência não tem produto: o campo vem nulo.
-        Guid? ancoraId = leitor.IdentificadorOpcional(itemRecurso, "produtoAncoraId", pathRecurso);
-        JsonObject argsObjeto = leitor.Objeto(itemRecurso, "args", pathRecurso);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        // Nenhuma é o sentinela de ausência que RecursoDaEtapa.Criar recusa e que Reidratar não reconfere.
-        if (ancora == AncoraDoRecurso.Nenhuma)
-        {
-            return leitor.Malformado<RecursoDaEtapa?>($"{pathRecurso}.ancora", "o recurso tem de declarar de que instante o prazo corre.");
-        }
-
-        ArgsRegraPrazoRecurso? args = LeituraDosPrazosDeRecurso.LerArgsDePrazoDeRecurso(leitor, argsObjeto, $"{pathRecurso}.args");
-        if (leitor.Falhou || args is null)
-        {
-            return null;
-        }
-
-        // Identidade nova: o que a publicação promete é a janela, não a linha que a guarda.
-        Result<RecursoDaEtapa> recurso = RecursoDaEtapa.Reidratar(Guid.CreateVersion7(), ancora, regra, args, ancoraId ?? Guid.Empty);
-        return recurso.IsFailure
-            ? leitor.Propagar<RecursoDaEtapa?>(recurso.Error!)
-            : recurso.Value;
-    }
-
-    /// <summary>
-    /// Lê o snapshot de tipo aninhado em cada item de <c>etapas</c> — mesmo
-    /// shape do bloco de topo <c>tipoProcesso</c>, mas diferente daquele (só forma, nunca
-    /// reidratado: o tipo do processo não muda ao restaurar uma versão), o valor lido aqui é
-    /// efetivamente usado para reconstruir a identidade de tipo da etapa. Um envelope
-    /// adulterado com <c>origemId</c>/<c>codigo</c>/<c>nome</c> vazio ou acima do limite é
-    /// recusado como malformado pela própria factory do VO, nunca reidratado.
-    /// </summary>
-    internal static TipoEtapaSnapshot? LerTipoEtapaDaEtapa(LeitorEnvelope leitor, JsonObject item, string path)
-    {
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        JsonObject tipo = leitor.Objeto(item, "tipoEtapa", path);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        string tipoPath = $"{path}.tipoEtapa";
-        leitor.ExigirChaves(
-            tipo, tipoPath, "origemId", "codigo", "nome", "admitePontuacao", "admiteEliminacao", "notaDeOrigemNoEnem");
-        Guid origemId = leitor.Identificador(tipo, "origemId", tipoPath);
-        string codigo = leitor.TextoNaoVazio(tipo, "codigo", tipoPath, LimitesDoEnvelope.TipoEtapaCodigo);
-        string nome = leitor.TextoNaoVazio(tipo, "nome", tipoPath, LimitesDoEnvelope.TipoEtapaNome);
-        bool admitePontuacao = leitor.Booleano(tipo, "admitePontuacao", tipoPath);
-        bool admiteEliminacao = leitor.Booleano(tipo, "admiteEliminacao", tipoPath);
-        bool notaDeOrigemNoEnem = leitor.Booleano(tipo, "notaDeOrigemNoEnem", tipoPath);
-        if (leitor.Falhou)
-        {
-            return null;
-        }
-
-        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(
-            origemId, codigo, nome, admitePontuacao, admiteEliminacao, notaDeOrigemNoEnem);
-        return resultado.IsFailure ? leitor.Propagar<TipoEtapaSnapshot>(resultado.Error!) : resultado.Value;
     }
 }
