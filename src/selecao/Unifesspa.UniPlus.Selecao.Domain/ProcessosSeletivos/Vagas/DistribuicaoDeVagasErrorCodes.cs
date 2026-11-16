@@ -28,4 +28,8 @@ public static class DistribuicaoDeVagasErrorCodes
     public const string ReclassificacaoParaAmplaSemAmplaOfertada = Prefixo + "ReclassificacaoParaAmplaSemAmplaOfertada";
     public const string QuadroNaoCompletaAsVagasOfertadasBase = Prefixo + "QuadroNaoCompletaVoBase";
     public const string QuadroExcedeAsVagasOfertadasBase = Prefixo + "QuadroExcedeVoBase";
+
+    public const string DistribuicaoVaziaNoProcesso = "ProcessoSeletivo.DistribuicaoVagasVazia";
+    public const string OfertaDeCursoDuplicada = "ProcessoSeletivo.OfertaCursoDuplicada";
+    public const string AcaoQuandoIndeferidoDivergente = "ProcessoSeletivo.AcaoQuandoIndeferidoDivergente";
 }
