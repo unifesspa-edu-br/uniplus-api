@@ -91,6 +91,7 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<ConferenciaDaNovaInstalacao>();
         services.AddScoped<GravacaoDaNovaInstalacao>();
         services.AddScoped<ConfirmacaoDoDocumentoDeDesignacao>();
+        services.AddScoped<EnvioDoCodigoDeConfirmacao>();
         services.AddScoped<TentativaDeConfirmacao>();
         services.AddScoped<ConcessaoDosGestores>();
     }
