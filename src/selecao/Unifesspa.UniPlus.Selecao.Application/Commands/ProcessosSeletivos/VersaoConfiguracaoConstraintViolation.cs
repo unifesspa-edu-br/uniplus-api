@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 /// <summary>
 /// Traduz as violações de guard rail de banco da tabela
 /// <c>versoes_configuracao</c> (ADR-0104) para <see cref="DomainError"/>
-/// nomeado — que o mapper de contrato aflora como 422 (ADR-0102). O nome da
+/// nomeado — que o mapper de contrato aflora como 422 (ADR-0102), ou como 409 na corrida pelo número da versão. O nome da
 /// constraint vem de <see cref="ConstraintVioladaNaGravacao.NomeDaConstraintViolada"/>,
 /// que já cobre <c>UNIQUE</c> (23505) e <c>CHECK</c> (23514) — e os triggers
 /// de sucessão levantam <c>check_violation</c> declarando a constraint, para
@@ -19,6 +19,12 @@ using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 /// publicações concorrentes, e a do <c>INSERT</c> cru fora do agregado. Um
 /// erro daqui é a prova de que a garantia é do banco, não da disciplina do
 /// caller.
+/// <para>
+/// As travas <c>ck_versoes_configuracao_contrato_abertura</c> e
+/// <c>ck_versoes_configuracao_nao_autorretifica</c> repetem guardas de forma da
+/// entidade, que o domínio nunca viola. Não são traduzidas: a violação é erro de
+/// programação e propaga como exceção.
+/// </para>
 /// </remarks>
 internal static class VersaoConfiguracaoConstraintViolation
 {
@@ -27,13 +33,12 @@ internal static class VersaoConfiguracaoConstraintViolation
     private const string NumeracaoContiguaConstraint = "ck_versoes_configuracao_numeracao_contigua";
     private const string CadeiaConstraint = "ck_versoes_configuracao_cadeia";
     private const string VigenciaMonotonicaConstraint = "ck_versoes_configuracao_vigencia_monotonica";
-    private const string ContratoAberturaConstraint = "ck_versoes_configuracao_contrato_abertura";
-    private const string NaoAutorretificaConstraint = "ck_versoes_configuracao_nao_autorretifica";
 
     /// <summary>
     /// <see cref="DomainError"/> correspondente à constraint violada, ou
-    /// <see langword="null"/> quando a constraint não é desta tabela — caso em
-    /// que o caller deve propagar a exceção original.
+    /// <see langword="null"/> quando a constraint não é desta tabela ou é uma das
+    /// duas travas de forma sem tradução — caso em que o caller deve propagar a
+    /// exceção original.
     /// </summary>
     public static DomainError? Traduzir(string? constraint) => constraint switch
     {
@@ -56,14 +61,6 @@ internal static class VersaoConfiguracaoConstraintViolation
         VigenciaMonotonicaConstraint => new DomainError(
             "VersaoConfiguracao.VigenciaRegressiva",
             "A vigência de uma versão não pode preceder a da versão anterior — é ela que ordena as versões."),
-
-        ContratoAberturaConstraint => new DomainError(
-            "VersaoConfiguracao.ContratoAberturaInvalido",
-            "A versão 1 não retifica ato algum; toda versão seguinte retifica — o contrato não admite estado intermediário."),
-
-        NaoAutorretificaConstraint => new DomainError(
-            "VersaoConfiguracao.AtoCriadorRepetido",
-            "Um ato não retifica a si mesmo — a cadeia de atos que congelam a configuração é linear."),
 
         _ => null,
     };

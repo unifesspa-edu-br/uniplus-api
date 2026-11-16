@@ -62,11 +62,15 @@ internal static class ErrosDaPublicacao
     /// SHAPE (bytes vazios, hash malformado, id zerado) lançam
     /// ArgumentException (defesa em profundidade contra erro de programação
     /// do caller, nunca alcançável a partir de input do usuário) e não têm
-    /// entrada aqui. Já as invariantes de NEGÓCIO da cadeia de versões
+    /// entrada aqui. O mesmo vale para as duas travas de banco que repetem
+    /// uma guarda de forma da entidade — um ato que retifica a si mesmo e o
+    /// contrato de abertura (versão 1 sem retificação, as demais com): o
+    /// domínio nunca monta essa linha, então a violação só aparece por
+    /// gravação malformada e propaga como exceção, sem código público. Já as invariantes de NEGÓCIO da cadeia de versões
     /// afloram como DomainError, pelo domínio e pelos guard rails de banco
     /// que fecham a corrida check-then-act (ADR-0102).
     ///
-    /// Dessas, UMA é corrida e vale 409; as outras seis são 422. A separação
+    /// Dessas, UMA é corrida e vale 409; as outras quatro são 422. A separação
     /// não é de julgamento — sai da ordem em que o trigger de sucessão
     /// confere as coisas.
     ///
@@ -82,19 +86,17 @@ internal static class ErrosDaPublicacao
     /// índice único: toda corrida vira NumeroDuplicado, e só ela. Nada no
     /// corpo está errado, e 422 mentiria mandando o operador corrigir o que
     /// não tem defeito — é o conflito com o estado atual do recurso que a
-    /// RFC 9110 descreve, resolvido relendo e resubmetendo.
+    /// RFC 9110 descreve, resolvido relendo o recurso e reavaliando a intenção.
     ///
-    /// As outras seis o agregado já conferiu em memória contra a MESMA linha
-    /// que o trigger vai encontrar: as versões são append-only e únicas por
-    /// número, então a anterior que o cliente leu e a que o trigger acha são
-    /// a mesma, com o mesmo ato e a mesma vigência. Cadeia quebrada e
-    /// vigência regressiva, portanto, não são alcançáveis por corrida — só
-    /// por gravação malformada, que nomeia a anterior certa e ainda assim
-    /// contradiz o que ela diz. Somam-se às que nem estado consultam (ato que
-    /// retifica a si mesmo, contrato de abertura), à recusa de um id que o
-    /// corpo informa (ato que já criou versão, e reenviar não conserta), e à
-    /// guarda contra INSERT por fora do agregado (numeração com buraco).
-    /// Nenhuma delas melhora ao ser retentada.
+    /// Cadeia quebrada e vigência regressiva o agregado já conferiu em memória
+    /// contra a MESMA linha que o trigger vai encontrar: as versões são
+    /// append-only e únicas por número, então a anterior que o cliente leu e a
+    /// que o trigger acha são a mesma, com o mesmo ato e a mesma vigência.
+    /// Não são alcançáveis por corrida — só por gravação malformada, que nomeia
+    /// a anterior certa e ainda assim contradiz o que ela diz. Somam-se a elas a recusa de um id que o corpo
+    /// informa (ato que já criou versão, e reenviar não conserta) e a guarda
+    /// contra INSERT por fora do agregado (numeração com buraco). Nenhuma
+    /// delas melhora ao ser retentada.
     ///
     /// O `code` continua específico em todas. O status responde "dá para
     /// tentar de novo?"; o code responde "por quê?" — colapsar no
@@ -105,7 +107,6 @@ internal static class ErrosDaPublicacao
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> CadeiaDeVersoesDaConfiguracao() =>
     [
         new("VersaoConfiguracao.CadeiaQuebrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.cadeia_quebrada", "O ato criador da versão não retifica o ato criador da versão anterior")),
-        new("VersaoConfiguracao.AtoCriadorRepetido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.ato_criador_repetido", "Um ato congela a configuração no máximo uma vez")),
         // NÃO retentável, apesar de ser corrida: o código é compartilhado, e um dos caminhos
         // que o emitem é o atalho atômico de retificação, que relê a versão corrente a cada
         // execução. Repetir depois de perder a corrida retificaria a versão do VENCEDOR, criando
@@ -113,7 +114,6 @@ internal static class ErrosDaPublicacao
         new("VersaoConfiguracao.NumeroDuplicado", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.versao_configuracao.numero_duplicado", "Outra publicação concorrente já criou esta versão da configuração")),
         new("VersaoConfiguracao.AtoCriadorJaCriouVersao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.ato_criador_ja_criou_versao", "O ato informado já criou uma versão da configuração")),
         new("VersaoConfiguracao.NumeracaoComBuraco", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.numeracao_com_buraco", "A numeração das versões da configuração é contígua")),
-        new("VersaoConfiguracao.ContratoAberturaInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.contrato_abertura_invalido", "A versão 1 não retifica ato algum; toda versão seguinte retifica")),
         new("VersaoConfiguracao.VigenciaRegressiva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.versao_configuracao.vigencia_regressiva", "A vigência de uma versão não pode preceder a da versão anterior")),
     ];
 

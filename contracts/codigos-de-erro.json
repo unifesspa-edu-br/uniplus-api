@@ -8017,19 +8017,9 @@
       "titulo": "O ato informado já criou uma versão da configuração"
     },
     {
-      "codigo": "uniplus.selecao.versao_configuracao.ato_criador_repetido",
-      "status": 422,
-      "titulo": "Um ato congela a configuração no máximo uma vez"
-    },
-    {
       "codigo": "uniplus.selecao.versao_configuracao.cadeia_quebrada",
       "status": 422,
       "titulo": "O ato criador da versão não retifica o ato criador da versão anterior"
-    },
-    {
-      "codigo": "uniplus.selecao.versao_configuracao.contrato_abertura_invalido",
-      "status": 422,
-      "titulo": "A versão 1 não retifica ato algum; toda versão seguinte retifica"
     },
     {
       "codigo": "uniplus.selecao.versao_configuracao.numeracao_com_buraco",
