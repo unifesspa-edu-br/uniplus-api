@@ -12,6 +12,9 @@ public static class RetificacaoErrorCodes
     /// <summary>O formulário que já recebeu envio de candidato saiu do documento.</summary>
     public const string FormularioComEnvioNaoSai = "Retificacao.FormularioComEnvioNaoSai";
 
+    /// <summary>O formulário obrigatório que já recebeu envio passou a facultativo.</summary>
+    public const string FormularioObrigatorioComEnvioNaoViraFacultativo = "Retificacao.FormularioObrigatorioComEnvioNaoViraFacultativo";
+
     /// <summary>A oferta de curso em que há inscrição enviada saiu do documento.</summary>
     public const string OfertaComInscricaoNaoSai = "Retificacao.OfertaComInscricaoNaoSai";
 
