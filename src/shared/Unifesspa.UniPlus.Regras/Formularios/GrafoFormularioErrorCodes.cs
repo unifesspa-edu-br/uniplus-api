@@ -10,4 +10,5 @@ public static class GrafoFormularioErrorCodes
     public const string CitaFatoPosterior = "GrafoFormulario.CitaFatoPosterior";
     public const string CitaAtributoDoCandidato = "GrafoFormulario.CitaAtributoDoCandidato";
     public const string CitaFatoDeMembroForaDoGrupo = "GrafoFormulario.CitaFatoDeMembroForaDoGrupo";
+    public const string CitaFatoDeIntegracao = "GrafoFormulario.CitaFatoDeIntegracao";
 }

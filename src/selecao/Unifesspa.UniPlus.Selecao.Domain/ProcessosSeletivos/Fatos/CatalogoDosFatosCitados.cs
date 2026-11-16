@@ -11,6 +11,9 @@ public sealed record CatalogoDosFatosCitados(
     IReadOnlyCollection<string> FatosDeclarados,
     IReadOnlyDictionary<string, IReadOnlyCollection<string>> DependenciasDosDerivados)
 {
+    /// <summary>Os fatos de integração externa: valor trazido de sistema externo, sem a imunidade da publicação, e por isso fora das regras dos formulários (UNI-REQ-0089).</summary>
+    public IReadOnlyCollection<string> FatosDeIntegracao { get; init; } = [];
+
     /// <summary>O fato "veio na importação" de cada dado básico importável, com os fatos que formam o dado (UNI-REQ-0151).</summary>
     public IReadOnlyCollection<PresencaNaImportacao> PresencasNaImportacao { get; init; } = [];
 }

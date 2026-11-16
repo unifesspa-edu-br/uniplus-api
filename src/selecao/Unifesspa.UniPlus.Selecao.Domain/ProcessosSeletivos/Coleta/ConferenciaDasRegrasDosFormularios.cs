@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 /// UNI-REQ-0077, UNI-REQ-0086). O campo de grupo repetível só é citado dentro do próprio grupo. Como o
 /// formulário facultativo não é fonte de ninguém e dois obrigatórios da mesma fase não se alcançam, dois
 /// formulários não dependem um do outro em círculo (UNI-REQ-0144): a citação cruzada é fato desconhecido
-/// nos dois lados. A recusa aponta a regra e o fato pelo caminho, sem repeti-los no texto.
+/// nos dois lados. O fato de integração externa é recusado em regra de formulário, antes de qualquer outra causa (UNI-REQ-0089). A recusa aponta a regra e o fato pelo caminho, sem repeti-los no texto.
 /// </summary>
 public static class ConferenciaDasRegrasDosFormularios
 {
@@ -39,9 +39,13 @@ public static class ConferenciaDasRegrasDosFormularios
             .Where(static citacao => citacao.recusa is not null)
             .Select(citacao => new FieldError($"{formulario}.{regra.Caminho}.fatosCitados.{citacao.fato}", citacao.recusa!));
 
-    private static DomainError? RecusaDaCitacao(ConhecimentoDosFatos conhecimento, PontoDeUso ponto, RegraDoFormulario regra, string fato)
+    private static DomainError? RecusaDaCitacao(ConhecimentoDosFatos conhecimento, PontoDeUso ponto, RegraDoFormulario regra, string fato) =>
+        conhecimento.Catalogo.FatosDeIntegracao.Contains(fato)
+            ? new DomainError(GrafoFormularioErrorCodes.CitaFatoDeIntegracao, "A regra cita fato de integração externa, que não vale em regra de formulário.")
+            : RecusaDoConhecimento(conhecimento, conhecimento.NoPonto(fato, ponto), regra, fato);
+
+    private static DomainError? RecusaDoConhecimento(ConhecimentoDosFatos conhecimento, ConhecimentoDoFatoNoPonto noPonto, RegraDoFormulario regra, string fato)
     {
-        ConhecimentoDoFatoNoPonto noPonto = conhecimento.NoPonto(fato, ponto);
         if (noPonto == ConhecimentoDoFatoNoPonto.ConhecidoEmFasePosterior)
         {
             return new DomainError(GrafoFormularioErrorCodes.CitaFatoPosterior, "A regra cita fato que só é conhecido numa fase posterior à do formulário.");
