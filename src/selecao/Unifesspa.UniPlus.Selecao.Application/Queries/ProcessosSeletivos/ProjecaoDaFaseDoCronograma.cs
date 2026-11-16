@@ -74,5 +74,6 @@ internal static class ProjecaoDaFaseDoCronograma
         regraRecurso.Id,
         regraRecurso.ProdutoAncoraId,
         ProjecaoDoProcessoSeletivo.Referencia(regraRecurso.Regra),
-        ProjecaoDoProcessoSeletivo.ProjetarArgumentosDoPrazo(regraRecurso.Args));
+        ProjecaoDoProcessoSeletivo.ProjetarArgumentosDoPrazo(regraRecurso.Args),
+        ProjecaoDosProcedimentosDeRecurso.De(regraRecurso.Procedimentos));
 }

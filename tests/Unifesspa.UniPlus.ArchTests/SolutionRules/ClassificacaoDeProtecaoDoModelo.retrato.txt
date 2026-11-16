@@ -1893,6 +1893,7 @@ selecao.recursos_da_etapa.etapa_processo_id: Interno
 selecao.recursos_da_etapa.id: Interno
 selecao.recursos_da_etapa.prazo_unidade: Interno
 selecao.recursos_da_etapa.prazo_valor: Interno
+selecao.recursos_da_etapa.procedimentos_de_recurso: Interno
 selecao.recursos_da_etapa.produto_ancora_id: Interno
 selecao.recursos_da_etapa.regra_codigo: Interno
 selecao.recursos_da_etapa.regra_hash: Interno
@@ -1939,6 +1940,7 @@ selecao.regras_recurso_fase.fase_cronograma_id: Interno
 selecao.regras_recurso_fase.id: Interno
 selecao.regras_recurso_fase.prazo_unidade: Interno
 selecao.regras_recurso_fase.prazo_valor: Interno
+selecao.regras_recurso_fase.procedimentos_de_recurso: Interno
 selecao.regras_recurso_fase.produto_ancora_id: Interno
 selecao.regras_recurso_fase.regra_codigo: Interno
 selecao.regras_recurso_fase.regra_hash: Interno

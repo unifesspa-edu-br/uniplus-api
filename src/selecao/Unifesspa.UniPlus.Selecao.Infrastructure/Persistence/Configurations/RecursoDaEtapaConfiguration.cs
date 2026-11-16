@@ -30,6 +30,7 @@ public sealed class RecursoDaEtapaConfiguration : IEntityTypeConfiguration<Recur
         builder.Property(r => r.Id).ValueGeneratedNever();
         builder.Property(r => r.Ancora).HasConversion<int>().IsRequired();
         builder.Property(r => r.ProdutoAncoraId).HasColumnName("produto_ancora_id");
+        builder.MapearProcedimentosDeRecurso(r => r.Procedimentos);
 
         builder.OwnsOne(r => r.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(r => r.Regra).IsRequired();

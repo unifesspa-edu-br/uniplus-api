@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -125,7 +126,13 @@ internal static partial class CorpusEnvelope
                 SuspensividadeSegundaInstanciaUnidade: null),
             // Ancora no resultado preliminar, não no gabarito preliminar: os dois têm o
             // mesmo papel, e é a identidade do produto que diz qual publicação abre a janela.
-            ProdutoId(2, 2, variante)).Value!;
+            ProdutoId(2, 2, variante),
+            ProcedimentosDoCorpusDaFase()).Value!;
+
+    private static ProcedimentosDeRecurso ProcedimentosDoCorpusDaFase() => ProcedimentosDeRecurso.De(
+    [
+        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, Regra(RegraProcedimentoRecursoCodigo.Recalculo, '7')),
+    ]);
 
     /// <summary>
     /// Fase 3: conclui o ciclo recursal aberto pela fase 2 — publica a definitiva de cada

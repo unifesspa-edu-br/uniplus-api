@@ -118,6 +118,7 @@ internal static class SerializacaoDoCronograma
         ["regra"] = EscritaCanonica.SerializarReferenciaRegra(regraRecurso.Regra),
         ["produtoAncoraId"] = regraRecurso.ProdutoAncoraId,
         ["args"] = SerializarArgsRegraPrazoRecurso(regraRecurso.Args),
+        ["procedimentos"] = SerializacaoDosProcedimentosDeRecurso.Serializar(regraRecurso.Procedimentos),
     };
 
     internal static JsonObject SerializarArgsRegraPrazoRecurso(ArgsRegraPrazoRecurso args) => new()

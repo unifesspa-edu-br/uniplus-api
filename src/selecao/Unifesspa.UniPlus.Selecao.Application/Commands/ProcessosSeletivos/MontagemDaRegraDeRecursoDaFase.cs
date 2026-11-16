@@ -4,6 +4,8 @@ using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
 using Domain.Interfaces;
+using Domain.MotivosDeDecisao;
+using Domain.ProcessosSeletivos.Recursos;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -16,9 +18,14 @@ using Kernel.Results;
 internal sealed class MontagemDaRegraDeRecursoDaFase(
     IRegraCatalogoReader regraCatalogoReader,
     AtosConsultadosNaEdicao atos,
-    IReadOnlySet<(string Fase, string Ato)> ancorasJaDeclaradas)
+    IReadOnlySet<(string Fase, string Ato)> ancorasJaDeclaradas,
+    bool processoTemNotaDoEnem)
 {
     private readonly ConferenciaDaAncoraDoRecurso _conferenciaDaAncora = new(atos);
+
+    private readonly DeclaracaoDosProcedimentosDeRecurso _procedimentos = new(
+        regraCatalogoReader.ObterAsync,
+        CodigosDoProcedimentoDeRecurso.DaFase);
 
     /// <summary>A regra de recurso que a fase declara; a falha interrompe a montagem do cronograma.</summary>
     public async Task<Result<RegraRecursoFase>> MontarAsync(
@@ -26,6 +33,7 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
         int indice,
         string faseCodigo,
         IReadOnlyList<ProdutoDaFase> produtos,
+        IReadOnlyList<string?>? tiposDeDecisao,
         CancellationToken cancellationToken)
     {
         string campo = $"fases[{indice}].regraRecurso";
@@ -40,7 +48,15 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
         // Quando o código não corresponde a produto algum, a âncora fica vazia e o domínio recusa nomeando
         // os preliminares disponíveis.
         ProdutoDaFase? ancora = ProdutoAncora(produtos, declarada.AtoAncoraCodigo);
-        Result<RegraRecursoFase> regra = RegraRecursoFase.Criar(referencia.Value!, ArgumentosDoPrazo(declarada), ancora?.Id ?? Guid.Empty);
+        Result<ProcedimentosDeRecurso> procedimentos = await _procedimentos
+            .DeclararAsync(declarada.Procedimentos, ContextoDosProcedimentos(tiposDeDecisao), $"{campo}.procedimentos", cancellationToken)
+            .ConfigureAwait(false);
+        if (procedimentos.IsFailure)
+        {
+            return Result<RegraRecursoFase>.ValidationFailure(procedimentos.Errors);
+        }
+
+        Result<RegraRecursoFase> regra = RegraRecursoFase.Criar(referencia.Value!, ArgumentosDoPrazo(declarada), ancora?.Id ?? Guid.Empty, procedimentos.Value);
         if (regra.IsFailure)
         {
             return InterrupcaoDaFase.Com<RegraRecursoFase>(campo, regra.Error!);
@@ -60,6 +76,13 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
             ? regra
             : InterrupcaoDaFase.Com<RegraRecursoFase>($"{campo}.atoAncoraCodigo", recusaDaAncora);
     }
+
+    // O lugar da janela é a própria fase: ela declara os tipos de decisão que produz, e o produtor fase não tem itens de
+    // avaliação. A área do ENEM vale em qualquer janela de processo que importa a nota do ENEM.
+    private ContextoDosProcedimentosDeRecurso ContextoDosProcedimentos(IReadOnlyList<string?>? tiposDeDecisao) => new(
+        TiposDeDecisaoDeclarados.Canonicos(tiposDeDecisao).Select(TipoMotivoDeDecisaoCodigo.FromCodigo).ToHashSet(),
+        new HashSet<Guid>(),
+        processoTemNotaDoEnem);
 
     private async Task<Result<ReferenciaRegra>> ReferenciaAsync(
         RegraRecursoFaseInput declarada, string campo, CancellationToken cancellationToken)

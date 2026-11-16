@@ -24,6 +24,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// virava <c>false</c> em silêncio, e o edital seria congelado afirmando que o recurso termina
 /// na 1ª instância sem que ninguém tivesse decidido isso.
 /// </param>
+/// <param name="Procedimentos">Como o recurso de cada matéria que a fase produz é revisado.</param>
 public sealed record RegraRecursoFaseInput(
     string RegraCodigo,
     string RegraVersao,
@@ -34,7 +35,8 @@ public sealed record RegraRecursoFaseInput(
     UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
     [property: JsonRequired] bool AdmiteInstanciaSuperior,
     decimal? SuspensividadeSegundaInstanciaValor,
-    UnidadePrazo? SuspensividadeSegundaInstanciaUnidade);
+    UnidadePrazo? SuspensividadeSegundaInstanciaUnidade,
+    IReadOnlyList<ProcedimentoDeRecursoInput>? Procedimentos = null);
 
 /// <summary>
 /// Entrada de um produto publicado pela fase, usada por <see cref="FaseCronogramaInput"/>.

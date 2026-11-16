@@ -7682,6 +7682,11 @@
       "titulo": "Versão do formato do rascunho inválida"
     },
     {
+      "codigo": "uniplus.selecao.recurso_da_etapa.alvo_do_procedimento_de_recurso_inexistente",
+      "status": 422,
+      "titulo": "O alvo do procedimento de recurso não existe no lugar da janela"
+    },
+    {
       "codigo": "uniplus.selecao.recurso_da_etapa.ancora_em_ato_congelante",
       "status": 422,
       "titulo": "A âncora do recurso da etapa não pode ser o ato que congela a configuração"
@@ -7715,6 +7720,26 @@
       "codigo": "uniplus.selecao.recurso_da_etapa.prazo_sem_unidade_declaravel",
       "status": 422,
       "titulo": "O prazo de interposição precisa declarar dias úteis ou horas"
+    },
+    {
+      "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_de_recurso_conflitante",
+      "status": 422,
+      "titulo": "O tipo de decisão tem procedimento sem alvo e procedimento com alvo ao mesmo tempo"
+    },
+    {
+      "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_de_recurso_desconhecido",
+      "status": 422,
+      "titulo": "A regra declarada não é um procedimento de recurso do catálogo"
+    },
+    {
+      "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_de_recurso_duplicado",
+      "status": 422,
+      "titulo": "A mesma matéria tem mais de um procedimento de recurso declarado"
+    },
+    {
+      "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_para_decisao_nao_declarada",
+      "status": 422,
+      "titulo": "O procedimento de recurso é de um tipo de decisão que a fase ou a etapa não declara produzir"
     },
     {
       "codigo": "uniplus.selecao.recurso_da_etapa.regra_catalogo_invalida",
@@ -7842,6 +7867,11 @@
       "titulo": "A regra referenciada não é do tipo regra_eliminacao"
     },
     {
+      "codigo": "uniplus.selecao.regra_recurso_fase.alvo_do_procedimento_de_recurso_inexistente",
+      "status": 422,
+      "titulo": "O alvo do procedimento de recurso não existe no lugar da janela"
+    },
+    {
       "codigo": "uniplus.selecao.regra_recurso_fase.ancora_em_ato_congelante",
       "status": 422,
       "titulo": "A âncora do recurso nunca é o ato que congela a configuração"
@@ -7880,6 +7910,26 @@
       "codigo": "uniplus.selecao.regra_recurso_fase.prazo_sem_unidade_declaravel",
       "status": 422,
       "titulo": "O prazo de interposição precisa declarar dias úteis ou horas"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_de_recurso_conflitante",
+      "status": 422,
+      "titulo": "O tipo de decisão tem procedimento sem alvo e procedimento com alvo ao mesmo tempo"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_de_recurso_desconhecido",
+      "status": 422,
+      "titulo": "A regra declarada não é um procedimento de recurso do catálogo"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_de_recurso_duplicado",
+      "status": 422,
+      "titulo": "A mesma matéria tem mais de um procedimento de recurso declarado"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_para_decisao_nao_declarada",
+      "status": 422,
+      "titulo": "O procedimento de recurso é de um tipo de decisão que a fase ou a etapa não declara produzir"
     },
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.regra_catalogo_invalida",

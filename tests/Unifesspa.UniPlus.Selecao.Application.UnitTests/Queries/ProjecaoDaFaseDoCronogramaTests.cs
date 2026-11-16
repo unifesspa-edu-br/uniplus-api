@@ -160,6 +160,7 @@ public sealed class ProjecaoDaFaseDoCronogramaTests
             regra.Id,
             ProdutoDoResultadoId,
             new ReferenciaRegraDto(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", new string('a', 64)),
-            new ArgsRegraPrazoRecursoDto(2m, UnidadePrazo.DiasUteis, 5m, UnidadePrazo.Dias, true, 3m, UnidadePrazo.Dias)),
+            new ArgsRegraPrazoRecursoDto(2m, UnidadePrazo.DiasUteis, 5m, UnidadePrazo.Dias, true, 3m, UnidadePrazo.Dias),
+            []),
         TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa]);
 }

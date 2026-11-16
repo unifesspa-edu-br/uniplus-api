@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -73,7 +74,7 @@ internal static class LeituraDosPrazosDeRecurso
         }
 
         string path = $"{pathPai}.regraRecurso";
-        leitor.ExigirChaves(bloco, path, "regra", "produtoAncoraId", "args");
+        leitor.ExigirChaves(bloco, path, "regra", "produtoAncoraId", "args", "procedimentos");
 
         ReferenciaRegra regra = leitor.Regra(bloco, "regra", path, RegraPrazoRecursoCodigo.AncoradoEmAto);
         Guid produtoAncoraId = leitor.Identificador(bloco, "produtoAncoraId", path);
@@ -89,7 +90,13 @@ internal static class LeituraDosPrazosDeRecurso
             return null;
         }
 
-        Result<RegraRecursoFase> regraRecurso = RegraRecursoFase.Reidratar(regra, args, produtoAncoraId);
+        ProcedimentosDeRecurso? procedimentos = LeituraDosProcedimentosDeRecurso.Ler(leitor, bloco, path, CodigosDoProcedimentoDeRecurso.DaFase);
+        if (leitor.Falhou || procedimentos is null)
+        {
+            return null;
+        }
+
+        Result<RegraRecursoFase> regraRecurso = RegraRecursoFase.Reidratar(regra, args, produtoAncoraId, procedimentos);
         return regraRecurso.IsFailure ? leitor.Propagar<RegraRecursoFase>(regraRecurso.Error!) : regraRecurso.Value;
     }
 

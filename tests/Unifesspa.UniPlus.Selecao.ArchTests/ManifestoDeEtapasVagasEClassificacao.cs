@@ -16,8 +16,22 @@ internal static class ManifestoDeEtapasVagasEClassificacao
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
 
         [typeof(RecursoDaEtapa)] = (
-            ["Ancora", "Regra", "Args", "ProdutoAncoraId"],
+            ["Ancora", "Regra", "Args", "ProdutoAncoraId", "Procedimentos"],
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
+
+        // Os procedimentos de recurso da janela, iguais na etapa e na fase. A coleção guarda a ordem canônica e cada
+        // procedimento é valor da janela que o declara: sem Id no envelope.
+        [typeof(ProcedimentosDeRecurso)] = (
+            ["Itens"],
+            []),
+
+        [typeof(ProcedimentoDeRecursoDeclarado)] = (
+            ["TipoDeDecisao", "Alvo", "Regra"],
+            []),
+
+        [typeof(AlvoDoProcedimentoDeRecurso)] = (
+            ["Tipo", "Valor"],
+            []),
 
         [typeof(ProdutoDaEtapa)] = (
             ["AtoCodigo", "Papel"],

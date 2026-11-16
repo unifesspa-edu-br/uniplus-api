@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -98,7 +99,8 @@ internal static partial class CorpusEnvelope
                 2.0000m, UnidadePrazo.DiasUteis,
                 true,
                 1.0000m, UnidadePrazo.DiasUteis),
-            ProdutoDaObjetivaId(1, variante)).Value!;
+            ProdutoDaObjetivaId(1, variante),
+            ProcedimentosDoCorpusSemAlvo()).Value!;
 
     // Segunda janela ancorada em ato, num produto DIFERENTE do primeiro — é o par que a
     // ordenação das janelas recursais precisa desempatar. Ela ordena pela chave do
@@ -115,7 +117,26 @@ internal static partial class CorpusEnvelope
             new ArgsRegraPrazoRecurso(
                 5.0000m, UnidadePrazo.DiasUteis,
                 null, null, false, null, null),
-            ProdutoDaObjetivaId(3, variante)).Value!;
+            ProdutoDaObjetivaId(3, variante),
+            ProcedimentosDoCorpusComAlvos()).Value!;
+
+    private static ProcedimentosDeRecurso ProcedimentosDoCorpusSemAlvo() => ProcedimentosDeRecurso.De(
+    [
+        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, Regra(RegraProcedimentoRecursoCodigo.Recalculo, '7')),
+    ]);
+
+    // Fora da ordem canônica de propósito: a coleção a normaliza, e o hash não pode depender da ordem de entrada.
+    private static ProcedimentosDeRecurso ProcedimentosDoCorpusComAlvos() => ProcedimentosDeRecurso.De(
+    [
+        ProcedimentoDeRecursoDeclarado.De(
+            TipoMotivoDeDecisao.Classificacao, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Matematica), Regra(RegraProcedimentoRecursoCodigo.Recalculo, '7')),
+        ProcedimentoDeRecursoDeclarado.De(
+            TipoMotivoDeDecisao.AnaliseDocumental,
+            AlvoDoProcedimentoDeRecurso.DoItem(Guid.Parse("00000000-0000-7000-8000-0000000000a1")),
+            Regra(RegraProcedimentoRecursoCodigo.Conferencia, '8')),
+        ProcedimentoDeRecursoDeclarado.De(
+            TipoMotivoDeDecisao.Classificacao, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Linguagens), Regra(RegraProcedimentoRecursoCodigo.Recalculo, '7')),
+    ]);
 
     private static RecursoDaEtapa RecursoDaObjetivaPorCiencia(int variante) =>
         RecursoDaEtapa.Reidratar(
@@ -123,7 +144,8 @@ internal static partial class CorpusEnvelope
             AncoraDoRecurso.CienciaIndividual,
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
             new ArgsRegraPrazoRecurso(48.0000m, UnidadePrazo.Horas, null, null, false, null, null),
-            Guid.Empty).Value!;
+            Guid.Empty,
+            ProcedimentosDeRecurso.Nenhum).Value!;
 
     private static EtapaProcesso EtapaRedacao(int variante) =>
         EtapaProcesso.Reidratar(

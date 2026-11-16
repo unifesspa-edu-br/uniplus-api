@@ -43,7 +43,8 @@ public sealed record RegraRecursoFaseDto(
     Guid Id,
     Guid ProdutoAncoraId,
     ReferenciaRegraDto Regra,
-    ArgsRegraPrazoRecursoDto Args);
+    ArgsRegraPrazoRecursoDto Args,
+    IReadOnlyList<ProcedimentoDeRecursoDto> Procedimentos);
 
 /// <summary>Projeção de leitura da unidade que responde por uma fase — a cópia congelada ao definir o cronograma.</summary>
 public sealed record UnidadeResponsavelDto(Guid OrigemId, string Sigla, string Nome);

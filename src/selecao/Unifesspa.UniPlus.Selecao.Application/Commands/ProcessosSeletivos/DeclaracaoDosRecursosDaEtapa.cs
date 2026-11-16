@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
+using Domain.ProcessosSeletivos.Recursos;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -13,9 +14,14 @@ using Kernel.Results;
 /// </summary>
 internal sealed class DeclaracaoDosRecursosDaEtapa(
     AtosConsultadosNaEdicao atos,
-    LeituraMemoizada<(string Codigo, string Versao), RegraCatalogo> regras)
+    LeituraMemoizada<(string Codigo, string Versao), RegraCatalogo> regras,
+    bool processoTemNotaDoEnem)
 {
     private readonly ConferenciaDaAncoraDoRecurso _conferenciaDaAncora = new(atos);
+
+    private readonly DeclaracaoDosProcedimentosDeRecurso _procedimentos = new(
+        (codigo, versao, cancellationToken) => regras.ObterAsync((codigo, versao), cancellationToken),
+        CodigosDoProcedimentoDeRecurso.DaEtapa);
 
     public async Task<Result> DeclararAsync(
         EtapaProcesso etapa,
@@ -24,9 +30,9 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
         CancellationToken cancellationToken)
     {
         List<RecursoDaEtapa> recursos = [];
-        foreach (RecursoDaEtapaInput declarado in input.Recursos)
+        for (int posicao = 0; posicao < input.Recursos.Count; posicao++)
         {
-            Result<RecursoDaEtapa> recurso = await RecursoAsync(etapa, input, declarado, atosJaAncorados, cancellationToken)
+            Result<RecursoDaEtapa> recurso = await RecursoAsync(etapa, input, posicao, atosJaAncorados, cancellationToken)
                 .ConfigureAwait(false);
             if (recurso.IsFailure)
             {
@@ -42,10 +48,11 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
     private async Task<Result<RecursoDaEtapa>> RecursoAsync(
         EtapaProcesso etapa,
         EtapaProcessoInput input,
-        RecursoDaEtapaInput declarado,
+        int posicao,
         IReadOnlySet<string> atosJaAncorados,
         CancellationToken cancellationToken)
     {
+        RecursoDaEtapaInput declarado = input.Recursos[posicao];
         ProdutoDaEtapa? produtoAncora = ProdutoAncora(etapa, declarado);
         if (produtoAncora is not null)
         {
@@ -67,10 +74,25 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
         }
 
         Result<ReferenciaRegra> regra = await ReferenciaDaRegraAsync(declarado, cancellationToken).ConfigureAwait(false);
-        return regra.IsFailure
-            ? Result<RecursoDaEtapa>.ValidationFailure(regra.Errors)
-            : RecursoDaEtapa.Criar(declarado.Ancora, regra.Value!, ArgumentosDoPrazo(declarado), produtoAncora?.Id ?? Guid.Empty);
+        if (regra.IsFailure)
+        {
+            return Result<RecursoDaEtapa>.ValidationFailure(regra.Errors);
+        }
+
+        Result<ProcedimentosDeRecurso> procedimentos = await _procedimentos
+            .DeclararAsync(declarado.Procedimentos, ContextoDosProcedimentos(etapa), $"recursos[{posicao}].procedimentos", cancellationToken)
+            .ConfigureAwait(false);
+        return procedimentos.IsFailure
+            ? Result<RecursoDaEtapa>.ValidationFailure(procedimentos.Errors)
+            : RecursoDaEtapa.Criar(declarado.Ancora, regra.Value!, ArgumentosDoPrazo(declarado), produtoAncora?.Id ?? Guid.Empty, procedimentos.Value);
     }
+
+    // O lugar da janela é a própria etapa: ela declara os tipos de decisão que produz e os itens de avaliação que o alvo
+    // pode apontar. A área do ENEM vale em qualquer janela de processo que importa a nota do ENEM.
+    private ContextoDosProcedimentosDeRecurso ContextoDosProcedimentos(EtapaProcesso etapa) => new(
+        etapa.TiposDeDecisao.Select(TipoMotivoDeDecisaoCodigo.FromCodigo).ToHashSet(),
+        etapa.ItensDeAvaliacao.Select(static item => item.Id).ToHashSet(),
+        processoTemNotaDoEnem);
 
     // Entre os PRELIMINARES, e não entre todos os produtos: a etapa publica o mesmo ato duas vezes, e é do
     // preliminar que a janela corre. Resolver só pelo código devolveria o definitivo quando ele viesse

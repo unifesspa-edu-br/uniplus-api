@@ -170,7 +170,8 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
                 new ReferenciaRegraDto(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", HashDaRegra),
                 new ArgsRegraPrazoRecursoDto(2m, UnidadePrazo.DiasUteis, null, null, true, null, null),
                 ProdutoDoResultadoId,
-                "RESULTADO_PRELIMINAR"),
+                "RESULTADO_PRELIMINAR",
+                []),
         ],
         TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa]);
 }

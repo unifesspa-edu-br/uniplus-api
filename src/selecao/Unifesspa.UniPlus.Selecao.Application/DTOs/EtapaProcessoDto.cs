@@ -110,7 +110,8 @@ public sealed record RecursoDaEtapaDto(
     ReferenciaRegraDto Regra,
     ArgsRegraPrazoRecursoDto Args,
     Guid ProdutoAncoraId,
-    string? AtoAncoraCodigo);
+    string? AtoAncoraCodigo,
+    IReadOnlyList<ProcedimentoDeRecursoDto> Procedimentos);
 
 /// <summary>Projeção de leitura de <c>ProdutoDaEtapa</c>.</summary>
 /// <param name="Papel">

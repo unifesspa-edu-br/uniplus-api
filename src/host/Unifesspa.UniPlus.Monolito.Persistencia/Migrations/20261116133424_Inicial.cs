@@ -3739,6 +3739,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     susp_2a_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true),
                     susp_2a_unidade = table.Column<int>(type: "integer", nullable: true),
                     produto_ancora_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    procedimentos_de_recurso = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Procedimentos de recurso declarados para a janela, um por matéria, em ordem canônica."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
@@ -3892,6 +3893,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     suspensividade_2a_instancia_valor = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true),
                     suspensividade_2a_instancia_unidade = table.Column<int>(type: "integer", nullable: true),
                     produto_ancora_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    procedimentos_de_recurso = table.Column<string>(type: "jsonb", nullable: false, defaultValueSql: "'[]'::jsonb", comment: "Procedimentos de recurso declarados para a janela, um por matéria, em ordem canônica."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },

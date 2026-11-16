@@ -139,7 +139,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         // qualquer regra que não seja RECURSO-PRAZO-ANCORADO-EM-ATO), por isso não
         // entra em UnioesDiscriminadas: é alcançado diretamente como ArgsRegraPrazoRecurso.
         [typeof(RegraRecursoFase)] = (
-            ["Regra", "ProdutoAncoraId", "Args"],
+            ["Regra", "ProdutoAncoraId", "Args", "Procedimentos"],
             [("FaseCronogramaId", "FK interna.")]),
 
         [typeof(ArgsRegraPrazoRecurso)] = (

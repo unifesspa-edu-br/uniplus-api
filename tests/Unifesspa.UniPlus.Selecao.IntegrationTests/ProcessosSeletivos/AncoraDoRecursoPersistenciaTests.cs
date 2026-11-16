@@ -9,6 +9,7 @@ using Npgsql;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
@@ -97,6 +98,17 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
 
         Publicar(processo).IsFailure.Should().BeTrue(
             "sem chave estrangeira, nada no banco impede a linha de apontar para fora da fase — o gate é a defesa");
+    }
+
+    [Fact(DisplayName = "Os procedimentos de recurso da janela da fase voltam do banco como foram gravados, na ordem canônica")]
+    public async Task ProcedimentosDeRecurso_GravadosEReidratadosDaColunaJsonb()
+    {
+        Guid processoId = await SemearProcessoConformeAsync($"PS procedimentos {Guid.CreateVersion7()}");
+
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = await CarregarAsync(db, processoId);
+
+        processo.CronogramaFases.Single().RegraRecurso!.Procedimentos.MesmoConteudo(ProcedimentosDaJanela()).Should().BeTrue();
     }
 
     [Fact(DisplayName = "Contraprova: a mesma configuração com a âncora no preliminar tem o item verde e publica")]
@@ -283,6 +295,17 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
             bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
     }
 
+    private static ProcedimentosDeRecurso ProcedimentosDaJanela() => ProcedimentosDeRecurso.De(
+    [
+        ProcedimentoDeRecursoDeclarado.De(
+            TipoMotivoDeDecisao.Classificacao, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Matematica), Regra(RegraProcedimentoRecursoCodigo.Recalculo, 'f')),
+        ProcedimentoDeRecursoDeclarado.De(
+            TipoMotivoDeDecisao.AnaliseDocumental,
+            AlvoDoProcedimentoDeRecurso.DoItem(Guid.Parse("00000000-0000-7000-8000-0000000000b1")),
+            Regra(RegraProcedimentoRecursoCodigo.Conferencia, 'f')),
+        ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.HomologacaoDasInscricoes, null, Regra(RegraProcedimentoRecursoCodigo.CorrecaoMaterial, 'f')),
+    ]);
+
     private static RegraRecursoFase RegraDeRecurso(Guid produtoPreliminarId) =>
         RegraRecursoFase.Criar(
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),
@@ -294,5 +317,6 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
                 AdmiteInstanciaSuperior: false,
                 SuspensividadeSegundaInstanciaValor: null,
                 SuspensividadeSegundaInstanciaUnidade: null),
-            produtoPreliminarId).Value!;
+            produtoPreliminarId,
+            ProcedimentosDaJanela()).Value!;
 }

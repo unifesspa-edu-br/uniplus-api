@@ -4,6 +4,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -43,6 +44,9 @@ public sealed class RecursoDaEtapa : EntityBase
     /// </summary>
     public Guid ProdutoAncoraId { get; private set; }
 
+    /// <summary>Como o recurso de cada matéria que a etapa produz é revisado; vazio quando nenhum foi declarado.</summary>
+    public ProcedimentosDeRecurso Procedimentos { get; private set; } = ProcedimentosDeRecurso.Nenhum;
+
     private RecursoDaEtapa() { }
 
     /// <summary>
@@ -54,7 +58,8 @@ public sealed class RecursoDaEtapa : EntityBase
         AncoraDoRecurso ancora,
         ReferenciaRegra regra,
         ArgsRegraPrazoRecurso args,
-        Guid produtoAncoraId)
+        Guid produtoAncoraId,
+        ProcedimentosDeRecurso? procedimentos = null)
     {
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentNullException.ThrowIfNull(args);
@@ -94,6 +99,7 @@ public sealed class RecursoDaEtapa : EntityBase
             Regra = regra,
             Args = args,
             ProdutoAncoraId = produtoAncoraId,
+            Procedimentos = procedimentos ?? ProcedimentosDeRecurso.Nenhum,
         });
     }
 
@@ -135,16 +141,22 @@ public sealed class RecursoDaEtapa : EntityBase
     /// </para>
     /// </remarks>
     public static Result<RecursoDaEtapa> Reidratar(
-        Guid id, AncoraDoRecurso ancora, ReferenciaRegra regra, ArgsRegraPrazoRecurso args, Guid produtoAncoraId)
+        Guid id,
+        AncoraDoRecurso ancora,
+        ReferenciaRegra regra,
+        ArgsRegraPrazoRecurso args,
+        Guid produtoAncoraId,
+        ProcedimentosDeRecurso procedimentos)
     {
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(procedimentos);
         if (id == Guid.Empty)
         {
             throw new ArgumentException("O recurso reidratado deve declarar o Id congelado no envelope.", nameof(id));
         }
 
-        Result<RecursoDaEtapa> validada = Criar(ancora, regra, args, produtoAncoraId);
+        Result<RecursoDaEtapa> validada = Criar(ancora, regra, args, produtoAncoraId, procedimentos);
         if (validada.IsFailure)
         {
             return validada;
@@ -157,6 +169,7 @@ public sealed class RecursoDaEtapa : EntityBase
             Regra = regra,
             Args = args,
             ProdutoAncoraId = produtoAncoraId,
+            Procedimentos = procedimentos,
         });
     }
 
@@ -166,15 +179,21 @@ public sealed class RecursoDaEtapa : EntityBase
     /// reposição impossível — mesma postura de <see cref="Reidratar"/>.
     /// </summary>
     internal void ReporDadosCongelados(
-        AncoraDoRecurso ancora, ReferenciaRegra regra, ArgsRegraPrazoRecurso args, Guid produtoAncoraId)
+        AncoraDoRecurso ancora,
+        ReferenciaRegra regra,
+        ArgsRegraPrazoRecurso args,
+        Guid produtoAncoraId,
+        ProcedimentosDeRecurso procedimentos)
     {
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(procedimentos);
 
         Ancora = ancora;
         Regra = regra;
         Args = args;
         ProdutoAncoraId = produtoAncoraId;
+        Procedimentos = procedimentos;
     }
 
     internal void VincularEtapa(Guid etapaProcessoId) => EtapaProcessoId = etapaProcessoId;

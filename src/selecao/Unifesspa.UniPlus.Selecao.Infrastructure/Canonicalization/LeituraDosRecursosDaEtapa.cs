@@ -5,6 +5,7 @@ using System.Text.Json.Nodes;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -33,7 +34,7 @@ internal static class LeituraDosRecursosDaEtapa
 
     private static RecursoDaEtapa? LerRecurso(LeitorEnvelope leitor, JsonObject itemRecurso, string pathRecurso)
     {
-        leitor.ExigirChaves(itemRecurso, pathRecurso, "ancora", "regra", "args", "produtoAncoraId");
+        leitor.ExigirChaves(itemRecurso, pathRecurso, "ancora", "regra", "args", "produtoAncoraId", "procedimentos");
         AncoraDoRecurso ancora = leitor.Enumeracao<AncoraDoRecurso>(itemRecurso, "ancora", pathRecurso);
 
         // A referência vem inteira e conferida contra o código de regra esperado.
@@ -42,12 +43,19 @@ internal static class LeituraDosRecursosDaEtapa
         // A âncora por ciência não tem produto: o campo vem nulo.
         Guid? ancoraId = leitor.IdentificadorOpcional(itemRecurso, "produtoAncoraId", pathRecurso);
         JsonObject argsObjeto = leitor.Objeto(itemRecurso, "args", pathRecurso);
-        return leitor.Falhou ? null : Reidratar(leitor, ancora, regra, ancoraId, argsObjeto, pathRecurso);
+        ProcedimentosDeRecurso? procedimentos = leitor.Falhou
+            ? null
+            : LeituraDosProcedimentosDeRecurso.Ler(leitor, itemRecurso, pathRecurso, CodigosDoProcedimentoDeRecurso.DaEtapa);
+        return leitor.Falhou || procedimentos is null
+            ? null
+            : Reidratar(leitor, new(ancora, regra, ancoraId, procedimentos), argsObjeto, pathRecurso);
     }
 
-    private static RecursoDaEtapa? Reidratar(
-        LeitorEnvelope leitor, AncoraDoRecurso ancora, ReferenciaRegra regra, Guid? ancoraId, JsonObject argsObjeto, string pathRecurso)
+    private sealed record RecursoLido(AncoraDoRecurso Ancora, ReferenciaRegra Regra, Guid? AncoraId, ProcedimentosDeRecurso Procedimentos);
+
+    private static RecursoDaEtapa? Reidratar(LeitorEnvelope leitor, RecursoLido lido, JsonObject argsObjeto, string pathRecurso)
     {
+        (AncoraDoRecurso ancora, ReferenciaRegra regra, Guid? ancoraId, ProcedimentosDeRecurso procedimentos) = lido;
         // Nenhuma é o sentinela de ausência que RecursoDaEtapa.Criar recusa e que Reidratar não reconfere.
         if (ancora == AncoraDoRecurso.Nenhuma)
         {
@@ -61,7 +69,7 @@ internal static class LeituraDosRecursosDaEtapa
         }
 
         // Identidade nova: o que a publicação promete é a janela, não a linha que a guarda.
-        Result<RecursoDaEtapa> recurso = RecursoDaEtapa.Reidratar(Guid.CreateVersion7(), ancora, regra, args, ancoraId ?? Guid.Empty);
+        Result<RecursoDaEtapa> recurso = RecursoDaEtapa.Reidratar(Guid.CreateVersion7(), ancora, regra, args, ancoraId ?? Guid.Empty, procedimentos);
         return recurso.IsFailure
             ? leitor.Propagar<RecursoDaEtapa?>(recurso.Error!)
             : recurso.Value;

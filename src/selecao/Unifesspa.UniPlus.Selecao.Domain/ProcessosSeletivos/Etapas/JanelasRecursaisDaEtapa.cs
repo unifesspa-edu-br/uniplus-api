@@ -94,7 +94,7 @@ internal static class JanelasRecursaisDaEtapa
         }
 
         RecursoDaEtapa destino = viva ?? congelado;
-        destino.ReporDadosCongelados(congelado.Ancora, congelado.Regra, congelado.Args, ancora);
+        destino.ReporDadosCongelados(congelado.Ancora, congelado.Regra, congelado.Args, ancora, congelado.Procedimentos);
 
         return destino;
     }

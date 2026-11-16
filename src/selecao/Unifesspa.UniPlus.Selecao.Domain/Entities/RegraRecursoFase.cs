@@ -4,6 +4,7 @@ using Enums;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -62,6 +63,9 @@ public sealed class RegraRecursoFase : EntityBase
     /// </remarks>
     public Guid ProdutoAncoraId { get; private set; }
 
+    /// <summary>Como o recurso de cada matéria que a fase produz é revisado; vazio quando nenhum foi declarado.</summary>
+    public ProcedimentosDeRecurso Procedimentos { get; private set; } = ProcedimentosDeRecurso.Nenhum;
+
     private RegraRecursoFase() { }
 
     /// <summary>
@@ -83,7 +87,8 @@ public sealed class RegraRecursoFase : EntityBase
     public static Result<RegraRecursoFase> Criar(
         ReferenciaRegra regra,
         ArgsRegraPrazoRecurso args,
-        Guid produtoAncoraId)
+        Guid produtoAncoraId,
+        ProcedimentosDeRecurso? procedimentos = null)
     {
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentNullException.ThrowIfNull(args);
@@ -110,7 +115,13 @@ public sealed class RegraRecursoFase : EntityBase
         }
 
         return Result<RegraRecursoFase>.Success(
-            new RegraRecursoFase { Regra = regra, Args = args, ProdutoAncoraId = produtoAncoraId });
+            new RegraRecursoFase
+            {
+                Regra = regra,
+                Args = args,
+                ProdutoAncoraId = produtoAncoraId,
+                Procedimentos = procedimentos ?? ProcedimentosDeRecurso.Nenhum,
+            });
     }
 
     /// <summary>
@@ -148,8 +159,10 @@ public sealed class RegraRecursoFase : EntityBase
     public static Result<RegraRecursoFase> Reidratar(
         ReferenciaRegra regra,
         ArgsRegraPrazoRecurso args,
-        Guid produtoAncoraId)
+        Guid produtoAncoraId,
+        ProcedimentosDeRecurso procedimentos)
     {
+        ArgumentNullException.ThrowIfNull(procedimentos);
         if (produtoAncoraId == Guid.Empty)
         {
             throw new ArgumentException(
@@ -157,7 +170,7 @@ public sealed class RegraRecursoFase : EntityBase
                 nameof(produtoAncoraId));
         }
 
-        return Criar(regra, args, produtoAncoraId);
+        return Criar(regra, args, produtoAncoraId, procedimentos);
     }
 
     internal void VincularFase(Guid faseCronogramaId) => FaseCronogramaId = faseCronogramaId;

@@ -40,7 +40,8 @@ internal sealed class FasesEmMontagem
         _cadastros = cadastros;
         _bancas = new MontagemDasBancasDaFase(cadastros);
         _produtos = new MontagemDosProdutosDaFase(atos);
-        _regraDeRecurso = new MontagemDaRegraDeRecursoDaFase(cadastros.Regras, atos, AncorasJaDeclaradas(processo));
+        _regraDeRecurso = new MontagemDaRegraDeRecursoDaFase(
+            cadastros.Regras, atos, AncorasJaDeclaradas(processo), processo.Etapas.Any(static e => e.DeclaraNotaDoEnem));
     }
 
     public async Task<Result<List<FaseCronograma>>> MontarAsync(
@@ -127,7 +128,7 @@ internal sealed class FasesEmMontagem
         }
 
         Result<RegraRecursoFase> regra = await _regraDeRecurso
-            .MontarAsync(declarada, indice, faseCodigo, produtos, cancellationToken).ConfigureAwait(false);
+            .MontarAsync(declarada, indice, faseCodigo, produtos, input.TiposDeDecisao, cancellationToken).ConfigureAwait(false);
         return regra.IsFailure
             ? Result<RegraRecursoFase?>.ValidationFailure(regra.Errors)
             : Result<RegraRecursoFase?>.Success(regra.Value);

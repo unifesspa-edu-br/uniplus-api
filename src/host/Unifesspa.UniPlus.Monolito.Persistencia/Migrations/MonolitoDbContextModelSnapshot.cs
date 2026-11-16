@@ -14310,6 +14310,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("etapa_processo_id");
 
+                    b.Property<string>("Procedimentos")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("procedimentos_de_recurso")
+                        .HasDefaultValueSql("'[]'::jsonb")
+                        .HasComment("Procedimentos de recurso declarados para a janela, um por matéria, em ordem canônica.");
+
                     b.Property<Guid>("ProdutoAncoraId")
                         .HasColumnType("uuid")
                         .HasColumnName("produto_ancora_id");
@@ -14931,6 +14939,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("FaseCronogramaId")
                         .HasColumnType("uuid")
                         .HasColumnName("fase_cronograma_id");
+
+                    b.Property<string>("Procedimentos")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("procedimentos_de_recurso")
+                        .HasDefaultValueSql("'[]'::jsonb")
+                        .HasComment("Procedimentos de recurso declarados para a janela, um por matéria, em ordem canônica.");
 
                     b.Property<Guid>("ProdutoAncoraId")
                         .HasColumnType("uuid")

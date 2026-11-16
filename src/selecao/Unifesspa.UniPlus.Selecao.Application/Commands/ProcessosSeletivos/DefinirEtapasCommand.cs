@@ -126,6 +126,7 @@ public sealed record BancaDaEtapaInput(Guid TipoBancaId, RegraDeDeliberacaoInput
 /// qual publicação abre a janela. <paramref name="AdmiteInstanciaSuperior"/> é
 /// <c>[JsonRequired]</c> pela mesma razão das listas da etapa: o ausente virava <c>false</c> em
 /// silêncio, e a janela seria congelada sem instância superior sem que ninguém o tivesse decidido.
+/// <paramref name="Procedimentos"/> declara como o recurso de cada matéria que a etapa produz é revisado.
 /// </summary>
 public sealed record RecursoDaEtapaInput(
     AncoraDoRecurso Ancora,
@@ -138,7 +139,8 @@ public sealed record RecursoDaEtapaInput(
     UnidadePrazo? SuspensividadePrimeiraInstanciaUnidade,
     [property: JsonRequired] bool AdmiteInstanciaSuperior,
     decimal? SuspensividadeSegundaInstanciaValor,
-    UnidadePrazo? SuspensividadeSegundaInstanciaUnidade);
+    UnidadePrazo? SuspensividadeSegundaInstanciaUnidade,
+    IReadOnlyList<ProcedimentoDeRecursoInput>? Procedimentos = null);
 
 /// <summary>O que uma etapa publica: o código do tipo de ato e o papel no ciclo recursal.</summary>
 /// <param name="Papel">Token UPPER_SNAKE, como o produto da fase o recebe.</param>

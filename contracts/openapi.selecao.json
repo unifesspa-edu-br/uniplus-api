@@ -12956,6 +12956,50 @@
           }
         }
       },
+      "AlvoDoProcedimentoDeRecursoDto": {
+        "required": [
+          "itemDeAvaliacaoId",
+          "areaDoEnem"
+        ],
+        "type": "object",
+        "properties": {
+          "itemDeAvaliacaoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "areaDoEnem": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "AlvoDoProcedimentoDeRecursoInput": {
+        "required": [
+          "itemDeAvaliacaoId",
+          "areaDoEnem"
+        ],
+        "type": "object",
+        "properties": {
+          "itemDeAvaliacaoId": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "uuid"
+          },
+          "areaDoEnem": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "AncoraDoRecurso": {
         "enum": [
           "nenhuma",
@@ -21605,6 +21649,71 @@
           }
         }
       },
+      "ProcedimentoDeRecursoDto": {
+        "required": [
+          "tipoDeDecisao",
+          "alvo",
+          "regra"
+        ],
+        "type": "object",
+        "properties": {
+          "tipoDeDecisao": {
+            "type": "string"
+          },
+          "alvo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AlvoDoProcedimentoDeRecursoDto"
+              }
+            ]
+          },
+          "regra": {
+            "$ref": "#/components/schemas/ReferenciaRegraDto"
+          }
+        }
+      },
+      "ProcedimentoDeRecursoInput": {
+        "required": [
+          "tipoDeDecisao",
+          "alvo",
+          "regraCodigo",
+          "regraVersao"
+        ],
+        "type": "object",
+        "properties": {
+          "tipoDeDecisao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "alvo": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AlvoDoProcedimentoDeRecursoInput"
+              }
+            ]
+          },
+          "regraCodigo": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "regraVersao": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
       "ProcessoDaInscricaoDto": {
         "required": [
           "id",
@@ -22376,7 +22485,8 @@
           "regra",
           "args",
           "produtoAncoraId",
-          "atoAncoraCodigo"
+          "atoAncoraCodigo",
+          "procedimentos"
         ],
         "type": "object",
         "properties": {
@@ -22402,6 +22512,12 @@
               "null",
               "string"
             ]
+          },
+          "procedimentos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProcedimentoDeRecursoDto"
+            }
           }
         }
       },
@@ -22479,6 +22595,15 @@
                 "$ref": "#/components/schemas/UnidadePrazo"
               }
             ]
+          },
+          "procedimentos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ProcedimentoDeRecursoInput"
+            }
           }
         }
       },
@@ -23054,7 +23179,8 @@
           "id",
           "produtoAncoraId",
           "regra",
-          "args"
+          "args",
+          "procedimentos"
         ],
         "type": "object",
         "properties": {
@@ -23071,6 +23197,12 @@
           },
           "args": {
             "$ref": "#/components/schemas/ArgsRegraPrazoRecursoDto"
+          },
+          "procedimentos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProcedimentoDeRecursoDto"
+            }
           }
         }
       },
@@ -23141,6 +23273,15 @@
                 "$ref": "#/components/schemas/UnidadePrazo"
               }
             ]
+          },
+          "procedimentos": {
+            "type": [
+              "null",
+              "array"
+            ],
+            "items": {
+              "$ref": "#/components/schemas/ProcedimentoDeRecursoInput"
+            }
           }
         }
       },

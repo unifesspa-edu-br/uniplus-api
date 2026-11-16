@@ -105,6 +105,7 @@ internal static class SerializacaoDasEtapas
                 ["regra"] = EscritaCanonica.SerializarReferenciaRegra(r.Regra),
                 ["args"] = SerializacaoDoCronograma.SerializarArgsRegraPrazoRecurso(r.Args),
                 ["produtoAncoraId"] = r.ProdutoAncoraId == Guid.Empty ? null : JsonValue.Create(r.ProdutoAncoraId),
+                ["procedimentos"] = SerializacaoDosProcedimentosDeRecurso.Serializar(r.Procedimentos),
             })]);
 
     private static JsonArray SerializarProdutos(EtapaProcesso etapa) =>

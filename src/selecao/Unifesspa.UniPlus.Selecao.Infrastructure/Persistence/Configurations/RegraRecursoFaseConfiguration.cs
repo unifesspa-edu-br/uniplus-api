@@ -51,6 +51,7 @@ public sealed class RegraRecursoFaseConfiguration : IEntityTypeConfiguration<Reg
         // referência é interna ao agregado e nunca atravessa fase: quem a mantém coerente é
         // FaseCronograma, que valida a âncora ao criar e a remapeia ao reconciliar.
         builder.Property(r => r.ProdutoAncoraId).HasColumnName("produto_ancora_id").IsRequired();
+        builder.MapearProcedimentosDeRecurso(r => r.Procedimentos);
 
         // 0..1 por fase — a FK É a chave alternativa que garante a cardinalidade.
         builder.HasIndex(r => r.FaseCronogramaId)
