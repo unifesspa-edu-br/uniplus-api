@@ -29,6 +29,7 @@ public static class SelecaoApplicationServiceRegistration
 
         services.AddValidatorsFromAssembly(typeof(SelecaoApplicationServiceRegistration).Assembly);
         AddDefinicaoDoCronogramaDeFases(services);
+        AddResolucaoDasDistribuicoesDeVagas(services);
         AddConferenciaDaObrigatoriedadeLegal(services);
         AddPublicacao(services);
         AddAcessoAoCampoEAoDocumentoDaInscricao(services);
@@ -46,6 +47,11 @@ public static class SelecaoApplicationServiceRegistration
         // A porta lida do catálogo do módulo, para o projetor saber qual permissão atende a cada par.
         services.AddSingleton<IPortaDePermissaoPorPar, PortaDePermissaoPorPar<PermissaoSelecao>>();
     }
+
+    // O resolvedor guarda só as portas dos cadastros por construtor; o comando que grava a distribuição e a query que a
+    // simula o recebem prontos, sem service location.
+    private static void AddResolucaoDasDistribuicoesDeVagas(IServiceCollection services) =>
+        services.AddScoped<ConfiguracaoDistribuicaoVagasResolver>();
 
     // O serviço de definição e a montagem das fases não guardam estado de uma edição para outra: as portas entram
     // por construtor, e o handler recebe os dois prontos.

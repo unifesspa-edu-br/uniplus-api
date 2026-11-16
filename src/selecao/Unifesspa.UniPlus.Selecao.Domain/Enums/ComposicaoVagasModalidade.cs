@@ -6,7 +6,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// Determina como a modalidade entra na fórmula de conservação do
 /// <c>QuadroDeVagas</c> (derivado, motor futuro):
 /// <c>VR_final + RETIRADAS + AC = VO_base</c> e
-/// <c>TotalPublicado = VO_base + Σ(SuplementarAoTotal)</c>.
+/// <c>total de vagas do edital = vagas ofertadas base + Σ(SuplementarAoTotal)</c>.
 /// </summary>
 public enum ComposicaoVagasModalidade
 {
@@ -21,6 +21,6 @@ public enum ComposicaoVagasModalidade
     /// <summary>Retira vagas de outra modalidade (<see cref="ModalidadeSelecionada.ComposicaoOrigemCodigo"/>) — não soma ao total.</summary>
     RetiradaDeOutraModalidade = 3,
 
-    /// <summary>Soma ao total publicado (<c>TotalPublicado = VO_base + n</c>) — vaga institucional adicional.</summary>
+    /// <summary>Soma ao total de vagas do edital (<c>vagas ofertadas base + n</c>) — vaga institucional adicional.</summary>
     SuplementarAoTotal = 4,
 }

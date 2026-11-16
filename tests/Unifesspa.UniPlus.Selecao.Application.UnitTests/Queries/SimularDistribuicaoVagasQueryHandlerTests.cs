@@ -32,7 +32,11 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         IRegraCatalogoReader RegraCatalogoReader,
         IOfertaCursoReader OfertaCursoReader,
         IModalidadeReader ModalidadeReader,
-        IReferenciaReservaDemograficaReader ReferenciaReservaDemograficaReader);
+        IReferenciaReservaDemograficaReader ReferenciaReservaDemograficaReader)
+    {
+        public ConfiguracaoDistribuicaoVagasResolver Resolvedor =>
+            new(RegraCatalogoReader, OfertaCursoReader, ModalidadeReader, ReferenciaReservaDemograficaReader);
+    }
 
     private static Mocks NovosMocks(bool processoExiste, Guid processoId)
     {
@@ -73,8 +77,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
             [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "X", "v1", null, null, null, [Guid.CreateVersion7()], [])]);
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CancellationToken.None);
+            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -106,8 +109,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
                 [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 10)])]);
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CancellationToken.None);
+            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue("AC não está entre as modalidades que o PSIQ admite");
         result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeNaoAdmitidaPelaRegra");
@@ -133,12 +135,11 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
                 [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 99999)])]);
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CancellationToken.None);
+            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue(
             "a simulação percorre o mesmo resolvedor da escrita — quem chama a API direto não pode contornar o teto");
-        result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.VoBaseAcimaDasVagasAutorizadas");
+        result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.VagasOfertadasBaseAcimaDasVagasAutorizadas");
     }
 
     [Fact(DisplayName = "Handle institucional devolve o quadro igual ao declarado, sem persistir")]
@@ -161,14 +162,13 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
                 [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])]);
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CancellationToken.None);
+            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         ConfiguracaoDistribuicaoVagasDto dto = result.Value!.Should().ContainSingle().Subject;
-        dto.VoBase.Should().Be(60);
+        dto.VagasOfertadasBase.Should().Be(60);
         dto.Quadro.Should().ContainSingle(v => v.Quantidade == 60);
-        dto.TotalPublicado.Should().Be(60);
+        dto.TotalDeVagasDoEdital.Should().Be(60);
         await mocks.Repository.DidNotReceiveWithAnyArgs().ObterParaMutacaoAsync(default, default);
     }
 
@@ -212,8 +212,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
                 [.. federaisMaisAc.Select(f => f.Id)], [])]);
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CancellationToken.None);
+            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         ConfiguracaoDistribuicaoVagasDto dto = result.Value!.Should().ContainSingle().Subject;
@@ -229,11 +228,10 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         quadroPorCodigo[ModalidadesFederaisLei12711.LiEp].Should().Be(3);
         quadroPorCodigo[ModalidadesFederaisLei12711.Ac].Should().Be(20);
 
-        dto.VrNominal.Should().Be(20);
-        dto.VrFinal.Should().Be(20);
-        dto.Estouro.Should().Be(0);
-        dto.CapadoEmVo.Should().BeFalse();
-        dto.TotalPublicado.Should().Be(40);
+        dto.ConferenciaDaReservaLegal.Should().Be(new ConferenciaDaReservaLegalDto(
+            ReservaLegalNominal: 20, ReservaLegalEfetiva: 20, ExcedenteSobreAReservaLegal: 0, VagasCortadasPorEscassez: 0));
+        dto.AjusteDoQuadroFixado.Should().BeNull();
+        dto.TotalDeVagasDoEdital.Should().Be(40);
 
         // O preview não toca no agregado nem no unit of work: a resolução cross-módulo
         // e o cálculo do quadro rodam inteiramente em memória.
@@ -254,8 +252,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
             [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "INEXISTENTE", "v1", null, null, null, [Guid.CreateVersion7()], [])]);
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CancellationToken.None);
+            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.RegraDistribuicaoNaoEncontrada");
@@ -283,8 +280,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
                 [modalidadeId1, modalidadeId2], [])]);
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CancellationToken.None);
+            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeDuplicada");
@@ -302,8 +298,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
             [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "X", "v1", null, null, null, [], [])]);
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await SimularDistribuicaoVagasQueryHandler.Handle(
-            query, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CancellationToken.None);
+            query, mocks.Repository, mocks.Resolvedor, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["ConfiguracaoDistribuicaoVagas.ModalidadesVazias"]);

@@ -98,7 +98,7 @@ public static class CalculadoraQuadroVagasLei12711
 
     private static DomainError AmplaConcorrenciaNegativa(int ampla, int vagasOfertadasBase) => new(
         "ConfiguracaoDistribuicaoVagas.QuadroAmplaConcorrenciaNegativa",
-        $"A ampla concorrência resultaria negativa ({ampla}) para VO={vagasOfertadasBase}: ajuste o VO, o PR ou as retiradas.");
+        $"A ampla concorrência resultaria negativa ({ampla}) para {vagasOfertadasBase} vagas ofertadas base: ajuste as vagas ofertadas base, o percentual da reserva legal ou as retiradas.");
 
     private static Result ValidarEntradas(
         IReadOnlyDictionary<string, int> retiradas, IReadOnlyDictionary<string, int> suplementares)

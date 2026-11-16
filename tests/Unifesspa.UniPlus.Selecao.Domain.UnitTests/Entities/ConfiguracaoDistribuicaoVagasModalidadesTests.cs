@@ -77,7 +77,7 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
         Result<ConfiguracaoDistribuicaoVagas> resultado = CriarConfiguracao(40, RegraComAcPcd(), modalidades, ["AC", "AC_PCD"]);
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.TotalDeVagasDoEdital.Should().Be(40, "AC_PCD retira de AC — o par fecha no VO_base");
+        resultado.Value!.TotalDeVagasDoEdital.Should().Be(40, "AC_PCD retira de AC — o par fecha no vagas ofertadas base");
     }
 
     [Fact(DisplayName = "Regra sem rol declarado não restringe as modalidades")]
@@ -228,16 +228,16 @@ public sealed class ConfiguracaoDistribuicaoVagasModalidadesTests
             regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), acaoQuandoIndeferido: null, baseLegal: "base legal",
             quantidadeDeclarada: 2).Value!;
 
-    [Theory(DisplayName = "Criar com VO_base não positivo falha")]
+    [Theory(DisplayName = "Criar com vagas ofertadas base não positivo falha")]
     [InlineData(0)]
     [InlineData(-1)]
-    public void Criar_VoBaseInvalido_Falha(int voBase)
+    public void Criar_VagasOfertadasBaseInvalido_Falha(int vagasOfertadasBase)
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = voBase, PercentualDaReservaLegal = 0.5m, RegraDeDistribuicao = RegraLei12711(), RegraDeAjuste = RegraAjuste(), ReferenciaDemografica = Demografica(), Modalidades = AsOitoFederaisMaisAc() },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = vagasOfertadasBase, PercentualDaReservaLegal = 0.5m, RegraDeDistribuicao = RegraLei12711(), RegraDeAjuste = RegraAjuste(), ReferenciaDemografica = Demografica(), Modalidades = AsOitoFederaisMaisAc() },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina });
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.VoBaseInvalido");
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.VagasOfertadasBaseInvalido");
     }
 }

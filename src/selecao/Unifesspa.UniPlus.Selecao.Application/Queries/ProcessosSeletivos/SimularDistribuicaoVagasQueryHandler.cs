@@ -9,8 +9,6 @@ using DTOs;
 
 using Kernel.Results;
 
-using Unifesspa.UniPlus.Configuracao.Contracts;
-
 /// <summary>
 /// Handler do <see cref="SimularDistribuicaoVagasQuery"/> (issue #1282):
 /// resolve cada oferta contra os mesmos cadastros vivos e o mesmo catálogo
@@ -25,53 +23,43 @@ public static class SimularDistribuicaoVagasQueryHandler
     public static async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>> Handle(
         SimularDistribuicaoVagasQuery query,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegraCatalogoReader regraCatalogoReader,
-        IOfertaCursoReader ofertaCursoReader,
-        IModalidadeReader modalidadeReader,
-        IReferenciaReservaDemograficaReader referenciaReservaDemograficaReader,
+        ConfiguracaoDistribuicaoVagasResolver resolvedor,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(regraCatalogoReader);
-        ArgumentNullException.ThrowIfNull(ofertaCursoReader);
-        ArgumentNullException.ThrowIfNull(modalidadeReader);
-        ArgumentNullException.ThrowIfNull(referenciaReservaDemograficaReader);
 
-        bool existe = await processoSeletivoRepository
-            .ExisteAsync(query.ProcessoSeletivoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (!existe)
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>> simulada =
+            await SimularAsync(query, processoSeletivoRepository, resolvedor, cancellationToken).ConfigureAwait(false);
+
+        // Nunca tocadas por SalvarAlteracoesAsync: os Guids da configuração e de cada VagaOfertada são
+        // efêmeros, gerados em memória, e nunca persistidos.
+        return simulada.IsFailure
+            ? Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.ValidationFailure(simulada.Errors)
+            : Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.Success(
+                [.. simulada.Value!.Select(ProjecaoDasVagas.ProjetarDistribuicao)]);
+    }
+
+    private static async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>> SimularAsync(
+        SimularDistribuicaoVagasQuery query,
+        IProcessoSeletivoRepository processoSeletivoRepository,
+        ConfiguracaoDistribuicaoVagasResolver resolvedor,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
+        ArgumentNullException.ThrowIfNull(resolvedor);
+
+        if (!await processoSeletivoRepository.ExisteAsync(query.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false))
         {
-            return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.Failure(new DomainError(
-                "ProcessoSeletivo.NaoEncontrado",
-                $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
+            return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.Failure(ProcessoNaoEncontrado(query.ProcessoSeletivoId));
         }
 
         // Mesma ordem do comando de escrita (ADR-0125): a forma de todas as ofertas antes de qualquer I/O.
         IReadOnlyList<FieldError> formaErros = ConfiguracaoDistribuicaoVagasResolver.ConferirForma(query.DistribuicaoVagas);
-        if (formaErros.Count > 0)
-        {
-            return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.ValidationFailure(formaErros);
-        }
-
-        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>> resolvidas = await ConfiguracaoDistribuicaoVagasResolver.ResolverTodasAsync(
-            query.DistribuicaoVagas,
-            regraCatalogoReader,
-            ofertaCursoReader,
-            modalidadeReader,
-            referenciaReservaDemograficaReader,
-            cancellationToken).ConfigureAwait(false);
-        if (resolvidas.IsFailure)
-        {
-            return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.ValidationFailure(resolvidas.Errors);
-        }
-
-        // Nunca tocadas por SalvarAlteracoesAsync: os Guids da configuração e de cada VagaOfertada são
-        // efêmeros, gerados em memória, e nunca persistidos.
-        IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> simulacao =
-            [.. resolvidas.Value!.Select(ProjecaoDasVagas.ProjetarDistribuicao)];
-
-        return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.Success(simulacao);
+        return formaErros.Count > 0
+            ? Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.ValidationFailure(formaErros)
+            : await resolvedor.ResolverTodasAsync(query.DistribuicaoVagas, cancellationToken).ConfigureAwait(false);
     }
+
+    private static DomainError ProcessoNaoEncontrado(Guid processoSeletivoId) =>
+        new("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoSeletivoId} não encontrado.");
 }

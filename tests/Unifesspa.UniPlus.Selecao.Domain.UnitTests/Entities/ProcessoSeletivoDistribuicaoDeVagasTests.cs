@@ -111,9 +111,9 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
         RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(EstadoDaConfiguracao.De(processo)).Should().BeTrue();
     }
 
-    private static ConfiguracaoDistribuicaoVagas Oferta(Guid ofertaCursoId, int voBase, IReadOnlyList<ModalidadeSelecionada> modalidades) =>
+    private static ConfiguracaoDistribuicaoVagas Oferta(Guid ofertaCursoId, int vagasOfertadasBase, IReadOnlyList<ModalidadeSelecionada> modalidades) =>
         ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoId,
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = voBase, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = vagasOfertadasBase, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     private static ModalidadeSelecionada Ac(int quantidade) => ModalidadeSelecionada.Criar(

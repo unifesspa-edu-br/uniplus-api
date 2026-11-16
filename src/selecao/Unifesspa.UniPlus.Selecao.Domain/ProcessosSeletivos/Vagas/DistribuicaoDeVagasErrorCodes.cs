@@ -4,11 +4,11 @@ public static class DistribuicaoDeVagasErrorCodes
 {
     private const string Prefixo = "ConfiguracaoDistribuicaoVagas.";
 
-    public const string VagasOfertadasBaseInvalido = Prefixo + "VoBaseInvalido";
-    public const string PercentualDaReservaLegalForaDoLimite = Prefixo + "PrForaDoLimite";
+    public const string VagasOfertadasBaseInvalido = Prefixo + "VagasOfertadasBaseInvalido";
+    public const string PercentualDaReservaLegalForaDoLimite = Prefixo + "PercentualDaReservaLegalForaDoLimite";
     public const string ModalidadesVazias = Prefixo + "ModalidadesVazias";
     public const string ModalidadeDuplicada = Prefixo + "ModalidadeDuplicada";
-    public const string VagasOfertadasBaseAcimaDasVagasAutorizadas = Prefixo + "VoBaseAcimaDasVagasAutorizadas";
+    public const string VagasOfertadasBaseAcimaDasVagasAutorizadas = Prefixo + "VagasOfertadasBaseAcimaDasVagasAutorizadas";
     public const string ModalidadeNaoAdmitidaPelaRegra = Prefixo + "ModalidadeNaoAdmitidaPelaRegra";
     public const string ModalidadeDoRolAusente = Prefixo + "ModalidadeDoRolAusente";
     public const string ReferenciaDemograficaObrigatoria = Prefixo + "ReferenciaDemograficaObrigatoria";
@@ -16,7 +16,7 @@ public static class DistribuicaoDeVagasErrorCodes
     public const string ModalidadesFederaisIncompletas = Prefixo + "ModalidadesFederaisIncompletas";
     public const string RetiradaFederalDeveSerDeAmplaConcorrencia = Prefixo + "RetiradaFederalDeveSerDeAmplaConcorrencia";
     public const string RegraAjusteObrigatoria = Prefixo + "RegraAjusteObrigatoria";
-    public const string MotorDeAjusteVedadoNaLei12711 = Prefixo + "MotorDeAjusteVedadoNaLei12711";
+    public const string MotorDeAjusteVedadoNaLeiDeCotas = Prefixo + "MotorDeAjusteVedadoNaLeiDeCotas";
     public const string QuadroModalidadeAusente = Prefixo + "QuadroModalidadeAusente";
     public const string QuantidadeCalculadaNaoInformavel = Prefixo + "QuantidadeCalculadaNaoInformavel";
     public const string QuantidadeDeclaradaObrigatoria = Prefixo + "QuantidadeDeclaradaObrigatoria";
@@ -26,8 +26,8 @@ public static class DistribuicaoDeVagasErrorCodes
     public const string RemanejamentoFallbackNaoSelecionado = Prefixo + "RemanejamentoFallbackNaoSelecionado";
     public const string ParCruzadoNaoReciproco = Prefixo + "ParCruzadoNaoReciproco";
     public const string ReclassificacaoParaAmplaSemAmplaOfertada = Prefixo + "ReclassificacaoParaAmplaSemAmplaOfertada";
-    public const string QuadroNaoCompletaAsVagasOfertadasBase = Prefixo + "QuadroNaoCompletaVoBase";
-    public const string QuadroExcedeAsVagasOfertadasBase = Prefixo + "QuadroExcedeVoBase";
+    public const string QuadroNaoCompletaAsVagasOfertadasBase = Prefixo + "QuadroNaoCompletaAsVagasOfertadasBase";
+    public const string QuadroExcedeAsVagasOfertadasBase = Prefixo + "QuadroExcedeAsVagasOfertadasBase";
 
     public const string DistribuicaoVaziaNoProcesso = "ProcessoSeletivo.DistribuicaoVagasVazia";
     public const string OfertaDeCursoDuplicada = "ProcessoSeletivo.OfertaCursoDuplicada";

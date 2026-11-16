@@ -27,7 +27,7 @@ public sealed class ConfiguracaoDistribuicaoVagasQuadroTests
 
         resultado.IsFailure.Should().BeTrue(
             "as quantidades dividem o total da oferta; publicar 42 numa oferta de 40 contradiz o VO_base declarado");
-        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroExcedeVoBase");
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroExcedeAsVagasOfertadasBase");
         resultado.Error.Message.Should().Contain("42").And.Contain("40");
     }
 
@@ -42,7 +42,7 @@ public sealed class ConfiguracaoDistribuicaoVagasQuadroTests
         Result<ConfiguracaoDistribuicaoVagas> resultado = CriarConfiguracao(40, RegraInstitucional(), modalidades);
 
         resultado.IsFailure.Should().BeTrue("a oferta tem 40 vagas e o quadro distribuiu 4");
-        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroNaoCompletaVoBase");
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroNaoCompletaAsVagasOfertadasBase");
     }
 
     [Fact(DisplayName = "Suplementar institucional entra na soma do quadro — não é dispensada do total")]
@@ -60,7 +60,7 @@ public sealed class ConfiguracaoDistribuicaoVagasQuadroTests
         Result<ConfiguracaoDistribuicaoVagas> resultado = CriarConfiguracao(40, RegraInstitucional(), modalidades);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroExcedeVoBase");
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroExcedeAsVagasOfertadasBase");
     }
 
     [Fact(DisplayName = "Suplementar na Lei 12.711 continua acrescendo ao total, sem cair na regra do quadro institucional")]
@@ -143,7 +143,7 @@ public sealed class ConfiguracaoDistribuicaoVagasQuadroTests
 
         resultado.IsFailure.Should().BeTrue(
             "o certame que ultrapassa o teto publica mais vagas do que o e-MEC autoriza para a oferta");
-        resultado.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.VoBaseAcimaDasVagasAutorizadas");
+        resultado.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.VagasOfertadasBaseAcimaDasVagasAutorizadas");
     }
 
     [Fact(DisplayName = "VO_base igual às vagas anuais autorizadas é aceito")]
@@ -192,7 +192,7 @@ public sealed class ConfiguracaoDistribuicaoVagasQuadroTests
         Result<ConfiguracaoDistribuicaoVagas> resultado = CriarConfiguracao(40, RegraComAcPcd(), modalidades);
 
         resultado.IsFailure.Should().BeTrue("sem motor declarado não há de onde tirar");
-        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroExcedeVoBase");
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroExcedeAsVagasOfertadasBase");
     }
 
     [Fact(DisplayName = "A sobra continua recusada mesmo com regra de ajuste — os motores só reduzem")]
@@ -209,6 +209,6 @@ public sealed class ConfiguracaoDistribuicaoVagasQuadroTests
 
         resultado.IsFailure.Should().BeTrue(
             "acrescer seria o sistema criar vaga que ninguém autorizou — quem configura fecha a conta");
-        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroNaoCompletaVoBase");
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.QuadroNaoCompletaAsVagasOfertadasBase");
     }
 }

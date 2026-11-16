@@ -27,31 +27,31 @@ internal static class ProjecaoDasVagas
     /// definição que poderia divergir em silêncio.
     /// </summary>
     internal static ConfiguracaoDistribuicaoVagasDto ProjetarDistribuicao(ConfiguracaoDistribuicaoVagas configuracao) => new(
-        configuracao.Id, configuracao.OfertaCursoOrigemId, configuracao.VagasOfertadasBase, configuracao.PercentualDaReservaLegal ?? 0m,
+        configuracao.Id, configuracao.OfertaCursoOrigemId, configuracao.VagasOfertadasBase, configuracao.PercentualDaReservaLegal,
         ProjecaoDoProcessoSeletivo.Referencia(configuracao.RegraDistribuicao),
         configuracao.RegraAjuste is { } regraAjuste ? ProjecaoDoProcessoSeletivo.Referencia(regraAjuste) : null,
+        configuracao.AjusteDoQuadro,
         configuracao.ReferenciaDemografica is { } demografica ? ProjetarReferenciaDemografica(demografica) : null,
         configuracao.GrupoAreaEnem is { } grupo ? new GrupoAreaEnemSnapshotDto(grupo.Codigo, grupo.Rotulo) : null,
         [.. configuracao.Modalidades.Select(ProjetarModalidade)],
         [.. configuracao.VagasOfertadas.Select(v => new VagaOfertadaDto(v.Id, v.ModalidadeOrigemId, v.ModalidadeCodigo, v.Quantidade))],
-        configuracao.ReservaLegalNominal ?? 0, configuracao.ReservaLegalEfetiva ?? 0, VagasAjustadas(configuracao.Quadro),
-        QuadroLimitadoPelasVagasOfertadas(configuracao.Quadro), configuracao.TotalDeVagasDoEdital);
+        configuracao.TotalDeVagasDoEdital,
+        ConferenciaDoQuadro(configuracao.Quadro),
+        AjusteDoQuadroFixado(configuracao.Quadro));
 
-    // O contrato ainda descreve os dois ramos pelo mesmo par de campos: no ramo da Lei de Cotas, o que a
-    // reserva efetiva passou da nominal; no quadro fixado, o que o ajuste retirou.
-    private static int VagasAjustadas(QuadroDeVagas quadro) => quadro switch
-    {
-        QuadroDeVagasDaLeiDeCotas leiDeCotas => leiDeCotas.ConferenciaDaReservaLegal.ExcedenteSobreAReservaLegal,
-        QuadroDeVagasFixadoNoEdital fixado => fixado.TotalDeVagasRetiradasNoAjuste,
-        _ => 0,
-    };
+    private static ConferenciaDaReservaLegalDto? ConferenciaDoQuadro(QuadroDeVagas quadro) =>
+        quadro is QuadroDeVagasDaLeiDeCotas { ConferenciaDaReservaLegal: var conferencia }
+            ? new ConferenciaDaReservaLegalDto(
+                conferencia.ReservaLegalNominal, conferencia.ReservaLegalEfetiva,
+                conferencia.ExcedenteSobreAReservaLegal, conferencia.VagasCortadasPorEscassez)
+            : null;
 
-    private static bool QuadroLimitadoPelasVagasOfertadas(QuadroDeVagas quadro) => quadro switch
-    {
-        QuadroDeVagasDaLeiDeCotas leiDeCotas => leiDeCotas.ConferenciaDaReservaLegal.VagasCortadasPorEscassez > 0,
-        QuadroDeVagasFixadoNoEdital fixado => fixado.TotalDeVagasRetiradasNoAjuste > 0,
-        _ => false,
-    };
+    private static AjusteDoQuadroFixadoDto? AjusteDoQuadroFixado(QuadroDeVagas quadro) =>
+        quadro is QuadroDeVagasFixadoNoEdital fixado
+            ? new AjusteDoQuadroFixadoDto(
+                [.. fixado.VagasRetiradasNoAjuste.Select(static v => new VagasRetiradasDaModalidadeDto(v.ModalidadeCodigo, v.Quantidade))],
+                fixado.TotalDeVagasRetiradasNoAjuste)
+            : null;
 
     private static ReferenciaReservaDemograficaSnapshotDto ProjetarReferenciaDemografica(ReferenciaReservaDemograficaSnapshot demografica) => new(
         demografica.OrigemId,

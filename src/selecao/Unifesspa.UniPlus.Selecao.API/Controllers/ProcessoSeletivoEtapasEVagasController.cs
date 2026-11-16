@@ -214,7 +214,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// Calcula, sem persistir, o quadro de vagas por modalidade que o
     /// <see cref="DefinirDistribuicaoVagas"/> produziria para o mesmo
     /// payload — preview para o admin conferir/ajustar
-    /// VoBase, PR ou modalidades antes de confirmar a gravação real.
+    /// as vagas ofertadas base, o percentual da reserva legal ou as modalidades antes de confirmar a gravação real.
     /// </summary>
     /// <remarks>
     /// <para>

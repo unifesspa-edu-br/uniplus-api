@@ -11,7 +11,7 @@ internal static class ErrosDoQuadroDeVagas
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
-        new("ConfiguracaoDistribuicaoVagas.QuadroAmplaConcorrenciaNegativa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.quadro_ampla_concorrencia_negativa", "A ampla concorrência resultaria negativa — ajuste o VO, o PR ou as retiradas")),
+        new("ConfiguracaoDistribuicaoVagas.QuadroAmplaConcorrenciaNegativa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.quadro_ampla_concorrencia_negativa", "A ampla concorrência resultaria negativa — ajuste as vagas ofertadas base, o percentual da reserva legal ou as retiradas")),
         new("ConfiguracaoDistribuicaoVagas.QuantidadeVagaNegativa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.quantidade_vaga_negativa", "A quantidade de vagas de uma modalidade não pode ser negativa")),
         new("ConfiguracaoDistribuicaoVagas.QuadroChaveColide", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.quadro_chave_colide", "Uma retirada ou suplemento não pode usar o código de uma sub-reserva federal ou da ampla concorrência")),
         new("ConfiguracaoDistribuicaoVagas.RegraAjusteObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.configuracao_distribuicao_vagas.regra_ajuste_obrigatoria", "A distribuição pela Lei 12.711 exige a regra de ajuste (art. 11 §único)")),

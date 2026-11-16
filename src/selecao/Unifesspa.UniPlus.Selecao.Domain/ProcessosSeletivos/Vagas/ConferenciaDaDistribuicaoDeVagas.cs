@@ -170,7 +170,7 @@ public static class ConferenciaDaDistribuicaoDeVagas
     // parágrafo único, e aceitar o motor deixaria o ajuste declarado sem rodar.
     private static FieldError? MotorDeAjusteVedado(DistribuicaoDeVagasDeclarada declarada) =>
         declarada.AjusteDoQuadro is not null
-            ? Recusa("ajusteDoQuadro", DistribuicaoDeVagasErrorCodes.MotorDeAjusteVedadoNaLei12711,
+            ? Recusa("ajusteDoQuadro", DistribuicaoDeVagasErrorCodes.MotorDeAjusteVedadoNaLeiDeCotas,
                 "Os motores de redução não se aplicam à distribuição pelo ramo federal (Lei 12.711) — a reconciliação dele é a do art. 11, parágrafo único.")
             : null;
 

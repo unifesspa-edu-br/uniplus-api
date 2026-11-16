@@ -138,7 +138,7 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
     public void LeiDeCotas_ComMotorDeReducao_Recusa() =>
         DeveRecusarSo(
             Conferir(DaLeiDeCotas() with { AjusteDoQuadro = new Selecao.Domain.ValueObjects.ArgsReduzirDe("AC") }),
-            "ajusteDoQuadro", DistribuicaoDeVagasErrorCodes.MotorDeAjusteVedadoNaLei12711);
+            "ajusteDoQuadro", DistribuicaoDeVagasErrorCodes.MotorDeAjusteVedadoNaLeiDeCotas);
 
     [Fact(DisplayName = "O quadro fixado no edital com referência demográfica é recusado")]
     public void QuadroFixado_ComReferenciaDemografica_Recusa() =>
@@ -227,7 +227,7 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
         Conferir(declarada).Select(static r => r.Error.Code).Should().Equal(
             DistribuicaoDeVagasErrorCodes.ReferenciaDemograficaObrigatoria,
             DistribuicaoDeVagasErrorCodes.RegraAjusteObrigatoria,
-            DistribuicaoDeVagasErrorCodes.MotorDeAjusteVedadoNaLei12711,
+            DistribuicaoDeVagasErrorCodes.MotorDeAjusteVedadoNaLeiDeCotas,
             DistribuicaoDeVagasErrorCodes.ModalidadesFederaisIncompletas);
     }
 

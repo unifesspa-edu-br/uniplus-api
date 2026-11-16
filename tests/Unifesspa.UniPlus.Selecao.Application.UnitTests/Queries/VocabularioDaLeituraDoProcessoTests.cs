@@ -117,8 +117,8 @@ public sealed class VocabularioDaLeituraDoProcessoTests
                 [new ConfiguracaoDistribuicaoVagasInput(
                     ofertaCursoId, 60, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
                     [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])]),
-            repository, regras, ofertas, modalidades,
-            Substitute.For<IReferenciaReservaDemograficaReader>(), CancellationToken.None);
+            repository, new ConfiguracaoDistribuicaoVagasResolver(regras, ofertas, modalidades, Substitute.For<IReferenciaReservaDemograficaReader>()),
+            CancellationToken.None);
         simulada.IsSuccess.Should().BeTrue(simulada.Error?.Message);
 
         JsonElement modalidade = Serializar(simulada.Value!)[0].GetProperty("modalidades")[0];

@@ -126,15 +126,15 @@ public sealed class CalculadoraQuadroVagasLei12711Tests
     public void Quadro_ConservaVagasOfertadas()
     {
         Dictionary<string, int> retiradas = new(StringComparer.Ordinal) { ["V"] = 2 };
-        int voBase = 50;
+        int vagasOfertadasBase = 50;
 
         Result<QuadroDeVagasDaLeiDeCotas> resultado = CalculadoraQuadroVagasLei12711.Calcular(
-            voBase, 0.5m, Demografica(79, 1.5m, 8.5m), retiradas, SemSuplementares);
+            vagasOfertadasBase, 0.5m, Demografica(79, 1.5m, 8.5m), retiradas, SemSuplementares);
 
         resultado.IsSuccess.Should().BeTrue();
         QuadroDeVagasDaLeiDeCotas quadro = resultado.Value!;
-        (quadro.ConferenciaDaReservaLegal.ReservaLegalEfetiva + retiradas.Values.Sum() + quadro.QuantidadeDe(ModalidadesFederaisLei12711.Ac)).Should().Be(voBase);
-        quadro.TotalDeVagasDoEdital.Should().Be(voBase + SemSuplementares.Values.Sum());
+        (quadro.ConferenciaDaReservaLegal.ReservaLegalEfetiva + retiradas.Values.Sum() + quadro.QuantidadeDe(ModalidadesFederaisLei12711.Ac)).Should().Be(vagasOfertadasBase);
+        quadro.TotalDeVagasDoEdital.Should().Be(vagasOfertadasBase + SemSuplementares.Values.Sum());
     }
 
     [Fact(DisplayName = "V7/CA-09 — retirada com código de sub-reserva federal colide e é recusada")]

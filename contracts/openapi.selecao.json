@@ -12909,6 +12909,25 @@
           }
         }
       },
+      "AjusteDoQuadroFixadoDto": {
+        "required": [
+          "vagasRetiradas",
+          "totalDeVagasRetiradas"
+        ],
+        "type": "object",
+        "properties": {
+          "vagasRetiradas": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VagasRetiradasDaModalidadeDto"
+            }
+          },
+          "totalDeVagasRetiradas": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "AlterarMotivoRetificacaoRequest": {
         "required": [
           "motivo"
@@ -14618,6 +14637,33 @@
           }
         }
       },
+      "ConferenciaDaReservaLegalDto": {
+        "required": [
+          "reservaLegalNominal",
+          "reservaLegalEfetiva",
+          "excedenteSobreAReservaLegal",
+          "vagasCortadasPorEscassez"
+        ],
+        "type": "object",
+        "properties": {
+          "reservaLegalNominal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "reservaLegalEfetiva": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "excedenteSobreAReservaLegal": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "vagasCortadasPorEscassez": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
       "ConfiguracaoBonusRegionalDto": {
         "required": [
           "id",
@@ -14840,19 +14886,18 @@
         "required": [
           "id",
           "ofertaCursoOrigemId",
-          "voBase",
-          "pr",
+          "vagasOfertadasBase",
+          "percentualDaReservaLegal",
           "regraDistribuicao",
           "regraAjuste",
+          "ajusteDoQuadro",
           "referenciaDemografica",
           "grupoAreaEnem",
           "modalidades",
           "quadro",
-          "vrNominal",
-          "vrFinal",
-          "estouro",
-          "capadoEmVo",
-          "totalPublicado"
+          "totalDeVagasDoEdital",
+          "conferenciaDaReservaLegal",
+          "ajusteDoQuadroFixado"
         ],
         "type": "object",
         "properties": {
@@ -14864,12 +14909,15 @@
             "type": "string",
             "format": "uuid"
           },
-          "voBase": {
+          "vagasOfertadasBase": {
             "type": "integer",
             "format": "int32"
           },
-          "pr": {
-            "type": "number",
+          "percentualDaReservaLegal": {
+            "type": [
+              "null",
+              "number"
+            ],
             "format": "double"
           },
           "regraDistribuicao": {
@@ -14882,6 +14930,16 @@
               },
               {
                 "$ref": "#/components/schemas/ReferenciaRegraDto"
+              }
+            ]
+          },
+          "ajusteDoQuadro": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ArgsRegraAjusteDistribuicao"
               }
             ]
           },
@@ -14917,32 +14975,37 @@
               "$ref": "#/components/schemas/VagaOfertadaDto"
             }
           },
-          "vrNominal": {
+          "totalDeVagasDoEdital": {
             "type": "integer",
             "format": "int32"
           },
-          "vrFinal": {
-            "type": "integer",
-            "format": "int32"
+          "conferenciaDaReservaLegal": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/ConferenciaDaReservaLegalDto"
+              }
+            ]
           },
-          "estouro": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "capadoEmVo": {
-            "type": "boolean"
-          },
-          "totalPublicado": {
-            "type": "integer",
-            "format": "int32"
+          "ajusteDoQuadroFixado": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/AjusteDoQuadroFixadoDto"
+              }
+            ]
           }
         }
       },
       "ConfiguracaoDistribuicaoVagasInput": {
         "required": [
           "ofertaCursoId",
-          "voBase",
-          "pr",
+          "vagasOfertadasBase",
+          "percentualDaReservaLegal",
           "regraDistribuicaoCodigo",
           "regraDistribuicaoVersao",
           "regraAjusteCodigo",
@@ -14957,12 +15020,15 @@
             "type": "string",
             "format": "uuid"
           },
-          "voBase": {
+          "vagasOfertadasBase": {
             "type": "integer",
             "format": "int32"
           },
-          "pr": {
-            "type": "number",
+          "percentualDaReservaLegal": {
+            "type": [
+              "null",
+              "number"
+            ],
             "format": "double"
           },
           "regraDistribuicaoCodigo": {
@@ -15003,7 +15069,7 @@
               "$ref": "#/components/schemas/QuantidadeVagaInput"
             }
           },
-          "argsAjuste": {
+          "ajusteDoQuadro": {
             "oneOf": [
               {
                 "type": "null"
@@ -22099,7 +22165,7 @@
         "required": [
           "ofertaCursoOrigemId",
           "quadro",
-          "totalPublicado"
+          "totalDeVagasDoEdital"
         ],
         "type": "object",
         "properties": {
@@ -22113,7 +22179,7 @@
               "$ref": "#/components/schemas/VagaPorModalidadeCertameDto"
             }
           },
-          "totalPublicado": {
+          "totalDeVagasDoEdital": {
             "type": "integer",
             "format": "int32"
           }
@@ -23972,6 +24038,22 @@
         }
       },
       "VagaPorModalidadeCertameDto": {
+        "required": [
+          "modalidadeCodigo",
+          "quantidade"
+        ],
+        "type": "object",
+        "properties": {
+          "modalidadeCodigo": {
+            "type": "string"
+          },
+          "quantidade": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "VagasRetiradasDaModalidadeDto": {
         "required": [
           "modalidadeCodigo",
           "quantidade"

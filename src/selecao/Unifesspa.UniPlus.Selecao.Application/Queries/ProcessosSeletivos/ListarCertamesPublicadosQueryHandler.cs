@@ -37,64 +37,61 @@ public static class ListarCertamesPublicadosQueryHandler
     /// </summary>
     private static readonly IReadOnlyList<SortField> OrdemCanonica = [];
 
+    // Campo fora do catálogo é recusado nomeando o campo e os aceitos. Numa rota anônima, traduzir o desconhecido
+    // em ordem arbitrária seria oferecer consulta livre sobre o banco; ignorá-lo em silêncio seria deixar o
+    // cliente crer que ordenou.
     public static async Task<Result<ListarCertamesPublicadosResult>> Handle(
-        ListarCertamesPublicadosQuery query,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        CancellationToken cancellationToken)
+        ListarCertamesPublicadosQuery query, ICertameDivulgadoRepository certameDivulgadoRepository, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
+        Result<string?> busca = BuscaPedida.Validar(query.Recorte.Busca);
+        Result<IReadOnlyList<SortField>> ordenacao = OrdenacaoPedida.Resolver(query.Ordenacao, CamposOrdenacaoDaVitrine.Todos, OrdemCanonica);
+
+        if (!busca.IsSuccess || !ordenacao.IsSuccess)
+        {
+            return Result<ListarCertamesPublicadosResult>.Failure((busca.IsSuccess ? ordenacao.Error : busca.Error)!);
+        }
+
+        PaginaDaVitrine pagina = await ListarPaginaAsync(query, certameDivulgadoRepository, ordenacao.Value!, cancellationToken).ConfigureAwait(false);
+        return Result<ListarCertamesPublicadosResult>.Success(
+            new ListarCertamesPublicadosResult(ItensDaVitrine(pagina), pagina.Anterior, pagina.Proximo, pagina.Contadores, pagina.Revisao));
+    }
+
+    private static Task<PaginaDaVitrine> ListarPaginaAsync(
+        ListarCertamesPublicadosQuery query, ICertameDivulgadoRepository certameDivulgadoRepository,
+        IReadOnlyList<SortField> ordenacao, CancellationToken cancellationToken)
+    {
         ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
 
-        Result<string?> busca = BuscaPedida.Validar(query.Recorte.Busca);
-        if (!busca.IsSuccess)
-        {
-            return Result<ListarCertamesPublicadosResult>.Failure(busca.Error!);
-        }
+        return certameDivulgadoRepository.ListarVitrineAsync(
+            query.Instante, query.Recorte, ordenacao, SituacaoDaVitrine.LimiarDosUltimosDias,
+            query.AfterSortKey, query.AfterId, query.Limit, query.Direction,
+            query.IncluirContadores, ProjecaoDoCertamePublicado.Versao, cancellationToken);
+    }
 
-        // Campo fora do catálogo é recusado nomeando o campo e os aceitos. Numa rota anônima,
-        // traduzir o desconhecido em ordem arbitrária seria oferecer consulta livre sobre o banco;
-        // ignorá-lo em silêncio seria deixar o cliente crer que ordenou.
-        Result<IReadOnlyList<SortField>> ordenacao = OrdenacaoPedida.Resolver(
-            query.Ordenacao, CamposOrdenacaoDaVitrine.Todos, OrdemCanonica);
-
-        if (!ordenacao.IsSuccess)
-        {
-            return Result<ListarCertamesPublicadosResult>.Failure(ordenacao.Error!);
-        }
-
-        PaginaDaVitrine pagina = await certameDivulgadoRepository
-            .ListarVitrineAsync(
-                query.Instante, query.Recorte, ordenacao.Value!, SituacaoDaVitrine.LimiarDosUltimosDias,
-                query.AfterSortKey, query.AfterId, query.Limit, query.Direction,
-                query.IncluirContadores, ProjecaoDoCertamePublicado.Versao, cancellationToken)
-            .ConfigureAwait(false);
-
-        DateTimeOffset instante = pagina.InstanteEfetivo;
-
+    private static List<CertameNaVitrineDto> ItensDaVitrine(PaginaDaVitrine pagina)
+    {
         List<CertameNaVitrineDto> itens = [];
         foreach (CertameDivulgado divulgado in pagina.Itens)
         {
-            if (!LeituraDoDocumentoDivulgado.TentarLerProjecao(divulgado.DocumentoPublico, out CertamePublicadoDto? certame))
+            if (LeituraDoDocumentoDivulgado.TentarLerProjecao(divulgado.DocumentoPublico, out CertamePublicadoDto? certame))
             {
-                continue;
+                itens.Add(ItemDaVitrine(divulgado, certame, pagina.InstanteEfetivo));
             }
-
-            itens.Add(new CertameNaVitrineDto(
-                divulgado.Id,
-                certame.IdentificadorLegivel,
-                certame.Periodo.Numero,
-                certame.Nome,
-                certame.TipoProcesso,
-                certame.ModalidadesOfertadas,
-                divulgado.InscricoesDe,
-                divulgado.InscricoesAte,
-                SituacaoDaVitrine.Classificar(
-                    divulgado.InscricoesDe, divulgado.InscricoesAte, instante, SituacaoDaVitrine.LimiarDosUltimosDias),
-                certame.Vagas.Sum(static v => v.TotalPublicado)));
         }
 
-        return Result<ListarCertamesPublicadosResult>.Success(
-            new ListarCertamesPublicadosResult(
-                itens, pagina.Anterior, pagina.Proximo, pagina.Contadores, pagina.Revisao));
+        return itens;
     }
+
+    private static CertameNaVitrineDto ItemDaVitrine(CertameDivulgado divulgado, CertamePublicadoDto certame, DateTimeOffset instante) => new(
+        divulgado.Id,
+        certame.IdentificadorLegivel,
+        certame.Periodo.Numero,
+        certame.Nome,
+        certame.TipoProcesso,
+        certame.ModalidadesOfertadas,
+        divulgado.InscricoesDe,
+        divulgado.InscricoesAte,
+        SituacaoDaVitrine.Classificar(divulgado.InscricoesDe, divulgado.InscricoesAte, instante, SituacaoDaVitrine.LimiarDosUltimosDias),
+        certame.Vagas.Sum(static v => v.TotalDeVagasDoEdital));
 }

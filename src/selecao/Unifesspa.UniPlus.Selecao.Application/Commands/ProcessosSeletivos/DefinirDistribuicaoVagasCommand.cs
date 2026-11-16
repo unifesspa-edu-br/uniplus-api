@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <summary>
 /// Item de entrada de uma distribuição de vagas por oferta, usado por
 /// <see cref="DefinirDistribuicaoVagasCommand"/>. O admin referencia a oferta,
-/// declara <c>VoBase</c>/<c>PR</c>, escolhe a versão da regra de distribuição
+/// declara as vagas ofertadas base e o percentual da reserva legal (este só na Lei de Cotas), escolhe a versão da regra de distribuição
 /// (<c>regras_do_catalogo</c>) e seleciona as modalidades por <c>Id</c> — os demais
 /// atributos de cada modalidade (natureza legal, composição, remanejamento)
 /// são lidos do cadastro vivo pelo handler (snapshot-copy, ADR-0061), não
@@ -19,8 +19,8 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// </summary>
 public sealed record ConfiguracaoDistribuicaoVagasInput(
     Guid OfertaCursoId,
-    int VoBase,
-    decimal Pr,
+    int VagasOfertadasBase,
+    decimal? PercentualDaReservaLegal,
     string RegraDistribuicaoCodigo,
     string RegraDistribuicaoVersao,
     string? RegraAjusteCodigo,
@@ -28,7 +28,7 @@ public sealed record ConfiguracaoDistribuicaoVagasInput(
     Guid? ReferenciaReservaDemograficaId,
     IReadOnlyList<Guid> ModalidadeIds,
     IReadOnlyList<QuantidadeVagaInput> Quadro,
-    ArgsRegraAjusteDistribuicao? ArgsAjuste = null);
+    ArgsRegraAjusteDistribuicao? AjusteDoQuadro = null);
 
 /// <summary>
 /// Quantidade que o edital fixa para uma modalidade — obrigatória para as

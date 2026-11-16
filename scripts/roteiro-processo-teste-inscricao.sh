@@ -510,7 +510,7 @@ definir_distribuicao_vagas() {
         --argjson ofertas "$(printf '%s\n' "${ofertas[@]}" | jq -R . | jq -sc .)" \
         --arg reserva "$RESERVA_DEMOGRAFICA_ID" --argjson modalidades "$modalidades" '
         [$ofertas[] | {
-            ofertaCursoId: ., voBase: 30, pr: 0.5,
+            ofertaCursoId: ., vagasOfertadasBase: 30, percentualDaReservaLegal: 0.5,
             regraDistribuicaoCodigo: "DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA", regraDistribuicaoVersao: "v1",
             regraAjusteCodigo: "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", regraAjusteVersao: "v1",
             referenciaReservaDemograficaId: $reserva,

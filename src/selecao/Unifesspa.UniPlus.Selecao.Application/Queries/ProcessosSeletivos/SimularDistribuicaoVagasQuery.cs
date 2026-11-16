@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// <summary>
 /// Calcula, sem persistir, o quadro de vagas por modalidade que
 /// <see cref="DefinirDistribuicaoVagasCommand"/> produziria para o mesmo
-/// payload (issue #1282) — preview para o admin conferir/ajustar VoBase, PR
+/// payload (issue #1282) — preview para o admin conferir/ajustar as vagas ofertadas base, o percentual da reserva legal
 /// ou modalidades antes de confirmar a gravação real.
 /// </summary>
 /// <remarks>

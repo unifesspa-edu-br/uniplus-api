@@ -169,11 +169,11 @@ internal sealed class ResolucaoDaDistribuicao(
     private DistribuicaoDeVagasDeclarada Declarada() => new()
     {
         RegraDeDistribuicao = _regra.Referencia(),
-        VagasOfertadasBase = pedido.VoBase,
-        PercentualDaReservaLegal = pedido.Pr,
+        VagasOfertadasBase = pedido.VagasOfertadasBase,
+        PercentualDaReservaLegal = pedido.PercentualDaReservaLegal,
         ReferenciaDemografica = _demografica,
         RegraDeAjuste = _regraDeAjuste,
-        AjusteDoQuadro = pedido.ArgsAjuste,
+        AjusteDoQuadro = pedido.AjusteDoQuadro,
         Modalidades = _modalidades,
     };
 

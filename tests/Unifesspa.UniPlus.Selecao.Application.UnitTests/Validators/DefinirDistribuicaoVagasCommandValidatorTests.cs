@@ -37,12 +37,12 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         resultado.IsValid.Should().BeTrue();
     }
 
-    [Theory(DisplayName = "Validator passa com VO_base não positivo — a rejeição é do agregado (ConfiguracaoDistribuicaoVagas.Criar, ADR-0125)")]
+    [Theory(DisplayName = "Validator passa com vagas ofertadas base não positivo — a rejeição é do agregado (ConfiguracaoDistribuicaoVagas.Criar, ADR-0125)")]
     [InlineData(0)]
     [InlineData(-1)]
-    public void Aceita_VoBaseInvalidoNoValidator(int voBase)
+    public void Aceita_VagasOfertadasBaseInvalidoNoValidator(int vagasOfertadasBase)
     {
-        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { VoBase = voBase };
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { VagasOfertadasBase = vagasOfertadasBase };
         DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
 
         ValidationResult resultado = _validator.Validate(command);
@@ -50,12 +50,12 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         resultado.IsValid.Should().BeTrue();
     }
 
-    [Theory(DisplayName = "Validator passa com PR fora de [0,5; 1] — a rejeição é do agregado (ConfiguracaoDistribuicaoVagas.Criar, ADR-0125)")]
+    [Theory(DisplayName = "Validator passa com percentual da reserva legal fora de [0,5; 1] — a rejeição é do agregado (ConfiguracaoDistribuicaoVagas.Criar, ADR-0125)")]
     [InlineData(0.49)]
     [InlineData(1.01)]
-    public void Aceita_PrForaDoLimiteNoValidator(double pr)
+    public void Aceita_PercentualDaReservaLegalForaDoLimiteNoValidator(double pr)
     {
-        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { Pr = (decimal)pr };
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { PercentualDaReservaLegal = (decimal)pr };
         DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
 
         ValidationResult resultado = _validator.Validate(command);
@@ -63,10 +63,10 @@ public sealed class DefinirDistribuicaoVagasCommandValidatorTests
         resultado.IsValid.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Validator falha quando o PR tem mais de 4 casas decimais (arredondaria silenciosamente)")]
-    public void Rejeita_PrComEscalaExcessiva()
+    [Fact(DisplayName = "Validator falha quando o percentual da reserva legal tem mais de 4 casas decimais (arredondaria silenciosamente)")]
+    public void Rejeita_PercentualDaReservaLegalComEscalaExcessiva()
     {
-        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { Pr = 0.75001m };
+        ConfiguracaoDistribuicaoVagasInput item = ItemValido() with { PercentualDaReservaLegal = 0.75001m };
         DefinirDistribuicaoVagasCommand command = new(Guid.CreateVersion7(), [item], PrecondicaoIfMatch.Ausente);
 
         ValidationResult resultado = _validator.Validate(command);

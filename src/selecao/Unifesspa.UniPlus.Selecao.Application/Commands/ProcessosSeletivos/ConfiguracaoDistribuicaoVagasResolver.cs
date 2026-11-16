@@ -22,11 +22,15 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// superfícies precisam concordar byte a byte sobre o que é uma
 /// configuração válida e sobre o quadro que ela produz.
 /// </remarks>
-internal static class ConfiguracaoDistribuicaoVagasResolver
+public sealed class ConfiguracaoDistribuicaoVagasResolver(
+    IRegraCatalogoReader regraCatalogoReader,
+    IOfertaCursoReader ofertaCursoReader,
+    IModalidadeReader modalidadeReader,
+    IReferenciaReservaDemograficaReader referenciaReservaDemograficaReader)
 {
     /// <summary>
     /// A distribuição reporta as violações com os nomes do domínio — o conjunto de modalidades sob
-    /// <c>modalidades</c>, as vagas ofertadas base sob <c>vagasOfertadasBase</c> —, e o cliente envia os
+    /// <c>modalidades</c>, a regra de ajuste sob <c>regraDeAjuste</c> —, e o cliente envia os
     /// campos de <see cref="ConfiguracaoDistribuicaoVagasInput"/>. Sem esta tradução, a resposta de validação
     /// apontaria para uma propriedade inexistente no request.
     /// </summary>
@@ -34,10 +38,7 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
         fieldDominio switch
         {
             "modalidades" => "modalidadeIds",
-            "vagasOfertadasBase" => "voBase",
-            "percentualDaReservaLegal" => "pr",
             "regraDeAjuste" => "regraAjusteCodigo",
-            "ajusteDoQuadro" => "argsAjuste",
             _ => fieldDominio,
         };
 
@@ -47,12 +48,11 @@ internal static class ConfiguracaoDistribuicaoVagasResolver
     /// </summary>
     internal static IReadOnlyList<FieldError> ConferirForma(IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> pedidos) =>
         [.. pedidos.SelectMany((pedido, indice) => ConferenciaDaDistribuicaoDeVagas
-            .ConferirForma(pedido.VoBase, pedido.Pr, pedido.ModalidadeIds.Count)
+            .ConferirForma(pedido.VagasOfertadasBase, pedido.PercentualDaReservaLegal, pedido.ModalidadeIds.Count)
             .Select(erro => ComIndice(erro, indice)))];
 
-    internal static async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>> ResolverTodasAsync(
-        IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> pedidos, IRegraCatalogoReader regraCatalogoReader, IOfertaCursoReader ofertaCursoReader,
-        IModalidadeReader modalidadeReader, IReferenciaReservaDemograficaReader referenciaReservaDemograficaReader, CancellationToken cancellationToken)
+    internal async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>> ResolverTodasAsync(
+        IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> pedidos, CancellationToken cancellationToken)
     {
         List<ConfiguracaoDistribuicaoVagas> distribuicoes = [];
         for (int indice = 0; indice < pedidos.Count; indice++)

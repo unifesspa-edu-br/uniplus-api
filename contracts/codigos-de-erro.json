@@ -4837,14 +4837,14 @@
       "titulo": "Par de remanejamento cruzado não aponta de volta"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.pr_fora_do_limite",
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.percentual_da_reserva_legal_fora_do_limite",
       "status": 422,
-      "titulo": "PR deve estar entre 0,5 e 1,0 (art. 10, II)"
+      "titulo": "O percentual da reserva legal deve estar entre 0,5 e 1,0 (art. 10, II)"
     },
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_ampla_concorrencia_negativa",
       "status": 422,
-      "titulo": "A ampla concorrência resultaria negativa — ajuste o VO, o PR ou as retiradas"
+      "titulo": "A ampla concorrência resultaria negativa — ajuste as vagas ofertadas base, o percentual da reserva legal ou as retiradas"
     },
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_chave_colide",
@@ -4852,7 +4852,7 @@
       "titulo": "Uma retirada ou suplemento não pode usar o código de uma sub-reserva federal ou da ampla concorrência"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_excede_vo_base",
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_excede_as_vagas_ofertadas_base",
       "status": 422,
       "titulo": "Quadro de vagas acima do total da oferta"
     },
@@ -4867,7 +4867,7 @@
       "titulo": "O quadro traz uma modalidade que não está selecionada nesta oferta"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_nao_completa_vo_base",
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.quadro_nao_completa_as_vagas_ofertadas_base",
       "status": 422,
       "titulo": "Quadro de vagas abaixo do total da oferta"
     },
@@ -4952,14 +4952,14 @@
       "titulo": "No ramo federal, toda modalidade de retirada só pode retirar da ampla concorrência"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.vo_base_acima_das_vagas_autorizadas",
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.vagas_ofertadas_base_acima_das_vagas_autorizadas",
       "status": 422,
-      "titulo": "VO_base acima das vagas anuais autorizadas da oferta"
+      "titulo": "Vagas ofertadas base acima das vagas anuais autorizadas da oferta"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.vo_base_invalido",
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.vagas_ofertadas_base_invalido",
       "status": 422,
-      "titulo": "VO_base deve ser maior que zero"
+      "titulo": "As vagas ofertadas base devem ser maiores que zero"
     },
     {
       "codigo": "uniplus.selecao.configuracao_divulgacao.campo_nao_permitido",

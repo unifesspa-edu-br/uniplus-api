@@ -75,8 +75,8 @@ public sealed partial class EnvelopeFechadoE2ETests
                 new
                 {
                     ofertaCursoId = Catalogos.OfertaCursoId,
-                    voBase = 60,
-                    pr = 0.7500m,
+                    vagasOfertadasBase = 60,
+                    percentualDaReservaLegal = 0.7500m,
                     regraDistribuicaoCodigo = RegraDistribuicaoVagasCodigo.Lei12711,
                     regraDistribuicaoVersao = "v1",
                     regraAjusteCodigo = RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico,

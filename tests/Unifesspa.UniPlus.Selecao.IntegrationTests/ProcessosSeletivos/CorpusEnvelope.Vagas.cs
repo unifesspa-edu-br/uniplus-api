@@ -70,67 +70,60 @@ internal static partial class CorpusEnvelope
     /// </summary>
     private static ConfiguracaoDistribuicaoVagas DistribuicaoLei12711(
         Guid? ofertaCursoOrigemId = null, (string? Codigo, string? Rotulo)? grupoAreaEnem = null,
-        int vagasOfertadasBase = VagasOfertadasBaseDaLeiDeCotasDoCorpus)
-    {
-        List<ModalidadeSelecionada> modalidades =
-        [
-            ModalidadeSelecionada.Criar(
-                new Guid("2222bbbb-0000-4000-8000-000000000001"), "AC", "Ampla concorrência",
-                NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
-                RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
-                baseLegal: "Lei 12.711/2012 art. 1º").Value!,
-        ];
-
-        // As 8 federais. Todas cota reservada ⇒ INV-12 obriga SEGUE_CASCATA.
-        (string Codigo, char Semente)[] federais =
-        [
-            ("LB_PPI", 'g'), ("LB_Q", 'h'), ("LB_PCD", 'i'), ("LB_EP", 'j'),
-            ("LI_PPI", 'k'), ("LI_Q", 'l'), ("LI_PCD", 'm'), ("LI_EP", 'n'),
-        ];
-
-        int sufixo = 2;
-        foreach ((string codigo, char _) in federais)
-        {
-            modalidades.Add(ModalidadeSelecionada.Criar(
-                new Guid($"2222bbbb-0000-4000-8000-00000000000{sufixo:x}"),
-                codigo,
-                $"Reserva {codigo}",
-                NaturezaLegalModalidade.CotaReservada,
-                ComposicaoVagasModalidade.DentroDaReservaLegal,
-                null,
-                RegraRemanejamentoModalidade.SegueCascata,
-                null,
-                null,
-                null,
-                // A regra da cota de renda tem duas cláusulas FORA da ordem canônica de propósito: o
-                // encoder ordena as cláusulas e as condições pela chave de conteúdo, então um decoder
-                // que preservasse a ordem de ENTRADA em vez de ler a canônica já gravada produziria
-                // bytes distintos dos congelados.
-                codigo.StartsWith("LB", StringComparison.Ordinal) ? RegraDaCotaDeRenda : RegraDaCotaIndependenteDeRenda,
-                acaoQuandoIndeferido: "RECLASSIFICAR_AC",
-                baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!);
-            sufixo++;
-        }
-
-        return ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId ?? OfertaMedicina,
+        int vagasOfertadasBase = VagasOfertadasBaseDaLeiDeCotasDoCorpus) =>
+        ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId ?? OfertaMedicina,
             new DistribuicaoDeVagasDeclarada
             {
                 VagasOfertadasBase = vagasOfertadasBase,
                 PercentualDaReservaLegal = 0.7500m,
                 RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711, '7'),
                 RegraDeAjuste = Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, '0'),
-                ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(
-                ReferenciaDemografica,
-                censoReferencia: "Censo IBGE 2022",
-                ppiPercentual: 78.55m,
-                quilombolaPercentual: 1.20m,
-                pcdPercentual: 8.40m,
-                baseLegal: "Lei 12.711/2012 art. 3º").Value!,
-                Modalidades = modalidades
+                ReferenciaDemografica = ReferenciaDemograficaDaLei(),
+                Modalidades = [ModalidadeAmplaDaLei(), .. ModalidadesFederais()],
             },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem ?? ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"), OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-    }
+
+    private static ReferenciaReservaDemograficaSnapshot ReferenciaDemograficaDaLei() =>
+        ReferenciaReservaDemograficaSnapshot.Criar(
+            ReferenciaDemografica,
+            censoReferencia: "Censo IBGE 2022",
+            ppiPercentual: 78.55m,
+            quilombolaPercentual: 1.20m,
+            pcdPercentual: 8.40m,
+            baseLegal: "Lei 12.711/2012 art. 3º").Value!;
+
+    private static ModalidadeSelecionada ModalidadeAmplaDaLei() =>
+        ModalidadeSelecionada.Criar(
+            new Guid("2222bbbb-0000-4000-8000-000000000001"), "AC", "Ampla concorrência",
+            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
+            RegraRemanejamentoModalidade.Nenhuma, null, null, null,
+            regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
+            baseLegal: "Lei 12.711/2012 art. 1º").Value!;
+
+    // As 8 federais. Todas cota reservada ⇒ INV-12 obriga SEGUE_CASCATA.
+    private static IEnumerable<ModalidadeSelecionada> ModalidadesFederais() =>
+        new[] { "LB_PPI", "LB_Q", "LB_PCD", "LB_EP", "LI_PPI", "LI_Q", "LI_PCD", "LI_EP" }
+            .Select(static (codigo, indice) => ModalidadeFederal(codigo, indice + 2));
+
+    private static ModalidadeSelecionada ModalidadeFederal(string codigo, int sufixo) =>
+        ModalidadeSelecionada.Criar(
+            new Guid($"2222bbbb-0000-4000-8000-00000000000{sufixo:x}"),
+            codigo,
+            $"Reserva {codigo}",
+            NaturezaLegalModalidade.CotaReservada,
+            ComposicaoVagasModalidade.DentroDaReservaLegal,
+            null,
+            RegraRemanejamentoModalidade.SegueCascata,
+            null,
+            null,
+            null,
+            // A regra da cota de renda tem duas cláusulas FORA da ordem canônica de propósito: o
+            // encoder ordena as cláusulas e as condições pela chave de conteúdo, então um decoder
+            // que preservasse a ordem de ENTRADA em vez de ler a canônica já gravada produziria
+            // bytes distintos dos congelados.
+            codigo.StartsWith("LB", StringComparison.Ordinal) ? RegraDaCotaDeRenda : RegraDaCotaIndependenteDeRenda,
+            acaoQuandoIndeferido: "RECLASSIFICAR_AC",
+            baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!;
 
     /// <summary>
     /// Oferta institucional: quadro fixo, <b>sem</b> referência demográfica — e com as

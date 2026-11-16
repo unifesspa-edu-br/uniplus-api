@@ -78,21 +78,21 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().Contain(e => e.Field == "grupoAreaEnem" && e.Error.Code == codigoDeErro);
-        resultado.Errors.Select(e => e.Error.Code).Should().Contain("ConfiguracaoDistribuicaoVagas.VoBaseInvalido",
+        resultado.Errors.Select(e => e.Error.Code).Should().Contain("ConfiguracaoDistribuicaoVagas.VagasOfertadasBaseInvalido",
             "a recusa do grupo se acumula com as demais checagens de forma (ADR-0125)");
     }
 
     [Theory(DisplayName = "Criar com PR fora de [0,5; 1] falha (INV-1)")]
     [InlineData(0.49)]
     [InlineData(1.01)]
-    public void Criar_PrForaDoLimite_Falha(double pr)
+    public void Criar_PercentualDaReservaLegalForaDoLimite_Falha(double pr)
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 50, PercentualDaReservaLegal = (decimal)pr, RegraDeDistribuicao = RegraLei12711(), RegraDeAjuste = RegraAjuste(), ReferenciaDemografica = Demografica(), Modalidades = AsOitoFederaisMaisAc() },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina });
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.PrForaDoLimite");
+        resultado.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.PercentualDaReservaLegalForaDoLimite");
     }
 
     [Fact(DisplayName = "Criar sem modalidades falha")]
@@ -213,7 +213,7 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
     }
 
     [Fact(DisplayName = "ADR-0125: VO_base inválido e PR fora do limite acumulam no mesmo lote")]
-    public void Criar_VoBaseInvalidoEPrForaDoLimite_AcumulaAsDuasViolacoes()
+    public void Criar_VagasOfertadasBaseInvalidoEPercentualDaReservaLegalForaDoLimite_AcumulaAsDuasViolacoes()
     {
         Result<ConfiguracaoDistribuicaoVagas> resultado = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 0, PercentualDaReservaLegal = 1.5m, RegraDeDistribuicao = RegraInstitucional(), Modalidades = [] },
@@ -222,8 +222,8 @@ public sealed class ConfiguracaoDistribuicaoVagasTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(
         [
-            "ConfiguracaoDistribuicaoVagas.VoBaseInvalido",
-            "ConfiguracaoDistribuicaoVagas.PrForaDoLimite",
+            "ConfiguracaoDistribuicaoVagas.VagasOfertadasBaseInvalido",
+            "ConfiguracaoDistribuicaoVagas.PercentualDaReservaLegalForaDoLimite",
             "ConfiguracaoDistribuicaoVagas.ModalidadesVazias",
         ]);
     }

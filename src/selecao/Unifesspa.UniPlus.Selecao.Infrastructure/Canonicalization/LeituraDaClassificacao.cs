@@ -149,18 +149,19 @@ internal static class LeituraDaClassificacao
         (string Codigo, string Rotulo)? grupo = LeituraDoGrupoDeAreaEnem.LerObrigatorio(leitor, item, path);
         string baseLegal = leitor.TextoNaoVazio(item, "baseLegal", path, LimitesDoEnvelope.BaseLegalPesoAreaEnem);
         JsonArray arrayAreas = leitor.Array(item, "areas", path);
-        if (leitor.Falhou || grupo is not { } grupoLido)
-        {
-            return null;
-        }
+        return leitor.Falhou || grupo is not { } grupoLido ? null : CongelarGrupoDePesos(leitor, grupoLido, baseLegal, arrayAreas, path);
+    }
 
+    private static GrupoPesoAreaEnemCongelado? CongelarGrupoDePesos(
+        LeitorEnvelope leitor, (string Codigo, string Rotulo) grupo, string baseLegal, JsonArray arrayAreas, string path)
+    {
         List<(string? Codigo, string? Rotulo, decimal Peso, decimal? Corte)>? areas = LerAreas(leitor, arrayAreas, path);
         if (areas is null)
         {
             return null;
         }
 
-        Result<GrupoPesoAreaEnemCongelado> congelado = GrupoPesoAreaEnemCongelado.Criar(grupoLido.Codigo, grupoLido.Rotulo, baseLegal, areas);
+        Result<GrupoPesoAreaEnemCongelado> congelado = GrupoPesoAreaEnemCongelado.Criar(grupo.Codigo, grupo.Rotulo, baseLegal, areas);
         return congelado.IsFailure ? leitor.Propagar<GrupoPesoAreaEnemCongelado?>(congelado.Error!) : congelado.Value;
     }
 

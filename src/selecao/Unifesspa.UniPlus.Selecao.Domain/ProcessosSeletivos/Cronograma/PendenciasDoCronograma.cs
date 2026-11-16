@@ -278,7 +278,7 @@ public static class PendenciasDoCronograma
     internal static FaseCronograma? FaseSemUnidadeResponsavel(EstadoDaConfiguracao estado) =>
         estado.CronogramaFases.OrderBy(static f => f.Ordem).FirstOrDefault(static f => f.UnidadeResponsavelOrigemId is null);
 
-    /// <summary>Há vagas ofertadas (VoBase > 0), mas nenhuma fase do cronograma produz resultado (§3.4).</summary>
+    /// <summary>Há vagas ofertadas (as vagas ofertadas base > 0), mas nenhuma fase do cronograma produz resultado (§3.4).</summary>
     internal static bool HaVagasSemFaseQueProduzResultado(EstadoDaConfiguracao estado) =>
         estado.DistribuicaoVagas.Any(static d => d.VagasOfertadasBase > 0) && !estado.CronogramaFases.Any(static f => f.ProduzResultado);
 }

@@ -37,7 +37,11 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         IOfertaCursoReader OfertaCursoReader,
         IModalidadeReader ModalidadeReader,
         IReferenciaReservaDemograficaReader ReferenciaReservaDemograficaReader,
-        IUnitOfWork UnitOfWork);
+        IUnitOfWork UnitOfWork)
+    {
+        public ConfiguracaoDistribuicaoVagasResolver Resolvedor =>
+            new(RegraCatalogoReader, OfertaCursoReader, ModalidadeReader, ReferenciaReservaDemograficaReader);
+    }
 
     private static Mocks NovosMocks(ProcessoSeletivo? processo, Guid processoId)
     {
@@ -73,8 +77,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         DefinirDistribuicaoVagasCommand command = new(processo.Id, [], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.DistribuicaoVagasVazia",
@@ -90,8 +93,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "X", "v1", null, null, null, [Guid.CreateVersion7()], [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -118,8 +120,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
                 [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         processo.DistribuicaoVagas.Should().ContainSingle();
@@ -132,9 +133,9 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         // recém-criado, sem retificação aberta), o ETag vem nulo.
         result.Value!.ETag.Should().BeNull();
         ConfiguracaoDistribuicaoVagasDto dto = result.Value!.DistribuicaoVagas.Should().ContainSingle().Subject;
-        dto.VoBase.Should().Be(60);
+        dto.VagasOfertadasBase.Should().Be(60);
         dto.Quadro.Should().ContainSingle(v => v.Quantidade == 60);
-        dto.TotalPublicado.Should().Be(60);
+        dto.TotalDeVagasDoEdital.Should().Be(60);
     }
 
     [Fact(DisplayName = "Handle congela o nome da oferta que o cadastro entrega: curso, grau, unidade ofertante e turnos")]
@@ -156,8 +157,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
                 [new ConfiguracaoDistribuicaoVagasInput(
                     ofertaCursoId, 60, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
                     [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])], PrecondicaoIfMatch.Ausente),
-            mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         OfertaCursoSnapshot congelado = processo.DistribuicaoVagas.Single().OfertaCurso!;
@@ -189,8 +189,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
                 [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         GrupoAreaEnemSnapshot? congelado = processo.DistribuicaoVagas.Single().GrupoAreaEnem;
@@ -228,14 +227,13 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
                 [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 101)])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Should().Contain(e => e.Field == "distribuicaoVagas[0].grupoAreaEnem"
             && e.Error.Code == "GrupoAreaEnemSnapshot.TamanhoInvalido");
-        result.Errors.Should().Contain(e => e.Field == "distribuicaoVagas[0].voBase"
-            && e.Error.Code == "ConfiguracaoDistribuicaoVagas.VoBaseAcimaDasVagasAutorizadas",
+        result.Errors.Should().Contain(e => e.Field == "distribuicaoVagas[0].vagasOfertadasBase"
+            && e.Error.Code == "ConfiguracaoDistribuicaoVagas.VagasOfertadasBaseAcimaDasVagasAutorizadas",
             "o grupo inválido não interrompe as demais checagens da distribuição (ADR-0125): a oferta autoriza 100 vagas");
     }
 
@@ -259,8 +257,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
                 [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
 
         // O administrador troca o grupo do curso no cadastro.
@@ -316,8 +313,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
                 [.. federaisMaisAc.Select(f => f.Id)], [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         processo.DistribuicaoVagas.Single().ReferenciaDemografica.Should().NotBeNull();
@@ -333,10 +329,10 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         ConfiguracaoDistribuicaoVagasDto dto = result.Value!.DistribuicaoVagas.Should().ContainSingle().Subject;
         dto.Quadro.Should().HaveCount(9);
         dto.ReferenciaDemografica.Should().NotBeNull();
-        dto.VrFinal.Should().Be(processo.DistribuicaoVagas.Single().ReservaLegalEfetiva);
-        dto.TotalPublicado.Should().Be(processo.DistribuicaoVagas.Single().TotalDeVagasDoEdital);
+        dto.ConferenciaDaReservaLegal!.ReservaLegalEfetiva.Should().Be(processo.DistribuicaoVagas.Single().ReservaLegalEfetiva!.Value);
+        dto.TotalDeVagasDoEdital.Should().Be(processo.DistribuicaoVagas.Single().TotalDeVagasDoEdital);
         int ac = dto.Quadro.Single(v => v.ModalidadeCodigo == ModalidadesFederaisLei12711.Ac).Quantidade;
-        (dto.VrFinal + ac).Should().Be(50);
+        (dto.ConferenciaDaReservaLegal.ReservaLegalEfetiva + ac).Should().Be(50);
     }
 
     [Fact(DisplayName = "Handle com regra de distribuição inexistente recusa")]
@@ -353,8 +349,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "INEXISTENTE", "v1", null, null, null, [Guid.CreateVersion7()], [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.RegraDistribuicaoNaoEncontrada");
@@ -376,8 +371,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "FORMULA-MEDIA-PONDERADA", "v1", null, null, null, [Guid.CreateVersion7()], [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.RegraDistribuicaoTipoInvalido");
@@ -395,8 +389,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "X", "v1", null, null, null, [Guid.CreateVersion7()], [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.OfertaCursoNaoEncontrada");
@@ -419,8 +412,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
                 ofertaCursoId, 50, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null, [Guid.CreateVersion7()], [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ModalidadeNaoEncontrada");
@@ -444,8 +436,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
                 ofertaCursoId, 50, 0.5m, RegraDistribuicaoVagasCodigo.Lei12711, "v1", null, null, Guid.CreateVersion7(), [Guid.CreateVersion7()], [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaNaoEncontrada");
@@ -465,12 +456,11 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             ], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => e.Field).Should().BeEquivalentTo(
-            ["distribuicaoVagas[0].voBase", "distribuicaoVagas[1].pr"]);
+            ["distribuicaoVagas[0].vagasOfertadasBase", "distribuicaoVagas[1].percentualDaReservaLegal"]);
         await mocks.OfertaCursoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
         await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
@@ -500,8 +490,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
                 [modalidadeId1, modalidadeId2], [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeDuplicada");
@@ -522,8 +511,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "X", "v1", null, null, null, [], [])], PrecondicaoIfMatch.Ausente);
 
         Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
-            command, mocks.Repository, mocks.RegraCatalogoReader, mocks.OfertaCursoReader, mocks.ModalidadeReader,
-            mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
+            command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["ConfiguracaoDistribuicaoVagas.ModalidadesVazias"]);
