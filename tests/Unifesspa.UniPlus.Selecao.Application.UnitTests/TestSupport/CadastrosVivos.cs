@@ -138,7 +138,7 @@ internal static class CadastrosVivos
     }
 
     public static ModalidadeView Modalidade(string codigo) =>
-        new(IdentidadeDe(codigo), codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR", null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null);
+        new(IdentidadeDe(codigo), codigo, null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL", null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null);
 
     public static TipoDocumentoView TipoDocumento(string codigo) =>
         new(IdentidadeDe(codigo), codigo, "Documento", "OUTROS", ClassificacaoDeProtecao.Pessoal, "Comprovação documental do candidato.", "CUMPRIMENTO_OBRIGACAO_LEGAL", ProtecaoAprovada: true);

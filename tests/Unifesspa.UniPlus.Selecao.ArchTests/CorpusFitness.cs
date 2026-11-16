@@ -55,7 +55,7 @@ internal static class CorpusFitness
                 modalidades: [
                     ModalidadeSelecionada.Criar(
                         new Guid("22222222-2222-2222-2222-222222222222"), "AC", null,
-                        NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
+                        NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
                         RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                         RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
                 ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!,

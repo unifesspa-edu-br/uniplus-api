@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// <summary>
 /// Integração ponta-a-ponta da Modalidade contra Postgres real (UNI-REQ-0011):
 /// persistência, UNIQUE parcial do código vivo, liberação do slot por soft-delete,
-/// CHECKs de domínio (natureza, formato do código, coerência RETIRA_DE⟺origem),
+/// CHECKs de domínio (natureza, formato do código, coerência RETIRADA_DE_OUTRA_MODALIDADE⟺origem),
 /// bloqueio de remoção quando referenciada (composicao_origem e remanejamento_args
 /// jsonb) e leitura cross-módulo ordenada por código.
 /// </summary>
@@ -140,7 +140,7 @@ public sealed class ModalidadePersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"INVALIDA"}, {"RESIDUAL_DO_VO"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"INVALIDA"}, {"RESTANTE_DAS_VAGAS_OFERTADAS"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK de domínio de natureza_legal impede o INSERT direto");
@@ -152,34 +152,34 @@ public sealed class ModalidadePersistenceTests
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lb-ppi"}, {"AMPLA"}, {"RESIDUAL_DO_VO"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {"lb-ppi"}, {"AMPLA"}, {"RESTANTE_DAS_VAGAS_OFERTADAS"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
             "o CHECK codigo ~ '^[A-Z0-9_]+$' impede o INSERT direto");
     }
 
-    [Fact(DisplayName = "CHECK de banco rejeita RETIRA_DE sem origem via SQL cru")]
-    public async Task Check_RejeitaRetiraDeSemOrigemViaSqlCru()
+    [Fact(DisplayName = "CHECK de banco rejeita RETIRADA_DE_OUTRA_MODALIDADE sem origem via SQL cru")]
+    public async Task Check_RejeitaRetiradaDeOutraModalidadeSemOrigemViaSqlCru()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"AMPLA"}, {"RETIRA_DE"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"AMPLA"}, {"RETIRADA_DE_OUTRA_MODALIDADE"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK (composicao_vagas = 'RETIRA_DE') = (composicao_origem IS NOT NULL) impede o INSERT direto");
+            "o CHECK (composicao_vagas = 'RETIRADA_DE_OUTRA_MODALIDADE') = (composicao_origem IS NOT NULL) impede o INSERT direto");
     }
 
-    [Fact(DisplayName = "CHECK de banco rejeita origem preenchida sem RETIRA_DE via SQL cru")]
-    public async Task Check_RejeitaOrigemSemRetiraDeViaSqlCru()
+    [Fact(DisplayName = "CHECK de banco rejeita origem preenchida sem RETIRADA_DE_OUTRA_MODALIDADE via SQL cru")]
+    public async Task Check_RejeitaOrigemSemRetiradaDeOutraModalidadeViaSqlCru()
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
         Func<Task> act = async () => await ctx.Database.ExecuteSqlAsync(
-            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, composicao_origem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"AMPLA"}, {"RESIDUAL_DO_VO"}, {"AC"}, {DateTimeOffset.UtcNow}, {false})");
+            $"INSERT INTO configuracao.modalidades (id, codigo, natureza_legal, composicao_vagas, composicao_origem, created_at, is_deleted) VALUES ({Guid.CreateVersion7()}, {CodigoUnico()}, {"AMPLA"}, {"RESTANTE_DAS_VAGAS_OFERTADAS"}, {"AC"}, {DateTimeOffset.UtcNow}, {false})");
 
         await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK de coerência RETIRA_DE⟺origem impede o INSERT direto");
+            "o CHECK de coerência RETIRADA_DE_OUTRA_MODALIDADE⟺origem impede o INSERT direto");
     }
 
     [Fact(DisplayName = "Remoção é bloqueada por referência via composicao_origem (repo)")]
@@ -190,7 +190,7 @@ public sealed class ModalidadePersistenceTests
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
         ctx.Modalidades.Add(Ampla(origem));
-        ctx.Modalidades.Add(RetiraDe(dependente, origem));
+        ctx.Modalidades.Add(RetiradaDeOutraModalidade(dependente, origem));
         await ctx.SaveChangesAsync();
 
         var repo = new ModalidadeRepository(ctx);
@@ -332,7 +332,7 @@ public sealed class ModalidadePersistenceTests
 
         Modalidade acPcd = semeadas.Single(m => m.Codigo.Valor == "AC_PCD");
         acPcd.NaturezaLegal.Should().Be(NaturezaLegal.AcaoAfirmativa);
-        acPcd.ComposicaoVagas.Should().Be(ComposicaoVagas.RetiraDe);
+        acPcd.ComposicaoVagas.Should().Be(ComposicaoVagas.RetiradaDeOutraModalidade);
         acPcd.ComposicaoOrigem.Should().Be("AC", "AC_PCD retira suas vagas da ampla concorrência, não do total");
         acPcd.RegraRemanejamento.Should().Be(RegraRemanejamento.DestinoUnico);
         acPcd.RemanejamentoArgs.Destino.Should().Be("AC", "a vaga ociosa de AC_PCD retorna à ampla concorrência");
@@ -340,12 +340,12 @@ public sealed class ModalidadePersistenceTests
 
         Modalidade ac = semeadas.Single(m => m.Codigo.Valor == "AC");
         ac.NaturezaLegal.Should().Be(NaturezaLegal.Ampla);
-        ac.ComposicaoVagas.Should().Be(ComposicaoVagas.ResidualDoVo, "só a ampla concorrência é residual do volume de oferta");
+        ac.ComposicaoVagas.Should().Be(ComposicaoVagas.RestanteDasVagasOfertadas, "só a ampla concorrência é residual do volume de oferta");
         ac.RegraRemanejamento.Should().BeNull("ampla concorrência não remaneja como cota");
 
         semeadas.Where(m => m.Codigo.Valor.StartsWith('L'))
             .Should().OnlyContain(m => m.NaturezaLegal == NaturezaLegal.CotaReservada
-                && m.ComposicaoVagas == ComposicaoVagas.DentroDoVr
+                && m.ComposicaoVagas == ComposicaoVagas.DentroDaReservaLegal
                 && m.RegraRemanejamento == RegraRemanejamento.SegueCascata,
                 "as cotas federais são sub-reservas dentro das vagas reservadas e seguem a cascata legal");
     }
@@ -494,15 +494,15 @@ public sealed class ModalidadePersistenceTests
     }
 
     private static Modalidade Ampla(string codigo) =>
-        Modalidade.Criar(codigo, null, "AMPLA", "RESIDUAL_DO_VO", null, null, null, null, null,
+        Modalidade.Criar(codigo, null, "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null,
             SementeDeAplicabilidadeLegal.AmplaConcorrencia, null, null).Value!;
 
     private static Modalidade Cota(string codigo) =>
-        Modalidade.Criar(codigo, "Cota", "COTA_RESERVADA", "DENTRO_DO_VR", null, "SEGUE_CASCATA", null, null, null,
+        Modalidade.Criar(codigo, "Cota", "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL", null, "SEGUE_CASCATA", null, null, null,
             SementeDeAplicabilidadeLegal.LiEp, null, null).Value!;
 
-    private static Modalidade RetiraDe(string codigo, string origem) =>
-        Modalidade.Criar(codigo, null, "AMPLA", "RETIRA_DE", origem, null, null, null, null,
+    private static Modalidade RetiradaDeOutraModalidade(string codigo, string origem) =>
+        Modalidade.Criar(codigo, null, "AMPLA", "RETIRADA_DE_OUTRA_MODALIDADE", origem, null, null, null, null,
             SementeDeAplicabilidadeLegal.AmplaConcorrencia, null, null).Value!;
 
     private static Modalidade DestinoUnico(string codigo, string destino) =>

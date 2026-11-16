@@ -83,7 +83,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
             codigo: "AC",
             descricao: "Ampla concorrência",
             naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             composicaoOrigemCodigo: null,
             regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
             remanejamentoDestino: null,
@@ -109,7 +109,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     private static ModalidadeSelecionada ModalidadeDe(string codigo, NaturezaLegalModalidade natureza) =>
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, null, natureza,
-            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.ResidualDoVo : ComposicaoVagasModalidade.SuplementarAoTotal, null,
+            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.SuplementarAoTotal, null,
             natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
             null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), null, "base legal", quantidadeDeclarada: 20).Value!;
 

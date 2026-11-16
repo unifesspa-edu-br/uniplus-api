@@ -27,10 +27,10 @@ internal static class DistribuicaoDeVagasDeTeste
             null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), null, "base legal", quantidadeDeclarada).Value!;
 
     internal static ModalidadeSelecionada Federal(string codigo) =>
-        Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr);
+        Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal);
 
     internal static ModalidadeSelecionada AmplaConcorrencia() =>
-        Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo);
+        Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas);
 
     internal static ModalidadeSelecionada Fixada(string codigo, int quantidade) =>
         Modalidade(codigo, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidade);

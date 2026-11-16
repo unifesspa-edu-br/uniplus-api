@@ -84,16 +84,16 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
     /// </summary>
     [Theory(DisplayName = "Natureza legal incoerente com a regra de remanejamento é RECUSADA na reidratação")]
     // Uma ampla concorrência que remaneja as próprias vagas ociosas — para onde?
-    [InlineData("Ampla", "DestinoUnico")]
-    [InlineData("Ampla", "SegueCascata")]
-    [InlineData("Ampla", "Cruzado")]
+    [InlineData("AMPLA", "DESTINO_UNICO")]
+    [InlineData("AMPLA", "SEGUE_CASCATA")]
+    [InlineData("AMPLA", "CRUZADO")]
     // Uma cota reservada da Lei 12.711 que foge da cascata legal (INV-12).
-    [InlineData("CotaReservada", "Nenhuma")]
-    [InlineData("CotaReservada", "DestinoUnico")]
+    [InlineData("COTA_RESERVADA", null)]
+    [InlineData("COTA_RESERVADA", "DESTINO_UNICO")]
     // Uma ação afirmativa que não remaneja para lugar nenhum, ou que segue a cascata da lei.
-    [InlineData("AcaoAfirmativa", "Nenhuma")]
-    [InlineData("AcaoAfirmativa", "SegueCascata")]
-    public void NaturezaIncoerenteComRemanejamento_Recusa(string natureza, string remanejamento)
+    [InlineData("ACAO_AFIRMATIVA", null)]
+    [InlineData("ACAO_AFIRMATIVA", "SEGUE_CASCATA")]
+    public void NaturezaIncoerenteComRemanejamento_Recusa(string natureza, string? remanejamento)
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
@@ -132,7 +132,7 @@ public sealed class EnvelopeCodecRecusaVocabularioEBlocosDerivadosTests
     }
 
     /// <summary>
-    /// O código da modalidade é <b>chave</b>: a composição (<c>RETIRA_DE</c>) e o
+    /// O código da modalidade é <b>chave</b>: a composição (<c>RETIRADA_DE_OUTRA_MODALIDADE</c>) e o
     /// remanejamento (<c>DESTINO_UNICO</c>, <c>CRUZADO</c>) apontam para códigos de outras
     /// modalidades da mesma oferta. O cadastro impõe <c>^[A-Z0-9_]+$</c>.
     /// </summary>

@@ -212,7 +212,7 @@ public sealed class OrdemDosPortoesDeCongelamentoTests
             Definir(_processo, nameof(ProcessoSeletivo.AlgoritmoContagemPrazo), ativas[2] ? null : _algoritmo);
             Definir(_processo, nameof(ProcessoSeletivo.ConfiguracaoTaxaInscricao), ativas[4] ? null : _taxa);
             Definir(_fase, nameof(FaseCronograma.UnidadeResponsavelOrigemId), ativas[5] ? null : _unidadeDaFase);
-            Definir(_modalidade, nameof(ModalidadeSelecionada.RegraRemanejamento), ativas[9] ? RegraRemanejamentoModalidade.SegueCascata : _remanejamento);
+            Definir(_modalidade, "RegraRemanejamentoCodigo", (ativas[9] ? RegraRemanejamentoModalidade.SegueCascata : _remanejamento).ToCodigo());
             Definir(_exigencia, nameof(DocumentoExigido.Aplicabilidade), ativas[10] ? Aplicabilidade.Condicional : Aplicabilidade.Geral);
 
             return _transicao(ativas[3] ? ContextoDeContagemDePrazos.SemCalendario : ComCalendario(), Tipos(ativas[6], ativas[7], ativas[8]));

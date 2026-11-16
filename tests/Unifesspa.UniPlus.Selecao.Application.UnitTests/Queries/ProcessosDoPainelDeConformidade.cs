@@ -125,7 +125,7 @@ internal static class ProcessosDoPainelDeConformidade
     private static ConfiguracaoDistribuicaoVagas DistribuicaoComAmpla()
     {
         ModalidadeSelecionada ampla = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: 50).Value!;
         ReferenciaRegra regraInstitucional = ReferenciaRegra.De(
             RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64));

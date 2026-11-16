@@ -105,10 +105,10 @@ public sealed class VocabularioDaLeituraDoProcessoTests
             "REGULAR", ["MATUTINO"], null, null, 100, null, null, null, "Medicina", "Bacharelado"));
         IModalidadeReader modalidades = Substitute.For<IModalidadeReader>();
 
-        // Ampla concorrência: o catálogo publica `AMPLA`/`RESIDUAL_DO_VO` e NÃO publica regra
+        // Ampla concorrência: o catálogo publica `AMPLA`/`RESTANTE_DAS_VAGAS_OFERTADAS` e NÃO publica regra
         // de remanejamento — a modalidade que não remaneja é representada por ausência.
         modalidades.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(new ModalidadeView(
-            modalidadeId, "AC", "Ampla concorrência", "AMPLA", "RESIDUAL_DO_VO",
+            modalidadeId, "AC", "Ampla concorrência", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS",
             null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012"));
 
         Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> simulada = await SimularDistribuicaoVagasQueryHandler.Handle(
@@ -125,7 +125,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
 
         modalidade.GetProperty("naturezaLegal").GetString().Should().Be("AMPLA",
             "o catálogo descreve esta mesma modalidade com este token, e o cliente cruza as duas rotas");
-        modalidade.GetProperty("composicaoVagas").GetString().Should().Be("RESIDUAL_DO_VO");
+        modalidade.GetProperty("composicaoVagas").GetString().Should().Be("RESTANTE_DAS_VAGAS_OFERTADAS");
         modalidade.GetProperty("regraRemanejamento").ValueKind.Should().Be(JsonValueKind.Null,
             "a origem representa 'não remaneja' por ausência do campo, não por um token próprio");
     }

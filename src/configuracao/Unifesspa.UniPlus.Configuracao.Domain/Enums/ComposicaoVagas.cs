@@ -13,13 +13,13 @@ public enum ComposicaoVagas
     Nenhuma = 0,
 
     /// <summary>Vagas residuais do Volume de Oferta (VO).</summary>
-    ResidualDoVo = 1,
+    RestanteDasVagasOfertadas = 1,
 
     /// <summary>Vagas contidas dentro das Vagas Reservadas (VR).</summary>
-    DentroDoVr = 2,
+    DentroDaReservaLegal = 2,
 
     /// <summary>Vagas retiradas de outra modalidade (exige <c>ComposicaoOrigem</c>).</summary>
-    RetiraDe = 3,
+    RetiradaDeOutraModalidade = 3,
 
     /// <summary>Vagas suplementares, acrescidas ao total do processo.</summary>
     SuplementarAoTotal = 4,

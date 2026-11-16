@@ -174,10 +174,10 @@ public static class ConferenciaDaDistribuicaoDeVagas
     // sem nunca reduzir a modalidade que alega retirar.
     private static IEnumerable<FieldError> RetiradasForaDaAmplaConcorrencia(IReadOnlyList<ModalidadeSelecionada> modalidades) =>
         modalidades
-            .Where(static m => m.ComposicaoVagas == ComposicaoVagasModalidade.RetiraDe
+            .Where(static m => m.ComposicaoVagas == ComposicaoVagasModalidade.RetiradaDeOutraModalidade
                 && !string.Equals(m.ComposicaoOrigemCodigo, ModalidadesFederaisLei12711.Ac, StringComparison.Ordinal))
             .Select(static retirada => Recusa("modalidades", DistribuicaoDeVagasErrorCodes.RetiradaFederalDeveSerDeAmplaConcorrencia,
-                $"No ramo federal, a modalidade {retirada.Codigo} (RETIRA_DE) só pode retirar da ampla concorrência (AC) — a fórmula do art. 10 desconta toda retirada de AC."));
+                $"No ramo federal, a modalidade {retirada.Codigo} (RETIRADA_DE_OUTRA_MODALIDADE) só pode retirar da ampla concorrência (AC) — a fórmula do art. 10 desconta toda retirada de AC."));
 
     private static IEnumerable<FieldError> Presentes(params FieldError?[] recusas) =>
         recusas.OfType<FieldError>();
@@ -205,8 +205,8 @@ public static class ConferenciaDaDistribuicaoDeVagas
 
     private static FieldError? FronteiraDaLeiDeCotas(ModalidadeSelecionada modalidade)
     {
-        bool calculada = modalidade.ComposicaoVagas is ComposicaoVagasModalidade.DentroDoVr or ComposicaoVagasModalidade.ResidualDoVo;
-        bool exigeDeclaracao = modalidade.ComposicaoVagas is ComposicaoVagasModalidade.RetiraDe or ComposicaoVagasModalidade.SuplementarAoTotal;
+        bool calculada = modalidade.ComposicaoVagas is ComposicaoVagasModalidade.DentroDaReservaLegal or ComposicaoVagasModalidade.RestanteDasVagasOfertadas;
+        bool exigeDeclaracao = modalidade.ComposicaoVagas is ComposicaoVagasModalidade.RetiradaDeOutraModalidade or ComposicaoVagasModalidade.SuplementarAoTotal;
 
         if (calculada && modalidade.QuantidadeDeclarada is not null)
         {

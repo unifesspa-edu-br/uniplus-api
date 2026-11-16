@@ -28,7 +28,7 @@ public sealed class ProcessoSeletivoPublicarGrupoDaConvocacaoTests
     public void AvaliarConformidade_GatilhoPeloGrupoDaConvocacao_SoAlcancaEsseGrupo()
     {
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, "RECLASSIFICA_AC");
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
@@ -46,7 +46,7 @@ public sealed class ProcessoSeletivoPublicarGrupoDaConvocacaoTests
     public void AvaliarConformidade_ClausulaComOsDoisFatosDeModalidade_AlcancaCadaUm()
     {
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, "RECLASSIFICA_AC");
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         DocumentoExigido exigencia = DocumentoExigido.Criar(

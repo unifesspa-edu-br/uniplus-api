@@ -53,49 +53,38 @@ internal static class CoerenciaDosCamposDaModalidade
     /// </remarks>
     internal static List<FieldError> ValidarCoerenciaCruzada(
         CamposResolvidosDaModalidade campos,
-        bool composicaoOk,
-        bool naturezaOk,
-        bool regraOk)
+        TokensReconhecidosDaModalidade reconhecidos)
     {
-        List<FieldError> erros = [];
+        FieldError?[] violacoes =
+        [
+            reconhecidos.Composicao ? ValidarOrigemPelaComposicao(campos) : null,
+            reconhecidos.Natureza && reconhecidos.Regra
+                ? ValidarCoerenciaNaturezaRemanejamento(campos.NaturezaLegal, campos.RegraRemanejamento)
+                : null,
+            reconhecidos.Regra ? ValidarArgumentosPorRegra(campos.RegraRemanejamento, campos.RemanejamentoArgs) : null,
+            reconhecidos.Natureza && campos.RegraDeAplicabilidade is { } regra
+                ? ValidarRegraPelaNatureza(campos.NaturezaLegal, regra)
+                : null,
+        ];
 
-        if (composicaoOk)
-        {
-            bool ehRetiraDe = campos.ComposicaoVagas == ComposicaoVagas.RetiraDe;
-            if (ehRetiraDe && campos.ComposicaoOrigem is null)
-            {
-                erros.Add(new("composicaoOrigem", new DomainError(
-                    ModalidadeErrorCodes.OrigemObrigatoriaParaRetiraDe,
-                    "Composição RETIRA_DE exige o código de origem (composicao_origem).")));
-            }
-            else if (!ehRetiraDe && campos.ComposicaoOrigem is not null)
-            {
-                erros.Add(new("composicaoOrigem", new DomainError(
-                    ModalidadeErrorCodes.OrigemApenasParaRetiraDe,
-                    "Código de origem (composicao_origem) só é permitido na composição RETIRA_DE.")));
-            }
-        }
-
-        if (naturezaOk && regraOk
-            && ValidarCoerenciaNaturezaRemanejamento(campos.NaturezaLegal, campos.RegraRemanejamento) is { } incoerencia)
-        {
-            erros.Add(incoerencia);
-        }
-
-        if (regraOk
-            && ValidarArgumentosPorRegra(campos.RegraRemanejamento, campos.RemanejamentoArgs) is { } argumentoInvalido)
-        {
-            erros.Add(argumentoInvalido);
-        }
-
-        if (naturezaOk && campos.RegraDeAplicabilidade is { } regraDeAplicabilidade
-            && ValidarRegraPelaNatureza(campos.NaturezaLegal, regraDeAplicabilidade) is { } regraIncoerente)
-        {
-            erros.Add(regraIncoerente);
-        }
-
-        return erros;
+        return [.. violacoes.OfType<FieldError>()];
     }
+
+    private static FieldError? ValidarOrigemPelaComposicao(CamposResolvidosDaModalidade campos)
+    {
+        bool retiradaDeOutraModalidade = campos.ComposicaoVagas == ComposicaoVagas.RetiradaDeOutraModalidade;
+        if (retiradaDeOutraModalidade == (campos.ComposicaoOrigem is not null))
+        {
+            return null;
+        }
+
+        return retiradaDeOutraModalidade
+            ? RecusaDaOrigem(ModalidadeErrorCodes.OrigemObrigatoriaParaRetiradaDeOutraModalidade, "Composição RETIRADA_DE_OUTRA_MODALIDADE exige o código de origem (composicao_origem).")
+            : RecusaDaOrigem(ModalidadeErrorCodes.OrigemApenasParaRetiradaDeOutraModalidade, "Código de origem (composicao_origem) só é permitido na composição RETIRADA_DE_OUTRA_MODALIDADE.");
+    }
+
+    private static FieldError RecusaDaOrigem(string codigoDaRecusa, string mensagem) =>
+        new("composicaoOrigem", new DomainError(codigoDaRecusa, mensagem));
 
     private static FieldError? ValidarCoerenciaNaturezaRemanejamento(
         NaturezaLegal natureza,

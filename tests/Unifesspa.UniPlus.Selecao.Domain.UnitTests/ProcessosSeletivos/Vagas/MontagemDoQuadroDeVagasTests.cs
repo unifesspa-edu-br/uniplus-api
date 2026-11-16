@@ -19,7 +19,7 @@ using static DistribuicaoDeVagasDeTeste;
 public sealed class MontagemDoQuadroDeVagasTests
 {
     private static ModalidadeSelecionada Retirada(string codigo, int quantidade) =>
-        Modalidade(codigo, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, quantidade, ModalidadesFederaisLei12711.Ac);
+        Modalidade(codigo, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade, quantidade, ModalidadesFederaisLei12711.Ac);
 
     private static DistribuicaoDeVagasDeclarada DaLeiDeCotasCom(int vagasOfertadasBase, decimal percentual, params ModalidadeSelecionada[] acrescimos) =>
         DaLeiDeCotas() with
@@ -87,7 +87,7 @@ public sealed class MontagemDoQuadroDeVagasTests
     public void LeiDeCotas_CalculadaForaDoArt10_RecusaComoAusente()
     {
         DistribuicaoDeVagasDeclarada declarada = DaLeiDeCotasCom(
-            50, 0.5m, Modalidade("OUTRA", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.DentroDoVr));
+            50, 0.5m, Modalidade("OUTRA", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.DentroDaReservaLegal));
 
         MontagemDoQuadroDeVagas.Montar(declarada).Error!.Code.Should().Be(DistribuicaoDeVagasErrorCodes.QuadroModalidadeAusente);
     }

@@ -28,7 +28,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
     public void Publicar_HeteroidentificacaoElimina_IncoerenteComAcaoDaModalidadePpi()
     {
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, "RECLASSIFICA_AC");
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
@@ -46,7 +46,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
     public void Publicar_ComprovanteRendaElimina_IncoerenteComAcaoDaModalidadeDeCota()
     {
         ModalidadeSelecionada cota = NovaModalidadeComAcao(
-            "LB_Q", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, "RECLASSIFICA_AC");
+            "LB_Q", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
         ProcessoSeletivo processo = NovoProcessoComModalidade(cota);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
@@ -128,7 +128,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         // ausente) avaliava como falsa (PredicadoDnf.Avaliar), reprovando a cláusula
         // inteira e escondendo QUALQUER modalidade do gate CA-05 — publicaria incoerente.
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, "RECLASSIFICAR_AC");
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICAR_AC");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
@@ -156,7 +156,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         // null passasse a ser lido como RECLASSIFICAR_AC, toda exigência ELIMINA do catálogo
         // real deixaria de publicar. Este teste é o que segura essa leitura.
         ModalidadeSelecionada semAcao = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, acaoQuandoIndeferido: null);
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, acaoQuandoIndeferido: null);
         ProcessoSeletivo processo = NovoProcessoComModalidade(semAcao);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(
@@ -180,7 +180,7 @@ public sealed class ProcessoSeletivoPublicarCoerenciaDaConsequenciaTests
         // (ck_modalidades_acao_quando_indeferido, módulo Configuração). Comparar os tokens
         // crus sempre reprovaria o único caso de reclassificação coerente que existe.
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, "RECLASSIFICAR_AC");
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICAR_AC");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirDocumentosExigidos(

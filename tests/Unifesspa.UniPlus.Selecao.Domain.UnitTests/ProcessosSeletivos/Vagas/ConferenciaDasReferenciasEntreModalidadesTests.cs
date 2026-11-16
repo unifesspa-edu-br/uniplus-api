@@ -50,8 +50,8 @@ public sealed class ConferenciaDasReferenciasEntreModalidadesTests
     [Fact(DisplayName = "As modalidades que só citam outras do mesmo conjunto passam sem recusa")]
     public void ReferenciasNoConjunto_SemRecusa() =>
         Conferir(
-            Modalidade("AC", ComposicaoVagasModalidade.ResidualDoVo),
-            Modalidade("PCD", ComposicaoVagasModalidade.RetiraDe, origem: "AC"),
+            Modalidade("AC", ComposicaoVagasModalidade.RestanteDasVagasOfertadas),
+            Modalidade("PCD", ComposicaoVagasModalidade.RetiradaDeOutraModalidade, origem: "AC"),
             ComDestino("IND", "AC"),
             Cruzada("QUI", par: "IND2"),
             Cruzada("IND2", par: "QUI", fallback: "AC")).Should().BeEmpty();
@@ -59,7 +59,7 @@ public sealed class ConferenciaDasReferenciasEntreModalidadesTests
     [Fact(DisplayName = "A origem da retirada fora do conjunto é recusada")]
     public void OrigemForaDoConjunto_Recusa() =>
         DeveRecusarSo(
-            Conferir(Modalidade("PCD", ComposicaoVagasModalidade.RetiraDe, origem: "AC")),
+            Conferir(Modalidade("PCD", ComposicaoVagasModalidade.RetiradaDeOutraModalidade, origem: "AC")),
             DistribuicaoDeVagasErrorCodes.ComposicaoOrigemNaoSelecionada, "PCD referencia a origem AC");
 
     [Fact(DisplayName = "O destino do remanejamento fora do conjunto é recusado")]
@@ -119,7 +119,7 @@ public sealed class ConferenciaDasReferenciasEntreModalidadesTests
     public void Recusas_Acumulam_NaOrdemDasModalidades()
     {
         IReadOnlyList<FieldError> recusas = Conferir(
-            Modalidade("PCD", ComposicaoVagasModalidade.RetiraDe, origem: "AC", acaoQuandoIndeferido: "RECLASSIFICAR_AC"),
+            Modalidade("PCD", ComposicaoVagasModalidade.RetiradaDeOutraModalidade, origem: "AC", acaoQuandoIndeferido: "RECLASSIFICAR_AC"),
             Cruzada("QUI", par: "QUI"));
 
         recusas.Select(static r => r.Error.Code).Should().Equal(

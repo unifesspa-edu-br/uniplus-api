@@ -76,7 +76,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         codigo: "AC",
         descricao: null,
         naturezaLegal: NaturezaLegalModalidade.Ampla,
-        composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+        composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
         composicaoOrigemCodigo: null,
         regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
         remanejamentoDestino: null,
@@ -187,7 +187,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         [
             ModalidadeSelecionada.Criar(
                 Guid.CreateVersion7(), "AC", "Ampla concorrência",
-                NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
+                NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
                 RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                 regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
                 baseLegal: "Lei 12.711/2012 art. 1º").Value!,
@@ -197,7 +197,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         {
             modalidades.Add(ModalidadeSelecionada.Criar(
                 Guid.CreateVersion7(), codigo, $"Reserva {codigo}",
-                NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, null,
+                NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, null,
                 RegraRemanejamentoModalidade.SegueCascata, null, null, null,
                 regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: "RECLASSIFICAR_AC",
                 baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!);

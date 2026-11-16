@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// imutável), descrição opcional, e os campos de cota como tokens canônicos
 /// UPPER_SNAKE para os enums (<c>NaturezaLegal</c>, <c>ComposicaoVagas</c>,
 /// <c>RegraRemanejamento</c>, <c>AcaoQuandoIndeferido</c>). Quando ausentes,
-/// <c>NaturezaLegal</c> assume AMPLA e <c>ComposicaoVagas</c> assume RESIDUAL_DO_VO.
+/// <c>NaturezaLegal</c> assume AMPLA e <c>ComposicaoVagas</c> assume RESTANTE_DAS_VAGAS_OFERTADAS.
 /// A <c>RegraDeAplicabilidade</c> é o OU de cláusulas, cada uma o E de condições, que diz quem
 /// concorre à modalidade (ADR-0144); a lista vazia é a regra incondicional, e a ausente é recusada.
 /// O ator de auditoria (<c>created_by</c>) é carimbado server-side via

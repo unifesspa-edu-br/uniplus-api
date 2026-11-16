@@ -19,7 +19,7 @@ public sealed class RemoverModalidadeCommandHandlerTests
     private const string CodigoInstitucional = "PSVR_AMPLA";
 
     private static Modalidade Modalidade(string codigo = CodigoInstitucional) =>
-        Domain.Entities.Modalidade.Criar(codigo, null, "AMPLA", "RESIDUAL_DO_VO", null, null, null, null, null,
+        Domain.Entities.Modalidade.Criar(codigo, null, "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null,
             Regras.ValueObjects.PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null)
             .Value!;
 

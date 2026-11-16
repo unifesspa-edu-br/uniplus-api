@@ -100,9 +100,9 @@ public sealed class CriarModalidadeCommandHandlerTests
         _repository.CodigosVivosExistemAsync(Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>())
             .Returns(false);
 
-        // RETIRA_DE exige origem; a origem "XPTO" não existe viva.
+        // RETIRADA_DE_OUTRA_MODALIDADE exige origem; a origem "XPTO" não existe viva.
         var comando = new CriarModalidadeCommand(
-            "PSIQ_QUILOMBOLA", NaturezaLegal: "AMPLA", ComposicaoVagas: "RETIRA_DE", ComposicaoOrigem: "XPTO", RegraDeAplicabilidade: Incondicional);
+            "PSIQ_QUILOMBOLA", NaturezaLegal: "AMPLA", ComposicaoVagas: "RETIRADA_DE_OUTRA_MODALIDADE", ComposicaoOrigem: "XPTO", RegraDeAplicabilidade: Incondicional);
 
         Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
             comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
@@ -119,7 +119,7 @@ public sealed class CriarModalidadeCommandHandlerTests
         _repository.CodigoExisteEntreVivosAsync(Arg.Any<string>(), null, Arg.Any<CancellationToken>()).Returns(false);
 
         var comando = new CriarModalidadeCommand(
-            "PSIQ_QUILOMBOLA", NaturezaLegal: "COTA_RESERVADA", ComposicaoVagas: "DENTRO_DO_VR", RegraDeAplicabilidade: OptouPelasCotas(true));
+            "PSIQ_QUILOMBOLA", NaturezaLegal: "COTA_RESERVADA", ComposicaoVagas: "DENTRO_DA_RESERVA_LEGAL", RegraDeAplicabilidade: OptouPelasCotas(true));
 
         Result<Guid> resultado = await CriarModalidadeCommandHandler.Handle(
             comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);

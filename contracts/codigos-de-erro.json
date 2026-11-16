@@ -1742,12 +1742,12 @@
       "titulo": "Regra de remanejamento incoerente com a natureza legal da modalidade"
     },
     {
-      "codigo": "uniplus.configuracao.modalidade.origem_apenas_para_retira_de",
+      "codigo": "uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade",
       "status": 422,
       "titulo": "Somente a composição 'retira de' admite modalidade de origem"
     },
     {
-      "codigo": "uniplus.configuracao.modalidade.origem_obrigatoria_para_retira_de",
+      "codigo": "uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade",
       "status": 422,
       "titulo": "A modalidade com composição 'retira de' exige a modalidade de origem"
     },
@@ -4764,7 +4764,7 @@
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.composicao_origem_nao_selecionada",
       "status": 422,
-      "titulo": "A origem da composição RETIRA_DE não está selecionada nesta oferta"
+      "titulo": "A origem da composição RETIRADA_DE_OUTRA_MODALIDADE não está selecionada nesta oferta"
     },
     {
       "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.modalidade_do_rol_ausente",
@@ -6134,12 +6134,12 @@
     {
       "codigo": "uniplus.selecao.modalidade_selecionada.composicao_origem_indevida",
       "status": 422,
-      "titulo": "Código de origem só se aplica à composição RETIRA_DE"
+      "titulo": "Código de origem só se aplica à composição RETIRADA_DE_OUTRA_MODALIDADE"
     },
     {
       "codigo": "uniplus.selecao.modalidade_selecionada.composicao_origem_obrigatoria",
       "status": 422,
-      "titulo": "Modalidade com composição RETIRA_DE exige o código de origem"
+      "titulo": "Modalidade com composição RETIRADA_DE_OUTRA_MODALIDADE exige o código de origem"
     },
     {
       "codigo": "uniplus.selecao.modalidade_selecionada.composicao_vagas_obrigatoria",

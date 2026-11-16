@@ -91,7 +91,7 @@ public sealed class ProcessoSeletivoFecharRetificacaoTests
     private static ProcessoSeletivo NovoProcessoPublicadoComGatilhoEmAc(RelogioManual clock, out VersaoConfiguracao versaoAbertura)
     {
         ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, "RECLASSIFICA_AC");
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
         ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
         ExigirHeteroidentificacaoDaModalidade(processo, "AC", PrecondicaoIfMatch.Ausente);
 

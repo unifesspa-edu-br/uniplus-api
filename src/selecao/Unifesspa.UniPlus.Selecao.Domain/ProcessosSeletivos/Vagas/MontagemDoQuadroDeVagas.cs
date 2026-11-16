@@ -43,7 +43,7 @@ public static class MontagemDoQuadroDeVagas
             declarada.VagasOfertadasBase,
             declarada.PercentualDaReservaLegal!.Value,
             declarada.ReferenciaDemografica!,
-            QuantidadesDeclaradas(declarada.Modalidades, ComposicaoVagasModalidade.RetiraDe),
+            QuantidadesDeclaradas(declarada.Modalidades, ComposicaoVagasModalidade.RetiradaDeOutraModalidade),
             QuantidadesDeclaradas(declarada.Modalidades, ComposicaoVagasModalidade.SuplementarAoTotal));
 
         return calculo.IsFailure

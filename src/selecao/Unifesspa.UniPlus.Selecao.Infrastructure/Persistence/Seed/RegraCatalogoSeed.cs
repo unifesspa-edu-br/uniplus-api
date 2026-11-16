@@ -272,7 +272,7 @@ public static class RegraCatalogoSeed
         // O processo que reserva vaga de pessoa com deficiência sem ofertar as cotas
         // federais, como o PSE Educação do Campo. A reserva é a mesma AC_PCD do ramo federal —
         // a ação afirmativa não depende de escola nem de renda (UNI-REQ-0141). AC permanece
-        // obrigatória: AC_PCD é RETIRA_DE origem AC, e ValidarReferenciasCruzadas recusa a
+        // obrigatória: AC_PCD é RETIRADA_DE_OUTRA_MODALIDADE origem AC, e ValidarReferenciasCruzadas recusa a
         // ausência em qualquer ramo.
         new(SeedId(26), RegraDistribuicaoVagasCodigo.ComAcPcd, VersaoV1, TipoRegra.RegraDistribuicaoVagas,
             """

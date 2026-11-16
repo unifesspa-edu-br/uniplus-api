@@ -107,24 +107,32 @@ internal static class SerializacaoDasVagas
         return array;
     }
 
-    private static JsonObject SerializarModalidade(Guid ofertaCursoOrigemId, ModalidadeSelecionada modalidade) => new()
+    private static JsonObject SerializarModalidade(Guid ofertaCursoOrigemId, ModalidadeSelecionada modalidade) =>
+        AcrescentarRegraEQuantidade(
+            new JsonObject
+            {
+                ["ofertaCursoOrigemId"] = ofertaCursoOrigemId,
+                ["modalidadeOrigemId"] = modalidade.ModalidadeOrigemId,
+                ["codigo"] = HashCanonicalComputer.NormalizeNfc(modalidade.Codigo),
+                ["descricao"] = modalidade.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
+                ["naturezaLegal"] = modalidade.NaturezaLegal.ToCodigo(),
+                ["composicaoVagas"] = modalidade.ComposicaoVagas.ToCodigo(),
+                ["composicaoOrigemCodigo"] = modalidade.ComposicaoOrigemCodigo,
+                ["regraRemanejamento"] = modalidade.RegraRemanejamento.ToCodigo(),
+                ["remanejamentoDestino"] = modalidade.RemanejamentoDestino,
+                ["remanejamentoPar"] = modalidade.RemanejamentoPar,
+                ["remanejamentoFallback"] = modalidade.RemanejamentoFallback,
+            },
+            modalidade);
+
+    private static JsonObject AcrescentarRegraEQuantidade(JsonObject objeto, ModalidadeSelecionada modalidade)
     {
-        ["ofertaCursoOrigemId"] = ofertaCursoOrigemId,
-        ["modalidadeOrigemId"] = modalidade.ModalidadeOrigemId,
-        ["codigo"] = HashCanonicalComputer.NormalizeNfc(modalidade.Codigo),
-        ["descricao"] = modalidade.Descricao is { } descricao ? HashCanonicalComputer.NormalizeNfc(descricao) : null,
-        ["naturezaLegal"] = modalidade.NaturezaLegal.ToString(),
-        ["composicaoVagas"] = modalidade.ComposicaoVagas.ToString(),
-        ["composicaoOrigemCodigo"] = modalidade.ComposicaoOrigemCodigo,
-        ["regraRemanejamento"] = modalidade.RegraRemanejamento.ToString(),
-        ["remanejamentoDestino"] = modalidade.RemanejamentoDestino,
-        ["remanejamentoPar"] = modalidade.RemanejamentoPar,
-        ["remanejamentoFallback"] = modalidade.RemanejamentoFallback,
-        ["regraDeAplicabilidade"] = SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(modalidade.RegraDeAplicabilidade)),
-        ["acaoQuandoIndeferido"] = modalidade.AcaoQuandoIndeferido,
-        ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(modalidade.BaseLegal),
-        ["quantidadeDeclarada"] = modalidade.QuantidadeDeclarada,
-    };
+        objeto["regraDeAplicabilidade"] = SerializacaoDosPredicados.SerializarDnf(SerializacaoDosPredicados.LinhasDoPredicado(modalidade.RegraDeAplicabilidade));
+        objeto["acaoQuandoIndeferido"] = modalidade.AcaoQuandoIndeferido;
+        objeto["baseLegal"] = HashCanonicalComputer.NormalizeNfc(modalidade.BaseLegal);
+        objeto["quantidadeDeclarada"] = modalidade.QuantidadeDeclarada;
+        return objeto;
+    }
 
     private static IOrderedEnumerable<ConfiguracaoDistribuicaoVagas> OrdenarPorOfertaCursoOrigemId(
         IEnumerable<ConfiguracaoDistribuicaoVagas> distribuicoes) =>

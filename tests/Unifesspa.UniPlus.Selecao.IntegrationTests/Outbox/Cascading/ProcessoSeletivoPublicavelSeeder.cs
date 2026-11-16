@@ -78,7 +78,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
             codigo: "AC",
             descricao: "Ampla concorrência",
             naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             composicaoOrigemCodigo: null,
             regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
             remanejamentoDestino: null,

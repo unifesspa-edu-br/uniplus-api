@@ -78,24 +78,28 @@ internal static class LeituraDasModalidades
         return Reidratar(leitor, declaracao);
     }
 
-    private static DeclaracaoDaModalidade LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) => new()
+    private static DeclaracaoDaModalidade LerDeclaracao(LeitorEnvelope leitor, JsonObject item, string path) =>
+        LerEstruturaDeVagas(leitor, item, path) with
+        {
+            // A modalidade incondicional não tem cláusula, e o encoder a grava nula.
+            Regra = LeituraDasCondicoes.LerDnf(leitor, item, "regraDeAplicabilidade", path),
+            AcaoQuandoIndeferido = leitor.TextoOpcional(item, "acaoQuandoIndeferido", path, LimitesDoEnvelope.Token),
+            BaseLegal = leitor.TextoNaoVazio(item, "baseLegal", path, LimitesDoEnvelope.BaseLegal),
+            QuantidadeDeclarada = leitor.InteiroOpcional(item, "quantidadeDeclarada", path),
+        };
+
+    private static DeclaracaoDaModalidade LerEstruturaDeVagas(LeitorEnvelope leitor, JsonObject item, string path) => new()
     {
         OrigemId = leitor.Identificador(item, "modalidadeOrigemId", path),
         Codigo = leitor.TextoNaoVazio(item, "codigo", path, LimitesDoEnvelope.ModalidadeCodigo),
         Descricao = leitor.TextoOpcional(item, "descricao", path, LimitesDoEnvelope.ModalidadeDescricao),
-        Natureza = leitor.Enumeracao<NaturezaLegalModalidade>(item, "naturezaLegal", path),
-        Composicao = leitor.Enumeracao<ComposicaoVagasModalidade>(item, "composicaoVagas", path),
+        Natureza = leitor.NaturezaLegal(item, "naturezaLegal", path),
+        Composicao = leitor.ComposicaoDeVagas(item, "composicaoVagas", path),
         ComposicaoOrigem = leitor.TextoOpcional(item, "composicaoOrigemCodigo", path, LimitesDoEnvelope.ModalidadeCodigo),
-        Remanejamento = leitor.Enumeracao<RegraRemanejamentoModalidade>(item, "regraRemanejamento", path),
+        Remanejamento = leitor.RegraDeRemanejamento(item, "regraRemanejamento", path),
         Destino = leitor.TextoOpcional(item, "remanejamentoDestino", path, LimitesDoEnvelope.ModalidadeCodigo),
         Par = leitor.TextoOpcional(item, "remanejamentoPar", path, LimitesDoEnvelope.ModalidadeCodigo),
         Fallback = leitor.TextoOpcional(item, "remanejamentoFallback", path, LimitesDoEnvelope.ModalidadeCodigo),
-
-        // A modalidade incondicional não tem cláusula, e o encoder a grava nula.
-        Regra = LeituraDasCondicoes.LerDnf(leitor, item, "regraDeAplicabilidade", path),
-        AcaoQuandoIndeferido = leitor.TextoOpcional(item, "acaoQuandoIndeferido", path, LimitesDoEnvelope.Token),
-        BaseLegal = leitor.TextoNaoVazio(item, "baseLegal", path, LimitesDoEnvelope.BaseLegal),
-        QuantidadeDeclarada = leitor.InteiroOpcional(item, "quantidadeDeclarada", path),
     };
 
     private static ModalidadeSelecionada? Reidratar(LeitorEnvelope leitor, DeclaracaoDaModalidade d)
@@ -135,7 +139,7 @@ internal static class LeituraDasModalidades
             : leitor.Malformado<ModalidadeSelecionada?>("modalidades", $"a regra de remanejamento de {d.Codigo} não é a que a natureza dela pede.");
     }
 
-    private sealed class DeclaracaoDaModalidade
+    private sealed record DeclaracaoDaModalidade
     {
         public Guid OrigemId { get; init; }
 
@@ -170,7 +174,7 @@ internal static class LeituraDasModalidades
     /// O <b>vocabulário</b> da modalidade — os tokens que só o cadastro produz.
     /// </summary>
     /// <remarks>
-    /// O código é <b>chave</b>: a composição (<c>RETIRA_DE</c>) e o remanejamento
+    /// O código é <b>chave</b>: a composição (<c>RETIRADA_DE_OUTRA_MODALIDADE</c>) e o remanejamento
     /// (<c>DESTINO_UNICO</c>, <c>CRUZADO</c>) apontam para códigos de outras modalidades da
     /// mesma oferta. Um código fora do formato do cadastro (<c>^[A-Z0-9_]+$</c>) nunca sai
     /// de lá — mas um envelope adulterado o usaria como chave, e o motor de vagas do certame

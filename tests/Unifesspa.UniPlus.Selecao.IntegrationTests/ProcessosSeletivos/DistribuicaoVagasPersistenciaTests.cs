@@ -70,9 +70,9 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         List<ModalidadeSelecionada> modalidades =
         [
             .. ModalidadesFederaisLei12711.Codigos.Select(codigo =>
-                NovaModalidade(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, regraRemanejamento: RegraRemanejamentoModalidade.SegueCascata)),
-            NovaModalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo),
-            NovaModalidade("V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, composicaoOrigemCodigo: "AC", quantidadeDeclarada: 2,
+                NovaModalidade(codigo, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, regraRemanejamento: RegraRemanejamentoModalidade.SegueCascata)),
+            NovaModalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas),
+            NovaModalidade("V", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade, composicaoOrigemCodigo: "AC", quantidadeDeclarada: 2,
                 regraDeAplicabilidade: RegraDaReservaPcd),
         ];
 
@@ -116,12 +116,12 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         distribuicao.ReferenciaDemografica.PpiPercentual.Should().Be(79m);
         distribuicao.Modalidades.Should().HaveCount(10);
 
-        ModalidadeSelecionada retiraDe = distribuicao.Modalidades.Single(m => m.Codigo == "V");
-        retiraDe.ComposicaoVagas.Should().Be(ComposicaoVagasModalidade.RetiraDe);
-        retiraDe.ComposicaoOrigemCodigo.Should().Be("AC");
-        retiraDe.RegraDeAplicabilidade.MesmoConteudo(RegraDaReservaPcd).Should().BeTrue(
+        ModalidadeSelecionada retiradaDeOutraModalidade = distribuicao.Modalidades.Single(m => m.Codigo == "V");
+        retiradaDeOutraModalidade.ComposicaoVagas.Should().Be(ComposicaoVagasModalidade.RetiradaDeOutraModalidade);
+        retiradaDeOutraModalidade.ComposicaoOrigemCodigo.Should().Be("AC");
+        retiradaDeOutraModalidade.RegraDeAplicabilidade.MesmoConteudo(RegraDaReservaPcd).Should().BeTrue(
             "a regra de aplicabilidade congelada volta do banco como foi gravada");
-        retiraDe.QuantidadeDeclarada.Should().Be(2);
+        retiradaDeOutraModalidade.QuantidadeDeclarada.Should().Be(2);
 
         ModalidadeSelecionada cotaReservada = distribuicao.Modalidades.Single(m => m.Codigo == "LB_PPI");
         cotaReservada.RegraRemanejamento.Should().Be(RegraRemanejamentoModalidade.SegueCascata);

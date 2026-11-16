@@ -37,10 +37,11 @@ internal sealed class ModalidadeSelecionadaConfiguration : IEntityTypeConfigurat
 
         builder.Property(m => m.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(m => m.Descricao).HasMaxLength(DescricaoMaxLength);
-        builder.Property(m => m.NaturezaLegal).HasConversion<string>().HasMaxLength(TokenMaxLength).IsRequired();
-        builder.Property(m => m.ComposicaoVagas).HasConversion<string>().HasMaxLength(TokenMaxLength).IsRequired();
+        builder.Property(m => m.NaturezaLegal).HasConversion(ConversoresDosTokensDeVagas.NaturezaLegal).HasMaxLength(TokenMaxLength).IsRequired();
+        builder.Property(m => m.ComposicaoVagas).HasConversion(ConversoresDosTokensDeVagas.ComposicaoDeVagas).HasMaxLength(TokenMaxLength).IsRequired();
         builder.Property(m => m.ComposicaoOrigemCodigo).HasMaxLength(CodigoMaxLength);
-        builder.Property(m => m.RegraRemanejamento).HasConversion<string>().HasMaxLength(TokenMaxLength).IsRequired();
+        builder.Ignore(m => m.RegraRemanejamento);
+        builder.Property<string?>("RegraRemanejamentoCodigo").HasColumnName("regra_remanejamento").HasMaxLength(TokenMaxLength);
         builder.Property(m => m.RemanejamentoDestino).HasMaxLength(CodigoMaxLength);
         builder.Property(m => m.RemanejamentoPar).HasMaxLength(CodigoMaxLength);
 

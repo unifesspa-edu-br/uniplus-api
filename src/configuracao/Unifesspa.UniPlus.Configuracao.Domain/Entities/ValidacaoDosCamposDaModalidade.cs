@@ -41,18 +41,18 @@ public static class ValidacaoDosCamposDaModalidade
         string? acaoQuandoIndeferidoToken,
         string? baseLegal)
     {
-        (List<FieldError> erros, _, _, _, _) = ValidarCamposIndependentes(
+        CamposValidadosDaModalidade validados = ValidarCamposIndependentes(new DeclaracaoDaModalidade(
             descricao, naturezaLegalToken, composicaoVagasToken, composicaoOrigem, regraRemanejamentoToken,
             remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
-            regraDeAplicabilidade, acaoQuandoIndeferidoToken, baseLegal);
+            regraDeAplicabilidade, acaoQuandoIndeferidoToken, baseLegal));
 
-        return erros.Count == 0 ? Result.Success() : Result.ValidationFailure(erros);
+        return validados.Recusas.Count == 0 ? Result.Success() : Result.ValidationFailure(validados.Recusas);
     }
 
     /// <summary>
     /// Valida os campos editáveis por completo, acumulando toda violação
     /// independente — os campos que não cruzam entre si (<see cref="ValidarCamposIndependentes"/>)
-    /// e as três invariantes cruzadas (RetiraDe⟺origem, natureza↔regra, args por
+    /// e as três invariantes cruzadas (RetiradaDeOutraModalidade⟺origem, natureza↔regra, args por
     /// regra), cada uma só avaliada quando os tokens de que ela depende já foram
     /// reconhecidos (senão o erro reportado seria derivado de um token inválido,
     /// não uma incoerência independente — ex.: reportar "SEGUE_CASCATA exigido"
@@ -74,13 +74,14 @@ public static class ValidacaoDosCamposDaModalidade
         string? baseLegal,
         CodigoModalidade? codigo = null)
     {
-        (List<FieldError> erros, bool naturezaOk, bool composicaoOk, bool regraOk, CamposResolvidosDaModalidade campos) =
-            ValidarCamposIndependentes(
-                descricao, naturezaLegalToken, composicaoVagasToken, composicaoOrigem, regraRemanejamentoToken,
-                remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
-                regraDeAplicabilidade, acaoQuandoIndeferidoToken, baseLegal);
+        CamposValidadosDaModalidade validados = ValidarCamposIndependentes(new DeclaracaoDaModalidade(
+            descricao, naturezaLegalToken, composicaoVagasToken, composicaoOrigem, regraRemanejamentoToken,
+            remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
+            regraDeAplicabilidade, acaoQuandoIndeferidoToken, baseLegal));
+        List<FieldError> erros = [.. validados.Recusas];
+        CamposResolvidosDaModalidade campos = validados.Campos;
 
-        erros.AddRange(CoerenciaDosCamposDaModalidade.ValidarCoerenciaCruzada(campos, composicaoOk, naturezaOk, regraOk));
+        erros.AddRange(CoerenciaDosCamposDaModalidade.ValidarCoerenciaCruzada(campos, validados.Reconhecidos));
 
         if (codigo is not null)
         {
@@ -93,133 +94,53 @@ public static class ValidacaoDosCamposDaModalidade
     }
 
     /// <summary>
-    /// Valida e normaliza os campos editáveis independentes de qualquer coerência
-    /// cruzada, acumulando toda violação em vez de parar na primeira — tokens dos
-    /// enums, normalização de texto e tamanhos. Também devolve, junto do lote de
-    /// erros, se cada token do qual alguma invariante cruzada depende foi
-    /// reconhecido (<paramref name="naturezaLegalToken"/> → natureza,
-    /// <paramref name="composicaoVagasToken"/> → composição,
-    /// <paramref name="regraRemanejamentoToken"/> → regra): quando o lote de erros
-    /// está vazio, os três sinalizadores são sempre verdadeiros, por construção.
-    /// Sem I/O — separada de <see cref="ValidarCoerenciaCruzada"/> porque
-    /// <see cref="Atualizar"/> precisa intercalar a guarda do catálogo legal fixo
-    /// entre as duas.
+    /// Valida e normaliza os campos editáveis independentes de qualquer coerência cruzada, acumulando toda
+    /// violação em vez de parar na primeira: tokens dos enums, normalização de texto e tamanhos. Devolve,
+    /// junto das recusas, quais tokens das invariantes cruzadas foram reconhecidos; com o lote de recusas
+    /// vazio, os três são sempre verdadeiros. Sem I/O, e separada da coerência cruzada porque
+    /// <see cref="Modalidade.Atualizar"/> intercala a guarda do catálogo legal fixo entre as duas.
     /// </summary>
-    internal static (List<FieldError> Erros, bool NaturezaOk, bool ComposicaoOk, bool RegraOk, CamposResolvidosDaModalidade Campos)
-        ValidarCamposIndependentes(
-        string? descricao,
-        string? naturezaLegalToken,
-        string? composicaoVagasToken,
-        string? composicaoOrigem,
-        string? regraRemanejamentoToken,
-        string? remanejamentoDestino,
-        string? remanejamentoPar,
-        string? remanejamentoFallback,
-        PredicadoDnf? regraDeAplicabilidade,
-        string? acaoQuandoIndeferidoToken,
-        string? baseLegal)
+    internal static CamposValidadosDaModalidade ValidarCamposIndependentes(DeclaracaoDaModalidade declaracao)
     {
-        List<FieldError> erros = [];
-
-        string? descricaoNorm = NormalizarOpcional(descricao);
-        if (descricaoNorm is not null && descricaoNorm.Length > DescricaoMaxLength)
-        {
-            erros.Add(new("descricao", new DomainError(
-                ModalidadeErrorCodes.DescricaoTamanho,
-                $"Descrição da modalidade deve ter no máximo {DescricaoMaxLength} caracteres.")));
-        }
-
-        string? baseLegalNorm = NormalizarOpcional(baseLegal);
-        if (baseLegalNorm is not null && baseLegalNorm.Length > BaseLegalMaxLength)
-        {
-            erros.Add(new("baseLegal", new DomainError(
-                ModalidadeErrorCodes.BaseLegalTamanho,
-                $"Base legal da modalidade deve ter no máximo {BaseLegalMaxLength} caracteres.")));
-        }
-
-        // NaturezaLegal — obrigatória, default AMPLA quando ausente.
-        bool naturezaOk = true;
-        NaturezaLegal natureza = NaturezaLegal.Ampla;
-        if (!string.IsNullOrWhiteSpace(naturezaLegalToken) && !NaturezasLegais.TryAnalisar(naturezaLegalToken, out natureza))
-        {
-            naturezaOk = false;
-            erros.Add(new("naturezaLegal", new DomainError(
-                ModalidadeErrorCodes.NaturezaInvalida,
-                $"Natureza legal deve ser uma de: {string.Join(", ", NaturezasLegais.TokensCanonicos)}.")));
-        }
-
-        // ComposicaoVagas — obrigatória, default RESIDUAL_DO_VO quando ausente.
-        bool composicaoOk = true;
-        ComposicaoVagas composicao = ComposicaoVagas.ResidualDoVo;
-        if (!string.IsNullOrWhiteSpace(composicaoVagasToken) && !ComposicoesVagas.TryAnalisar(composicaoVagasToken, out composicao))
-        {
-            composicaoOk = false;
-            erros.Add(new("composicaoVagas", new DomainError(
-                ModalidadeErrorCodes.ComposicaoVagasInvalida,
-                $"Composição de vagas deve ser uma de: {string.Join(", ", ComposicoesVagas.TokensCanonicos)}.")));
-        }
-
-        // RegraRemanejamento — opcional (null quando ausente).
-        bool regraOk = true;
-        RegraRemanejamento? regra = null;
-        if (!string.IsNullOrWhiteSpace(regraRemanejamentoToken))
-        {
-            if (RegrasRemanejamento.TryAnalisar(regraRemanejamentoToken, out RegraRemanejamento regraResolvida))
-            {
-                regra = regraResolvida;
-            }
-            else
-            {
-                regraOk = false;
-                erros.Add(new("regraRemanejamento", new DomainError(
-                    ModalidadeErrorCodes.RegraRemanejamentoInvalida,
-                    $"Regra de remanejamento deve ser uma de: {string.Join(", ", RegrasRemanejamento.TokensCanonicos)}.")));
-            }
-        }
-
-        // AcaoQuandoIndeferido — opcional (null quando ausente); quando informada, deve ser
-        // um dos dois tokens (invariante 6). Nenhuma invariante deste agregado depende dela
-        // — sem gate. A ausência não é lacuna: declara que a modalidade não reclassifica, e
-        // o destino do candidato indeferido passa a ser o que a exigência documental que o
-        // alcançou declarar (consequência de indeferimento, em Seleção).
-        AcaoQuandoIndeferido? acao = null;
-        if (!string.IsNullOrWhiteSpace(acaoQuandoIndeferidoToken))
-        {
-            if (AcoesQuandoIndeferido.TryAnalisar(acaoQuandoIndeferidoToken, out AcaoQuandoIndeferido acaoResolvida))
-            {
-                acao = acaoResolvida;
-            }
-            else
-            {
-                erros.Add(new("acaoQuandoIndeferido", new DomainError(
-                    ModalidadeErrorCodes.AcaoIndeferimentoInvalida,
-                    $"Ação quando indeferido deve ser uma de: {string.Join(", ", AcoesQuandoIndeferido.TokensCanonicos)}.")));
-            }
-        }
-
-        string? origemNorm = NormalizarOpcional(composicaoOrigem);
-        if (origemNorm is not null && origemNorm.Length > CodigoReferenciaMaxLength)
-        {
-            erros.Add(new("composicaoOrigem", new DomainError(
-                ModalidadeErrorCodes.CodigoFormatoInvalido,
-                $"Código de origem da composição deve ter no máximo {CodigoReferenciaMaxLength} caracteres.")));
-        }
-
-        RemanejamentoArgs args = RemanejamentoArgs.Criar(
-            remanejamentoDestino, remanejamentoPar, remanejamentoFallback);
-
-        if (regraDeAplicabilidade is null)
-        {
-            erros.Add(new("regraDeAplicabilidade", new DomainError(
-                ModalidadeErrorCodes.RegraDeAplicabilidadeObrigatoria,
-                "A modalidade precisa da regra que diz quem concorre a ela; a ampla concorrência a declara sem condição.")));
-        }
-
-        var campos = new CamposResolvidosDaModalidade(
-            descricaoNorm, natureza, composicao, origemNorm, regra, args, regraDeAplicabilidade, acao, baseLegalNorm);
-
-        return (erros, naturezaOk, composicaoOk, regraOk, campos);
+        string? descricao = NormalizarOpcional(declaracao.Descricao);
+        string? baseLegal = NormalizarOpcional(declaracao.BaseLegal);
+        string? origem = NormalizarOpcional(declaracao.ComposicaoOrigem);
+        TokensResolvidosDaModalidade tokens = TokensResolvidosDaModalidade.De(declaracao);
+        FieldError?[] recusas =
+        [
+            RecusaDeTamanho(descricao, DescricaoMaxLength, "descricao", ModalidadeErrorCodes.DescricaoTamanho, "Descrição da modalidade"),
+            RecusaDeTamanho(baseLegal, BaseLegalMaxLength, "baseLegal", ModalidadeErrorCodes.BaseLegalTamanho, "Base legal da modalidade"),
+            .. tokens.Recusas,
+            RecusaDeTamanho(origem, CodigoReferenciaMaxLength, "composicaoOrigem", ModalidadeErrorCodes.CodigoFormatoInvalido, "Código de origem da composição"),
+            RecusaDaRegraDeAplicabilidade(declaracao.RegraDeAplicabilidade),
+        ];
+        return new([.. recusas.OfType<FieldError>()], tokens.Reconhecidos, CamposResolvidos(declaracao, tokens, descricao, origem, baseLegal));
     }
+
+    private static CamposResolvidosDaModalidade CamposResolvidos(
+        DeclaracaoDaModalidade declaracao, TokensResolvidosDaModalidade tokens, string? descricao, string? origem, string? baseLegal) =>
+        new(
+            descricao,
+            tokens.Natureza,
+            tokens.Composicao,
+            origem,
+            tokens.Regra,
+            RemanejamentoArgs.Criar(declaracao.RemanejamentoDestino, declaracao.RemanejamentoPar, declaracao.RemanejamentoFallback),
+            declaracao.RegraDeAplicabilidade,
+            tokens.Acao,
+            baseLegal);
+
+    private static FieldError? RecusaDeTamanho(string? valor, int maximo, string campo, string codigoDaRecusa, string rotulo) =>
+        valor is { } texto && texto.Length > maximo
+            ? new FieldError(campo, new DomainError(codigoDaRecusa, $"{rotulo} deve ter no máximo {maximo} caracteres."))
+            : null;
+
+    private static FieldError? RecusaDaRegraDeAplicabilidade(PredicadoDnf? regra) =>
+        regra is null
+            ? new FieldError("regraDeAplicabilidade", new DomainError(
+                ModalidadeErrorCodes.RegraDeAplicabilidadeObrigatoria,
+                "A modalidade precisa da regra que diz quem concorre a ela; a ampla concorrência a declara sem condição."))
+            : null;
 
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();

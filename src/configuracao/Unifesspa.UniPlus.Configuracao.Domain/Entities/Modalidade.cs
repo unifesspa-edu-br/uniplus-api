@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// referencial intra-banco. A unicidade é checada pelo handler (com proteção de
 /// corrida via índice).</para>
 /// <para>As invariantes de coerência (natureza↔remanejamento, composição
-/// RetiraDe⟺origem, args por regra, ação de indeferimento) moram na factory
+/// RetiradaDeOutraModalidade⟺origem, args por regra, ação de indeferimento) moram na factory
 /// <see cref="Criar"/>/<see cref="Atualizar"/>. A integridade referencial (todos
 /// os códigos referenciados existem vivos; bloqueio de remoção quando referenciada)
 /// exige consulta ao banco e mora no handler via repositório.</para>
@@ -78,10 +78,10 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     /// <summary>
     /// Cria uma nova Modalidade, acumulando toda violação independente em vez de
     /// parar na primeira. Valida o código (formato) e todas as invariantes de
-    /// coerência de domínio (natureza↔remanejamento, RetiraDe⟺origem, args por
+    /// coerência de domínio (natureza↔remanejamento, RetiradaDeOutraModalidade⟺origem, args por
     /// regra, ação de indeferimento). Os enums chegam como tokens textuais
     /// (UPPER_SNAKE): <paramref name="naturezaLegal"/> e <paramref name="composicaoVagas"/>
-    /// aplicam default quando ausentes (AMPLA / RESIDUAL_DO_VO);
+    /// aplicam default quando ausentes (AMPLA / RESTANTE_DAS_VAGAS_OFERTADAS);
     /// <paramref name="regraRemanejamento"/> e <paramref name="acaoQuandoIndeferido"/>
     /// são opcionais.
     /// </summary>
@@ -162,14 +162,16 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         string? acaoQuandoIndeferido,
         string? baseLegal)
     {
-        (List<FieldError> erros, bool naturezaOk, bool composicaoOk, bool regraOk, CamposResolvidosDaModalidade campos) = ValidacaoDosCamposDaModalidade.ValidarCamposIndependentes(
+        CamposValidadosDaModalidade validados = ValidacaoDosCamposDaModalidade.ValidarCamposIndependentes(new DeclaracaoDaModalidade(
             descricao, naturezaLegal, composicaoVagas, composicaoOrigem, regraRemanejamento,
             remanejamentoDestino, remanejamentoPar, remanejamentoFallback,
-            regraDeAplicabilidade, acaoQuandoIndeferido, baseLegal);
-        if (erros.Count > 0)
+            regraDeAplicabilidade, acaoQuandoIndeferido, baseLegal));
+        if (validados.Recusas.Count > 0)
         {
-            return Result.ValidationFailure(erros);
+            return Result.ValidationFailure(validados.Recusas);
         }
+
+        CamposResolvidosDaModalidade campos = validados.Campos;
 
         if (Codigo.EhLegalFixa && EstruturaDivergeDe(campos))
         {
@@ -180,7 +182,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
                 + "e ação no indeferimento são fixados em lei."));
         }
 
-        List<FieldError> violacoes = CoerenciaDosCamposDaModalidade.ValidarCoerenciaCruzada(campos, composicaoOk, naturezaOk, regraOk);
+        List<FieldError> violacoes = CoerenciaDosCamposDaModalidade.ValidarCoerenciaCruzada(campos, validados.Reconhecidos);
         violacoes.AddRange(CoerenciaDosCamposDaModalidade.ValidarAutorreferencia(Codigo, campos));
         if (violacoes.Count > 0)
         {

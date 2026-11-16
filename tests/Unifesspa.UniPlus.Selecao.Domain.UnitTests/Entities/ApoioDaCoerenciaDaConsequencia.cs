@@ -42,7 +42,7 @@ internal static class ApoioDaCoerenciaDaConsequencia
             acaoQuandoIndeferido: acaoQuandoIndeferido,
             baseLegal: "Lei 12.711/2012",
             // Story #575: sob o regime federal (Lei 12.711), a quantidade de uma modalidade
-            // DentroDoVr/ResidualDoVo é CALCULADA pela fórmula — informá-la é recusado
+            // DentroDaReservaLegal/RestanteDasVagasOfertadas é CALCULADA pela fórmula — informá-la é recusado
             // (ConfiguracaoDistribuicaoVagas.QuantidadeCalculadaNaoInformavel). Só a ação
             // afirmativa, cuja quantidade o edital fixa fora da fórmula, precisa do 10.
             quantidadeDeclarada: naturezaLegal == NaturezaLegalModalidade.AcaoAfirmativa ? 10 : null).Value!;
@@ -103,11 +103,11 @@ internal static class ApoioDaCoerenciaDaConsequencia
                 .. ModalidadesFederaisLei12711.Codigos
                     .Where(codigo => codigo != modalidade.Codigo)
                     .Select(codigo => ModalidadeSelecionada.Criar(
-                        Guid.CreateVersion7(), codigo, null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr,
+                        Guid.CreateVersion7(), codigo, null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal,
                         null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), null, "Lei 12.711/2012", quantidadeDeclarada: null).Value!),
                 modalidade,
                 ModalidadeSelecionada.Criar(
-                    Guid.CreateVersion7(), ModalidadesFederaisLei12711.Ac, null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+                    Guid.CreateVersion7(), ModalidadesFederaisLei12711.Ac, null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
                     null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: null).Value!,
             ];
             distribuicao = ConfiguracaoDistribuicaoVagas.Criar(

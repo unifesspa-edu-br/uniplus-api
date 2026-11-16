@@ -78,7 +78,7 @@ internal static class CenarioDeConformidadeLegal
             codigo: codigo,
             descricao: null,
             naturezaLegal: natureza,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             composicaoOrigemCodigo: null,
             regraRemanejamento: RemanejamentoDa(natureza),
             remanejamentoDestino: null,

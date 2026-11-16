@@ -42,8 +42,8 @@ internal static class ErrosDasModalidadesOfertadas
     /// <summary>Origem da composição e cascata das cotas reservadas.</summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DaComposicaoDaModalidade() =>
     [
-        new("ModalidadeSelecionada.ComposicaoOrigemObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modalidade_selecionada.composicao_origem_obrigatoria", "Modalidade com composição RETIRA_DE exige o código de origem")),
-        new("ModalidadeSelecionada.ComposicaoOrigemIndevida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modalidade_selecionada.composicao_origem_indevida", "Código de origem só se aplica à composição RETIRA_DE")),
+        new("ModalidadeSelecionada.ComposicaoOrigemObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modalidade_selecionada.composicao_origem_obrigatoria", "Modalidade com composição RETIRADA_DE_OUTRA_MODALIDADE exige o código de origem")),
+        new("ModalidadeSelecionada.ComposicaoOrigemIndevida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modalidade_selecionada.composicao_origem_indevida", "Código de origem só se aplica à composição RETIRADA_DE_OUTRA_MODALIDADE")),
         new("ModalidadeSelecionada.CotaReservadaExigeCascata", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.modalidade_selecionada.cota_reservada_exige_cascata", "Modalidade de cota reservada deve seguir a cascata legal")),
     ];
 

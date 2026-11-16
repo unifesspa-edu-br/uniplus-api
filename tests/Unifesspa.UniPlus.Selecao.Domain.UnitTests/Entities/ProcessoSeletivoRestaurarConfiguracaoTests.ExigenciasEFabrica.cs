@@ -274,7 +274,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
             modalidades: [
                 ModalidadeSelecionada.Criar(
                     new Guid("cccc0000-0000-4000-8000-000000000001"), "AC", null,
-                    NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
+                    NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
                     RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                     RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
             ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;

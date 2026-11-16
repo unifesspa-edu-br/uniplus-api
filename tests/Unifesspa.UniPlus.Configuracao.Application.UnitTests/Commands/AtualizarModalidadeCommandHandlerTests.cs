@@ -41,7 +41,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         new(fato, "IGUAL", JsonSerializer.SerializeToElement(valor));
 
     private static Modalidade Existente(string codigo = "PSVR_AMPLA") =>
-        Modalidade.Criar(codigo, "Ampla", "AMPLA", "RESIDUAL_DO_VO", null, null, null, null, null,
+        Modalidade.Criar(codigo, "Ampla", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS", null, null, null, null, null,
                 PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, null)
             .Value!;
 
@@ -66,7 +66,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
         var comando = new AtualizarModalidadeCommand(
-            existente.Id, Descricao: "Descrição nova", NaturezaLegal: "AMPLA", ComposicaoVagas: "RESIDUAL_DO_VO", RegraDeAplicabilidade: Incondicional);
+            existente.Id, Descricao: "Descrição nova", NaturezaLegal: "AMPLA", ComposicaoVagas: "RESTANTE_DAS_VAGAS_OFERTADAS", RegraDeAplicabilidade: Incondicional);
 
         Result resultado = await AtualizarModalidadeCommandHandler.Handle(
             comando, _repository, _fatoRepository, _precedenciaRepository, _unitOfWork, CancellationToken.None);
@@ -128,7 +128,7 @@ public sealed class AtualizarModalidadeCommandHandlerTests
         // que vencer, não a coerência, mesmo com o pré-check do handler rodando
         // antes do fetch.
         var comando = new AtualizarModalidadeCommand(
-            existente.Id, NaturezaLegal: "AMPLA", ComposicaoVagas: "DENTRO_DO_VR",
+            existente.Id, NaturezaLegal: "AMPLA", ComposicaoVagas: "DENTRO_DA_RESERVA_LEGAL",
             RegraRemanejamento: "SEGUE_CASCATA", RegraDeAplicabilidade: Incondicional);
 
         Result resultado = await AtualizarModalidadeCommandHandler.Handle(

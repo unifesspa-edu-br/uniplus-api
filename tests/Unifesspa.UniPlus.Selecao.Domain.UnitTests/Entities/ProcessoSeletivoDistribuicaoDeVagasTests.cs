@@ -118,7 +118,7 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
             regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
 
     private static ModalidadeSelecionada Ac(int quantidade) => ModalidadeSelecionada.Criar(
-        Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo,
+        Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
         null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: quantidade).Value!;
 
     private static ModalidadeSelecionada ModalidadeV(string? acaoQuandoIndeferido, int quantidade, PredicadoDnf? regraDeAplicabilidade = null) =>
@@ -129,7 +129,7 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
             acaoQuandoIndeferido, "base legal", quantidadeDeclarada: quantidade).Value!;
 
     private static ModalidadeSelecionada CotaReservadaPpi(int quantidade) => ModalidadeSelecionada.Criar(
-        Guid.CreateVersion7(), "LB_PPI", null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr,
+        Guid.CreateVersion7(), "LB_PPI", null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal,
         null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), null, "Lei 12.711/2012 art. 3º", quantidadeDeclarada: quantidade).Value!;
 
     private static PredicadoDnf Exige(string fato) => PredicadoDnf.CriarDeCondicoesAgrupadas(

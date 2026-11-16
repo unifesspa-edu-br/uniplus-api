@@ -269,7 +269,7 @@ public sealed class AvaliacaoDaInscricaoTests
 
     private static ModalidadeSelecionada Modalidade(string codigo, NaturezaLegalModalidade natureza, params (string Fato, bool Valor)[] atomos) =>
         ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, $"Nome de {codigo}", natureza, ComposicaoVagasModalidade.ResidualDoVo,
+            Guid.CreateVersion7(), codigo, $"Nome de {codigo}", natureza, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             null, natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
             null, null, null,
             PredicadoDnf.CriarDeCondicoesAgrupadas([.. atomos.Select(static a => (0, CondicaoDnf.Criar(

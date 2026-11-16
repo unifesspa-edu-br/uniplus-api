@@ -60,7 +60,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
                 codigo: oferta.Codigo,
                 descricao: null,
                 naturezaLegal: NaturezaLegalModalidade.Ampla,
-                composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+                composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
                 composicaoOrigemCodigo: null,
                 regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
                 remanejamentoDestino: null,

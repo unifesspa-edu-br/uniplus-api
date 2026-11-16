@@ -6691,13 +6691,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_modalidades_codigo_formato", "codigo ~ '^[A-Z0-9_]+$'");
 
-                            t.HasCheckConstraint("ck_modalidades_composicao_vagas", "composicao_vagas IN ('RESIDUAL_DO_VO', 'DENTRO_DO_VR', 'RETIRA_DE', 'SUPLEMENTAR_AO_TOTAL')");
+                            t.HasCheckConstraint("ck_modalidades_composicao_vagas", "composicao_vagas IN ('RESTANTE_DAS_VAGAS_OFERTADAS', 'DENTRO_DA_RESERVA_LEGAL', 'RETIRADA_DE_OUTRA_MODALIDADE', 'SUPLEMENTAR_AO_TOTAL')");
 
                             t.HasCheckConstraint("ck_modalidades_natureza_legal", "natureza_legal IN ('COTA_RESERVADA', 'AMPLA', 'ACAO_AFIRMATIVA')");
 
                             t.HasCheckConstraint("ck_modalidades_regra_remanejamento", "regra_remanejamento IS NULL OR regra_remanejamento IN ('SEGUE_CASCATA', 'DESTINO_UNICO', 'CRUZADO')");
 
-                            t.HasCheckConstraint("ck_modalidades_retira_de_origem", "(composicao_vagas = 'RETIRA_DE') = (composicao_origem IS NOT NULL)");
+                            t.HasCheckConstraint("ck_modalidades_retirada_de_outra_modalidade_origem", "(composicao_vagas = 'RETIRADA_DE_OUTRA_MODALIDADE') = (composicao_origem IS NOT NULL)");
                         });
 
                     b.HasData(
@@ -6706,7 +6706,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000001"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "AC",
-                            ComposicaoVagas = "RESIDUAL_DO_VO",
+                            ComposicaoVagas = "RESTANTE_DAS_VAGAS_OFERTADAS",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Ampla concorrência",
                             IsDeleted = false,
@@ -6719,7 +6719,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000002"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LB_PPI",
-                            ComposicaoVagas = "DENTRO_DO_VR",
+                            ComposicaoVagas = "DENTRO_DA_RESERVA_LEGAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Cota — baixa renda, preto/pardo/indígena",
                             IsDeleted = false,
@@ -6733,7 +6733,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000003"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LB_Q",
-                            ComposicaoVagas = "DENTRO_DO_VR",
+                            ComposicaoVagas = "DENTRO_DA_RESERVA_LEGAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Cota — baixa renda, quilombola",
                             IsDeleted = false,
@@ -6747,7 +6747,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000004"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LB_PCD",
-                            ComposicaoVagas = "DENTRO_DO_VR",
+                            ComposicaoVagas = "DENTRO_DA_RESERVA_LEGAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Cota — baixa renda, pessoa com deficiência",
                             IsDeleted = false,
@@ -6761,7 +6761,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000005"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LB_EP",
-                            ComposicaoVagas = "DENTRO_DO_VR",
+                            ComposicaoVagas = "DENTRO_DA_RESERVA_LEGAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Cota — baixa renda, egresso de escola pública",
                             IsDeleted = false,
@@ -6775,7 +6775,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000006"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LI_PPI",
-                            ComposicaoVagas = "DENTRO_DO_VR",
+                            ComposicaoVagas = "DENTRO_DA_RESERVA_LEGAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Cota — independente de renda, preto/pardo/indígena",
                             IsDeleted = false,
@@ -6789,7 +6789,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000007"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LI_Q",
-                            ComposicaoVagas = "DENTRO_DO_VR",
+                            ComposicaoVagas = "DENTRO_DA_RESERVA_LEGAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Cota — independente de renda, quilombola",
                             IsDeleted = false,
@@ -6803,7 +6803,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000008"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LI_PCD",
-                            ComposicaoVagas = "DENTRO_DO_VR",
+                            ComposicaoVagas = "DENTRO_DA_RESERVA_LEGAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Cota — independente de renda, pessoa com deficiência",
                             IsDeleted = false,
@@ -6817,7 +6817,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Id = new Guid("70da1000-0000-7000-8000-000000000009"),
                             BaseLegal = "Lei 12.711/2012 (red. Lei 14.723/2023)",
                             Codigo = "LI_EP",
-                            ComposicaoVagas = "DENTRO_DO_VR",
+                            ComposicaoVagas = "DENTRO_DA_RESERVA_LEGAL",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Cota — independente de renda, egresso de escola pública",
                             IsDeleted = false,
@@ -6832,7 +6832,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Res. Unifesspa 532/2021, art. 1º (reserva de vaga para pessoa com deficiência)",
                             Codigo = "AC_PCD",
                             ComposicaoOrigem = "AC",
-                            ComposicaoVagas = "RETIRA_DE",
+                            ComposicaoVagas = "RETIRADA_DE_OUTRA_MODALIDADE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Ampla Concorrência – Pessoa com Deficiência (V)",
                             IsDeleted = false,
@@ -13257,8 +13257,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("jsonb")
                         .HasColumnName("regra_de_aplicabilidade");
 
-                    b.Property<string>("RegraRemanejamento")
-                        .IsRequired()
+                    b.Property<string>("RegraRemanejamentoCodigo")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("regra_remanejamento");

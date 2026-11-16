@@ -92,7 +92,7 @@ public sealed class ModalidadeEndpointTests
             codigo,
             descricao = "Cota PPI de baixa renda",
             naturezaLegal = "COTA_RESERVADA",
-            composicaoVagas = "DENTRO_DO_VR",
+            composicaoVagas = "DENTRO_DA_RESERVA_LEGAL",
             regraRemanejamento = "SEGUE_CASCATA",
             regraDeAplicabilidade = OptouPelasCotas(),
             baseLegal = "Lei 12.711/2012",
@@ -113,7 +113,7 @@ public sealed class ModalidadeEndpointTests
         JsonElement root = doc.RootElement;
         root.GetProperty("codigo").GetString().Should().Be(codigo);
         root.GetProperty("naturezaLegal").GetString().Should().Be("COTA_RESERVADA");
-        root.GetProperty("composicaoVagas").GetString().Should().Be("DENTRO_DO_VR");
+        root.GetProperty("composicaoVagas").GetString().Should().Be("DENTRO_DA_RESERVA_LEGAL");
         root.GetProperty("regraRemanejamento").GetString().Should().Be("SEGUE_CASCATA");
         root.GetProperty("regraDeAplicabilidade").GetRawText().Should().Be(
             """[[{"fato":"OPTOU_PELAS_COTAS_DA_LEI","operador":"IGUAL","valor":true}]]""");
@@ -153,10 +153,10 @@ public sealed class ModalidadeEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
 
-    [Fact(DisplayName = "POST RETIRA_DE sem origem retorna 422 (coerência de domínio)")]
-    public async Task Criar_RetiraDeSemOrigem_Retorna422()
+    [Fact(DisplayName = "POST RETIRADA_DE_OUTRA_MODALIDADE sem origem retorna 422 (coerência de domínio)")]
+    public async Task Criar_RetiradaDeOutraModalidadeSemOrigem_Retorna422()
     {
-        var body = new { codigo = CodigoUnico(), naturezaLegal = "AMPLA", composicaoVagas = "RETIRA_DE" };
+        var body = new { codigo = CodigoUnico(), naturezaLegal = "AMPLA", composicaoVagas = "RETIRADA_DE_OUTRA_MODALIDADE" };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -239,7 +239,7 @@ public sealed class ModalidadeEndpointTests
         {
             id,
             naturezaLegal = "AMPLA",
-            composicaoVagas = "RESIDUAL_DO_VO",
+            composicaoVagas = "RESTANTE_DAS_VAGAS_OFERTADAS",
             regraDeAplicabilidade = Incondicional,
         });
 
@@ -261,7 +261,7 @@ public sealed class ModalidadeEndpointTests
             id,
             descricao,
             naturezaLegal = "COTA_RESERVADA",
-            composicaoVagas = "DENTRO_DO_VR",
+            composicaoVagas = "DENTRO_DA_RESERVA_LEGAL",
             regraRemanejamento = "SEGUE_CASCATA",
             regraDeAplicabilidade = OptouPelasCotas(),
             baseLegal = BaseLegal,
@@ -277,7 +277,7 @@ public sealed class ModalidadeEndpointTests
         root.GetProperty("baseLegal").GetString().Should().Be(BaseLegal);
         root.GetProperty("naturezaLegal").GetString().Should().Be("COTA_RESERVADA",
             "a estrutura de vagas permanece a da lei");
-        root.GetProperty("composicaoVagas").GetString().Should().Be("DENTRO_DO_VR");
+        root.GetProperty("composicaoVagas").GetString().Should().Be("DENTRO_DA_RESERVA_LEGAL");
         root.GetProperty("regraRemanejamento").GetString().Should().Be("SEGUE_CASCATA");
     }
 
@@ -299,7 +299,7 @@ public sealed class ModalidadeEndpointTests
         {
             codigo = CodigoUnico(),
             naturezaLegal = "COTA_RESERVADA",
-            composicaoVagas = "DENTRO_DO_VR",
+            composicaoVagas = "DENTRO_DA_RESERVA_LEGAL",
             regraRemanejamento = "SEGUE_CASCATA",
             regraDeAplicabilidade = new[]
             {

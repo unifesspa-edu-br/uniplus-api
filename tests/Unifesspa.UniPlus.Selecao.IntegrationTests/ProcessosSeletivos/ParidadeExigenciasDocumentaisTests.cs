@@ -66,7 +66,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
             codigo: "AC",
             descricao: null,
             naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.ResidualDoVo,
+            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             composicaoOrigemCodigo: null,
             regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
             remanejamentoDestino: null,

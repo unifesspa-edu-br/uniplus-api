@@ -67,7 +67,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         PredicadoDnf? regra = null) =>
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, null, natureza,
-            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.ResidualDoVo : ComposicaoVagasModalidade.DentroDoVr,
+            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.DentroDaReservaLegal,
             null, remanejamento, null, null, null, regra ?? RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), acaoQuandoIndeferido, "base legal", quantidadeDeclarada).Value!;
 
     private static readonly (string? Codigo, string? Rotulo) GrupoTecnologica = ("TECNOLOGICA", "Tecnológica");
@@ -322,7 +322,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
 
     /// <summary>
     /// As 8 modalidades federais (SegueCascata) + AC — INV-6 exige o conjunto completo sob Lei
-    /// 12.711. Sem <c>quantidadeDeclarada</c>: sob o ramo federal, DENTRO_DO_VR e RESIDUAL_DO_VO
+    /// 12.711. Sem <c>quantidadeDeclarada</c>: sob o ramo federal, DENTRO_DA_RESERVA_LEGAL e RESTANTE_DAS_VAGAS_OFERTADAS
     /// são CALCULADAS pela fórmula do art. 10 — declarar quantidade aqui é recusado
     /// (QuantidadeCalculadaNaoInformavel).
     /// </summary>

@@ -52,11 +52,11 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
         "REGULAR", ["MATUTINO"], null, null, 100, null, null, null, "Medicina", "Bacharelado");
 
     private static ModalidadeView NovaModalidadeAmpla(Guid id) => new(
-        id, "AC", "Ampla concorrência", "AMPLA", "RESIDUAL_DO_VO",
+        id, "AC", "Ampla concorrência", "AMPLA", "RESTANTE_DAS_VAGAS_OFERTADAS",
         null, null, null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012");
 
     private static ModalidadeView NovaModalidadeCotaReservada(Guid id, string codigo) => new(
-        id, codigo, null, "COTA_RESERVADA", "DENTRO_DO_VR",
+        id, codigo, null, "COTA_RESERVADA", "DENTRO_DA_RESERVA_LEGAL",
         null, "SEGUE_CASCATA", null, null, null, PredicadoDnf.CriarDeCondicoesAgrupadas([]).Value!, null, "Lei 12.711/2012 art. 3º");
 
     [Fact(DisplayName = "Handle com processo inexistente retorna ProcessoSeletivo.NaoEncontrado sem consultar readers")]

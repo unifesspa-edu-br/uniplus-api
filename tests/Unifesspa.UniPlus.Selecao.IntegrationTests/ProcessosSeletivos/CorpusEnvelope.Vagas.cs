@@ -72,7 +72,7 @@ internal static partial class CorpusEnvelope
         [
             ModalidadeSelecionada.Criar(
                 new Guid("2222bbbb-0000-4000-8000-000000000001"), "AC", "Ampla concorrência",
-                NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
+                NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
                 RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                 regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
                 baseLegal: "Lei 12.711/2012 art. 1º").Value!,
@@ -93,7 +93,7 @@ internal static partial class CorpusEnvelope
                 codigo,
                 $"Reserva {codigo}",
                 NaturezaLegalModalidade.CotaReservada,
-                ComposicaoVagasModalidade.DentroDoVr,
+                ComposicaoVagasModalidade.DentroDaReservaLegal,
                 null,
                 RegraRemanejamentoModalidade.SegueCascata,
                 null,
@@ -129,7 +129,7 @@ internal static partial class CorpusEnvelope
     /// <summary>
     /// Oferta institucional: quadro fixo, <b>sem</b> referência demográfica — e com as
     /// variantes de remanejamento que a federal não usa (<c>DESTINO_UNICO</c> e
-    /// <c>CRUZADO</c>, com par e fallback) e a composição <c>RETIRA_DE</c>.
+    /// <c>CRUZADO</c>, com par e fallback) e a composição <c>RETIRADA_DE_OUTRA_MODALIDADE</c>.
     /// </summary>
     /// <param name="grupoAreaEnem">
     /// O processo rico classifica pelo ENEM com cálculo local e exige grupo em toda oferta; os
@@ -146,7 +146,7 @@ internal static partial class CorpusEnvelope
             modalidades: [
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000001"), "AC", null,
-                    NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
+                    NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
                     RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                     RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 15).Value!,
                 ModalidadeSelecionada.Criar(
@@ -156,12 +156,12 @@ internal static partial class CorpusEnvelope
                     RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), "RECLASSIFICAR_AC", "Lei 13.146/2015", quantidadeDeclarada: 5).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000003"), "IND", "Indígena",
-                    NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, "AC",
+                    NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade, "AC",
                     RegraRemanejamentoModalidade.Cruzado, null, "QUI", "AC",
                     RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000004"), "QUI", "Quilombola",
-                    NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, "AC",
+                    NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade, "AC",
                     RegraRemanejamentoModalidade.Cruzado, null, "IND", "AC",
                     RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
             ],

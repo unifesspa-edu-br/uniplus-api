@@ -159,11 +159,11 @@ internal sealed class ModalidadeConfiguration : IEntityTypeConfiguration<Modalid
             "ck_modalidades_codigo_formato",
             "codigo ~ '^[A-Z0-9_]+$'");
 
-        // Equivalência exata RETIRA_DE ⟺ composicao_origem preenchida (invariante 4),
+        // Equivalência exata RETIRADA_DE_OUTRA_MODALIDADE ⟺ composicao_origem preenchida (invariante 4),
         // como igualdade de dois booleanos — null-safe (ambos os lados nunca são null).
         table.HasCheckConstraint(
-            "ck_modalidades_retira_de_origem",
-            "(composicao_vagas = 'RETIRA_DE') = (composicao_origem IS NOT NULL)");
+            "ck_modalidades_retirada_de_outra_modalidade_origem",
+            "(composicao_vagas = 'RETIRADA_DE_OUTRA_MODALIDADE') = (composicao_origem IS NOT NULL)");
     }
 
     private static string TokensSql(IReadOnlyList<string> tokens) =>

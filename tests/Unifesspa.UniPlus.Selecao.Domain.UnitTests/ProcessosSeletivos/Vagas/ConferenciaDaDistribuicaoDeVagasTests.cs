@@ -121,7 +121,7 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
     {
         List<ModalidadeSelecionada> modalidades = AsOitoFederaisMaisAmplaConcorrencia();
         modalidades.Add(Modalidade(
-            "AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, 2, ModalidadesFederaisLei12711.LbPpi));
+            "AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade, 2, ModalidadesFederaisLei12711.LbPpi));
 
         DeveRecusarSo(
             Conferir(DaLeiDeCotas() with { Modalidades = modalidades }),
@@ -151,7 +151,7 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
     {
         List<ModalidadeSelecionada> modalidades = AsOitoFederaisMaisAmplaConcorrencia();
         modalidades[0] = Modalidade(
-            ModalidadesFederaisLei12711.LbPpi, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDoVr, 3);
+            ModalidadesFederaisLei12711.LbPpi, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, 3);
 
         DeveRecusarSo(
             Conferir(DaLeiDeCotas() with { Modalidades = modalidades }),
@@ -163,7 +163,7 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
     {
         List<ModalidadeSelecionada> modalidades = AsOitoFederaisMaisAmplaConcorrencia();
         modalidades.Add(Modalidade(
-            "AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe, null, ModalidadesFederaisLei12711.Ac));
+            "AC_PCD", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade, null, ModalidadesFederaisLei12711.Ac));
 
         DeveRecusarSo(
             Conferir(DaLeiDeCotas() with { Modalidades = modalidades }),
@@ -184,7 +184,7 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
         PercentualDaReservaLegal = 2m,
         ReferenciaDemografica = null,
         Modalidades = [.. AsOitoFederaisMaisAmplaConcorrencia().Select(static m => m.Codigo == ModalidadesFederaisLei12711.Ac
-            ? Modalidade(m.Codigo, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, 5)
+            ? Modalidade(m.Codigo, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, 5)
             : m)],
     };
 

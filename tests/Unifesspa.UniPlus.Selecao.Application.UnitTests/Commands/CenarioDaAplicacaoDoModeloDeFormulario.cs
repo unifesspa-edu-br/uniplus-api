@@ -135,7 +135,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
     public static ModalidadeSelecionada Ofertada(string codigo, NaturezaLegalModalidade natureza, PredicadoDnf regra) =>
         ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), codigo, null, natureza,
-            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.ResidualDoVo : ComposicaoVagasModalidade.SuplementarAoTotal, null,
+            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.SuplementarAoTotal, null,
             natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma,
             null, null, null, regra, null, "base legal", quantidadeDeclarada: 10).Value!;
 

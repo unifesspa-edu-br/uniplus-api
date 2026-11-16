@@ -324,13 +324,13 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
             // federal com origem diferente de AC descontaria de AC no cálculo sem
             // nunca reduzir a modalidade que ela alega retirar.
             ModalidadeSelecionada? retiradaForaDeAc = modalidades.FirstOrDefault(
-                m => m.ComposicaoVagas == ComposicaoVagasModalidade.RetiraDe
+                m => m.ComposicaoVagas == ComposicaoVagasModalidade.RetiradaDeOutraModalidade
                     && !string.Equals(m.ComposicaoOrigemCodigo, ModalidadesFederaisLei12711.Ac, StringComparison.Ordinal));
             if (retiradaForaDeAc is not null)
             {
                 return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
                     "ConfiguracaoDistribuicaoVagas.RetiradaFederalDeveSerDeAmplaConcorrencia",
-                    $"No ramo federal, a modalidade {retiradaForaDeAc.Codigo} (RETIRA_DE) só pode retirar da ampla concorrência (AC) — a fórmula do art. 10 desconta toda retirada de AC."));
+                    $"No ramo federal, a modalidade {retiradaForaDeAc.Codigo} (RETIRADA_DE_OUTRA_MODALIDADE) só pode retirar da ampla concorrência (AC) — a fórmula do art. 10 desconta toda retirada de AC."));
             }
         }
         else if (referenciaDemografica is not null)
@@ -415,7 +415,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
     /// <summary>
     /// A fronteira entre o que é calculado e o que é declarado (issue #848
     /// §3.2): no ramo federal, as modalidades calculadas (sub-reserva
-    /// <c>DENTRO_DO_VR</c> e a ampla concorrência <c>RESIDUAL_DO_VO</c>) nunca
+    /// <c>DENTRO_DA_RESERVA_LEGAL</c> e a ampla concorrência <c>RESTANTE_DAS_VAGAS_OFERTADAS</c>) nunca
     /// aceitam quantidade fixada, e as modalidades de retirada/suplemento
     /// sempre exigem; no ramo institucional, toda modalidade selecionada exige
     /// a quantidade fixada — não há cálculo algum.
@@ -437,8 +437,8 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
                 continue;
             }
 
-            bool calculada = modalidade.ComposicaoVagas is ComposicaoVagasModalidade.DentroDoVr or ComposicaoVagasModalidade.ResidualDoVo;
-            bool exigeDeclaracao = modalidade.ComposicaoVagas is ComposicaoVagasModalidade.RetiraDe or ComposicaoVagasModalidade.SuplementarAoTotal;
+            bool calculada = modalidade.ComposicaoVagas is ComposicaoVagasModalidade.DentroDaReservaLegal or ComposicaoVagasModalidade.RestanteDasVagasOfertadas;
+            bool exigeDeclaracao = modalidade.ComposicaoVagas is ComposicaoVagasModalidade.RetiradaDeOutraModalidade or ComposicaoVagasModalidade.SuplementarAoTotal;
 
             if (calculada && modalidade.QuantidadeDeclarada is not null)
             {
@@ -469,7 +469,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
 
         foreach (ModalidadeSelecionada modalidade in modalidades)
         {
-            if (modalidade.ComposicaoVagas == ComposicaoVagasModalidade.RetiraDe)
+            if (modalidade.ComposicaoVagas == ComposicaoVagasModalidade.RetiradaDeOutraModalidade)
             {
                 retiradas[modalidade.Codigo] = modalidade.QuantidadeDeclarada!.Value;
             }
@@ -587,7 +587,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
         ProcessoSeletivoId = processoSeletivoId;
 
     /// <summary>
-    /// Valida que todo código de cruzamento (origem de RETIRA_DE, destino de
+    /// Valida que todo código de cruzamento (origem de RETIRADA_DE_OUTRA_MODALIDADE, destino de
     /// DESTINO_UNICO, par/fallback de CRUZADO) referencia uma modalidade
     /// presente neste MESMO conjunto selecionado — não apenas uma modalidade
     /// existente no cadastro global. Sem esta checagem, uma

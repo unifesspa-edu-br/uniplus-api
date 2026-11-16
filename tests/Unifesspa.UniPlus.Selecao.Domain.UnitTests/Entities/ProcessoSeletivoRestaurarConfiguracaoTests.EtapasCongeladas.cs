@@ -100,7 +100,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 
         static ModalidadeSelecionada Ac(int quantidade) => ModalidadeSelecionada.Criar(
             new Guid("cccc0000-0000-4000-8000-000000000001"), "AC", null,
-            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
+            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
             RegraRemanejamentoModalidade.Nenhuma, null, null, null,
             RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: quantidade).Value!;
 
@@ -148,7 +148,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 
         ModalidadeSelecionada ac = ModalidadeSelecionada.Criar(
             new Guid("cccc0000-0000-4000-8000-000000000001"), "AC", null,
-            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
+            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
             RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada: 8).Value!;
         ModalidadeSelecionada cotaSemOpcao = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "LI_EP", null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.SuplementarAoTotal,
@@ -187,10 +187,10 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 
         ModalidadeSelecionada ac = ModalidadeSelecionada.Criar(
             new Guid("cccc0000-0000-4000-8000-000000000001"), "AC", null,
-            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.ResidualDoVo, null,
+            NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
             RegraRemanejamentoModalidade.Nenhuma, null, null, null, PredicadoDnf.SemClausula, null, "base legal", quantidadeDeclarada: 8).Value!;
         ModalidadeSelecionada reservaSemRemanejamento = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiraDe,
+            Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
             "AC", RegraRemanejamentoModalidade.Nenhuma, null, null, null,
             RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal",
             quantidadeDeclarada: 2).Value!;
