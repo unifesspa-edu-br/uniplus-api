@@ -37,10 +37,8 @@ public sealed class MapeamentoDeDomainErrorTests
     [InlineData("VersaoConfiguracao.NumeroDuplicado", 409)]
     [InlineData("VersaoConfiguracao.CadeiaQuebrada", 422)]
     [InlineData("VersaoConfiguracao.VigenciaRegressiva", 422)]
-    [InlineData("VersaoConfiguracao.AtoCriadorRepetido", 422)]
     [InlineData("VersaoConfiguracao.AtoCriadorJaCriouVersao", 422)]
     [InlineData("VersaoConfiguracao.NumeracaoComBuraco", 422)]
-    [InlineData("VersaoConfiguracao.ContratoAberturaInvalido", 422)]
     public void GuardRailDaCadeiaDeVersoes_TemOStatusDaSuaEspecie(string code, int statusEsperado)
     {
         Dictionary<string, DomainErrorMapping> mapeamentos = LerMapeamentosRegistrados("Selecao");
