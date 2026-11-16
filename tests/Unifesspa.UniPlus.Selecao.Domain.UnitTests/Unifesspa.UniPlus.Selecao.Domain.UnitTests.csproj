@@ -21,6 +21,11 @@
     <Using Include="Xunit" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- O esquema da configuração do processo seletivo, lido para conferir que as enumerações dele são as do domínio. -->
+    <None Include="..\..\contracts\selecao\configuracao\v1\*.json" Link="Contratos\selecao-configuracao\v1\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 
   <ItemGroup>
     <!-- Instantes construídos a partir da zona institucional resolvida (issue #1376). Compilado em
