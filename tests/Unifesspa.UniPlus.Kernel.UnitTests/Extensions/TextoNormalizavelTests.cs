@@ -47,4 +47,24 @@ public sealed class TextoNormalizavelTests
         TextoNormalizavel.TentarNfcDeTextoLivre("art. 5º,\tinciso II\nparágrafo", 40, out _).Should().Be(SituacaoDoTexto.Valido);
         TextoNormalizavel.TentarNfcDeTextoLivre("art. 5º\u0000", 40, out _).Should().Be(SituacaoDoTexto.CaractereInvalido);
     }
+
+    [Theory(DisplayName = "TentarNfcDeTextoDeVariasLinhas aceita a quebra de linha e a tabulação")]
+    [InlineData("linha 1\nlinha 2")]
+    [InlineData("linha 1\r\nlinha 2")]
+    [InlineData("coluna 1\tcoluna 2")]
+    public void TentarNfcDeTextoDeVariasLinhas_AceitaQuebraETabulacao(string texto) =>
+        TextoNormalizavel.TentarNfcDeTextoDeVariasLinhas(texto, 40, out _).Should().Be(SituacaoDoTexto.Valido);
+
+    [Theory(DisplayName = "TentarNfcDeTextoDeVariasLinhas recusa o nulo, os outros controles e a formatação")]
+    [InlineData("texto\u0000")]
+    [InlineData("texto\u0007")]
+    [InlineData("texto\u202Einvertido")]
+    [InlineData("texto\u2028separador")]
+    [InlineData("texto\u0085proxima")]
+    public void TentarNfcDeTextoDeVariasLinhas_RecusaOutrosInvisiveis(string texto) =>
+        TextoNormalizavel.TentarNfcDeTextoDeVariasLinhas(texto, 40, out _).Should().Be(SituacaoDoTexto.CaractereInvalido);
+
+    [Fact(DisplayName = "TentarNfcDeTextoDeVariasLinhas aplica o limite depois do NFC")]
+    public void TentarNfcDeTextoDeVariasLinhas_PassaDoLimite_TamanhoExcedido() =>
+        TextoNormalizavel.TentarNfcDeTextoDeVariasLinhas(new string('b', 39) + "\u0344", 40, out _).Should().Be(SituacaoDoTexto.TamanhoExcedido);
 }

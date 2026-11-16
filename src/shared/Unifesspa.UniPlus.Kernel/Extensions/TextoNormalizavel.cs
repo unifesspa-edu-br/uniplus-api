@@ -17,6 +17,8 @@ public enum SituacaoDoTexto
 /// </summary>
 public static class TextoNormalizavel
 {
+    private static readonly char[] QuebrasDeLinhaETabulacao = ['\n', '\r', '\t'];
+
     /// <summary>
     /// Quantas vezes um texto em NFC pode crescer ao ser decomposto (UAX #15): um caractere
     /// composto corresponde a no máximo quatro unidades na forma decomposta.
@@ -47,7 +49,15 @@ public static class TextoNormalizavel
     /// varrido e normalizado.
     /// </summary>
     public static SituacaoDoTexto TentarNfc(string texto, int maximo, out string normalizado) =>
-        Tentar(texto, maximo, recusarInvisiveis: true, out normalizado);
+        Tentar(texto, maximo, static t => CaracteresInvisiveis.Contem(t), out normalizado);
+
+    /// <summary>
+    /// Como <see cref="TentarNfc"/>, para texto livre de várias linhas — descrição, justificativa —: aceita
+    /// a quebra de linha (<c>\n</c> e <c>\r</c>) e a tabulação, e continua recusando o caractere nulo, os
+    /// demais de controle e os de formatação, como os controles bidirecionais.
+    /// </summary>
+    public static SituacaoDoTexto TentarNfcDeTextoDeVariasLinhas(string texto, int maximo, out string normalizado) =>
+        Tentar(texto, maximo, static t => CaracteresInvisiveis.Contem(t, QuebrasDeLinhaETabulacao), out normalizado);
 
     /// <summary>
     /// Como <see cref="TentarNfc"/>, para texto livre que não volta em mensagem nem em log: aceita
@@ -56,9 +66,9 @@ public static class TextoNormalizavel
     /// o grava.
     /// </summary>
     public static SituacaoDoTexto TentarNfcDeTextoLivre(string texto, int maximo, out string normalizado) =>
-        Tentar(texto, maximo, recusarInvisiveis: false, out normalizado);
+        Tentar(texto, maximo, static t => t.Contains((char)0), out normalizado);
 
-    private static SituacaoDoTexto Tentar(string texto, int maximo, bool recusarInvisiveis, out string normalizado)
+    private static SituacaoDoTexto Tentar(string texto, int maximo, Func<string, bool> temCaractereRecusado, out string normalizado)
     {
         ArgumentNullException.ThrowIfNull(texto);
 
@@ -68,18 +78,14 @@ public static class TextoNormalizavel
             return SituacaoDoTexto.TamanhoExcedido;
         }
 
-        bool temInvisivelRecusado = recusarInvisiveis ? CaracteresInvisiveis.Contem(texto) : texto.Contains((char)0);
-        if (temInvisivelRecusado || !TentarNormalizar(texto, out string emNfc))
-        {
-            return SituacaoDoTexto.CaractereInvalido;
-        }
+        return temCaractereRecusado(texto) || !TentarNormalizar(texto, out string emNfc)
+            ? SituacaoDoTexto.CaractereInvalido
+            : CabeNoLimite(emNfc, maximo, out normalizado);
+    }
 
-        if (emNfc.Length > maximo)
-        {
-            return SituacaoDoTexto.TamanhoExcedido;
-        }
-
-        normalizado = emNfc;
-        return SituacaoDoTexto.Valido;
+    private static SituacaoDoTexto CabeNoLimite(string emNfc, int maximo, out string normalizado)
+    {
+        normalizado = emNfc.Length > maximo ? string.Empty : emNfc;
+        return emNfc.Length > maximo ? SituacaoDoTexto.TamanhoExcedido : SituacaoDoTexto.Valido;
     }
 }
