@@ -24,6 +24,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoRestauradorDeConfiguracao;
+
 /// <summary>
 /// A prova de round-trip como <b>guard de produção</b> — não só como teste (ADR-0110).
 /// </summary>
@@ -41,7 +43,7 @@ using Xunit;
 /// publicou. Com ela, o descarte falha alto.
 /// </para>
 /// </remarks>
-public sealed partial class RestauradorDeConfiguracaoTests
+public sealed class RestauradorDeConfiguracaoTests
 {
     [Fact(DisplayName = "Restaurar decodifica, repõe e PROVA — e o agregado reposto recanonicaliza nos bytes congelados")]
     public void Restaurar_ReporEProvar()

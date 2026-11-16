@@ -24,11 +24,13 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoRestauradorDeConfiguracao;
+
 /// <summary>
 /// Os parâmetros que a publicação congela no envelope — metadado de fato, fuso e valores
 /// selecionáveis — e a prova de que a restauração os reproduz sem consultar o que está vivo.
 /// </summary>
-public sealed partial class RestauradorDeConfiguracaoTests
+public sealed class RestauradorDeConfiguracaoParametrosCongeladosTests
 {
     /// <summary>
     /// A prova estrutural do congelamento dos parâmetros na publicação (UNI-REQ-0019, Story #919): <see cref="FatoCandidato"/> não tem

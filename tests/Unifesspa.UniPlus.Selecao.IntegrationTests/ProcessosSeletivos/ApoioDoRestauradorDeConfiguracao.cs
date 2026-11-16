@@ -8,6 +8,7 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
@@ -23,10 +24,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
-/// <summary>As etapas comuns às provas de reposição: publicar, reidratar e repor o grafo provado.</summary>
-public sealed partial class RestauradorDeConfiguracaoTests
+internal static class ApoioDoRestauradorDeConfiguracao
 {
-    private static VersaoConfiguracao PublicadaPeloAtorDoCorpus(
+    internal static VersaoConfiguracao PublicadaPeloAtorDoCorpus(
         ProcessoSeletivo processo, DadosEdital dados, SnapshotCanonico congelado)
     {
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
@@ -39,7 +39,7 @@ public sealed partial class RestauradorDeConfiguracaoTests
 
     // A APLICAÇÃO na raiz viva é do descarte (Story #986): limpa as coleções mutáveis e repõe o
     // grafo provado.
-    private static void ReporORestauradoNaRaizViva(ProcessoSeletivo processo, VersaoConfiguracao versao)
+    internal static void ReporORestauradoNaRaizViva(ProcessoSeletivo processo, VersaoConfiguracao versao)
     {
         Result<GrafoConfiguracao> resultado = new RestauradorDeConfiguracao(new RegistroCodecsEnvelope()).Restaurar(processo, versao);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -49,14 +49,14 @@ public sealed partial class RestauradorDeConfiguracaoTests
 
 
 
-    private static EnvelopeReidratado Reidratado(VersaoConfiguracao versao)
+    internal static EnvelopeReidratado Reidratado(VersaoConfiguracao versao)
     {
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
         return reidratado.Value!;
     }
 
-    private static GrafoConfiguracao RestauradoSemErro(ProcessoSeletivo processo, VersaoConfiguracao versao, string porque)
+    internal static GrafoConfiguracao RestauradoSemErro(ProcessoSeletivo processo, VersaoConfiguracao versao, string porque)
     {
         Result<GrafoConfiguracao> resultado = new RestauradorDeConfiguracao(new RegistroCodecsEnvelope()).Restaurar(processo, versao);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message ?? porque);

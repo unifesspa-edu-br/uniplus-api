@@ -24,10 +24,12 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoRestauradorDeConfiguracao;
+
 /// <summary>
 /// A restauração de predicados com bloco opaco e de gatilhos de exigência ancorados em fase.
 /// </summary>
-public sealed partial class RestauradorDeConfiguracaoTests
+public sealed class RestauradorDeConfiguracaoPredicadosEGatilhosTests
 {
     /// <summary>
     /// A válvula de escape de obrigatoriedade (<see cref="Customizado"/>, ADR-0058) carrega

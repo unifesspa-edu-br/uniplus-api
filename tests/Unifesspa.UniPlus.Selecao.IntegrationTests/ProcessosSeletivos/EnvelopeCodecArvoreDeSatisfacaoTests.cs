@@ -27,7 +27,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
-public sealed partial class EnvelopeCodecRoundTripTests
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoEnvelopeCodec;
+
+public sealed class EnvelopeCodecArvoreDeSatisfacaoTests
 {
     /// <summary>
     /// Prova de fidelidade do codec sobre a MESMA exigência documental rica que a golden
@@ -41,7 +43,7 @@ public sealed partial class EnvelopeCodecRoundTripTests
     /// usa <c>Guid.CreateVersion7()</c> para a etapa, a fase e a exigência (a suíte de
     /// origem normaliza esses ids antes de comparar — ver <c>NormalizarIds</c>), então um
     /// arquivo com bytes crus nunca seria estável entre regenerações. A prova aqui é de
-    /// AUTOCONSISTÊNCIA (mesmo padrão de <see cref="RoundTrip_VersaoDeAbertura"/>): o
+    /// AUTOCONSISTÊNCIA (mesmo padrão de <see cref="EnvelopeCodecRoundTripTests.RoundTrip_VersaoDeAbertura"/>): o
     /// primeiro <c>Codificar</c> É o oráculo — decodificar e recodificar tem de reproduzir
     /// EXATAMENTE os mesmos bytes, quaisquer que sejam os Guids sorteados nesta execução.
     /// </remarks>

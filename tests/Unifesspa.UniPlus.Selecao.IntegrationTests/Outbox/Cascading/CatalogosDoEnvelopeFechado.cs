@@ -33,10 +33,16 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 
-public sealed partial class EnvelopeFechadoE2ETests
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.CatalogosDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.CheckpointsDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ItensDoChecklistDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PassosDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PayloadsDoEnvelopeFechado;
+
+internal static class CatalogosDoEnvelopeFechado
 {
     /// <summary>Os ids dos catálogos semeados por <see cref="SemearCatalogosRicosAsync"/>.</summary>
-    private sealed record CatalogosSemeados(
+    internal sealed record CatalogosSemeados(
         Guid UnidadeId,
         Guid OfertaCursoId,
         Guid ReferenciaReservaDemograficaId,
@@ -57,7 +63,7 @@ public sealed partial class EnvelopeFechadoE2ETests
     /// resolvidas aqui pelo código. As 10 <see cref="Modalidade"/> federais já vêm semeadas por migration
     /// (<see cref="ModalidadeSeed"/>) — só referenciadas aqui pelo código.
     /// </summary>
-    private static async Task<CatalogosSemeados> SemearCatalogosRicosAsync(CascadingApiFactory api, string sufixo)
+    internal static async Task<CatalogosSemeados> SemearCatalogosRicosAsync(CascadingApiFactory api, string sufixo)
     {
         Guid unidadeId;
         await using (AsyncServiceScope scopeOrg = api.Services.CreateAsyncScope())
@@ -215,7 +221,7 @@ public sealed partial class EnvelopeFechadoE2ETests
     /// vigentes no catálogo de Publicações — semeados aqui, à parte, sem duplicar o seeder
     /// existente para dois códigos extras.
     /// </summary>
-    private static async Task SemearTipoDeAtoResultadoPreliminarAsync(CascadingApiFactory api)
+    internal static async Task SemearTipoDeAtoResultadoPreliminarAsync(CascadingApiFactory api)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db =
@@ -225,7 +231,7 @@ public sealed partial class EnvelopeFechadoE2ETests
         await db.SaveChangesAsync().ConfigureAwait(false);
     }
 
-    private static async Task GarantirTipoDeAtoDeResultadoAsync(
+    internal static async Task GarantirTipoDeAtoDeResultadoAsync(
         UniPlusDbContext db,
         string codigo,
         string nome)
@@ -256,7 +262,7 @@ public sealed partial class EnvelopeFechadoE2ETests
     /// cadastro de Configuração, então seguir o mesmo atalho de <see cref="SemearDocumentoConfirmadoAsync"/>
     /// evita um HTTP round-trip extra sem cobertura adicional.
     /// </summary>
-    private static async Task<Guid> SemearBaseLegalBonusRegionalAsync(CascadingApiFactory api)
+    internal static async Task<Guid> SemearBaseLegalBonusRegionalAsync(CascadingApiFactory api)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
@@ -268,7 +274,7 @@ public sealed partial class EnvelopeFechadoE2ETests
         return baseLegal.Id;
     }
 
-    private static async Task<Guid> SemearDocumentoConfirmadoAsync(CascadingApiFactory api, Guid processoId)
+    internal static async Task<Guid> SemearDocumentoConfirmadoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
@@ -280,7 +286,7 @@ public sealed partial class EnvelopeFechadoE2ETests
         return documento.Id;
     }
 
-    private static async Task<Guid> ObterAtoCriadorUnicoAsync(CascadingApiFactory api, Guid processoId)
+    internal static async Task<Guid> ObterAtoCriadorUnicoAsync(CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
@@ -290,7 +296,7 @@ public sealed partial class EnvelopeFechadoE2ETests
             .SingleAsync();
     }
 
-    private static async Task<(string Hash, Guid VersaoId)> LerIdentidadeDaVersaoAsync(CascadingApiFactory api, Guid atoCriadorId)
+    internal static async Task<(string Hash, Guid VersaoId)> LerIdentidadeDaVersaoAsync(CascadingApiFactory api, Guid atoCriadorId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
@@ -305,7 +311,7 @@ public sealed partial class EnvelopeFechadoE2ETests
     /// produziu: o id do ato V2, o ato que ele retifica (deve ser o de V1) e o hash de V1 tal
     /// como está gravado agora (para o checkpoint de imutabilidade).
     /// </summary>
-    private static async Task<(Guid AtoV2Id, Guid AtoV2RetificaId, string HashV1AposFechamento, Guid VersaoV2Id, string HashV2)> LerVersoesAposFechamentoAsync(
+    internal static async Task<(Guid AtoV2Id, Guid AtoV2RetificaId, string HashV1AposFechamento, Guid VersaoV2Id, string HashV2)> LerVersoesAposFechamentoAsync(
         CascadingApiFactory api, Guid processoId)
     {
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();

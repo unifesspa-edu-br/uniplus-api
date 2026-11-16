@@ -152,7 +152,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     }
 
     private static JsonNode CondicaoGatilhoDoEnvelope(SnapshotCanonico snapshot) =>
-        EnvelopeCodecRoundTripTests.Envelope(snapshot)["documentosExigidos"]!["exigencias"]![0]!["condicaoGatilho"]!;
+        ApoioDoEnvelopeCodec.Envelope(snapshot)["documentosExigidos"]!["exigencias"]![0]!["condicaoGatilho"]!;
 
     // ── Teste central: o ordinal do cliente sai do digest ──
 
@@ -315,7 +315,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         }
 
         JsonNode ArgsDoEnvelope(SnapshotCanonico snapshot) =>
-            EnvelopeCodecRoundTripTests.Envelope(snapshot)["criteriosDesempate"]![0]!["args"]!["valor"]!;
+            ApoioDoEnvelopeCodec.Envelope(snapshot)["criteriosDesempate"]![0]!["args"]!["valor"]!;
 
         JsonNode valorUm = ArgsDoEnvelope(
             Canonicalizador.Canonicalizar(Entrada(MontarComDesempate(Alternativas("PRETA", "PARDA")))));

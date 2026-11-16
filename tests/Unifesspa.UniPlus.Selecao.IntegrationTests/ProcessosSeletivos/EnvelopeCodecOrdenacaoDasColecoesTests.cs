@@ -27,7 +27,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
-public sealed partial class EnvelopeCodecRoundTripTests
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoEnvelopeCodec;
+
+public sealed class EnvelopeCodecOrdenacaoDasColecoesTests
 {
     /// <summary>
     /// O discriminante da issue #1067: <c>obrigatoriedades[]</c> ordena pela CHAVE DE CONTEÚDO
@@ -152,46 +154,6 @@ public sealed partial class EnvelopeCodecRoundTripTests
         envelope.Conformidade!.Regras.Select(r => r.RegraCodigo).Should().Equal(["REGRA-A", "REGRA-B"],
             "o valor DECODIFICADO também preserva a ordem de conteúdo — não é só o JSON bruto que bate, é a " +
             "sequência que o decoder de fato devolve");
-    }
-
-    /// <summary>
-    /// Reidrata, repõe e recanonicaliza <b>com o encoder da versão dela</b> — nunca com o
-    /// corrente. É o que torna a prova não-circular: no dia da <c>1.2</c>, recanonicalizar
-    /// uma <c>1.1</c> com o encoder corrente produziria bytes de <c>1.2</c>, e a fidelidade
-    /// da reidratação de tudo o que já foi publicado deixaria de ser verificável.
-    /// </summary>
-    private static EnvelopeReidratado AssertRoundTrip(
-        ProcessoSeletivo processo,
-        VersaoConfiguracao versao,
-        SnapshotCanonico congelado)
-    {
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
-        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
-
-        EnvelopeReidratado envelope = reidratado.Value!;
-
-        Result restauracao = processo.RestaurarConfiguracaoCongelada(versao, envelope.Grafo);
-        restauracao.IsSuccess.Should().BeTrue(restauracao.Error?.Message);
-
-        Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
-            versao.SchemaVersion,
-            new EntradaCanonicalizacao(
-                processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade,
-                envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados,
-                envelope.CalendarioDiasUteis, envelope.AgregadosDosGrupos, envelope.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: envelope.TiposDeAtoCongelados, FatosDerivadosCongelados: envelope.FatosDerivadosCongelados));
-        recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
-
-        // Os três são independentes no modelo (VersaoConfiguracao guarda schema_version e
-        // algoritmo em colunas próprias). Comparar só os bytes deixaria passar uma versão
-        // reidratada que declarasse outra forma ou outro algoritmo de hash.
-        recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,
-            "reidratar e recanonicalizar tem de reproduzir os bytes congelados INTEIROS — qualquer campo que o " +
-            "decoder perca sai daqui como uma divergência de bytes, e é a única forma de vê-lo");
-        recodificado.Value.SchemaVersion.Should().Be(congelado.SchemaVersion);
-        recodificado.Value.AlgoritmoHash.Should().Be(congelado.AlgoritmoHash);
-
-        return envelope;
     }
 
     // ── O etapa.Id é PRESERVADO (asserção direta sobre o decoder) ──

@@ -14,7 +14,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed partial class EnvelopeCodecRoundTripTests
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoEnvelopeCodec;
+
+public sealed class EnvelopeCodecQuadroDeVagasTests
 {
     private const int VagasOfertadasBaseDoQuadroFixado = 40;
 

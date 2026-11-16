@@ -27,7 +27,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
-public sealed partial class EnvelopeCodecRoundTripTests
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoEnvelopeCodec;
+
+public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
 {
     /// <summary>
     /// Os campos que <b>são chave de ordenação</b> do encoder — mutá-los reposiciona o item
@@ -85,48 +87,6 @@ public sealed partial class EnvelopeCodecRoundTripTests
         reidratado.Error!.Message.Should().Contain("o quadro congelado não é o que a declaração da oferta monta");
     }
 
-    private static (byte[] Originais, byte[] Mutados, byte[] Recodificados) MutarEReidratar(string caminho, string valorNovo)
-    {
-        ArgumentNullException.ThrowIfNull(caminho);
-
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
-
-        // A mesma modalidade é ofertada pelos dois cursos do processo rico, e o processo não aceita
-        // duas cópias diferentes dela: o caminho pode nomear as duas ocorrências, separadas por '|'.
-        JsonObject mutado = Envelope(congelado);
-        foreach (string ocorrencia in caminho.Split('|'))
-        {
-            Mutar(mutado, ocorrencia, valorNovo);
-        }
-
-        byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
-        bytesMutados.Should().NotEqual(congelado.Bytes, $"pré-condição: mutar '{caminho}' tem de mudar os bytes");
-
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, bytesMutados);
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
-        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
-
-        Result reposicao = processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo);
-        reposicao.IsSuccess.Should().BeTrue(reposicao.Error?.Message);
-
-        byte[] recodificados = CorpusEnvelope.Registro.Recodificar(
-            versao.SchemaVersion,
-            new EntradaCanonicalizacao(
-                processo,
-                reidratado.Value.Dados,
-                reidratado.Value.HashDocumento, FusoInstitucional.ZoneId,
-                reidratado.Value.Retificacao,
-                reidratado.Value.Conformidade,
-                reidratado.Value.MetadadosFatosCongelados,
-                reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados, FatosDerivadosCongelados: reidratado.Value.FatosDerivadosCongelados)).Value!.Bytes;
-
-        return (congelado.Bytes, bytesMutados, recodificados);
-    }
-
     // ── Cultura: os decimais do envelope são InvariantCulture, sempre ──
 
     [Fact(DisplayName = "O round-trip é imune à cultura do host — pt-BR usa vírgula decimal")]
@@ -136,7 +96,7 @@ public sealed partial class EnvelopeCodecRoundTripTests
         try
         {
             CultureInfo.CurrentCulture = new CultureInfo("pt-BR");
-            RoundTrip_VersaoDeAbertura();
+            ConferirRoundTripDaVersaoDeAbertura();
         }
         finally
         {

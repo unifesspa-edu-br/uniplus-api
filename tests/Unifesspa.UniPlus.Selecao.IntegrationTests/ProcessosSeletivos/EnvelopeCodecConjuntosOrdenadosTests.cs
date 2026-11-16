@@ -27,7 +27,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
-public sealed partial class EnvelopeCodecRoundTripTests
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoEnvelopeCodec;
+
+public sealed class EnvelopeCodecConjuntosOrdenadosTests
 {
     /// <summary>
     /// Prova que o decoder NÃO reordena (ADR-0109 D9) com os seis arrays da issue #1067
@@ -177,55 +179,6 @@ public sealed partial class EnvelopeCodecRoundTripTests
                 processo, envelope.Dados, envelope.HashDocumento, FusoInstitucional.ZoneId, envelope.Retificacao, envelope.Conformidade,
                 envelope.MetadadosFatosCongelados, envelope.ValoresSelecionaveisCongelados,
                 TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao)).Value!.Bytes;
-
-    internal static JsonObject Envelope(SnapshotCanonico snapshot) =>
-        JsonNode.Parse(Encoding.UTF8.GetString(snapshot.Bytes))!.AsObject();
-
-    /// <summary>
-    /// Troca <b>um</b> valor num path <c>a.0.b</c>, preservando o <b>tipo JSON</b> do
-    /// original — o envelope escreve decimais como string e inteiros como número, e trocar
-    /// um pelo outro testaria o parser de tipos, não a leitura do campo.
-    /// </summary>
-    private static void Mutar(JsonObject raiz, string caminho, string valorNovo)
-    {
-        string[] partes = caminho.Split('.');
-        JsonNode atual = raiz;
-
-        for (int i = 0; i < partes.Length - 1; i++)
-        {
-            atual = int.TryParse(partes[i], CultureInfo.InvariantCulture, out int indice)
-                ? atual.AsArray()[indice]!
-                : atual.AsObject()[partes[i]]!;
-        }
-
-        string chave = partes[^1];
-
-        if (int.TryParse(chave, CultureInfo.InvariantCulture, out int posicao))
-        {
-            JsonArray array = atual.AsArray();
-            array[posicao].Should().NotBeNull($"pré-condição: o path '{caminho}' tem de existir no envelope");
-            array[posicao] = ValorComoNo(array[posicao]!, valorNovo);
-            return;
-        }
-
-        JsonObject objeto = atual.AsObject();
-        objeto[chave].Should().NotBeNull($"pré-condição: o path '{caminho}' tem de existir no envelope");
-        objeto[chave] = ValorComoNo(objeto[chave]!, valorNovo);
-    }
-
-    /// <summary>
-    /// Sem o ramo <c>True</c>/<c>False</c>, os campos booleanos mutados por este helper
-    /// (<c>baseadoEmEnem</c>, <c>notaDeOrigemNoEnem</c>) virariam string JSON e seriam
-    /// recusados por <see cref="LeitorEnvelope.Booleano"/>, que só aceita
-    /// <c>JsonValueKind.True</c>/<c>False</c>.
-    /// </summary>
-    private static JsonValue ValorComoNo(JsonNode original, string valor) => original.GetValueKind() switch
-    {
-        System.Text.Json.JsonValueKind.Number => JsonValue.Create(int.Parse(valor, CultureInfo.InvariantCulture)),
-        System.Text.Json.JsonValueKind.True or System.Text.Json.JsonValueKind.False =>
-            JsonValue.Create(bool.Parse(valor)),
-        _ => JsonValue.Create(valor),
-    };
 
     // ── Round-trip dedicado de baseadoEmEnem — corpus SEM eliminação ENEM (#850) ──
 }

@@ -17,7 +17,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
-public sealed partial class PoliticaDeOrdenacaoTests
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDaPoliticaDeOrdenacao;
+
+public sealed class PoliticaDeOrdenacaoIdentidadeDeOrigemTests
 {
     private static FaseCronograma FaseDeAlfaFase() => FaseCronograma.Reidratar(
         id: IdFixo(1),
@@ -57,7 +59,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
 
         ProcessoSeletivo processo = Montar(cronogramaFases: [faseAlfa, faseZeta]);
 
-        JsonArray fasesJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["cronogramaFases"]!["fases"]!.AsArray();
+        JsonArray fasesJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["cronogramaFases"]!["fases"]!.AsArray();
 
         fasesJson.Select(static f => f!["codigo"]!.GetValue<string>()).Should().Equal(
             ["ZETA_FASE", "ALFA_FASE"],
@@ -133,7 +135,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
         bancasRequeridas: bancas).Value!;
 
     private static JsonArray BancasRequeridasEnvelopadas(FaseCronograma fase) =>
-        EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(Montar(cronogramaFases: [fase]))))
+        ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(Montar(cronogramaFases: [fase]))))
             ["cronogramaFases"]!["fases"]![0]!["bancasRequeridas"]!.AsArray();
 
     [Fact(DisplayName = "fatosColetados: Ordem governa sobre o conteúdo (FatoCodigo) — oráculo de sequência exata")]
@@ -147,7 +149,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
 
         ProcessoSeletivo processo = Montar(fatosColetados: [fatoAlfa, fatoZeta]);
 
-        JsonArray fatosJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["fatosColetados"]!.AsArray();
+        JsonArray fatosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["fatosColetados"]!.AsArray();
 
         // O formulário de inscrição traz também a seção do conjunto básico, que vem antes.
         fatosJson.Select(static f => f!["fatoCodigo"]!.GetValue<string>()).Where(static c => c is "ZETA_FATO" or "ALFA_FATO").Should().Equal(
@@ -167,7 +169,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
         ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("FATO_TESTE", [regraAlfa, regraZeta]).Value!;
         ProcessoSeletivo processo = Montar(regrasDerivacao: [config]);
 
-        JsonArray regrasJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["regrasDerivacao"]![0]!["regras"]!.AsArray();
+        JsonArray regrasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["regrasDerivacao"]![0]!["regras"]!.AsArray();
 
         regrasJson.Select(static r => r!["contribui"]!.GetValue<string>()).Should().Equal(
             ["ZETA_VALOR", "ALFA_VALOR"],
@@ -188,7 +190,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
 
         ProcessoSeletivo processo = Montar(cascata: cascata);
 
-        JsonArray destinosJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))
+        JsonArray destinosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))
             ["cascataRemanejamento"]!["ordens"]![0]!["destinos"]!.AsArray();
 
         destinosJson.Select(static d => d!.GetValue<string>()).Should().Equal(
@@ -209,7 +211,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
 
         ProcessoSeletivo processo = Montar(cascata: cascata);
 
-        JsonArray ordensJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["cascataRemanejamento"]!["ordens"]!.AsArray();
+        JsonArray ordensJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["cascataRemanejamento"]!["ordens"]!.AsArray();
 
         ordensJson.Should().HaveCount(2, "pré-condição: duas origens distintas sob teste");
         ordensJson.Select(static o => o!["origem"]!.GetValue<string>()).Should().Equal(
@@ -279,7 +281,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
         // Inseridas na ordem física ERRADA (folha, cuja Ordem é maior, antes do grupo).
         ProcessoSeletivo processo = Montar(cronogramaFases: [fase], documentosExigidos: [raizFolha, raizGrupo]);
 
-        JsonArray arvoreJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["arvoreSatisfacao"]!.AsArray();
+        JsonArray arvoreJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["arvoreSatisfacao"]!.AsArray();
 
         arvoreJson.Should().HaveCount(2, "pré-condição: duas raízes, como o cenário exige");
         arvoreJson.Select(static r => r!["tipo"]!.GetValue<string>()).Should().Equal(

@@ -1,0 +1,173 @@
+namespace Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
+
+using System.Globalization;
+using System.Net;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Nodes;
+
+using AwesomeAssertions;
+
+using Domain.Entities;
+
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence.Seed;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
+using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Selecao.Application.DTOs;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
+using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
+using Unifesspa.UniPlus.Testes.Compartilhado;
+
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.CatalogosDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.CheckpointsDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ItensDoChecklistDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PassosDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PayloadsDoEnvelopeFechado;
+
+internal static class CronogramaEFormularioDoContextoDoEnvelope
+{
+    public static Task<HttpResponseMessage> PutCronogramaFasesAsync(this ContextoDoEnvelopeFechado contexto) =>
+        contexto.EnviarAsync(HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/cronograma-fases", CronogramaDeFases(contexto.Catalogos), ifMatch: null);
+
+
+    public static Task<HttpResponseMessage> PutFatosColetadosAsync(this ContextoDoEnvelopeFechado contexto)
+    {
+        // COR_RACA vem da seção do conjunto básico, que a gravação inclui. As perguntas da reserva
+        // de vagas são as que as regras das modalidades ofertadas citam.
+        string[] perguntasDaReserva =
+            ["CONCORRER_EP", "PCD", "CONCORRER_PCD", "INDIGENA", "QUILOMBOLA", "CONCORRER_PPI", "CONCORRER_Q", "CONCORRER_RENDA"];
+        object[] fatos =
+        [
+            new
+            {
+                fatoCodigo = "BAIXA_RENDA",
+                ordem = 0,
+                rotulo = "Baixa renda",
+                tipoRenderizacao = TipoRenderizacaoCodigo.Booleano,
+                obrigatoriedade = "SEMPRE",
+                precondicao = new[] { new[] { new { fato = "COR_RACA", @operador = OperadorCodigo.Igual, valor = "PRETA" } } },
+            },
+            // A classificação é baseada em ENEM: a inscrição pede a edição, entre as declaradas.
+            new
+            {
+                fatoCodigo = "EDICAO_ENEM",
+                ordem = 1,
+                rotulo = "Qual edição do ENEM você vai usar?",
+                tipoRenderizacao = TipoRenderizacaoCodigo.SelecaoUnica,
+                obrigatoriedade = "SEMPRE",
+            },
+            .. perguntasDaReserva.Select(static (fato, indice) => (object)new
+            {
+                fatoCodigo = fato,
+                ordem = indice + 2,
+                rotulo = fato,
+                tipoRenderizacao = TipoRenderizacaoCodigo.Booleano,
+                obrigatoriedade = "SEMPRE",
+            }),
+        ];
+
+        return contexto.EnviarAsync(
+            HttpMethod.Put, FormularioDeInscricaoHttp.RotaDosItens(contexto.ProcessoId).ToString(),
+            FormularioDeInscricaoHttp.CorpoDosItens(fatos), ifMatch: null);
+    }
+
+
+    public static Task<HttpResponseMessage> PutRegrasDerivacaoAsync(this ContextoDoEnvelopeFechado contexto)
+    {
+        object[] configuracoes =
+        [
+            new
+            {
+                codigoFato = "EGRESSO_ESCOLA_PUBLICA",
+                regras = new object[]
+                {
+                    new
+                    {
+                        ordem = 0,
+                        contribui = (string?)null,
+                        quando = new[] { new[] { new { fato = "COR_RACA", @operador = OperadorCodigo.Igual, valor = "PRETA" } } },
+                    },
+                },
+            },
+        ];
+
+        return contexto.EnviarAsync(HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/regras-derivacao", configuracoes, ifMatch: null);
+    }
+
+
+    /// <summary>
+    /// Matriz 8×7, fallback AC — a MESMA forma do <c>esquema_args</c> congelado da regra
+    /// <c>REMANEJ-CASCATA-LEI-12711</c> v1 (<c>RegraCatalogoSeed.cs:169-183</c>): para cada
+    /// origem federal, os destinos são as outras 7, na ordem declarada em
+    /// <see cref="ModalidadesFederaisLei12711.Codigos"/> — sem permutar, porque o handler
+    /// compara célula a célula contra o catálogo, não só a forma.
+    /// </summary>
+    public static Task<HttpResponseMessage> PutCascataRemanejamentoAsync(this ContextoDoEnvelopeFechado contexto)
+    {
+        IReadOnlyList<string> origens = ModalidadesFederaisLei12711.Codigos;
+        List<object> destinos = [];
+        foreach (string origem in origens)
+        {
+            string[] destinosDaOrigem = [.. origens.Where(o => o != origem)];
+            for (int i = 0; i < destinosDaOrigem.Length; i++)
+            {
+                destinos.Add(new { modalidadeOrigemCodigo = origem, ordem = i + 1, modalidadeDestinoCodigo = destinosDaOrigem[i] });
+            }
+        }
+
+        return contexto.EnviarAsync(
+            HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/cascata-remanejamento",
+            new
+            {
+                regraCodigo = RegraRemanejamentoCodigo.Cascata,
+                regraVersao = "v1",
+                fallbackCodigo = ModalidadesFederaisLei12711.Ac,
+                destinos,
+            },
+            ifMatch: null);
+    }
+
+
+    public static Task<HttpResponseMessage> PutDocumentosExigidosAsync(this ContextoDoEnvelopeFechado contexto, object[] raizes) =>
+        contexto.EnviarAsync(HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/documentos-exigidos", raizes, ifMatch: null);
+
+
+    public static Task<HttpResponseMessage> PutFormularioAsync(this ContextoDoEnvelopeFechado contexto, string titulo, Guid faseId, string? ifMatch) =>
+        contexto.EnviarAsync(
+            HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{contexto.ProcessoId}/formularios/INSCRICAO",
+            new
+            {
+                faseId,
+                titulo,
+                etapas = new object[]
+                {
+                    new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, titulo = "Dados" },
+                    new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", titulo = "Revisão e aceite" },
+                },
+            },
+            ifMatch);
+
+
+    public static Task<HttpResponseMessage> PutDivulgacaoAsync(this ContextoDoEnvelopeFechado contexto, IReadOnlyList<string>? camposPublicos, string? justificativa, string? ifMatch) =>
+        contexto.EnviarAsync(
+            HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/divulgacao",
+            new { camposPublicos, justificativa }, ifMatch);
+}

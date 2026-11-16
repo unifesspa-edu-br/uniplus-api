@@ -26,6 +26,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoEnvelopeCodec;
+
 /// <summary>
 /// <b>A prova de fidelidade da reidratação</b> (Story #859, ADR-0110): reidratar um envelope
 /// congelado e recanonicalizá-lo reproduz os mesmos bytes, byte a byte, incluindo a preservação
@@ -50,20 +52,14 @@ using Xunit;
 /// <c>RestaurarConfiguracaoPersistenciaTests</c>.
 /// </para>
 /// </remarks>
-public sealed partial class EnvelopeCodecRoundTripTests
+public sealed class EnvelopeCodecRoundTripTests
 {
     // ── Round-trip byte-a-byte, com o encoder DA VERSÃO ──
 
     [Fact(DisplayName = "Reidratar a versão 1 e recanonicalizá-la reproduz os bytes congelados, inteiros")]
     public void RoundTrip_VersaoDeAbertura()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
-
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
-
-        AssertRoundTrip(processo, versao, congelado);
+        ConferirRoundTripDaVersaoDeAbertura();
     }
 
     private static FaseCronograma FaseDeHabilitacaoDepoisDasDemais(ProcessoSeletivo processo) => FaseCronograma.Criar(

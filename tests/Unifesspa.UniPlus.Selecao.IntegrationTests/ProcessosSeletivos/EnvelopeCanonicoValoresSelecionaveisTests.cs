@@ -94,7 +94,7 @@ public sealed class EnvelopeCanonicoValoresSelecionaveisTests
 
         SnapshotCanonico canonico = CanonicalizarComValoresDaCorRaca(empatados);
 
-        JsonArray valoresCorRaca = ValoresSelecionaveisDoFato(EnvelopeCodecRoundTripTests.Envelope(canonico), "COR_RACA");
+        JsonArray valoresCorRaca = ValoresSelecionaveisDoFato(ApoioDoEnvelopeCodec.Envelope(canonico), "COR_RACA");
 
         CodigosDosValores(valoresCorRaca).Should().Equal(
             ["ALFA", "ZETA"],

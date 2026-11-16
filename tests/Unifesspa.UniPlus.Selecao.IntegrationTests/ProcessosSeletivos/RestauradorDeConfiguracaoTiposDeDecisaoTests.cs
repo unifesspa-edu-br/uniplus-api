@@ -7,12 +7,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 using Xunit;
 
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoRestauradorDeConfiguracao;
+
 /// <summary>
 /// Os tipos de decisão declarados por fase e etapa ainda não entram no envelope congelado nem no hash da
 /// publicação. Estas provas caracterizam essa limitação pelo caminho real da restauração, em que a prova em
 /// sombra aprova e o grafo devolvido é aplicado à raiz viva, e não pela reposição direta da entidade.
 /// </summary>
-public sealed partial class RestauradorDeConfiguracaoTests
+public sealed class RestauradorDeConfiguracaoTiposDeDecisaoTests
 {
     private const string TipoDeClassificacao = TipoMotivoDeDecisaoCodigo.Classificacao;
     private const string TipoDeIsencaoDaTaxa = TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa;

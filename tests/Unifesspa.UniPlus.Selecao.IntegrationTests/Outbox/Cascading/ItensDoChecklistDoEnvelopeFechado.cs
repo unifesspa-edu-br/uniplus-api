@@ -36,13 +36,19 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed partial class EnvelopeFechadoE2ETests
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.CatalogosDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.CheckpointsDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.ItensDoChecklistDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PassosDoEnvelopeFechado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.PayloadsDoEnvelopeFechado;
+
+internal static class ItensDoChecklistDoEnvelopeFechado
 {
     /// <summary>
     /// O conjunto exato de itens que este corpus produz: remover um item do checklist, ou
     /// acrescentar um item indevido marcado ok, muda este conjunto.
     /// </summary>
-    private static readonly string[] ItensEsperadosDoChecklist =
+    internal static readonly string[] ItensEsperadosDoChecklist =
     [
         // ── PendenciaDeConformidade (itens estruturais originais) ──
         "atendimento_especializado_ausente",

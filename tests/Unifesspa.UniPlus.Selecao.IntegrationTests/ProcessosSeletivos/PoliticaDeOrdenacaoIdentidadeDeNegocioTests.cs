@@ -17,7 +17,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
-public sealed partial class PoliticaDeOrdenacaoTests
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDaPoliticaDeOrdenacao;
+
+public sealed class PoliticaDeOrdenacaoIdentidadeDeNegocioTests
 {
     [Fact(DisplayName = "documentosExigidos.metadadosFatos[].valoresDominioDeclarados: Ordem governa sobre o Codigo — oráculo de sequência exata")]
     public void MetadadosFatos_ValoresDominioDeclarados_OrdemGovernaSobreCodigo()
@@ -64,7 +66,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
         };
 
         ProcessoSeletivo processo = Montar();
-        JsonArray declaradosJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo, metadados)))
+        JsonArray declaradosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo, metadados)))
             ["documentosExigidos"]!["metadadosFatos"]![0]!["valoresDominioDeclarados"]!.AsArray();
 
         declaradosJson.Select(static v => v!["valorCodigo"]!.GetValue<string>()).Should().Equal(
@@ -109,7 +111,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
 
         ProcessoSeletivo processo = Montar(atendimentoEspecializado: atendimento);
 
-        JsonObject atendimentoJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["atendimento"]!.AsObject();
+        JsonObject atendimentoJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["atendimento"]!.AsObject();
 
         atendimentoJson["condicoes"]!.AsArray().Select(static c => c!["condicaoNome"]!.GetValue<string>()).Should().Equal(
             ["Zeta Nome", "Alfa Nome", "Atendimento PCD"],
@@ -149,7 +151,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
 
         ProcessoSeletivo processo = Montar(cronogramaFases: [fase], documentosExigidos: [raizMaior, raizMenor]);
 
-        JsonArray exigenciasJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["documentosExigidos"]!["exigencias"]!.AsArray();
+        JsonArray exigenciasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["documentosExigidos"]!["exigencias"]!.AsArray();
 
         exigenciasJson.Should().HaveCount(2, "pré-condição: duas exigências, mesma fase, TipoDocumentoOrigemId distintos");
         exigenciasJson.Select(static e => e!["tipoDocumentoNome"]!.GetValue<string>()).Should().Equal(
@@ -183,7 +185,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
 
         ProcessoSeletivo processo = Montar(cronogramaFases: [fase], documentosExigidos: [raizComIdMaior, raizComIdMenor]);
 
-        JsonArray exigenciasJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["documentosExigidos"]!["exigencias"]!.AsArray();
+        JsonArray exigenciasJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))["documentosExigidos"]!["exigencias"]!.AsArray();
 
         exigenciasJson.Select(static e => e!["tipoDocumentoNome"]!.GetValue<string>()).Should().Equal(
             ["Alfa Documento", "Zeta Documento"],
@@ -213,7 +215,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
 
         ProcessoSeletivo processo = Montar(fatosColetados: [fatoA, fatoB]);
 
-        JsonObject grafoJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))
+        JsonObject grafoJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))
             ["grafoDependencia"]!.AsObject();
 
         // Só os nós do caso: o formulário de inscrição traz também os do conjunto básico.
@@ -289,7 +291,7 @@ public sealed partial class PoliticaDeOrdenacaoTests
         ProcessoSeletivo processo = Montar();
         processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        JsonArray municipiosJson = EnvelopeCodecRoundTripTests.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))
+        JsonArray municipiosJson = ApoioDoEnvelopeCodec.Envelope(Canonicalizador.Canonicalizar(Entrada(processo)))
             ["bonusRegional"]!["municipios"]!.AsArray();
 
         municipiosJson.Should().HaveCount(2, "pré-condição: dois municípios sob o mesmo código IBGE");
