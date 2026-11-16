@@ -119,13 +119,24 @@ public sealed class TransicoesDaVersaoSequenciaTests
     public void Fechar_RecusadoPorPortao_MantemASessaoNaMesmaRevisao()
     {
         ProcessoSeletivo emSessao = ProcessoEmEdicaoDeTeste.EmSessao();
-        VersaoConfiguracao deOutroProcesso = VersaoDe(ProcessoConformeFactory.Criar());
-        PrecondicaoIfMatch atual = PrecondicaoIfMatch.DeTags([emSessao.ETagDaSessaoEditorial!]);
+        VersaoConfiguracao versao = VersaoDe(emSessao);
+        emSessao.DefinirCronogramaFases([FaseSemUnidade(emSessao)], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        int revisao = emSessao.Rascunho!.Revisao;
 
-        Result<VersaoConfiguracao> resultado = Fechar(emSessao, deOutroProcesso, atual);
+        Result<VersaoConfiguracao> resultado = Fechar(emSessao, versao, PrecondicaoIfMatch.DeTags([emSessao.ETagDaSessaoEditorial!]));
 
-        resultado.IsFailure.Should().BeTrue();
-        emSessao.Rascunho!.Revisao.Should().Be(1);
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
+        emSessao.Rascunho!.Revisao.Should().Be(revisao);
+    }
+
+    private static FaseCronograma FaseSemUnidade(ProcessoSeletivo processo)
+    {
+        FaseCronograma atual = processo.CronogramaFases.Single();
+        return FaseCronograma.Criar(
+            atual.Ordem, atual.FaseCanonicaOrigemId, atual.Codigo, atual.OrigemData,
+            atual.AgrupaEtapas, atual.PermiteComplementacao, atual.ColetaInscricao, atual.ColetaSolicitacaoIsencao,
+            atual.Inicio, atual.Fim, [.. atual.Produtos], atual.FaseConcluinteCodigo, atual.EmiteParecerIndividual,
+            [.. atual.BancasRequeridas], atual.RegraRecurso, unidadeResponsavel: null).Value!;
     }
 
     private static Result<VersaoConfiguracao> Fechar(ProcessoSeletivo p, VersaoConfiguracao versao, PrecondicaoIfMatch precondicao) =>

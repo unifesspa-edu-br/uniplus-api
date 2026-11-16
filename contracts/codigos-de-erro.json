@@ -8047,11 +8047,6 @@
       "titulo": "Outra publicação concorrente já criou esta versão da configuração"
     },
     {
-      "codigo": "uniplus.selecao.versao_configuracao.versao_anterior_de_outro_processo",
-      "status": 422,
-      "titulo": "A cadeia de versões não atravessa certames"
-    },
-    {
       "codigo": "uniplus.selecao.versao_configuracao.versao_de_outro_processo",
       "status": 422,
       "titulo": "A configuração congelada de um certame não se repõe em outro"
