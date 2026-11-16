@@ -110,6 +110,7 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "cronograma_banca_de_recursos_sem_recorte",
         "cronograma_banca_com_regra_de_deliberacao",
         "cronograma_banca_com_o_minimo_de_integrantes",
+        "etapa_correcao_independente_com_dois_corretores",
         // ── PendenciaDaCascata, detalhamento por razão ──
         "cascata_modalidade_fora_do_regime_federal",
         "cascata_origem_ausente",

@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
@@ -31,20 +32,22 @@ internal sealed record PortoesDeIdentificacao(
     internal Func<DomainError?>[] EmOrdem() => [IdentificadorLegivel, Localidade, AlgoritmoDeContagem, CalendarioVigente];
 }
 
-/// <summary>Os portões da estrutura da configuração: conformidade, cronograma, procedimentos de recurso e bancas.</summary>
+/// <summary>Os portões da estrutura da configuração: conformidade, cronograma, procedimentos de recurso, bancas e correção independente.</summary>
 internal sealed record PortoesDaEstrutura(
     Func<DomainError?> Conformidade,
     Func<DomainError?> Cronograma,
     Func<DomainError?> ProcedimentosDeRecurso,
-    Func<DomainError?> Bancas)
+    Func<DomainError?> Bancas,
+    Func<DomainError?> CorrecaoIndependente)
 {
     internal static PortoesDaEstrutura Para(EstadoDaConfiguracao estado, PedidoDeCongelamento pedido) => new(
         Conformidade: () => ChecklistDeConformidade.PendenciaDeConformidade(estado),
         Cronograma: () => PendenciasDoCronograma.PendenciaDoCronograma(estado, pedido.Contexto.FusoInstitucional),
         ProcedimentosDeRecurso: () => PendenciasDosProcedimentosDeRecurso.PendenciaDosProcedimentosDeRecurso(estado),
-        Bancas: () => PendenciasDasBancas.PendenciaDasBancas(estado, pedido.Corretores));
+        Bancas: () => PendenciasDasBancas.PendenciaDasBancas(estado, pedido.Corretores),
+        CorrecaoIndependente: () => PendenciasDaCorrecaoIndependente.PendenciaDaCorrecaoIndependente(estado, pedido.Corretores));
 
-    internal Func<DomainError?>[] EmOrdem() => [Conformidade, Cronograma, ProcedimentosDeRecurso, Bancas];
+    internal Func<DomainError?>[] EmOrdem() => [Conformidade, Cronograma, ProcedimentosDeRecurso, Bancas, CorrecaoIndependente];
 }
 
 /// <summary>Os portões dos tipos de ato que o cronograma declara.</summary>

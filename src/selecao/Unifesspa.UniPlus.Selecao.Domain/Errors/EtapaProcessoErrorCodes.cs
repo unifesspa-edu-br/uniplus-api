@@ -19,7 +19,8 @@ public static class EtapaProcessoErrorCodes
     public const string RegraDeConsolidacaoInvalida = "EtapaProcesso.RegraDeConsolidacaoInvalida";
     public const string PassoNaFormaObjetiva = "EtapaProcesso.PassoNaFormaObjetiva";
     public const string FormaObjetivaEmTipoQueExigeCorrecaoIndependente = "EtapaProcesso.FormaObjetivaEmTipoQueExigeCorrecaoIndependente";
-    public const string AvaliacaoUnicaEmTipoQueExigeCorrecaoIndependente = "EtapaProcesso.AvaliacaoUnicaEmTipoQueExigeCorrecaoIndependente";
+    public const string CorrecaoIndependenteComMenosDeDoisCorretores = "EtapaProcesso.CorrecaoIndependenteComMenosDeDoisCorretores";
+    public const string RegraDeConsolidacaoNaoResolvida = "EtapaProcesso.RegraDeConsolidacaoNaoResolvida";
     public const string FormaDeAvaliacaoDesconhecida = "EtapaProcesso.FormaDeAvaliacaoDesconhecida";
     public const string ItensNaEtapaDoEnem = "EtapaProcesso.ItensNaEtapaDoEnem";
     public const string EscalaSemItens = "EtapaProcesso.EscalaSemItens";

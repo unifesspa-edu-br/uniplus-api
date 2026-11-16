@@ -7,11 +7,27 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
-/// Recusas do acesso ao processo, dos catálogos de apoio e da configuração base do processo seletivo.
+/// Recusas do acesso ao processo, dos catálogos de apoio e da configuração base do processo seletivo. As da
+/// etapa e as dos formulários vêm das famílias próprias; a ordem vale, porque o registro global guarda o último
+/// mapeamento de um código repetido.
 /// </summary>
 internal static class ErrosDoProcessoSeletivo
 {
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
+    [
+        .. AcessoEConsultaDoProcesso(),
+        .. ContagemDosPrazos(),
+        .. CalendarioDeDiasUteisCongelado(),
+        .. TiposCongelados(),
+        .. CatalogosDeApoio(),
+        .. ErrosDaEtapaDoProcesso.Mapeamentos(),
+        .. IdentificacaoDoCertame(),
+        .. BonusRegionalDoProcesso(),
+        .. ErrosDosFormulariosDoProcesso.Mapeamentos(),
+        .. AtendimentoEspecializado(),
+    ];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> AcessoEConsultaDoProcesso() =>
     [
         // Acesso às operações do processo, decidido por concessão na unidade dona (ADR-0078, ADR-0151).
         new(ProcessoSeletivoErrorCodes.SemPermissaoNaUnidade, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.auth.forbidden", "Acesso negado")),
@@ -19,12 +35,12 @@ internal static class ErrosDoProcessoSeletivo
         new(ProcessoSeletivoErrorCodes.ImpedidoPorInscricaoNoProcesso, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.auth.impedido_por_inscricao_no_processo", "Impedido de atuar no processo seletivo")),
         // O token não traz o que identifica o solicitante: não houve decisão de acesso a tomar, e a borda responde 401.
         new(ProcessoSeletivoErrorCodes.IdentidadeIncompleta, new DomainErrorMapping(StatusCodes.Status401Unauthorized, "uniplus.selecao.processo_seletivo.identidade_incompleta", "Identidade do solicitante incompleta")),
-        // Configuração do Processo Seletivo (UNI-REQ-0014/0015).
-        // Invariantes do agregado-raiz nesta fatia: etapas e atendimento
-        // especializado (ADR-0067). Vagas/bônus/desempate/classificação entram
-        // depois, sobre o catálogo de regras, com seus próprios códigos.
         new("ProcessoSeletivo.NaoEncontrado", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.processo_seletivo.nao_encontrado", "Processo Seletivo não encontrado")),
         new("ProcessoSeletivo.OcorrenciaSimuladaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ocorrencia_simulada_invalida", "Ocorrência simulada sem identidade própria no grupo")),
+    ];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> ContagemDosPrazos() =>
+    [
         new("ProcessoSeletivo.LocalidadeAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.localidade_ausente", "Localidade que rege a contagem dos prazos não declarada")),
         new("ProcessoSeletivo.FusoInstitucionalNaoReconhecido", new DomainErrorMapping(StatusCodes.Status500InternalServerError, "uniplus.selecao.processo_seletivo.fuso_institucional_nao_reconhecido", "O fuso institucional aplicado não é uma zona reconhecida")),
         new("ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.algoritmo_contagem_prazo_nao_declarado", "Convenção de contagem dos prazos não declarada")),
@@ -35,12 +51,20 @@ internal static class ErrosDoProcessoSeletivo
         new(DiaNaoUtilCongeladoErrorCodes.UfAusenteEmDiaEstadual, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dia_nao_util_congelado.uf_ausente_em_dia_estadual", "Dia de abrangência estadual exige a UF")),
         new(DiaNaoUtilCongeladoErrorCodes.UfInvalida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dia_nao_util_congelado.uf_invalida", "UF do dia não útil não é uma unidade federativa reconhecida")),
         new(DiaNaoUtilCongeladoErrorCodes.TerritorioEmDiaSemRecorte, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.dia_nao_util_congelado.territorio_em_dia_sem_recorte", "Dia sem recorte territorial não carrega município nem UF")),
+    ];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> CalendarioDeDiasUteisCongelado() =>
+    [
         new(CalendarioDiasUteisCongeladoErrorCodes.OrigemObrigatoria, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.calendario_dias_uteis_congelado.origem_obrigatoria", "Identificador do calendário de origem é obrigatório")),
         new(CalendarioDiasUteisCongeladoErrorCodes.VersaoDatasetObrigatoria, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.calendario_dias_uteis_congelado.versao_dataset_obrigatoria", "Versão do dataset do calendário é obrigatória")),
         new(CalendarioDiasUteisCongeladoErrorCodes.VersaoDatasetTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.calendario_dias_uteis_congelado.versao_dataset_tamanho", "Versão do dataset do calendário excede o tamanho permitido")),
         new(CalendarioDiasUteisCongeladoErrorCodes.DiasObrigatorios, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.calendario_dias_uteis_congelado.dias_obrigatorios", "A lista de dias não úteis congelados é obrigatória")),
         new(CalendarioDiasUteisCongeladoErrorCodes.SemDiaNaoUtil, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.calendario_dias_uteis_congelado.sem_dia_nao_util", "O calendário congelado precisa ter ao menos um dia não útil")),
         new(CalendarioDiasUteisCongeladoErrorCodes.DiaDuplicado, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.calendario_dias_uteis_congelado.dia_duplicado", "O calendário congelado traz o mesmo dia não útil mais de uma vez")),
+    ];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> TiposCongelados() =>
+    [
         new("TipoProcessoSnapshot.OrigemIdObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.tipo_processo_snapshot.origem_id_obrigatorio", "Origem do tipo de processo seletivo é obrigatória")),
         new("TipoProcessoSnapshot.CodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.tipo_processo_snapshot.codigo_obrigatorio", "Código do tipo de processo seletivo é obrigatório")),
         new("TipoProcessoSnapshot.NomeObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.tipo_processo_snapshot.nome_obrigatorio", "Nome do tipo de processo seletivo é obrigatório")),
@@ -52,6 +76,10 @@ internal static class ErrosDoProcessoSeletivo
         new("TipoEtapaSnapshot.NotaDeOrigemNoEnemSemPontuacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.tipo_etapa_snapshot.nota_de_origem_no_enem_sem_pontuacao", "Snapshot do tipo de etapa com nota de origem no ENEM deve admitir compor a nota final")),
         new("TipoEtapaSnapshot.CaractereNulo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.tipo_etapa_snapshot.caractere_nulo", "Snapshot do tipo de etapa contém caractere nulo ou que não é texto")),
         new("TipoEtapaSnapshot.TamanhoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.tipo_etapa_snapshot.tamanho_invalido", "Snapshot do tipo de etapa excede o tamanho permitido")),
+    ];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> CatalogosDeApoio() =>
+    [
         new("GrupoAreaEnemSnapshot.CodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.grupo_area_enem_snapshot.codigo_obrigatorio", "Código do grupo de área do ENEM é obrigatório")),
         new("GrupoAreaEnemSnapshot.RotuloObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.grupo_area_enem_snapshot.rotulo_obrigatorio", "Rótulo do grupo de área do ENEM é obrigatório")),
         new("GrupoAreaEnemSnapshot.CaractereNulo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.grupo_area_enem_snapshot.caractere_nulo", "Grupo de área do ENEM contém caractere nulo ou que não é texto")),
@@ -59,51 +87,10 @@ internal static class ErrosDoProcessoSeletivo
         new("GrupoAreaEnemSnapshot.TamanhoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.grupo_area_enem_snapshot.tamanho_invalido", "Grupo de área do ENEM excede o tamanho permitido")),
         new("CalendarioVigente.FormaTerritorialInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.calendario_vigente.forma_territorial_invalida", "O calendário vigente traz dia com recorte territorial incoerente com a abrangência")),
         new("ProcessoSeletivo.AlgoritmoContagemPrazoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.algoritmo_contagem_prazo_nao_encontrado", "Algoritmo de contagem não encontrado no catálogo de regras")),
-        new("ProcessoSeletivo.EtapasVazias", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapas_vazias", "O processo deve ter ao menos uma etapa pontuada")),
-        new("ProcessoSeletivo.OrdemEtapaDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_etapa_duplicada", "Ordem de etapa duplicada no processo")),
-        new("ProcessoSeletivo.IdEtapaDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.id_etapa_duplicado", "O mesmo Id de etapa foi informado mais de uma vez no payload")),
-        new("EtapaProcesso.NomeObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.nome_obrigatorio", "O nome da etapa é obrigatório")),
-        new("EtapaProcesso.NomeTamanho", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.nome_tamanho", "O nome da etapa excede o tamanho máximo permitido")),
-        new("EtapaProcesso.CaraterObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.carater_obrigatorio", "Caráter da etapa é obrigatório (classificatória, eliminatória ou ambas)")),
-        new("EtapaProcesso.PesoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.peso_invalido", "O peso da etapa, quando informado, deve ser maior que zero")),
-        new("EtapaProcesso.NotaMinimaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.nota_minima_invalida", "A nota mínima, quando informada, não pode ser negativa")),
-        new("EtapaProcesso.NotaMaximaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.nota_maxima_invalida", "A nota máxima, quando informada, deve ser maior que zero")),
-        new("EtapaProcesso.PassoDoLancamentoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.passo_do_lancamento_invalido", "O passo do lançamento, quando informado, deve ser maior que zero")),
-        new("EtapaProcesso.NotaMinimaAcimaDaNotaMaxima", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.nota_minima_acima_da_nota_maxima", "A nota mínima não pode passar da nota máxima da etapa")),
-        new("EtapaProcesso.NotaMaximaForaDoPasso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.nota_maxima_fora_do_passo", "A nota máxima deve ser múltipla do passo do lançamento")),
-        new("EtapaProcesso.FormaDeAvaliacaoDesconhecida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.forma_de_avaliacao_desconhecida", "A forma de avaliação declarada não existe: use OBJETIVA ou HUMANA")),
-        new("EtapaProcesso.AvaliacaoNaEtapaDoEnem", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.avaliacao_na_etapa_do_enem", "A etapa de nota do ENEM não declara forma de avaliação nem regra de consolidação")),
-        new("EtapaProcesso.RegraDeConsolidacaoForaDaFormaHumana", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.regra_de_consolidacao_fora_da_forma_humana", "A regra de consolidação só se aplica à etapa de avaliação humana")),
-        new("EtapaProcesso.RegraDeConsolidacaoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.regra_de_consolidacao_invalida", "A regra declarada não é uma regra de consolidação do catálogo")),
-        new("EtapaProcesso.PassoNaFormaObjetiva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.passo_na_forma_objetiva", "O passo do lançamento só se aplica à etapa de avaliação humana")),
-        new("EtapaProcesso.FormaObjetivaEmTipoQueExigeCorrecaoIndependente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.forma_objetiva_em_tipo_que_exige_correcao_independente", "O tipo da etapa exige correção independente, que só existe na avaliação humana")),
-        new("EtapaProcesso.AvaliacaoUnicaEmTipoQueExigeCorrecaoIndependente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.avaliacao_unica_em_tipo_que_exige_correcao_independente", "O tipo da etapa exige correção independente, e a avaliação única tem um só corretor")),
-        new("EtapaProcesso.ItensNaEtapaDoEnem", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.itens_na_etapa_do_enem", "A etapa de nota do ENEM não declara itens de avaliação nem escala de atendimento")),
-        new("EtapaProcesso.EscalaSemItens", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.escala_sem_itens", "A escala de atendimento só vale em etapa com itens de avaliação")),
-        new("EtapaProcesso.EscalaNaFormaObjetiva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.escala_na_forma_objetiva", "A escala de atendimento só se aplica à etapa de avaliação humana")),
-        new("EtapaProcesso.PassoComEscalaDeAtendimento", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.passo_com_escala_de_atendimento", "A etapa com escala de atendimento não declara passo do lançamento")),
-        new("ItemDeAvaliacao.RotuloInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.item_de_avaliacao.rotulo_invalido", "O rótulo do item de avaliação é obrigatório e tem tamanho máximo")),
-        new("ItemDeAvaliacao.RotuloDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.item_de_avaliacao.rotulo_duplicado", "O rótulo do item de avaliação não pode se repetir na etapa")),
-        new("ItemDeAvaliacao.IdDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.item_de_avaliacao.id_duplicado", "O mesmo id de item de avaliação não pode ser informado duas vezes na etapa")),
-        new("ItemDeAvaliacao.PontuacaoMaximaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.item_de_avaliacao.pontuacao_maxima_invalida", "A pontuação máxima do item de avaliação deve ser maior que zero")),
-        new("ItemDeAvaliacao.PontuacaoForaDoPasso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.item_de_avaliacao.pontuacao_fora_do_passo", "A pontuação máxima do item deve ser múltipla do passo do lançamento")),
-        new("NivelDeAtendimento.RotuloInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.nivel_de_atendimento.rotulo_invalido", "O rótulo do nível de atendimento é obrigatório e tem tamanho máximo")),
-        new("NivelDeAtendimento.FracaoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.nivel_de_atendimento.fracao_invalida", "A fração do nível de atendimento deve estar entre 0 e 1")),
-        new("NivelDeAtendimento.Duplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.nivel_de_atendimento.duplicado", "O nível de atendimento não pode se repetir na escala")),
-        new("NivelDeAtendimento.SemNivelCompleto", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.nivel_de_atendimento.sem_nivel_completo", "A escala de atendimento precisa de um nível que valha a pontuação inteira")),
-        new("EtapaProcesso.OrdemInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.ordem_invalida", "A ordem da etapa, quando informada, deve ser maior que zero")),
-        new("EtapaProcesso.PesoSemCaraterQuePontua", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.peso_sem_carater_que_pontua", "Peso só se aplica a etapa cujo caráter compõe a nota final")),
-        new("EtapaProcesso.NotaMinimaSemCaraterQueElimina", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.nota_minima_sem_carater_que_elimina", "Nota mínima só se aplica a etapa cujo caráter elimina")),
-        new("EtapaProcesso.CaraterNaoAdmitidoPeloTipo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.carater_nao_admitido_pelo_tipo", "O tipo de etapa não admite o caráter declarado")),
-        new("ProcessoSeletivo.NenhumaEtapaComponeNota", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.nenhuma_etapa_compoe_nota", "Ao menos uma etapa deve compor a nota final")),
-        new("ProcessoSeletivo.EtapaNotaEnemDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_nota_enem_duplicada", "O processo admite uma única etapa de nota do ENEM")),
-        new("ProcessoSeletivo.EtapaNotaEnemNaoCompoeNota", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_nota_enem_nao_compoe_nota", "Etapa de nota do ENEM deve compor a média, com caráter classificatória ou ambas e peso")),
-        new("ProcessoSeletivo.EtapaNotaEnemComBanca", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_nota_enem_com_banca", "Etapa de nota do ENEM não admite banca")),
-        new("ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_nota_enem_com_produto_ou_recurso_em_ato", "Etapa de nota do ENEM não declara produto nem recurso ancorado em ato; o recurso coletivo é o da regra de recurso da fase")),
-        new("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_nota_enem_sem_classificacao_enem", "Etapa de nota do ENEM exige classificação baseada em ENEM pela média ponderada")),
-        new("ProcessoSeletivo.EtapaReferenciadaPorClassificacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_referenciada_por_classificacao", "Etapa referenciada por regra de eliminação da classificação")),
-        // Identificador legível do certame: forma, obrigatoriedade na geração de
-        // versão, imutabilidade depois de constar em versão publicada e unicidade entre processos.
+    ];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> IdentificacaoDoCertame() =>
+    [
         new(ProcessoSeletivoErrorCodes.IdentificadorLegivelTamanho, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.identificador_legivel_tamanho", "O identificador legível deve ter entre 3 e 64 caracteres")),
         new(ProcessoSeletivoErrorCodes.IdentificadorLegivelFormatoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.identificador_legivel_formato_invalido", "O identificador legível deve estar em kebab-case")),
         new(ProcessoSeletivoErrorCodes.IdentificadorLegivelComFormatoDeGuid, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.identificador_legivel_com_formato_de_guid", "O identificador legível não pode ter a forma de um identificador técnico")),
@@ -112,6 +99,10 @@ internal static class ErrosDoProcessoSeletivo
         new(ProcessoSeletivoErrorCodes.OpcoesDeCursoInvalido, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.opcoes_de_curso_invalido", "O número de opções de curso deve ser 1 ou 2")),
         new(ProcessoSeletivoErrorCodes.ConflitoDeConcorrencia, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.processo_seletivo.conflito_de_concorrencia", "O processo foi alterado concorrentemente; tente novamente", RetryableConflict: true)),
         new(ProcessoSeletivoErrorCodes.OpcoesDeCursoAcimaDasOfertas, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.opcoes_de_curso_acima_das_ofertas", "Com 2 opções de curso, cadastre pelo menos dois cursos")),
+    ];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> BonusRegionalDoProcesso() =>
+    [
         new(ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.bonus_regional_aplica_sem_configuracao", "O processo que aplica o bônus regional precisa da configuração do bônus")),
         new(ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.bonus_regional_nao_aplica_com_configuracao", "O processo que não aplica o bônus regional não pode ter a configuração do bônus")),
         new(ProcessoSeletivoErrorCodes.FatoElegibilidadeAusente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_elegibilidade_ausente", "O processo com inscrição própria que aplica o acréscimo precisa citar o fato que decide quem o recebe")),
@@ -121,32 +112,10 @@ internal static class ErrosDoProcessoSeletivo
         new(ProcessoSeletivoErrorCodes.FatoElegibilidadeConhecidoDepoisDaInscricao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_elegibilidade_conhecido_depois_da_inscricao", "O fato que decide quem recebe o acréscimo só é conhecido depois da inscrição")),
         new(ProcessoSeletivoErrorCodes.FatoElegibilidadeDaIsencao, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fato_elegibilidade_da_isencao", "O fato que decide quem recebe o acréscimo depende do que só a isenção coleta")),
         new(ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso, new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.processo_seletivo.identificador_legivel_em_uso", "O identificador legível já é usado por outro processo seletivo")),
-        new("FormularioProcesso.FaseForaDoCronograma", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.fase_fora_do_cronograma", "A fase do formulário não está no cronograma do processo")),
-        new("FormularioProcesso.FaseIncoerenteComFinalidade", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.fase_incoerente_com_finalidade", "A fase do formulário não é a que a finalidade pede")),
-        new("FormularioProcesso.IsencaoSemTaxa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.isencao_sem_taxa", "Formulário de isenção de taxa em processo que não cobra taxa")),
-        new("FormularioProcesso.FormularioInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.formulario_inexistente", "O processo não tem formulário dessa finalidade")),
-        new("FormularioProcesso.RemocaoSoEmRascunho", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.remocao_so_em_rascunho", "A retificação acrescenta formulário, mas não remove")),
-        new("FormularioProcesso.AplicacaoDeModeloSoEmRascunho", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.aplicacao_de_modelo_so_em_rascunho", "O modelo se aplica só em rascunho")),
-        new("AplicacaoDeModelo.ModeloInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.aplicacao_de_modelo.modelo_inexistente", "O modelo de formulário informado não existe")),
-        new("AplicacaoDeModelo.ModeloInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.aplicacao_de_modelo.modelo_inativo", "O modelo de formulário está desativado")),
-        new("AplicacaoDeModelo.TipoDeProcessoDiferente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.aplicacao_de_modelo.tipo_de_processo_diferente", "O modelo é de outro tipo de processo")),
-        new("AplicacaoDeModelo.PressupostoAusente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.aplicacao_de_modelo.pressuposto_ausente", "O modelo cita fato que a inscrição do processo não coleta")),
-        new("AplicacaoDeModelo.SemDistribuicaoDeVagas", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.aplicacao_de_modelo.sem_distribuicao_de_vagas", "O modelo cita a modalidade, e o processo não tem distribuição de vagas")),
-        new(AplicacaoDeModeloErrorCodes.SemCotaDaLeiOfertada, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.aplicacao_de_modelo.sem_cota_da_lei_ofertada", "O modelo cita a opção pelas cotas da lei, e o processo não oferta cota da lei")),
-        new(AplicacaoDeModeloErrorCodes.FaseDoDocumentoInexistente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.aplicacao_de_modelo.fase_do_documento_inexistente", "O modelo exige documento em fase que o cronograma do processo não tem")),
-        new(AplicacaoDeModeloErrorCodes.TipoDeDocumentoInexistente, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.aplicacao_de_modelo.tipo_de_documento_inexistente", "O modelo exige tipo de documento que o catálogo não tem")),
-        new("AplicacaoDeModelo.DerivadoSemRegra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.aplicacao_de_modelo.derivado_sem_regra", "O modelo cita derivado sem regra no processo nem no catálogo")),
-        new("ProcessoSeletivo.InscricaoSemConjuntoBasico", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.inscricao_sem_conjunto_basico", "O formulário de inscrição não coleta o conjunto básico de dados do candidato")),
-        new("ProcessoSeletivo.InscricaoSemEdicaoDoEnem", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.inscricao_sem_edicao_do_enem", "A classificação usa as notas do ENEM, e o formulário de inscrição não pede a edição a todo candidato")),
-        new("ProcessoSeletivo.EdicaoDoEnemSemClassificacaoEnem", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.edicao_do_enem_sem_classificacao_enem", "Um formulário pede a edição do ENEM, e a classificação não usa as notas do ENEM")),
-        new("ProcessoSeletivo.InscricaoSemFormulario", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.inscricao_sem_formulario", "Processo com inscrição própria sem formulário de inscrição")),
-        new("ProcessoSeletivo.FaseReferenciadaPorFormulario", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_referenciada_por_formulario", "A fase é usada por um formulário e não pode sair do cronograma")),
-        new("ProcessoSeletivo.FormularioSemFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.formulario_sem_fase", "O formulário ainda não declara a fase em que é respondido")),
-        new("ProcessoSeletivo.ItemDoFormularioForaDeSecao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.item_do_formulario_fora_de_secao", "Item do formulário fora de uma seção ou da ordem das seções")),
-        new("TermoExigidoFormulario.ObrigatoriedadeInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.termo_exigido_formulario.obrigatoriedade_invalida", "A obrigatoriedade do termo é SEMPRE ou NUNCA sem predicado, ou QUANDO com predicado")),
-        new("TermoExigidoFormulario.EntradaMalformada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.termo_exigido_formulario.entrada_malformada", "A lista de termos ou um dos termos veio nulo")),
-        new("TermoExigidoFormulario.VersaoNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.termo_exigido_formulario.versao_nao_encontrada", "A versão não existe no catálogo de termos ou pertence a outro termo")),
-        new("ProcessoSeletivo.TermoExigidoSemFormaDeAceite", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.termo_exigido_sem_forma_de_aceite", "Termo exigido usa versão sem forma de aceite definida")),
+    ];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> AtendimentoEspecializado() =>
+    [
         new("AtendimentoEspecializado.TipoDeficienciaSemCondicaoPcd", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.atendimento_especializado.tipo_deficiencia_sem_condicao_pcd", "Tipo de deficiência só pode ser ofertado sob a condição PcD")),
         new("AtendimentoEspecializado.CondicaoNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.atendimento_especializado.condicao_nao_encontrada", "Condição de atendimento não encontrada ou não está mais viva")),
         new("AtendimentoEspecializado.RecursoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.atendimento_especializado.recurso_nao_encontrado", "Recurso de acessibilidade não encontrado ou não está mais vivo")),

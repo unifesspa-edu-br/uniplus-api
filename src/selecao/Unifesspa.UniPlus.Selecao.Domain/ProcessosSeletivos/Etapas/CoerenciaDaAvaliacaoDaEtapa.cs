@@ -32,15 +32,9 @@ public static class CoerenciaDaAvaliacaoDaEtapa
             RecusaDaRegra(avaliacao.Forma, avaliacao.RegraConsolidacaoCodigo),
             RecusaDoPasso(avaliacao.Forma, avaliacao.PassoDoLancamento),
             RecusaDaFormaNoTipoQueExigeCorrecao(avaliacao),
-            RecusaDaRegraNoTipoQueExigeCorrecao(avaliacao),
+            .. RecusasDaEscalaDeAtendimento(avaliacao),
         ];
-        List<FieldError> erros = [.. recusas.OfType<FieldError>()];
-        if (avaliacao.DeclaraEscala)
-        {
-            erros.AddRange(RecusasDaEscalaDeAtendimento(avaliacao).OfType<FieldError>());
-        }
-
-        return erros;
+        return [.. recusas.OfType<FieldError>()];
     }
 
     private static List<FieldError> RecusasDaAvaliacaoNaEtapaDoEnem(AvaliacaoParaCoerencia avaliacao) =>
@@ -83,25 +77,22 @@ public static class CoerenciaDaAvaliacaoDaEtapa
             EtapaProcessoErrorCodes.FormaObjetivaEmTipoQueExigeCorrecaoIndependente,
             "O tipo da etapa exige correção independente, que só existe na avaliação humana: na avaliação objetiva ninguém corrige.");
 
-    private static FieldError? RecusaDaRegraNoTipoQueExigeCorrecao(AvaliacaoParaCoerencia avaliacao) =>
-        Recusa(avaliacao.ExigeCorrecaoIndependente && avaliacao.RegraConsolidacaoCodigo == RegraConsolidacaoCodigo.AvaliacaoUnica,
-            "regraConsolidacao", EtapaProcessoErrorCodes.AvaliacaoUnicaEmTipoQueExigeCorrecaoIndependente,
-            "O tipo da etapa exige correção independente, e a avaliação única tem um só corretor: use uma regra de consolidação de mais de um corretor.");
-
     private static FieldError? RecusaDoPasso(FormaDeAvaliacao? forma, decimal? passoDoLancamento) =>
         Recusa(forma == FormaDeAvaliacao.Objetiva && passoDoLancamento is not null, "passoDoLancamento",
             EtapaProcessoErrorCodes.PassoNaFormaObjetiva,
             "O passo do lançamento só se aplica à avaliação humana: na avaliação objetiva ninguém lança a nota.");
 
     private static FieldError?[] RecusasDaEscalaDeAtendimento(AvaliacaoParaCoerencia avaliacao) =>
-    [
-        Recusa(!avaliacao.DeclaraItens, "escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaSemItens,
-            "A escala de atendimento é aplicada a cada item: sem itens de avaliação, não há o que atender."),
-        Recusa(avaliacao.Forma == FormaDeAvaliacao.Objetiva, "escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaNaFormaObjetiva,
-            "A escala de atendimento só se aplica à avaliação humana: na avaliação objetiva ninguém escolhe o nível."),
-        Recusa(avaliacao.PassoDoLancamento is not null, "passoDoLancamento", EtapaProcessoErrorCodes.PassoComEscalaDeAtendimento,
-            "Com escala de atendimento a banca escolhe o nível e não digita a nota, então a etapa não declara passo do lançamento."),
-    ];
+        !avaliacao.DeclaraEscala
+            ? []
+            : [
+                Recusa(!avaliacao.DeclaraItens, "escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaSemItens,
+                    "A escala de atendimento é aplicada a cada item: sem itens de avaliação, não há o que atender."),
+                Recusa(avaliacao.Forma == FormaDeAvaliacao.Objetiva, "escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaNaFormaObjetiva,
+                    "A escala de atendimento só se aplica à avaliação humana: na avaliação objetiva ninguém escolhe o nível."),
+                Recusa(avaliacao.PassoDoLancamento is not null, "passoDoLancamento", EtapaProcessoErrorCodes.PassoComEscalaDeAtendimento,
+                    "Com escala de atendimento a banca escolhe o nível e não digita a nota, então a etapa não declara passo do lançamento."),
+            ];
 
     private static FieldError? Recusa(bool recusar, string campo, string codigo, string mensagem) =>
         recusar ? new FieldError(campo, new DomainError(codigo, mensagem)) : null;

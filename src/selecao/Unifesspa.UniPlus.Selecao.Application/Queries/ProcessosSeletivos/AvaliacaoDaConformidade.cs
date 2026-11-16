@@ -5,6 +5,7 @@ using Abstractions;
 using Domain.Entities;
 using Domain.Interfaces;
 using Domain.ProcessosSeletivos.Bancas;
+using Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Domain.ValueObjects;
 
 using DTOs;

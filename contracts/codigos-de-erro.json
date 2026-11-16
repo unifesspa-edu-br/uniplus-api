@@ -4437,11 +4437,6 @@
       "titulo": "A banca de análise de recursos julga todos os recursos da fase e não declara recorte de competência"
     },
     {
-      "codigo": "uniplus.selecao.banca.regra_de_consolidacao_nao_resolvida",
-      "status": 422,
-      "titulo": "A regra de consolidação de uma etapa julgada pela banca não pôde ser confirmada no catálogo"
-    },
-    {
       "codigo": "uniplus.selecao.banca.regra_de_deliberacao_obrigatoria",
       "status": 422,
       "titulo": "Toda banca declara a regra de deliberação para o processo ser publicado"
@@ -5472,11 +5467,6 @@
       "titulo": "A etapa de nota do ENEM não declara forma de avaliação nem regra de consolidação"
     },
     {
-      "codigo": "uniplus.selecao.etapa_processo.avaliacao_unica_em_tipo_que_exige_correcao_independente",
-      "status": 422,
-      "titulo": "O tipo da etapa exige correção independente, e a avaliação única tem um só corretor"
-    },
-    {
       "codigo": "uniplus.selecao.etapa_processo.banca_duplicada_na_etapa",
       "status": 422,
       "titulo": "O mesmo tipo de banca foi requerido duas vezes na etapa"
@@ -5495,6 +5485,11 @@
       "codigo": "uniplus.selecao.etapa_processo.ciencia_sem_parecer_individual",
       "status": 422,
       "titulo": "O prazo contado da ciência exige que a etapa prometa parecer individual"
+    },
+    {
+      "codigo": "uniplus.selecao.etapa_processo.correcao_independente_com_menos_de_dois_corretores",
+      "status": 422,
+      "titulo": "O tipo da etapa exige correção independente, e a regra de consolidação congelada tem menos de dois corretores distintos"
     },
     {
       "codigo": "uniplus.selecao.etapa_processo.escala_na_forma_objetiva",
@@ -5605,6 +5600,11 @@
       "codigo": "uniplus.selecao.etapa_processo.regra_de_consolidacao_invalida",
       "status": 422,
       "titulo": "A regra declarada não é uma regra de consolidação do catálogo"
+    },
+    {
+      "codigo": "uniplus.selecao.etapa_processo.regra_de_consolidacao_nao_resolvida",
+      "status": 422,
+      "titulo": "A regra de consolidação de uma etapa não pôde ser confirmada no catálogo"
     },
     {
       "codigo": "uniplus.selecao.etapa_processo.tipo_banca_nao_encontrado_ou_inativo",

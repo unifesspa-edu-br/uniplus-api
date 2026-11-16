@@ -17,7 +17,6 @@ public static class BancaErrorCodes
     public const string SemUnanimidadeNaoSeAplica = "Banca.SemUnanimidadeNaoSeAplica";
     public const string RegraDeDeliberacaoObrigatoria = "Banca.RegraDeDeliberacaoObrigatoria";
     public const string IntegrantesAbaixoDoMinimo = "Banca.IntegrantesAbaixoDoMinimo";
-    public const string RegraDeConsolidacaoNaoResolvida = "Banca.RegraDeConsolidacaoNaoResolvida";
     public const string RecorteEmBancaDeRecursos = "Banca.RecorteEmBancaDeRecursos";
     public const string RecursoSemBanca = "Cronograma.RecursoSemBanca";
 }

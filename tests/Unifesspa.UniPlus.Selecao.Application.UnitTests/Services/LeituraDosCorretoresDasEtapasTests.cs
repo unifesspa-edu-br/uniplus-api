@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -30,7 +31,7 @@ public sealed class LeituraDosCorretoresDasEtapasTests
 
         CorretoresDasEtapas corretores = await Ler(catalogo, processo);
 
-        corretores.De(processo.Etapas.Single()).Should().Be(0);
+        corretores.EmCampo(processo.Etapas.Single()).Should().Be(0);
         await catalogo.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, CancellationToken.None);
     }
 
@@ -42,8 +43,8 @@ public sealed class LeituraDosCorretoresDasEtapasTests
 
         CorretoresDasEtapas corretores = await Ler(RegrasDeConsolidacaoDeTeste.Catalogo(), processo);
 
-        corretores.De(processo.Etapas.Single(etapa => etapa.Ordem == 1)).Should().Be(3);
-        corretores.De(processo.Etapas.Single(etapa => etapa.Ordem == 2)).Should().Be(1);
+        corretores.EmCampo(processo.Etapas.Single(etapa => etapa.Ordem == 1)).Should().Be(3);
+        corretores.EmCampo(processo.Etapas.Single(etapa => etapa.Ordem == 2)).Should().Be(1);
     }
 
     [Theory(DisplayName = "A regra que declara o novo corretor põe em campo os distintos e mais um; a que declara a decisão da banca, só os distintos")]
@@ -58,7 +59,7 @@ public sealed class LeituraDosCorretoresDasEtapasTests
 
         CorretoresDasEtapas corretores = await Ler(RegrasDeConsolidacaoDeTeste.Catalogo(regra), processo);
 
-        corretores.De(processo.Etapas.Single()).Should().Be(esperado);
+        corretores.EmCampo(processo.Etapas.Single()).Should().Be(esperado);
     }
 
     [Fact(DisplayName = "A regra de maioria simples do catálogo põe em campo os três corretores e o adicional")]
@@ -68,7 +69,8 @@ public sealed class LeituraDosCorretoresDasEtapasTests
 
         CorretoresDasEtapas corretores = await Ler(RegrasDeConsolidacaoDeTeste.Catalogo(), processo);
 
-        corretores.De(processo.Etapas.Single()).Should().Be(4);
+        corretores.EmCampo(processo.Etapas.Single()).Should().Be(4);
+        corretores.Distintos(processo.Etapas.Single()).Should().Be(3);
     }
 
     [Fact(DisplayName = "Cada referência distinta é lida uma só vez, ainda que várias etapas a compartilhem")]
@@ -82,7 +84,7 @@ public sealed class LeituraDosCorretoresDasEtapasTests
 
         CorretoresDasEtapas corretores = await Ler(catalogo, processo);
 
-        corretores.De(processo.Etapas.Single(etapa => etapa.Ordem == 3)).Should().Be(3);
+        corretores.EmCampo(processo.Etapas.Single(etapa => etapa.Ordem == 3)).Should().Be(3);
         await catalogo.Received(1).ObterAsync(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", Arg.Any<CancellationToken>());
         await catalogo.Received(1).ObterAsync(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", Arg.Any<CancellationToken>());
     }
@@ -97,8 +99,8 @@ public sealed class LeituraDosCorretoresDasEtapasTests
 
         corretores.Resolvida(processo.Etapas.Single(etapa => etapa.Ordem == 1)).Should().BeFalse();
         corretores.Resolvida(processo.Etapas.Single(etapa => etapa.Ordem == 2)).Should().BeTrue();
-        corretores.De(processo.Etapas.Single(etapa => etapa.Ordem == 2)).Should().Be(1);
-        Action ler = () => corretores.De(processo.Etapas.Single(etapa => etapa.Ordem == 1));
+        corretores.EmCampo(processo.Etapas.Single(etapa => etapa.Ordem == 2)).Should().Be(1);
+        Action ler = () => corretores.EmCampo(processo.Etapas.Single(etapa => etapa.Ordem == 1));
         ler.Should().Throw<InvalidOperationException>();
     }
 

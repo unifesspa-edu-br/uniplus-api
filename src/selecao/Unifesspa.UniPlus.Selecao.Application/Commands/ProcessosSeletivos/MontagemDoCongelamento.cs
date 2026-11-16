@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Abstractions;
 
 using Domain.ProcessosSeletivos.Bancas;
+using Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Domain.ProcessosSeletivos.Publicacao;
 using Domain.ValueObjects;
 

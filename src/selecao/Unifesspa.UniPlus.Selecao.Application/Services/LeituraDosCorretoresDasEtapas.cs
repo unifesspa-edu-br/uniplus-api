@@ -2,13 +2,12 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services;
 
 using Domain.Entities;
 using Domain.Interfaces;
-using Domain.ProcessosSeletivos.Bancas;
 using Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Domain.ValueObjects;
 
 /// <summary>
-/// Lê no rol o número de corretores em campo da regra de consolidação que cada etapa do processo referencia: os
-/// corretores distintos e, quando a regra declara o novo corretor para o critério que não converge, o adicional. O
+/// Lê no rol os corretores da regra de consolidação que cada etapa do processo referencia: os distintos e os que ela
+/// põe em campo, com o adicional quando a regra declara o novo corretor para o critério que não converge. O
 /// Domain não lê o catálogo (ADR-0042), então o número chega pronto. O congelamento e a consulta de conformidade usam esta mesma
 /// leitura: o painel avalia as bancas com o conjunto que a publicação avalia.
 /// </summary>
@@ -24,7 +23,7 @@ public sealed class LeituraDosCorretoresDasEtapas(IRegraCatalogoReader regras)
     {
         ArgumentNullException.ThrowIfNull(processo);
 
-        Dictionary<ReferenciaRegra, int> porRegra = [];
+        Dictionary<ReferenciaRegra, CorretoresDaRegra> porRegra = [];
         foreach (ReferenciaRegra referencia in processo.Etapas.Select(static etapa => etapa.RegraConsolidacao).OfType<ReferenciaRegra>().Distinct())
         {
             if (await LerDaRegraAsync(referencia, cancellationToken).ConfigureAwait(false) is { } corretores)
@@ -36,10 +35,13 @@ public sealed class LeituraDosCorretoresDasEtapas(IRegraCatalogoReader regras)
         return new CorretoresDasEtapas(porRegra);
     }
 
-    private async Task<int?> LerDaRegraAsync(ReferenciaRegra referencia, CancellationToken cancellationToken)
+    private async Task<CorretoresDaRegra?> LerDaRegraAsync(ReferenciaRegra referencia, CancellationToken cancellationToken)
     {
         RegraCatalogo? regra = await regras.ObterAsync(referencia.Codigo, referencia.Versao, cancellationToken).ConfigureAwait(false);
 
-        return regra?.Referencia() == referencia && CorretoresDaRegraDeConsolidacao.TentarEmCampo(regra, out int corretores) ? corretores : null;
+        return regra?.Referencia() == referencia && CorretoresDaRegraDeConsolidacao.Tentar(regra, out int distintos)
+            && CorretoresDaRegraDeConsolidacao.TentarEmCampo(regra, out int emCampo)
+            ? new CorretoresDaRegra(distintos, emCampo)
+            : null;
     }
 }

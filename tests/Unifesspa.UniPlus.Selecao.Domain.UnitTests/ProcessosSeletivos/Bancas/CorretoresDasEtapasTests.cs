@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -35,8 +36,8 @@ public sealed class CorretoresDasEtapasTests
     {
         EtapaProcesso objetiva = Etapa("Objetiva", 1, consolidacao: null);
 
-        CorretoresDeTeste.SemConsolidacao.De(objetiva).Should().Be(0);
-        new CorretoresDasEtapas(new Dictionary<ReferenciaRegra, int> { [CorrecaoIndependente] = 3 }).De(objetiva).Should().Be(0);
+        CorretoresDeTeste.SemConsolidacao.EmCampo(objetiva).Should().Be(0);
+        new CorretoresDasEtapas(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [CorrecaoIndependente] = CorretoresDaRegra.SemNovoCorretor(3) }).EmCampo(objetiva).Should().Be(0);
     }
 
     [Fact(DisplayName = "A etapa com regra de consolidação tem o número lido para a regra dela")]
@@ -44,7 +45,7 @@ public sealed class CorretoresDasEtapasTests
     {
         EtapaProcesso redacao = Etapa("Redação", 1, CorrecaoIndependente);
 
-        new CorretoresDasEtapas(new Dictionary<ReferenciaRegra, int> { [CorrecaoIndependente] = 3 }).De(redacao).Should().Be(3);
+        new CorretoresDasEtapas(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [CorrecaoIndependente] = CorretoresDaRegra.SemNovoCorretor(3) }).EmCampo(redacao).Should().Be(3);
     }
 
     [Fact(DisplayName = "As etapas que referenciam a mesma regra têm o mesmo número")]
@@ -52,9 +53,9 @@ public sealed class CorretoresDasEtapasTests
     {
         EtapaProcesso redacao = Etapa("Redação", 1, CorrecaoIndependente);
         EtapaProcesso projeto = Etapa("Projeto", 2, ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", new string('d', 64)));
-        CorretoresDasEtapas corretores = new(new Dictionary<ReferenciaRegra, int> { [CorrecaoIndependente] = 3 });
+        CorretoresDasEtapas corretores = new(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [CorrecaoIndependente] = CorretoresDaRegra.SemNovoCorretor(3) });
 
-        corretores.De(projeto).Should().Be(corretores.De(redacao)).And.Be(3);
+        corretores.EmCampo(projeto).Should().Be(corretores.EmCampo(redacao)).And.Be(3);
     }
 
     [Fact(DisplayName = "A etapa com regra fora do conjunto não está resolvida e o número dela não se presume")]
@@ -62,10 +63,10 @@ public sealed class CorretoresDasEtapasTests
     {
         EtapaProcesso redacao = Etapa("Redação", 1, CorrecaoIndependente);
         ReferenciaRegra outraVersao = ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v2", new string('f', 64));
-        CorretoresDasEtapas deOutraVersao = new(new Dictionary<ReferenciaRegra, int> { [outraVersao] = 3 });
+        CorretoresDasEtapas deOutraVersao = new(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [outraVersao] = CorretoresDaRegra.SemNovoCorretor(3) });
 
-        Func<int> ler = () => deOutraVersao.De(redacao);
-        Func<int> lerSemConjunto = () => CorretoresDeTeste.SemConsolidacao.De(redacao);
+        Func<int> ler = () => deOutraVersao.EmCampo(redacao);
+        Func<int> lerSemConjunto = () => CorretoresDeTeste.SemConsolidacao.EmCampo(redacao);
 
         ler.Should().Throw<InvalidOperationException>().WithMessage($"*{RegraConsolidacaoCodigo.CorrecaoIndependente}*v1*");
         lerSemConjunto.Should().Throw<InvalidOperationException>();
@@ -78,7 +79,7 @@ public sealed class CorretoresDasEtapasTests
     {
         EtapaProcesso objetiva = Etapa("Objetiva", 1, consolidacao: null);
         EtapaProcesso redacao = Etapa("Redação", 2, CorrecaoIndependente);
-        CorretoresDasEtapas corretores = new(new Dictionary<ReferenciaRegra, int> { [CorrecaoIndependente] = 3 });
+        CorretoresDasEtapas corretores = new(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [CorrecaoIndependente] = CorretoresDaRegra.SemNovoCorretor(3) });
 
         CorretoresDeTeste.SemConsolidacao.Resolvida(objetiva).Should().BeTrue();
         corretores.Resolvida(redacao).Should().BeTrue();
@@ -88,19 +89,19 @@ public sealed class CorretoresDasEtapasTests
     public void Construcao_CopiaOsNumeros()
     {
         EtapaProcesso redacao = Etapa("Redação", 1, CorrecaoIndependente);
-        Dictionary<ReferenciaRegra, int> origem = new() { [CorrecaoIndependente] = 3 };
+        Dictionary<ReferenciaRegra, CorretoresDaRegra> origem = new() { [CorrecaoIndependente] = CorretoresDaRegra.SemNovoCorretor(3) };
         CorretoresDasEtapas corretores = new(origem);
 
         origem.Clear();
 
-        corretores.De(redacao).Should().Be(3);
+        corretores.EmCampo(redacao).Should().Be(3);
     }
 
     [Fact(DisplayName = "Conjunto e etapa nulos são recusados")]
     public void Nulos_Lancam()
     {
         Action semConjunto = () => _ = new CorretoresDasEtapas(null!);
-        Func<int> semEtapa = () => CorretoresDeTeste.SemConsolidacao.De(null!);
+        Func<int> semEtapa = () => CorretoresDeTeste.SemConsolidacao.EmCampo(null!);
         Func<bool> semEtapaResolvida = () => CorretoresDeTeste.SemConsolidacao.Resolvida(null!);
 
         semConjunto.Should().Throw<ArgumentNullException>();

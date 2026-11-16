@@ -26,15 +26,9 @@ public sealed class CoerenciaDaAvaliacaoNoTipoQueExigeCorrecaoTests
         erros[0].Error.Code.Should().Be(EtapaProcessoErrorCodes.FormaObjetivaEmTipoQueExigeCorrecaoIndependente);
     }
 
-    [Fact(DisplayName = "Avaliação única em tipo que exige correção independente é recusada no campo da regra")]
-    public void AvaliacaoUnica_Recusa()
-    {
-        List<FieldError> erros = Validar(FormaDeAvaliacao.Humana, RegraConsolidacaoCodigo.AvaliacaoUnica);
-
-        erros.Should().ContainSingle();
-        erros[0].Field.Should().Be("regraConsolidacao");
-        erros[0].Error.Code.Should().Be(EtapaProcessoErrorCodes.AvaliacaoUnicaEmTipoQueExigeCorrecaoIndependente);
-    }
+    [Fact(DisplayName = "A avaliação única em tipo que exige correção independente não é recusada na gravação: o número de corretores é conferido ao congelar")]
+    public void AvaliacaoUnica_NaoRecusaNaGravacao() =>
+        Validar(FormaDeAvaliacao.Humana, RegraConsolidacaoCodigo.AvaliacaoUnica).Should().BeEmpty();
 
     [Theory(DisplayName = "Regra de consolidação de mais de um corretor é aceita em tipo que exige correção independente")]
     [InlineData(RegraConsolidacaoCodigo.CorrecaoIndependente)]

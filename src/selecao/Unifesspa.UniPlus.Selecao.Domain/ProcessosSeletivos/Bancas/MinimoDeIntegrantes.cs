@@ -3,6 +3,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -15,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class MinimoDeIntegrantes
 {
     internal static int Exigido(RegraDeDeliberacao regra, IEnumerable<EtapaProcesso> julgadas, CorretoresDasEtapas corretores) =>
-        Math.Max(regra.QuorumExigido, julgadas.Select(corretores.De).DefaultIfEmpty(0).Max());
+        Math.Max(regra.QuorumExigido, julgadas.Select(corretores.EmCampo).DefaultIfEmpty(0).Max());
 
     /// <summary>
     /// Primeiro as bancas comprovadamente abaixo do mínimo, de todas as bancas, e depois as etapas cuja regra de
@@ -64,7 +66,7 @@ internal static class MinimoDeIntegrantes
 
     private static DomainError NaoResolvida(BancaJulgadora banca, EtapaProcesso etapa) =>
         new(
-            BancaErrorCodes.RegraDeConsolidacaoNaoResolvida,
+            EtapaProcessoErrorCodes.RegraDeConsolidacaoNaoResolvida,
             $"A banca '{Eco(banca.Nome)}' {banca.Onde} julga a etapa '{Eco(etapa.Nome)}', cuja regra de consolidação não pôde ser confirmada no catálogo, e a quantidade de corretores não é conhecida. Tente novamente ou fale com a equipe de suporte.");
 
     private static string Eco(string texto) =>

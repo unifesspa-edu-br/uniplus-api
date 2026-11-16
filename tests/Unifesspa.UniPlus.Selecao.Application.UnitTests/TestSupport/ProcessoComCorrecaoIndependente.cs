@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -107,7 +108,7 @@ internal static class ProcessoComCorrecaoIndependente
 
     /// <summary>Os números que o seed declara para as duas regras.</summary>
     public static CorretoresDasEtapas ComOsNumerosDoSeed() =>
-        new(new Dictionary<ReferenciaRegra, int> { [CorrecaoIndependente] = 3, [AvaliacaoUnica] = 1 });
+        new(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [CorrecaoIndependente] = CorretoresDaRegra.SemNovoCorretor(3), [AvaliacaoUnica] = CorretoresDaRegra.SemNovoCorretor(1) });
 
     private static void DeclararBancaDaEtapa(EtapaProcesso etapa, int integrantes, int quorum) =>
         AlinhamentoDasBancasDaEtapa.Definir(etapa, [BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes, quorum))])

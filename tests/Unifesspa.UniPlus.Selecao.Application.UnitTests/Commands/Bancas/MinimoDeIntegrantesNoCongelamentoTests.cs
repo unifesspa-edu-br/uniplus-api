@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 
@@ -146,7 +147,7 @@ public sealed class MinimoDeIntegrantesNoCongelamentoTests
             .ComRegrasDeConsolidacao(CatalogoSemACorrecaoIndependente())
             .PublicarAsync(processo.Id);
 
-        resposta.Error!.Code.Should().Be(BancaErrorCodes.RegraDeConsolidacaoNaoResolvida);
+        resposta.Error!.Code.Should().Be(EtapaProcessoErrorCodes.RegraDeConsolidacaoNaoResolvida);
         eventos.Should().BeEmpty();
     }
 
@@ -158,7 +159,7 @@ public sealed class MinimoDeIntegrantesNoCongelamentoTests
         (Result resposta, IEnumerable<object> eventos) = await Congelar(
             transicao, servicos => servicos.ComCalendario(CalendarioVigenteReaderDeTeste.ComVigente()).ComRegrasDeConsolidacao(CatalogoSemACorrecaoIndependente()));
 
-        resposta.Error!.Code.Should().Be(BancaErrorCodes.RegraDeConsolidacaoNaoResolvida);
+        resposta.Error!.Code.Should().Be(EtapaProcessoErrorCodes.RegraDeConsolidacaoNaoResolvida);
         eventos.Should().BeEmpty();
     }
 

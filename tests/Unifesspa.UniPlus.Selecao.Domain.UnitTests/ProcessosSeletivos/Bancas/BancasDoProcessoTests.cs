@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
@@ -69,7 +70,7 @@ public sealed class BancasDoProcessoTests
         BancaRequerida.Criar(Tipo, TipoBancaCodigo.AnaliseDeRecursos, "Banca de análise de recursos", [], BancasDeTeste.Regra(integrantes, quorum));
 
     private static CorretoresDasEtapas Corretores(params (ReferenciaRegra Regra, int Numero)[] porRegra) =>
-        new(porRegra.ToDictionary(static par => par.Regra, static par => par.Numero));
+        new(porRegra.ToDictionary(static par => par.Regra, static par => CorretoresDaRegra.SemNovoCorretor(par.Numero)));
 
     private static DomainError? Pendencia(ProcessoSeletivo processo, CorretoresDasEtapas? corretores = null) =>
         PendenciasDasBancas.PendenciaDasBancas(EstadoDaConfiguracao.De(processo), corretores ?? CorretoresDeTeste.SemConsolidacao);
@@ -263,7 +264,7 @@ public sealed class BancasDoProcessoTests
 
         DomainError? pendencia = Pendencia(processo, CorretoresDeTeste.SemConsolidacao);
 
-        pendencia!.Code.Should().Be("Banca.RegraDeConsolidacaoNaoResolvida");
+        pendencia!.Code.Should().Be("EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
         pendencia.Message.Should().Contain("'Redação'").And.NotContain(CorrecaoIndependente.Hash);
     }
 
@@ -276,7 +277,7 @@ public sealed class BancasDoProcessoTests
 
         IEnumerable<DomainError> violacoes = MinimoDeIntegrantes.Violacoes(EstadoDaConfiguracao.De(processo), Corretores((CorrecaoIndependente, 3)));
 
-        violacoes.Select(static erro => erro.Code).Should().Equal("Banca.IntegrantesAbaixoDoMinimo", "Banca.RegraDeConsolidacaoNaoResolvida");
+        violacoes.Select(static erro => erro.Code).Should().Equal("Banca.IntegrantesAbaixoDoMinimo", "EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
         violacoes.Last().Message.Should().Contain("'Entrevista'");
     }
 
@@ -292,7 +293,7 @@ public sealed class BancasDoProcessoTests
 
         IEnumerable<string> violacoes = MinimoDeIntegrantes.Violacoes(EstadoDaConfiguracao.De(processo), corretores).Select(static erro => erro.Code);
 
-        violacoes.Should().Equal("Banca.IntegrantesAbaixoDoMinimo", "Banca.RegraDeConsolidacaoNaoResolvida");
+        violacoes.Should().Equal("Banca.IntegrantesAbaixoDoMinimo", "EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
         Pendencia(processo, corretores)!.Code.Should().Be("Banca.IntegrantesAbaixoDoMinimo");
         ProntidaoParaCongelar.Portoes.Para(EstadoDaConfiguracao.De(processo), Pedido(corretores)).Estrutura.Bancas()!.Code
             .Should().Be("Banca.IntegrantesAbaixoDoMinimo");
@@ -345,7 +346,7 @@ public sealed class BancasDoProcessoTests
         ProntidaoParaCongelar.Portoes.Para(estado, Pedido(Corretores((CorrecaoIndependente, 3)))).Estrutura.Bancas()!.Code
             .Should().Be("Banca.IntegrantesAbaixoDoMinimo");
         ProntidaoParaCongelar.Portoes.Para(estado, Pedido(CorretoresDeTeste.SemConsolidacao)).Estrutura.Bancas()!.Code
-            .Should().Be("Banca.RegraDeConsolidacaoNaoResolvida");
+            .Should().Be("EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
     }
 
     [Fact(DisplayName = "Redefinir as bancas da etapa leva à linha reaproveitada o nome e a regra declarados")]

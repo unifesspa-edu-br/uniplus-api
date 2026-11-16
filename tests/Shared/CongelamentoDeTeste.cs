@@ -24,7 +24,7 @@ internal static class CongelamentoDeTeste
         FatosDeModalidade fatosDeModalidade,
         TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos) =>
         processo.Publicar(Pedido(
-            dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioContaId,
+            processo, dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioContaId,
             clock, contexto, fatosDeModalidade, tiposDeAtoUnicos));
 
     public static Result<VersaoConfiguracao> Retificar(
@@ -43,7 +43,7 @@ internal static class CongelamentoDeTeste
         TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos) =>
         processo.Retificar(
             Pedido(
-                dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioContaId,
+                processo, dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioContaId,
                 clock, contexto, fatosDeModalidade, tiposDeAtoUnicos),
             versaoAtual,
             motivo);
@@ -64,12 +64,13 @@ internal static class CongelamentoDeTeste
         TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos) =>
         processo.FecharRetificacao(
             Pedido(
-                dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioContaId,
+                processo, dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioContaId,
                 clock, contexto, fatosDeModalidade, tiposDeAtoUnicos),
             versaoAtual,
             precondicao);
 
     private static PedidoDeCongelamento Pedido(
+        ProcessoSeletivo processo,
         DadosEdital dados,
         byte[] canonico,
         string schemaVersion,
@@ -89,6 +90,6 @@ internal static class CongelamentoDeTeste
             Contexto = contexto,
             FatosDeModalidade = fatosDeModalidade,
             TiposDeAtoUnicos = tiposDeAtoUnicos,
-            Corretores = CorretoresDeTeste.SemConsolidacao,
+            Corretores = CorretoresDeTeste.DoProcesso(processo),
         };
 }
