@@ -21,6 +21,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <EmbeddedResource Include="Messaging\SchemaRegistry\Recursos\*.schema.json" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\shared\Unifesspa.UniPlus.Infrastructure.Core\Unifesspa.UniPlus.Infrastructure.Core.csproj" />
     <ProjectReference Include="..\Unifesspa.UniPlus.IntegrationTests.Fixtures\Unifesspa.UniPlus.IntegrationTests.Fixtures.csproj" />
     <!-- O smoke test do pipeline de middleware shared sobe a API UniPlus

@@ -132,6 +132,7 @@ public sealed class ClienteDoSchemaRegistryDoBootstrapTests
         ISchemaRegistryClient bootstrap = SchemaRegistryServiceCollectionExtensions.CreateClient(
             SettingsDe(ConfiguracaoOAuth), NullLoggerFactory.Instance, services, Relogio);
         services.AddSingleton(bootstrap);
+        services.AddSingleton(Relogio);
         services.AddSchemaRegistry(configuracao);
 
         using ServiceProvider provider = services.BuildServiceProvider();

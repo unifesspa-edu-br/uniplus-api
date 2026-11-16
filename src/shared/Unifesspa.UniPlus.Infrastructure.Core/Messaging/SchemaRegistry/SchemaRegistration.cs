@@ -5,7 +5,7 @@ using System.IO;
 using System.Reflection;
 
 /// <summary>
-/// Descreve um schema Avro a registrar no Schema Registry no startup da API.
+/// Descreve um schema (Avro ou JSON Schema) a registrar no Schema Registry no startup da API.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -34,6 +34,9 @@ public sealed record SchemaRegistration(
     string SchemaResourceName,
     Assembly ResourceAssembly)
 {
+    /// <summary>O formato do schema, com a política de registro dele; Avro quando não declarado.</summary>
+    public FormatoDoSchema Formato { get; init; } = FormatoDoSchema.Avro;
+
     /// <summary>
     /// Lê o conteúdo do schema do embedded resource. Pode lançar
     /// <see cref="InvalidOperationException"/> se o resource não for encontrado —
@@ -44,8 +47,11 @@ public sealed record SchemaRegistration(
     {
         using Stream? stream = ResourceAssembly.GetManifestResourceStream(SchemaResourceName)
             ?? throw new InvalidOperationException(
-                $"Schema Avro '{SchemaResourceName}' não encontrado como embedded resource em '{ResourceAssembly.FullName}'.");
+                $"Schema {Formato.Nome} '{SchemaResourceName}' não encontrado como embedded resource em '{ResourceAssembly.FullName}'.");
         using StreamReader reader = new(stream);
-        return reader.ReadToEnd();
+        string conteudo = reader.ReadToEnd();
+        Formato.ConferirConteudo(conteudo, SchemaResourceName);
+
+        return conteudo;
     }
 }

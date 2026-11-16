@@ -47,8 +47,12 @@ public sealed class SchemaRegistrationHostedServiceTests
         ISchemaRegistryClient client,
         params SchemaRegistration[] registrations)
     {
+        RegistradorDeSchema registrador = new(
+            client, Substitute.For<ILeitorDaRegraDeCompatibilidadeDoSubject>(), NullLogger<RegistradorDeSchema>.Instance);
+
         return new SchemaRegistrationHostedService(
-            client,
+            registrador,
+            new RepetidorDoRegistroDeSchema(registrador, TimeProvider.System, NullLogger<RepetidorDoRegistroDeSchema>.Instance),
             registrations,
             NullLogger<SchemaRegistrationHostedService>.Instance);
     }

@@ -2,19 +2,15 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.Messaging.SchemaRegistry;
 
 using System;
 using System.Collections.Generic;
-using System.Net.Http;
-using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-
-using Confluent.SchemaRegistry;
 
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
 /// <summary>
-/// Hosted service idempotente que registra os schemas Avro conhecidos do módulo no
-/// Schema Registry (Apicurio) durante o startup do host.
+/// Hosted service idempotente que registra os schemas (Avro e JSON Schema) conhecidos do módulo no
+/// Schema Registry (Apicurio) durante o startup do host, pelo <see cref="RegistradorDeSchema"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -41,6 +37,10 @@ using Microsoft.Extensions.Logging;
 /// publish" e mensagens durables se acumulam silenciosamente no outbox.
 /// </para>
 /// <para>
+/// <b>JSON Schema:</b> sem serializador que registre de novo em runtime, o registro que falhou por indisponibilidade é
+/// entregue à <see cref="RepetidorDoRegistroDeSchema"/>, e a subida segue; o subject do JSON Schema exige a regra <c>NONE</c>.
+/// </para>
+/// <para>
 /// <b>Idempotência:</b> Apicurio aceita registrar o mesmo schema (byte-equal) múltiplas
 /// vezes — retorna o mesmo schema-id. Mudança de schema dispara o compatibility check
 /// configurado (default BACKWARD); incompatibilidade falha o registro com 409 Conflict
@@ -60,20 +60,24 @@ using Microsoft.Extensions.Logging;
 /// </remarks>
 public sealed partial class SchemaRegistrationHostedService : IHostedService
 {
-    private readonly ISchemaRegistryClient _schemaRegistryClient;
+    private readonly RegistradorDeSchema _registrador;
+    private readonly RepetidorDoRegistroDeSchema _novaTentativa;
     private readonly IReadOnlyCollection<SchemaRegistration> _registrations;
     private readonly ILogger<SchemaRegistrationHostedService> _logger;
 
-    public SchemaRegistrationHostedService(
-        ISchemaRegistryClient schemaRegistryClient,
+    internal SchemaRegistrationHostedService(
+        RegistradorDeSchema registrador,
+        RepetidorDoRegistroDeSchema novaTentativa,
         IEnumerable<SchemaRegistration> registrations,
         ILogger<SchemaRegistrationHostedService> logger)
     {
-        ArgumentNullException.ThrowIfNull(schemaRegistryClient);
+        ArgumentNullException.ThrowIfNull(registrador);
+        ArgumentNullException.ThrowIfNull(novaTentativa);
         ArgumentNullException.ThrowIfNull(registrations);
         ArgumentNullException.ThrowIfNull(logger);
 
-        _schemaRegistryClient = schemaRegistryClient;
+        _registrador = registrador;
+        _novaTentativa = novaTentativa;
         _registrations = [.. registrations];
         _logger = logger;
     }
@@ -91,64 +95,29 @@ public sealed partial class SchemaRegistrationHostedService : IHostedService
         foreach (SchemaRegistration registration in _registrations)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            await RegistrarSchemaAsync(registration).ConfigureAwait(false);
-        }
-    }
-
-    // Fail-graceful **apenas** para indisponibilidade do Schema Registry: Apicurio offline (ConnectionError), DNS que
-    // não resolveu (NameResolutionError) ou tempo esgotado. O cliente Confluent reembrulha a falha de conexão numa
-    // HttpRequestException sem o código do erro, então a causa é procurada na cadeia de exceções. O Confluent serdes
-    // registra de novo em runtime quando o Registry voltar.
-    //
-    // Demais variantes (SecureConnectionError de TLS chain inválida, HttpProtocolError, UserAuthenticationError de
-    // cliente cert ausente, InvalidResponse, ProxyTunnelError) são determinísticas — propagam e travam StartAsync.
-    // Release com config TLS/proxy/cert ruim não pode rodar silenciosamente em modo "degraded but accepting traffic".
-    // O mesmo vale para SchemaRegistryException (auth/conflict/malformed), InvalidOperationException (embedded resource
-    // ausente) e AvroException (schema sintaticamente inválido).
-    private async Task RegistrarSchemaAsync(SchemaRegistration registration)
-    {
-        try
-        {
-            Schema schema = new(registration.ReadSchemaContent(), SchemaType.Avro);
-            int schemaId = await _schemaRegistryClient
-                .RegisterSchemaAsync(registration.Subject, schema, normalize: true)
-                .ConfigureAwait(false);
-
-            LogSchemaRegistered(_logger, registration.Subject, schemaId);
-        }
-        catch (Exception ex) when (EhIndisponibilidadeDoRegistry(ex))
-        {
-            LogSchemaRegistrationTransientFailure(_logger, registration.Subject, ex);
+            await RegistrarAsync(registration, cancellationToken).ConfigureAwait(false);
         }
     }
 
     public Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
-    private static bool EhIndisponibilidadeDoRegistry(Exception falha) => falha switch
+    private async Task RegistrarAsync(SchemaRegistration registration, CancellationToken cancellationToken)
     {
-        HttpRequestException { HttpRequestError: HttpRequestError.ConnectionError or HttpRequestError.NameResolutionError } => true,
-        SocketException => true,
-        TaskCanceledException cancelada => cancelada.InnerException is TimeoutException || cancelada.CancellationToken == default,
-        _ => falha.InnerException is { } causa && EhIndisponibilidadeDoRegistry(causa),
-    };
+        ResultadoDoRegistroDeSchema resultado = await _registrador.RegistrarAsync(registration, cancellationToken).ConfigureAwait(false);
+
+        if (resultado == ResultadoDoRegistroDeSchema.SchemaRegistryIndisponivel && registration.Formato.RepeteRegistroAposFalhaTransitoria)
+        {
+            _novaTentativa.Agendar(registration);
+        }
+    }
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Nenhum schema Avro a registrar no Schema Registry — feature off ou módulo sem eventos cross-module.")]
+        Message = "Nenhum schema a registrar no Schema Registry — feature off ou módulo sem eventos cross-module.")]
     private static partial void LogNoSchemasRegistered(ILogger logger);
 
     [LoggerMessage(
         Level = LogLevel.Information,
-        Message = "Registrando {Count} schema(s) Avro no Schema Registry no startup.")]
+        Message = "Registrando {Count} schema(s) no Schema Registry no startup.")]
     private static partial void LogRegisteringSchemas(ILogger logger, int count);
-
-    [LoggerMessage(
-        Level = LogLevel.Information,
-        Message = "Schema Avro registrado/confirmado. Subject={Subject} SchemaId={SchemaId}")]
-    private static partial void LogSchemaRegistered(ILogger logger, string subject, int schemaId);
-
-    [LoggerMessage(
-        Level = LogLevel.Warning,
-        Message = "Falha transiente ao registrar schema Avro no startup (continuando com host degradado — registro tentará novamente em runtime via Confluent serdes). Subject={Subject}")]
-    private static partial void LogSchemaRegistrationTransientFailure(ILogger logger, string subject, Exception exception);
 }
