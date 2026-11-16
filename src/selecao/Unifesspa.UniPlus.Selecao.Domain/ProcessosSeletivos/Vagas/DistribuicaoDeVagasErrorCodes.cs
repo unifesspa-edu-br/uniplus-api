@@ -26,4 +26,6 @@ public static class DistribuicaoDeVagasErrorCodes
     public const string RemanejamentoFallbackNaoSelecionado = Prefixo + "RemanejamentoFallbackNaoSelecionado";
     public const string ParCruzadoNaoReciproco = Prefixo + "ParCruzadoNaoReciproco";
     public const string ReclassificacaoParaAmplaSemAmplaOfertada = Prefixo + "ReclassificacaoParaAmplaSemAmplaOfertada";
+    public const string QuadroNaoCompletaAsVagasOfertadasBase = Prefixo + "QuadroNaoCompletaVoBase";
+    public const string QuadroExcedeAsVagasOfertadasBase = Prefixo + "QuadroExcedeVoBase";
 }
