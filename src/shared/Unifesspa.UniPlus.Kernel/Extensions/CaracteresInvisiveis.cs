@@ -36,8 +36,7 @@ public static class CaracteresInvisiveis
         ReadOnlySpan<char> resto = texto;
         while (!resto.IsEmpty)
         {
-            if (Rune.DecodeFromUtf16(resto, out Rune caractere, out int lidos) != OperationStatus.Done
-                || (EhInvisivel(Rune.GetUnicodeCategory(caractere)) && !permitidos.Contains(resto[0])))
+            if (Rune.DecodeFromUtf16(resto, out Rune caractere, out int lidos) != OperationStatus.Done || EhRecusado(caractere, resto[0], permitidos))
             {
                 return true;
             }
@@ -47,6 +46,9 @@ public static class CaracteresInvisiveis
 
         return false;
     }
+
+    private static bool EhRecusado(Rune caractere, char primeiro, ReadOnlySpan<char> permitidos) =>
+        EhInvisivel(Rune.GetUnicodeCategory(caractere)) && !permitidos.Contains(primeiro);
 
     /// <summary>
     /// Um texto recebido, pronto para voltar numa mensagem: limitado a

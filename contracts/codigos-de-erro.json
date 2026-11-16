@@ -802,9 +802,9 @@
       "titulo": "Código IBGE da cidade é obrigatório"
     },
     {
-      "codigo": "uniplus.cidade_referencia.nome_caractere_nulo",
+      "codigo": "uniplus.cidade_referencia.nome_caractere_invalido",
       "status": 422,
-      "titulo": "Nome da cidade contém caractere nulo"
+      "titulo": "Nome da cidade contém o caractere nulo ou caractere que não é texto"
     },
     {
       "codigo": "uniplus.cidade_referencia.nome_obrigatorio",

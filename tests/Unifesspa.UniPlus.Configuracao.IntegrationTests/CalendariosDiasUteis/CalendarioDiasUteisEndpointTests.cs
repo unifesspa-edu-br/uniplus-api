@@ -129,15 +129,14 @@ public sealed class CalendarioDiasUteisEndpointTests
     public async Task Criar_MunicipioNomeComCaractereNulo_Retorna422()
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        string nomeComNulo = "Mara" + '\0' + "bá";
 
         HttpResponseMessage response = await EnviarPostAdmin(
             client,
             AdminPath,
-            CorpoComDia("MUNICIPAL", "1504208", nomeComNulo, "PA"));
+            CorpoComDia("MUNICIPAL", "1504208", "Mara" + '\0' + "bá", "PA"));
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await LerCodigoDeErro(response)).Should().Be("uniplus.cidade_referencia.nome_caractere_nulo");
+        (await LerCodigoDeErro(response)).Should().Be("uniplus.cidade_referencia.nome_caractere_invalido");
     }
 
     [Theory(DisplayName = "POST admin rejeita campos municipais fora de MUNICIPAL")]

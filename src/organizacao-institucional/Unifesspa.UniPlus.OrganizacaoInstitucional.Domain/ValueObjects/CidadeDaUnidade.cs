@@ -32,7 +32,7 @@ public readonly record struct CidadeDaUnidade(string? CodigoIbge, string? Nome, 
     private static string CampoDoErro(string codigoErro) => codigoErro switch
     {
         CidadeReferenciaErrorCodes.NomeObrigatorio
-            or CidadeReferenciaErrorCodes.NomeCaractereNulo
+            or CidadeReferenciaErrorCodes.NomeCaractereInvalido
             or CidadeReferenciaErrorCodes.NomeTamanho => "cidadeNome",
         CidadeReferenciaErrorCodes.UfObrigatoria
             or CidadeReferenciaErrorCodes.UfIncoerente => "cidadeUf",

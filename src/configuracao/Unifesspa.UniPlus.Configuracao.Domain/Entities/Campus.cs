@@ -322,7 +322,7 @@ public sealed class Campus : SoftDeletableEntity, IAuditableEntity
     private static string CampoDaCidade(string codigoErro) => codigoErro switch
     {
         CidadeReferenciaErrorCodes.NomeObrigatorio
-            or CidadeReferenciaErrorCodes.NomeCaractereNulo
+            or CidadeReferenciaErrorCodes.NomeCaractereInvalido
             or CidadeReferenciaErrorCodes.NomeTamanho => "cidadeNome",
         CidadeReferenciaErrorCodes.UfObrigatoria
             or CidadeReferenciaErrorCodes.UfIncoerente => "cidadeUf",
