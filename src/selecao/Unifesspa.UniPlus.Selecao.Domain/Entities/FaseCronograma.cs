@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 
 using ValueObjects;
 
@@ -106,6 +107,15 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
 
     /// <summary>Os tipos de decisão que a fase declara produzir, em ordem alfabética ordinal e sem repetição.</summary>
     public IReadOnlyList<string> TiposDeDecisao => _tiposDeDecisao.AsReadOnly();
+
+    /// <summary>A regra de homologação das inscrições que a fase declara; ausente quando a fase não homologa.</summary>
+    public RegraDeHomologacaoDasInscricoes? RegraDeHomologacao { get; private set; }
+
+    /// <summary>
+    /// Se a fase homologa as inscrições: declara o tipo de decisão de homologação das inscrições e tem a regra.
+    /// </summary>
+    internal bool HomologaAsInscricoes =>
+        RegraDeHomologacao is not null && _tiposDeDecisao.Contains(TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes);
 
     /// <summary>
     /// Se a fase declara ao menos um produto com papel: decide o piso mínimo havendo vagas e é
@@ -216,6 +226,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         DefinirCronograma(cronograma);
         EmiteParecerIndividual = publicacoes.EmiteParecerIndividual;
         FilhasDoAgregado.Substituir(_tiposDeDecisao, TiposDeDecisaoDeclarados.Canonicos(publicacoes.TiposDeDecisao));
+        RegraDeHomologacao = publicacoes.RegraDeHomologacao;
         AdotarFilhas(publicacoes.Produtos, bancasRequeridas, publicacoes.RegraRecurso);
     }
 
@@ -275,6 +286,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         DefinirCronograma(origem.DecisoesDeCronograma());
         EmiteParecerIndividual = origem.EmiteParecerIndividual;
         FilhasDoAgregado.Substituir(_tiposDeDecisao, origem._tiposDeDecisao);
+        RegraDeHomologacao = origem.RegraDeHomologacao;
         ReconciliarProdutos(produtos);
         ReporBancasRequeridasDe(origem);
         ReporRegraDeRecursoDe(origem, produtos);

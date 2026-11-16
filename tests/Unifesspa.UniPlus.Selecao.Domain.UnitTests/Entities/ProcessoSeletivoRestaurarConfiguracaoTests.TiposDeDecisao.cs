@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -74,4 +75,30 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         viva.Nome.Should().Be("Prova Restaurada");
         viva.TiposDeDecisao.Should().BeEmpty("o grafo congelado ainda não traz os tipos, e a reposição troca a declaração viva pela dele");
     }
+
+    [Fact(DisplayName = "Restauração pelo processo ainda não preserva a regra de homologação das inscrições declarada pela fase")]
+    public void Restauracao_AindaNaoPreservaARegraDeHomologacaoDaFase()
+    {
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
+        FaseCronograma viva = processo.CronogramaFases.Single();
+        viva.AtualizarDe(FaseConformeDeclarandoRegra(), [.. viva.Produtos]);
+        viva.RegraDeHomologacao.Should().NotBeNull();
+
+        Result resultado = processo.RestaurarConfiguracaoCongelada(VersaoDo(processo), Grafo(cronogramaFases: [FaseConforme()]));
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        viva.RegraDeHomologacao.Should().BeNull("o grafo congelado ainda não traz a regra, e a reposição troca a declaração viva pela dele");
+    }
+
+    private static FaseCronograma FaseConformeDeclarandoRegra() => FaseCronograma.Criar(
+        new OrigemCanonicaDaFase(
+            OrigemId: new Guid("eeee0000-0000-4000-8000-000000000001"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
+            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+        new DecisoesDeCronogramaDaFase(
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            UnidadeResponsavel: UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null,
+            RegraDeHomologacao: RegraDeHomologacaoDasInscricoes.Criar("RESULTADO_CLASSIFICACAO", []).Value!),
+        bancasRequeridas: []).Value!;
 }

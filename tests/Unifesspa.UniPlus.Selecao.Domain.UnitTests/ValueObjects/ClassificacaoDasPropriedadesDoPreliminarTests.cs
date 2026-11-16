@@ -44,6 +44,7 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
         [nameof(FaseCronograma.Produtos)] = NaoEntra(PublicacoesDeclaradas),
         [nameof(FaseCronograma.BancasRequeridas)] = Entra("Quem julga e como delibera define a decisão do preliminar."),
         [nameof(FaseCronograma.TiposDeDecisao)] = NaoEntra("Ainda fora do envelope congelado; passa a entrar no preliminar quando entrar no envelope."),
+        [nameof(FaseCronograma.RegraDeHomologacao)] = NaoEntra("Ainda fora do envelope congelado; passa a entrar no preliminar quando entrar no envelope."),
     };
 
     internal static readonly Dictionary<string, Classificacao> DaEtapa = new()

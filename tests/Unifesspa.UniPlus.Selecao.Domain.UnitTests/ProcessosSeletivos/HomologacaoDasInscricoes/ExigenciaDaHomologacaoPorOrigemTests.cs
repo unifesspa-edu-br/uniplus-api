@@ -184,4 +184,17 @@ public sealed class ExigenciaDaHomologacaoPorOrigemTests
 
         recusa!.Code.Should().Be(ProcessoSeletivoErrorCodes.ImportacaoExternaSemHomologacaoDasInscricoes);
     }
+
+    [Fact(DisplayName = "A capacidade da fase, com o tipo de decisão e a regra, é o que a exigência usa para achar a fase que homologa")]
+    public void InscricaoPropria_CapacidadeDaFase_SatisfazAExigencia()
+    {
+        RegraDeHomologacaoDasInscricoes regra = RegraDeHomologacaoDasInscricoes.Criar(ResultadoDaLista, []).Value!;
+        FaseCronograma homologa = Fase(2, "HOMOLOGACAO_INSCRICOES", [Preliminar(), Definitivo()], tiposDeDecisao: [TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes], regraDeHomologacao: regra);
+        FaseCronograma[] fases = [FaseDeColeta(1), homologa];
+
+        ExigenciaDaHomologacaoPorOrigem.Pendencia(OrigemCandidatos.InscricaoPropria, usaNotaImportadaDeExame: false, fases, static fase => fase.HomologaAsInscricoes)
+            .Should().BeNull();
+        ExigenciaDaHomologacaoPorOrigem.Pendencia(OrigemCandidatos.InscricaoPropria, usaNotaImportadaDeExame: false, [FaseDeColeta(1), Fase(2, "HOMOLOGACAO_INSCRICOES")], static fase => fase.HomologaAsInscricoes)!
+            .Code.Should().Be(ProcessoSeletivoErrorCodes.InscricaoPropriaSemHomologacaoDasInscricoes);
+    }
 }

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.ArchTests;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -86,6 +87,25 @@ internal static class ManifestoDeEditalSnapshotsECronograma
                 ("UnidadeResponsavelNome", "Coluna que materializa UnidadeResponsavel, congelada pelo value object."),
                 ("ProduzResultado", "Derivada de Produtos — a fase produz resultado quando declara ao menos um produto com papel; congelá-la duplicaria a fonte de verdade."),
                 ("TiposDeDecisao", "Ainda não entra no envelope congelado nem no hash."),
+                ("RegraDeHomologacao", "Ainda não entra no envelope congelado nem no hash."),
+            ]),
+
+        // Regra de homologação das inscrições declarada pela fase: ainda fora do envelope congelado.
+        [typeof(RegraDeHomologacaoDasInscricoes)] = (
+            [],
+            [
+                ("ResultadoAtoCodigo", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash."),
+                ("Alternativas", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash."),
+                ("HomologaTodaInscricaoEnviada", "Derivada de Alternativas."),
+            ]),
+        [typeof(AlternativaDeCondicoes)] = ([], [("Condicoes", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash.")]),
+        [typeof(CondicaoDeHomologacao)] = (
+            [],
+            [
+                ("Tipo", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash."),
+                ("EdicaoDoExame", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash."),
+                ("MotivoDesfavoravelCodigo", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash."),
+                ("Enquadramento", "A regra de homologação das inscrições ainda não entra no envelope congelado nem no hash."),
             ]),
 
         // Cópia da unidade responsável pela fase (ADR-0061), congelada na publicação.

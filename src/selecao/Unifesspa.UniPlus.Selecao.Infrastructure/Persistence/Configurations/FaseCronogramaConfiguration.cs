@@ -45,6 +45,10 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         builder.Property(f => f.UnidadeResponsavelNome).HasMaxLength(UnidadeNomeMaxLength);
         builder.Ignore(f => f.UnidadeResponsavel);
 
+        // A regra de homologação das inscrições é valor da declaração da fase e ainda não tem coluna nem
+        // envelope: vive só na sessão que a declarou.
+        builder.Ignore(f => f.RegraDeHomologacao);
+
         // Referência por CÓDIGO canônico, não por FK: a fase concluinte é outra linha do
         // MESMO cronograma, e uma FK autorreferente exigiria ordenar os INSERTs de uma
         // reposição integral — que é como toda escrita do cronograma acontece. A

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Homologa
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -10,11 +11,13 @@ internal static class FasesDeHomologacaoParaTestes
     internal const string ResultadoDaLista = "RESULTADO_HOMOLOGACAO";
 
     internal static FaseCronograma Fase(
-        int ordem, string codigo, IReadOnlyList<ProdutoDaFase>? produtos = null, RegraRecursoFase? regraRecurso = null, string? faseConcluinteCodigo = null) =>
+        int ordem, string codigo, IReadOnlyList<ProdutoDaFase>? produtos = null, RegraRecursoFase? regraRecurso = null,
+        string? faseConcluinteCodigo = null, IReadOnlyList<string?>? tiposDeDecisao = null,
+        RegraDeHomologacaoDasInscricoes? regraDeHomologacao = null) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, faseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(produtos ?? [], EmiteParecerIndividual: false, regraRecurso),
+            new PublicacoesDaFase(produtos ?? [], EmiteParecerIndividual: false, regraRecurso, tiposDeDecisao, regraDeHomologacao),
             regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()]).Value!;
 
     internal static FaseCronograma FaseDeColeta(int ordem) =>

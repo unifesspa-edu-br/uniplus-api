@@ -22,26 +22,24 @@ internal static class ConferenciaDaRegraDeHomologacao
     internal static IReadOnlyList<FieldError> Faltas(
         RegraDeHomologacaoDasInscricoes regra,
         FaseCronograma fase,
-        IReadOnlyCollection<string> tiposDeDecisaoDaFase,
         IReadOnlyCollection<FaseCronograma> cronograma,
         bool usaNotaImportadaDeExame)
     {
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentNullException.ThrowIfNull(fase);
-        ArgumentNullException.ThrowIfNull(tiposDeDecisaoDaFase);
         ArgumentNullException.ThrowIfNull(cronograma);
 
         return
         [
-            .. FaltaDoTipo(tiposDeDecisaoDaFase, fase),
+            .. FaltaDoTipo(fase),
             .. FaltaDoResultado(regra, fase, cronograma),
             .. FaltaDaConfirmacaoDoInep(regra, usaNotaImportadaDeExame),
         ];
     }
 
-    private static IEnumerable<FieldError> FaltaDoTipo(IReadOnlyCollection<string> tiposDeDecisaoDaFase, FaseCronograma fase)
+    private static IEnumerable<FieldError> FaltaDoTipo(FaseCronograma fase)
     {
-        if (!tiposDeDecisaoDaFase.Contains(TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes, StringComparer.Ordinal))
+        if (!fase.TiposDeDecisao.Contains(TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes, StringComparer.Ordinal))
         {
             yield return TipoNaoDeclarado(fase);
         }
