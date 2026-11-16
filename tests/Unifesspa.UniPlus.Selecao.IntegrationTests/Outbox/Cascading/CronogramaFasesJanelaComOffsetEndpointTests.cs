@@ -194,7 +194,7 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
             UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             ProcessoSeletivo processo = ProcessoSeletivo.Criar(
                 $"PS janela com offset — {nome} {Guid.CreateVersion7()}",
-                Unifesspa.UniPlus.Selecao.Domain.Enums.TipoProcesso.SiSU,
+                TiposDeProcessoDeTeste.SiSU,
                 OrigemCandidatos.InscricaoPropria,
                 Guid.CreateVersion7(),
                 UnidadeAdministradoraSnapshot.Criar(

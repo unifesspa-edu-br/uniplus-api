@@ -21,7 +21,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "issue #563 (CA-13, bloco default/D5): restaurar repõe ausência mesmo que a sessão editorial tenha gravado uma configuração explícita")]
     public void Restauracao_RepoeAusenciaDeConfiguracaoDivulgacaoQuandoOGrafoCongeladoENulo()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
         processo.AbrirRetificacao("Editar a divulgação", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "testes", DateTimeOffset.UnixEpoch)
@@ -44,7 +44,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Story #554, PR #903 (achado de revisão P2) — restaurar remapeia ExigidoNaFaseId/ReferenciaTemporalFatos.FaseId para a fase VIVA quando a sessão editorial trocou a fase da mesma Ordem")]
     public void Restauracao_RemapeiaReferenciasDeFaseParaAInstanciaViva()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
         processo.AbrirRetificacao("Trocar a fase da Ordem 1", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "testes", DateTimeOffset.UnixEpoch)

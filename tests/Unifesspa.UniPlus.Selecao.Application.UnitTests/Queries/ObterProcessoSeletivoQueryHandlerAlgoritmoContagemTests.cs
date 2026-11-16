@@ -29,7 +29,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerAlgoritmoContagemTests
     private static async Task<ProcessoSeletivoDto?> ObterDtoAsync(ReferenciaRegra? algoritmo)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Query Contagem", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Query Contagem", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 

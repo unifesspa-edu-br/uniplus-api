@@ -102,7 +102,7 @@ public sealed class RemocaoDeEtapaIniciadaTests
     private static ProcessoSeletivo ProcessoComEtapas(FaseCronograma[] fases, params EtapaProcesso[] etapas)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Remocao de etapa", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Remocao de etapa", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

@@ -37,7 +37,7 @@ public sealed class VocabularioDeFatosTests
     public void DominiosDinamicos_DerivadosDeResidencia()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Residência", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Residência", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
@@ -137,7 +137,7 @@ public sealed class VocabularioDeFatosTests
     }
 
     private static ProcessoSeletivo Processo() => ProcessoSeletivo.Criar(
-        "PS Agregado", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        "PS Agregado", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 

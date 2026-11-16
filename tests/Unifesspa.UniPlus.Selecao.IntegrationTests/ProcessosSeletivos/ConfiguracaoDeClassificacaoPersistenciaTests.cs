@@ -53,7 +53,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     [Fact(DisplayName = "Persiste e recarrega classificação com as 5 variantes de eliminação (prova a coluna json polimórfica)")]
     public async Task PersisteERecarrega_ComCincoVariantesDeEliminacao()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = NovoProcesso("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU);
         EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoDeEtapaProvaObjetiva(), peso: 1m, ordem: 1).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -127,7 +127,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     [Fact(DisplayName = "Persiste e recarrega classificação CLASSIFICACAO-IMPORTADA sem arredondamento (INV-B8)")]
     public async Task PersisteERecarrega_Importada_SemArredondamento()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS 2026 — Transferência", TipoProcesso.TransferenciaExterna);
+        ProcessoSeletivo processo = NovoProcesso("PS 2026 — Transferência", TiposDeProcessoDeTeste.TransferenciaExterna);
         processo.DefinirEtapas([EtapaProcesso.Criar("Análise curricular", CaraterEtapa.Classificatoria, TipoDeEtapaProvaObjetiva(), peso: 1m, ordem: 1).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
@@ -161,7 +161,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     [Fact(DisplayName = "Reconfigurar classificação sobre o agregado tracked insere os filhos novos, não falha em UPDATE")]
     public async Task ReconfigurarClassificacaoSobreAgregadoTracked_InsereFilhos()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS 2026 — PSVR", TipoProcesso.PSVR);
+        ProcessoSeletivo processo = NovoProcesso("PS 2026 — PSVR", TiposDeProcessoDeTeste.PSVR);
         EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoDeEtapaProvaObjetiva(), peso: 1m, ordem: 1).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -216,7 +216,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     [Fact(DisplayName = "Atualizar dados da MESMA etapa (Id preservado) mantém a eliminação referenciando-a (F3)")]
     public async Task AtualizarEtapaMesmoId_MantemEliminacaoReferenciada()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS 2026 — SiSU", TipoProcesso.SiSU);
+        ProcessoSeletivo processo = NovoProcesso("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU);
         EtapaProcesso etapa = EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoDeEtapaProvaObjetiva(), peso: 1m, ordem: 1).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
@@ -273,7 +273,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     [InlineData(false)]
     public async Task PersisteERecarrega_BaseadoEmEnem(bool baseadoEmEnem)
     {
-        ProcessoSeletivo processo = NovoProcesso("PS 2026 — BaseadoEmEnem", TipoProcesso.PSIQ);
+        ProcessoSeletivo processo = NovoProcesso("PS 2026 — BaseadoEmEnem", TiposDeProcessoDeTeste.PSIQ);
         processo.DefinirEtapas(
             [EtapaProcesso.Criar("Prova Objetiva", CaraterEtapa.Classificatoria, TipoDeEtapaProvaObjetiva(), peso: 1m, ordem: 1, faseCodigo: "RESULTADO_FINAL").Value!], PrecondicaoIfMatch.Ausente);
 

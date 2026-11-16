@@ -1,13 +1,12 @@
-namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
+namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
-using ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Valores legados exclusivamente para fixtures de domínio. Não é enum, não faz
-/// parte do contrato HTTP e não é consultado por handlers: novos processos são
-/// resolvidos pelo catálogo Configuração via <c>ITipoProcessoReader</c>.
+/// Tipos de processo fixos para fixtures de teste. O conjunto real é configuração: vem do catálogo do módulo
+/// Configuração, resolvido por <c>ITipoProcessoReader</c>, e nenhum código de produção enumera tipos.
 /// </summary>
-public static class TipoProcesso
+public static class TiposDeProcessoDeTeste
 {
     public static TipoProcessoSnapshot Nenhum { get; } = null!;
     public static TipoProcessoSnapshot SiSU => Criar("019fe8f8-1400-7000-8000-000000000001", "SiSU", "SiSU");

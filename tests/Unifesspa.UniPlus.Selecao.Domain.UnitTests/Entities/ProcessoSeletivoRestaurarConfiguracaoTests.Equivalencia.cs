@@ -21,7 +21,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Restaurar mais critérios de desempate que o teto é recusado, como na gravação")]
     public void Restaurar_CriteriosAcimaDoTeto_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.PSIQ);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.PSIQ);
         Estado antes = Estado.De(processo);
         CriterioDesempate[] criterios = [.. Enumerable.Range(1, RegrasDoDesempate.CriteriosDesempateMaximo + 1).Select(static ordem =>
             CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!)];
@@ -42,8 +42,8 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "RestaurarConfiguracaoCongelada produz o mesmo resultado em processos de Tipo diferente com a mesma configuração (indistinguibilidade, #850)")]
     public void RestaurarConfiguracaoCongelada_TiposDiferentesMesmaConfiguracao_ResultadoIdentico()
     {
-        ProcessoSeletivo psiq = ProcessoPublicado(TipoProcesso.PSIQ);
-        ProcessoSeletivo sisu = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo psiq = ProcessoPublicado(TiposDeProcessoDeTeste.PSIQ);
+        ProcessoSeletivo sisu = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versaoPsiq = VersaoDo(psiq);
         VersaoConfiguracao versaoSisu = VersaoDo(sisu);
 
@@ -84,7 +84,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "EtapaRef órfão também falha sem tocar no estado")]
     public void EtapaRefOrfao_NaoAlteraEstado()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -109,7 +109,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Ids de etapa duplicados no grafo são recusados — a entidade não os validava")]
     public void IdsDeEtapaDuplicados_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
         GrafoConfiguracao invalido = Grafo(etapas: [
@@ -128,8 +128,8 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Restaurar a configuração de OUTRO processo é recusado")]
     public void VersaoDeOutroProcesso_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
-        ProcessoSeletivo alheio = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
+        ProcessoSeletivo alheio = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
 
         Result resultado = processo.RestaurarConfiguracaoCongelada(VersaoDo(alheio), Grafo());
 
@@ -142,8 +142,8 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Um processo em rascunho não tem configuração congelada a restaurar")]
     public void ProcessoEmRascunho_Recusa()
     {
-        ProcessoSeletivo rascunho = ProcessoConforme(TipoProcesso.SiSU);
-        ProcessoSeletivo publicado = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo rascunho = ProcessoConforme(TiposDeProcessoDeTeste.SiSU);
+        ProcessoSeletivo publicado = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
 
         Result resultado = rascunho.RestaurarConfiguracaoCongelada(VersaoDo(publicado), Grafo());
 
@@ -156,7 +156,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "A etapa que sobrevive é RECONCILIADA na mesma instância (o CreatedAt não se perde)")]
     public void EtapaSobrevivente_EReconciliada()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
         EtapaProcesso instanciaViva = processo.Etapas.Single();
@@ -187,7 +187,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "A etapa que sobrevive recupera também a fase em que acontece")]
     public void EtapaSobrevivente_RecuperaAFaseCongelada()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
         GrafoConfiguracao grafo = Grafo(etapas: [
@@ -232,7 +232,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         // O estado de que o descarte parte chega por uma restauração: o agregado publicado
         // recusa mudar de fase uma etapa fora de sessão editorial, e o que se testa aqui é o
         // vínculo que a reposição refaz, não o caminho que sujou a configuração.
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
         GrafoConfiguracao daSessao = Grafo(
@@ -285,7 +285,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Grafo com todas as etapas vinculadas a fase que não agrupa é restaurável")]
     public void GrafoComEtapasVinculadasAFaseQueNaoAgrupa_ERestaurado()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
         FaseCronograma habilitacao = FaseCronograma.Criar(

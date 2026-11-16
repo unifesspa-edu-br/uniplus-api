@@ -2,16 +2,16 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Enums;
 
 using AwesomeAssertions;
 
-using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed class TipoProcessoTests
+public sealed class TiposDeProcessoDeTesteTests
 {
     [Fact(DisplayName = "Getter legado retorna snapshot distinto em cada acesso")]
     public void SiSU_AcessosConsecutivos_RetornamSnapshotsDistintos()
     {
-        TipoProcessoSnapshot primeiro = TipoProcesso.SiSU;
-        TipoProcessoSnapshot segundo = TipoProcesso.SiSU;
+        TipoProcessoSnapshot primeiro = TiposDeProcessoDeTeste.SiSU;
+        TipoProcessoSnapshot segundo = TiposDeProcessoDeTeste.SiSU;
 
         primeiro.Should().NotBeSameAs(segundo,
             "o EF mapeia o snapshot como owned e uma instância não pode pertencer a dois agregados");
@@ -23,14 +23,14 @@ public sealed class TipoProcessoTests
     {
         TipoProcessoSnapshot[] tiposLegados =
         [
-            TipoProcesso.SiSU,
-            TipoProcesso.PSIQ,
-            TipoProcesso.PSECampo,
-            TipoProcesso.PSVR,
-            TipoProcesso.TransferenciaInterna,
-            TipoProcesso.TransferenciaExterna,
-            TipoProcesso.PortadorDiploma,
-            TipoProcesso.Reopcao,
+            TiposDeProcessoDeTeste.SiSU,
+            TiposDeProcessoDeTeste.PSIQ,
+            TiposDeProcessoDeTeste.PSECampo,
+            TiposDeProcessoDeTeste.PSVR,
+            TiposDeProcessoDeTeste.TransferenciaInterna,
+            TiposDeProcessoDeTeste.TransferenciaExterna,
+            TiposDeProcessoDeTeste.PortadorDiploma,
+            TiposDeProcessoDeTeste.Reopcao,
         ];
 
         tiposLegados.Select(tipo => tipo.OrigemId).Should().OnlyHaveUniqueItems();

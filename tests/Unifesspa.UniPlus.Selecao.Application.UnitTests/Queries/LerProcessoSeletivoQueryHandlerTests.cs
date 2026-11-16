@@ -46,7 +46,7 @@ public sealed class LerProcessoSeletivoQueryHandlerTests
     private static async Task<(ProcessoSeletivoDto? Dto, ProcessoSeletivo Processo)> LerSemConfigurarAsync(string envelope)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Leitura", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
+            "PS Leitura", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         VersaoConfiguracao versao = (VersaoConfiguracao)RuntimeHelpers.GetUninitializedObject(typeof(VersaoConfiguracao));

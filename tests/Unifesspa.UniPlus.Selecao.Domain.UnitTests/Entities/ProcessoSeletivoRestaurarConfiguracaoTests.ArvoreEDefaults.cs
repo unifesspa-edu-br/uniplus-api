@@ -21,7 +21,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Árvore restaurada com base legal de grupo sem consequência é recusada")]
     public void ArvoreComBaseLegalDeGrupoSemConsequencia_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -51,7 +51,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Árvore restaurada com folha de cardinalidade qualificada incoerente é recusada")]
     public void ArvoreComFolhaCardinalidadeIncoerente_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -78,7 +78,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Árvore restaurada com repetição por entidade aninhada é recusada")]
     public void ArvoreComRepeticaoPorEntidadeAninhada_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -107,7 +107,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Árvore restaurada com duas folhas para o mesmo DocumentoExigido é recusada")]
     public void ArvoreComDocumentoExigidoDuplicado_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -133,7 +133,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Árvore restaurada com folha de quantidadeMinima nula é recusada — CriarFolha a normalizaria em silêncio")]
     public void ArvoreComFolhaQuantidadeMinimaNula_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -161,7 +161,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Árvore restaurada com grupo carregando chaveDistincao (campo exclusivo de folha) é recusada")]
     public void ArvoreComGrupoCarregandoChaveDistincao_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -190,7 +190,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Árvore restaurada com folha carregando base legal (campo exclusivo de grupo) é recusada")]
     public void ArvoreComFolhaCarregandoBaseLegal_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -218,7 +218,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "A etapa que NÃO existe mais é reinserida com o Id congelado")]
     public void EtapaAusente_EReinseridaComOIdCongelado()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
         GrafoConfiguracao grafo = Grafo(etapas: [
@@ -241,7 +241,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         // a contêm. A guarda B-01 garante que TODA versão já congelada tem zero
         // DocumentoExigido; a restauração precisa repor esse mesmo estado vazio, mesmo
         // que a sessão editorial tenha configurado exigências.
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Guid faseId = processo.CronogramaFases.Single().Id;
 
@@ -278,7 +278,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         // restaurar — e a versão congelada nunca teve gatilho por FAIXA_ETARIA que
         // dependesse dele (B-01 barra qualquer DocumentoExigido). Preservar o valor
         // editado pela sessão descartada vazaria a mutação não publicada.
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Guid faseId = processo.CronogramaFases.Single().Id;
 
@@ -303,7 +303,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "issue #563 (CA-13, bloco ampliado): restaurar repõe ConfiguracaoDivulgacao campo a campo, substituindo o que a sessão editorial gravou")]
     public void Restauracao_RepoeConfiguracaoDivulgacaoAmpliadaCampoACampo()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
         // A sessão editorial grava OUTRA configuração — é o estado que a restauração tem de

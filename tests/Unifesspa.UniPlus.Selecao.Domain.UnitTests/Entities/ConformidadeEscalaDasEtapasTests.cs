@@ -166,7 +166,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
     public void Rascunho_EtapaComNotaSemEscala_Grava()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Rascunho", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Rascunho", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 

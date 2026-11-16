@@ -310,7 +310,7 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
     public async Task Handle_AncoraComDefinitivoAntesDoPreliminar_ResolveNoPreliminar()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();

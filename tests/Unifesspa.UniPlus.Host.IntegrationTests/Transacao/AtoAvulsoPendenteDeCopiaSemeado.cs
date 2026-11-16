@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Um processo com a divulgação do certame na versão 1 e um ato publicado que não criou versão: o ato já entrou na
@@ -33,7 +34,7 @@ internal sealed record AtoAvulsoPendenteDeCopiaSemeado(Guid ProcessoId, Guid Ato
 
     private static ProcessoSeletivo NovoProcesso() =>
         ProcessoSeletivo.Criar(
-            "Processo da cópia ao acervo", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "Processo da cópia ao acervo", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
             IdentificadorLegivel.Criar($"certame-{Guid.NewGuid():N}"[..40]).Value!);

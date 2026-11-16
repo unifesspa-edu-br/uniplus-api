@@ -274,7 +274,7 @@ public sealed class CronogramaFasesLoteDeRecusasEndpointTests
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             $"PS lote de recusas {Guid.CreateVersion7()}",
-            Unifesspa.UniPlus.Selecao.Domain.Enums.TipoProcesso.SiSU,
+            TiposDeProcessoDeTeste.SiSU,
             OrigemCandidatos.ImportacaoExterna,
             Guid.CreateVersion7(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,

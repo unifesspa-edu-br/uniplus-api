@@ -23,7 +23,7 @@ internal static class CenarioDeConformidadeLegal
     internal static ProcessoSeletivo NovoProcesso() =>
         ProcessoSeletivo.Criar(
             "PS Avaliador 2026",
-            TipoProcesso.SiSU,
+            TiposDeProcessoDeTeste.SiSU,
             OrigemCandidatos.InscricaoPropria,
             Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
