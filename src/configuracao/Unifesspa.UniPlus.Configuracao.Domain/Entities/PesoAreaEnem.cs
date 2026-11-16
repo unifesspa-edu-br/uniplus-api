@@ -49,22 +49,6 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
     private const int ResolucaoMinLength = 1;
     private const int ResolucaoMaxLength = 40;
 
-    private const int BaseLegalMaxLength = 500;
-
-    /// <summary>Escala persistida dos pesos (<c>numeric(4,2)</c>).</summary>
-    private const int EscalaPeso = 2;
-
-    /// <summary>Escala persistida do corte (<c>numeric(7,3)</c>).</summary>
-    private const int EscalaCorte = 3;
-
-    private const int TamanhoMaximoDoCodigoEcoado = 40;
-
-    /// <summary>
-    /// Teto de itens aceitos em <c>areas</c>: acima dele a lista é recusada inteira, sem
-    /// um erro por item — uma entrada pequena não pode gerar resposta desproporcional.
-    /// </summary>
-    private const int MaximoDeItensInformados = 20;
-
     /// <summary>
     /// As cinco áreas do cadastro, na ordem canônica de exibição e de leitura, com o
     /// rótulo do Anexo I da Resolução nº 805/2024/Consepe, a resolução que fundamenta os
@@ -79,13 +63,9 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
         new(CodigoMatematica, "Matemática e suas Tecnologias"),
     ];
 
-    private static readonly Dictionary<string, int> OrdemPorCodigo =
+    internal static readonly Dictionary<string, int> OrdemPorCodigo =
         Areas.Select(static (area, indice) => (area.Codigo, indice))
             .ToDictionary(static par => par.Codigo, static par => par.indice, StringComparer.Ordinal);
-
-    // Declarado depois de Areas: inicializadores estáticos rodam na ordem do texto.
-    private static readonly string AreasAceitas =
-        string.Join(", ", Areas.Select(static a => $"{a.Codigo} ({a.Rotulo})"));
 
     private readonly List<PesoAreaEnemArea> _areas = [];
 
@@ -215,160 +195,17 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
         return resultado.IsFailure ? Result.ValidationFailure(resultado.Errors) : Result.Success();
     }
 
-    // Cada área informada precisa ser uma das cinco, uma vez só; nenhuma pode faltar. O
-    // erro vai no campo da área (`areas[i].codigo`, `.peso`, `.corte`), e a falta, em
-    // `areas`, nomeando os códigos ausentes. Toda violação independente se acumula.
     private static Result<CamposEditaveis> ValidarAreasEBaseLegal(
         IReadOnlyList<AreaInformada>? areas,
         string? baseLegal)
     {
         List<FieldError> erros = [];
-        List<AreaValidada> validas = [];
-        HashSet<string> vistas = new(StringComparer.Ordinal);
-
-        if (areas is { Count: > MaximoDeItensInformados })
-        {
-            erros.Add(new("areas", new DomainError(
-                PesoAreaEnemErrorCodes.AreasEmExcesso,
-                $"Informe as cinco áreas, uma vez cada; vieram {areas.Count} itens.")));
-            ValidarBaseLegal(erros, baseLegal);
-            return Result<CamposEditaveis>.ValidationFailure(erros);
-        }
-
-        for (int i = 0; i < (areas?.Count ?? 0); i++)
-        {
-            AreaInformada informada = areas![i];
-            string? codigo = informada.Codigo?.Trim();
-            decimal peso = informada.Peso;
-            decimal? corte = informada.Corte;
-            string campo = $"areas[{i}]";
-
-            AreaEnemDescrita? descrita = codigo is not null && OrdemPorCodigo.TryGetValue(codigo, out int ordem)
-                ? Areas[ordem]
-                : null;
-            if (descrita is null)
-            {
-                string mensagem = string.IsNullOrEmpty(codigo)
-                    ? $"Informe o código da área. Aceitas: {AreasAceitas}."
-                    : $"\"{Resumir(codigo)}\" não é uma área do Peso por Área. Aceitas: {AreasAceitas}.";
-                erros.Add(new($"{campo}.codigo", new DomainError(
-                    PesoAreaEnemErrorCodes.AreaForaDoDominio, mensagem)));
-            }
-
-            bool repetida = false;
-            if (descrita is not null && !vistas.Add(descrita.Codigo))
-            {
-                erros.Add(new($"{campo}.codigo", new DomainError(
-                    PesoAreaEnemErrorCodes.AreaRepetida,
-                    $"A área {descrita.Codigo} ({descrita.Rotulo}) foi informada mais de uma vez.")));
-                repetida = true;
-            }
-
-            // A área repetida continua conhecida: peso e corte dela são conferidos pela
-            // regra da própria área, só não entram na linha.
-            string nomeDaArea = descrita?.Rotulo ?? "esta área";
-            int errosAntes = erros.Count;
-            AdicionarErroDePeso(erros, campo, peso, nomeDaArea);
-            AdicionarErroDeCorte(erros, campo, corte, descrita);
-
-            if (descrita is not null && !repetida && erros.Count == errosAntes)
-            {
-                validas.Add(new AreaValidada(
-                    descrita,
-                    Arredondar(peso, EscalaPeso),
-                    corte is null ? null : Arredondar(corte.Value, EscalaCorte)));
-            }
-        }
-
-        string[] faltando = [.. Areas.Select(static a => a.Codigo).Where(c => !vistas.Contains(c))];
-        if (faltando.Length > 0)
-        {
-            erros.Add(new("areas", new DomainError(
-                PesoAreaEnemErrorCodes.AreaFaltando,
-                $"Informe o peso das cinco áreas; faltam: {string.Join(", ", faltando)}.")));
-        }
-
-        // A nota da etapa divide pela soma dos pesos: com tudo zerado (inclusive o que só zera
-        // depois de arredondar à escala gravada) não há média a calcular.
-        if (faltando.Length == 0 && validas.Count == Areas.Count && validas.All(static a => a.Peso == 0m))
-        {
-            erros.Add(new("areas", new DomainError(
-                PesoAreaEnemErrorCodes.PesosSomamZero,
-                "Informe ao menos uma área com peso maior que zero; a nota da etapa é a média ponderada por esses pesos.")));
-        }
-
-        string? baseLegalNormalizada = ValidarBaseLegal(erros, baseLegal);
+        IReadOnlyList<AreaValidada> validas = ConferenciaDasAreasDoPeso.Conferir(erros, areas);
+        string? baseLegalNormalizada = ConferenciaDaBaseLegalDoPeso.Conferir(erros, baseLegal);
 
         return erros.Count == 0
             ? Result<CamposEditaveis>.Success(new CamposEditaveis(validas, baseLegalNormalizada!))
             : Result<CamposEditaveis>.ValidationFailure(erros);
-    }
-
-    // A base legal é gravada em NFC, a forma em que o processo seletivo a congela: o limite vale
-    // para o texto normalizado, que pode ser mais longo que o digitado. Sem isso, uma base legal
-    // aceita aqui passaria do limite da cópia congelada.
-    private static string? ValidarBaseLegal(List<FieldError> erros, string? baseLegal)
-    {
-        if (string.IsNullOrWhiteSpace(baseLegal))
-        {
-            erros.Add(new("baseLegal", new DomainError(
-                PesoAreaEnemErrorCodes.BaseLegalObrigatoria, "Base legal é obrigatória.")));
-            return null;
-        }
-
-        switch (TextoNormalizavel.TentarNfcDeTextoLivre(baseLegal.Trim(), BaseLegalMaxLength, out string normalizada))
-        {
-            case SituacaoDoTexto.Valido:
-                return normalizada;
-            case SituacaoDoTexto.CaractereInvalido:
-                erros.Add(new("baseLegal", new DomainError(
-                    PesoAreaEnemErrorCodes.BaseLegalCaractereInvalido,
-                    "Base legal não pode conter o caractere nulo nem caractere que não seja texto.")));
-                return null;
-            default:
-                erros.Add(new("baseLegal", new DomainError(
-                    PesoAreaEnemErrorCodes.BaseLegalTamanho,
-                    $"Base legal deve ter no máximo {BaseLegalMaxLength} caracteres.")));
-                return null;
-        }
-    }
-
-    private static void AdicionarErroDePeso(List<FieldError> erros, string campo, decimal peso, string nomeDaArea)
-    {
-        if (peso < 0)
-        {
-            erros.Add(new($"{campo}.peso", new DomainError(
-                PesoAreaEnemErrorCodes.PesoNegativo,
-                $"O peso informado para {nomeDaArea} não pode ser negativo.")));
-        }
-        else if (peso > PesoMaximo)
-        {
-            erros.Add(new($"{campo}.peso", new DomainError(
-                PesoAreaEnemErrorCodes.PesoExcedeMaximo,
-                $"O peso informado para {nomeDaArea} não pode exceder {PesoMaximo}.")));
-        }
-    }
-
-    private static void AdicionarErroDeCorte(List<FieldError> erros, string campo, decimal? corte, AreaEnemDescrita? area)
-    {
-        if (corte is null)
-        {
-            return;
-        }
-
-        string nomeDaArea = area?.Rotulo ?? "esta área";
-        if (corte < 0)
-        {
-            erros.Add(new($"{campo}.corte", new DomainError(
-                PesoAreaEnemErrorCodes.CorteNegativo,
-                $"O corte informado para {nomeDaArea} não pode ser negativo.")));
-        }
-        else if (corte > CorteMaximo)
-        {
-            erros.Add(new($"{campo}.corte", new DomainError(
-                PesoAreaEnemErrorCodes.CorteExcedeMaximo,
-                $"O corte informado para {nomeDaArea} não pode exceder {CorteMaximo} (nota máxima de uma área do ENEM).")));
-        }
     }
 
     /// <summary>
@@ -399,20 +236,4 @@ public sealed class PesoAreaEnem : SoftDeletableEntity, IAuditableEntity
                 $"Resolução deve ter entre {ResolucaoMinLength} e {ResolucaoMaxLength} caracteres.")),
         };
     }
-
-    // O código recusado volta na mensagem para o operador achar o erro, mas limitado:
-    // um valor arbitrariamente longo não é ecoado inteiro na resposta nem nos logs.
-    // O corte nunca parte um par substituto: um emoji na fronteira sai inteiro ou não sai.
-    // Caracteres de controle, de formatação e separadores de linha e parágrafo (quebra de
-    // linha, controles bidi, U+2028/U+2029) viram "?":
-    // o texto volta na resposta e nos logs, e não pode reescrever a linha em que cai.
-    private static string Resumir(string texto) =>
-        CaracteresInvisiveis.ParaEco(texto, TamanhoMaximoDoCodigoEcoado);
-
-    private static decimal Arredondar(decimal valor, int escala) =>
-        Math.Round(valor, escala, MidpointRounding.ToEven);
-
-    private sealed record AreaValidada(AreaEnemDescrita Descrita, decimal Peso, decimal? Corte);
-
-    private sealed record CamposEditaveis(IReadOnlyList<AreaValidada> Areas, string BaseLegal);
 }
