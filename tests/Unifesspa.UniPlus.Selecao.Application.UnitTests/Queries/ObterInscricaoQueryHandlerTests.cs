@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
@@ -32,30 +33,42 @@ public sealed class ObterInscricaoQueryHandlerTests
         return contexto;
     }
 
+    private static Task<Result<InscricaoDto>> Obter(PortasDaInscricaoDeTeste portas, IUserContext usuario) =>
+        ObterInscricaoQueryHandler.Handle(
+            new ObterInscricaoQuery(ProcessoId), portas.InscricaoAtiva(), portas.Consulta(), usuario, DivulgacaoDeTeste.Relogio, CancellationToken.None);
+
+    private static (PortasDaInscricaoDeTeste Portas, Inscricao Inscricao) PortasNaVersaoConforme(Cpf cpf)
+    {
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
+        Inscricao existente = Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
+        PortasDaInscricaoDeTeste portas = new(ProcessoId);
+        portas.ComInscricao(cpf, existente);
+        DivulgacaoDeTeste.ConfigurarVersao(portas.Processos, portas.Codecs, versao, grafo);
+        return (portas, existente);
+    }
+
     [Fact(DisplayName = "Sem o claim cpf no token, recusa sem consultar repositório nenhum")]
     public async Task Handle_SemCpfNoToken_Recusa()
     {
+        PortasDaInscricaoDeTeste portas = new(ProcessoId);
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.Cpf.Returns((string?)null);
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
 
-        Result<InscricaoDto> resultado = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IDocumentoDaInscricaoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), userContext, DivulgacaoDeTeste.Relogio, CancellationToken.None);
+        Result<InscricaoDto> resultado = await Obter(portas, userContext);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
-        await inscricaoRepository.DidNotReceive().ObterAtivaPorProcessoECpfAsync(Arg.Any<Guid>(), Arg.Any<Cpf>(), Arg.Any<CancellationToken>());
+        await portas.Inscricoes.DidNotReceive().ObterAtivaPorProcessoECpfAsync(Arg.Any<Guid>(), Arg.Any<Cpf>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Sem inscrição para o CPF e o processo, recusa como não encontrada, sem citar o CPF nem o processo")]
     public async Task Handle_SemInscricao_RecusaComoNaoEncontrada()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
+        PortasDaInscricaoDeTeste portas = new(ProcessoId);
+        portas.ComInscricao(cpf, null);
 
-        Result<InscricaoDto> resultado = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IDocumentoDaInscricaoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
+        Result<InscricaoDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
@@ -66,14 +79,10 @@ public sealed class ObterInscricaoQueryHandlerTests
     public async Task Handle_ContaIdDivergente_RecusaComoDonoDivergente()
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
-        Inscricao existente = Inscricao.Iniciar(
-            ProcessoId, cpf, "conta-original", "https://issuer", Guid.CreateVersion7()).Value!;
+        PortasDaInscricaoDeTeste portas = new(ProcessoId);
+        portas.ComInscricao(cpf, Inscricao.Iniciar(ProcessoId, cpf, "conta-original", "https://issuer", Guid.CreateVersion7()).Value!);
 
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
-
-        Result<InscricaoDto> resultado = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IDocumentoDaInscricaoRepository>(), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), UsuarioComCpf(cpf, contaId: "conta-outro"), DivulgacaoDeTeste.Relogio, CancellationToken.None);
+        Result<InscricaoDto> resultado = await Obter(portas, UsuarioComCpf(cpf, contaId: "conta-outro"));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.DonoDivergente");
@@ -83,18 +92,9 @@ public sealed class ObterInscricaoQueryHandlerTests
     public async Task Handle_InscricaoDoDono_Devolve()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
-        Inscricao existente = Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
+        (PortasDaInscricaoDeTeste portas, Inscricao existente) = PortasNaVersaoConforme(cpf);
 
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
-
-        Result<InscricaoDto> resultado = await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(ProcessoId), inscricaoRepository, DivulgacaoDeTeste.Certame(ProcessoId), processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), registroCodecs, DivulgacaoDeTeste.Fuso(),
-            Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
+        Result<InscricaoDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Id.Should().Be(existente.Id);

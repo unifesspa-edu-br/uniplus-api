@@ -28,7 +28,7 @@ internal static class SalvarDeTeste
         CancellationToken cancellationToken) =>
         SalvarInscricaoCommandHandler.Handle(
             command,
-            new RascunhoDoCandidato(inscricoes, certames, processos, codecs, fuso, relogio),
+            new RascunhoDoCandidato(new InscricaoAtivaDoCandidato(inscricoes), certames, processos, codecs, fuso, relogio),
             new SalvamentoDoRascunho(geo, inscricoes, unitOfWork),
             new RespostaDoRascunho(documentos, geo, enderecos),
             userContext,

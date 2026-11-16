@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -45,26 +46,28 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         return contexto;
     }
 
-    /// <summary>A divulgação aponta para <paramref name="divulgada"/>; o rascunho nasce na versão <paramref name="fixada"/>, que é a mesma quando a retificação não mudou nada.</summary>
-    private static async Task<(Result Resultado, IInscricaoRepository Repositorio, IUnitOfWork UnitOfWork)> Descartar(
-        Func<Inscricao, string> precondicao, Inscricao rascunho, VersaoConfiguracao fixada, VersaoConfiguracao divulgada, GrafoConfiguracao grafo, string contaId = "conta-1", DateTimeOffset? agora = null,
-        IDocumentoDaInscricaoRepository? documentos = null)
+    /// <summary>A divulgação aponta para <see cref="Divulgada"/>; o rascunho nasce na versão <see cref="Fixada"/>, que é a mesma quando a retificação não mudou nada.</summary>
+    private sealed record CenarioDoDescarte(Inscricao Rascunho, VersaoConfiguracao Fixada, VersaoConfiguracao Divulgada, GrafoConfiguracao Grafo)
     {
-        IInscricaoRepository repositorio = Substitute.For<IInscricaoRepository>();
-        repositorio.ObterAtivaPorProcessoECpfAsync(ProcessoId, Dono, Arg.Any<CancellationToken>()).Returns(rascunho);
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarFixadaEDivulgada(
-            processoRepository, registroCodecs, grafo,
-            fixada: (fixada, DivulgacaoDeTeste.FimDoPeriodo),
-            divulgada: (divulgada, DivulgacaoDeTeste.FimDoPeriodo));
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
+        public string ContaId { get; init; } = "conta-1";
 
+        public DateTimeOffset? Agora { get; init; }
+
+        public IDocumentoDaInscricaoRepository Documentos { get; init; } = Substitute.For<IDocumentoDaInscricaoRepository>();
+    }
+
+    private static async Task<(Result Resultado, IInscricaoRepository Repositorio, IUnitOfWork UnitOfWork)> Descartar(
+        Func<Inscricao, string> precondicao, CenarioDoDescarte cenario)
+    {
+        PortasDaInscricaoDeTeste portas = new(ProcessoId) { Documentos = cenario.Documentos };
+        portas.ComInscricao(Dono, cenario.Rascunho);
+        DivulgacaoDeTeste.ConfigurarFixadaEDivulgada(
+            portas.Processos, portas.Codecs, cenario.Grafo, (cenario.Fixada, DivulgacaoDeTeste.FimDoPeriodo), (cenario.Divulgada, DivulgacaoDeTeste.FimDoPeriodo));
+        TimeProvider relogio = new RelogioFixo(cenario.Agora ?? DivulgacaoDeTeste.DentroDoPeriodo);
         Result resultado = await DescartarRascunhoDaInscricaoCommandHandler.Handle(
-            new DescartarRascunhoDaInscricaoCommand(ProcessoId, PrecondicaoIfMatch.DeTags([precondicao(rascunho)])),
-            repositorio, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), new RelogioFixo(agora ?? DivulgacaoDeTeste.DentroDoPeriodo), unitOfWork, Usuario(contaId),
-            documentos ?? Substitute.For<IDocumentoDaInscricaoRepository>(), CancellationToken.None);
-        return (resultado, repositorio, unitOfWork);
+            new DescartarRascunhoDaInscricaoCommand(ProcessoId, PrecondicaoIfMatch.DeTags([precondicao(cenario.Rascunho)])),
+            portas.InscricaoAtiva(), portas.Periodo(), portas.Descarte(relogio), Usuario(cenario.ContaId), relogio, CancellationToken.None);
+        return (resultado, portas.Inscricoes, portas.UnitOfWork);
     }
 
     private static Task<(Result Resultado, IInscricaoRepository Repositorio, IUnitOfWork UnitOfWork)> DescartarNaVersaoDivulgada(
@@ -72,7 +75,8 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         IDocumentoDaInscricaoRepository? documentos = null)
     {
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
-        return Descartar(precondicao, (rascunho ?? NovoRascunho)(versao.Id), versao, versao, grafo, contaId, agora, documentos);
+        CenarioDoDescarte cenario = new((rascunho ?? NovoRascunho)(versao.Id), versao, versao, grafo) { ContaId = contaId, Agora = agora };
+        return Descartar(precondicao, documentos is null ? cenario : cenario with { Documentos = documentos });
     }
 
     [Fact(DisplayName = "Descartar o próprio rascunho com o If-Match corrente remove a inscrição e grava")]
@@ -161,7 +165,7 @@ public sealed class DescartarRascunhoDaInscricaoCommandHandlerTests
         (VersaoConfiguracao divulgada, _) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
 
         (Result resultado, IInscricaoRepository repositorio, _) = await Descartar(
-            r => DivulgacaoDeTeste.ETagDepoisDeAdotar(r, divulgada), NovoRascunho(fixada.Id), fixada, divulgada, grafo);
+            r => DivulgacaoDeTeste.ETagDepoisDeAdotar(r, divulgada), new CenarioDoDescarte(NovoRascunho(fixada.Id), fixada, divulgada, grafo));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         await repositorio.Received(1).RemoverAsync(Arg.Any<Inscricao>(), Arg.Any<CancellationToken>());

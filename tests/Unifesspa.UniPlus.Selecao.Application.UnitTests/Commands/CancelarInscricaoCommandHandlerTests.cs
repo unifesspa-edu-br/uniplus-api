@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -45,21 +46,14 @@ public sealed class CancelarInscricaoCommandHandlerTests
     {
         (VersaoConfiguracao versao, GrafoConfiguracao grafo) = SalvarInscricaoCommandHandlerTests.MontarVersaoComItem(Item);
         Inscricao existente = inscricao(versao.Id);
-        IInscricaoRepository repositorio = Substitute.For<IInscricaoRepository>();
-        repositorio.ObterAtivaPorProcessoECpfAsync(ProcessoId, Dono, Arg.Any<CancellationToken>()).Returns(existente);
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
+        PortasDaInscricaoDeTeste portas = new(ProcessoId);
+        portas.ComInscricao(Dono, existente);
         DivulgacaoDeTeste.ConfigurarFixadaEDivulgada(
-            processoRepository, registroCodecs, grafo,
-            fixada: (versao, DivulgacaoDeTeste.FimDoPeriodo),
-            divulgada: (versao, DivulgacaoDeTeste.FimDoPeriodo));
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-
+            portas.Processos, portas.Codecs, grafo, (versao, DivulgacaoDeTeste.FimDoPeriodo), (versao, DivulgacaoDeTeste.FimDoPeriodo));
         Result resultado = await CancelarInscricaoCommandHandler.Handle(
             new CancelarInscricaoCommand(ProcessoId, motivo, PrecondicaoIfMatch.DeTags([existente.ETag])),
-            repositorio, processoRepository, DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(),
-            unitOfWork, Usuario(contaId), new RelogioFixo(agora), CancellationToken.None);
-        return (resultado, existente, unitOfWork);
+            portas.InscricaoAtiva(), portas.Periodo(), portas.Gravacao(), Usuario(contaId), new RelogioFixo(agora), CancellationToken.None);
+        return (resultado, existente, portas.UnitOfWork);
     }
 
     [Fact(DisplayName = "Cancelar a inscrição enviada, com as inscrições abertas, grava o cancelamento com o ator e o motivo")]

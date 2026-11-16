@@ -69,23 +69,22 @@ internal sealed class CenarioDeInscricaoPublicada
 
     public async Task<Result<InscricaoDto>> ObterAsync(UniPlusDbContext db, Guid processoId, IUserContext usuario) =>
         await ObterInscricaoQueryHandler.Handle(
-            new ObterInscricaoQuery(processoId), NovoRepositorioDeInscricao(db), new CertameDivulgadoRepository(db),
-            ProcessoSeletivoRepositoryDeTeste.Criar(db), Substitute.For<IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(),
-            Substitute.For<IConferenciaEnderecoGeo>(), EnderecosSemCopia(), usuario, DentroDoPeriodo, CancellationToken.None);
+            new ObterInscricaoQuery(processoId), new InscricaoAtivaDoCandidato(NovoRepositorioDeInscricao(db)),
+            new ConsultaDaInscricaoDoCandidato(
+                new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), Substitute.For<IDocumentoDaInscricaoRepository>(),
+                RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), EnderecosSemCopia()),
+            usuario, DentroDoPeriodo, CancellationToken.None);
 
     public async Task<Result<FormularioRenderizavelDto>> ObterFormularioAsync(UniPlusDbContext db, Guid processoId, IUserContext usuario) =>
         await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(processoId), NovoRepositorioDeInscricao(db),
-            new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs, usuario,
-            CancellationToken.None);
+            new ObterFormularioDaInscricaoQuery(processoId), new InscricaoAtivaDoCandidato(NovoRepositorioDeInscricao(db)),
+            new FormularioDaInscricao(VersaoDaInscricaoDe(db), RegistroCodecs), usuario, CancellationToken.None);
 
     public async Task<Result<AvaliacaoDaInscricaoDto>> AvaliarAsync(
         UniPlusDbContext db, Guid processoId, IUserContext usuario, Dictionary<string, JsonElement>? respostas) =>
         await AvaliarInscricaoQueryHandler.Handle(
             new AvaliarInscricaoQuery(processoId, new AvaliacaoDaInscricaoRequest(respostas, null)),
-            NovoRepositorioDeInscricao(db),
-            ProcessoSeletivoRepositoryDeTeste.Criar(db), Substitute.For<IDocumentoDaInscricaoRepository>(), new CertameDivulgadoRepository(db),
-            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), EnderecosSemCopia(), usuario, DentroDoPeriodo, CancellationToken.None);
+            new InscricaoAtivaDoCandidato(NovoRepositorioDeInscricao(db)), PeriodoDe(db), AvaliacaoDe(db), usuario, DentroDoPeriodo, CancellationToken.None);
 
     public async Task<Result<ReciboDaInscricaoDto>> EnviarAsync(UniPlusDbContext db, Guid processoId, InscricaoRequest pedido, string etag, string numero) =>
         await SubmeterInscricaoCommandHandler.Handle(
@@ -93,6 +92,15 @@ internal sealed class CenarioDeInscricaoPublicada
             NovoRepositorioDeInscricao(db),
             ProcessoSeletivoRepositoryDeTeste.Criar(db), new CertameDivulgadoRepository(db), Substitute.For<IDocumentoDaInscricaoRepository>(), RegistroCodecs, Fuso(), GeoQueConfirma(),
             GeradorQueDevolve(numero), db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), DentroDoPeriodo, CancellationToken.None);
+
+    internal static VersaoDaInscricao VersaoDaInscricaoDe(UniPlusDbContext db) =>
+        new(new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs);
+
+    internal static PeriodoDaInscricao PeriodoDe(UniPlusDbContext db) =>
+        new(new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs, Fuso());
+
+    internal static AvaliacaoDaInscricaoDoCandidato AvaliacaoDe(UniPlusDbContext db) =>
+        new(VersaoDaInscricaoDe(db), Fuso(), Substitute.For<IDocumentoDaInscricaoRepository>(), Substitute.For<IConferenciaEnderecoGeo>(), EnderecosSemCopia());
 
     public async Task<Result<InscricaoDto>> SalvarAsync(
         UniPlusDbContext db, Guid processoId, InscricaoRequest pedido, string etag, IConferenciaEnderecoGeo? geo = null)
@@ -102,7 +110,7 @@ internal sealed class CenarioDeInscricaoPublicada
         return await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(processoId, pedido, PrecondicaoIfMatch.DeTags([etag])),
             new RascunhoDoCandidato(
-                inscricoes, new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs, Fuso(), DentroDoPeriodo),
+                new InscricaoAtivaDoCandidato(inscricoes), new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs, Fuso(), DentroDoPeriodo),
             new SalvamentoDoRascunho(geoDoSalvar, inscricoes, db),
             new RespostaDoRascunho(Substitute.For<IDocumentoDaInscricaoRepository>(), geoDoSalvar, EnderecosSemCopia()),
             UsuarioComCpf(PersonasDeTeste.FernandaDrumond),

@@ -1,21 +1,14 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
 
-using Abstractions;
-
 using Domain.Entities;
-using Domain.Errors;
-using Domain.Interfaces;
-using Domain.ValueObjects;
 
 using DTOs;
 
-using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
 using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// O formulário renderizável da versão em que está a inscrição do dono do token — a divulgada, no
@@ -27,101 +20,19 @@ public static class ObterFormularioDaInscricaoQueryHandler
 {
     public static async Task<Result<FormularioRenderizavelDto>> Handle(
         ObterFormularioDaInscricaoQuery query,
-        IInscricaoRepository inscricaoRepository,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
+        InscricaoAtivaDoCandidato inscricaoAtiva,
+        FormularioDaInscricao formulario,
         IUserContext userContext,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(query);
-        ArgumentNullException.ThrowIfNull(inscricaoRepository);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(userContext);
+        ArgumentNullException.ThrowIfNull(inscricaoAtiva);
+        ArgumentNullException.ThrowIfNull(formulario);
 
-        Result<Inscricao> doCandidato = await InscricaoDoCandidatoAsync(query, inscricaoRepository, userContext, cancellationToken)
-            .ConfigureAwait(false);
-        return doCandidato.IsFailure
-            ? Result<FormularioRenderizavelDto>.Failure(doCandidato.Error!)
-            : await FormularioDaVersaoDaInscricaoAsync(
-                query, doCandidato.Value!, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
-                .ConfigureAwait(false);
-    }
-
-    private static async Task<Result<Inscricao>> InscricaoDoCandidatoAsync(
-        ObterFormularioDaInscricaoQuery query,
-        IInscricaoRepository inscricaoRepository,
-        IUserContext userContext,
-        CancellationToken cancellationToken)
-    {
-        Result<Cpf> cpf = CpfDoToken(userContext);
-        if (cpf.IsFailure)
-        {
-            return Result<Inscricao>.Failure(cpf.Error!);
-        }
-
-        Inscricao? inscricao = await inscricaoRepository
-            .ObterAtivaPorProcessoECpfAsync(query.ProcessoSeletivoId, cpf.Value!, cancellationToken)
-            .ConfigureAwait(false);
-        return inscricao is null
-            ? Result<Inscricao>.Failure(Inscricao.NaoEncontrada)
-            : DoDonoDoToken(inscricao, userContext);
-    }
-
-    private static Result<Inscricao> DoDonoDoToken(Inscricao inscricao, IUserContext userContext) =>
-        inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono
-            ? Result<Inscricao>.Failure(erroDono)
-            : Result<Inscricao>.Success(inscricao);
-
-    private static Result<Cpf> CpfDoToken(IUserContext userContext)
-    {
-        if (userContext.Cpf is not { } cpfDoToken)
-        {
-            return Result<Cpf>.Failure(new DomainError(
-                "Inscricao.CpfAusenteNoToken",
-                "O token não traz o claim cpf — só um candidato autenticado com CPF pode ler o formulário da inscrição."));
-        }
-
-        Result<Cpf> cpf = Cpf.Criar(cpfDoToken);
-        return cpf.IsFailure
-            ? Result<Cpf>.Failure(new DomainError("Inscricao.CpfAusenteNoToken", "O claim cpf do token não é um CPF válido."))
-            : cpf;
-    }
-
-    private static async Task<Result<FormularioRenderizavelDto>> FormularioDaVersaoDaInscricaoAsync(
-        ObterFormularioDaInscricaoQuery query,
-        Inscricao inscricao,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        CancellationToken cancellationToken)
-    {
-        Result<VersaoConfiguracao> resolvida = await VersaoDaInscricaoResolver
-            .ResolverAsync(inscricao, certameDivulgadoRepository, processoSeletivoRepository, cancellationToken)
-            .ConfigureAwait(false);
-        if (resolvida.IsFailure)
-        {
-            return Result<FormularioRenderizavelDto>.Failure(resolvida.Error!);
-        }
-
-        return FormularioDeInscricaoDaVersao(query, resolvida.Value!, registroCodecs);
-    }
-
-    private static Result<FormularioRenderizavelDto> FormularioDeInscricaoDaVersao(
-        ObterFormularioDaInscricaoQuery query, VersaoConfiguracao versao, IRegistroCodecsEnvelope registroCodecs)
-    {
-        Result<FormularioRenderizavelDto?> projetado = ProjecaoDoFormularioDaVersao.Projetar(
-            versao, FinalidadeFormulario.Inscricao, registroCodecs, acervoDaComprovacao: null);
-        if (projetado.IsFailure)
-        {
-            return Result<FormularioRenderizavelDto>.Failure(projetado.Error!);
-        }
-
-        // Uma versão que recebeu inscrição foi publicada com o formulário de inscrição: a ausência
-        // dele numa versão fixada é estado que a publicação não produz.
-        return Result<FormularioRenderizavelDto>.Success(projetado.Value
-            ?? throw new InvalidOperationException(
-                $"A versão fixada da inscrição do processo {query.ProcessoSeletivoId} não tem o formulário de inscrição."));
+        Result<Inscricao> inscricao = await inscricaoAtiva
+            .ObterAsync(query.ProcessoSeletivoId, userContext, "ler o formulário da inscrição", cancellationToken).ConfigureAwait(false);
+        return inscricao.IsFailure
+            ? Result<FormularioRenderizavelDto>.Failure(inscricao.Error!)
+            : await formulario.ProjetarAsync(inscricao.Value!, cancellationToken).ConfigureAwait(false);
     }
 }

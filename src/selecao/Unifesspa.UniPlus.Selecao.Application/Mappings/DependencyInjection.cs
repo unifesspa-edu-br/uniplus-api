@@ -33,6 +33,7 @@ public static class SelecaoApplicationServiceRegistration
         AddPublicacao(services);
         AddAcessoAoCampoEAoDocumentoDaInscricao(services);
         AddSalvamentoDoRascunho(services);
+        AddInscricaoDoCandidato(services);
         AddRotinaPeriodicaEPortaDePermissao(services);
 
         return services;
@@ -73,6 +74,19 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<RascunhoDoCandidato>();
         services.AddScoped<SalvamentoDoRascunho>();
         services.AddScoped<RespostaDoRascunho>();
+    }
+
+    // Os papéis da inscrição do candidato: as portas entram por construtor, e o handler recebe os serviços prontos.
+    private static void AddInscricaoDoCandidato(IServiceCollection services)
+    {
+        services.AddScoped<InscricaoAtivaDoCandidato>();
+        services.AddScoped<PeriodoDaInscricao>();
+        services.AddScoped<VersaoDaInscricao>();
+        services.AddScoped<GravacaoDaInscricao>();
+        services.AddScoped<DescarteDoRascunho>();
+        services.AddScoped<AvaliacaoDaInscricaoDoCandidato>();
+        services.AddScoped<ConsultaDaInscricaoDoCandidato>();
+        services.AddScoped<FormularioDaInscricao>();
     }
 
     // Todo comando que publica (versão, ato avulso, item do edital) lê o relógio uma só vez por esta leitura.

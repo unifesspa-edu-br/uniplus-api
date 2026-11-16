@@ -50,10 +50,30 @@ public sealed class AvaliarInscricaoQueryHandlerTests
     private static async Task<AvaliacaoDaInscricaoDto> AvaliarAsync(Guid? gravada, Guid? noCorpo)
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
+        (VersaoConfiguracao versao, GrafoConfiguracao grafo) = VersaoComDuasOfertas();
+        PortasDaInscricaoDeTeste portas = new(ProcessoId);
+        portas.ComInscricao(cpf, InscricaoComOfertaGravada(versao, grafo, gravada));
+        DivulgacaoDeTeste.ConfigurarVersao(portas.Processos, portas.Codecs, versao, grafo);
+
+        Result<AvaliacaoDaInscricaoDto> resultado = await AvaliarInscricaoQueryHandler.Handle(
+            new AvaliarInscricaoQuery(ProcessoId, CorpoDaAvaliacao(noCorpo)),
+            portas.InscricaoAtiva(), portas.Periodo(), portas.Avaliacao(), UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        return resultado.Value!;
+    }
+
+    private static (VersaoConfiguracao Versao, GrafoConfiguracao Grafo) VersaoComDuasOfertas()
+    {
         (VersaoConfiguracao versao, GrafoConfiguracao grafoBase) = DivulgacaoDeTeste.VersaoConforme(ProcessoId);
         GrafoConfiguracao grafo = OfertasDeTeste.ComDistribuicao(
             grafoBase, OfertasDeTeste.Distribuicao(OfertaA, "AC"), OfertasDeTeste.Distribuicao(OfertaB, "AC", "AC_FEM"));
-        Inscricao inscricao = Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
+        return (versao, grafo);
+    }
+
+    private static Inscricao InscricaoComOfertaGravada(VersaoConfiguracao versao, GrafoConfiguracao grafo, Guid? gravada)
+    {
+        Inscricao inscricao = Inscricao.Iniciar(ProcessoId, PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", versao.Id).Value!;
         if (gravada is { } oferta)
         {
             inscricao.Salvar(
@@ -61,30 +81,23 @@ public sealed class AvaliarInscricaoQueryHandlerTests
                 ContextoDaVersaoFixadaResolver.Admitidas(grafo) with { NomeCivilDoLogin = PersonasDeTeste.NomeFernandaDrumond }, PrecondicaoIfMatch.DeTags([inscricao.ETag])).IsSuccess.Should().BeTrue();
         }
 
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(inscricao);
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        IRegistroCodecsEnvelope registroCodecs = Substitute.For<IRegistroCodecsEnvelope>();
-        DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
-        IUserContext usuario = Substitute.For<IUserContext>();
-        usuario.Cpf.Returns(cpf.Valor);
-        usuario.UserId.Returns("conta-1");
+        return inscricao;
+    }
 
-        AvaliacaoDaInscricaoRequest corpo = new(
+    private static AvaliacaoDaInscricaoRequest CorpoDaAvaliacao(Guid? oferta) =>
+        new(
             new Dictionary<string, JsonElement>(StringComparer.Ordinal)
             {
                 [OfertasDeTeste.FatoDaAcaoAfirmativa] = JsonSerializer.SerializeToElement(OfertasDeTeste.ValorDaAcaoAfirmativa),
             },
             null,
-            noCorpo);
+            oferta);
 
-        Result<AvaliacaoDaInscricaoDto> resultado = await AvaliarInscricaoQueryHandler.Handle(
-            new AvaliarInscricaoQuery(ProcessoId, corpo),
-            inscricaoRepository, processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(),
-            Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), usuario, DivulgacaoDeTeste.Relogio,
-            CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        return resultado.Value!;
+    private static IUserContext UsuarioComCpf(Cpf cpf)
+    {
+        IUserContext usuario = Substitute.For<IUserContext>();
+        usuario.Cpf.Returns(cpf.Valor);
+        usuario.UserId.Returns("conta-1");
+        return usuario;
     }
 }

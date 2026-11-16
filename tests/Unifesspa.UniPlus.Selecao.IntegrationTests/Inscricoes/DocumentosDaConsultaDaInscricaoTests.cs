@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.Queries.Inscricoes;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
@@ -92,7 +93,12 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
         documentos.Fases.Single().Documentos.Select(static d => (d.TipoDocumentoCodigo, d.OcorrenciaId, d.Situacao));
 
     private async Task<Result<AvaliacaoDaInscricaoDto>> AvaliarDocumentosAsync(
-        UniPlusDbContext db, Guid processoId, IUserContext usuario, bool? declaraRenda, string[] membros, Guid faseId)
+        UniPlusDbContext db, Guid processoId, IUserContext usuario, bool? declaraRenda, string[] membros, Guid faseId) =>
+        await AvaliarInscricaoQueryHandler.Handle(
+            new AvaliarInscricaoQuery(processoId, new AvaliacaoDaInscricaoRequest(RespostasDaAvaliacao(declaraRenda), GrupoDaComposicaoFamiliar(membros)), faseId),
+            new InscricaoAtivaDoCandidato(_cenario.NovoRepositorioDeInscricao(db)), PeriodoDe(db), AvaliacaoDe(db), usuario, DentroDoPeriodo, CancellationToken.None);
+
+    private static Dictionary<string, JsonElement> RespostasDaAvaliacao(bool? declaraRenda)
     {
         Dictionary<string, JsonElement> respostas = new(StringComparer.Ordinal);
         if (declaraRenda is { } valor)
@@ -100,16 +106,14 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
             respostas["DECLARA_RENDA"] = JsonSerializer.SerializeToElement(valor);
         }
 
-        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> grupos = new(StringComparer.Ordinal)
+        return respostas;
+    }
+
+    private static Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricaoInput>> GrupoDaComposicaoFamiliar(string[] membros) =>
+        new(StringComparer.Ordinal)
         {
             ["COMPOSICAO_FAMILIAR"] = [.. membros.Select(static m => new OcorrenciaDeGrupoInscricaoInput(m, new Dictionary<string, JsonElement>(StringComparer.Ordinal)))],
         };
-        return await AvaliarInscricaoQueryHandler.Handle(
-            new AvaliarInscricaoQuery(processoId, new AvaliacaoDaInscricaoRequest(respostas, grupos), faseId),
-            _cenario.NovoRepositorioDeInscricao(db),
-            ProcessoSeletivoRepositoryDeTeste.Criar(db), Substitute.For<IDocumentoDaInscricaoRepository>(), new CertameDivulgadoRepository(db),
-            RegistroCodecs, Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), EnderecosSemCopia(), usuario, DentroDoPeriodo, CancellationToken.None);
-    }
 
     private static DocumentoExigido Exigencia(Guid fase, string tipo, (string Fato, JsonElement Valor)[] gatilho) =>
         DocumentoExigido.Criar(

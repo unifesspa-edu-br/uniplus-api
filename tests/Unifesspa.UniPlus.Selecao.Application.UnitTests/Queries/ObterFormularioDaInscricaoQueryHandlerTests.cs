@@ -80,32 +80,52 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
         return registro;
     }
 
+    private static readonly Guid FaseDoBloco = Guid.Parse("0199a000-0000-7000-8000-0000000000f1");
+
+    private static Task<Result<FormularioRenderizavelDto>> Obter(PortasDaInscricaoDeTeste portas, IUserContext usuario) =>
+        ObterFormularioDaInscricaoQueryHandler.Handle(
+            new ObterFormularioDaInscricaoQuery(ProcessoId), portas.InscricaoAtiva(), portas.Formulario(), usuario, CancellationToken.None);
+
+    private static Inscricao Rascunho(Cpf cpf, VersaoConfiguracao versao) =>
+        Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
+
+    private static PortasDaInscricaoDeTeste PortasNaVersao(Cpf cpf, Inscricao inscricao, VersaoConfiguracao versao, EnvelopeReidratado envelope)
+    {
+        PortasDaInscricaoDeTeste portas = new(ProcessoId) { Codecs = RegistroReidratando(envelope) };
+        portas.ComInscricao(cpf, inscricao);
+        portas.Processos.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
+        portas.Processos.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
+        return portas;
+    }
+
+    private static string ExigenciaCondicionalDeComprovante() =>
+        $$"""
+        {"tipoDocumentoNome": "Comprovante de residência", "aplicabilidade": "Condicional", "obrigatorio": true, "exigidoNaFaseId": "{{FaseDoBloco}}",
+         "finalidade": "INSCRICAO", "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null}
+        """;
+
     [Fact(DisplayName = "Sem o claim cpf no token, recusa sem consultar repositório nenhum")]
     public async Task Handle_SemCpfNoToken_Recusa()
     {
+        PortasDaInscricaoDeTeste portas = new(ProcessoId);
         IUserContext userContext = Substitute.For<IUserContext>();
         userContext.Cpf.Returns((string?)null);
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
 
-        Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(),
-            Substitute.For<IRegistroCodecsEnvelope>(), userContext, CancellationToken.None);
+        Result<FormularioRenderizavelDto> resultado = await Obter(portas, userContext);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.CpfAusenteNoToken");
-        await inscricaoRepository.DidNotReceive().ObterAtivaPorProcessoECpfAsync(Arg.Any<Guid>(), Arg.Any<Cpf>(), Arg.Any<CancellationToken>());
+        await portas.Inscricoes.DidNotReceive().ObterAtivaPorProcessoECpfAsync(Arg.Any<Guid>(), Arg.Any<Cpf>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Sem inscrição para o CPF e o processo, recusa como não encontrada")]
     public async Task Handle_SemInscricao_RecusaComoNaoEncontrada()
     {
         Cpf cpf = PersonasDeTeste.FernandaDrumond;
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
+        PortasDaInscricaoDeTeste portas = new(ProcessoId);
+        portas.ComInscricao(cpf, null);
 
-        Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, Substitute.For<ICertameDivulgadoRepository>(), Substitute.For<IProcessoSeletivoRepository>(),
-            Substitute.For<IRegistroCodecsEnvelope>(), UsuarioComCpf(cpf), CancellationToken.None);
+        Result<FormularioRenderizavelDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("Inscricao.NaoEncontrada");
@@ -116,19 +136,9 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao();
-        Inscricao existente = Inscricao.Iniciar(
-            ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!;
+        PortasDaInscricaoDeTeste portas = PortasNaVersao(cpf, Rascunho(cpf, versao), versao, envelope);
 
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
-
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
-        processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
-
-        Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, DivulgacaoDeTeste.Certame(ProcessoId), processoRepository,
-            RegistroReidratando(envelope), UsuarioComCpf(cpf), CancellationToken.None);
+        Result<FormularioRenderizavelDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.Finalidade.Should().Be(EstruturaFormulario.ParaToken(FinalidadeFormulario.Inscricao));
@@ -138,23 +148,10 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
     public async Task Handle_FormularioComBlocoDeComprovacao_NaoTrazALista()
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
-        Guid fase = Guid.Parse("0199a000-0000-7000-8000-0000000000f1");
-        (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao(
-            fase,
-            $$"""
-            {"tipoDocumentoNome": "Comprovante de residência", "aplicabilidade": "Condicional", "obrigatorio": true, "exigidoNaFaseId": "{{fase}}",
-             "finalidade": "INSCRICAO", "formatosPermitidos": {"lista": null, "qualquer": true}, "modelo": null}
-            """);
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>())
-            .Returns(Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!);
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
-        processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
+        (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao(FaseDoBloco, ExigenciaCondicionalDeComprovante());
+        PortasDaInscricaoDeTeste portas = PortasNaVersao(cpf, Rascunho(cpf, versao), versao, envelope);
 
-        Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, DivulgacaoDeTeste.Certame(ProcessoId), processoRepository,
-            RegistroReidratando(envelope), UsuarioComCpf(cpf), CancellationToken.None);
+        Result<FormularioRenderizavelDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         resultado.Value!.ComprovacaoDocumental.Should().BeNull("a lista do certame não diz o que se aplica ao candidato");
@@ -165,16 +162,9 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
         (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao(finalidade: FinalidadeFormulario.Habilitacao);
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>())
-            .Returns(InscricaoEnviadaDeTeste.Enviar(Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!));
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
-        processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
+        PortasDaInscricaoDeTeste portas = PortasNaVersao(cpf, InscricaoEnviadaDeTeste.Enviar(Rascunho(cpf, versao)), versao, envelope);
 
-        Func<Task> leitura = () => ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, DivulgacaoDeTeste.Certame(ProcessoId), processoRepository,
-            RegistroReidratando(envelope), UsuarioComCpf(cpf), CancellationToken.None);
+        Func<Task> leitura = () => Obter(portas, UsuarioComCpf(cpf));
 
         await leitura.Should().ThrowAsync<InvalidOperationException>().WithMessage("*não tem o formulário de inscrição*");
     }
@@ -195,19 +185,11 @@ public sealed class ObterFormularioDaInscricaoQueryHandlerTests
     public async Task Handle_FormularioComFase_PublicaAFase()
     {
         Cpf cpf = PersonasDeTeste.KevinCarvalho;
-        Guid fase = Guid.Parse("0199a000-0000-7000-8000-0000000000f1");
-        (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao(fase);
-        IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
-        inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>())
-            .Returns(Inscricao.Iniciar(ProcessoId, cpf, "conta-1", "https://issuer", versao.Id).Value!);
-        IProcessoSeletivoRepository processoRepository = Substitute.For<IProcessoSeletivoRepository>();
-        processoRepository.ObterVersoesAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns([versao]);
-        processoRepository.ObterVersoesPorAtoCriadorAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns([versao]);
+        (VersaoConfiguracao versao, EnvelopeReidratado envelope) = MontarVersaoComFormularioDeInscricao(FaseDoBloco);
+        PortasDaInscricaoDeTeste portas = PortasNaVersao(cpf, Rascunho(cpf, versao), versao, envelope);
 
-        Result<FormularioRenderizavelDto> resultado = await ObterFormularioDaInscricaoQueryHandler.Handle(
-            new ObterFormularioDaInscricaoQuery(ProcessoId), inscricaoRepository, DivulgacaoDeTeste.Certame(ProcessoId), processoRepository,
-            RegistroReidratando(envelope), UsuarioComCpf(cpf), CancellationToken.None);
+        Result<FormularioRenderizavelDto> resultado = await Obter(portas, UsuarioComCpf(cpf));
 
-        resultado.Value!.FaseId.Should().Be(fase);
+        resultado.Value!.FaseId.Should().Be(FaseDoBloco);
     }
 }
