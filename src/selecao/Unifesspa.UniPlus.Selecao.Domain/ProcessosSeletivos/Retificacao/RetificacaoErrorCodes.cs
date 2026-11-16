@@ -41,4 +41,10 @@ public static class RetificacaoErrorCodes
 
     /// <summary>O término da janela de isenção já encerrada foi alterado: a janela encerrada não reabre.</summary>
     public const string JanelaDeIsencaoEncerradaReaberta = "Retificacao.JanelaDeIsencaoEncerradaReaberta";
+
+    /// <summary>A retificação muda a regra ou os dados de um resultado preliminar publicado, e o bloco não declara o novo ciclo.</summary>
+    public const string CicloNovoNaoDeclarado = "Retificacao.CicloNovoNaoDeclarado";
+
+    /// <summary>O bloco declara novo ciclo para um item sem resultado preliminar publicado e com o ciclo ainda aberto.</summary>
+    public const string CicloNovoDeItemSemPreliminarAberto = "Retificacao.CicloNovoDeItemSemPreliminarAberto";
 }

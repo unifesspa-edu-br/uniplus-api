@@ -223,6 +223,9 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     internal IReadOnlyList<FieldError> ViolacoesDoRecorteDeCompetencia() =>
         RecorteDeCompetenciaDasBancas.Violacoes(Codigo, _bancasRequeridas);
 
+    /// <summary>O que da fase entra no resultado preliminar que ela publica (ver <see cref="ValueObjects.EntradaDoPreliminar"/>).</summary>
+    public EntradaDoPreliminar EntradaDoPreliminar() => EntradaDoPreliminarDaFase.De(this);
+
     /// <summary>Refaz a cópia de sigla e nome da unidade que a fase já tem, pelo valor vivo do cadastro.</summary>
     internal void RecopiarUnidadeResponsavel(UnidadeResponsavelSnapshot viva)
     {

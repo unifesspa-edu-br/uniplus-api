@@ -67,7 +67,7 @@ public static class ConferenciaDoCicloRecursalAberto
             .Distinct(StringComparer.Ordinal);
     }
 
-    private static IEnumerable<CicloAberto> CiclosAbertos(
+    internal static IEnumerable<CicloAberto> CiclosAbertos(
         IReadOnlyCollection<FaseCronograma> fasesPublicadas,
         IReadOnlyCollection<EtapaProcesso> etapasPublicadas,
         IReadOnlySet<IdentidadeDoItemDoEdital> itensPublicados)
@@ -109,5 +109,5 @@ public static class ConferenciaDoCicloRecursalAberto
             $"A retificação desfaz o ciclo de recurso da matéria '{atoCodigo}': o resultado preliminar já foi publicado, o definitivo ainda não, "
             + "e a configuração nova retira ou muda de ciclo um dos dois. Publique o definitivo antes de retificar, ou mantenha o preliminar e o definitivo da matéria no cronograma."));
 
-    private sealed record CicloAberto(IdentidadeDoItemDoEdital Preliminar, IReadOnlyList<IdentidadeDoItemDoEdital> Definitivos);
+    internal sealed record CicloAberto(IdentidadeDoItemDoEdital Preliminar, IReadOnlyList<IdentidadeDoItemDoEdital> Definitivos);
 }

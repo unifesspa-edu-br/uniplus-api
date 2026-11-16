@@ -13,6 +13,8 @@ internal static class FaseDaRetificacaoDeTeste
 {
     internal static readonly DateTimeOffset Instante = new(2027, 3, 10, 12, 0, 0, TimeSpan.Zero);
 
+    private static readonly Guid TipoDaEtapaDeTeste = Guid.Parse("0197d6f0-0000-7000-8000-00000000e7a0");
+
     internal static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar);
 
     internal static ProdutoDaFase Definitivo(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Definitivo);
@@ -39,6 +41,14 @@ internal static class FaseDaRetificacaoDeTeste
             new PublicacoesDaFase(Produtos: [.. fase.Produtos], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
+    /// <summary>A mesma fase, com a mesma origem canônica, com outro código, outra ordem e outros produtos: o que não entra no preliminar.</summary>
+    internal static FaseCronograma Renomeada(FaseCronograma fase, string codigo, int ordem, params ProdutoDaFase[] produtos) =>
+        FaseCronograma.Criar(
+            new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: fase.Inicio, Fim: fase.Fim, FaseConcluinteCodigo: fase.FaseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
+
     internal static FasesIniciadas Iniciadas(params FaseCronograma[] fases) =>
         new(fases.Select(static f => KeyValuePair.Create(f.FaseCanonicaOrigemId, f.UnidadeResponsavelOrigemId)));
 
@@ -53,6 +63,18 @@ internal static class FaseDaRetificacaoDeTeste
             new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: null, FaseCodigo: faseCodigo),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         etapa.DefinirJanelaEParecer(inicio, inicio.AddDays(3), emiteParecerIndividual: false).IsSuccess.Should().BeTrue();
+
+        return etapa;
+    }
+
+    /// <summary>A etapa de identidade fixa, com peso e produtos: a mesma etapa em versões diferentes tem o mesmo <c>Id</c>.</summary>
+    internal static EtapaProcesso EtapaComPeso(Guid id, string nome, decimal peso, string faseCodigo, params ProdutoDaEtapa[] produtos)
+    {
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(TipoDaEtapaDeTeste, "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: null, FaseCodigo: faseCodigo),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
+        typeof(EtapaProcesso).GetProperty(nameof(EtapaProcesso.Id))!.SetValue(etapa, id);
+        etapa.DefinirProdutos(produtos).IsSuccess.Should().BeTrue();
 
         return etapa;
     }

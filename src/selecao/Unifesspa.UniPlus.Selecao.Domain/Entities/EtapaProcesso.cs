@@ -300,6 +300,9 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         return Result.Success();
     }
 
+    /// <summary>O que da etapa entra no resultado preliminar que ela publica (ver <see cref="ValueObjects.EntradaDoPreliminar"/>).</summary>
+    public EntradaDoPreliminar EntradaDoPreliminar() => EntradaDoPreliminarDaEtapa.De(this);
+
     /// <summary>Os tipos de ato cujo preliminar a etapa publica sem o definitivo do mesmo tipo.</summary>
     internal IEnumerable<string> TiposComCicloAberto() =>
         CicloRecursal.TiposComCicloAberto(_produtos.Select(static p => (p.AtoCodigo, p.Papel)));
