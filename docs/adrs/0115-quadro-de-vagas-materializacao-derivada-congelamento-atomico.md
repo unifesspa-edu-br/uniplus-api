@@ -114,3 +114,11 @@ calculadora) e `EhQuadroFixo(codigo)` (aceita as quantidades fixadas), partiçã
 todo código do catálogo — não por igualdade com um único código de cada lado. A opção B
 ("dois caminhos dentro da mesma factory") continua a decisão vigente; o que muda é só quantos
 códigos cada caminho reconhece.
+
+## Emenda 2 (2026-11-16) — o cadastro de reserva por chamada não faz parte do quadro
+
+**Contexto.** O processo declara, para cada chamada com cadastro de reserva, quantas pessoas da reserva convoca por vaga (UNI-REQ-0354, UNI-REQ-0355). Nesta ADR e no código do quadro, "reserva" já designa a reserva legal e as sub-reservas da Lei 12.711/2012, o que tornaria o termo ambíguo.
+
+**Decisão.** O cadastro de reserva por chamada é declaração própria do processo, indexada pelo número da chamada, fora da configuração da distribuição. Não é insumo nem saída do quadro: não altera o bloco `vagas` nem o hash do congelamento. As vagas que ele multiplica são as da chamada, informadas por quem convoca, e a declaração nunca lê o quadro. No código o nome é sempre "cadastro de reserva", nunca "reserva" sozinho.
+
+**Consequências.** O quadro segue sendo o estoque da classificação. A pessoa do cadastro de reserva é convocada além das vagas, sem ocupá-las. A separação é garantida por regra de arquitetura nos dois sentidos: o cadastro de reserva não depende do quadro de vagas nem dos tipos que o materializam, e eles não dependem dele.
