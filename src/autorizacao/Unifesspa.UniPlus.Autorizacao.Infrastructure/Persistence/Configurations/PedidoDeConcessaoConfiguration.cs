@@ -70,9 +70,7 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
     {
         ConfigurarSolicitante(builder);
         builder.Property(p => p.BeneficiarioEmail).HasMaxLength(EmailDaPessoa.MaxLength).IsRequired();
-        builder.Property(p => p.BeneficiarioEmissor).HasMaxLength(IdentidadeMaxLength);
-        builder.Property(p => p.BeneficiarioContaId).HasMaxLength(IdentidadeMaxLength);
-        builder.Property(p => p.BeneficiarioNome).HasMaxLength(NomeDeExibicao.MaxLength);
+        ConfigurarBeneficiario(builder);
         builder.Property(p => p.Justificativa).HasMaxLength(PedidoDeConcessao.JustificativaMaxLength).IsRequired();
         builder.Property(p => p.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
         builder.Property(p => p.ValidaAteSugerida);
@@ -84,7 +82,6 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         builder.Property(p => p.TermoResumo).HasMaxLength(ConteudoDoTermo.ResumoLength).IsFixedLength();
 
         // Derivados do estado: não se gravam de novo.
-        builder.Ignore(p => p.Beneficiario);
         builder.Ignore(p => p.Escopo);
         builder.Ignore(p => p.Ativo);
         builder.Ignore(p => p.EtapaAtual);
@@ -106,6 +103,20 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
             solicitante.HasIndex(s => new { s.Emissor, s.ContaId }).HasDatabaseName("ix_pedidos_solicitante");
         });
         builder.Navigation(p => p.Solicitante).IsRequired();
+    }
+
+    private static void ConfigurarBeneficiario(EntityTypeBuilder<PedidoDeConcessao> builder)
+    {
+        builder.OwnsOne(p => p.Beneficiario, beneficiario =>
+        {
+            beneficiario.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
+            beneficiario.Property(b => b.Emissor).HasColumnName("beneficiario_emissor").HasMaxLength(IdentidadeMaxLength);
+            beneficiario.Property(b => b.ContaId).HasColumnName("beneficiario_conta_id").HasMaxLength(IdentidadeMaxLength);
+            beneficiario.Property(b => b.Nome).HasColumnName("beneficiario_nome").HasMaxLength(NomeDeExibicao.MaxLength);
+            beneficiario.Property(b => b.AceitouEm).HasColumnName("beneficiario_aceitou_em");
+            beneficiario.Ignore(b => b.Identidade);
+        });
+        builder.Navigation(p => p.Beneficiario).IsRequired();
     }
 
     private static void ConfigurarRelacionamentos(EntityTypeBuilder<PedidoDeConcessao> builder)

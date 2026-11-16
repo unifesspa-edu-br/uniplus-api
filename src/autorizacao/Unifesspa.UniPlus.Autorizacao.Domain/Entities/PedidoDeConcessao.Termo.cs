@@ -70,7 +70,7 @@ public sealed partial class PedidoDeConcessao
         return Result.Success();
     }
 
-    private bool EnvioEOAceite => Beneficiario is not null && !AnexaraDocumento;
+    private bool EnvioEOAceite => Beneficiario.Identidade is not null && !AnexaraDocumento;
 
     private static Result? RecusaDoTermoNaCriacao(TermoNaCriacao termo)
     {
@@ -95,7 +95,7 @@ public sealed partial class PedidoDeConcessao
 
         if (EnvioEOAceite)
         {
-            AceiteDoTermo = AceiteDoTermo.Registrar(Id, Termo!, Beneficiario!, instante);
+            AceiteDoTermo = AceiteDoTermo.Registrar(Id, Termo!, Beneficiario.Identidade!, instante);
         }
     }
 
@@ -114,7 +114,7 @@ public sealed partial class PedidoDeConcessao
     {
         if (Termo is { } fixado)
         {
-            AceiteDoTermo = AceiteDoTermo.Registrar(Id, fixado, Beneficiario!, instante);
+            AceiteDoTermo = AceiteDoTermo.Registrar(Id, fixado, Beneficiario.Identidade!, instante);
         }
     }
 
@@ -166,7 +166,7 @@ public sealed partial class PedidoDeConcessao
     // Depois do documento verificado, o pedido aguarda o aceite quando o beneficiário é outra pessoa ou o termo o exige; só
     // então vai ao gestor.
     private SituacaoDoPedido EtapaSeguinteAoDocumento() =>
-        Beneficiario is null || Termo is not null ? SituacaoDoPedido.AguardandoBeneficiario : SituacaoDoPedido.AguardandoGestor;
+        Beneficiario.Identidade is null || Termo is not null ? SituacaoDoPedido.AguardandoBeneficiario : SituacaoDoPedido.AguardandoGestor;
 
     private static DomainError SemTermoVigente() => new(
         PedidoErrorCodes.SemTermoVigente,

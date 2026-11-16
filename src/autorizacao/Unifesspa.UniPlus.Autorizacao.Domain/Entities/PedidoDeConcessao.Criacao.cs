@@ -81,10 +81,7 @@ public sealed partial class PedidoDeConcessao
         BeneficiarioEmail = beneficiario.Email;
         Solicitante = SolicitanteDoPedido.De(solicitante);
 
-        if (beneficiario.ParaSiMesmo)
-        {
-            DefinirBeneficiario(Solicitante.Identidade, Solicitante.Nome);
-        }
+        Beneficiario = beneficiario.ParaSiMesmo ? BeneficiarioDoPedido.Conhecido(Solicitante.Identidade, Solicitante.Nome) : BeneficiarioDoPedido.Desconhecido();
     }
 
     // O documento declarado vem antes de tudo; sem ele, o pedido para si mesmo vai ao gestor e o para outra pessoa espera o

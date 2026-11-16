@@ -43,7 +43,7 @@ public sealed class ConcessaoDoPedidoAprovado
         }
 
         Concessao? igual = await _concessoes
-            .ObterNaoRevogadaIgualAsync(pedido.Beneficiario!, decisao.Perfil.Id, pedido.Escopo, cancellationToken)
+            .ObterNaoRevogadaIgualAsync(pedido.Beneficiario.Identidade!, decisao.Perfil.Id, pedido.Escopo, cancellationToken)
             .ConfigureAwait(false);
         return igual?.EstaAtiva(agora) == true
             ? Result.Failure(PedidoHandlerErros.JaTemConcessao())
@@ -57,7 +57,7 @@ public sealed class ConcessaoDoPedidoAprovado
             return false;
         }
 
-        Identidade beneficiario = decisao.Pedido.Beneficiario!;
+        Identidade beneficiario = decisao.Pedido.Beneficiario.Identidade!;
         await _papeis.TravarAsync([beneficiario], cancellationToken).ConfigureAwait(false);
 
         return await _papeis.TemPapelIncompativelAsync(beneficiario, decisao.Perfil.Id, agora, cancellationToken).ConfigureAwait(false);
@@ -81,7 +81,7 @@ public sealed class ConcessaoDoPedidoAprovado
         PedidoDeConcessao pedido = decisao.Pedido;
 
         return Concessao.Conceder(
-            new TitularDaConcessao(pedido.Beneficiario!, pedido.BeneficiarioEmail), decisao.Perfil, pedido.Escopo,
+            new TitularDaConcessao(pedido.Beneficiario.Identidade!, pedido.BeneficiarioEmail), decisao.Perfil, pedido.Escopo,
             new OrigemDaConcessao(TipoDeOrigem.Pedido, pedido.Id), new AtoDoAgente(decisao.Decisor, agora), _catalogo, pedido.ValidaAte);
     }
 

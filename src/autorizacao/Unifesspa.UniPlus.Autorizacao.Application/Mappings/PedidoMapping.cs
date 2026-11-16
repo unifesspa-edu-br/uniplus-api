@@ -65,8 +65,8 @@ public static class PedidoMapping
 
     private static BeneficiarioDoPedidoDto Beneficiario(PedidoDeConcessao p) => new(
         p.BeneficiarioEmail,
-        p.Beneficiario is { } b ? new IdentidadeDto(b.Emissor, b.ContaId, b.Nome) : null,
-        p.BeneficiarioNome);
+        p.Beneficiario.Identidade is { } b ? new IdentidadeDto(b.Emissor, b.ContaId, b.Nome) : null,
+        p.Beneficiario.Nome);
 
     private static AnexoDoPedidoDto[] Anexos(PedidoDeConcessao p) => [.. p.Anexos.OrderBy(a => a.Id).Select(ToDto)];
 

@@ -70,7 +70,7 @@ public sealed class EventosDoPedido : IEventosDaOrigem
 
     private static IEnumerable<EventoDaTrilhaDto> DoAceite(PedidoDeConcessao pedido)
     {
-        if (pedido.BeneficiarioAceitouEm is { } aceitouEm && pedido.Beneficiario is { } beneficiario)
+        if (pedido.Beneficiario.AceitouEm is { } aceitouEm && pedido.Beneficiario.Identidade is { } beneficiario)
         {
             yield return new("beneficiario_aceitou", aceitouEm, Dto(beneficiario.Emissor, beneficiario.ContaId, beneficiario.Nome), null);
         }

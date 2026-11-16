@@ -105,7 +105,7 @@ public sealed class AvisosDoPedido
 
     // Quem cancela é o solicitante; só o beneficiário, que já sabia do pedido, precisa saber que ele acabou.
     private static string[] DestinatariosDoCancelamento(PedidoDeConcessao pedido) =>
-        pedido.Beneficiario == pedido.Solicitante.Identidade
+        pedido.Beneficiario.Identidade == pedido.Solicitante.Identidade
             ? []
             : [.. Distintos([pedido.BeneficiarioEmail]).Where(e => !MesmoEndereco(e, pedido.Solicitante.Email))];
 
@@ -120,7 +120,7 @@ public sealed class AvisosDoPedido
 
         return Distintos(titulares
             .Where(t => !pedido.Solicitante.Eh(t.Pessoa)
-                && !(pedido.Beneficiario is { } beneficiario && t.Pessoa == beneficiario)
+                && !pedido.Beneficiario.Eh(t.Pessoa)
                 && !MesmoEndereco(t.Email, pedido.Solicitante.Email)
                 && !MesmoEndereco(t.Email, pedido.BeneficiarioEmail)
                 && !excluidos.Contains(t.Pessoa))
