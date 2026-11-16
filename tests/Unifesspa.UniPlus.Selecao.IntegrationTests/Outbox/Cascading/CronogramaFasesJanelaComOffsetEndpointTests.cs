@@ -91,8 +91,8 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         persistida.Fim!.Value.Offset.Should().Be(TimeSpan.Zero);
 
         FaseCronogramaDto lida = await ctx.ObterFaseLidaPelaApiAsync();
-        lida.Inicio.Should().Be(InicioEsperadoUtc, "a leitura devolve o mesmo instante que a gravação recebeu");
-        lida.Fim.Should().Be(FimEsperadoUtc);
+        lida.Cronograma.Inicio.Should().Be(InicioEsperadoUtc, "a leitura devolve o mesmo instante que a gravação recebeu");
+        lida.Cronograma.Fim.Should().Be(FimEsperadoUtc);
     }
 
     [Fact(DisplayName = "Redefinir a MESMA fase com outro offset atualiza o instante — o caminho de reconciliação também normaliza")]

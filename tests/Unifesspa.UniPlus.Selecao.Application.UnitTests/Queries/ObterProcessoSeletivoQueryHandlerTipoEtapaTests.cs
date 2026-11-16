@@ -38,7 +38,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerTipoEtapaTests
         ProcessoSeletivoDto? dto = await ObterProcessoSeletivoQueryHandler.Handle(
             new ObterProcessoSeletivoQuery(processo.Id), repository, CancellationToken.None);
 
-        dto!.Etapas.Select(etapa => (etapa.Nome, etapa.TipoEtapa.NotaDeOrigemNoEnem))
+        dto!.Etapas.Select(etapa => (etapa.Identificacao.Nome, etapa.Identificacao.TipoEtapa.NotaDeOrigemNoEnem))
             .Should().Equal(("Nota do ENEM", true), ("Redação", false));
     }
 }

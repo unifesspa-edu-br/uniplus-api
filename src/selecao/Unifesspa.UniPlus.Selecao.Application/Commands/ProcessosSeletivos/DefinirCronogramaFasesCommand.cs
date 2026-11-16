@@ -88,6 +88,10 @@ public sealed record BancaRequeridaInput(
 /// a retificação a exigem. O handler a resolve pela porta <c>IResolvedorDaUnidadeResponsavel</c> e congela id, sigla
 /// e nome por valor (snapshot-copy, ADR-0061).
 /// </param>
+/// <param name="TiposDeDecisao">
+/// Os tipos de decisão que a fase declara produzir, como o cliente os escreveu. Ausente ou vazio: nenhum. A
+/// ordem não importa, e a leitura os devolve em ordem canônica.
+/// </param>
 public sealed record FaseCronogramaInput(
     int Ordem,
     Guid FaseCanonicaId,
@@ -98,7 +102,8 @@ public sealed record FaseCronogramaInput(
     bool EmiteParecerIndividual,
     IReadOnlyList<BancaRequeridaInput> BancasRequeridas,
     RegraRecursoFaseInput? RegraRecurso,
-    Guid? UnidadeResponsavelId = null);
+    Guid? UnidadeResponsavelId = null,
+    IReadOnlyList<string?>? TiposDeDecisao = null);
 
 /// <summary>
 /// Substitui integralmente o cronograma de fases do processo (Story #851, CA-06):

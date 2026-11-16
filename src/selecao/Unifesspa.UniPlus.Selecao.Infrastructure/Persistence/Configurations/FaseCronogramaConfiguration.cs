@@ -55,6 +55,7 @@ public sealed class FaseCronogramaConfiguration : IEntityTypeConfiguration<FaseC
         // resolução (existe, publica definitiva, não antecede) é invariante da raiz.
         builder.Property(f => f.FaseConcluinteCodigo).HasMaxLength(CodigoMaxLength);
         builder.Property(f => f.EmiteParecerIndividual).IsRequired();
+        builder.MapearTiposDeDecisao();
 
         // Ordem e fase canônica únicas por processo — a rejeição em
         // ProcessoSeletivo.DefinirCronogramaFases é check-then-act não-atômico; a

@@ -73,7 +73,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
 
         JsonElement json = await ProjetarERSerializarAsync(processo);
 
-        json.GetProperty("etapas")[0].GetProperty("carater").GetString().Should().Be("classificatoria",
+        json.GetProperty("etapas")[0].GetProperty("identificacao").GetProperty("carater").GetString().Should().Be("classificatoria",
             "`EtapaProcessoInput.carater` aceita este token — reenviar o GET direto no PUT não pode "
             + "exigir que o cliente traduza a grafia no caminho");
     }

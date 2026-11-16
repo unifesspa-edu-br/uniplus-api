@@ -5632,8 +5632,8 @@
                   "pm.test('200 OK', () => {",
                   "  pm.response.to.have.status(200);",
                   "  const j = pm.response.json();",
-                  "  pm.environment.set('arvore_fase_id_p2', j.cronogramaFases.find(f => f.ordem === 2).id);",
-                  "  pm.environment.set('arvore_fase_inscricao_id_p2', j.cronogramaFases.find(f => f.ordem === 1).id);",
+                  "  pm.environment.set('arvore_fase_id_p2', j.cronogramaFases.find(f => f.cronograma.ordem === 2).id);",
+                  "  pm.environment.set('arvore_fase_inscricao_id_p2', j.cronogramaFases.find(f => f.cronograma.ordem === 1).id);",
                   "});"
                 ]
               }
@@ -6250,8 +6250,8 @@
                   "pm.test('200 OK', () => {",
                   "  pm.response.to.have.status(200);",
                   "  const j = pm.response.json();",
-                  "  pm.environment.set('arvore_fase_id_p3', j.cronogramaFases.find(f => f.ordem === 2).id);",
-                  "  pm.environment.set('arvore_fase_inscricao_id_p3', j.cronogramaFases.find(f => f.ordem === 1).id);",
+                  "  pm.environment.set('arvore_fase_id_p3', j.cronogramaFases.find(f => f.cronograma.ordem === 2).id);",
+                  "  pm.environment.set('arvore_fase_inscricao_id_p3', j.cronogramaFases.find(f => f.cronograma.ordem === 1).id);",
                   "});"
                 ]
               }
@@ -6861,8 +6861,8 @@
                   "pm.test('200 OK', () => {",
                   "  pm.response.to.have.status(200);",
                   "  const j = pm.response.json();",
-                  "  pm.environment.set('arvore_fase_id_p4', j.cronogramaFases.find(f => f.ordem === 2).id);",
-                  "  pm.environment.set('arvore_fase_inscricao_id_p4', j.cronogramaFases.find(f => f.ordem === 1).id);",
+                  "  pm.environment.set('arvore_fase_id_p4', j.cronogramaFases.find(f => f.cronograma.ordem === 2).id);",
+                  "  pm.environment.set('arvore_fase_inscricao_id_p4', j.cronogramaFases.find(f => f.cronograma.ordem === 1).id);",
                   "});"
                 ]
               }
@@ -7476,8 +7476,8 @@
                   "pm.test('200 OK', () => {",
                   "  pm.response.to.have.status(200);",
                   "  const j = pm.response.json();",
-                  "  pm.environment.set('arvore_fase_id_p5', j.cronogramaFases.find(f => f.ordem === 2).id);",
-                  "  pm.environment.set('arvore_fase_inscricao_id_p5', j.cronogramaFases.find(f => f.ordem === 1).id);",
+                  "  pm.environment.set('arvore_fase_id_p5', j.cronogramaFases.find(f => f.cronograma.ordem === 2).id);",
+                  "  pm.environment.set('arvore_fase_inscricao_id_p5', j.cronogramaFases.find(f => f.cronograma.ordem === 1).id);",
                   "});"
                 ]
               }

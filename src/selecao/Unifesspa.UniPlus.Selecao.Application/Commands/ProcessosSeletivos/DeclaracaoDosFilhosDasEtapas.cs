@@ -6,8 +6,8 @@ using Domain.Enums;
 using Kernel.Results;
 
 /// <summary>
-/// Declara, em uma etapa que já existe, os produtos, a janela, as bancas e as janelas recursais, nessa
-/// ordem: o recurso se ancora num produto, e é a etapa quem recusa o ato repetido.
+/// Declara, em uma etapa que já existe, os produtos, a janela, os tipos de decisão, as bancas e as janelas
+/// recursais, nessa ordem: o recurso se ancora num produto, e é a etapa quem recusa o ato repetido.
 /// </summary>
 internal sealed class DeclaracaoDosFilhosDasEtapas(
     DeclaracaoDosProdutosDaEtapa produtos,
@@ -26,16 +26,22 @@ internal sealed class DeclaracaoDosFilhosDasEtapas(
             return declaradosOsProdutos;
         }
 
-        Result janela = etapa.DefinirJanelaEParecer(input.Inicio, input.Fim, input.EmiteParecerIndividual);
-        if (janela.IsFailure)
+        Result propria = DeclararJanelaETiposDeDecisao(etapa, input);
+        if (propria.IsFailure)
         {
-            return janela;
+            return propria;
         }
 
         Result declaradasAsBancas = await bancas.DeclararAsync(etapa, input, cancellationToken).ConfigureAwait(false);
         return declaradasAsBancas.IsFailure
             ? declaradasAsBancas
             : await recursos.DeclararAsync(etapa, input, atosJaAncorados, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static Result DeclararJanelaETiposDeDecisao(EtapaProcesso etapa, EtapaProcessoInput input)
+    {
+        Result janela = etapa.DefinirJanelaEParecer(input.Inicio, input.Fim, input.EmiteParecerIndividual);
+        return janela.IsFailure ? janela : etapa.DefinirTiposDeDecisao(input.TiposDeDecisao);
     }
 
     private static HashSet<string> AtosJaAncorados(EtapaProcesso etapa) =>

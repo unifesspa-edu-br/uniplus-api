@@ -67,8 +67,8 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
         gravadas[1].UnidadeResponsavelOrigemId.Should().Be(cga.Id);
 
         IReadOnlyList<FaseCronogramaDto> lidas = await ctx.ObterFasesLidasPelaApiAsync();
-        lidas[0].UnidadeResponsavel.Should().Be(new UnidadeResponsavelDto(ceps.Id, ceps.Sigla, ceps.Nome));
-        lidas[1].UnidadeResponsavel.Should().Be(new UnidadeResponsavelDto(cga.Id, cga.Sigla, cga.Nome));
+        lidas[0].Cronograma.UnidadeResponsavel.Should().Be(new UnidadeResponsavelDto(ceps.Id, ceps.Sigla, ceps.Nome));
+        lidas[1].Cronograma.UnidadeResponsavel.Should().Be(new UnidadeResponsavelDto(cga.Id, cga.Sigla, cga.Nome));
     }
 
     [Fact(DisplayName = "O rascunho aceita fase sem unidade responsável, e a leitura a devolve nula")]
@@ -80,7 +80,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
         IReadOnlyList<FaseCronogramaDto> lidas = await ctx.ObterFasesLidasPelaApiAsync();
-        lidas.Should().OnlyContain(f => f.UnidadeResponsavel == null);
+        lidas.Should().OnlyContain(f => f.Cronograma.UnidadeResponsavel == null);
     }
 
     [Fact(DisplayName = "Unidade que o cadastro não tem é recusada no campo da fase, com o código próprio")]
@@ -117,7 +117,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
         await ctx.RenomearUnidadeAsync(cga.Id, $"{cga.Sigla}X", "Centro de Gestão Acadêmica (renomeado)");
 
         IReadOnlyList<FaseCronogramaDto> lidas = await ctx.ObterFasesLidasPelaApiAsync();
-        lidas[0].UnidadeResponsavel.Should().Be(new UnidadeResponsavelDto(cga.Id, cga.Sigla, cga.Nome));
+        lidas[0].Cronograma.UnidadeResponsavel.Should().Be(new UnidadeResponsavelDto(cga.Id, cga.Sigla, cga.Nome));
     }
 
     [Fact(DisplayName = "No rascunho, definir o cronograma de novo atualiza a cópia da unidade pelo cadastro")]
@@ -131,8 +131,8 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
         (await ctx.PutCronogramaAsync(cga.Id, null)).StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         IReadOnlyList<FaseCronogramaDto> lidas = await ctx.ObterFasesLidasPelaApiAsync();
-        lidas[0].UnidadeResponsavel!.Nome.Should().Be("Centro de Gestão Acadêmica (renomeado)");
-        lidas[0].UnidadeResponsavel!.Sigla.Should().Be($"{cga.Sigla}X");
+        lidas[0].Cronograma.UnidadeResponsavel!.Nome.Should().Be("Centro de Gestão Acadêmica (renomeado)");
+        lidas[0].Cronograma.UnidadeResponsavel!.Sigla.Should().Be($"{cga.Sigla}X");
     }
 
     [Fact(DisplayName = "No rascunho, a unidade gravada que saiu do cadastro é recusada ao definir de novo")]
@@ -244,7 +244,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
             resposta.StatusCode.Should().Be(HttpStatusCode.OK);
             ProcessoSeletivoDto? processo = await resposta.Content
                 .ReadFromJsonAsync<ProcessoSeletivoDto>(JsonDoContrato.Opcoes).ConfigureAwait(false);
-            return [.. processo!.CronogramaFases.OrderBy(f => f.Ordem)];
+            return [.. processo!.CronogramaFases.OrderBy(f => f.Cronograma.Ordem)];
         }
 
         public async Task<Unidade> SemearUnidadeAsync(string sigla, string nome)

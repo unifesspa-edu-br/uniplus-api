@@ -1553,6 +1553,7 @@ selecao.etapas_processo.tipo_etapa_codigo: Interno
 selecao.etapas_processo.tipo_etapa_nome: Interno
 selecao.etapas_processo.tipo_etapa_nota_de_origem_no_enem: Interno
 selecao.etapas_processo.tipo_etapa_origem_id: Interno
+selecao.etapas_processo.tipos_de_decisao: Interno
 selecao.etapas_processo.updated_at: Interno
 selecao.fases_cronograma.agrupa_etapas: Interno
 selecao.fases_cronograma.codigo: Interno
@@ -1569,6 +1570,7 @@ selecao.fases_cronograma.ordem: Interno
 selecao.fases_cronograma.origem_data: Interno
 selecao.fases_cronograma.permite_complementacao: Interno
 selecao.fases_cronograma.processo_seletivo_id: Interno
+selecao.fases_cronograma.tipos_de_decisao: Interno
 selecao.fases_cronograma.unidade_responsavel_nome: Interno
 selecao.fases_cronograma.unidade_responsavel_origem_id: Interno
 selecao.fases_cronograma.unidade_responsavel_sigla: Interno

@@ -126,10 +126,10 @@ public sealed partial class EnvelopeFechadoE2ETests
         await ExecutarPassoAsync(() => c.Ctx.PutEtapasAsync(EtapasIniciais(), ifMatch: null), HttpStatusCode.NoContent, "PUT etapas", "/etapas");
 
         ProcessoSeletivoDto processo = await c.Ctx.ObterProcessoAsync();
-        c.ObjetivaId = processo.Etapas.Single(e => e.Nome == "Prova Objetiva").Id;
-        c.RedacaoId = processo.Etapas.Single(e => e.Nome == "Redação").Id;
-        c.EntrevistaId = processo.Etapas.Single(e => e.Nome == "Entrevista").Id;
-        processo.Etapas.Single(e => e.Id == c.ObjetivaId).Peso.Should().Be(
+        c.ObjetivaId = processo.Etapas.Single(e => e.Identificacao.Nome == "Prova Objetiva").Id;
+        c.RedacaoId = processo.Etapas.Single(e => e.Identificacao.Nome == "Redação").Id;
+        c.EntrevistaId = processo.Etapas.Single(e => e.Identificacao.Nome == "Entrevista").Id;
+        processo.Etapas.Single(e => e.Id == c.ObjetivaId).Nota.Peso.Should().Be(
             3.5000m, "a Prova Objetiva nasce com este peso em EtapasIniciais — é o valor que a sessão editorial altera");
     }
 
@@ -176,7 +176,7 @@ public sealed partial class EnvelopeFechadoE2ETests
     // (COR_RACA de seleção única; BAIXA_RENDA exibido quando COR_RACA=PRETA).
     private static async Task DeclararFormularioAsync(Cenario c)
     {
-        Guid faseDeInscricaoId = (await c.Ctx.ObterProcessoAsync()).CronogramaFases.Single(f => f.ColetaInscricao).Id;
+        Guid faseDeInscricaoId = (await c.Ctx.ObterProcessoAsync()).CronogramaFases.Single(f => f.FaseCanonica.ColetaInscricao).Id;
 
         await ExecutarPassoAsync(
             () => c.Ctx.PutFormularioAsync("Formulário de Inscrição — PS Rico E2E", faseDeInscricaoId, ifMatch: null),

@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Domain.Entities;
 using Domain.Enums;
 using Domain.Errors;
+using Domain.MotivosDeDecisao;
 using Domain.ProcessosSeletivos.Etapas;
 using Domain.ValueObjects;
 
@@ -10,7 +11,7 @@ using Kernel.Results;
 
 /// <summary>
 /// A escrita das etapas do processo que só olha o payload, sem cadastro nem agregado: o <c>Id</c> repetido
-/// e a forma de TODAS as etapas, acumulada (ADR-0125). Roda antes de qualquer leitura externa — a validação
+/// a forma e os tipos de decisão de TODAS as etapas, acumulados (ADR-0125). Roda antes de qualquer leitura externa — a validação
 /// vence o I/O —, para que uma etapa com nome vazio não fique escondida atrás da recusa de catálogo de
 /// outra. Também lê uma etapa do payload na forma que o domínio recebe.
 /// </summary>
@@ -26,11 +27,7 @@ internal static class EscritaDasEtapasDoProcesso
                 "O mesmo Id de etapa não pode ser informado mais de uma vez no mesmo payload."));
         }
 
-        List<FieldError> erros = [];
-        for (int indice = 0; indice < etapas.Count; indice++)
-        {
-            erros.AddRange(ComIndice(FormaDaEtapa(etapas[indice]), indice));
-        }
+        List<FieldError> erros = [.. etapas.SelectMany(ErrosDoPayloadDaEtapa)];
 
         return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }
@@ -57,6 +54,11 @@ internal static class EscritaDasEtapasDoProcesso
     public static IReadOnlyList<FieldError> ErrosDeCarater(
         CaraterEtapa carater, bool admitePontuacao, bool admiteEliminacao, string nomeDoTipo, int indice) =>
         ComIndice(CaraterDaEtapa.ValidarAdmitido(carater, admitePontuacao, admiteEliminacao, nomeDoTipo), indice);
+
+    private static IReadOnlyList<FieldError> ErrosDoPayloadDaEtapa(EtapaProcessoInput etapa, int indice) =>
+        ComIndice(
+            [.. FormaDaEtapa(etapa), .. TiposDeDecisaoDeclarados.Validar(etapa.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo)],
+            indice);
 
     private static List<FieldError> FormaDaEtapa(EtapaProcessoInput etapa) =>
         ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(

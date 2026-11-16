@@ -49,27 +49,61 @@ public sealed record RegraRecursoFaseDto(
 public sealed record UnidadeResponsavelDto(Guid OrigemId, string Sigla, string Nome);
 
 /// <summary>Projeção de leitura de <c>FaseCronograma</c> (Story #851) — o eixo temporal do certame.</summary>
-/// <param name="UnidadeResponsavel">A unidade que responde pela fase, ou nulo enquanto o rascunho ainda não a definiu.</param>
+/// <param name="Codigo">A identidade estável da fase no processo: a etapa aponta para a fase por este código, porque o id não sobrevive à reconciliação.</param>
+/// <param name="FaseCanonica">Os traços que a fase herda da fase canônica.</param>
+/// <param name="Cronograma">A posição da fase, a janela e a unidade que responde por ela.</param>
+/// <param name="Publicacoes">O que a fase publica e decide, e o recurso que admite.</param>
 public sealed record FaseCronogramaDto(
     Guid Id,
-    int Ordem,
-    Guid FaseCanonicaOrigemId,
     string Codigo,
-    // Token canônico UPPER_SNAKE (`NO_EDITAL`/`NA_EXECUCAO`), o mesmo que o catálogo de fases
-    // canônicas publica — a origem deste campo é aquele cadastro, não a escrita daqui.
+    FaseCanonicaCongeladaDto FaseCanonica,
+    CronogramaDaFaseDto Cronograma,
+    PublicacoesDaFaseDto Publicacoes,
+    IReadOnlyList<BancaRequeridaDto> BancasRequeridas);
+
+/// <summary>Os traços que a fase herda da fase canônica, congelados na definição do cronograma (ADR-0061).</summary>
+/// <param name="OrigemId">O id da fase canônica de que a fase foi copiada.</param>
+/// <param name="OrigemData">
+/// Token canônico UPPER_SNAKE (<c>NO_EDITAL</c>/<c>NA_EXECUCAO</c>), o mesmo que o catálogo de fases
+/// canônicas publica — a origem deste campo é aquele cadastro, não a escrita daqui.
+/// </param>
+/// <param name="AgrupaEtapas">Se a fase agrupa etapas de avaliação.</param>
+/// <param name="PermiteComplementacao">Se a fase admite complementação de documentos.</param>
+/// <param name="ColetaInscricao">Se a fase coleta a inscrição.</param>
+/// <param name="ColetaSolicitacaoIsencao">Se a fase coleta a solicitação de isenção da taxa.</param>
+public sealed record FaseCanonicaCongeladaDto(
+    Guid OrigemId,
     string OrigemData,
     bool AgrupaEtapas,
     bool PermiteComplementacao,
-    // Derivado dos produtos declarados — a fase produz resultado quando publica ao menos um
-    // produto com papel. Projetado por conveniência de quem lê; não é campo de escrita.
-    bool ProduzResultado,
     bool ColetaInscricao,
-    bool ColetaSolicitacaoIsencao,
+    bool ColetaSolicitacaoIsencao);
+
+/// <summary>O que o edital decide sobre a fase: a posição, a janela, onde o ciclo recursal conclui e quem responde.</summary>
+/// <param name="Ordem">A posição da fase na sequência do cronograma.</param>
+/// <param name="Inicio">O início da janela da fase, ou nulo quando o edital não o fixa.</param>
+/// <param name="Fim">O fim da janela da fase, ou nulo quando o edital não o fixa.</param>
+/// <param name="FaseConcluinteCodigo">O código da fase que conclui o ciclo recursal desta, quando a própria fase não publica a definitiva da matéria que abriu; nulo nos demais casos.</param>
+/// <param name="UnidadeResponsavel">A unidade que responde pela fase, ou nulo enquanto o rascunho ainda não a definiu.</param>
+public sealed record CronogramaDaFaseDto(
+    int Ordem,
     DateTimeOffset? Inicio,
     DateTimeOffset? Fim,
-    IReadOnlyList<ProdutoDaFaseDto> Produtos,
     string? FaseConcluinteCodigo,
-    bool EmiteParecerIndividual,
-    IReadOnlyList<BancaRequeridaDto> BancasRequeridas,
-    RegraRecursoFaseDto? RegraRecurso,
     UnidadeResponsavelDto? UnidadeResponsavel);
+
+/// <summary>O que a fase publica e decide: os produtos, o resultado, o parecer, o recurso e os tipos de decisão.</summary>
+/// <param name="Produtos">Os atos que a fase publica, com o papel de cada publicação.</param>
+/// <param name="ProduzResultado">
+/// Derivado dos produtos declarados — a fase produz resultado quando publica ao menos um
+/// produto com papel. Projetado por conveniência de quem lê; não é campo de escrita.
+/// </param>
+/// <param name="EmiteParecerIndividual">Se a fase emite parecer individual.</param>
+/// <param name="RegraRecurso">A regra de recurso da fase, ou nulo quando a fase não admite recurso.</param>
+/// <param name="TiposDeDecisao">Os tipos de decisão que a fase declara produzir, em ordem alfabética ordinal e sem repetição.</param>
+public sealed record PublicacoesDaFaseDto(
+    IReadOnlyList<ProdutoDaFaseDto> Produtos,
+    bool ProduzResultado,
+    bool EmiteParecerIndividual,
+    RegraRecursoFaseDto? RegraRecurso,
+    IReadOnlyList<string> TiposDeDecisao);

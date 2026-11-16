@@ -14,15 +14,20 @@ internal static class ErrosDosMotivosDeDecisao
     private const string Prefixo = "uniplus.selecao.motivo_de_decisao.";
 
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
-        [.. CamposDoCadastro(), .. SituacaoDoCadastro(), .. EscolhaECobertura()];
+        [.. IdentificacaoDoMotivo(), .. ConteudoDoMotivo(), .. SituacaoDoCadastro(), .. EscolhaECobertura()];
 
-    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> CamposDoCadastro() =>
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> IdentificacaoDoMotivo() =>
     [
         Recusa(MotivoDeDecisaoErrorCodes.TipoObrigatorio, "tipo_obrigatorio", "Tipo do motivo é obrigatório"),
         Recusa(MotivoDeDecisaoErrorCodes.TipoInvalido, "tipo_invalido", "Tipo de decisão desconhecido"),
+        Recusa(MotivoDeDecisaoErrorCodes.TipoDeDecisaoDuplicado, "tipo_de_decisao_duplicado", "Tipo de decisão declarado mais de uma vez"),
         Recusa(MotivoDeDecisaoErrorCodes.CodigoObrigatorio, "codigo_obrigatorio", "Código do motivo é obrigatório"),
         Recusa(MotivoDeDecisaoErrorCodes.CodigoFormatoInvalido, "codigo_formato_invalido", "Código do motivo fora do formato aceito"),
         Mapear(MotivoDeDecisaoErrorCodes.CodigoJaExiste, StatusCodes.Status409Conflict, "codigo_ja_existe", "Já existe motivo com este código neste tipo"),
+    ];
+
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> ConteudoDoMotivo() =>
+    [
         Recusa(MotivoDeDecisaoErrorCodes.DescricaoObrigatoria, "descricao_obrigatoria", "Descrição do motivo é obrigatória"),
         Recusa(MotivoDeDecisaoErrorCodes.DescricaoTamanho, "descricao_tamanho", "Descrição do motivo fora do tamanho permitido"),
         Recusa(MotivoDeDecisaoErrorCodes.DescricaoCaractereInvalido, "descricao_caractere_invalido", "Descrição do motivo contém caractere não permitido"),

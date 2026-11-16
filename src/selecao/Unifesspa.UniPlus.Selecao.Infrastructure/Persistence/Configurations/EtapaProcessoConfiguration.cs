@@ -117,6 +117,7 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
         builder.Property(e => e.Fim).HasColumnName("fim");
         builder.Property(e => e.EmiteParecerIndividual)
             .HasColumnName("emite_parecer_individual").HasDefaultValue(false);
+        builder.MapearTiposDeDecisao();
 
         builder.Property(e => e.Peso).HasPrecision(18, 4);
         builder.Property(e => e.NotaMinima).HasPrecision(18, 4);

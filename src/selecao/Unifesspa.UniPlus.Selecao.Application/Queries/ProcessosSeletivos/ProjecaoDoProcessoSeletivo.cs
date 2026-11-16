@@ -30,7 +30,7 @@ internal static class ProjecaoDoProcessoSeletivo
         processo.OrigemCandidatos,
         ProjetarUnidadeAdministradora(processo),
         new LocalidadeRegenteDto(processo.Localidade.CodigoIbge, processo.Localidade.Nome, processo.Localidade.Uf),
-        [.. processo.Etapas.OrderBy(e => e.Ordem).Select(ProjecaoDoCronogramaEEtapas.ProjetarEtapa)],
+        [.. processo.Etapas.OrderBy(e => e.Ordem).Select(ProjecaoDaEtapaDoProcesso.ProjetarEtapa)],
         ProjecaoDasVagas.ProjetarAtendimento(processo.AtendimentoEspecializado),
         [.. processo.DistribuicaoVagas.Select(ProjecaoDasVagas.ProjetarDistribuicao)],
         ProjecaoDasVagas.ProjetarBonusRegional(processo.BonusRegional),
@@ -39,7 +39,7 @@ internal static class ProjecaoDoProcessoSeletivo
         ProjecaoDasVagas.ProjetarCascata(processo.Cascata),
         [.. processo.CriteriosDesempate.OrderBy(c => c.Ordem).Select(ProjetarCriterioDeDesempate)],
         ProjetarClassificacao(processo),
-        [.. processo.CronogramaFases.OrderBy(f => f.Ordem).ThenBy(f => f.Id).Select(ProjecaoDoCronogramaEEtapas.ProjetarFase)],
+        [.. processo.CronogramaFases.OrderBy(f => f.Ordem).ThenBy(f => f.Id).Select(ProjecaoDaFaseDoCronograma.ProjetarFase)],
         [.. processo.DocumentosExigidos.OrderBy(d => d.Id).Select(ProjecaoDaColeta.ProjetarDocumento)],
         [.. processo.RaizesDeExigencia.OrderBy(n => n.Ordem).ThenBy(n => n.Id).Select(ProjecaoDaColeta.ProjetarNo)],
         ProjecaoDaColeta.ProjetarReferenciaTemporal(processo.ReferenciaTemporalFatos),
@@ -56,6 +56,15 @@ internal static class ProjecaoDoProcessoSeletivo
 
     /// <summary>A referência a uma regra versionada, no formato do contrato.</summary>
     internal static ReferenciaRegraDto Referencia(ReferenciaRegra regra) => new(regra.Codigo, regra.Versao, regra.Hash);
+
+    internal static ArgsRegraPrazoRecursoDto ProjetarArgumentosDoPrazo(ArgsRegraPrazoRecurso args) => new(
+        args.PrazoValor,
+        args.PrazoUnidade,
+        args.SuspensividadePrimeiraInstanciaValor,
+        args.SuspensividadePrimeiraInstanciaUnidade,
+        args.AdmiteInstanciaSuperior,
+        args.SuspensividadeSegundaInstanciaValor,
+        args.SuspensividadeSegundaInstanciaUnidade);
 
     private static UnidadeAdministradoraSnapshotDto ProjetarUnidadeAdministradora(ProcessoSeletivo processo) => new(
         processo.UnidadeAdministradoraOrigemId,

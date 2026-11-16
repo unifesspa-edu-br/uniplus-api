@@ -18,6 +18,10 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// referenciar (<c>etapa_ref</c>). Omitido (ou sem correspondência), o
 /// handler cria uma etapa nova.
 /// </summary>
+/// <param name="TiposDeDecisao">
+/// Os tipos de decisão que a etapa declara produzir, como o cliente os escreveu. Ausente ou vazio: nenhum; a
+/// gravação substitui a declaração anterior. A ordem não importa, e a leitura os devolve em ordem canônica.
+/// </param>
 /// <param name="TipoEtapaOrigemId">
 /// Id do tipo de etapa ativo em Configuração (issue #1071). Obrigatório em toda
 /// definição — o handler resolve o item via <c>ITipoEtapaReader</c> e congela um
@@ -100,7 +104,8 @@ public sealed record EtapaProcessoInput(
     string? RegraConsolidacaoCodigo = null,
     string? RegraConsolidacaoVersao = null,
     IReadOnlyList<ItemDeAvaliacaoInput>? ItensDeAvaliacao = null,
-    IReadOnlyList<NivelDeAtendimentoInput>? EscalaDeAtendimento = null);
+    IReadOnlyList<NivelDeAtendimentoInput>? EscalaDeAtendimento = null,
+    IReadOnlyList<string?>? TiposDeDecisao = null);
 
 /// <summary>Um item de avaliação (critério ou bloco) da etapa e a pontuação máxima que ele vale.</summary>
 public sealed record ItemDeAvaliacaoInput(Guid? Id, string Rotulo, decimal PontuacaoMaxima);

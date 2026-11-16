@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -2387,6 +2388,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     inicio = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     fim = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     emite_parecer_individual = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    tipos_de_decisao = table.Column<List<string>>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
@@ -2427,6 +2429,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     fim = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     fase_concluinte_codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true),
                     emite_parecer_individual = table.Column<bool>(type: "boolean", nullable: false),
+                    tipos_de_decisao = table.Column<List<string>>(type: "text[]", nullable: false, defaultValueSql: "'{}'::text[]", comment: "Tipos de decisão que a fase ou a etapa declara produzir, em ordem alfabética ordinal e sem repetição."),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
