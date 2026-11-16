@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
 {
     internal static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS Documentos Exigidos", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo.Criar("PS Documentos Exigidos", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     internal static FaseCronograma Fase(int ordem, string codigo, Guid? faseCanonicaOrigemId = null) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(

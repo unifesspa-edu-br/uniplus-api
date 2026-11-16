@@ -187,6 +187,9 @@ public static class LimitesDoEnvelope
     /// <summary><c>UnidadeAdministradoraSnapshot.Sigla</c> — espelha <c>UnidadeConfiguration.Sigla</c>.</summary>
     public const int UnidadeAdministradoraSigla = 50;
 
+    /// <summary><c>UnidadeAdministradoraSnapshot.Codigo</c> — espelha <c>UnidadeConfiguration.Codigo</c>.</summary>
+    public const int UnidadeAdministradoraCodigo = 50;
+
     /// <summary><c>UnidadeAdministradoraSnapshot.Slug</c> — espelha <c>UnidadeConfiguration.Slug</c>.</summary>
     public const int UnidadeAdministradoraSlug = 64;
 

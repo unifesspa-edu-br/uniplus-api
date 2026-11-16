@@ -57,7 +57,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     [Fact(DisplayName = "Persiste e recarrega distribuição Lei 12.711 com referência demográfica e modalidades")]
     public async Task PersisteERecarrega_Lei12711ComDemografica()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirEtapas([EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente);
@@ -135,7 +135,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     [Fact(DisplayName = "Persiste e recarrega distribuição institucional sem referência demográfica")]
     public async Task PersisteERecarrega_InstitucionalSemDemografica()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirEtapas([EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente);
@@ -171,7 +171,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     [InlineData("grupo_area_enem_rotulo")]
     public async Task GrupoComUmaColunaNula_VoltaSemGrupo(string coluna)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         ReferenciaRegra regra = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('b', 64));
         ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 60, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regra, Modalidades = [NovaModalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60)] },
@@ -201,7 +201,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     [Fact(DisplayName = "Reconfigurar distribuição sobre o agregado tracked insere os filhos novos, não falha em UPDATE")]
     public async Task ReconfigurarDistribuicaoSobreAgregadoTracked_InsereFilhos()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSE Campo", TiposDeProcessoDeTeste.PSECampo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSE Campo", TiposDeProcessoDeTeste.PSECampo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirEtapas([EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente);

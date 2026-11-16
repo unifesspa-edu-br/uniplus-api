@@ -18,6 +18,28 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Adult
 /// </summary>
 public sealed class EnvelopeCodecRecusaUnidadeAdministradoraTests
 {
+    [Theory(DisplayName = "O código da Unidade administradora é obrigatório e não vazio em identidadesUnidade.administradora")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void IdentidadesUnidade_CodigoAusenteOuVazio_Recusa(bool removerChave)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject administradora = envelope["identidadesUnidade"]!["administradora"]!.AsObject();
+            if (removerChave)
+            {
+                administradora.Remove("codigo");
+            }
+            else
+            {
+                administradora["codigo"] = string.Empty;
+            }
+        });
+
+        resultado.IsFailure.Should().BeTrue("o snapshot da Unidade sem código deixaria o documento sem a referência estável que ele cita");
+        resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
+    }
+
     [Fact(DisplayName = "issue #1114: cidade parcial (só código IBGE) em identidadesUnidade.administradora é recusada")]
     public void IdentidadesUnidade_CidadeParcialSoCodigo_Recusa()
     {

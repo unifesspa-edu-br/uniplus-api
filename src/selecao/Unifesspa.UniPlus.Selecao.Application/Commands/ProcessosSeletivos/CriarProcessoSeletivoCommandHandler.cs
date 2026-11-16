@@ -123,7 +123,7 @@ public static class CriarProcessoSeletivoCommandHandler
         }
 
         Result<UnidadeAdministradoraSnapshot> snapshotResult = UnidadeAdministradoraSnapshot.Criar(
-            unidade.Sigla, unidade.Slug, unidade.Nome, unidade.Tipo,
+            unidade.Sigla, unidade.Codigo, unidade.Slug, unidade.Nome, unidade.Tipo,
             unidade.CidadeCodigoIbge, unidade.CidadeNome, unidade.CidadeUf);
         if (snapshotResult.IsFailure)
         {

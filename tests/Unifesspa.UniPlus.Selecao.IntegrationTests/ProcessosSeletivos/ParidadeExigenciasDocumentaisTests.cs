@@ -56,7 +56,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
     /// <summary>Processo conforme mínimo (etapas/oferta/distribuição/classificação/cronograma) — o par exigido pelo canonicalizador para os blocos reais.</summary>
     private static ProcessoSeletivo NovoProcessoConforme()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Paridade 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Paridade 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
 
         processo.DefinirAtendimentoEspecializado(

@@ -1840,6 +1840,7 @@ selecao.processos_seletivos.tipo_processo_origem_id: Interno
 selecao.processos_seletivos.unidade_administradora_cidade_codigo_ibge: Interno
 selecao.processos_seletivos.unidade_administradora_cidade_nome: Interno
 selecao.processos_seletivos.unidade_administradora_cidade_uf: Interno
+selecao.processos_seletivos.unidade_administradora_codigo: Interno
 selecao.processos_seletivos.unidade_administradora_nome: Interno
 selecao.processos_seletivos.unidade_administradora_origem_id: Interno
 selecao.processos_seletivos.unidade_administradora_sigla: Interno

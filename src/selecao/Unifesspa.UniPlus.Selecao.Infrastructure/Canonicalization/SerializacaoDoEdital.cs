@@ -102,6 +102,7 @@ internal static class SerializacaoDoEdital
         {
             ["origemId"] = processo.UnidadeAdministradoraOrigemId,
             ["sigla"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Sigla),
+            ["codigo"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Codigo),
             ["slug"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Slug),
             ["nome"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Nome),
             ["tipo"] = HashCanonicalComputer.NormalizeNfc(processo.UnidadeAdministradora.Tipo),

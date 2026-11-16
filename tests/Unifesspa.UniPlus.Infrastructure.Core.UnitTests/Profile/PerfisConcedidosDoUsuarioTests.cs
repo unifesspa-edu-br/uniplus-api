@@ -162,7 +162,7 @@ public sealed class PerfisConcedidosDoUsuarioTests
     }
 
     private static UnidadeView Unidade(Guid id, string sigla, string nome) =>
-        new(id, sigla, sigla.ToLowerInvariant(), nome, null, "Centro", true, null);
+        new(id, sigla, sigla, sigla.ToLowerInvariant(), nome, null, "Centro", true, null);
 
     private static ConcessaoAtiva Concessao(string perfil, Guid? unidadeId, DateTimeOffset? validaAte = null) =>
         new(Guid.CreateVersion7(), Guid.CreateVersion7(), null, perfil, unidadeId, unidadeId is null, validaAte, []);

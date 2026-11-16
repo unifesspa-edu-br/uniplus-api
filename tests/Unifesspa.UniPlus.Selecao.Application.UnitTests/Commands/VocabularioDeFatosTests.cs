@@ -38,7 +38,7 @@ public sealed class VocabularioDeFatosTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Residência", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         VocabularioDeFatos.Classificar(Derivado("UF_RESIDENCIA", "GEO_UF")).Should().Be(TipoDominioFato.CategoricoDinamico);
@@ -138,7 +138,7 @@ public sealed class VocabularioDeFatosTests
 
     private static ProcessoSeletivo Processo() => ProcessoSeletivo.Criar(
         "PS Agregado", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-        UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static FatoCandidatoView Agregado(string codigo, string membro) => new(

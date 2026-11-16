@@ -129,7 +129,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
 
     private static ProcessoSeletivo NovoProcesso(string nome) => ProcessoSeletivo.Criar(
         nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-        UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static FaseCronograma Fase(Guid faseCanonicaOrigemId, IReadOnlyList<BancaRequerida> bancas) =>

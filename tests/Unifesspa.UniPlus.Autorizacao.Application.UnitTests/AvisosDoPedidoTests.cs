@@ -278,7 +278,7 @@ public sealed class AvisosDoPedidoTests
     private sealed class Unidades : ILeitorDeUnidade
     {
         public Task<UnidadeView?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-            Task.FromResult<UnidadeView?>(new UnidadeView(id, "CEPS", "ceps", "Centro de Processos Seletivos", null, "centro", false, null));
+            Task.FromResult<UnidadeView?>(new UnidadeView(id, "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "centro", false, null));
     }
 
     private sealed class Dominios : IDominiosInstitucionais

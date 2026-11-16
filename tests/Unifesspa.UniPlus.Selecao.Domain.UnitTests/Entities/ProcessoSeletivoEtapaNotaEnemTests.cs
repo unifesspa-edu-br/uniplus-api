@@ -19,7 +19,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class ProcessoSeletivoEtapaNotaEnemTests
 {
     private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PSVR 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo.Criar("PSVR 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static EtapaProcesso EtapaNotaEnem(decimal peso = 1m, int ordem = 1) =>
         EtapaProcesso.Criar(

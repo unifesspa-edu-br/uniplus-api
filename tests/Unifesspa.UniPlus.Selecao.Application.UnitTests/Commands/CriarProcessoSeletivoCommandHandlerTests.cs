@@ -23,7 +23,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
     private static readonly Guid UnidadeId = Guid.NewGuid();
 
     private static readonly UnidadeView UnidadeCeps = new(
-        UnidadeId, "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null,
+        UnidadeId, "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null,
         "1504208", "Marabá", "PA");
 
     private static readonly TipoProcessoView TipoSisu = new(
@@ -95,7 +95,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         UnidadeView unidadeSemCidade = new(
-            UnidadeId, "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null);
+            UnidadeId, "CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null);
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(unidadeSemCidade);
         CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
 

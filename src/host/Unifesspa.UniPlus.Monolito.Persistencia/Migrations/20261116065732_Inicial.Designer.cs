@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261116065706_Inicial")]
+    [Migration("20261116065732_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -19744,6 +19744,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnName("unidade_administradora_cidade_uf")
                                 .IsFixedLength()
                                 .HasComment("Snapshot-copy da UF da cidade da Unidade administradora no momento da criação.");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("unidade_administradora_codigo")
+                                .HasComment("Snapshot-copy do código da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
 
                             b1.Property<string>("Nome")
                                 .IsRequired()

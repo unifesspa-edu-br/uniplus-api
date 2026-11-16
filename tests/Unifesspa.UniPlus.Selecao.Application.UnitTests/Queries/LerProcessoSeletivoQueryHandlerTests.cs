@@ -47,7 +47,7 @@ public sealed class LerProcessoSeletivoQueryHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Leitura", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         VersaoConfiguracao versao = (VersaoConfiguracao)RuntimeHelpers.GetUninitializedObject(typeof(VersaoConfiguracao));
         typeof(VersaoConfiguracao).GetProperty(nameof(VersaoConfiguracao.ConfiguracaoCongelada), BindingFlags.Public | BindingFlags.Instance)!

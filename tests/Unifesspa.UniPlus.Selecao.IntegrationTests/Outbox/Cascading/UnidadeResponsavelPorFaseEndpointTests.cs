@@ -176,6 +176,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
                 Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemCandidatos.ImportacaoExterna,
                 Guid.CreateVersion7(),
                 UnidadeAdministradoraSnapshot.Criar(
+                    "CEPS",
                     "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
                 LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
                 IdentificadoresDeTeste.Novo());

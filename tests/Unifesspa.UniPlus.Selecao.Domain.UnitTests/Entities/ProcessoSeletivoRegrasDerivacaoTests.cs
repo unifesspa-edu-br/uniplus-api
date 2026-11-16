@@ -31,7 +31,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     private static readonly IReadOnlyCollection<string> DominioDoDerivado = ["AC", "AC_PCD", "LI_PCD"];
 
     private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS Derivação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo.Criar("PS Derivação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static CondicaoRegraDerivacao Cond(string fato, bool valor) =>
         CondicaoRegraDerivacao.Criar(1, fato, Operador.Igual, JsonSerializer.SerializeToElement(valor)).Value!;

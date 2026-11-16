@@ -43,7 +43,7 @@ internal sealed class CenarioDosCriteriosDeDesempate
     public static CenarioDosCriteriosDeDesempate SemProcesso() => new(null, Guid.CreateVersion7());
 
     public static ProcessoSeletivo NovoProcesso(string titulo, TipoProcessoSnapshot tipo) =>
-        ProcessoSeletivo.Criar(titulo, tipo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo.Criar(titulo, tipo, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     public static ProcessoSeletivo ProcessoComClassificacaoEnem()
     {

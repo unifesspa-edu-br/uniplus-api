@@ -135,5 +135,5 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
     }
 
     private static UnidadeView UnidadeCga() => new(
-        Guid.CreateVersion7(), "CGA", "cga", "Centro de Gestão Acadêmica", null, "Centro", true, null);
+        Guid.CreateVersion7(), "CGA", "CGA", "cga", "Centro de Gestão Acadêmica", null, "Centro", true, null);
 }

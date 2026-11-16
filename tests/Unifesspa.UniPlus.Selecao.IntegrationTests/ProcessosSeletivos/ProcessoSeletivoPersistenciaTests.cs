@@ -45,7 +45,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
         Guid recursoOrigemId = Guid.CreateVersion7();
         Guid tipoDeficienciaOrigemId = Guid.CreateVersion7();
 
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         Result etapasResult = processo.DefinirEtapas(
         [
@@ -107,10 +107,10 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
     {
         ProcessoSeletivo processoA = ProcessoSeletivo.Criar(
             "PS snapshot A", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         ProcessoSeletivo processoB = ProcessoSeletivo.Criar(
             "PS snapshot B", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -140,6 +140,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, unidadeId,
             UnidadeAdministradoraSnapshot.Criar(
+                "CEPS",
                 "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
                 cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
@@ -172,6 +173,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS 2026 — Cidade Parcial", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar(
+                "CEPS",
                 "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
                 cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
@@ -198,7 +200,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
     [InlineData(false)]
     public async Task ChecksDaEscalaDaEtapa_RejeitamValorNaoPositivo(bool notaMaxima)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Escala", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Escala", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirEtapas(
         [
             EtapaProcesso.Criar(
@@ -263,7 +265,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
         // substitui a coleção de etapas por filhos com Guid v7 já preenchido e
         // salva. Sem a correção, DbSet.Update marcaria os filhos novos como
         // Modified e o SaveChanges emitiria UPDATE de linhas nunca inseridas.
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirEtapas([EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente);
@@ -309,7 +311,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<Pr
     [Fact(DisplayName = "Persiste e reidrata a regra de derivação nos três níveis, reconstruindo o value object do motor")]
     public async Task PersisteEReidrata_RegraDerivacao()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Derivação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Derivação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA",
         [

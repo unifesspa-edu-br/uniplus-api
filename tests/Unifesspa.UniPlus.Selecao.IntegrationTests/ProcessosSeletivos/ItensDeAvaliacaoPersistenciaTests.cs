@@ -39,7 +39,7 @@ public sealed class ItensDeAvaliacaoPersistenciaTests(ProcessoSeletivoDbFixture 
         {
             ProcessoSeletivo processo = ProcessoSeletivo.Criar(
                 $"Certame de itens {Guid.CreateVersion7()}", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
-                UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+                UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
                 LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
             EtapaProcesso etapa = Entrevista(
                 tipo,

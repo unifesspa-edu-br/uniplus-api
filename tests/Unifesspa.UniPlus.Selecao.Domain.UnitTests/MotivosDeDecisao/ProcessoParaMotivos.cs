@@ -23,7 +23,7 @@ internal static class ProcessoParaMotivos
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PSR Medicina 2027", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases(
             [Fase(1, "INSCRICAO", InicioDaInscricao, coletaIsencao: true), Fase(2, "HOMOLOGACAO_INSCRICOES", InicioDaHomologacao, coletaIsencao: false)],

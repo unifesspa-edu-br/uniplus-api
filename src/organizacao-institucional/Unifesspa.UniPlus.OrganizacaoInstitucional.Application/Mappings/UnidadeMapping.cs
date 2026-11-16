@@ -33,6 +33,7 @@ public static class UnidadeMapping
         return new UnidadeView(
             unidade.Id,
             unidade.Sigla,
+            unidade.Codigo,
             unidade.Slug.Valor,
             unidade.Nome,
             unidade.Alias,

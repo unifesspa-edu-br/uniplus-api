@@ -30,10 +30,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed record UnidadeAdministradoraSnapshot
 {
     private UnidadeAdministradoraSnapshot(
-        string sigla, string slug, string nome, string tipo,
+        string sigla, string codigo, string slug, string nome, string tipo,
         string? cidadeCodigoIbge, string? cidadeNome, string? cidadeUf)
     {
         Sigla = sigla;
+        Codigo = codigo;
         Slug = slug;
         Nome = nome;
         Tipo = tipo;
@@ -43,6 +44,7 @@ public sealed record UnidadeAdministradoraSnapshot
     }
 
     public string Sigla { get; }
+    public string Codigo { get; }
     public string Slug { get; }
     public string Nome { get; }
     public string Tipo { get; }
@@ -51,11 +53,11 @@ public sealed record UnidadeAdministradoraSnapshot
     public string? CidadeUf { get; }
 
     /// <summary>
-    /// Sigla, slug, nome e tipo vêm do cadastro vivo da unidade, que já os exige: vazios são defeito de quem chama, não recusa a
+    /// Sigla, código, slug, nome e tipo vêm do cadastro vivo da unidade, que já os exige: vazios são defeito de quem chama, não recusa a
     /// um cliente, e lançam <see cref="ArgumentException"/>. A referência de cidade é a que pode falhar como resultado.
     /// </summary>
     public static Result<UnidadeAdministradoraSnapshot> Criar(
-        string sigla, string slug, string nome, string tipo,
+        string sigla, string codigo, string slug, string nome, string tipo,
         string? cidadeCodigoIbge = null, string? cidadeNome = null, string? cidadeUf = null)
     {
         Result cidadeValidacao = ValidarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
@@ -64,10 +66,10 @@ public sealed record UnidadeAdministradoraSnapshot
             return Result<UnidadeAdministradoraSnapshot>.Failure(cidadeValidacao.Error!);
         }
 
-        (string? codigo, string? nomeCidade, string? uf) = NormalizarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
+        (string? cidadeIbge, string? nomeCidade, string? uf) = NormalizarReferenciaCidade(cidadeCodigoIbge, cidadeNome, cidadeUf);
 
         return Result<UnidadeAdministradoraSnapshot>.Success(new UnidadeAdministradoraSnapshot(
-            Obrigatorio(sigla), Obrigatorio(slug), Obrigatorio(nome), Obrigatorio(tipo), codigo, nomeCidade, uf));
+            Obrigatorio(sigla), Obrigatorio(codigo), Obrigatorio(slug), Obrigatorio(nome), Obrigatorio(tipo), cidadeIbge, nomeCidade, uf));
     }
 
     private static string Obrigatorio(string? valor, [CallerArgumentExpression(nameof(valor))] string? campo = null)

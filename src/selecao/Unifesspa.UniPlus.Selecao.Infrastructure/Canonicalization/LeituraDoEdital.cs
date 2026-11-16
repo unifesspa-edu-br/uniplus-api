@@ -170,10 +170,11 @@ internal static class LeituraDoEdital
         }
 
         const string path = "identidadesUnidade.administradora";
-        leitor.ExigirChaves(administradora, path, "origemId", "sigla", "slug", "nome", "tipo", "cidadeCodigoIbge", "cidadeNome", "cidadeUf");
+        leitor.ExigirChaves(administradora, path, "origemId", "sigla", "codigo", "slug", "nome", "tipo", "cidadeCodigoIbge", "cidadeNome", "cidadeUf");
 
         leitor.Identificador(administradora, "origemId", path);
         leitor.TextoNaoVazio(administradora, "sigla", path, LimitesDoEnvelope.UnidadeAdministradoraSigla);
+        leitor.TextoNaoVazio(administradora, "codigo", path, LimitesDoEnvelope.UnidadeAdministradoraCodigo);
         leitor.TextoNaoVazio(administradora, "slug", path, LimitesDoEnvelope.UnidadeAdministradoraSlug);
         leitor.TextoNaoVazio(administradora, "nome", path, LimitesDoEnvelope.UnidadeAdministradoraNome);
         leitor.TextoNaoVazio(administradora, "tipo", path, LimitesDoEnvelope.UnidadeAdministradoraTipo);

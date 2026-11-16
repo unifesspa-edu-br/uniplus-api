@@ -26,7 +26,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
     [Fact(DisplayName = "Redefinir a regra de derivação sobre o agregado carregado apaga a árvore antiga inteira (cascade órfão nos três níveis)")]
     public async Task RedefinirRegraDerivacao_SobreAgregadoTracked_ApagaArvoreAntiga()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Redefinição", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Redefinição", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirRegrasDerivacao(
         [
             ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA",
@@ -125,7 +125,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
     private static ProcessoSeletivo NovoProcessoDoSplitQuery() =>
         ProcessoSeletivo.Criar(
             "PS 2026 — AsSplitQuery", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static EtapaProcesso DefinirEtapaDoSplitQuery(ProcessoSeletivo processo)
     {

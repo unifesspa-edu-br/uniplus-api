@@ -19742,6 +19742,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .IsFixedLength()
                                 .HasComment("Snapshot-copy da UF da cidade da Unidade administradora no momento da criação.");
 
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("unidade_administradora_codigo")
+                                .HasComment("Snapshot-copy do código da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+
                             b1.Property<string>("Nome")
                                 .IsRequired()
                                 .HasMaxLength(250)

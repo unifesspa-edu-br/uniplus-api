@@ -104,6 +104,8 @@ public sealed class ProcessoSeletivoConfiguration : IEntityTypeConfiguration<Pro
             u.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
             u.Property(x => x.Sigla).HasColumnName("unidade_administradora_sigla").HasMaxLength(50).IsRequired()
                 .HasComment("Snapshot-copy da sigla da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
+            u.Property(x => x.Codigo).HasColumnName("unidade_administradora_codigo").HasMaxLength(50).IsRequired()
+                .HasComment("Snapshot-copy do código da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
             u.Property(x => x.Slug).HasColumnName("unidade_administradora_slug").HasMaxLength(64).IsRequired()
                 .HasComment("Snapshot-copy do slug da Unidade administradora no momento da criação — não reflete edições posteriores no cadastro de origem.");
             u.Property(x => x.Nome).HasColumnName("unidade_administradora_nome").HasMaxLength(250).IsRequired()

@@ -93,7 +93,7 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
     {
         FaseCanonica existente = Existente();
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        UnidadeView cga = new(Guid.CreateVersion7(), "CGA", "cga", "Centro de Gestão Acadêmica", null, "Centro", true, null);
+        UnidadeView cga = new(Guid.CreateVersion7(), "CGA", "CGA", "cga", "Centro de Gestão Acadêmica", null, "Centro", true, null);
         _unidadeReader.ObterPorIdAsync(cga.Id, Arg.Any<CancellationToken>()).Returns(cga);
 
         Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(

@@ -8,6 +8,7 @@ namespace Unifesspa.UniPlus.Governance.Contracts;
 /// </summary>
 /// <param name="Id">Identificador único (Guid v7 — ADR-0032).</param>
 /// <param name="Sigla">Sigla corrente da Unidade (uppercase).</param>
+/// <param name="Codigo">Código da Unidade, único entre as vivas; a identidade decide e o código só se mostra e se informa em documento.</param>
 /// <param name="Slug">Identificador kebab-case da Unidade.</param>
 /// <param name="Nome">Nome formal da Unidade.</param>
 /// <param name="Alias">Nome popular de agrupamento, ou <see langword="null"/> se não informado.</param>
@@ -20,6 +21,7 @@ namespace Unifesspa.UniPlus.Governance.Contracts;
 public sealed record UnidadeView(
     Guid Id,
     string Sigla,
+    string Codigo,
     string Slug,
     string Nome,
     string? Alias,

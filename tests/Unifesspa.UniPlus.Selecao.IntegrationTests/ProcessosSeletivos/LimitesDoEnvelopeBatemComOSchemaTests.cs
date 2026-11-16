@@ -361,6 +361,8 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
 
         unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.Sigla))!.GetMaxLength()
             .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraSigla, "LimitesDoEnvelope.UnidadeAdministradoraSigla espelha a coluna de Sigla");
+        unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.Codigo))!.GetMaxLength()
+            .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraCodigo, "LimitesDoEnvelope.UnidadeAdministradoraCodigo espelha a coluna de Codigo");
         unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.Slug))!.GetMaxLength()
             .Should().Be(LimitesDoEnvelope.UnidadeAdministradoraSlug, "LimitesDoEnvelope.UnidadeAdministradoraSlug espelha a coluna de Slug");
         unidadeAdministradora.FindProperty(nameof(UnidadeAdministradoraSnapshot.Nome))!.GetMaxLength()
@@ -410,7 +412,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
             .. Precisoes.Select(static p => p.Nome),
             // Exercidas em OwnedTypes_BatemComOSchema.
             "RegraCodigo", "RegraVersao", "CensoReferencia", "PrecisaoPercentual", "PrecisaoPrazo",
-            "UnidadeAdministradoraSigla", "UnidadeAdministradoraSlug", "UnidadeAdministradoraNome", "UnidadeAdministradoraTipo",
+            "UnidadeAdministradoraSigla", "UnidadeAdministradoraCodigo", "UnidadeAdministradoraSlug", "UnidadeAdministradoraNome", "UnidadeAdministradoraTipo",
             "UnidadeAdministradoraCidadeCodigoIbge", "UnidadeAdministradoraCidadeNome", "UnidadeAdministradoraCidadeUf",
             "TipoEtapaCodigo", "TipoEtapaNome",
             "GrupoAreaEnemCodigo", "GrupoAreaEnemRotulo",

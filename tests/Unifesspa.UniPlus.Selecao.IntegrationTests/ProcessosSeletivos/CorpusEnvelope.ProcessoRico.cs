@@ -66,6 +66,7 @@ internal static partial class CorpusEnvelope
 
     private static UnidadeAdministradoraSnapshot UnidadeAdministradoraDoCorpus() =>
         UnidadeAdministradoraSnapshot.Criar(
+            "CEPS",
             "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
             cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA").Value!;
 

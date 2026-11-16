@@ -136,6 +136,18 @@ public sealed partial class UnidadeReader : IUnidadeReader
         return todas.FirstOrDefault(u => u.Id == id);
     }
 
+    public async Task<UnidadeView?> ObterPorCodigoAsync(string codigo, CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+
+        Unidade? unidade = await _dbContext.Unidades
+            .AsNoTracking()
+            .FirstOrDefaultAsync(u => u.Codigo == codigo, cancellationToken)
+            .ConfigureAwait(false);
+
+        return unidade?.ToView();
+    }
+
     private async Task<List<UnidadeView>?> ObterDoCacheAsync(CancellationToken cancellationToken)
     {
         try

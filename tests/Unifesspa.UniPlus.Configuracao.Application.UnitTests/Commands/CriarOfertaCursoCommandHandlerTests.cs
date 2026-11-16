@@ -33,7 +33,7 @@ public sealed class CriarOfertaCursoCommandHandlerTests
             ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
 
     private static UnidadeView UnidadeViva(Guid id) =>
-        new(id, "FACET", "facet", "Faculdade de Computação e Engenharia Elétrica",
+        new(id, "FACET", "FACET", "facet", "Faculdade de Computação e Engenharia Elétrica",
             null, "Faculdade", UnidadeAcademica: true, UnidadeSuperiorId: null);
 
     private static CriarOfertaCursoCommand Comando(
