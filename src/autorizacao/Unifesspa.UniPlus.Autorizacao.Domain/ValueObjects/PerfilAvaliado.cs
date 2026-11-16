@@ -47,7 +47,14 @@ public sealed record PerfilAvaliado
 /// <param name="HaRepresentanteVigente">
 /// Alguém tem hoje concessão vigente do perfil de Representante do controlador, lido sob a trava do papel.
 /// </param>
-public sealed record ContextoDaAprovacao(bool HaRepresentanteVigente);
+public sealed record ContextoDaAprovacao(bool HaRepresentanteVigente)
+{
+    // Só a designação do primeiro Representante dispensa a segunda etapa: havendo Representante vigente, outro decide.
+    internal string? MotivoDaDispensa(PerfilAvaliado perfil) =>
+        perfil.Governanca == TipoDeGovernanca.RepresentanteDoControlador && !HaRepresentanteVigente
+            ? MotivosDeDispensa.DesignacaoDeProtecaoDeDados
+            : null;
+}
 
 /// <summary>Os motivos pelos quais a segunda aprovação deixa de ser exigida, gravados na decisão do gestor.</summary>
 public static class MotivosDeDispensa

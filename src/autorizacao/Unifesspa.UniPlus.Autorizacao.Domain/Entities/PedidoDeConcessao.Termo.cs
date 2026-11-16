@@ -96,8 +96,8 @@ public sealed partial class PedidoDeConcessao
 
     private DomainError DevolverPorTermoExigido(AprovacaoNaEtapa aprovacao)
     {
-        _decisoes.Add(DecisaoDoPedido.Registrar(
-            Id, aprovacao.Etapa, new AtoDoAgente(aprovacao.Decisor, aprovacao.Instante), ResultadoDaDecisao.TermoExigido, null, aprovacao.Perfil, null));
+        Registro.Registrar(
+            aprovacao.Etapa, new AtoDoAgente(aprovacao.Decisor, aprovacao.Instante), ResultadoDaDecisao.TermoExigido, null, aprovacao.Perfil);
         Encerrar(SituacaoDoPedido.Devolvido, aprovacao.Instante);
 
         return new DomainError(
