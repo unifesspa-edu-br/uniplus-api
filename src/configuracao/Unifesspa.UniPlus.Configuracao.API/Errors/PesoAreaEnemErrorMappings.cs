@@ -28,12 +28,6 @@ internal static class PesoAreaEnemErrorMappings
                 "uniplus.configuracao.peso_area_enem.resolucao_caractere_invalido",
                 "A resolução contém caractere de controle, de formatação, de quebra de linha ou que não é texto")),
 
-        new(GrupoCursoErrorCodes.ForaDoDominio,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.grupo_curso.fora_do_dominio",
-                "Grupo de área do ENEM fora dos quatro grupos da Resolução nº 805/2024/Consepe")),
-
         new(PesoAreaEnemErrorCodes.GrupoCursoInvalido,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
