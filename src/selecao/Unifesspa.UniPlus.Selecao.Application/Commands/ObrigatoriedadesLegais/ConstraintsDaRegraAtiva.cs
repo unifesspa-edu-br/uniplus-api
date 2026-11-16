@@ -17,4 +17,8 @@ internal static class ConstraintsDaRegraAtiva
     /// <summary><see langword="true"/> quando a constraint violada é a do hash canônico da regra ativa.</summary>
     public static bool EhConflitoDoHashDaRegra(string? constraint) =>
         string.Equals(constraint, HashCanonico, StringComparison.Ordinal);
+
+    /// <summary><see langword="true"/> quando a constraint violada é uma das duas de unicidade da regra ativa.</summary>
+    public static bool EhDeUnicidadeDaRegra(string? constraint) =>
+        EhConflitoDoCodigoDaRegra(constraint) || EhConflitoDoHashDaRegra(constraint);
 }

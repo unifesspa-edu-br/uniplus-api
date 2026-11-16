@@ -17,11 +17,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// processos administrativos.
 /// </summary>
 /// <remarks>
-/// A entidade encapsula o estado e os invariantes do agregado. A
-/// validação e normalização do payload de entrada é responsabilidade do
-/// <see cref="ObrigatoriedadeLegalPayloadNormalizer"/> (Domain Service),
-/// invocado pelas factories — separação de responsabilidades alinhada
-/// com SRP.
+/// A validação dos campos é do domínio e acumula toda violação do lote
+/// (<see cref="ValidarCampos"/>); as factories a repetem, então nenhuma regra
+/// nasce nem muda sem ter passado por ela.
 /// </remarks>
 [SuppressMessage(
     "Design",
@@ -29,11 +27,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
     Justification = "AtoNormativoUrl é payload textual exibido para auditoria — pode incluir DOI, "
         + "URN, IRI ou identificadores não-HTTP que System.Uri suporta apenas com workarounds. "
         + "Mantemos string para preservar fidelidade do valor original informado pelo admin.")]
-[SuppressMessage(
-    "Design",
-    "CA1054:URI-like parameters should not be strings",
-    Justification = "Pareado com a justificativa de CA1056 acima — factory aceita string para "
-        + "preservar fidelidade do payload textual da citação normativa.")]
 public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
 {
     /// <summary>
@@ -42,6 +35,10 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     /// de filtro pública <c>?tipoProcesso=*</c>.
     /// </summary>
     public const string TipoProcessoUniversal = "*";
+
+    private const string ModalidadesMinimasVazia = "ObrigatoriedadeLegal.ModalidadesMinimasVazia";
+    private const string CodigoEmBranco = "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco";
+    private const string AtendimentoDisponivelVazio = "ObrigatoriedadeLegal.AtendimentoDisponivelVazio";
 
     public string TipoProcessoCodigo { get; private set; } = null!;
     public CategoriaObrigatoriedade Categoria { get; private set; }
@@ -70,161 +67,77 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     {
     }
 
-    private ObrigatoriedadeLegal(NormalizedPayload payload, PredicadoObrigatoriedade predicado)
-    {
-        TipoProcessoCodigo = payload.TipoProcessoCodigo;
-        Categoria = payload.Categoria;
-        RegraCodigo = payload.RegraCodigo;
-        Predicado = predicado;
-        DescricaoHumana = payload.DescricaoHumana;
-        BaseLegal = payload.BaseLegal;
-        AtoNormativoUrl = payload.AtoNormativoUrl;
-        PortariaInternaCodigo = payload.PortariaInternaCodigo;
-        VigenciaInicio = payload.VigenciaInicio;
-        VigenciaFim = payload.VigenciaFim;
-        Hash = ComputeHash();
-    }
-
-    /// <summary>
-    /// Factory canônica (Story #460) — devolve uma regra na forma plena com
-    /// hash já computado e payload normalizado pelo
-    /// <see cref="ObrigatoriedadeLegalPayloadNormalizer"/>.
-    /// </summary>
-    public static Result<ObrigatoriedadeLegal> Criar(
-        string tipoProcessoCodigo,
+    private ObrigatoriedadeLegal(
+        string? tipoProcessoCodigo,
         CategoriaObrigatoriedade categoria,
-        string regraCodigo,
-        PredicadoObrigatoriedade predicado,
-        string descricaoHumana,
-        string baseLegal,
-        DateOnly vigenciaInicio,
-        DateOnly? vigenciaFim = null,
-        string? atoNormativoUrl = null,
-        string? portariaInternaCodigo = null)
-    {
-        if (predicado is null)
-        {
-            return Result<ObrigatoriedadeLegal>.Failure(new DomainError(
-                "ObrigatoriedadeLegal.PredicadoObrigatorio",
-                "Predicado é obrigatório."));
-        }
-
-        Result forma = ValidarFormaDoPredicado(predicado);
-        if (forma.IsFailure)
-        {
-            return Result<ObrigatoriedadeLegal>.Failure(forma.Error!);
-        }
-
-        Result<NormalizedPayload> normalized = ObrigatoriedadeLegalPayloadNormalizer.Normalizar(
-            tipoProcessoCodigo,
-            categoria,
-            regraCodigo,
-            descricaoHumana,
-            baseLegal,
-            atoNormativoUrl,
-            portariaInternaCodigo,
-            vigenciaInicio,
-            vigenciaFim);
-
-        return normalized.IsFailure
-            ? Result<ObrigatoriedadeLegal>.Failure(normalized.Error!)
-            : Result<ObrigatoriedadeLegal>.Success(new ObrigatoriedadeLegal(normalized.Value!, predicado));
-    }
+        string? regraCodigo,
+        PredicadoObrigatoriedade? predicado,
+        TextoNormativo texto,
+        DateOnly? vigenciaInicio,
+        DateOnly? vigenciaFim) =>
+        Aplicar(tipoProcessoCodigo, categoria, regraCodigo, predicado, texto, vigenciaInicio, vigenciaFim);
 
     /// <summary>
-    /// Factory de retrocompatibilidade preservada para os testes do avaliador
-    /// (#459): aplica defaults pragmáticos para os campos novos da forma
-    /// plena (universal, categoria <see cref="CategoriaObrigatoriedade.Outros"/>,
-    /// vigência aberta a partir de "hoje" do <paramref name="clock"/>, global).
-    /// Use a sobrecarga completa em código de produção.
+    /// Confere todos os campos da regra sem efeito colateral e devolve cada violação, com o nome do campo no
+    /// formato do contrato. É a única fonte das regras de campo: o handler a chama antes das consultas, e as
+    /// factories a repetem.
     /// </summary>
-    /// <param name="clock">
-    /// Fonte de "hoje" para <c>VigenciaInicio</c>. Obrigatório (sem default
-    /// <see cref="TimeProvider.System"/>): a convenção de relógio exige que o
-    /// <see cref="TimeProvider"/> seja sempre injetado. Testes passam um
-    /// <see cref="TimeProvider"/> fake para isolar o cenário do relógio.
-    /// </param>
+    public static Result ValidarCampos(
+        string? tipoProcessoCodigo,
+        CategoriaObrigatoriedade categoria,
+        string? regraCodigo,
+        PredicadoObrigatoriedade? predicado,
+        TextoNormativo texto,
+        DateOnly? vigenciaInicio,
+        DateOnly? vigenciaFim) =>
+        ValidacaoDaObrigatoriedadeLegal.Validar(
+            tipoProcessoCodigo, categoria, regraCodigo, predicado, texto, vigenciaInicio, vigenciaFim);
+
+    /// <summary>
+    /// Cria uma regra na forma plena, com o texto aparado e o hash calculado sobre o conteúdo final.
+    /// </summary>
     public static Result<ObrigatoriedadeLegal> Criar(
-        string regraCodigo,
-        PredicadoObrigatoriedade predicado,
-        string baseLegal,
-        string descricaoHumana,
-        string? portariaInternaCodigo,
-        TimeProvider clock)
+        string? tipoProcessoCodigo,
+        CategoriaObrigatoriedade categoria,
+        string? regraCodigo,
+        PredicadoObrigatoriedade? predicado,
+        TextoNormativo texto,
+        DateOnly? vigenciaInicio,
+        DateOnly? vigenciaFim)
     {
-        ArgumentNullException.ThrowIfNull(clock);
-        return Criar(
-            tipoProcessoCodigo: TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: regraCodigo,
-            predicado: predicado,
-            descricaoHumana: descricaoHumana,
-            baseLegal: baseLegal,
-            vigenciaInicio: DateOnly.FromDateTime(clock.GetUtcNow().UtcDateTime.Date),
-            vigenciaFim: null,
-            atoNormativoUrl: null,
-            portariaInternaCodigo: portariaInternaCodigo);
+        ArgumentNullException.ThrowIfNull(texto);
+        Result validacao = ValidarCampos(
+            tipoProcessoCodigo, categoria, regraCodigo, predicado, texto, vigenciaInicio, vigenciaFim);
+
+        return validacao.IsFailure
+            ? Result<ObrigatoriedadeLegal>.ValidationFailure(validacao.Errors)
+            : Result<ObrigatoriedadeLegal>.Success(new ObrigatoriedadeLegal(
+                tipoProcessoCodigo, categoria, regraCodigo, predicado, texto, vigenciaInicio, vigenciaFim));
     }
 
     /// <summary>
-    /// Atualiza os campos semânticos da regra (Story #461 admin PUT) e
-    /// recomputa o hash. O caller é responsável por respeitar a política
-    /// de versionamento documentada no ADR-0058 (soft-delete + new row vs
-    /// in-place update); esta entidade só garante consistência interna.
+    /// Substitui todos os campos semânticos da regra e recomputa o hash (ADR-0058). Em violação, o estado
+    /// da regra não muda. Semântica full-replace: o texto opcional ausente limpa o valor anterior, então o
+    /// chamador repassa o que quer manter.
     /// </summary>
-    /// <remarks>
-    /// <para>
-    /// <strong>Semântica full-replace</strong>: todos os campos (inclusive
-    /// opcionais) são aplicados literalmente ao estado da regra. O caller
-    /// que só quer alterar um campo precisa repassar os valores atuais
-    /// dos demais — sem parâmetros opcionais com default <c>null</c>, para
-    /// evitar limpeza silenciosa de <c>AtoNormativoUrl</c> ou
-    /// <c>PortariaInternaCodigo</c> persistidos previamente.
-    /// </para>
-    /// </remarks>
     public Result Atualizar(
-        string tipoProcessoCodigo,
+        string? tipoProcessoCodigo,
         CategoriaObrigatoriedade categoria,
-        string regraCodigo,
-        PredicadoObrigatoriedade predicado,
-        string descricaoHumana,
-        string baseLegal,
-        DateOnly vigenciaInicio,
-        DateOnly? vigenciaFim,
-        string? atoNormativoUrl,
-        string? portariaInternaCodigo)
+        string? regraCodigo,
+        PredicadoObrigatoriedade? predicado,
+        TextoNormativo texto,
+        DateOnly? vigenciaInicio,
+        DateOnly? vigenciaFim)
     {
-        if (predicado is null)
+        ArgumentNullException.ThrowIfNull(texto);
+        Result validacao = ValidarCampos(
+            tipoProcessoCodigo, categoria, regraCodigo, predicado, texto, vigenciaInicio, vigenciaFim);
+        if (validacao.IsSuccess)
         {
-            return Result.Failure(new DomainError(
-                "ObrigatoriedadeLegal.PredicadoObrigatorio",
-                "Predicado é obrigatório."));
+            Aplicar(tipoProcessoCodigo, categoria, regraCodigo, predicado, texto, vigenciaInicio, vigenciaFim);
         }
 
-        Result forma = ValidarFormaDoPredicado(predicado);
-        if (forma.IsFailure)
-        {
-            return forma;
-        }
-
-        Result<NormalizedPayload> normalized = ObrigatoriedadeLegalPayloadNormalizer.Normalizar(
-            tipoProcessoCodigo,
-            categoria,
-            regraCodigo,
-            descricaoHumana,
-            baseLegal,
-            atoNormativoUrl,
-            portariaInternaCodigo,
-            vigenciaInicio,
-            vigenciaFim);
-
-        if (normalized.IsFailure)
-        {
-            return Result.Failure(normalized.Error!);
-        }
-
-        AplicarPayload(normalized.Value!, predicado);
-        return Result.Success();
+        return validacao;
     }
 
     /// <summary>
@@ -246,69 +159,66 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     /// efeito: nunca casa com o valor congelado no processo, e a cláusula vira
     /// letra morta sem que nada sinalize.</para>
     /// </remarks>
-    public static Result ValidarFormaDoPredicado(PredicadoObrigatoriedade predicado)
+    public static Result ValidarFormaDoPredicado(PredicadoObrigatoriedade predicado) => predicado switch
     {
-        switch (predicado)
-        {
-            case ModalidadesMinimas modalidades
-                when modalidades.Codigos is null || modalidades.Codigos.Count == 0:
-                return Result.Failure(new DomainError(
-                    "ObrigatoriedadeLegal.ModalidadesMinimasVazia",
-                    "Exigência de modalidades mínimas precisa de ao menos um código de modalidade."));
+        ModalidadesMinimas m => ValidarModalidadesMinimas(m),
+        EtapaObrigatoria e => CodigoPreenchido(e.TipoEtapaCodigo, "Exigência de etapa obrigatória precisa do código do tipo de etapa."),
+        DocumentoObrigatorioParaModalidade d => ValidarDocumentoPorModalidade(d),
+        AtendimentoDisponivel a => ValidarAtendimentoDisponivel(a),
+        DesempateDeveIncluir d => CodigoPreenchido(d.Criterio, "Exigência de critério de desempate precisa do código do critério."),
+        _ => Result.Success(),
+    };
 
-            case ModalidadesMinimas modalidades
-                when modalidades.Codigos.Any(string.IsNullOrWhiteSpace):
-                return Result.Failure(new DomainError(
-                    "ObrigatoriedadeLegal.ModalidadesMinimasVazia",
-                    "Exigência de modalidades mínimas não admite código em branco na lista."));
+    private static Result ValidarModalidadesMinimas(ModalidadesMinimas modalidades) =>
+        modalidades.Codigos is null || modalidades.Codigos.Count == 0
+            ? Falha(ModalidadesMinimasVazia, "Exigência de modalidades mínimas precisa de ao menos um código de modalidade.")
+            : modalidades.Codigos.Any(string.IsNullOrWhiteSpace)
+                ? Falha(ModalidadesMinimasVazia, "Exigência de modalidades mínimas não admite código em branco na lista.")
+                : Result.Success();
 
-            case EtapaObrigatoria etapa when string.IsNullOrWhiteSpace(etapa.TipoEtapaCodigo):
-                return Result.Failure(new DomainError(
-                    "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco",
-                    "Exigência de etapa obrigatória precisa do código do tipo de etapa."));
+    private static Result ValidarDocumentoPorModalidade(DocumentoObrigatorioParaModalidade documento) =>
+        string.IsNullOrWhiteSpace(documento.Modalidade) || string.IsNullOrWhiteSpace(documento.TipoDocumento)
+            ? Falha(CodigoEmBranco, "Exigência de documento por modalidade precisa do código da modalidade e do tipo de documento.")
+            : Result.Success();
 
-            case DocumentoObrigatorioParaModalidade documento
-                when string.IsNullOrWhiteSpace(documento.Modalidade)
-                    || string.IsNullOrWhiteSpace(documento.TipoDocumento):
-                return Result.Failure(new DomainError(
-                    "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco",
-                    "Exigência de documento por modalidade precisa do código da modalidade e do tipo de documento."));
+    private static Result ValidarAtendimentoDisponivel(AtendimentoDisponivel atendimento) =>
+        atendimento.Necessidades is null || atendimento.Necessidades.Count == 0
+            ? Falha(AtendimentoDisponivelVazio, "Exigência de atendimento disponível precisa de ao menos um código de tipo de deficiência.")
+            : atendimento.Necessidades.Any(string.IsNullOrWhiteSpace)
+                ? Falha(CodigoEmBranco, "Exigência de atendimento disponível não admite código em branco na lista.")
+                : Result.Success();
 
-            case AtendimentoDisponivel atendimento
-                when atendimento.Necessidades is null || atendimento.Necessidades.Count == 0:
-                return Result.Failure(new DomainError(
-                    "ObrigatoriedadeLegal.AtendimentoDisponivelVazio",
-                    "Exigência de atendimento disponível precisa de ao menos um código de tipo de deficiência."));
+    private static Result CodigoPreenchido(string? codigo, string mensagem) =>
+        string.IsNullOrWhiteSpace(codigo) ? Falha(CodigoEmBranco, mensagem) : Result.Success();
 
-            case AtendimentoDisponivel atendimento
-                when atendimento.Necessidades.Any(string.IsNullOrWhiteSpace):
-                return Result.Failure(new DomainError(
-                    "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco",
-                    "Exigência de atendimento disponível não admite código em branco na lista."));
+    private static Result Falha(string codigo, string mensagem) => Result.Failure(new DomainError(codigo, mensagem));
 
-            case DesempateDeveIncluir desempate when string.IsNullOrWhiteSpace(desempate.Criterio):
-                return Result.Failure(new DomainError(
-                    "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco",
-                    "Exigência de critério de desempate precisa do código do critério."));
-
-            default:
-                return Result.Success();
-        }
+    // Só recebe lote que passou por ValidarCampos: os campos obrigatórios chegam preenchidos.
+    private void Aplicar(
+        string? tipoProcessoCodigo,
+        CategoriaObrigatoriedade categoria,
+        string? regraCodigo,
+        PredicadoObrigatoriedade? predicado,
+        TextoNormativo texto,
+        DateOnly? vigenciaInicio,
+        DateOnly? vigenciaFim)
+    {
+        TipoProcessoCodigo = ValidacaoDaObrigatoriedadeLegal.Aparar(tipoProcessoCodigo);
+        Categoria = categoria;
+        RegraCodigo = ValidacaoDaObrigatoriedadeLegal.Aparar(regraCodigo);
+        Predicado = predicado!;
+        AplicarTexto(texto);
+        VigenciaInicio = vigenciaInicio!.Value;
+        VigenciaFim = vigenciaFim;
+        Hash = ComputeHash();
     }
 
-    private void AplicarPayload(NormalizedPayload payload, PredicadoObrigatoriedade predicado)
+    private void AplicarTexto(TextoNormativo texto)
     {
-        TipoProcessoCodigo = payload.TipoProcessoCodigo;
-        Categoria = payload.Categoria;
-        RegraCodigo = payload.RegraCodigo;
-        Predicado = predicado;
-        DescricaoHumana = payload.DescricaoHumana;
-        BaseLegal = payload.BaseLegal;
-        AtoNormativoUrl = payload.AtoNormativoUrl;
-        PortariaInternaCodigo = payload.PortariaInternaCodigo;
-        VigenciaInicio = payload.VigenciaInicio;
-        VigenciaFim = payload.VigenciaFim;
-        Hash = ComputeHash();
+        DescricaoHumana = ValidacaoDaObrigatoriedadeLegal.Aparar(texto.DescricaoHumana);
+        BaseLegal = ValidacaoDaObrigatoriedadeLegal.Aparar(texto.BaseLegal);
+        AtoNormativoUrl = ValidacaoDaObrigatoriedadeLegal.AparaOuNulo(texto.AtoNormativo);
+        PortariaInternaCodigo = ValidacaoDaObrigatoriedadeLegal.AparaOuNulo(texto.PortariaInternaCodigo);
     }
 
     /// <summary>

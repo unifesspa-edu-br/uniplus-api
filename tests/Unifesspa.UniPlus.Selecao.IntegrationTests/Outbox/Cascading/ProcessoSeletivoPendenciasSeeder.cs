@@ -177,13 +177,13 @@ internal static class ProcessoSeletivoPendenciasSeeder
     public static async Task<Guid> SemearObrigatoriedadeNaoAtendidaAsync(UniPlusDbContext db, string regraCodigo)
     {
         ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: regraCodigo,
-            predicado: new EtapaObrigatoria(TipoEtapaNaoOfertada),
-            descricaoHumana: "Etapa de entrevista obrigatória (teste de integração issue #1096)",
-            baseLegal: "Base legal de teste",
-            vigenciaInicio: new DateOnly(2020, 1, 1)).Value!;
+            ObrigatoriedadeLegal.TipoProcessoUniversal,
+            CategoriaObrigatoriedade.Outros,
+            regraCodigo,
+            new EtapaObrigatoria(TipoEtapaNaoOfertada),
+            new TextoNormativo("Etapa de entrevista obrigatória (teste de integração issue #1096)", "Base legal de teste", null, null),
+            new DateOnly(2020, 1, 1),
+            null).Value!;
 
         ObrigatoriedadeLegalRepository repository = new(db, TimeProvider.System);
         await repository.AdicionarAsync(regra, CancellationToken.None);

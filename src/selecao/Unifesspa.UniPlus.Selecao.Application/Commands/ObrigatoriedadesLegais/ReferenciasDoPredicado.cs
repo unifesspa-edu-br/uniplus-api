@@ -33,59 +33,46 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// Um <c>null</c> vindo do payload precisa virar 422 aqui, não
 /// <c>NullReferenceException</c> mais adiante.</para>
 /// </remarks>
-internal static class ReferenciasDoPredicado
+public sealed class ReferenciasDoPredicado(
+    ITipoEtapaReader tipoEtapaReader,
+    IModalidadeReader modalidadeReader,
+    ITipoDocumentoReader tipoDocumentoReader,
+    ITipoDeficienciaReader tipoDeficienciaReader,
+    IRegraCatalogoReader regraCatalogoReader)
 {
     /// <summary>
     /// Devolve o predicado com todas as referências normalizadas, ou a falha da
     /// primeira referência inexistente. Predicados sem referência a cadastro
     /// atravessam inalterados.
     /// </summary>
-    public static async Task<Result<PredicadoObrigatoriedade>> NormalizarEValidarAsync(
+    /// <remarks>
+    /// A forma vem primeiro: código em branco vira busca por string vazia, que o cadastro
+    /// legitimamente não encontra — a recusa sairia como "código não existe" e esconderia
+    /// de quem cadastra que o campo não foi preenchido.
+    /// </remarks>
+    public async Task<Result<PredicadoObrigatoriedade>> NormalizarEValidarAsync(
         PredicadoObrigatoriedade predicado,
-        ITipoEtapaReader tipoEtapaReader,
-        IModalidadeReader modalidadeReader,
-        ITipoDocumentoReader tipoDocumentoReader,
-        ITipoDeficienciaReader tipoDeficienciaReader,
-        IRegraCatalogoReader regraCatalogoReader,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(predicado);
-        ArgumentNullException.ThrowIfNull(tipoEtapaReader);
-        ArgumentNullException.ThrowIfNull(modalidadeReader);
-        ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
-        ArgumentNullException.ThrowIfNull(tipoDeficienciaReader);
-        ArgumentNullException.ThrowIfNull(regraCatalogoReader);
-
-        // Forma primeiro: código em branco vira busca por string vazia, que o cadastro
-        // legitimamente não encontra — a recusa sairia como "código não existe" e
-        // esconderia de quem cadastra que o campo não foi preenchido.
         Result forma = ObrigatoriedadeLegal.ValidarFormaDoPredicado(predicado);
-        if (forma.IsFailure)
-        {
-            return Result<PredicadoObrigatoriedade>.Failure(forma.Error!);
-        }
 
-        return predicado switch
-        {
-            EtapaObrigatoria etapa =>
-                await NormalizarEtapaAsync(etapa, tipoEtapaReader, cancellationToken).ConfigureAwait(false),
-
-            DocumentoObrigatorioParaModalidade documento =>
-                await NormalizarDocumentoParaModalidadeAsync(
-                    documento, modalidadeReader, tipoDocumentoReader, cancellationToken).ConfigureAwait(false),
-
-            ModalidadesMinimas modalidades =>
-                await NormalizarModalidadesMinimasAsync(modalidades, modalidadeReader, cancellationToken).ConfigureAwait(false),
-
-            AtendimentoDisponivel atendimento =>
-                await NormalizarAtendimentoDisponivelAsync(atendimento, tipoDeficienciaReader, cancellationToken).ConfigureAwait(false),
-
-            DesempateDeveIncluir desempate =>
-                await NormalizarDesempateDeveIncluirAsync(desempate, regraCatalogoReader, cancellationToken).ConfigureAwait(false),
-
-            _ => Result<PredicadoObrigatoriedade>.Success(predicado),
-        };
+        return forma.IsFailure
+            ? Result<PredicadoObrigatoriedade>.Failure(forma.Error!)
+            : await NormalizarReferenciasAsync(predicado, cancellationToken).ConfigureAwait(false);
     }
+
+    private Task<Result<PredicadoObrigatoriedade>> NormalizarReferenciasAsync(
+        PredicadoObrigatoriedade predicado,
+        CancellationToken cancellationToken) => predicado switch
+        {
+            EtapaObrigatoria etapa => NormalizarEtapaAsync(etapa, cancellationToken),
+            DocumentoObrigatorioParaModalidade documento => NormalizarDocumentoParaModalidadeAsync(documento, cancellationToken),
+            ModalidadesMinimas modalidades => NormalizarModalidadesMinimasAsync(modalidades, cancellationToken),
+            AtendimentoDisponivel atendimento => NormalizarAtendimentoDisponivelAsync(atendimento, cancellationToken),
+            DesempateDeveIncluir desempate => NormalizarDesempateDeveIncluirAsync(desempate, cancellationToken),
+            _ => Task.FromResult(Result<PredicadoObrigatoriedade>.Success(predicado)),
+        };
 
     internal static DomainError TipoEtapaNaoEncontradoOuInativo(string codigo) => new(
         "ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo",
@@ -111,134 +98,100 @@ internal static class ReferenciasDoPredicado
     /// Confere cada código de tipo de deficiência exigido contra o cadastro vivo.
     /// </summary>
     /// <remarks>
-    /// O predicado passou a referenciar o tipo pelo <b>código</b>, não pelo nome: o
-    /// nome é rótulo editorial e muda sem aviso, e uma regra escrita com o rótulo
-    /// antigo deixaria de casar depois de uma renomeação cosmética — reprovando
-    /// processos conformes sem que nada no cadastro sinalizasse o motivo.
+    /// O predicado referencia o tipo pelo <b>código</b>, não pelo nome: o nome é rótulo
+    /// editorial e muda sem aviso, e uma regra escrita com o rótulo antigo deixaria de casar
+    /// depois de uma renomeação cosmética — reprovando processos conformes sem que nada no
+    /// cadastro sinalizasse o motivo.
     /// </remarks>
-    private static async Task<Result<PredicadoObrigatoriedade>> NormalizarAtendimentoDisponivelAsync(
+    private async Task<Result<PredicadoObrigatoriedade>> NormalizarAtendimentoDisponivelAsync(
         AtendimentoDisponivel predicado,
-        ITipoDeficienciaReader tipoDeficienciaReader,
         CancellationToken cancellationToken)
     {
         IReadOnlyList<TipoDeficienciaView> vivos = await tipoDeficienciaReader
             .ListarVivosAsync(cancellationToken).ConfigureAwait(false);
-        HashSet<string> codigosVivos = new(vivos.Select(t => t.Codigo), StringComparer.Ordinal);
+        List<string> necessidades = [.. predicado.Necessidades.Select(Normalizar)];
 
-        List<string> normalizados = [];
-        foreach (string necessidade in predicado.Necessidades)
-        {
-            string codigo = Normalizar(necessidade);
-            if (!codigosVivos.Contains(codigo))
-            {
-                return Result<PredicadoObrigatoriedade>.Failure(TipoDeficienciaNaoEncontrada(codigo));
-            }
-
-            normalizados.Add(codigo);
-        }
-
-        return Result<PredicadoObrigatoriedade>.Success(predicado with { Necessidades = normalizados });
+        return necessidades.Find(codigo => vivos.All(v => !string.Equals(v.Codigo, codigo, StringComparison.Ordinal))) is { } orfao
+            ? Result<PredicadoObrigatoriedade>.Failure(TipoDeficienciaNaoEncontrada(orfao))
+            : Result<PredicadoObrigatoriedade>.Success(predicado with { Necessidades = necessidades });
     }
 
     /// <summary>
     /// Confere o código do critério contra as regras de desempate do catálogo.
     /// </summary>
     /// <remarks>
-    /// Sem esta conferência, um código inexistente reprovava toda publicação com a
+    /// <para>Sem esta conferência, um código inexistente reprovava toda publicação com a
     /// mensagem "critério de desempate ausente" — que descreve o processo seletivo e
-    /// manda o operador procurar o defeito no lugar errado, quando ele está na regra.
+    /// manda o operador procurar o defeito no lugar errado, quando ele está na regra.</para>
+    /// <para>O código só é aparado, alinhado ao que o catálogo grava: normalizar em NFC faria a
+    /// comparação ordinal procurar uma forma que o catálogo não guarda. O catálogo é versionado
+    /// e o predicado cita só o código, então basta existir uma versão dele; qual versão vale num
+    /// certame é decisão de quem configura o processo, não da obrigatoriedade legal.</para>
     /// </remarks>
-    private static async Task<Result<PredicadoObrigatoriedade>> NormalizarDesempateDeveIncluirAsync(
+    private async Task<Result<PredicadoObrigatoriedade>> NormalizarDesempateDeveIncluirAsync(
         DesempateDeveIncluir predicado,
-        IRegraCatalogoReader regraCatalogoReader,
         CancellationToken cancellationToken)
     {
-        // Trim e nada mais, alinhado ao que o catálogo grava: RegraCatalogo.Criar apara
-        // o código e não compõe. Normalizar aqui em NFC faria a comparação ordinal
-        // procurar uma forma que o catálogo não guarda, e um código com caractere
-        // decomponível seria dado como inexistente mesmo estando lá.
         string codigo = NormalizarComoOCatalogoDeRegrasGrava(predicado.Criterio);
-
         IReadOnlyList<RegraCatalogo> regras = await regraCatalogoReader
             .ListarPorTipoAsync(TipoRegra.CriterioDesempate, cancellationToken).ConfigureAwait(false);
 
-        // O catálogo é versionado: o predicado cita só o código, e basta existir uma
-        // versão dele para a regra ser avaliável. Qual versão vale num certame é
-        // decisão de quem configura o processo, não da obrigatoriedade legal.
-        bool existe = regras.Any(r => string.Equals(r.Codigo, codigo, StringComparison.Ordinal));
-
-        return existe
+        return regras.Any(r => string.Equals(r.Codigo, codigo, StringComparison.Ordinal))
             ? Result<PredicadoObrigatoriedade>.Success(predicado with { Criterio = codigo })
             : Result<PredicadoObrigatoriedade>.Failure(CriterioDesempateNaoEncontrado(codigo));
     }
 
-    private static async Task<Result<PredicadoObrigatoriedade>> NormalizarEtapaAsync(
+    private async Task<Result<PredicadoObrigatoriedade>> NormalizarEtapaAsync(
         EtapaObrigatoria predicado,
-        ITipoEtapaReader tipoEtapaReader,
         CancellationToken cancellationToken)
     {
         string codigo = Normalizar(predicado.TipoEtapaCodigo);
-
-        bool ativo = await tipoEtapaReader
-            .ObterAtivoPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false) is not null;
+        bool ativo = await tipoEtapaReader.ObterAtivoPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false) is not null;
 
         return ativo
             ? Result<PredicadoObrigatoriedade>.Success(predicado with { TipoEtapaCodigo = codigo })
             : Result<PredicadoObrigatoriedade>.Failure(TipoEtapaNaoEncontradoOuInativo(codigo));
     }
 
-    private static async Task<Result<PredicadoObrigatoriedade>> NormalizarDocumentoParaModalidadeAsync(
+    private async Task<Result<PredicadoObrigatoriedade>> NormalizarDocumentoParaModalidadeAsync(
         DocumentoObrigatorioParaModalidade predicado,
-        IModalidadeReader modalidadeReader,
-        ITipoDocumentoReader tipoDocumentoReader,
         CancellationToken cancellationToken)
     {
         string modalidade = Normalizar(predicado.Modalidade);
         string tipoDocumento = NormalizarComoOCadastroDeTipoDocumentoGrava(predicado.TipoDocumento);
 
-        if (!await ModalidadeEstaVivaAsync(modalidade, modalidadeReader, cancellationToken).ConfigureAwait(false))
+        if (!await ModalidadeEstaVivaAsync(modalidade, cancellationToken).ConfigureAwait(false))
         {
             return Result<PredicadoObrigatoriedade>.Failure(ModalidadeNaoEncontrada(modalidade));
         }
 
-        if (await tipoDocumentoReader
-                .ObterVivoPorCodigoAsync(tipoDocumento, cancellationToken).ConfigureAwait(false) is null)
-        {
-            return Result<PredicadoObrigatoriedade>.Failure(TipoDocumentoNaoEncontrado(tipoDocumento));
-        }
-
-        return Result<PredicadoObrigatoriedade>.Success(
-            predicado with { Modalidade = modalidade, TipoDocumento = tipoDocumento });
+        return await tipoDocumentoReader.ObterVivoPorCodigoAsync(tipoDocumento, cancellationToken).ConfigureAwait(false) is null
+            ? Result<PredicadoObrigatoriedade>.Failure(TipoDocumentoNaoEncontrado(tipoDocumento))
+            : Result<PredicadoObrigatoriedade>.Success(predicado with { Modalidade = modalidade, TipoDocumento = tipoDocumento });
     }
 
-    private static async Task<Result<PredicadoObrigatoriedade>> NormalizarModalidadesMinimasAsync(
+    /// <remarks>
+    /// A lista inteira é normalizada e conferida item a item: basta um código órfão para a
+    /// exigência mínima nunca ser satisfeita pelo edital que a deveria cumprir.
+    /// </remarks>
+    private async Task<Result<PredicadoObrigatoriedade>> NormalizarModalidadesMinimasAsync(
         ModalidadesMinimas predicado,
-        IModalidadeReader modalidadeReader,
         CancellationToken cancellationToken)
     {
-        // Lista inteira normalizada e conferida item a item: basta um código órfão
-        // para a exigência mínima nunca ser satisfeita pelo edital que a deveria
-        // cumprir.
-        List<string> codigos = new(predicado.Codigos?.Count ?? 0);
+        List<string> codigos = [.. predicado.Codigos.Select(Normalizar)];
 
-        foreach (string codigoBruto in predicado.Codigos ?? [])
+        foreach (string codigo in codigos)
         {
-            string codigo = Normalizar(codigoBruto);
-            if (!await ModalidadeEstaVivaAsync(codigo, modalidadeReader, cancellationToken).ConfigureAwait(false))
+            if (!await ModalidadeEstaVivaAsync(codigo, cancellationToken).ConfigureAwait(false))
             {
                 return Result<PredicadoObrigatoriedade>.Failure(ModalidadeNaoEncontrada(codigo));
             }
-
-            codigos.Add(codigo);
         }
 
         return Result<PredicadoObrigatoriedade>.Success(predicado with { Codigos = codigos });
     }
 
-    private static async Task<bool> ModalidadeEstaVivaAsync(
-        string codigo,
-        IModalidadeReader modalidadeReader,
-        CancellationToken cancellationToken) =>
+    private async Task<bool> ModalidadeEstaVivaAsync(string codigo, CancellationToken cancellationToken) =>
         await modalidadeReader.ObterVivaPorCodigoAsync(codigo, cancellationToken).ConfigureAwait(false) is not null;
 
     /// <summary>

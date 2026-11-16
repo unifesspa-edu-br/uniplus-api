@@ -13526,25 +13526,47 @@
             "format": "uuid"
           },
           "tipoProcessoCodigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "categoria": {
             "$ref": "#/components/schemas/CategoriaObrigatoriedade"
           },
           "regraCodigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "predicado": {
-            "$ref": "#/components/schemas/PredicadoObrigatoriedade"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PredicadoObrigatoriedade"
+              }
+            ]
           },
           "descricaoHumana": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "baseLegal": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "vigenciaInicio": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date"
           },
           "vigenciaFim": {
@@ -15184,25 +15206,47 @@
         "type": "object",
         "properties": {
           "tipoProcessoCodigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "categoria": {
             "$ref": "#/components/schemas/CategoriaObrigatoriedade"
           },
           "regraCodigo": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "predicado": {
-            "$ref": "#/components/schemas/PredicadoObrigatoriedade"
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/PredicadoObrigatoriedade"
+              }
+            ]
           },
           "descricaoHumana": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "baseLegal": {
-            "type": "string"
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "vigenciaInicio": {
-            "type": "string",
+            "type": [
+              "null",
+              "string"
+            ],
             "format": "date"
           },
           "vigenciaFim": {

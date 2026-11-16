@@ -29,13 +29,13 @@ public sealed class AvaliadorConformidadeLegalTests
 
     private static ObrigatoriedadeLegal NovaRegra(string regraCodigo, PredicadoObrigatoriedade predicado) =>
         ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: regraCodigo,
-            predicado: predicado,
-            descricaoHumana: "Regra de teste",
-            baseLegal: "Lei de teste",
-            vigenciaInicio: new DateOnly(2026, 1, 1)).Value!;
+            ObrigatoriedadeLegal.TipoProcessoUniversal,
+            CategoriaObrigatoriedade.Outros,
+            regraCodigo,
+            predicado,
+            new TextoNormativo("Regra de teste", "Lei de teste", null, null),
+            new DateOnly(2026, 1, 1),
+            null).Value!;
 
     [Fact(DisplayName = "CA-01: sem nenhuma regra vigente, a avaliação aprova (lista vazia)")]
     public void SemRegras_Aprova()

@@ -24,13 +24,16 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
     "CA1054:URI-like parameters should not be strings",
     Justification = "Construtor do record propaga o tipo string do payload — ver justificativa acima.")]
 public sealed record CriarObrigatoriedadeLegalCommand(
-    string TipoProcessoCodigo,
+    string? TipoProcessoCodigo,
     CategoriaObrigatoriedade Categoria,
-    string RegraCodigo,
-    PredicadoObrigatoriedade Predicado,
-    string DescricaoHumana,
-    string BaseLegal,
-    DateOnly VigenciaInicio,
+    string? RegraCodigo,
+    PredicadoObrigatoriedade? Predicado,
+    string? DescricaoHumana,
+    string? BaseLegal,
+    DateOnly? VigenciaInicio,
     DateOnly? VigenciaFim,
     string? AtoNormativoUrl,
-    string? PortariaInternaCodigo) : ICommand<Result<Guid>>;
+    string? PortariaInternaCodigo) : ICommand<Result<Guid>>, IObrigatoriedadeLegalDoComando
+{
+    public TextoNormativo ComoTextoNormativo() => new(DescricaoHumana, BaseLegal, AtoNormativoUrl, PortariaInternaCodigo);
+}

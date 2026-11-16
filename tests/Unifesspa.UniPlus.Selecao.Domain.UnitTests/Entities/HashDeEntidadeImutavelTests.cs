@@ -29,13 +29,13 @@ public sealed class HashDeEntidadeImutavelTests
     public void HashDeObrigatoriedadeLegal_PermaneceEstavelComAChaveTipoProcessoCodigo()
     {
         Result<ObrigatoriedadeLegal> regra = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Etapa,
-            regraCodigo: "ETAPA_OBRIGATORIA",
-            predicado: new EtapaObrigatoria("ProvaObjetiva"),
-            descricaoHumana: "Edital deve incluir etapa de Prova Objetiva.",
-            baseLegal: "Lei 12.711/2012 art.1º",
-            vigenciaInicio: new DateOnly(2026, 1, 1));
+            ObrigatoriedadeLegal.TipoProcessoUniversal,
+            CategoriaObrigatoriedade.Etapa,
+            "ETAPA_OBRIGATORIA",
+            new EtapaObrigatoria("ProvaObjetiva"),
+            new TextoNormativo("Edital deve incluir etapa de Prova Objetiva.", "Lei 12.711/2012 art.1º", null, null),
+            new DateOnly(2026, 1, 1),
+            null);
 
         regra.IsSuccess.Should().BeTrue();
         regra.Value!.Hash.Should().Be(

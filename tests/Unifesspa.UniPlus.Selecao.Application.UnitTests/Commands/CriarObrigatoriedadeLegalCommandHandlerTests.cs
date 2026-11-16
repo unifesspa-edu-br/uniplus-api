@@ -4,213 +4,121 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.CenarioDaObrigatoriedadeLegal;
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport.LeitoresDeCadastroParaObrigatoriedadeLegal;
 
 /// <summary>
-/// A existência e a atividade do código de uma regra legal pertencem à Configuração;
-/// a factory de domínio apenas preserva o código que o handler validou.
+/// Criar confere os campos pelas regras do domínio, só depois as referências e a unicidade, e persiste a regra com
+/// o predicado já normalizado.
 /// </summary>
 public sealed class CriarObrigatoriedadeLegalCommandHandlerTests
 {
-    [Fact(DisplayName = "Handle aceita código de tipo ativo e persiste a obrigatoriedade")]
+    private readonly CenarioDaObrigatoriedadeLegal _cenario = new();
+
+    [Fact(DisplayName = "Código de tipo ativo é aceito e a regra é persistida")]
     public async Task Handle_TipoAtivo_Persiste()
     {
-        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        ITipoProcessoReader tipoReader = Substitute.For<ITipoProcessoReader>();
-        ITipoEtapaReader tipoEtapaReader = TipoEtapaReaderAtivo();
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        tipoReader.ObterAtivoPorCodigoAsync("PS_NOVO", Arg.Any<CancellationToken>())
-            .Returns(new TipoProcessoView(Guid.CreateVersion7(), "PS_NOVO", "Processo novo", null));
-        repository.ExisteRegraCodigoAtivoAsync("REGRA_NOVA", null, Arg.Any<CancellationToken>()).Returns(false);
-
-        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            NovaRegra("PS_NOVO"), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        await repository.Received(1).AdicionarAsync(
-            Arg.Is<ObrigatoriedadeLegal>(regra => regra.TipoProcessoCodigo == "PS_NOVO"),
-            Arg.Any<CancellationToken>());
-        await unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _cenario.Repositorio.Received(1).AdicionarAsync(
+            Arg.Is<ObrigatoriedadeLegal>(regra => regra.TipoProcessoCodigo == TipoProcessoDoCenario), Arg.Any<CancellationToken>());
+        await _cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle recusa código de tipo de processo inexistente ou desativado sem persistir regra")]
-    public async Task Handle_TipoProcessoInexistenteOuInativo_Recusa()
+    [Fact(DisplayName = "Tipo de processo inexistente ou desativado é recusado sem persistir")]
+    public async Task Handle_TipoProcessoInativo_Recusa()
     {
-        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        ITipoProcessoReader tipoReader = Substitute.For<ITipoProcessoReader>();
-        ITipoEtapaReader tipoEtapaReader = TipoEtapaReaderAtivo();
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        tipoReader.ObterAtivoPorCodigoAsync("PS_DESATIVADO", Arg.Any<CancellationToken>())
-            .Returns((TipoProcessoView?)null);
+        _cenario.TiposDeProcesso = Substitute.For<ITipoProcessoReader>();
 
-        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            NovaRegra("PS_DESATIVADO"), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar());
 
-        resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo");
-        await repository.DidNotReceive().AdicionarAsync(Arg.Any<ObrigatoriedadeLegal>(), Arg.Any<CancellationToken>());
-        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle aceita o sentinela universal sem consultar os tipos de processo ativos")]
+    [Fact(DisplayName = "O sentinela universal é aceito sem consultar os tipos de processo")]
     public async Task Handle_TipoUniversal_NaoConsultaTiposAtivos()
     {
-        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        ITipoProcessoReader tipoReader = Substitute.For<ITipoProcessoReader>();
-        ITipoEtapaReader tipoEtapaReader = TipoEtapaReaderAtivo();
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        repository.ExisteRegraCodigoAtivoAsync("REGRA_NOVA", null, Arg.Any<CancellationToken>()).Returns(false);
+        ITipoProcessoReader tipos = _cenario.TiposDeProcesso = Substitute.For<ITipoProcessoReader>();
 
-        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            NovaRegra(ObrigatoriedadeLegal.TipoProcessoUniversal), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar() with { TipoProcessoCodigo = "*" });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        await tipoReader.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);
+        await tipos.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);
     }
 
-    /// <summary>issue #1071 — decisão fechada: obrigatoriedade nova só pode usar código de tipo de etapa ativo.</summary>
-    [Fact(DisplayName = "Handle recusa código de tipo de etapa inexistente ou desativado sem persistir regra")]
-    public async Task Handle_TipoEtapaInexistenteOuInativo_Recusa()
+    [Fact(DisplayName = "Tipo de etapa inexistente é recusado sem persistir")]
+    public async Task Handle_TipoEtapaInativo_Recusa()
     {
-        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        ITipoProcessoReader tipoReader = Substitute.For<ITipoProcessoReader>();
-        ITipoEtapaReader tipoEtapaReader = TipoEtapaReaderComResposta(null);
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        tipoReader.ObterAtivoPorCodigoAsync("PS_NOVO", Arg.Any<CancellationToken>())
-            .Returns(new TipoProcessoView(Guid.CreateVersion7(), "PS_NOVO", "Processo novo", null));
+        _cenario.TiposDeEtapa = TipoEtapaReaderComResposta(null);
 
-        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            NovaRegra("PS_NOVO"), repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar());
 
-        resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo");
-        await repository.DidNotReceive().AdicionarAsync(Arg.Any<ObrigatoriedadeLegal>(), Arg.Any<CancellationToken>());
-        await unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _cenario.Repositorio.DidNotReceive().AdicionarAsync(Arg.Any<ObrigatoriedadeLegal>(), Arg.Any<CancellationToken>());
     }
 
-    /// <summary>
-    /// TipoEtapaCodigo é non-nullable só em compile-time: FluentValidation valida Predicado
-    /// não-nulo, não os campos do subtipo polimórfico, e System.Text.Json não impõe NRT em
-    /// runtime — um payload com <c>"tipoEtapaCodigo": null</c> desserializa sem erro.
-    /// </summary>
-    [Fact(DisplayName = "Handle recusa código de tipo de etapa nulo sem lançar")]
-    public async Task Handle_TipoEtapaCodigoNulo_RecusaSemLancar()
+    [Fact(DisplayName = "Código de tipo de etapa nulo é defeito de campo, não de cadastro, e não chega ao cadastro")]
+    public async Task Handle_TipoEtapaCodigoNulo_RecusaPelaFormaSemConsultar()
     {
-        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        ITipoProcessoReader tipoReader = Substitute.For<ITipoProcessoReader>();
-        ITipoEtapaReader tipoEtapaReader = Substitute.For<ITipoEtapaReader>();
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        tipoReader.ObterAtivoPorCodigoAsync("PS_NOVO", Arg.Any<CancellationToken>())
-            .Returns(new TipoProcessoView(Guid.CreateVersion7(), "PS_NOVO", "Processo novo", null));
+        ITipoEtapaReader tipos = _cenario.TiposDeEtapa = Substitute.For<ITipoEtapaReader>();
 
-        CriarObrigatoriedadeLegalCommand command = new(
-            "PS_NOVO",
-            CategoriaObrigatoriedade.Etapa,
-            "REGRA_NOVA",
-            new EtapaObrigatoria(null!),
-            "Descrição da regra.",
-            "Lei de teste.",
-            new DateOnly(2026, 1, 1),
-            null,
-            null,
-            null);
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar(new EtapaObrigatoria(null!)));
 
-        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            command, repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(
-            "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco",
-            "campo não preenchido é defeito da regra, não do catálogo — dizer que o tipo não existe mandaria procurar no lugar errado");
-        await repository.DidNotReceive().AdicionarAsync(Arg.Any<ObrigatoriedadeLegal>(), Arg.Any<CancellationToken>());
+        resultado.Errors.Should().ContainSingle().Which.Should()
+            .Match<FieldError>(e => e.Error.Code == "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco" && e.Field == "predicado");
+        await tipos.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);
     }
 
-    /// <summary>
-    /// O reader normaliza a busca (<c>Trim</c>), mas se o valor persistido não fosse
-    /// normalizado a regra ficaria aceita e, ao mesmo tempo, permanentemente inatingível em
-    /// AvaliadorConformidadeLegal — que compara por igualdade ordinal exata.
-    /// </summary>
-    [Fact(DisplayName = "Handle normaliza espaços do código de tipo de etapa antes de persistir")]
-    public async Task Handle_TipoEtapaCodigoComEspacos_PersisteNormalizado()
+    [Fact(DisplayName = "O predicado persistido é o normalizado e o hash nasce dele")]
+    public async Task Handle_TipoEtapaComEspacos_PersisteNormalizadoComHashDoConteudoFinal()
     {
-        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        ITipoProcessoReader tipoReader = Substitute.For<ITipoProcessoReader>();
-        ITipoEtapaReader tipoEtapaReader = TipoEtapaReaderAtivo();
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        tipoReader.ObterAtivoPorCodigoAsync("PS_NOVO", Arg.Any<CancellationToken>())
-            .Returns(new TipoProcessoView(Guid.CreateVersion7(), "PS_NOVO", "Processo novo", null));
-        repository.ExisteRegraCodigoAtivoAsync("REGRA_NOVA", null, Arg.Any<CancellationToken>()).Returns(false);
+        ObrigatoriedadeLegal? persistida = null;
+        await _cenario.Repositorio.AdicionarAsync(Arg.Do<ObrigatoriedadeLegal>(r => persistida = r), Arg.Any<CancellationToken>());
 
-        CriarObrigatoriedadeLegalCommand command = new(
-            "PS_NOVO",
-            CategoriaObrigatoriedade.Etapa,
-            "REGRA_NOVA",
-            new EtapaObrigatoria($"  {TipoEtapaCodigo}  "),
-            "Descrição da regra.",
-            "Lei de teste.",
-            new DateOnly(2026, 1, 1),
-            null,
-            null,
-            null);
+        await _cenario.CriarAsync(ComandoDeCriar(new EtapaObrigatoria($"  {TipoEtapaCodigo}  ")));
 
-        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            command, repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
+        persistida!.Predicado.Should().Be(new EtapaObrigatoria(TipoEtapaCodigo));
+        persistida.Hash.Should().Be(NovaRegraComPredicado(new EtapaObrigatoria(TipoEtapaCodigo)).Hash);
+    }
+
+    [Fact(DisplayName = "Predicado sem referência a cadastro não consulta os tipos de etapa")]
+    public async Task Handle_PredicadoNaoEEtapa_NaoConsultaTiposDeEtapa()
+    {
+        ITipoEtapaReader tipos = _cenario.TiposDeEtapa = Substitute.For<ITipoEtapaReader>();
+
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar(new ConcorrenciaDuplaObrigatoria()));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        await repository.Received(1).AdicionarAsync(
-            Arg.Is<ObrigatoriedadeLegal>(regra =>
-                ((EtapaObrigatoria)regra.Predicado).TipoEtapaCodigo == TipoEtapaCodigo),
-            Arg.Any<CancellationToken>());
+        await tipos.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);
     }
 
-    /// <summary>Predicados que não são EtapaObrigatoria não consultam o reader de tipos de etapa.</summary>
-    [Fact(DisplayName = "Handle com predicado que não é EtapaObrigatoria não consulta os tipos de etapa ativos")]
-    public async Task Handle_PredicadoNaoEEtapaObrigatoria_NaoConsultaTiposDeEtapa()
+    [Fact(DisplayName = "Código de regra já usado por regra ativa é recusado como duplicado")]
+    public async Task Handle_RegraCodigoDuplicado_Recusa()
     {
-        IObrigatoriedadeLegalRepository repository = Substitute.For<IObrigatoriedadeLegalRepository>();
-        ITipoProcessoReader tipoReader = Substitute.For<ITipoProcessoReader>();
-        ITipoEtapaReader tipoEtapaReader = Substitute.For<ITipoEtapaReader>();
-        IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
-        repository.ExisteRegraCodigoAtivoAsync("REGRA_NOVA", null, Arg.Any<CancellationToken>()).Returns(false);
+        _cenario.Repositorio.ExisteRegraCodigoAtivoAsync("REGRA_NOVA", null, Arg.Any<CancellationToken>()).Returns(true);
 
-        CriarObrigatoriedadeLegalCommand command = new(
-            ObrigatoriedadeLegal.TipoProcessoUniversal,
-            CategoriaObrigatoriedade.Outros,
-            "REGRA_NOVA",
-            new ConcorrenciaDuplaObrigatoria(),
-            "Descrição da regra.",
-            "Lei de teste.",
-            new DateOnly(2026, 1, 1),
-            null,
-            null,
-            null);
+        Result<Guid> resultado = await _cenario.CriarAsync(ComandoDeCriar());
 
-        Result<Guid> resultado = await CriarObrigatoriedadeLegalCommandHandler.Handle(
-            command, repository, tipoReader, tipoEtapaReader, ModalidadeReaderViva(), TipoDocumentoReaderVivo(), CadastrosVivos.TiposDeficiencia(), CadastrosVivos.RegrasDesempate(), unitOfWork, CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        await tipoEtapaReader.DidNotReceiveWithAnyArgs().ObterAtivoPorCodigoAsync(default!, default);
+        resultado.Error!.Code.Should().Be("ObrigatoriedadeLegal.RegraCodigoDuplicada");
+        await _cenario.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    private static CriarObrigatoriedadeLegalCommand NovaRegra(string tipoProcessoCodigo) => new(
-        tipoProcessoCodigo,
-        CategoriaObrigatoriedade.Etapa,
-        "REGRA_NOVA",
-        new EtapaObrigatoria(TipoEtapaCodigo),
-        "Descrição da regra.",
-        "Lei de teste.",
-        new DateOnly(2026, 1, 1),
-        null,
-        null,
-        null);
+    private static ObrigatoriedadeLegal NovaRegraComPredicado(PredicadoObrigatoriedade predicado) =>
+        ObrigatoriedadeLegal.Criar(
+            TipoProcessoDoCenario,
+            CategoriaObrigatoriedade.Etapa,
+            "REGRA_NOVA",
+            predicado,
+            new TextoNormativo("Descrição da regra.", "Lei de teste.", null, null),
+            new DateOnly(2026, 1, 1),
+            null).Value!;
 }

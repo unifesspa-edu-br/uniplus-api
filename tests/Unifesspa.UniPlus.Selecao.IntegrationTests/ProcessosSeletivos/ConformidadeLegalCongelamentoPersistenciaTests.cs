@@ -123,13 +123,13 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
     private async Task<Guid> SemearRegraVigenteAsync(string regraCodigo)
     {
         ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: regraCodigo,
-            predicado: new EtapaObrigatoria("PROVA_OBJETIVA"),
-            descricaoHumana: "Etapa objetiva obrigatória (teste de integração)",
-            baseLegal: "Lei de teste",
-            vigenciaInicio: new DateOnly(2020, 1, 1)).Value!;
+            ObrigatoriedadeLegal.TipoProcessoUniversal,
+            CategoriaObrigatoriedade.Outros,
+            regraCodigo,
+            new EtapaObrigatoria("PROVA_OBJETIVA"),
+            new TextoNormativo("Etapa objetiva obrigatória (teste de integração)", "Lei de teste", null, null),
+            new DateOnly(2020, 1, 1),
+            null).Value!;
 
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         ObrigatoriedadeLegalRepository repository = new(context, TimeProvider.System);
