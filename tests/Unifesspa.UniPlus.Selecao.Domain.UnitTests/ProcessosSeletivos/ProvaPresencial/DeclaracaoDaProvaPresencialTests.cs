@@ -163,4 +163,29 @@ public sealed class DeclaracaoDaProvaPresencialTests
             ("provaPresencial.municipios[1].uf", CidadeReferenciaErrorCodes.UfIncoerente),
         ]);
     }
+
+    [Fact(DisplayName = "Duas declarações são iguais quando têm a mesma prova presencial e os mesmos municípios, na mesma ordem")]
+    public void Igualdade_PelaProvaEPelosMunicipiosEmOrdem()
+    {
+        DeclaracaoDaProvaPresencial Declarar(bool prova, params MunicipioDeAplicacaoInformado[] municipios) =>
+            DeclaracaoDaProvaPresencial.Declarar(prova, municipios, Limite).Value!;
+
+        Declarar(true, Municipio(Marabá, "PA"), Municipio(Xinguara, "PA")).Should().Be(Declarar(true, Municipio(Marabá, "PA"), Municipio(Xinguara, "PA")));
+        Declarar(true, Municipio(Marabá, "PA"), Municipio(Xinguara, "PA")).Should().NotBe(Declarar(true, Municipio(Xinguara, "PA"), Municipio(Marabá, "PA")));
+        Declarar(true).Should().NotBe(Declarar(false));
+    }
+
+    [Fact(DisplayName = "A igualdade das declarações é simétrica, tem hash coerente, e recusa nulo")]
+    public void Igualdade_SimetriaHashNuloECopia()
+    {
+        DeclaracaoDaProvaPresencial primeira = DeclaracaoDaProvaPresencial.Declarar(true, [Municipio(Marabá, "PA")], Limite).Value!;
+        DeclaracaoDaProvaPresencial segunda = DeclaracaoDaProvaPresencial.Declarar(true, [Municipio(Marabá, "PA")], Limite).Value!;
+        DeclaracaoDaProvaPresencial outraUf = DeclaracaoDaProvaPresencial.Declarar(true, [Municipio("3550308", "SP")], Limite).Value!;
+
+        primeira.Should().Be(segunda);
+        segunda.Should().Be(primeira);
+        primeira.GetHashCode().Should().Be(segunda.GetHashCode());
+        primeira.Should().NotBe(outraUf);
+        primeira.Equals(null).Should().BeFalse();
+    }
 }

@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// A declaração é do próprio processo, nunca deduzida do tipo de processo nem de etapa. A declaração
 /// que não existe ainda é a do processo por declarar, e quem a guarda a representa por ausência.
 /// </summary>
-public sealed class DeclaracaoDaProvaPresencial
+public sealed record DeclaracaoDaProvaPresencial
 {
     private const string CampoDosMunicipios = "provaPresencial.municipios";
 
@@ -23,6 +23,12 @@ public sealed class DeclaracaoDaProvaPresencial
 
     /// <summary>Os municípios de aplicação; vazia sem prova presencial, e ainda vazia no rascunho que não os declarou.</summary>
     public IReadOnlyList<MunicipioDeAplicacao> Municipios { get; }
+
+    /// <summary>As declarações são iguais quando têm a mesma prova presencial e os mesmos municípios, na mesma ordem.</summary>
+    public bool Equals(DeclaracaoDaProvaPresencial? outra) =>
+        outra is not null && TemProvaPresencial == outra.TemProvaPresencial && Municipios.SequenceEqual(outra.Municipios);
+
+    public override int GetHashCode() => HashCode.Combine(TemProvaPresencial, Municipios.Count);
 
     /// <summary>
     /// Confere a forma da declaração e acumula as recusas (ADR-0125): sem prova presencial não há município,

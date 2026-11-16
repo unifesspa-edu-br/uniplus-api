@@ -136,4 +136,46 @@ public sealed class ConferenciaDaProvaPresencialTests
         conferidos.NomeConferido(Marabá).Should().Be("Marabá");
         conferidos.NomeConferido(Xinguara).Should().BeNull();
     }
+
+    [Fact(DisplayName = "Dois conjuntos de municípios conferidos são iguais quando trazem o mesmo resultado para os mesmos municípios")]
+    public void Igualdade_PeloResultadoDeCadaMunicipio()
+    {
+        MunicipiosConferidosNoGeo Conjunto(string nome) => MunicipiosConferidosNoGeo.De(
+            new Dictionary<string, ResultadoDoMunicipioNoGeo> { [Marabá] = ResultadoDoMunicipioNoGeo.Conferido(nome) });
+
+        Conjunto("Marabá").Should().Be(Conjunto("Marabá"));
+        Conjunto("Marabá").Should().NotBe(Conjunto("Outro nome"));
+        Conjunto("Marabá").Should().NotBe(MunicipiosConferidosNoGeo.Nenhum);
+    }
+
+    [Fact(DisplayName = "A igualdade dos conjuntos conferidos é simétrica, não depende da ordem e distingue municípios diferentes")]
+    public void Igualdade_SimetricaSemOrdemENuloENaoEIgualAOutroMunicipio()
+    {
+        MunicipiosConferidosNoGeo umDoisOrdemA = Conjunto((Marabá, "Marabá"), (Xinguara, "Xinguara"));
+        MunicipiosConferidosNoGeo umDoisOrdemB = Conjunto((Xinguara, "Xinguara"), (Marabá, "Marabá"));
+
+        umDoisOrdemA.Should().Be(umDoisOrdemB);
+        umDoisOrdemB.Should().Be(umDoisOrdemA);
+        umDoisOrdemA.GetHashCode().Should().Be(umDoisOrdemB.GetHashCode());
+        umDoisOrdemA.Should().NotBe(Conjunto((Marabá, "Marabá"), ("3550308", "Xinguara")));
+        umDoisOrdemA.Equals(null).Should().BeFalse();
+    }
+
+    private static MunicipiosConferidosNoGeo Conjunto(params (string Codigo, string Nome)[] municipios) =>
+        MunicipiosConferidosNoGeo.De(municipios.ToDictionary(
+            static municipio => municipio.Codigo, static municipio => ResultadoDoMunicipioNoGeo.Conferido(municipio.Nome)));
+
+    [Fact(DisplayName = "O conjunto conferido recusa resultado nulo e a cópia com with mantém o resultado de cada município")]
+    public void ResultadoNulo_Recusa_ECopiaComWithMantemOsResultados()
+    {
+        Action comResultadoNulo = () => MunicipiosConferidosNoGeo.De(new Dictionary<string, ResultadoDoMunicipioNoGeo> { [Marabá] = null! });
+        MunicipiosConferidosNoGeo conferidos = MunicipiosConferidosNoGeo.De(
+            new Dictionary<string, ResultadoDoMunicipioNoGeo> { [Marabá] = ResultadoDoMunicipioNoGeo.Conferido("Marabá") });
+
+        MunicipiosConferidosNoGeo copia = conferidos with { };
+
+        comResultadoNulo.Should().Throw<ArgumentException>();
+        copia.Should().Be(conferidos);
+        copia.NomeConferido(Marabá).Should().Be("Marabá");
+    }
 }
