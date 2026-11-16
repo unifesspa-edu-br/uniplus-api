@@ -81,9 +81,9 @@ public sealed class TipoConceitoTests
     }
 
     [Fact(DisplayName = "Recusa código com o caractere nulo")]
-    public void Criar_CodigoComCaractereNulo_Recusa() =>
+    public void Criar_CodigoCaractereInvalido_Recusa() =>
         TipoConceito.Criar(Nulo, DefinicoesDeTipoConceito.Numerica())
-            .DeveRecusarComo(TipoConceitoErrorCodes.CodigoComCaractereNulo, "codigo");
+            .DeveRecusarComo(TipoConceitoErrorCodes.CodigoCaractereInvalido, "codigo");
 
     [Theory(DisplayName = "Recusa nome ausente")]
     [InlineData(null)]
@@ -102,9 +102,9 @@ public sealed class TipoConceitoTests
     }
 
     [Fact(DisplayName = "Recusa nome com o caractere nulo")]
-    public void Criar_NomeComCaractereNulo_Recusa() =>
+    public void Criar_NomeCaractereInvalido_Recusa() =>
         TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Nome = Nulo })
-            .DeveRecusarComo(TipoConceitoErrorCodes.NomeComCaractereNulo, "nome");
+            .DeveRecusarComo(TipoConceitoErrorCodes.NomeCaractereInvalido, "nome");
 
     [Fact(DisplayName = "Aceita descrição de 1000 caracteres e recusa a de 1001")]
     public void Criar_DescricaoNoLimiteDeTamanho()
@@ -116,9 +116,37 @@ public sealed class TipoConceitoTests
     }
 
     [Fact(DisplayName = "Recusa descrição com o caractere nulo")]
-    public void Criar_DescricaoComCaractereNulo_Recusa() =>
+    public void Criar_DescricaoCaractereInvalido_Recusa() =>
         TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Descricao = Nulo })
-            .DeveRecusarComo(TipoConceitoErrorCodes.DescricaoComCaractereNulo, "descricao");
+            .DeveRecusarComo(TipoConceitoErrorCodes.DescricaoCaractereInvalido, "descricao");
+
+    [Theory(DisplayName = "Recusa código e nome com quebra de linha, tabulação ou formatação, que a linha única não aceita")]
+    [InlineData("TIPO\tA")]
+    [InlineData("TIPO\nA")]
+    [InlineData("TIPO\u202EA")]
+    public void Criar_CodigoENomeDeUmaLinha_RecusamInvisiveis(string texto)
+    {
+        TipoConceito.Criar(texto, DefinicoesDeTipoConceito.Numerica())
+            .DeveRecusarComo(TipoConceitoErrorCodes.CodigoCaractereInvalido, "codigo");
+        TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Nome = texto })
+            .DeveRecusarComo(TipoConceitoErrorCodes.NomeCaractereInvalido, "nome");
+    }
+
+    [Fact(DisplayName = "Aceita descrição de várias linhas e com tabulação, e a grava em NFC")]
+    public void Criar_DescricaoDeVariasLinhas_Aceita()
+    {
+        Result<TipoConceito> resultado = TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Descricao = "linha 1\r\nlinha\t2 e\u0301" });
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Descricao.Should().Be("linha 1\r\nlinha\t2 é");
+    }
+
+    [Theory(DisplayName = "Recusa descrição com controle que não seja quebra de linha ou tabulação, ou com formatação")]
+    [InlineData("texto\u0007")]
+    [InlineData("texto\u202Einvertido")]
+    public void Criar_DescricaoComControleOuFormatacao_Recusa(string descricao) =>
+        TipoConceito.Criar("TIPO", DefinicoesDeTipoConceito.Numerica() with { Descricao = descricao })
+            .DeveRecusarComo(TipoConceitoErrorCodes.DescricaoCaractereInvalido, "descricao");
 
     [Theory(DisplayName = "Recusa natureza ausente ou que não seja o nome exato de uma natureza")]
     [InlineData(null)]

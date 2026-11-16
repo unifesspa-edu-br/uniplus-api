@@ -4,10 +4,11 @@ using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Regra de um campo textual do tipo de conceito: sem espaços nas pontas, em NFC, sem caractere nulo e dentro
-/// do tamanho. A violação entra no lote de erros do chamador, e a mensagem nunca ecoa o valor recusado.
+/// Regra de um campo textual: sem espaços nas pontas, em NFC, sem os caracteres que a <see cref="FormaDoTexto"/>
+/// recusa e dentro do tamanho. A violação entra no lote de erros do chamador, e a mensagem nunca ecoa o valor
+/// recusado.
 /// </summary>
-internal sealed record CampoTextual(string Nome, int Maximo, string ErroTamanho, string ErroCaractere)
+internal sealed record CampoTextual(string Nome, int Maximo, string ErroTamanho, string ErroCaractere, FormaDoTexto Forma)
 {
     /// <summary>O texto normalizado, ou <see langword="null"/> quando ausente ou recusado.</summary>
     public string? Obrigatorio(string? valor, string caminho, string erroObrigatorio, List<FieldError> erros)
@@ -28,13 +29,8 @@ internal sealed record CampoTextual(string Nome, int Maximo, string ErroTamanho,
 
     private string? Normalizar(string valor, string caminho, List<FieldError> erros)
     {
-        SituacaoDoTexto situacao = TextoNormalizavel.TentarNfcDeTextoLivre(valor.Trim(), Maximo, out string normalizado);
-        DomainError? recusa = situacao switch
-        {
-            SituacaoDoTexto.Valido => null,
-            SituacaoDoTexto.TamanhoExcedido => new(ErroTamanho, $"{Nome} deve ter no máximo {Maximo} caracteres."),
-            _ => new(ErroCaractere, $"{Nome} não pode conter caractere inválido, como o nulo (U+0000)."),
-        };
+        SituacaoDoTexto situacao = Tentar(valor.Trim(), out string normalizado);
+        DomainError? recusa = Recusa(situacao);
         if (recusa is not null)
         {
             erros.Add(new(caminho, recusa));
@@ -42,4 +38,25 @@ internal sealed record CampoTextual(string Nome, int Maximo, string ErroTamanho,
 
         return recusa is null ? normalizado : null;
     }
+
+    private SituacaoDoTexto Tentar(string texto, out string normalizado) => Forma switch
+    {
+        FormaDoTexto.UmaLinha => TextoNormalizavel.TentarNfc(texto, Maximo, out normalizado),
+        FormaDoTexto.VariasLinhas => TextoNormalizavel.TentarNfcDeTextoDeVariasLinhas(texto, Maximo, out normalizado),
+        _ => TextoNormalizavel.TentarNfcDeTextoLivre(texto, Maximo, out normalizado),
+    };
+
+    private DomainError? Recusa(SituacaoDoTexto situacao) => situacao switch
+    {
+        SituacaoDoTexto.Valido => null,
+        SituacaoDoTexto.TamanhoExcedido => new(ErroTamanho, $"{Nome} deve ter no máximo {Maximo} caracteres."),
+        _ => new(ErroCaractere, MensagemDoCaractere()),
+    };
+
+    private string MensagemDoCaractere() => Forma switch
+    {
+        FormaDoTexto.UmaLinha => $"{Nome} não pode conter o caractere nulo nem caractere que não seja texto.",
+        FormaDoTexto.VariasLinhas => $"{Nome} não pode conter o caractere nulo, de controle ou de formatação; só a quebra de linha e a tabulação são aceitas.",
+        _ => $"{Nome} não pode conter o caractere nulo (U+0000).",
+    };
 }
