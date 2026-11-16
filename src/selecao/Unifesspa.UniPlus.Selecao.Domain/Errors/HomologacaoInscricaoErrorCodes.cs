@@ -11,4 +11,5 @@ public static class HomologacaoInscricaoErrorCodes
     public const string CondicaoNaoDisponivel = "HomologacaoInscricao.CondicaoNaoDisponivel";
     public const string EdicaoDoExameInvalida = "HomologacaoInscricao.EdicaoDoExameInvalida";
     public const string AlternativaSemCondicao = "HomologacaoInscricao.AlternativaSemCondicao";
+    public const string ConfirmacaoDoInepAusente = "HomologacaoInscricao.ConfirmacaoDoInepAusente";
 }

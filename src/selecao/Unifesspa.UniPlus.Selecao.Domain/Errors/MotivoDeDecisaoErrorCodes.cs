@@ -37,4 +37,7 @@ public static class MotivoDeDecisaoErrorCodes
     public const string RetiradaAposPublicacao = "MotivoDeDecisao.RetiradaAposPublicacao";
     public const string MotivoDesativado = "MotivoDeDecisao.MotivoDesativado";
     public const string CoberturaInsuficiente = "MotivoDeDecisao.CoberturaInsuficiente";
+
+    /// <summary>A fase ou a etapa usa uma capacidade que gera decisão de um tipo que ela não declara produzir.</summary>
+    public const string TipoDeDecisaoNaoDeclarado = "MotivoDeDecisao.TipoDeDecisaoNaoDeclarado";
 }

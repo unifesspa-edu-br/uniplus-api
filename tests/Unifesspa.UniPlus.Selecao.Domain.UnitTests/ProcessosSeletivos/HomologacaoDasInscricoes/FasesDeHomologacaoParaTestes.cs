@@ -9,10 +9,11 @@ internal static class FasesDeHomologacaoParaTestes
 {
     internal const string ResultadoDaLista = "RESULTADO_HOMOLOGACAO";
 
-    internal static FaseCronograma Fase(int ordem, string codigo, IReadOnlyList<ProdutoDaFase>? produtos = null, RegraRecursoFase? regraRecurso = null) =>
+    internal static FaseCronograma Fase(
+        int ordem, string codigo, IReadOnlyList<ProdutoDaFase>? produtos = null, RegraRecursoFase? regraRecurso = null, string? faseConcluinteCodigo = null) =>
         FaseCronograma.Criar(
             new OrigemCanonicaDaFase(Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, faseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(produtos ?? [], EmiteParecerIndividual: false, regraRecurso),
             regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()]).Value!;
 
