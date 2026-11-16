@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -56,17 +57,37 @@ public static class ConferenciaDaDeclaracaoDaEtapa
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(nome);
         ExigirTipoResolvido(tipoEtapa);
-        if (id == Guid.Empty)
-        {
-            throw new ArgumentException("A etapa reidratada deve declarar o Id congelado no envelope.", nameof(id));
-        }
-
+        ExigirIdCongelado(id);
         if (carater == CaraterEtapa.Nenhum)
         {
             throw new ArgumentException(
                 "Caráter da etapa é obrigatório (classificatória, eliminatória ou ambas).", nameof(carater));
         }
     }
+
+    internal static void ExigirIdCongelado(Guid id)
+    {
+        if (id == Guid.Empty)
+        {
+            throw new ArgumentException("A etapa reidratada deve declarar o Id congelado no envelope.", nameof(id));
+        }
+    }
+
+    /// <summary>
+    /// A recusa do mesmo par ato e papel declarado duas vezes: dois registros idênticos tornariam ambíguo o
+    /// que o recurso ancora. O ato é comparado em NFC, como o documento canônico o emite.
+    /// </summary>
+    internal static DomainError? AtoRepetido(IEnumerable<ProdutoDaEtapa> produtos) =>
+        ProdutosPublicados.PrimeiroParRepetido(produtos, HashCanonicalComputer.NormalizeNfc) is { } duplicado
+            ? new DomainError(
+                "EtapaProcesso.AtoDuplicadoNaEtapa",
+                $"A etapa declara o ato '{duplicado.AtoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por etapa.")
+            : null;
+
+    internal static DomainError? JanelaInvertida(JanelaDeTempo janela) =>
+        janela.Invertida
+            ? new DomainError("EtapaProcesso.JanelaInvertida", "O fim da janela da etapa não pode ser anterior ao início.")
+            : null;
 
     private static void ExigirTipoResolvido(TipoEtapaSnapshot tipoEtapa) => ArgumentNullException.ThrowIfNull(tipoEtapa);
 

@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -86,7 +87,20 @@ internal static class ConferenciaDaDeclaracaoDaFase
         .. ViolacoesDasPublicacoes(origem.Codigo, publicacoes),
         .. TiposDeDecisaoDeclarados.Validar(publicacoes.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo),
         .. RecorteDeCompetenciaDasBancas.Violacoes(origem.Codigo, bancasRequeridas),
+        .. RecortesEmBancaDeRecursos(origem.Codigo, bancasRequeridas),
     ];
+
+    private static IEnumerable<FieldError> RecortesEmBancaDeRecursos(string codigoDaFase, IReadOnlyList<BancaRequerida> bancasRequeridas)
+    {
+        for (int indice = 0; indice < bancasRequeridas.Count; indice++)
+        {
+            BancaRequerida banca = bancasRequeridas[indice];
+            if (ExigenciaDeBancaDeRecurso.RecorteNaDeclaracao(codigoDaFase, banca.Codigo, banca.RecorteDeCompetencia.Count) is { } recusa)
+            {
+                yield return new FieldError(RecorteDeCompetenciaDasBancas.CampoDoRecorte(indice), recusa);
+            }
+        }
+    }
 
     private static void ExigirCodigoEFilhas(
         string codigo, IReadOnlyList<ProdutoDaFase> produtos, IReadOnlyList<BancaRequerida> bancasRequeridas)

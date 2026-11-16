@@ -24,7 +24,7 @@ internal static class ErrosDaEtapaDoProcesso
     [
         new("ProcessoSeletivo.EtapasVazias", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapas_vazias", "O processo deve ter ao menos uma etapa pontuada")),
         new("ProcessoSeletivo.OrdemEtapaDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_etapa_duplicada", "Ordem de etapa duplicada no processo")),
-        new("ProcessoSeletivo.IdEtapaDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.id_etapa_duplicado", "O mesmo Id de etapa foi informado mais de uma vez no payload")),
+        new("ProcessoSeletivo.IdEtapaDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.id_etapa_duplicado", "O mesmo identificador de etapa aparece em mais de uma etapa")),
         new("EtapaProcesso.NomeObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.nome_obrigatorio", "O nome da etapa é obrigatório")),
         new("EtapaProcesso.NomeTamanho", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.nome_tamanho", "O nome da etapa excede o tamanho máximo permitido")),
         new("EtapaProcesso.CaraterObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.carater_obrigatorio", "Caráter da etapa é obrigatório (classificatória, eliminatória ou ambas)")),

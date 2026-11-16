@@ -44,6 +44,30 @@ public static class CicloRecursal
         return [.. TiposComPapel(declarados, PapelProdutoFase.Preliminar).Where(definitivos.Contains)];
     }
 
+    /// <summary>Se algum dos produtos é publicado com o papel dado.</summary>
+    public static bool PublicaComPapel(IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> produtos, PapelProdutoFase papel)
+    {
+        ArgumentNullException.ThrowIfNull(produtos);
+
+        return produtos.Any(p => p.Papel == papel);
+    }
+
+    /// <summary>Se algum dos produtos é o definitivo do tipo de ato dado (a matéria é o tipo).</summary>
+    public static bool PublicaDefinitivoDe(IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> produtos, string atoCodigo)
+    {
+        ArgumentNullException.ThrowIfNull(produtos);
+
+        return produtos.Any(p => p.Papel == PapelProdutoFase.Definitivo && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal));
+    }
+
+    /// <summary>Se algum dos produtos tem papel: o lugar publica ao menos um resultado.</summary>
+    public static bool ProduzResultado(IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> produtos)
+    {
+        ArgumentNullException.ThrowIfNull(produtos);
+
+        return produtos.Any(static p => p.Papel is not null);
+    }
+
     /// <summary>
     /// Os identificadores dos produtos preliminares do tipo <paramref name="atoCodigo"/> que o
     /// definitivo do mesmo tipo fecha neste lugar, a fase ou a etapa que os declara.

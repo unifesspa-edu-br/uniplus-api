@@ -10,6 +10,25 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 internal static class JanelasRecursaisDaEtapa
 {
+    internal const string AncoraForaDosPreliminares = "EtapaProcesso.AncoraNaoEhProdutoPreliminarDaEtapa";
+    internal const string CienciaSemParecerIndividual = "EtapaProcesso.CienciaSemParecerIndividual";
+
+    /// <summary>Os códigos das recusas da âncora das janelas, para quem projeta a âncora num item só.</summary>
+    internal static readonly IReadOnlySet<string> CodigosDaAncora =
+        new HashSet<string>([AncoraForaDosPreliminares, CienciaSemParecerIndividual], StringComparer.Ordinal);
+
+    /// <summary>
+    /// A recusa das janelas recursais declaradas: a primeira violação da âncora ou, não havendo, o fato
+    /// recorrível que duas janelas disputam. É o predicado que a gravação das janelas e a declaração da
+    /// etapa chamam.
+    /// </summary>
+    internal static DomainError? Recusa(
+        IEnumerable<ProdutoDaEtapa> produtos,
+        bool notaVemDoEnem,
+        bool emiteParecerIndividual,
+        IEnumerable<RecursoDaEtapa> recursos) =>
+        ViolacaoDaAncora(produtos, notaVemDoEnem, emiteParecerIndividual, recursos) ?? FatoRepetido(recursos);
+
     /// <summary>
     /// A primeira violação da âncora das janelas, ou <see langword="null"/> quando todas se ancoram onde
     /// podem: a âncora em ato referencia um produto preliminar da etapa, e a âncora em ciência exige a
@@ -17,12 +36,21 @@ internal static class JanelasRecursaisDaEtapa
     /// janelas e o gate de publicação chamam: o estado carregado do banco não passa pela gravação, e só o
     /// gate o alcança.
     /// </summary>
-    internal static DomainError? ViolacaoDaAncora(EtapaProcesso etapa, IEnumerable<RecursoDaEtapa> recursos)
+    internal static DomainError? ViolacaoDaAncora(EtapaProcesso etapa, IEnumerable<RecursoDaEtapa> recursos) =>
+        ViolacaoDaAncora(etapa.Produtos, etapa.DeclaraNotaDoEnem, etapa.EmiteParecerIndividual, recursos);
+
+    internal static DomainError? ViolacaoDaAncora(
+        IEnumerable<ProdutoDaEtapa> produtos,
+        bool notaVemDoEnem,
+        bool emiteParecerIndividual,
+        IEnumerable<RecursoDaEtapa> recursos)
     {
         HashSet<Guid> preliminares =
-            [.. etapa.Produtos.Where(static p => p.Papel == PapelProdutoFase.Preliminar).Select(static p => p.Id)];
+            [.. produtos.Where(static p => p.Papel == PapelProdutoFase.Preliminar).Select(static p => p.Id)];
 
-        return recursos.Select(recurso => ViolacaoDaJanela(etapa, recurso, preliminares)).FirstOrDefault(static v => v is not null);
+        return recursos
+            .Select(recurso => ViolacaoDaJanela(recurso, preliminares, notaVemDoEnem, emiteParecerIndividual))
+            .FirstOrDefault(static v => v is not null);
     }
 
     /// <summary>
@@ -61,18 +89,19 @@ internal static class JanelasRecursaisDaEtapa
     // Na etapa de nota do ENEM o recurso em ato não cabe de modo algum, e a regra do processo diz isso
     // nomeando o caminho certo (a regra de recurso da fase). Pedir aqui um preliminar que ela depois
     // recusa mandaria o operador na direção errada.
-    private static DomainError? ViolacaoDaJanela(EtapaProcesso etapa, RecursoDaEtapa recurso, HashSet<Guid> preliminares)
+    private static DomainError? ViolacaoDaJanela(
+        RecursoDaEtapa recurso, HashSet<Guid> preliminares, bool notaVemDoEnem, bool emiteParecerIndividual)
     {
-        if (recurso.Ancora == AncoraDoRecurso.AtoPublicado && !etapa.DeclaraNotaDoEnem && !preliminares.Contains(recurso.ProdutoAncoraId))
+        if (recurso.Ancora == AncoraDoRecurso.AtoPublicado && !notaVemDoEnem && !preliminares.Contains(recurso.ProdutoAncoraId))
         {
             return new DomainError(
-                "EtapaProcesso.AncoraNaoEhProdutoPreliminarDaEtapa",
+                AncoraForaDosPreliminares,
                 "O recurso contra ato publicado ancora num resultado preliminar desta etapa — é a publicação dele que abre a janela.");
         }
 
-        return recurso.Ancora == AncoraDoRecurso.CienciaIndividual && !etapa.EmiteParecerIndividual
+        return recurso.Ancora == AncoraDoRecurso.CienciaIndividual && !emiteParecerIndividual
             ? new DomainError(
-                "EtapaProcesso.CienciaSemParecerIndividual",
+                CienciaSemParecerIndividual,
                 "O prazo que corre da ciência do candidato exige que a etapa prometa parecer individual: é dele que o candidato toma ciência.")
             : null;
     }

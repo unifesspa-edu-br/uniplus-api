@@ -82,7 +82,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.AvaliacaoSemEtapa");
     }
 
-    [Fact(DisplayName = "Cronograma: etapa pontuada sem fase declarada — item vermelho e Publicar recusa com EtapaSemFaseDeclarada")]
+    [Fact(DisplayName = "Cronograma: etapa pontuada sem fase declarada — itens da etapa e da fase agrupadora vermelhos, e Publicar recusa com EtapaSemFaseDeclarada")]
     public void Cronograma_EtapaSemFaseDeclarada()
     {
         ProcessoSeletivo processo = ProcessoConforme();
@@ -92,8 +92,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("cronograma_etapa_declara_a_fase");
+        // Sem saber em que fase a etapa acontece, não se sabe se a fase que agrupa etapas tem etapa nela: o item fica indeterminado, e vermelho.
+        SoEstesItensVermelhos(processo, "cronograma_fase_agrupadora_sem_etapa_pontuada", "cronograma_etapa_declara_a_fase");
 
         ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.EtapaSemFaseDeclarada");
     }

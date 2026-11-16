@@ -2,7 +2,10 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 
 /// <summary>
 /// O que falta nas bancas declaradas para o processo ser congelado: a banca de recursos que todo
@@ -16,34 +19,12 @@ internal static class PendenciasDasBancas
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(corretores);
 
-        return ExigenciaDeBancaDeRecurso.RecursosSemBanca(estado).FirstOrDefault()
-            ?? ExigenciaDeBancaDeRecurso.RecortesEmBancaDeRecursos(estado).FirstOrDefault()
-            ?? BancasSemRegra(estado).FirstOrDefault()
-            ?? MinimoDeIntegrantes.Violacoes(estado, corretores).FirstOrDefault();
+        CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do(estado.CronogramaFases);
+        EtapasDoProcesso etapas = EtapasDoProcesso.Das(estado.Etapas);
+
+        return CausasDaRecusa.Primeira(ConferenciaDasBancas.ConferirRecursosSemBanca(cronograma, etapas))
+            ?? CausasDaRecusa.Primeira(cronograma.RecusasDasDeclaracoes(ConferenciaDasBancas.CodigosDoRecorte))
+            ?? CausasDaRecusa.Primeira(ConferenciaDasBancas.ConferirRegrasDeDeliberacao(cronograma, etapas))
+            ?? CausasDaRecusa.Primeira(ConferenciaDasBancas.ConferirMinimoDeIntegrantes(cronograma, etapas, corretores));
     }
-
-    internal static DomainError? PendenciaDoRecursoSemBanca(EstadoDaConfiguracao estado) =>
-        ExigenciaDeBancaDeRecurso.RecursosSemBanca(estado).FirstOrDefault();
-
-    internal static DomainError? PendenciaDoRecorteEmBancaDeRecursos(EstadoDaConfiguracao estado) =>
-        ExigenciaDeBancaDeRecurso.RecortesEmBancaDeRecursos(estado).FirstOrDefault();
-
-    internal static DomainError? PendenciaDaRegraDeDeliberacao(EstadoDaConfiguracao estado) =>
-        BancasSemRegra(estado).FirstOrDefault();
-
-    internal static DomainError? PendenciaDoMinimoDeIntegrantes(EstadoDaConfiguracao estado, CorretoresDasEtapas corretores) =>
-        MinimoDeIntegrantes.Violacoes(estado, corretores).FirstOrDefault();
-
-    private static IEnumerable<DomainError> BancasSemRegra(EstadoDaConfiguracao estado) =>
-    [
-        .. estado.CronogramaFases.SelectMany(static fase => fase.BancasRequeridas
-            .Where(static banca => banca.RegraDeDeliberacao is null)
-            .Select(banca => SemRegra(banca.Nome, $"da fase '{fase.Codigo}'"))),
-        .. estado.Etapas.SelectMany(static etapa => etapa.Bancas
-            .Where(static banca => banca.RegraDeDeliberacao is null)
-            .Select(banca => SemRegra(banca.Nome, $"da etapa '{etapa.Nome}'"))),
-    ];
-
-    private static DomainError SemRegra(string nome, string onde) =>
-        new(BancaErrorCodes.RegraDeDeliberacaoObrigatoria, $"A banca '{nome}' {onde} não declara a regra de deliberação.");
 }

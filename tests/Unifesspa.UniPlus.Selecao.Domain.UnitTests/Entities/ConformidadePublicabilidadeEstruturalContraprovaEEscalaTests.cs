@@ -63,29 +63,32 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
+    private static readonly string[] ItensDeReferenciaTemporal =
+    [
+        "referencia_temporal_ausente_com_gatilho_etario",
+        "referencia_temporal_fase_fora_do_cronograma",
+        "referencia_temporal_extremo_da_fase_ausente",
+        "referencia_temporal_fim_inscricao_indisponivel",
+    ];
+
+    // Exigência GERAL, sem qualquer condição de gatilho — não aciona FAIXA_ETARIA.
+    private static NoExigencia ExigenciaGeralDeIdentidade(Guid faseId) => NoExigencia.CriarFolha(
+        DocumentoExigido.Criar(
+            faseId, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
+            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
+            condicoes: [], basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!,
+        0).Value!;
+
     [Fact(DisplayName = "Contraprova: ausência de gatilho por FAIXA_ETARIA mantém os quatro itens de referência temporal Ok, mesmo com outras exigências configuradas")]
     public void Contraprova_SemGatilhoPorFaixaEtaria_ChecklistVerde()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
-        // Exigência GERAL, sem qualquer condição de gatilho — não aciona FAIXA_ETARIA.
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), "IDENTIDADE", "Documento de identidade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([ExigenciaGeralDeIdentidade(processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        string[] itensDeReferenciaTemporal =
-        [
-            "referencia_temporal_ausente_com_gatilho_etario",
-            "referencia_temporal_fase_fora_do_cronograma",
-            "referencia_temporal_extremo_da_fase_ausente",
-            "referencia_temporal_fim_inscricao_indisponivel",
-        ];
         IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao);
-        foreach (string item in itensDeReferenciaTemporal)
+        foreach (string item in ItensDeReferenciaTemporal)
         {
             checklist.Should().Contain(i => i.Codigo == item && i.Ok, $"sem gatilho por FAIXA_ETARIA — \"{item}\" não pode ficar vermelho");
         }
@@ -139,9 +142,9 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
             EmiteParecerIndividual: false, RegraRecurso: RecursoEmHoras()),
         bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
 
-    private static FaseCronograma FaseFinal(int ordem) => FaseCronograma.Criar(
+    private static FaseCronograma FaseFinal(int ordem, string codigo = "RESULTADO_FINAL") => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
+            Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
@@ -187,7 +190,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
             Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            1, Inicio: null, Fim: null, FaseConcluinteCodigo: "RESULTADO_FINAL", UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            1, Inicio: null, Fim: null, FaseConcluinteCodigo: "CONCLUSAO_DO_CICLO", UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
             Produtos: [ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
@@ -205,7 +208,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
 
         // O estado só existe em processo materializado do banco: a gravação do cronograma já
         // o recusa. Sem esta metade, o gate de publicação ficaria sem prova.
-        MaterializarFases(processo, FasePreliminarDeGabaritoComConcluinte(), FaseFinal(2));
+        MaterializarFases(processo, FasePreliminarDeGabaritoComConcluinte(), FaseFinal(2, "CONCLUSAO_DO_CICLO"));
 
         SoEstesItensVermelhos(processo, "cronograma_conclusao_do_ciclo_recursal");
 
@@ -214,18 +217,24 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo");
     }
 
-    [Fact(DisplayName = "Com duas pendências simultâneas, o checklist lista a que bloqueia a publicação antes da outra")]
-    public void ContagemDePrazos_PrecedenciaDoChecklistSegueOsGates()
+    // Duas pendências ao mesmo tempo, de gates que Publicar() avalia em ordem conhecida: a convenção de contagem (2º) e a
+    // taxa de inscrição, que é item estrutural e cai no agregador genérico (3º). Quem lê o checklist de cima para baixo
+    // tem de encontrar a causa que efetivamente bloqueia antes da que só apareceria depois dela.
+    private static ProcessoSeletivo ProcessoComContagemETaxaPendentes()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        // Duas pendências ao mesmo tempo, de gates que Publicar() avalia em ordem conhecida:
-        // a convenção de contagem (2º) e a taxa de inscrição, que é item estrutural e cai no
-        // agregador genérico (3º). Quem lê o checklist de cima para baixo tem de encontrar a
-        // causa que efetivamente bloqueia antes da que só apareceria depois dela.
         processo.DefinirCronogramaFases([FaseComRecurso(), FaseFinal(2)], [], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
         processo.DefinirTaxaInscricao(null!, PrecondicaoIfMatch.Curinga);
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
+
+        return processo;
+    }
+
+    [Fact(DisplayName = "Com duas pendências simultâneas, o checklist lista a que bloqueia a publicação antes da outra")]
+    public void ContagemDePrazos_PrecedenciaDoChecklistSegueOsGates()
+    {
+        ProcessoSeletivo processo = ProcessoComContagemETaxaPendentes();
 
         string[] vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
@@ -289,22 +298,23 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
+    private static ConfiguracaoClassificacao ClassificacaoLocalSemEscala() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+    {
+        RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
+        RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+        CasasArredondamento = 2,
+        RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        BaseadoEmEnem = true,
+        ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+        QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+    }).Value!;
+
     [Fact(DisplayName = "Escala da nota final: cálculo local sem a escala — só o item da escala fica vermelho, e Publicar recusa")]
     public void EscalaDaNotaFinal_CalculoLocalSemEscala_Recusa()
     {
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica)]);
-        processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-            {
-                RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-                RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
-                CasasArredondamento = 2,
-                RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-                BaseadoEmEnem = true,
-                ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
-                QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
-            }).Value!,
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue("o rascunho aceita a classificação sem a escala");
+        processo.DefinirClassificacao(ClassificacaoLocalSemEscala(), PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue("o rascunho aceita a classificação sem a escala");
 
         SoEstesItensVermelhos(processo, "classificacao_escala_nota_final_nao_declarada");
         Item(processo, "classificacao_escala_nota_final_nao_declarada").Dimensao.Should().Be(DimensaoConformidade.Classificacao);

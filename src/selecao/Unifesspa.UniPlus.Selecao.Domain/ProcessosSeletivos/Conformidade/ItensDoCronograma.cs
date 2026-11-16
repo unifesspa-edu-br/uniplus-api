@@ -1,12 +1,11 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 
-using Unifesspa.UniPlus.Kernel.Extensions;
-using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -14,40 +13,47 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class ItensDoCronograma
 {
     internal static IReadOnlyList<ItemConformidade> Avaliar(
-        EstadoDaConfiguracao estado, ContextoDeContagemDePrazos contexto, TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos, CorretoresDasEtapas corretores) =>
+        EstadoDaConfiguracao estado, ContextoDeContagemDePrazos contexto, TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos, CorretoresDasEtapas corretores)
+    {
+        CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do(estado.CronogramaFases);
+        EtapasDoProcesso etapas = EtapasDoProcesso.Das(estado.Etapas);
+
+        return
+        [
+            .. DaPublicacao(estado, cronograma, etapas, contexto),
+            .. DoCicloRecursal(estado, cronograma, etapas),
+            .. DasBancasEDaJanelaDasEtapas(estado, cronograma, etapas, corretores),
+            .. ConferenciaDosTiposDeAto.Itens(cronograma, etapas, tiposDeAtoUnicos),
+        ];
+    }
+
+    private static ItemConformidade[] DaPublicacao(
+        EstadoDaConfiguracao estado, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, ContextoDeContagemDePrazos contexto) =>
     [
-        .. DaEstrutura(estado, contexto),
-        .. DoCicloRecursalEDasBancas(estado, corretores),
-        .. DosTiposDeAto(estado, tiposDeAtoUnicos),
+        EtapasNoCronograma.ItemDaFaseQueAgrupaEtapas(cronograma, etapas),
+        EtapasNoCronograma.ItemDaFaseDeclaradaPelaEtapa(cronograma, etapas),
+        Item("cronograma_inscricao_propria_sem_fase_de_coleta", "Cronograma: inscrição própria tem fase que coleta inscrição", !PendenciasDoCronograma.HaInscricaoPropriaSemFaseDeColeta(estado)),
+        .. cronograma.ItensDaCompletude(contexto.FusoInstitucional),
+        Item("cronograma_vagas_sem_fase_que_produz_resultado", "Cronograma: vagas ofertadas têm fase que produz resultado", !PendenciasDoCronograma.HaVagasSemFaseQueProduzResultado(estado)),
     ];
 
-    private static ItemConformidade[] DaEstrutura(EstadoDaConfiguracao estado, ContextoDeContagemDePrazos contexto) =>
+    private static ItemConformidade[] DoCicloRecursal(EstadoDaConfiguracao estado, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
     [
-        new ItemConformidade("cronograma_fase_agrupadora_sem_etapa_pontuada", DimensaoConformidade.Cronograma, "Cronograma: fase que agrupa etapas só quando há etapa pontuada", !PendenciasDoCronograma.HaFaseDeAvaliacaoSemEtapa(estado)),
-        new ItemConformidade("cronograma_etapa_declara_a_fase", DimensaoConformidade.Cronograma, "Cronograma: toda etapa declara a fase em que acontece", PendenciasDoCronograma.EtapaSemFaseDeclarada(estado) is null),
-        new ItemConformidade("cronograma_inscricao_propria_sem_fase_de_coleta", DimensaoConformidade.Cronograma, "Cronograma: inscrição própria tem fase que coleta inscrição", !PendenciasDoCronograma.HaInscricaoPropriaSemFaseDeColeta(estado)),
-        new ItemConformidade("cronograma_fase_que_coleta_inscricao_sem_janela", DimensaoConformidade.Cronograma, "Cronograma: a fase que coleta inscrição tem início e fim definidos", PendenciasDoCronograma.FaseQueColetaInscricaoSemJanela(estado) is null),
-        new ItemConformidade("cronograma_fase_sem_unidade_responsavel", DimensaoConformidade.Cronograma, "Cronograma: toda fase tem a unidade responsável definida", PendenciasDoCronograma.FaseSemUnidadeResponsavel(estado) is null),
-        new ItemConformidade("cronograma_janela_de_isencao", DimensaoConformidade.Cronograma, "Cronograma: a janela de solicitação de isenção abre com a inscrição, fecha antes dela e dura cinco dias", PendenciasDoCronograma.JanelaDeIsencaoConforme(estado, contexto)),
-        new ItemConformidade("cronograma_vagas_sem_fase_que_produz_resultado", DimensaoConformidade.Cronograma, "Cronograma: vagas ofertadas têm fase que produz resultado", !PendenciasDoCronograma.HaVagasSemFaseQueProduzResultado(estado)),
+        CicloRecursalDoProcesso.Item(cronograma, etapas),
+        cronograma.ItemDaAncoraDoRecurso(),
+        etapas.ItemDaAncoraDoRecurso(),
+        cronograma.ItemDoRecorteDeCompetencia(),
+        Item("cronograma_procedimento_de_recurso", "Cronograma: cada janela de recurso declara o procedimento de revisão de toda decisão que o lugar produz", PendenciasDosProcedimentosDeRecurso.PendenciaDosProcedimentosDeRecurso(estado) is null),
     ];
 
-    private static ItemConformidade[] DoCicloRecursalEDasBancas(EstadoDaConfiguracao estado, CorretoresDasEtapas corretores) =>
+    private static ItemConformidade[] DasBancasEDaJanelaDasEtapas(
+        EstadoDaConfiguracao estado, CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
     [
-        new ItemConformidade("cronograma_conclusao_do_ciclo_recursal", DimensaoConformidade.Cronograma, "Cronograma: a fase ou a etapa que publica resultado preliminar tem o definitivo do mesmo tipo de ato, na própria fase ou etapa ou na fase concluinte declarada", CicloRecursalDoCronograma.PendenciaDaConclusaoDoCicloRecursal(estado) is null),
-        new ItemConformidade("cronograma_ancora_do_recurso", DimensaoConformidade.Cronograma, "Cronograma: a regra de recurso ancora num produto preliminar da própria fase", CicloRecursalDoCronograma.PendenciaDaAncoraDoRecurso(estado) is null),
-        new ItemConformidade("cronograma_ancora_do_recurso_da_etapa", DimensaoConformidade.Cronograma, "Cronograma: cada janela de recurso da etapa ancora num produto preliminar da própria etapa", CicloRecursalDoCronograma.PendenciaDaAncoraDoRecursoDasEtapas(estado) is null),
-        new ItemConformidade("cronograma_recorte_de_competencia_das_bancas", DimensaoConformidade.Cronograma, "Cronograma: bancas do mesmo tipo na mesma fase declaram recortes de competência distintos", CicloRecursalDoCronograma.PendenciaDoRecorteDeCompetencia(estado) is null),
-        new ItemConformidade("cronograma_procedimento_de_recurso", DimensaoConformidade.Cronograma, "Cronograma: cada janela de recurso declara o procedimento de revisão de toda decisão que o lugar produz", PendenciasDosProcedimentosDeRecurso.PendenciaDosProcedimentosDeRecurso(estado) is null),
-        .. ItensDasBancas.Avaliar(estado, corretores),
+        .. ConferenciaDasBancas.Itens(cronograma, etapas, corretores),
         new ItemConformidade("etapa_correcao_independente_com_dois_corretores", DimensaoConformidade.Etapas, "Etapa de tipo que exige correção independente com regra de consolidação de ao menos dois corretores distintos", PendenciasDaCorrecaoIndependente.PendenciaDaCorrecaoIndependente(estado, corretores) is null),
-        new ItemConformidade("cronograma_etapa_fora_da_janela_da_fase", DimensaoConformidade.Cronograma, "Cronograma: a etapa acontece dentro da janela da fase que a abriga", JanelaDaEtapaNaFase.PendenciaDaJanelaDaEtapaNaFase(estado) is null),
+        EtapasNoCronograma.ItemDaJanelaDaEtapaNaFase(cronograma, etapas),
     ];
 
-    private static ItemConformidade[] DosTiposDeAto(EstadoDaConfiguracao estado, TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos) =>
-    [
-        new ItemConformidade("cronograma_resultado_declarado_com_papel", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato classificado como resultado declara papel preliminar ou definitivo", TiposDeAtoDoCronograma.PendenciaDoResultadoSemPapel(estado, tiposDeAtoUnicos) is null),
-        new ItemConformidade("cronograma_tipo_que_congela_nao_eh_resultado", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que congela a configuração não é declarado como item de resultado", TiposDeAtoDoCronograma.PendenciaDoTipoQueCongelaDeclaradoComoResultado(estado, tiposDeAtoUnicos) is null),
-        new ItemConformidade("cronograma_tipo_de_ato_unico_declarado_uma_vez", DimensaoConformidade.Cronograma, "Cronograma: o tipo de ato que só sai uma vez por processo é declarado em um único produto", TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(estado, tiposDeAtoUnicos) is null),
-    ];
+    private static ItemConformidade Item(string codigo, string mensagem, bool conforme) =>
+        new(codigo, DimensaoConformidade.Cronograma, mensagem, conforme);
 }

@@ -31,6 +31,23 @@ public static class CoerenciaDoConceitoDaEtapa
     {
         ArgumentNullException.ThrowIfNull(conceitosAdmitidosPeloTipo);
         ArgumentNullException.ThrowIfNull(declaracao);
+        if (conceito is null || etapaDeNotaDoEnem)
+        {
+            return ValidarDeclarado(conceito, declaracao, declaraItens, etapaDeNotaDoEnem);
+        }
+
+        return [.. RecusasDaAdmissao(conceito, conceitosAdmitidosPeloTipo), .. ValidarDeclarado(conceito, declaracao, declaraItens, etapaDeNotaDoEnem)];
+    }
+
+    /// <summary>
+    /// As recusas do conceito contra o resto da avaliação declarada, sem conferir o que o tipo da etapa admite:
+    /// a etapa de nota do ENEM não declara conceito, e só essa recusa sai; no conceito categórico, nenhum campo de nota
+    /// é declarado; no numérico, a nota máxima positiva declarada cabe na escala.
+    /// </summary>
+    public static IReadOnlyList<FieldError> ValidarDeclarado(
+        ConceitoDaEtapa? conceito, DeclaracaoDaAvaliacaoDaEtapa declaracao, bool declaraItens, bool etapaDeNotaDoEnem)
+    {
+        ArgumentNullException.ThrowIfNull(declaracao);
         if (conceito is null)
         {
             return [];
@@ -38,14 +55,8 @@ public static class CoerenciaDoConceitoDaEtapa
 
         return etapaDeNotaDoEnem
             ? [Recusa("conceito", ConceitoDaEtapaErrorCodes.EtapaDoEnemNaoDeclaraConceito, "A etapa de nota do ENEM não declara conceito: a nota vem do INEP.")]
-            : [.. RecusasDoConceito(conceito, conceitosAdmitidosPeloTipo, declaracao, declaraItens)];
+            : [.. RecusasDaNotaNoCategorico(conceito, declaracao, declaraItens), .. RecusasDaNotaMaximaNoNumerico(conceito, declaracao)];
     }
-
-    private static IEnumerable<FieldError> RecusasDoConceito(
-        ConceitoDaEtapa conceito, IReadOnlyCollection<string> admitidos, DeclaracaoDaAvaliacaoDaEtapa declaracao, bool declaraItens) =>
-        RecusasDaAdmissao(conceito, admitidos)
-            .Concat(RecusasDaNotaNoCategorico(conceito, declaracao, declaraItens))
-            .Concat(RecusasDaNotaMaximaNoNumerico(conceito, declaracao));
 
     private static IEnumerable<FieldError> RecusasDaAdmissao(ConceitoDaEtapa conceito, IReadOnlyCollection<string> admitidos)
     {

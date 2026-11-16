@@ -6899,7 +6899,7 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.avaliacao_sem_etapa",
       "status": 422,
-      "titulo": "Há fase que agrupa etapas, mas o processo não tem etapa pontuada"
+      "titulo": "Fase que agrupa etapas sem nenhuma etapa que aconteça nela"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.bonus_regional_aplica_sem_configuracao",
@@ -7264,7 +7264,7 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.id_etapa_duplicado",
       "status": 422,
-      "titulo": "O mesmo Id de etapa foi informado mais de uma vez no payload"
+      "titulo": "O mesmo identificador de etapa aparece em mais de uma etapa"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.id_no_exigencia_duplicado",

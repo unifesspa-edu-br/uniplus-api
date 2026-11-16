@@ -236,8 +236,8 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
             .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
     }
 
-    [Fact(DisplayName = "Classificação incoerente sai antes de qualquer outra recusa da etapa do ENEM")]
-    public void DefinirEtapas_ClassificacaoIncoerenteAntesDasDemais()
+    [Fact(DisplayName = "Duas etapas do ENEM sob classificação incoerente: a causa do conjunto das etapas sai antes da classificação")]
+    public void DefinirEtapas_DuplicidadeDoEnem_SaiAntesDaClassificacaoIncoerente()
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -245,7 +245,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         etapa.DefinirBancas([BancaDaEtapa.Criar(Guid.CreateVersion7(), "BANCA_EXAMINADORA", "Banca de teste")]).IsSuccess.Should().BeTrue();
 
         processo.DefinirEtapas([etapa, EtapaNotaEnem(ordem: 2)], PrecondicaoIfMatch.Ausente)
-            .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
+            .Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemDuplicada");
     }
 
     [Fact(DisplayName = "Banca e parecer continuam valendo para as demais etapas")]
@@ -273,8 +273,8 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
     }
 
-    [Fact(DisplayName = "Sob classificação que não é ENEM, a recusa aponta a classificação antes da banca — é ela que decide se a etapa pode existir")]
-    public void DefinirEtapas_ClassificacaoNaoEnemEBanca_RecusaPelaClassificacao()
+    [Fact(DisplayName = "Sob classificação que não é ENEM, a banca da etapa do ENEM é recusada antes da classificação, que só é apontada quando é a única causa")]
+    public void DefinirEtapas_ClassificacaoNaoEnemEBanca_RecusaPelaBanca()
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
@@ -284,6 +284,17 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
         Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
         result.IsFailure.Should().BeTrue();
+        result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComBanca");
+    }
+
+    [Fact(DisplayName = "Sob classificação que não é ENEM, a etapa do ENEM sem outra causa é recusada pela classificação")]
+    public void DefinirEtapas_ClassificacaoNaoEnemSemOutraCausa_RecusaPelaClassificacao()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        processo.DefinirClassificacao(ClassificacaoMediaPonderada(baseadoEmEnem: false), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        Result result = processo.DefinirEtapas([EtapaNotaEnem()], PrecondicaoIfMatch.Ausente);
+
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemSemClassificacaoEnem");
     }
 

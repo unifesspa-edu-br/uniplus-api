@@ -11,15 +11,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class JanelaDaFase
 {
-    internal static DateTimeOffset? EmUtc(DateTimeOffset? instante) => instante?.ToUniversalTime();
-
     // A janela é fixada em UTC antes de montar as mensagens, para que a violação e o valor gravado falem
     // da mesma representação do instante.
     internal static List<FieldError> Violacoes(
         string codigo, OrigemDataFase origemData, DecisoesDeCronogramaDaFase cronograma)
     {
-        DateTimeOffset? inicio = EmUtc(cronograma.Inicio);
-        DateTimeOffset? fim = EmUtc(cronograma.Fim);
+        DateTimeOffset? inicio = JanelaDeTempo.EmUtc(cronograma.Inicio);
+        DateTimeOffset? fim = JanelaDeTempo.EmUtc(cronograma.Fim);
         FieldError?[] violacoes =
         [
             JanelaInvertida(codigo, inicio, fim),

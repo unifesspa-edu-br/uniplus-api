@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 
 /// <summary>
@@ -95,26 +96,20 @@ internal static class RegrasDaClassificacao
             "Uma condição viva (exigência documental, pré-condição de campo ou regra de derivação) cita uma edição do ENEM, que deixaria de existir com a classificação sem ENEM — ajuste ou remova a condição antes."))];
     }
 
-    private static List<FieldError> EtapasDeEliminacaoRecusadas(EstadoDaConfiguracao estado, ConfiguracaoClassificacao classificacao)
-    {
-        List<FieldError> erros = [];
-        foreach ((RegraEliminacao regra, int indice) in classificacao.RegrasEliminacao.Select(static (regra, indice) => (regra, indice)))
-        {
-            string campo = $"regrasEliminacao[{indice}].etapaRef";
-            if (regra.Args.EtapaReferenciada() is { } etapaRef && !estado.Etapas.Any(e => e.Id == etapaRef))
-            {
-                erros.Add(new(campo, new DomainError(
-                    "ProcessoSeletivo.EtapaRefEliminacaoInexistente",
-                    $"A regra de eliminação referencia a etapa {etapaRef}, que não existe neste processo.")));
-            }
-            else if (RegrasDasEtapas.AusenciaNaEtapaDoEnem(regra.Args, estado.Etapas))
-            {
-                erros.Add(new(campo, RegrasDasEtapas.AusenciaNaEtapaDoEnemRecusada()));
-            }
-        }
+    private static List<FieldError> EtapasDeEliminacaoRecusadas(EstadoDaConfiguracao estado, ConfiguracaoClassificacao classificacao) =>
+    [
+        .. classificacao.RegrasEliminacao.SelectMany((regra, indice) =>
+            RecusaDaEtapaDaRegra(regra, estado) is { } recusa
+                ? [new FieldError($"regrasEliminacao[{indice}].etapaRef", recusa)]
+                : Array.Empty<FieldError>()),
+    ];
 
-        return erros;
-    }
+    private static DomainError? RecusaDaEtapaDaRegra(RegraEliminacao regra, EstadoDaConfiguracao estado) =>
+        regra.Args.EtapaReferenciada() is { } etapaRef && !estado.Etapas.Any(e => e.Id == etapaRef)
+            ? ReferenciaAEtapaInexistente.PelaEliminacao(etapaRef)
+            : RegrasDasEtapas.AusenciaNaEtapaDoEnem(regra.Args, estado.Etapas)
+                ? RegrasDasEtapas.AusenciaNaEtapaDoEnemRecusada()
+                : null;
 
     // Uma recusa por critério afetado, e não por área: a classificação é a mesma para todas.
     private static IEnumerable<FieldError> DesempateForaDoQuadro(List<RegrasDoDesempate.ViolacaoDoDesempatePorArea> violacoesDeArea) =>

@@ -36,8 +36,16 @@ public sealed record CorretoresDasEtapas
     {
         ArgumentNullException.ThrowIfNull(etapa);
 
-        return etapa.RegraConsolidacao is null || _porRegra.ContainsKey(etapa.RegraConsolidacao);
+        return RegraResolvida(etapa.RegraConsolidacao);
     }
+
+    /// <summary>Se a regra de consolidação declarada tem resposta: a ausência de regra sempre tem.</summary>
+    public bool RegraResolvida(ReferenciaRegra? regraConsolidacao) =>
+        regraConsolidacao is null || _porRegra.ContainsKey(regraConsolidacao);
+
+    /// <summary>Os corretores em campo da regra de consolidação declarada; zero para a ausência de regra.</summary>
+    /// <exception cref="InvalidOperationException">A regra referenciada não teve o número lido.</exception>
+    public int EmCampoDaRegra(ReferenciaRegra? regraConsolidacao) => Da(regraConsolidacao)?.EmCampo ?? 0;
 
     /// <summary>
     /// Zero para a etapa sem regra de consolidação (objetiva, ou nota do ENEM: não há consolidação humana); os
@@ -53,20 +61,25 @@ public sealed record CorretoresDasEtapas
     /// <exception cref="InvalidOperationException">A etapa referencia regra cujo número não foi lido.</exception>
     public int EmCampo(EtapaProcesso etapa) => Da(etapa)?.EmCampo ?? 0;
 
-    // Quem pede o número confere antes Resolvida: nenhum número é presumido.
     private CorretoresDaRegra? Da(EtapaProcesso etapa)
     {
         ArgumentNullException.ThrowIfNull(etapa);
 
-        if (etapa.RegraConsolidacao is null)
+        return Da(etapa.RegraConsolidacao);
+    }
+
+    // Quem pede o número confere antes Resolvida: nenhum número é presumido.
+    private CorretoresDaRegra? Da(ReferenciaRegra? regraConsolidacao)
+    {
+        if (regraConsolidacao is null)
         {
             return null;
         }
 
-        return _porRegra.TryGetValue(etapa.RegraConsolidacao, out CorretoresDaRegra? corretores)
+        return _porRegra.TryGetValue(regraConsolidacao, out CorretoresDaRegra? corretores)
             ? corretores
             : throw new InvalidOperationException(
-                $"O número de corretores da regra de consolidação '{etapa.RegraConsolidacao.Codigo}' versão '{etapa.RegraConsolidacao.Versao}' não foi lido.");
+                $"O número de corretores da regra de consolidação '{regraConsolidacao.Codigo}' versão '{regraConsolidacao.Versao}' não foi lido.");
     }
 }
 

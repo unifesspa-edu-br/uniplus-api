@@ -47,6 +47,11 @@ public static class AlinhamentoDasBancasDaEtapa
         return codigos.Distinct(StringComparer.Ordinal).Count() != codigos.Count;
     }
 
+    internal static DomainError? BancaRepetida(IEnumerable<BancaDaEtapa> bancas) =>
+        CodigoRepetido(bancas)
+            ? new DomainError("EtapaProcesso.BancaDuplicadaNaEtapa", "Cada tipo de banca pode ser requerido uma única vez por etapa.")
+            : null;
+
     /// <summary>
     /// As bancas que a etapa passa a ter: a linha viva de mesmo código é reaproveitada, com o tipo de
     /// origem reposto nela, e a banca sem linha viva entra como chegou. O código identifica a banca, e a

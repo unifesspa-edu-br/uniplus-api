@@ -134,7 +134,7 @@ public sealed class DefinirCronogramaFasesProdutosDaFaseTests
     {
         CenarioDoCronogramaDeFases cenario = CenarioDoCronogramaDeFases.EmRascunho().ComTipoDeAto(TipoAtoDaClassificacao());
         FaseCronogramaInput primeira = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal());
-        FaseCronogramaInput segunda = cenario.CadastrarFase(FaseCanonicaDoResultadoFinal()) with { Ordem = 2 };
+        FaseCronogramaInput segunda = cenario.CadastrarFase(FaseCanonicaRecorrivel()) with { Ordem = 2 };
 
         Result<MutacaoAceita> resultado = await cenario.DefinirFasesAsync(primeira, segunda);
 

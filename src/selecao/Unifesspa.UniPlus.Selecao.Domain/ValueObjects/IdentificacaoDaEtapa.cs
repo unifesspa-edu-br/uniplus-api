@@ -15,4 +15,9 @@ public sealed record IdentificacaoDaEtapa(
     CaraterEtapa Carater,
     TipoEtapaSnapshot TipoEtapa,
     int? Ordem,
-    string? FaseCodigo);
+    string? FaseCodigo)
+{
+    /// <summary>A identificação como a etapa a guarda: nome aparado e código da fase normalizado.</summary>
+    public IdentificacaoDaEtapa Normalizada() =>
+        this with { Nome = Nome.Trim(), FaseCodigo = CodigoDeFase.Normalizado(FaseCodigo) };
+}

@@ -19,12 +19,9 @@ internal static class EscritaDasEtapasDoProcesso
 {
     public static Result Conferir(IReadOnlyList<EtapaProcessoInput> etapas)
     {
-        List<Guid> idsInformados = [.. etapas.Where(e => e.Id.HasValue).Select(e => e.Id!.Value)];
-        if (idsInformados.Distinct().Count() != idsInformados.Count)
+        if (EtapasDoProcesso.PosicoesComIdRepetido(etapas.Select(static etapa => etapa.Id)).Count > 0)
         {
-            return Result.Failure(new DomainError(
-                "ProcessoSeletivo.IdEtapaDuplicado",
-                "O mesmo Id de etapa não pode ser informado mais de uma vez no mesmo payload."));
+            return Result.Failure(EtapasDoProcesso.IdRepetido());
         }
 
         List<FieldError> erros = [.. etapas.SelectMany(ErrosDoPayloadDaEtapa)];

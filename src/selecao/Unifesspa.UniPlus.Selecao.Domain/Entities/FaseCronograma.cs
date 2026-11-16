@@ -121,31 +121,31 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// Se a fase declara ao menos um produto com papel: decide o piso mínimo havendo vagas e é
     /// pré-condição de recurso.
     /// </summary>
-    public bool ProduzResultado => _produtos.Exists(static p => p.Papel is not null);
+    public bool ProduzResultado => CicloRecursal.ProduzResultado(ParesDeAto());
 
     /// <summary>Abre ciclo recursal: publica ao menos um resultado preliminar.</summary>
-    internal bool PublicaResultadoPreliminar =>
-        _produtos.Exists(static p => p.Papel == PapelProdutoFase.Preliminar);
+    internal bool PublicaResultadoPreliminar => CicloRecursal.PublicaComPapel(ParesDeAto(), PapelProdutoFase.Preliminar);
 
     /// <summary>Encerra ciclo recursal: publica ao menos um resultado definitivo.</summary>
-    internal bool PublicaResultadoDefinitivo =>
-        _produtos.Exists(static p => p.Papel == PapelProdutoFase.Definitivo);
+    internal bool PublicaResultadoDefinitivo => CicloRecursal.PublicaComPapel(ParesDeAto(), PapelProdutoFase.Definitivo);
 
     /// <summary>Se a fase publica o resultado definitivo desse tipo de ato (a matéria é o tipo).</summary>
     internal bool PublicaResultadoDefinitivoDe(string atoCodigo) =>
-        _produtos.Exists(p => p.Papel == PapelProdutoFase.Definitivo
-            && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal));
+        CicloRecursal.PublicaDefinitivoDe(ParesDeAto(), atoCodigo);
 
     /// <summary>
     /// Os tipos de ato cujo preliminar a fase publica sem publicar o definitivo do mesmo tipo:
     /// são as matérias cujo ciclo recursal ela deixa para a fase concluinte fechar.
     /// </summary>
     public IEnumerable<string> TiposComCicloAberto() =>
-        CicloRecursal.TiposComCicloAberto(_produtos.Select(static p => (p.AtoCodigo, p.Papel)));
+        CicloRecursal.TiposComCicloAberto(ParesDeAto());
 
     /// <summary>Os tipos de ato cujo preliminar e cujo definitivo a própria fase publica.</summary>
     internal IEnumerable<string> TiposFechadosNaPropriaFase() =>
-        CicloRecursal.TiposFechadosNoProprioLugar(_produtos.Select(static p => (p.AtoCodigo, p.Papel)));
+        CicloRecursal.TiposFechadosNoProprioLugar(ParesDeAto());
+
+    private IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> ParesDeAto() =>
+        _produtos.Select(static p => (p.AtoCodigo, p.Papel));
 
     /// <summary>Presença = a fase admite recurso (0..1).</summary>
     public RegraRecursoFase? RegraRecurso { get; private set; }
@@ -231,15 +231,15 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     }
 
     /// <summary>
-    /// <see cref="AncoraDoRecursoDaFase.Violacao"/> sobre o estado ATUAL da fase, a forma que
-    /// <c>ProcessoSeletivo</c> usa porque a hidratação do EF materializa estado violado sem passar por fábrica.
+    /// A fase como está agora, lida como se acabasse de ser declarada: a hidratação do EF materializa estado
+    /// violado sem passar por fábrica, e as recusas da declaração o mostram.
     /// </summary>
-    internal FieldError? ViolacaoDaAncoraDoRecurso() =>
-        AncoraDoRecursoDaFase.Violacao(Codigo, _produtos, RegraRecurso);
-
-    /// <summary><see cref="RecorteDeCompetenciaDasBancas.Violacoes"/> sobre o estado ATUAL, pelo mesmo motivo.</summary>
-    internal IReadOnlyList<FieldError> ViolacoesDoRecorteDeCompetencia() =>
-        RecorteDeCompetenciaDasBancas.Violacoes(Codigo, _bancasRequeridas);
+    public FaseDeclarada Declaracao() => FaseDeclarada.Declarar(
+        Id,
+        OrigemCanonica(),
+        DecisoesDeCronograma(),
+        new PublicacoesDaFase([.. _produtos], EmiteParecerIndividual, RegraRecurso, [.. _tiposDeDecisao], RegraDeHomologacao),
+        [.. _bancasRequeridas]);
 
     /// <summary>O que da fase entra no resultado preliminar que ela publica (ver <see cref="ValueObjects.EntradaDoPreliminar"/>).</summary>
     public EntradaDoPreliminar EntradaDoPreliminar() => EntradaDoPreliminarDaFase.De(this);
@@ -312,9 +312,9 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     private void DefinirCronograma(DecisoesDeCronogramaDaFase cronograma)
     {
         Ordem = cronograma.Ordem;
-        Inicio = JanelaDaFase.EmUtc(cronograma.Inicio);
-        Fim = JanelaDaFase.EmUtc(cronograma.Fim);
-        FaseConcluinteCodigo = NormalizarCodigo(cronograma.FaseConcluinteCodigo);
+        Inicio = JanelaDeTempo.EmUtc(cronograma.Inicio);
+        Fim = JanelaDeTempo.EmUtc(cronograma.Fim);
+        FaseConcluinteCodigo = CodigoDeFase.Normalizado(cronograma.FaseConcluinteCodigo);
         DefinirUnidadeResponsavel(cronograma.UnidadeResponsavel);
     }
 
@@ -360,9 +360,4 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
 
     private void AdotarBancasRequeridas(IEnumerable<BancaRequerida> bancasRequeridas) =>
         FilhasDoAgregado.Substituir(_bancasRequeridas, bancasRequeridas, banca => banca.VincularFase(Id));
-
-    // Texto em branco e ausência são o mesmo estado ("esta fase não aponta concluinte"); sem normalizar, a
-    // mesma configuração produziria bytes canônicos distintos conforme o cliente enviasse null ou "".
-    private static string? NormalizarCodigo(string? codigo) =>
-        string.IsNullOrWhiteSpace(codigo) ? null : codigo.Trim();
 }

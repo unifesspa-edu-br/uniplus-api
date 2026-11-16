@@ -27,6 +27,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// </remarks>
 public static class RecorteDeCompetenciaDasBancas
 {
+    private const string CategoriaDuplicada = "BancaRequerida.CategoriaDuplicadaNoRecorte";
+    private const string RecorteObrigatorioCodigo = "BancaRequerida.RecorteDeCompetenciaObrigatorio";
+    private const string RecorteDuplicadoCodigo = "BancaRequerida.RecorteDeCompetenciaDuplicado";
+
+    /// <summary>Os códigos das recusas do recorte, para quem projeta o recorte num item só.</summary>
+    internal static readonly IReadOnlySet<string> Codigos =
+        new HashSet<string>([CategoriaDuplicada, RecorteObrigatorioCodigo, RecorteDuplicadoCodigo], StringComparer.Ordinal);
+
     /// <summary>
     /// As violações do recorte de competência das bancas requeridas pela fase, vazio quando cada banca é
     /// identificável dentro dela. Vêm primeiro as de categoria repetida, por índice, e depois as dos
@@ -59,7 +67,7 @@ public static class RecorteDeCompetenciaDasBancas
             if (banca.RecorteDeCompetencia.Count != banca.ChaveDoRecorte().Count)
             {
                 yield return new(CampoDoRecorte(indice), new DomainError(
-                    "BancaRequerida.CategoriaDuplicadaNoRecorte",
+                    CategoriaDuplicada,
                     $"A banca '{banca.Codigo}' da fase '{codigoDaFase}' declara a mesma categoria de documento mais de uma vez no recorte de competência."));
             }
         }
@@ -122,13 +130,13 @@ public static class RecorteDeCompetenciaDasBancas
 
     private static FieldError RecorteObrigatorio(string codigoDaFase, BancaRequerida banca, int indice) =>
         new(CampoDoRecorte(indice), new DomainError(
-            "BancaRequerida.RecorteDeCompetenciaObrigatorio",
+            RecorteObrigatorioCodigo,
             $"A fase '{codigoDaFase}' requer mais de uma banca '{banca.Codigo}' e cada uma precisa declarar as categorias de documento que julga."));
 
     private static FieldError RecorteDuplicado(string codigoDaFase, BancaRequerida banca, int indice, IReadOnlyList<string> chave) =>
         new(CampoDoRecorte(indice), new DomainError(
-            "BancaRequerida.RecorteDeCompetenciaDuplicado",
+            RecorteDuplicadoCodigo,
             $"A fase '{codigoDaFase}' declara duas bancas '{banca.Codigo}' com o mesmo recorte de competência ({string.Join(", ", chave)}) — recortes iguais não distinguem uma banca da outra."));
 
-    private static string CampoDoRecorte(int indice) => $"bancasRequeridas[{indice}].categoriasDocumentoIds";
+    internal static string CampoDoRecorte(int indice) => $"bancasRequeridas[{indice}].categoriasDocumentoIds";
 }

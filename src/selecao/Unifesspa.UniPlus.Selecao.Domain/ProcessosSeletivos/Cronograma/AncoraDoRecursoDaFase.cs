@@ -18,6 +18,13 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </remarks>
 public static class AncoraDoRecursoDaFase
 {
+    private const string FaseSemPreliminar = "RegraRecursoFase.FaseSemProdutoPreliminar";
+    private const string AncoraForaDoPreliminar = "RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase";
+
+    /// <summary>Os códigos das recusas da âncora do recurso, para quem projeta a âncora num item só.</summary>
+    internal static readonly IReadOnlySet<string> Codigos =
+        new HashSet<string>([FaseSemPreliminar, AncoraForaDoPreliminar], StringComparer.Ordinal);
+
     /// <summary>
     /// A violação da âncora do prazo de recurso, ou <see langword="null"/> quando a fase não admite
     /// recurso ou o ancora corretamente.
@@ -84,7 +91,7 @@ public static class AncoraDoRecursoDaFase
 
     private static FieldError FaseSemProdutoPreliminar(string codigoDaFase) =>
         new("produtos", new DomainError(
-            "RegraRecursoFase.FaseSemProdutoPreliminar",
+            FaseSemPreliminar,
             $"A fase '{codigoDaFase}' admite recurso e não publica nenhum produto com papel preliminar — declare o resultado preliminar em que o prazo ancora."));
 
     private static FieldError? AncoraForaDosPreliminares(
@@ -98,7 +105,7 @@ public static class AncoraDoRecursoDaFase
         }
 
         return new("regraRecurso.atoAncoraCodigo", new DomainError(
-            "RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase",
+            AncoraForaDoPreliminar,
             $"A regra de recurso da fase '{codigoDaFase}' não ancora em nenhum dos produtos preliminares que ela publica ({string.Join(", ", preliminares.Select(static p => p.AtoCodigo).Order(StringComparer.Ordinal))})."));
     }
 }

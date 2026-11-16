@@ -188,11 +188,12 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
 
     private void DefinirIdentificacaoECarater(IdentificacaoDaEtapa identificacao)
     {
-        Nome = identificacao.Nome.Trim();
-        Carater = identificacao.Carater;
-        TipoEtapa = identificacao.TipoEtapa;
-        Ordem = identificacao.Ordem;
-        FaseCodigo = string.IsNullOrWhiteSpace(identificacao.FaseCodigo) ? null : identificacao.FaseCodigo.Trim();
+        IdentificacaoDaEtapa normalizada = identificacao.Normalizada();
+        Nome = normalizada.Nome;
+        Carater = normalizada.Carater;
+        TipoEtapa = normalizada.TipoEtapa;
+        Ordem = normalizada.Ordem;
+        FaseCodigo = normalizada.FaseCodigo;
     }
 
     private void DefinirLancamentoDaNota(DeclaracaoDaAvaliacaoDaEtapa avaliacao)
@@ -217,11 +218,9 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// <summary>Declara a janela própria da etapa, normalizada para UTC, e o parecer individual.</summary>
     public Result DefinirJanelaEParecer(DateTimeOffset? inicio, DateTimeOffset? fim, bool emiteParecerIndividual)
     {
-        if (inicio is not null && fim is not null && fim < inicio)
+        if (ConferenciaDaDeclaracaoDaEtapa.JanelaInvertida(new JanelaDeTempo(inicio, fim)) is { } invertida)
         {
-            return Result.Failure(new DomainError(
-                "EtapaProcesso.JanelaInvertida",
-                "O fim da janela da etapa não pode ser anterior ao início."));
+            return Result.Failure(invertida);
         }
 
         AplicarJanelaEParecer(inicio, fim, emiteParecerIndividual);
@@ -245,8 +244,8 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
 
     private void AplicarJanelaEParecer(DateTimeOffset? inicio, DateTimeOffset? fim, bool emiteParecerIndividual)
     {
-        Inicio = inicio?.ToUniversalTime();
-        Fim = fim?.ToUniversalTime();
+        Inicio = JanelaDeTempo.EmUtc(inicio);
+        Fim = JanelaDeTempo.EmUtc(fim);
         EmiteParecerIndividual = emiteParecerIndividual;
     }
 
@@ -264,9 +263,9 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     {
         ArgumentNullException.ThrowIfNull(produtos);
 
-        if (ProdutosPublicados.PrimeiroParRepetido(produtos, HashCanonicalComputer.NormalizeNfc) is { } duplicado)
+        if (ConferenciaDaDeclaracaoDaEtapa.AtoRepetido(produtos) is { } repetido)
         {
-            return AtoDuplicadoNaEtapa(duplicado);
+            return Result.Failure(repetido);
         }
 
         SubstituirProdutos(ProdutosPublicados
@@ -275,27 +274,36 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         return Result.Success();
     }
 
-    private static Result AtoDuplicadoNaEtapa(ProdutoDaEtapa duplicado) =>
-        Result.Failure(new DomainError(
-            "EtapaProcesso.AtoDuplicadoNaEtapa",
-            $"A etapa declara o ato '{duplicado.AtoCodigo}' mais de uma vez no mesmo papel — o par ato e papel é declarado uma única vez por etapa."));
-
     /// <summary>Substitui as bancas da etapa por inteiro, recusando o mesmo tipo duas vezes.</summary>
     public Result DefinirBancas(IReadOnlyList<BancaDaEtapa> bancas)
     {
         ArgumentNullException.ThrowIfNull(bancas);
 
-        if (AlinhamentoDasBancasDaEtapa.CodigoRepetido(bancas))
+        if (AlinhamentoDasBancasDaEtapa.BancaRepetida(bancas) is { } repetida)
         {
-            return Result.Failure(new DomainError(
-                "EtapaProcesso.BancaDuplicadaNaEtapa",
-                "Cada tipo de banca pode ser requerido uma única vez por etapa."));
+            return Result.Failure(repetida);
         }
 
         SubstituirBancas(bancas);
 
         return Result.Success();
     }
+
+    /// <summary>
+    /// A etapa como está agora, lida como se acabasse de ser declarada: a âncora de uma janela recursal pode
+    /// ter ficado sem o que a sustentava, e a hidratação do EF materializa estado violado. O conceito não é
+    /// parte da entidade e fica ausente.
+    /// </summary>
+    public EtapaDeclarada Declaracao() => EtapaDeclarada.Declarar(
+        Id,
+        IdentificacaoAtual(),
+        new AvaliacaoDeclaradaDaEtapa(
+            AvaliacaoAtual(),
+            [.. ItensDeAvaliacao.Select(static item => new ItemDeAvaliacaoDeclarado(item.Id, item.Rotulo, item.PontuacaoMaxima))],
+            null),
+        new JanelaDeTempo(Inicio, Fim),
+        new PublicacoesDaEtapa([.. _produtos], EmiteParecerIndividual, [.. _recursos], [.. _tiposDeDecisao]),
+        [.. _bancas]);
 
     /// <summary>O que da etapa entra no resultado preliminar que ela publica (ver <see cref="ValueObjects.EntradaDoPreliminar"/>).</summary>
     public EntradaDoPreliminar EntradaDoPreliminar() => EntradaDoPreliminarDaEtapa.De(this);
@@ -313,7 +321,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     {
         ArgumentNullException.ThrowIfNull(recursos);
 
-        DomainError? recusa = JanelasRecursaisDaEtapa.ViolacaoDaAncora(this, recursos) ?? JanelasRecursaisDaEtapa.FatoRepetido(recursos);
+        DomainError? recusa = JanelasRecursaisDaEtapa.Recusa(_produtos, DeclaraNotaDoEnem, EmiteParecerIndividual, recursos);
         if (recusa is not null)
         {
             return Result.Failure(recusa);

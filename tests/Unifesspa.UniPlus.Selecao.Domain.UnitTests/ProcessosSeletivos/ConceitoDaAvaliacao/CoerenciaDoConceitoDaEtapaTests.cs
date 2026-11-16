@@ -182,4 +182,32 @@ public sealed class CoerenciaDoConceitoDaEtapaTests
 
         erros.Should().ContainSingle().Which.Error.Message.Should().NotContain("12");
     }
+
+    [Fact(DisplayName = "O conceito declarado não confere o que o tipo admite: só a coerência com o resto da avaliação")]
+    public void ValidarDeclarado_NaoConfereAAdmissao()
+    {
+        CoerenciaDoConceitoDaEtapa.ValidarDeclarado(Nota(), Declaracao(notaMaxima: 10m), declaraItens: false, etapaDeNotaDoEnem: false).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O conceito declarado com teto acima da escala recusa a nota máxima, e sem nota máxima não recusa")]
+    public void ValidarDeclarado_TetoAcimaDaEscala_Recusa()
+    {
+        CoerenciaDoConceitoDaEtapa.ValidarDeclarado(Nota(), Declaracao(notaMaxima: 10.01m), declaraItens: false, etapaDeNotaDoEnem: false)
+            .Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(("notaMaxima", ConceitoDaEtapaErrorCodes.NotaMaximaAcimaDaEscala));
+        CoerenciaDoConceitoDaEtapa.ValidarDeclarado(Nota(), Declaracao(), declaraItens: false, etapaDeNotaDoEnem: false).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O conceito categórico declarado recusa cada campo de nota declarado, inclusive os itens de avaliação")]
+    public void ValidarDeclarado_CategoricoComCamposDeNota_RecusaCadaUm()
+    {
+        CoerenciaDoConceitoDaEtapa.ValidarDeclarado(AptoInapto(), Declaracao(peso: 1m, notaMinima: 5m), declaraItens: true, etapaDeNotaDoEnem: false)
+            .Select(static erro => erro.Field).Should().Equal("notaMinima", "peso", "itensDeAvaliacao");
+    }
+
+    [Fact(DisplayName = "O conceito declarado na etapa do ENEM recusa só o conceito")]
+    public void ValidarDeclarado_EtapaDoEnem_RecusaSoOConceito()
+    {
+        CoerenciaDoConceitoDaEtapa.ValidarDeclarado(AptoInapto(), Declaracao(notaMaxima: 10m), declaraItens: true, etapaDeNotaDoEnem: true)
+            .Select(static erro => (erro.Field, erro.Error.Code)).Should().Equal(("conceito", ConceitoDaEtapaErrorCodes.EtapaDoEnemNaoDeclaraConceito));
+    }
 }

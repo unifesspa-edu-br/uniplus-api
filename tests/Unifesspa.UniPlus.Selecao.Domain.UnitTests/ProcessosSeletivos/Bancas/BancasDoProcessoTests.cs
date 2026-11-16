@@ -7,8 +7,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -75,6 +77,12 @@ public sealed class BancasDoProcessoTests
     private static DomainError? Pendencia(ProcessoSeletivo processo, CorretoresDasEtapas? corretores = null) =>
         PendenciasDasBancas.PendenciaDasBancas(EstadoDaConfiguracao.De(processo), corretores ?? CorretoresDeTeste.SemConsolidacao);
 
+    private static IReadOnlyList<ItemConformidade> Itens(ProcessoSeletivo processo, CorretoresDasEtapas corretores) =>
+        ConferenciaDasBancas.Itens(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas), corretores);
+
+    private static IReadOnlyList<FieldError> Minimo(ProcessoSeletivo processo, CorretoresDasEtapas corretores) =>
+        ConferenciaDasBancas.ConferirMinimoDeIntegrantes(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas), corretores);
+
     [Fact(DisplayName = "Fase com recurso sem banca de análise de recursos é recusada, citando a fase")]
     public void FaseComRecursoSemBanca_RecusaCitandoAFase()
     {
@@ -117,19 +125,33 @@ public sealed class BancasDoProcessoTests
         pendencia.Message.Should().Contain("Redação");
     }
 
+    // A fase criada recusa o recorte na banca de recursos; o estado violado chega pela reidratação, como o que o banco hidrata.
+    private static FaseCronograma FaseReidratadaComBancaDeRecursosComRecorte(BancaRequerida banca) => FaseCronograma.Reidratar(
+        Guid.CreateVersion7(),
+        new OrigemCanonicaDaFase(Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NoEdital, true, false, true, false),
+        new DecisoesDeCronogramaDaFase(
+            1, new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), null, UnidadesDeTeste.Ceps),
+        new PublicacoesDaFase(
+            [
+                ProdutoDaFase.Reidratar(ProcessoConformeFactory.ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
+                ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
+            ],
+            false,
+            RegraDeRecurso()),
+        [banca]);
+
     [Fact(DisplayName = "Banca de análise de recursos com recorte de competência é recusada")]
     public void BancaDeRecursosComRecorte_Recusa()
     {
         BancaRequerida comRecorte = BancaRequerida.Criar(
             Tipo, TipoBancaCodigo.AnaliseDeRecursos, "Banca de análise de recursos",
             [CategoriaJulgada.Criar(Guid.CreateVersion7(), "RENDA")], BancasDeTeste.Regra());
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(
-            fase: ProcessoConformeFactory.FaseConforme(RegraDeRecurso(), bancas: [comRecorte]));
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: FaseReidratadaComBancaDeRecursosComRecorte(comRecorte));
 
         Pendencia(processo)!.Code.Should().Be("Banca.RecorteEmBancaDeRecursos");
-        ExigenciaDeBancaDeRecurso.RecorteNaDeclaracao(TipoBancaCodigo.AnaliseDeRecursos, 1)!.Code
+        ExigenciaDeBancaDeRecurso.RecorteNaDeclaracao("RECURSOS", TipoBancaCodigo.AnaliseDeRecursos, 1)!.Code
             .Should().Be("Banca.RecorteEmBancaDeRecursos");
-        ExigenciaDeBancaDeRecurso.RecorteNaDeclaracao("BANCA_ANALISE_DOCUMENTAL", 1).Should().BeNull();
+        ExigenciaDeBancaDeRecurso.RecorteNaDeclaracao("RECURSOS", "BANCA_ANALISE_DOCUMENTAL", 1).Should().BeNull();
     }
 
     [Fact(DisplayName = "Banca da etapa sem regra de deliberação é recusada, citando o nome da banca")]
@@ -201,7 +223,7 @@ public sealed class BancasDoProcessoTests
     {
         EtapaProcesso redacao = NovaEtapa("Redação", 1, CorrecaoIndependente);
 
-        MinimoDeIntegrantes.Exigido(BancasDeTeste.Regra(integrantes: 5, quorum: 4), [redacao], Corretores((CorrecaoIndependente, 3)))
+        MinimoDeIntegrantes.Exigido(BancasDeTeste.Regra(integrantes: 5, quorum: 4), [Corretores((CorrecaoIndependente, 3)).EmCampo(redacao)])
             .Should().Be(4);
     }
 
@@ -248,11 +270,11 @@ public sealed class BancasDoProcessoTests
         redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
         CorretoresDasEtapas corretores = Corretores((CorrecaoIndependente, 3));
 
-        IEnumerable<string> vermelhos = ItensDasBancas.Avaliar(EstadoDaConfiguracao.De(processo), corretores)
+        IEnumerable<string> vermelhos = Itens(processo, corretores)
             .Where(static item => !item.Ok).Select(static item => item.Codigo);
 
         vermelhos.Should().Equal("cronograma_banca_com_o_minimo_de_integrantes");
-        ItensDasBancas.Avaliar(EstadoDaConfiguracao.De(processo), Corretores((CorrecaoIndependente, 2))).Should().OnlyContain(static item => item.Ok);
+        Itens(processo, Corretores((CorrecaoIndependente, 2))).Should().OnlyContain(static item => item.Ok);
     }
 
     [Fact(DisplayName = "Etapa com regra de consolidação não resolvida gera recusa própria, citando a etapa, e nunca vale zero corretores")]
@@ -275,10 +297,10 @@ public sealed class BancasDoProcessoTests
         EtapaProcesso entrevista = ComRecurso(NovaEtapa("Entrevista", 2, AvaliacaoUnica));
         ProcessoSeletivo processo = ProcessoComEtapas([DeRecursosDaFase(integrantes: 2, quorum: 2)], redacao, entrevista);
 
-        IEnumerable<DomainError> violacoes = MinimoDeIntegrantes.Violacoes(EstadoDaConfiguracao.De(processo), Corretores((CorrecaoIndependente, 3)));
+        IReadOnlyList<FieldError> violacoes = Minimo(processo, Corretores((CorrecaoIndependente, 3)));
 
-        violacoes.Select(static erro => erro.Code).Should().Equal("Banca.IntegrantesAbaixoDoMinimo", "EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
-        violacoes.Last().Message.Should().Contain("'Entrevista'");
+        violacoes.Select(static erro => erro.Error.Code).Should().Equal("Banca.IntegrantesAbaixoDoMinimo", "EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
+        violacoes[^1].Error.Message.Should().Contain("'Entrevista'");
     }
 
     [Fact(DisplayName = "A banca abaixo do mínimo vem antes da regra não resolvida de outra banca que a precede")]
@@ -291,7 +313,7 @@ public sealed class BancasDoProcessoTests
         entrevista.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
         CorretoresDasEtapas corretores = Corretores((lida, 3));
 
-        IEnumerable<string> violacoes = MinimoDeIntegrantes.Violacoes(EstadoDaConfiguracao.De(processo), corretores).Select(static erro => erro.Code);
+        IEnumerable<string> violacoes = Minimo(processo, corretores).Select(static erro => erro.Error.Code);
 
         violacoes.Should().Equal("Banca.IntegrantesAbaixoDoMinimo", "EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
         Pendencia(processo, corretores)!.Code.Should().Be("Banca.IntegrantesAbaixoDoMinimo");
@@ -316,7 +338,7 @@ public sealed class BancasDoProcessoTests
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
         redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 3, quorum: 2)]).IsSuccess.Should().BeTrue();
 
-        IEnumerable<string> vermelhos = ItensDasBancas.Avaliar(EstadoDaConfiguracao.De(processo), CorretoresDeTeste.SemConsolidacao)
+        IEnumerable<string> vermelhos = Itens(processo, CorretoresDeTeste.SemConsolidacao)
             .Where(static item => !item.Ok).Select(static item => item.Codigo);
 
         vermelhos.Should().Equal("cronograma_banca_com_o_minimo_de_integrantes");
