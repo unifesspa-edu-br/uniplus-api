@@ -34,10 +34,8 @@ public sealed record PartesDoPedido(PessoaNoToken Solicitante, string? EmailDoBe
                 "Para pedir acesso a outra pessoa, o e-mail da sessão deve ser institucional e verificado.")
             : null;
 
-    internal (string? Email, bool ParaSiMesmo) ResolverBeneficiario(IDominiosInstitucionais dominios, List<FieldError> erros) =>
-        ParaSiMesmo
-            ? (ResolverParaSiMesmo(dominios, erros), true)
-            : (ResolverParaOutraPessoa(dominios, erros), false);
+    internal BeneficiarioIndicado ResolverBeneficiario(IDominiosInstitucionais dominios, List<FieldError> erros) =>
+        new(ParaSiMesmo ? ResolverParaSiMesmo(dominios, erros) : ResolverParaOutraPessoa(dominios, erros), ParaSiMesmo);
 
     private string? ResolverParaSiMesmo(IDominiosInstitucionais dominios, List<FieldError> erros)
     {

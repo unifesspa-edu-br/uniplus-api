@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -46,6 +47,31 @@ public sealed record BeneficiarioDoPedido
     }
 
     public bool Eh(Identidade identidade) => Identidade is { } conhecida && conhecida == identidade;
+
+    /// <summary>
+    /// A pessoa é o beneficiário: o já conhecido se confere pela identidade do token; o ainda desconhecido, pelo e-mail
+    /// verificado, que é o do pedido.
+    /// </summary>
+    internal bool Reconhece(PessoaNoToken pessoa, string emailDoPedido) =>
+        Identidade is not null
+            ? Eh(pessoa.Identidade)
+            : pessoa.EmailVerificado && EmailDaPessoa.Normalizar(pessoa.Email) is { } email && string.Equals(email, emailDoPedido, StringComparison.Ordinal);
+
+    internal DomainError? RecusaDoAceite(PessoaNoToken pessoa, string emailDoPedido)
+    {
+        if (!Reconhece(pessoa, emailDoPedido))
+        {
+            return new DomainError(
+                PedidoErrorCodes.NaoEOBeneficiario,
+                "Só a pessoa a quem o pedido se destina, com o e-mail institucional verificado, o aceita.");
+        }
+
+        // O aprovador julga a pessoa pelo nome: sem ele no token, o pedido não avança à aprovação.
+        return NomeDeExibicao.Normalizar(pessoa.Nome) is null ? SemNome() : null;
+    }
+
+    internal static BeneficiarioDoPedido AceitoPor(PessoaNoToken pessoa, DateTimeOffset instante) =>
+        Aceito(pessoa.Identidade, NomeDeExibicao.Normalizar(pessoa.Nome), instante);
 
     internal static DomainError SemNome() => new(
         PedidoErrorCodes.BeneficiarioSemNome,
