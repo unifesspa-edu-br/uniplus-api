@@ -1,6 +1,9 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
+using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Onde o pedido está: a situação, o fim de vigência que o gestor definiu e, nos estados terminais, o encerramento. Cada
@@ -62,4 +65,30 @@ public sealed record AndamentoDoPedido
             ? DesfechoDaTrocaDeVersao.VoltouAoGestor
             : DesfechoDaTrocaDeVersao.VersaoAtualizada;
     }
+
+    internal DomainError? RecusaDoAceite() => Situacao switch
+    {
+        SituacaoDoPedido.AguardandoBeneficiario => null,
+        SituacaoDoPedido.AguardandoDocumento => new DomainError(
+            PedidoErrorCodes.AnexoNaoVerificado,
+            "O documento declarado ainda não foi verificado; o aceite e a decisão esperam a verificação."),
+        _ => new DomainError(PedidoErrorCodes.SituacaoInvalida, "O pedido não aguarda o aceite do beneficiário."),
+    };
+
+    /// <summary>Só o gestor define o prazo; depois da aprovação o pedido se encerra, ou passa a aguardar a proteção de dados.</summary>
+    internal AndamentoDoPedido DepoisDaAprovacao(AprovacaoNaEtapa aprovacao)
+    {
+        AndamentoDoPedido comPrazo = aprovacao.Etapa == EtapaDoPedido.Gestor ? ComPrazo(aprovacao.ValidaAte) : this;
+
+        return aprovacao.Conclui
+            ? comPrazo.Encerrado(SituacaoDoPedido.Aprovado, aprovacao.Instante)
+            : comPrazo.Em(SituacaoDoPedido.AguardandoProtecaoDeDados);
+    }
+
+    internal AndamentoDoPedido DepoisDaTroca(DesfechoDaTrocaDeVersao desfecho, DateTimeOffset instante) => desfecho switch
+    {
+        DesfechoDaTrocaDeVersao.Devolvido => Encerrado(SituacaoDoPedido.Devolvido, instante),
+        DesfechoDaTrocaDeVersao.VoltouAoGestor => DeVoltaAoGestor(),
+        _ => this,
+    };
 }
