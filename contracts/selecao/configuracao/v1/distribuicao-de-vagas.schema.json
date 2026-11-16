@@ -1,0 +1,259 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/distribuicao-de-vagas.schema.json",
+  "title": "Distribuição de vagas por oferta de curso",
+  "description": "Os insumos que o edital declara para distribuir as vagas de uma oferta de curso. No máximo uma distribuição por oferta no processo. O quadro de vagas é calculado pelo sistema e vai ao documento só como leitura.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ofertaCursoCodigo"
+  ],
+  "properties": {
+    "ofertaCursoCodigo": {
+      "title": "Oferta de curso",
+      "description": "Código da oferta de curso no cadastro, de letras maiúsculas, dígitos e sublinhado, de 2 a 50 caracteres. É a chave da distribuição.",
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 50,
+      "pattern": "^[A-Z][A-Z0-9_]{1,49}$"
+    },
+    "vagasOfertadasBase": {
+      "title": "Vagas ofertadas base",
+      "description": "Número de vagas que a oferta tem antes da distribuição por modalidade. Maior que zero.",
+      "type": "integer",
+      "minimum": 1
+    },
+    "percentualDaReservaLegal": {
+      "title": "Percentual da reserva legal",
+      "description": "Fração das vagas reservada pela Lei de Cotas, de 0,5 a 1, com até quatro casas decimais. Só nas regras do ramo federal.",
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 0.5,
+      "maximum": 1,
+      "multipleOf": 0.0001
+    },
+    "regraDistribuicao": {
+      "title": "Regra de distribuição",
+      "description": "Regra do catálogo que distribui as vagas entre as modalidades.",
+      "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
+    },
+    "regraAjuste": {
+      "title": "Regra de ajuste",
+      "description": "Regra do catálogo que concilia o quadro de vagas. Nula ou ausente quando a distribuição não a usa.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
+        }
+      ]
+    },
+    "ajusteDoQuadro": {
+      "title": "Ajuste do quadro",
+      "description": "Como o edital reduz o quadro fixado: de uma modalidade ou proporcionalmente em um conjunto delas. Nulo ou ausente quando não há ajuste.",
+      "anyOf": [
+        {
+          "type": "null"
+        },
+        {
+          "$ref": "#/$defs/ajusteDoQuadro"
+        }
+      ]
+    },
+    "referenciaDemograficaCodigo": {
+      "title": "Referência demográfica",
+      "description": "Código do censo de referência da reserva demográfica no cadastro, de até 20 caracteres. Só nas regras do ramo federal.",
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1,
+      "maxLength": 20
+    },
+    "modalidades": {
+      "title": "Modalidades",
+      "description": "Modalidades que a oferta distribui, cada uma pelo código do cadastro.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/modalidade"
+      }
+    },
+    "cursoNome": {
+      "title": "Nome do curso",
+      "description": "Nome do curso da oferta, para leitura. Campo só de leitura: ignorado na importação.",
+      "type": "string",
+      "maxLength": 200,
+      "readOnly": true
+    },
+    "cursoGrau": {
+      "title": "Grau do curso",
+      "description": "Grau do curso da oferta. Campo só de leitura: ignorado na importação.",
+      "type": "string",
+      "maxLength": 60,
+      "readOnly": true
+    },
+    "unidadeOfertanteNome": {
+      "title": "Unidade ofertante",
+      "description": "Nome da unidade que oferta o curso. Campo só de leitura: ignorado na importação.",
+      "type": "string",
+      "maxLength": 250,
+      "readOnly": true
+    },
+    "turnos": {
+      "title": "Turnos",
+      "description": "Turnos da oferta. Campo só de leitura: ignorado na importação.",
+      "type": "array",
+      "readOnly": true,
+      "items": {
+        "type": "string",
+        "maxLength": 30
+      }
+    },
+    "quadro": {
+      "title": "Quadro de vagas",
+      "description": "Vagas por modalidade calculadas pelo sistema a partir dos insumos. Campo só de leitura: ignorado na importação, porque o sistema recalcula o quadro.",
+      "type": "array",
+      "readOnly": true,
+      "items": {
+        "$ref": "#/$defs/vagasDaModalidade"
+      }
+    },
+    "totalDeVagasDoEdital": {
+      "title": "Total de vagas do edital",
+      "description": "Soma das vagas do quadro. Campo só de leitura: ignorado na importação.",
+      "type": "integer",
+      "minimum": 0,
+      "readOnly": true
+    }
+  },
+  "$defs": {
+    "modalidade": {
+      "title": "Modalidade da oferta",
+      "description": "Uma modalidade de concorrência da oferta. A natureza, a composição e o remanejamento dela vêm do cadastro de modalidades e não se declaram aqui.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "codigo"
+      ],
+      "properties": {
+        "codigo": {
+          "title": "Código da modalidade",
+          "description": "Código da modalidade no cadastro, de letras maiúsculas, dígitos e sublinhado, de 1 a 60 caracteres.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[A-Z0-9_]+$"
+        },
+        "quantidadeDeclarada": {
+          "title": "Quantidade declarada",
+          "description": "Quantidade de vagas que o edital fixa para a modalidade. Nula ou ausente quando o sistema a calcula.",
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "descricao": {
+          "title": "Descrição da modalidade",
+          "description": "Descrição da modalidade no cadastro. Campo só de leitura: ignorado na importação.",
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 300,
+          "readOnly": true
+        }
+      }
+    },
+    "vagasDaModalidade": {
+      "title": "Vagas de uma modalidade",
+      "description": "A quantidade de vagas calculada para uma modalidade.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "modalidadeCodigo": {
+          "title": "Código da modalidade",
+          "description": "Código da modalidade no cadastro.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[A-Z0-9_]+$"
+        },
+        "quantidade": {
+          "title": "Quantidade",
+          "description": "Vagas da modalidade no quadro.",
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "ajusteDoQuadro": {
+      "title": "Ajuste do quadro",
+      "description": "O ajuste que o edital declara sobre o quadro fixado. O discriminador $tipo escolhe qual propriedade vale.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "$tipo"
+      ],
+      "properties": {
+        "$tipo": {
+          "title": "Tipo de ajuste",
+          "description": "reduzirDe reduz de uma modalidade; reduzirProporcionalEm reduz proporcionalmente num conjunto delas.",
+          "enum": [
+            "reduzirDe",
+            "reduzirProporcionalEm"
+          ]
+        },
+        "modalidadeCodigo": {
+          "title": "Modalidade reduzida",
+          "description": "Código da modalidade de onde se reduz. Usado em reduzirDe.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "pattern": "^[A-Z0-9_]+$"
+        },
+        "modalidadeCodigos": {
+          "title": "Modalidades reduzidas",
+          "description": "Códigos das modalidades em que se reduz proporcionalmente. Usado em reduzirProporcionalEm.",
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "^[A-Z0-9_]+$"
+          }
+        }
+      },
+      "if": {
+        "properties": {
+          "$tipo": {
+            "const": "reduzirDe"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "modalidadeCodigo"
+        ],
+        "not": {
+          "required": [
+            "modalidadeCodigos"
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "modalidadeCodigos"
+        ],
+        "not": {
+          "required": [
+            "modalidadeCodigo"
+          ]
+        }
+      }
+    }
+  }
+}

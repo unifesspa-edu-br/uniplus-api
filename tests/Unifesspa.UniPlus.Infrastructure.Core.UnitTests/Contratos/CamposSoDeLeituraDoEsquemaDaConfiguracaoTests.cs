@@ -32,6 +32,14 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
         { "motivo.schema.json", "properties/subclassificacao" },
         { "motivo.schema.json", "properties/sentido" },
         { "motivo.schema.json", "properties/congelado" },
+        { "formulario.schema.json", "properties/modeloOrigemCodigo" },
+        { "distribuicao-de-vagas.schema.json", "properties/cursoNome" },
+        { "distribuicao-de-vagas.schema.json", "properties/cursoGrau" },
+        { "distribuicao-de-vagas.schema.json", "properties/unidadeOfertanteNome" },
+        { "distribuicao-de-vagas.schema.json", "properties/turnos" },
+        { "distribuicao-de-vagas.schema.json", "properties/quadro" },
+        { "distribuicao-de-vagas.schema.json", "properties/totalDeVagasDoEdital" },
+        { "distribuicao-de-vagas.schema.json", "$defs/modalidade/properties/descricao" },
     };
 
     [Theory(DisplayName = "O campo só de leitura é marcado readOnly e a descrição diz que a importação o ignora")]
@@ -55,6 +63,8 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
     [InlineData("atendimento.schema.json", "$defs/condicao/properties/condicaoCodigo")]
     [InlineData("bonus-regional.schema.json", "properties/baseLegalBonusRegionalCodigo")]
     [InlineData("motivo.schema.json", "properties/codigo")]
+    [InlineData("distribuicao-de-vagas.schema.json", "properties/ofertaCursoCodigo")]
+    [InlineData("distribuicao-de-vagas.schema.json", "$defs/modalidade/properties/codigo")]
     [InlineData("motivo.schema.json", "properties/tipoCodigo")]
     public void Codigo_NaoEReadOnly(string arquivo, string caminho)
     {

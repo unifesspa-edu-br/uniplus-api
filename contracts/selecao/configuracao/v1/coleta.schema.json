@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/coleta.schema.json",
   "title": "Coleta de fatos",
-  "description": "Regras de coleta dos fatos do candidato.",
+  "description": "Regras de coleta dos fatos do candidato: a referência temporal e as regras que derivam fatos das respostas.",
   "type": "object",
   "additionalProperties": false,
   "properties": {
@@ -32,6 +32,66 @@
           "title": "Fase de referência",
           "description": "Chave local da fase do cronograma que ancora a referência. Usada quando o tipo é INICIO_FASE ou FIM_FASE.",
           "$ref": "comuns.schema.json#/$defs/chave"
+        }
+      }
+    },
+    "regrasDerivacao": {
+      "title": "Regras de derivação",
+      "description": "Regras que derivam o valor de um fato do catálogo a partir de outros fatos. Cada fato derivado aparece uma vez. A derivação da modalidade não entra aqui: vem da oferta.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "fatoCodigo"
+        ],
+        "properties": {
+          "fatoCodigo": {
+            "title": "Fato derivado",
+            "description": "Código do fato derivado no catálogo, de 1 a 60 caracteres.",
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60,
+            "pattern": "\\S"
+          },
+          "regras": {
+            "title": "Regras",
+            "description": "Regras da derivação, cada uma com a condição em que contribui. A regra sem condição é a âncora e contribui sempre, junto com as demais que valerem.",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "ordem": {
+                  "title": "Ordem",
+                  "description": "Posição da regra na avaliação, a partir de 0.",
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "contribui": {
+                  "title": "Valor contribuído",
+                  "description": "Valor que a regra atribui ao fato quando vale, de até 60 caracteres.",
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "maxLength": 60
+                },
+                "quando": {
+                  "title": "Quando vale",
+                  "description": "Condição da regra. Nula ou ausente: regra âncora, que vale sempre.",
+                  "anyOf": [
+                    {
+                      "type": "null"
+                    },
+                    {
+                      "$ref": "predicado.schema.json#/$defs/predicado"
+                    }
+                  ]
+                }
+              }
+            }
+          }
         }
       }
     }

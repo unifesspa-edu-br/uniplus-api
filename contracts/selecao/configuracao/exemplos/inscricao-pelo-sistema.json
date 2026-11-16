@@ -24,7 +24,206 @@
   "coleta": {
     "referenciaTemporalFatos": {
       "tipo": "FIM_INSCRICAO"
+    },
+    "regrasDerivacao": [
+      {
+        "fatoCodigo": "FAIXA_DE_RENDA",
+        "regras": [
+          {
+            "ordem": 0,
+            "contribui": "ATE_UM_SALARIO",
+            "quando": [
+              [
+                {
+                  "fato": "RENDA_PER_CAPITA",
+                  "operador": "MENOR_IGUAL",
+                  "valor": 1518
+                }
+              ]
+            ]
+          },
+          {
+            "ordem": 1,
+            "contribui": "ACIMA_DE_UM_SALARIO",
+            "quando": [
+              [
+                {
+                  "fato": "RENDA_PER_CAPITA",
+                  "operador": "MAIOR_IGUAL",
+                  "valor": 1518.01
+                }
+              ]
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "formularios": [
+    {
+      "finalidade": "INSCRICAO",
+      "faseChave": "inscricao",
+      "titulo": "Formulário de inscrição",
+      "etapas": [
+        {
+          "codigo": "dados-pessoais",
+          "ordem": 0,
+          "tipo": "SECAO",
+          "titulo": "Dados pessoais"
+        },
+        {
+          "codigo": "dados-socioeconomicos",
+          "ordem": 1,
+          "tipo": "SECAO",
+          "titulo": "Dados socioeconômicos"
+        },
+        {
+          "codigo": "revisao-e-aceite",
+          "ordem": 2,
+          "tipo": "BLOCO",
+          "bloco": "REVISAO_E_ACEITE",
+          "titulo": "Revisão e aceite"
+        }
+      ],
+      "itens": [
+        {
+          "fatoCodigo": "RENDA_PER_CAPITA",
+          "etapaCodigo": "dados-socioeconomicos",
+          "ordem": 0,
+          "rotulo": "Renda mensal per capita da família",
+          "ajuda": "Informe o valor em reais.",
+          "obrigatoriedade": {
+            "tipo": "SEMPRE"
+          },
+          "restricoes": [
+            {
+              "tipo": "FAIXA_NUMERICA",
+              "minimo": 0,
+              "maximo": 100000
+            }
+          ]
+        },
+        {
+          "fatoCodigo": "DATA_DE_NASCIMENTO",
+          "etapaCodigo": "dados-pessoais",
+          "ordem": 1,
+          "rotulo": "Data de nascimento",
+          "obrigatoriedade": {
+            "tipo": "SEMPRE"
+          },
+          "restricoes": [
+            {
+              "tipo": "FAIXA_DE_DATA",
+              "dataMinima": {
+                "ancora": "ENVIO",
+                "anos": 120,
+                "dias": 0
+              },
+              "dataMaxima": {
+                "ancora": "ENVIO",
+                "anos": 10,
+                "dias": 0
+              }
+            }
+          ]
+        }
+      ],
+      "grupos": [
+        {
+          "codigo": "composicao-familiar",
+          "etapaCodigo": "dados-socioeconomicos",
+          "ordem": 2,
+          "rotulo": "Composição familiar",
+          "minimo": 0,
+          "maximo": 10,
+          "incluiCandidato": true,
+          "obrigatoriedade": {
+            "tipo": "NUNCA"
+          },
+          "subitens": [
+            {
+              "fatoCodigo": "NOME_DO_MEMBRO_DA_FAMILIA",
+              "ordem": 0,
+              "rotulo": "Nome do membro",
+              "obrigatoriedade": {
+                "tipo": "SEMPRE"
+              }
+            }
+          ]
+        }
+      ],
+      "termos": [
+        {
+          "codigo": "consentimento-lgpd",
+          "ordem": 0,
+          "termoCodigo": "TERMO_DE_CONSENTIMENTO_LGPD",
+          "versaoNumero": 1,
+          "obrigatoriedade": {
+            "tipo": "SEMPRE"
+          }
+        }
+      ]
     }
+  ],
+  "opcoesDeCurso": {
+    "numero": 1
+  },
+  "distribuicaoVagas": [
+    {
+      "ofertaCursoCodigo": "ENG_CIVIL_MARABA",
+      "vagasOfertadasBase": 40,
+      "percentualDaReservaLegal": 0.5,
+      "regraDistribuicao": {
+        "codigo": "DISTRIB-VAGAS-LEI-12711",
+        "versao": "v1"
+      },
+      "regraAjuste": {
+        "codigo": "RECONCILIACAO-VAGAS-ART11-PU",
+        "versao": "v1"
+      },
+      "referenciaDemograficaCodigo": "CENSO_2022",
+      "modalidades": [
+        {
+          "codigo": "AC",
+          "descricao": "Ampla concorrência"
+        },
+        {
+          "codigo": "LB_PPI",
+          "descricao": "Escola pública, baixa renda, pretos, pardos e indígenas"
+        }
+      ],
+      "cursoNome": "Engenharia Civil",
+      "cursoGrau": "Bacharelado",
+      "unidadeOfertanteNome": "Faculdade de Engenharia",
+      "turnos": [
+        "INTEGRAL"
+      ],
+      "quadro": [
+        {
+          "modalidadeCodigo": "AC",
+          "quantidade": 20
+        },
+        {
+          "modalidadeCodigo": "LB_PPI",
+          "quantidade": 20
+        }
+      ],
+      "totalDeVagasDoEdital": 40
+    }
+  ],
+  "cascataRemanejamento": {
+    "regra": {
+      "codigo": "REMANEJ-CASCATA-LEI-12711",
+      "versao": "v1"
+    },
+    "fallbackCodigo": "AC",
+    "destinos": [
+      {
+        "modalidadeOrigemCodigo": "LB_PPI",
+        "ordem": 1,
+        "modalidadeDestinoCodigo": "AC"
+      }
+    ]
   },
   "cronograma": {
     "fases": [
@@ -86,7 +285,13 @@
           "prazoValor": 2,
           "prazoUnidade": "diasUteis",
           "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
-          "admiteInstanciaSuperior": false
+          "admiteInstanciaSuperior": false,
+          "procedimentosDeRecurso": [
+            {
+              "tipoDeDecisao": "HOMOLOGACAO_DAS_INSCRICOES",
+              "regra": { "codigo": "PROCEDIMENTO-RECURSO-CONFERENCIA", "versao": "v1" }
+            }
+          ]
         },
         "tiposDeDecisao": [
           "CLASSIFICACAO",
@@ -191,7 +396,19 @@
           "prazoValor": 2,
           "prazoUnidade": "diasUteis",
           "atoAncoraCodigo": "RESULTADO_PRELIMINAR",
-          "admiteInstanciaSuperior": false
+          "admiteInstanciaSuperior": false,
+          "procedimentosDeRecurso": [
+            {
+              "tipoDeDecisao": "CLASSIFICACAO",
+              "alvo": { "itemDeAvaliacaoChave": "argumentacao" },
+              "regra": { "codigo": "PROCEDIMENTO-RECURSO-RECORRECAO", "versao": "v1" }
+            },
+            {
+              "tipoDeDecisao": "CLASSIFICACAO",
+              "alvo": { "areaDoEnem": "REDACAO" },
+              "regra": { "codigo": "PROCEDIMENTO-RECURSO-RECALCULO", "versao": "v1" }
+            }
+          ]
         }
       ],
       "tiposDeDecisao": [

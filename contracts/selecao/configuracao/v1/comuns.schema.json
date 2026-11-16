@@ -140,8 +140,82 @@
             "dias",
             "diasUteis"
           ]
+        },
+        "procedimentosDeRecurso": {
+          "title": "Procedimentos de recurso",
+          "description": "O procedimento que revisa o recurso de cada matéria que a fase ou a etapa decide. Cada matéria tem um único procedimento, e um tipo de decisão não mistura procedimento para o tipo inteiro com procedimento por alvo.",
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/procedimentoDeRecurso"
+          }
         }
       }
+    },
+    "procedimentoDeRecurso": {
+      "title": "Procedimento de recurso",
+      "description": "Como se revisa o recurso de uma matéria: o tipo de decisão recorrida, o alvo opcional dentro dela e a regra do catálogo que diz como revisar. Sem alvo, o procedimento cobre o tipo de decisão inteiro. O tipo de decisão precisa estar entre os que a fase ou a etapa declara.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipoDeDecisao": {
+          "title": "Tipo de decisão",
+          "description": "Tipo da decisão recorrida, entre os que a fase ou a etapa declara.",
+          "$ref": "#/$defs/tipoDeDecisao"
+        },
+        "alvo": {
+          "title": "Alvo",
+          "description": "A parte da matéria que o procedimento cobre: um item de avaliação da etapa, pela chave, ou uma área do ENEM, pelo código. Ausente, o procedimento cobre o tipo de decisão inteiro.",
+          "$ref": "#/$defs/alvoDoProcedimentoDeRecurso"
+        },
+        "regra": {
+          "title": "Regra do procedimento",
+          "description": "Regra do catálogo que diz como o recurso é revisado: nova correção, conferência, correção de erro de registro ou recálculo.",
+          "$ref": "#/$defs/referenciaDeRegra",
+          "properties": {
+            "codigo": {
+              "title": "Código da regra do procedimento",
+              "description": "Código de um procedimento de recurso do catálogo: nova correção, conferência, correção de erro de registro ou recálculo.",
+              "enum": [
+                "PROCEDIMENTO-RECURSO-RECORRECAO",
+                "PROCEDIMENTO-RECURSO-CONFERENCIA",
+                "PROCEDIMENTO-RECURSO-CORRECAO-MATERIAL",
+                "PROCEDIMENTO-RECURSO-RECALCULO"
+              ]
+            }
+          }
+        }
+      },
+      "required": [
+        "tipoDeDecisao",
+        "regra"
+      ]
+    },
+    "alvoDoProcedimentoDeRecurso": {
+      "title": "Alvo do procedimento de recurso",
+      "description": "Um item de avaliação da etapa que produz a decisão, pela chave, ou uma área do ENEM, pelo código; um só dos dois. A área exige que o processo importe a nota do ENEM.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "itemDeAvaliacaoChave": {
+          "title": "Item de avaliação",
+          "description": "Chave do item de avaliação da etapa.",
+          "$ref": "#/$defs/chave"
+        },
+        "areaDoEnem": {
+          "title": "Área do ENEM",
+          "description": "Código da área do ENEM.",
+          "enum": [
+            "REDACAO",
+            "CIENCIAS_DA_NATUREZA",
+            "CIENCIAS_HUMANAS",
+            "LINGUAGENS",
+            "MATEMATICA"
+          ]
+        }
+      },
+      "minProperties": 1,
+      "maxProperties": 1
     },
     "referenciaDeRegra": {
       "title": "Referência a uma regra do catálogo",

@@ -4,7 +4,10 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
 /// <summary>
@@ -17,6 +20,9 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
     private const string Bonus = "bonus-regional.schema.json";
     private const string Comuns = "comuns.schema.json";
     private const string Etapas = "etapas.schema.json";
+    private const string Distribuicao = "distribuicao-de-vagas.schema.json";
+    private const string Formulario = "formulario.schema.json";
+    private const string Item = "item-do-formulario.schema.json";
     private const string Exigencia = "exigencias.schema.json#/$defs/exigencia/properties";
     private const string Predicado = "predicado.schema.json";
     private const string Pesos = "pesos-por-area.schema.json";
@@ -56,6 +62,27 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
         (nameof(LimitesDoEnvelope.BaseLegalPesoAreaEnem), LimitesDoEnvelope.BaseLegalPesoAreaEnem, Pesos, "/properties/baseLegal", true),
         (nameof(LimitesDoEnvelope.AreaPesoAreaEnemCodigo), LimitesDoEnvelope.AreaPesoAreaEnemCodigo, Pesos, "/$defs/areaDePeso/properties/codigo", true),
         (nameof(LimitesDoEnvelope.AreaPesoAreaEnemRotulo), LimitesDoEnvelope.AreaPesoAreaEnemRotulo, Pesos, "/$defs/areaDePeso/properties/rotulo", true),
+        (nameof(LimitesDoEnvelope.CodigoDoTermoNoCatalogo), LimitesDoEnvelope.CodigoDoTermoNoCatalogo, Formulario, "/$defs/termoExigido/properties/termoCodigo", true),
+        (nameof(LimitesDoEnvelope.CodigoTermoExigido), LimitesDoEnvelope.CodigoTermoExigido, Item, "/$defs/codigoLocal", true),
+        (nameof(LimitesDoEnvelope.CodigoEtapaFormulario), LimitesDoEnvelope.CodigoEtapaFormulario, Item, "/$defs/codigoLocal", true),
+        (nameof(LimitesDoEnvelope.TituloEtapaFormulario), LimitesDoEnvelope.TituloEtapaFormulario, Formulario, "/$defs/etapa/properties/titulo", true),
+        (nameof(LimitesDoEnvelope.TextoEtapaFormulario), LimitesDoEnvelope.TextoEtapaFormulario, Formulario, "/$defs/etapa/properties/descricao", true),
+        (nameof(LimitesDoEnvelope.CodigoModeloDeFormulario), LimitesDoEnvelope.CodigoModeloDeFormulario, Formulario, "/properties/modeloOrigemCodigo", true),
+        (nameof(LimitesDoEnvelope.AjudaDoCampo), LimitesDoEnvelope.AjudaDoCampo, Item, "/properties/ajuda", true),
+        (nameof(LimitesDoEnvelope.MensagemDoImpedimento), LimitesDoEnvelope.MensagemDoImpedimento, Item, "/$defs/impedimento/properties/mensagem", true),
+        (nameof(FormaDoItem.FatoCodigoMaxLength), FormaDoItem.FatoCodigoMaxLength, Item, "/properties/fatoCodigo", true),
+        (nameof(FormaDoItem.RotuloMaxLength), FormaDoItem.RotuloMaxLength, Item, "/properties/rotulo", true),
+        (nameof(FormaDoItem.RotuloMaxLength) + " (opção)", FormaDoItem.RotuloMaxLength, Item, "/$defs/opcao/properties/rotulo", true),
+        (nameof(FormaDoCabecalho.TituloMaxLength), FormaDoCabecalho.TituloMaxLength, Formulario, "/properties/titulo", true),
+        ($"{nameof(OfertaCursoSnapshot)}.{nameof(OfertaCursoSnapshot.CodigoMaxLength)}", OfertaCursoSnapshot.CodigoMaxLength, Distribuicao, "/properties/ofertaCursoCodigo", true),
+        (nameof(OfertaCursoSnapshot.CursoNomeMaxLength), OfertaCursoSnapshot.CursoNomeMaxLength, Distribuicao, "/properties/cursoNome", true),
+        (nameof(OfertaCursoSnapshot.CursoGrauMaxLength), OfertaCursoSnapshot.CursoGrauMaxLength, Distribuicao, "/properties/cursoGrau", true),
+        (nameof(OfertaCursoSnapshot.UnidadeOfertanteNomeMaxLength), OfertaCursoSnapshot.UnidadeOfertanteNomeMaxLength, Distribuicao, "/properties/unidadeOfertanteNome", true),
+        (nameof(OfertaCursoSnapshot.TurnoMaxLength), OfertaCursoSnapshot.TurnoMaxLength, Distribuicao, "/properties/turnos/items", true),
+        (nameof(LimitesDoEnvelope.CensoReferencia), LimitesDoEnvelope.CensoReferencia, Distribuicao, "/properties/referenciaDemograficaCodigo", true),
+        (nameof(LimitesDoEnvelope.ModalidadeCodigo), LimitesDoEnvelope.ModalidadeCodigo, Distribuicao, "/$defs/modalidade/properties/codigo", true),
+        (nameof(LimitesDoEnvelope.ModalidadeDescricao), LimitesDoEnvelope.ModalidadeDescricao, Distribuicao, "/$defs/modalidade/properties/descricao", true),
+        ($"{nameof(DestinoRemanejamento)}.{nameof(DestinoRemanejamento.CodigoMaxLength)}", DestinoRemanejamento.CodigoMaxLength, "cascata-de-remanejamento.schema.json", "/properties/fallbackCodigo", true),
         // O nome do cadastro vem de colunas de 200 caracteres; o codec guarda a cópia em coluna de 300, folga que o esquema não usa.
         ($"{nameof(LimitesDoEnvelope.NomeDeCadastro)} (condição)", LimitesDoEnvelope.NomeDeCadastro, Atendimento, "/$defs/condicao/properties/condicaoNome", false),
         ($"{nameof(LimitesDoEnvelope.NomeDeCadastro)} (recurso)", LimitesDoEnvelope.NomeDeCadastro, Atendimento, "/$defs/recurso/properties/recursoNome", false),

@@ -7,7 +7,9 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Serializacao;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
@@ -60,6 +62,12 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
         (Exigencias, "/$defs/formatosPermitidos/properties/lista/items/properties/formato", () => Codigos<FormatoPermitido>(static v => v.ToCodigo())),
         ("identificacao.schema.json", "/properties/origemCandidatos", Nomes<OrigemCandidatos>),
         ("taxa-de-inscricao.schema.json", "/properties/fundamentos/items", () => FundamentoIsencaoCodigo.Codigos),
+        ("formulario.schema.json", "/properties/finalidade", () => [EstruturaFormulario.FinalidadeInscricao, EstruturaFormulario.FinalidadeIsencaoTaxa, EstruturaFormulario.FinalidadeHabilitacao]),
+        ("formulario.schema.json", "/$defs/etapa/properties/tipo", () => [EstruturaFormulario.TipoSecao, EstruturaFormulario.TipoBloco]),
+        ("formulario.schema.json", "/$defs/etapa/properties/bloco", () => [EstruturaFormulario.BlocoComprovacaoDocumental, EstruturaFormulario.BlocoModalidadesCalculadas, EstruturaFormulario.BlocoRevisaoEAceite]),
+        (Comuns, "/$defs/alvoDoProcedimentoDeRecurso/properties/areaDoEnem", () => AreaDoEnem.Todas),
+        (Comuns, "/$defs/procedimentoDeRecurso/properties/regra/properties/codigo", () => RegraProcedimentoRecursoCodigo.Rol),
+        ("restricao-de-valor.schema.json", "/$defs/limiteDeData/properties/ancora", () => [RestricaoValorJson.AncoraDataFixa, RestricaoValorJson.AncoraEnvio]),
     ];
 
     public static TheoryData<string> ChavesDeParidade => [.. Paridades.Select(static p => $"{p.Arquivo}{p.Caminho}")];
@@ -79,6 +87,14 @@ public sealed class EnumeracoesDoEsquemaDaConfiguracaoTests
     [Fact(DisplayName = "A unidade do prazo de interposição é um subconjunto da unidade de prazo do domínio")]
     public void UnidadeDoPrazoDeInterposicao_EhSubconjuntoDoDominio() =>
         ValoresDoEsquema(Comuns, $"{Recurso}/prazoUnidade").Should().BeSubsetOf(Nomes<UnidadePrazo>());
+
+    // O formato do texto é derivado do catálogo do fato, não declarado: fica fora do tipo da restrição do esquema.
+    [Fact(DisplayName = "O tipo de restrição do esquema são os tipos declaráveis do domínio")]
+    public void TipoDeRestricao_SaoOsTiposDeclaraveis() =>
+        ValoresDoEsquema("restricao-de-valor.schema.json", "/properties/tipo").Should().BeEquivalentTo(
+            Enum.GetValues<TipoRestricaoValor>()
+                .Where(static t => t is not (TipoRestricaoValor.Nenhuma or TipoRestricaoValor.FormatoTexto))
+                .Select(RestricaoValorJson.ParaToken));
 
     private static IEnumerable<string> Codigos<T>(Func<T, string> codigo)
         where T : struct, Enum =>
