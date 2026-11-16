@@ -214,42 +214,44 @@ internal static class ConferenciaDoConteudoDoModelo
 
     /// <summary>
     /// Pressuposto é fato coletado pela inscrição (UNI-REQ-0144): o modelo de inscrição não tem, e o
-    /// fato não é pressuposto e item do mesmo modelo.
+    /// fato não é pressuposto e item do mesmo modelo, inclusive item de grupo.
     /// </summary>
     private static IEnumerable<FieldError> ConferirPressupostos(FinalidadeFormulario finalidade, ConteudoDoModelo conteudo)
     {
         if (finalidade == FinalidadeFormulario.Inscricao && conteudo.Pressupostos.Count > 0)
         {
-            yield return new("pressupostos", new DomainError(
+            return [new("pressupostos", new DomainError(
                 ModeloFormularioErrorCodes.PressupostoNaInscricao,
-                "O modelo de inscrição não tem pressupostos: nenhum formulário é respondido antes dele."));
-            yield break;
+                "O modelo de inscrição não tem pressupostos: nenhum formulário é respondido antes dele."))];
         }
 
+        HashSet<string> coletados = new(Campos(conteudo).Select(static i => i.FatoCodigo), StringComparer.Ordinal);
+        return RecusasDosPressupostos(conteudo.Pressupostos, coletados);
+    }
+
+    private static IEnumerable<FieldError> RecusasDosPressupostos(IReadOnlyList<string> pressupostos, HashSet<string> coletados)
+    {
         HashSet<string> vistos = new(StringComparer.Ordinal);
-        HashSet<string> itens = new(conteudo.Itens.Select(static i => i.FatoCodigo), StringComparer.Ordinal);
-        for (int i = 0; i < conteudo.Pressupostos.Count; i++)
+        for (int i = 0; i < pressupostos.Count; i++)
         {
-            string fato = conteudo.Pressupostos[i];
-            if (fato.Length == 0)
+            foreach (DomainError erro in RecusasDoPressuposto(pressupostos[i], vistos, coletados))
             {
-                yield return new($"pressupostos[{i}]", new DomainError(
-                    ModeloFormularioErrorCodes.PressupostoEmBranco, "O pressuposto nomeia um fato."));
-                continue;
-            }
-
-            if (!vistos.Add(fato))
-            {
-                yield return new($"pressupostos[{i}]", new DomainError(
-                    ModeloFormularioErrorCodes.PressupostoRepetido, $"O fato '{fato}' aparece mais de uma vez entre os pressupostos."));
-            }
-
-            if (itens.Contains(fato))
-            {
-                yield return new($"pressupostos[{i}]", new DomainError(
-                    ModeloFormularioErrorCodes.PressupostoTambemItem,
-                    $"O fato '{fato}' é item do modelo e não pode ser também pressuposto: ou o formulário o coleta, ou o recebe da inscrição."));
+                yield return new($"pressupostos[{i}]", erro);
             }
         }
     }
+
+    private static IEnumerable<DomainError> RecusasDoPressuposto(string fato, HashSet<string> vistos, HashSet<string> coletados) =>
+        fato.Length == 0
+            ? [new(ModeloFormularioErrorCodes.PressupostoEmBranco, "O pressuposto nomeia um fato.")]
+            :
+            [
+                .. RecusaSe(!vistos.Add(fato), ModeloFormularioErrorCodes.PressupostoRepetido,
+                    $"O fato '{fato}' aparece mais de uma vez entre os pressupostos."),
+                .. RecusaSe(coletados.Contains(fato), ModeloFormularioErrorCodes.PressupostoTambemItem,
+                    $"O fato '{fato}' é item do modelo e não pode ser também pressuposto: ou o formulário o coleta, ou o recebe da inscrição."),
+            ];
+
+    private static IEnumerable<DomainError> RecusaSe(bool recusa, string codigo, string mensagem) =>
+        recusa ? [new(codigo, mensagem)] : [];
 }
