@@ -84,10 +84,9 @@ internal static class ValidacaoDaObrigatoriedadeLegal
             yield break;
         }
 
-        Result forma = ObrigatoriedadeLegal.ValidarFormaDoPredicado(predicado);
-        if (forma.IsFailure)
+        foreach (FieldError violacao in ObrigatoriedadeLegal.ValidarFormaDoPredicado(predicado).Errors)
         {
-            yield return new FieldError("predicado", forma.Error!);
+            yield return violacao;
         }
     }
 

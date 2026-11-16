@@ -150,4 +150,12 @@ public sealed class ObrigatoriedadeLegalValidacaoTests
         regra.RegraCodigo.Should().Be("OUTRA");
         regra.Hash.Should().NotBe(hashAntes);
     }
+
+    [Fact(DisplayName = "A forma do predicado devolve a violação já com o campo")]
+    public void ValidarFormaDoPredicado_Falha_TrazOCampo()
+    {
+        Result forma = ObrigatoriedadeLegal.ValidarFormaDoPredicado(new EtapaObrigatoria(" "));
+
+        forma.Errors.Should().ContainSingle().Which.Field.Should().Be("predicado");
+    }
 }
