@@ -74,7 +74,7 @@ internal sealed class PedidoDeConcessaoBuilder
     /// <summary>O pedido criado e com o termo fixado, quando exigido; no pedido para si sem documento, já com o aceite.</summary>
     public PedidoDeConcessao Criado()
     {
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
+        PedidoDeConcessao pedido = CriacaoDoPedido.Criar(
             new PartesDoPedido(_solicitante, _paraSiMesmo ? null : _beneficiario.Email),
             _perfil, EscopoDe(_perfil), new DeclaracaoDoPedido(Justificativa, null, _anexara), Dominios, Catalogo, Agora).Value!;
         bool exigido = _protegido || ExigenciaDoTermo.Do(_perfil, Catalogo);

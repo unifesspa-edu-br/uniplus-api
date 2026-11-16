@@ -43,7 +43,7 @@ public sealed class PedidoDeConcessaoVersaoTests
         Perfil governanca = PerfisDeTeste.DeGovernanca(
             "Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], Catalogo);
 
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(new PartesDoPedido(Betina, null), governanca, EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
+        PedidoDeConcessao pedido = CriacaoDoPedido.Criar(new PartesDoPedido(Betina, null), governanca, EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
 
         pedido.VersaoId.Should().BeNull();
         pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
@@ -99,7 +99,7 @@ public sealed class PedidoDeConcessaoVersaoTests
     {
         Perfil governanca = PerfisDeTeste.DeGovernanca(
             "Gestão de acessos", "Opera as concessões de acesso.", ["autorizacao:concessoes:administrar"], Catalogo);
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(new PartesDoPedido(Betina, null), governanca, EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
+        PedidoDeConcessao pedido = CriacaoDoPedido.Criar(new PartesDoPedido(Betina, null), governanca, EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
         TrocaDeVigencia troca = NovaTroca(comAcrescimo: false);
 
         pedido.AoEntrarEmVigor(troca, Troca).Should().Be(DesfechoDaTrocaDeVersao.VersaoAtualizada);

@@ -24,7 +24,7 @@ public sealed class PrazoDoRepresentanteTests
     [Fact(DisplayName = "Sugerir fim de vigência no pedido de Representante é recusado no campo da sugestão")]
     public void Criar_SugestaoParaRepresentante_Recusa()
     {
-        Result<PedidoDeConcessao> resultado = PedidoDeConcessao.Criar(
+        Result<PedidoDeConcessao> resultado = CriacaoDoPedido.Criar(
             new PartesDoPedido(Betina, Leandro.Email), Representante(), EscopoDaConcessao.DaInstituicao(),
             new DeclaracaoDoPedido(Justificativa, Agora.AddMonths(6), true), Dominios, Catalogo, Agora);
 

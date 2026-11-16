@@ -2,7 +2,6 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
-using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
@@ -71,6 +70,22 @@ public sealed class PedidoDeConcessao : EntityBase
     {
     }
 
+    // Só a criação o usa, depois de conferir tudo. O termo ainda não está fixado: o pedido para si mesmo sem documento vai ao
+    // gestor, e a fixação do termo registra o envio como o aceite.
+    internal PedidoDeConcessao(
+        PessoaNoToken solicitante, BeneficiarioIndicado beneficiario, Perfil perfil, EscopoDaConcessao escopo, DeclaracaoDoPedido declaracao, DateTimeOffset instante)
+    {
+        Solicitante = SolicitanteDoPedido.De(solicitante);
+        BeneficiarioEmail = beneficiario.Email!;
+        Beneficiario = beneficiario.Inicial(Solicitante);
+        PerfilId = perfil.Id;
+        VersaoId = perfil.VersaoVigente?.Id;
+        UnidadeId = escopo.UnidadeId;
+        Declaracao = declaracao;
+        CriadoEm = instante;
+        Andamento = AndamentoDoPedido.Inicial(declaracao.AnexaraDocumento ? SituacaoDoPedido.AguardandoDocumento : SituacaoSeguinte());
+    }
+
     /// <summary>Cancela o pedido, só antes da primeira decisão.</summary>
     public Result Cancelar(DateTimeOffset instante)
     {
@@ -99,79 +114,6 @@ public sealed class PedidoDeConcessao : EntityBase
         && _decisoes.Count == 0;
 
     private static DomainError SituacaoInvalida(string mensagem) => new(PedidoErrorCodes.SituacaoInvalida, mensagem);
-
-    /// <summary>
-    /// Cria o pedido. Acumula toda violação independente num só conjunto de erros (ADR-0125). Que o pedido ativo igual não
-    /// exista é do índice único, traduzido por quem grava; que a unidade exista é do handler; o termo de responsabilidade se
-    /// fixa em seguida, por <see cref="FixarTermo"/>.
-    /// </summary>
-    /// <param name="partes">Quem pede e a quem o pedido se destina.</param>
-    /// <param name="declaracao">Justificativa, validade sugerida e intenção de anexar documento; os perfis de gestor de acessos e de Representante do controlador não admitem prazo.</param>
-    public static Result<PedidoDeConcessao> Criar(
-        PartesDoPedido partes,
-        Perfil perfil,
-        EscopoDaConcessao escopo,
-        DeclaracaoDoPedido declaracao,
-        IDominiosInstitucionais dominios,
-        ICatalogoDePermissoesConsultavel catalogo,
-        DateTimeOffset instante)
-    {
-        ArgumentNullException.ThrowIfNull(partes);
-        ArgumentNullException.ThrowIfNull(perfil);
-        ArgumentNullException.ThrowIfNull(escopo);
-        ArgumentNullException.ThrowIfNull(declaracao);
-        ArgumentNullException.ThrowIfNull(dominios);
-        ArgumentNullException.ThrowIfNull(catalogo);
-
-        DomainError? recusa = partes.RecusaDoSolicitante(dominios);
-        (List<FieldError> erros, string? justificativa) = ValidacaoDaCriacaoDoPedido.ValidarCampos(perfil, escopo, catalogo, declaracao, instante);
-        BeneficiarioIndicado beneficiario = partes.ResolverBeneficiario(dominios, erros);
-
-        return recusa is not null ? Result<PedidoDeConcessao>.Failure(recusa)
-            : erros.Count > 0 ? Result<PedidoDeConcessao>.ValidationFailure(erros)
-            : Result<PedidoDeConcessao>.Success(Novo(partes.Solicitante, perfil, escopo, declaracao.Consolidada(justificativa!, perfil), instante, beneficiario));
-    }
-
-    private static PedidoDeConcessao Novo(
-        PessoaNoToken solicitante,
-        Perfil perfil,
-        EscopoDaConcessao escopo,
-        DeclaracaoDoPedido declaracao,
-        DateTimeOffset instante,
-        BeneficiarioIndicado beneficiario)
-    {
-        PedidoDeConcessao pedido = new()
-        {
-            PerfilId = perfil.Id,
-            VersaoId = perfil.VersaoVigente?.Id,
-            UnidadeId = escopo.UnidadeId,
-            Declaracao = declaracao,
-            Andamento = AndamentoDoPedido.Inicial(SituacaoInicial(declaracao.AnexaraDocumento, beneficiario.ParaSiMesmo)),
-            CriadoEm = instante,
-        };
-        pedido.DefinirPartes(solicitante, beneficiario);
-
-        return pedido;
-    }
-
-    private void DefinirPartes(PessoaNoToken solicitante, BeneficiarioIndicado beneficiario)
-    {
-        BeneficiarioEmail = beneficiario.Email!;
-        Solicitante = SolicitanteDoPedido.De(solicitante);
-        Beneficiario = beneficiario.Inicial(Solicitante);
-    }
-
-    // O documento declarado vem antes de tudo; sem ele, o pedido para si mesmo vai ao gestor e o para outra pessoa espera o
-    // aceite dela.
-    private static SituacaoDoPedido SituacaoInicial(bool anexaraDocumento, bool paraSiMesmo)
-    {
-        if (anexaraDocumento)
-        {
-            return SituacaoDoPedido.AguardandoDocumento;
-        }
-
-        return paraSiMesmo ? SituacaoDoPedido.AguardandoGestor : SituacaoDoPedido.AguardandoBeneficiario;
-    }
 
     /// <summary>
     /// O beneficiário aceita o pedido que o nomeou e, no pedido protegido, o termo fixado nele. O beneficiário já conhecido
@@ -231,14 +173,19 @@ public sealed class PedidoDeConcessao : EntityBase
             return recusa;
         }
 
-        Termo = termo.Fixado;
+        Fixar(termo.Fixado, instante);
+
+        return Result.Success();
+    }
+
+    private void Fixar(TermoFixado? fixado, DateTimeOffset instante)
+    {
+        Termo = fixado;
 
         if (EnvioEOAceite)
         {
             RegistrarAceiteDoTermo(instante);
         }
-
-        return Result.Success();
     }
 
     private bool EnvioEOAceite => Beneficiario.Identidade is not null && !Declaracao.AnexaraDocumento;
@@ -251,10 +198,11 @@ public sealed class PedidoDeConcessao : EntityBase
         }
     }
 
-    // Depois do documento verificado, o pedido aguarda o aceite quando o beneficiário é outra pessoa ou o termo o exige; só
-    // então vai ao gestor.
-    private SituacaoDoPedido EtapaSeguinteAoDocumento() =>
-        Beneficiario.Identidade is null || Termo is not null ? SituacaoDoPedido.AguardandoBeneficiario : SituacaoDoPedido.AguardandoGestor;
+    // O pedido aguarda o aceite enquanto o beneficiário é desconhecido ou não aceitou o termo fixado; só então vai ao gestor.
+    private SituacaoDoPedido SituacaoSeguinte() =>
+        Beneficiario.Identidade is null || (Termo is not null && AceiteDoTermo is null)
+            ? SituacaoDoPedido.AguardandoBeneficiario
+            : SituacaoDoPedido.AguardandoGestor;
 
     /// <summary>
     /// Cria o anexo e devolve-o para o handler emitir a URL de envio. Só antes da primeira decisão e, no pedido protegido,
@@ -291,7 +239,7 @@ public sealed class PedidoDeConcessao : EntityBase
             return false;
         }
 
-        Andamento = Andamento.Em(EtapaSeguinteAoDocumento());
+        Andamento = Andamento.Em(SituacaoSeguinte());
         return true;
     }
 

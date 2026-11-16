@@ -67,7 +67,7 @@ public sealed class LeituraPorTitularidadeForaDoCatalogoTests
     }
 
     private static Result<PedidoDeConcessao> PedidoDoPerfil(Perfil perfil) =>
-        PedidoDeConcessao.Criar(
+        CriacaoDoPedido.Criar(
             new PartesDoPedido(new PessoaNoToken(new Identidade(Emissor, "betina.neves"), "Betina das Neves", "betina-dasneves81@uniplus-test.local", true), null),
             perfil,
             EscopoDaConcessao.DaInstituicao(),

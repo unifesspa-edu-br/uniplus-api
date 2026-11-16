@@ -203,7 +203,7 @@ public sealed class AvisosDoPedidoTests
     [Fact(DisplayName = "O e-mail do solicitante é o verificado do token, em minúsculas")]
     public void Criar_GravaOEmailVerificadoDoSolicitante()
     {
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(new PartesDoPedido(Betina with { Email = "Betina-DasNeves81@uniplus-test.local" }, Leandro.Email), PerfilComum(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), new Dominios(), new Catalogo(), DateTimeOffset.UtcNow).Value!;
+        PedidoDeConcessao pedido = CriacaoDoPedido.Criar(new PartesDoPedido(Betina with { Email = "Betina-DasNeves81@uniplus-test.local" }, Leandro.Email), PerfilComum(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), new Dominios(), new Catalogo(), DateTimeOffset.UtcNow).Value!;
 
         pedido.Solicitante.Email.Should().Be(Betina.Email);
     }
@@ -222,7 +222,7 @@ public sealed class AvisosDoPedidoTests
     private static PedidoDeConcessao Pedido(bool paraSiMesmo, Guid? unidade = null, Perfil? perfil = null)
     {
         Perfil alvo = perfil ?? PerfilComum(deUnidade: unidade is not null);
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
+        PedidoDeConcessao pedido = CriacaoDoPedido.Criar(
             new PartesDoPedido(Betina, paraSiMesmo ? null : Leandro.Email),
             alvo,
             unidade is { } id ? EscopoDaConcessao.DaUnidade(id) : EscopoDaConcessao.DaInstituicao(),

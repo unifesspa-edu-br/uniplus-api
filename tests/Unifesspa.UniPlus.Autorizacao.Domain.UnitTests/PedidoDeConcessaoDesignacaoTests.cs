@@ -19,7 +19,7 @@ public sealed class PedidoDeConcessaoDesignacaoTests
     [Fact(DisplayName = "Pedido de perfil com designação nasce aguardando o documento, fora das etapas de decisão e do aceite")]
     public void Criar_PerfilComDesignacao_NasceAguardandoODocumento()
     {
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(new PartesDoPedido(Betina, Leandro.Email), PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
+        PedidoDeConcessao pedido = CriacaoDoPedido.Criar(new PartesDoPedido(Betina, Leandro.Email), PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
 
         pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
         pedido.Andamento.Ativo.Should().BeTrue("o pedido repetido continua barrado enquanto espera o documento");
@@ -32,7 +32,7 @@ public sealed class PedidoDeConcessaoDesignacaoTests
     [Fact(DisplayName = "Pedido de perfil com designação pode ser cancelado enquanto espera o documento")]
     public void Cancelar_AguardandoDocumento_Encerra()
     {
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(new PartesDoPedido(Betina, Leandro.Email), PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
+        PedidoDeConcessao pedido = CriacaoDoPedido.Criar(new PartesDoPedido(Betina, Leandro.Email), PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
 
         pedido.Cancelar(Agora).IsSuccess.Should().BeTrue();
 
@@ -68,12 +68,12 @@ public sealed class PedidoDeConcessaoDesignacaoTests
     }
 
     private static PedidoDeConcessao PedidoComDesignacao(PessoaNoToken solicitante) =>
-        PedidoDeConcessao.Criar(new PartesDoPedido(solicitante, Leandro.Email), PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
+        CriacaoDoPedido.Criar(new PartesDoPedido(solicitante, Leandro.Email), PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
 
     [Fact(DisplayName = "O documento recusado pelo verificador não libera o pedido")]
     public void LiberarAoVerificarDocumento_AnexoRecusado_NaoLibera()
     {
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(new PartesDoPedido(Betina, Leandro.Email), PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
+        PedidoDeConcessao pedido = CriacaoDoPedido.Criar(new PartesDoPedido(Betina, Leandro.Email), PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
         AnexoDoPedido anexo = pedido.NovoAnexo(1024).Value!;
         pedido.ConfirmarAnexo(anexo.Id, "\"etag\"", Agora);
         anexo.RegistrarRecusado(Agora).Should().BeTrue();

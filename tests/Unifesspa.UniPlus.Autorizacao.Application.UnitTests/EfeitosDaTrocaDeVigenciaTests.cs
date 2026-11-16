@@ -162,7 +162,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
 
     private static PedidoDeConcessao Pedido(Perfil perfil, bool paraSiMesmo)
     {
-        PedidoDeConcessao pedido = PedidoDeConcessao.Criar(
+        PedidoDeConcessao pedido = CriacaoDoPedido.Criar(
             new PartesDoPedido(Betina, paraSiMesmo ? null : Leandro.Email), perfil, EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), new DominiosQualquer(), Catalogo, DateTimeOffset.UtcNow).Value!;
         pedido.FixarTermo(new TermoNaCriacao(Vigente, Vigente.Id, true), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         if (!paraSiMesmo)

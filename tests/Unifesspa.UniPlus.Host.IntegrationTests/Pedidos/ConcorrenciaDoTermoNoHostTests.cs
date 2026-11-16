@@ -135,7 +135,7 @@ public sealed class ConcorrenciaDoTermoNoHostTests : TermoNoHostTestBase
     }
 
     private static PedidoDeConcessao ParaSiMesmo(IServiceProvider servicos, Perfil perfil, EscopoDaConcessao escopo) =>
-        PedidoDeConcessao.Criar(
+        CriacaoDoPedido.Criar(
             new PartesDoPedido(PessoaDe(Betina), null),
             perfil,
             escopo,
