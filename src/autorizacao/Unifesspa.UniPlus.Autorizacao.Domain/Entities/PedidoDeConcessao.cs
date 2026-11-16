@@ -231,25 +231,17 @@ public sealed class PedidoDeConcessao : EntityBase
             return recusa;
         }
 
-        if (termo.Fixado is { } fixado)
+        Termo = termo.Fixado;
+
+        if (EnvioEOAceite)
         {
-            Fixar(fixado, instante);
+            RegistrarAceiteDoTermo(instante);
         }
 
         return Result.Success();
     }
 
     private bool EnvioEOAceite => Beneficiario.Identidade is not null && !Declaracao.AnexaraDocumento;
-
-    private void Fixar(TermoFixado fixado, DateTimeOffset instante)
-    {
-        Termo = fixado;
-
-        if (EnvioEOAceite)
-        {
-            AceiteDoTermo = AceiteDoTermo.Registrar(Id, fixado, Beneficiario.Identidade!, instante);
-        }
-    }
 
     private void RegistrarAceiteDoTermo(DateTimeOffset instante)
     {
@@ -311,10 +303,6 @@ public sealed class PedidoDeConcessao : EntityBase
     /// passa pela segunda etapa, decidida por outro Representante.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// O fim da vigência é definido pelo gestor, na etapa dele; o Representante não o informa e a concessão herda o que o
-    /// gestor gravou. No perfil que não admite prazo, o prazo gravado antes da regra recusa a segunda etapa.
-    /// </para>
     /// <para>
     /// O perfil que mudou entre as etapas, ou o prazo que venceu antes da segunda etapa, devolve o pedido ao gestor e
     /// responde <see cref="PedidoErrorCodes.PerfilAlterado"/> ou <see cref="PedidoErrorCodes.PrazoVencido"/>: o pedido
