@@ -50,7 +50,7 @@ public sealed class GrupoAreaEnemSnapshotTests
     [Fact(DisplayName = "Caractere nulo é recusado na fronteira do domínio")]
     public void Criar_CaractereNulo_Recusa()
     {
-        GrupoAreaEnemSnapshot.Criar("TECNO\0LOGICA", "Tecnológica").Error!.Code.Should().Be("GrupoAreaEnemSnapshot.CaractereNulo");
+        GrupoAreaEnemSnapshot.Criar("TECNO\0LOGICA", "Tecnológica").Error!.Code.Should().Be("GrupoAreaEnemSnapshot.CaractereInvalido");
     }
 
     [Theory(DisplayName = "Código ou rótulo acima do tamanho da coluna é recusado")]

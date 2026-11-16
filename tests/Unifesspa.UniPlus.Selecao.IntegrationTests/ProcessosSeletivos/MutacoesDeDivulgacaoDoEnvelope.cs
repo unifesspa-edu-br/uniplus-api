@@ -81,7 +81,7 @@ public static class MutacoesDeDivulgacaoDoEnvelope
             ErrosCodecEnvelope.EnvelopeMalformado, "divulgacao.justificativa"),
         Caso("justificativa contém o caractere nulo (U+0000) — sobrevive a trim, NFC e ao limite de comprimento",
             envelope => Bloco(envelope)["justificativa"] = $"Divulgação com {(char)0} no meio.",
-            "ConfiguracaoDivulgacao.JustificativaComCaractereNulo", "caractere nulo"),
+            "ConfiguracaoDivulgacao.JustificativaCaractereInvalido", "caractere nulo"),
     ];
 
     private static object[] Caso(string descricao, Action<JsonObject> mutar, string codigoEsperado, string trechoEsperado) =>

@@ -84,7 +84,7 @@ public sealed class ConfiguracaoDivulgacaoTests
         resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaMuitoLonga");
     }
 
-    [Fact(DisplayName = "Criar com justificativa contendo o caractere nulo falha — JustificativaComCaractereNulo")]
+    [Fact(DisplayName = "Criar com justificativa contendo o caractere nulo falha — JustificativaCaractereInvalido")]
     public void Criar_JustificativaComCaractereNulo_Falha()
     {
         // U+0000 sobrevive a IsNullOrWhiteSpace, Trim e NormalizeNfc — nenhum dos três o
@@ -96,7 +96,27 @@ public sealed class ConfiguracaoDivulgacaoTests
             ["numero_inscricao", "nome"], justificativaComCaractereNulo);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaComCaractereNulo");
+        resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaCaractereInvalido");
+    }
+
+    [Fact(DisplayName = "Criar com justificativa de várias linhas e tabulação é aceita")]
+    public void Criar_JustificativaComQuebraDeLinhaETabulacao_Sucesso()
+    {
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(
+            ["numero_inscricao", "nome"], "Primeira linha.\r\n\tSegunda linha.\nTerceira.");
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
+    [Theory(DisplayName = "Criar com justificativa contendo controle ou formatação falha — JustificativaCaractereInvalido")]
+    [InlineData("Justificativa com \u0007 sinal.")]
+    [InlineData("Justificativa com \u202E inversão.")]
+    public void Criar_JustificativaComControleOuFormatacao_Falha(string justificativa)
+    {
+        Result<ConfiguracaoDivulgacao> resultado = ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], justificativa);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ConfiguracaoDivulgacao.JustificativaCaractereInvalido");
     }
 
     [Fact(DisplayName = "Violar vocabulário e piso ao mesmo tempo acumula os dois erros no mesmo lote")]
@@ -130,7 +150,7 @@ public sealed class ConfiguracaoDivulgacaoTests
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
-        resultado.Errors.Should().Contain(e => e.Field == "justificativa" && e.Error.Code == "ConfiguracaoDivulgacao.JustificativaComCaractereNulo");
+        resultado.Errors.Should().Contain(e => e.Field == "justificativa" && e.Error.Code == "ConfiguracaoDivulgacao.JustificativaCaractereInvalido");
         resultado.Errors.Should().Contain(e => e.Field == "justificativa" && e.Error.Code == "ConfiguracaoDivulgacao.JustificativaMuitoLonga");
     }
 

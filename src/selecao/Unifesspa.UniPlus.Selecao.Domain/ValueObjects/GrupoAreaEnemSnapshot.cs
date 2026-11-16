@@ -52,14 +52,14 @@ public sealed record GrupoAreaEnemSnapshot
         string? codigoNormalizado = TextoCongelado.Normalizar(codigo);
         string? rotuloNormalizado = TextoCongelado.Normalizar(rotulo);
 
-        // Defesa de decode: um envelope adulterado não pode injetar U+0000 e só falhar
+        // Defesa de decode: um envelope adulterado não pode injetar nulo, controle ou formatação e só falhar
         // depois, na constraint do Postgres.
         if (codigoNormalizado is null || rotuloNormalizado is null
-            || TextoCongelado.ContemCaractereNulo(codigoNormalizado) || TextoCongelado.ContemCaractereNulo(rotuloNormalizado))
+            || TextoCongelado.TemCaractereInvalido(codigoNormalizado) || TextoCongelado.TemCaractereInvalido(rotuloNormalizado))
         {
             return Falha(
-                "GrupoAreaEnemSnapshot.CaractereNulo",
-                "Grupo de área do ENEM não pode conter o caractere nulo (U+0000) nem caractere que não seja texto.");
+                "GrupoAreaEnemSnapshot.CaractereInvalido",
+                "Grupo de área do ENEM não pode conter o caractere nulo, de controle ou de formatação, nem caractere que não seja texto.");
         }
 
         if (codigoNormalizado.Length > CodigoMaxLength || rotuloNormalizado.Length > RotuloMaxLength)

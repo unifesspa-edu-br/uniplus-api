@@ -87,7 +87,7 @@ public sealed class TipoEtapaSnapshotTests
         Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, codigoComNulo, "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.CaractereNulo");
+        resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.CaractereInvalido");
     }
 
     [Fact(DisplayName = "Criar com caractere nulo no nome falha")]
@@ -98,7 +98,18 @@ public sealed class TipoEtapaSnapshotTests
         Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, "PROVA_OBJETIVA", nomeComNulo, admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.CaractereNulo");
+        resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.CaractereInvalido");
+    }
+
+    [Theory(DisplayName = "Criar com tabulação ou formatação no nome falha")]
+    [InlineData("Prova\tObjetiva")]
+    [InlineData("Prova\u202EObjetiva")]
+    public void Criar_NomeComControleOuFormatacao_Falha(string nome)
+    {
+        Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(OrigemId, "PROVA_OBJETIVA", nome, admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("TipoEtapaSnapshot.CaractereInvalido");
     }
 
     [Fact(DisplayName = "Criar com código acima de 64 caracteres falha")]

@@ -96,14 +96,14 @@ public sealed record TipoEtapaSnapshot
         string? codigoNormalizado = TextoCongelado.Normalizar(codigo);
         string? nomeNormalizado = TextoCongelado.Normalizar(nome);
 
-        // Defesa de decode: um envelope adulterado não pode injetar U+0000 e só falhar
+        // Defesa de decode: um envelope adulterado não pode injetar nulo, controle ou formatação e só falhar
         // depois, na constraint do Postgres — o VO recusa aqui, na fronteira do domínio.
         if (codigoNormalizado is null || nomeNormalizado is null
-            || TextoCongelado.ContemCaractereNulo(codigoNormalizado) || TextoCongelado.ContemCaractereNulo(nomeNormalizado))
+            || TextoCongelado.TemCaractereInvalido(codigoNormalizado) || TextoCongelado.TemCaractereInvalido(nomeNormalizado))
         {
             return Falha(
-                "TipoEtapaSnapshot.CaractereNulo",
-                "Snapshot do tipo de etapa não pode conter o caractere nulo (U+0000) nem caractere que não seja texto.");
+                "TipoEtapaSnapshot.CaractereInvalido",
+                "Snapshot do tipo de etapa não pode conter o caractere nulo, de controle ou de formatação, nem caractere que não seja texto.");
         }
 
         if (codigoNormalizado.Length > 64 || nomeNormalizado.Length > 200)
