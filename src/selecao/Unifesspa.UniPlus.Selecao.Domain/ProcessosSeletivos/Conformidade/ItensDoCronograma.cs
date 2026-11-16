@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>Os itens do painel sobre o cronograma de fases e etapas, na ordem dos gates.</summary>
@@ -36,6 +37,7 @@ internal static class ItensDoCronograma
         new ItemConformidade("cronograma_ancora_do_recurso", DimensaoConformidade.Cronograma, "Cronograma: a regra de recurso ancora num produto preliminar da própria fase", CicloRecursalDoCronograma.PendenciaDaAncoraDoRecurso(estado) is null),
         new ItemConformidade("cronograma_ancora_do_recurso_da_etapa", DimensaoConformidade.Cronograma, "Cronograma: cada janela de recurso da etapa ancora num produto preliminar da própria etapa", CicloRecursalDoCronograma.PendenciaDaAncoraDoRecursoDasEtapas(estado) is null),
         new ItemConformidade("cronograma_recorte_de_competencia_das_bancas", DimensaoConformidade.Cronograma, "Cronograma: bancas do mesmo tipo na mesma fase declaram recortes de competência distintos", CicloRecursalDoCronograma.PendenciaDoRecorteDeCompetencia(estado) is null),
+        new ItemConformidade("cronograma_procedimento_de_recurso", DimensaoConformidade.Cronograma, "Cronograma: cada janela de recurso declara o procedimento de revisão de toda decisão que o lugar produz", PendenciasDosProcedimentosDeRecurso.PendenciaDosProcedimentosDeRecurso(estado) is null),
         .. ItensDasBancas.Avaliar(estado, corretores),
         new ItemConformidade("cronograma_etapa_fora_da_janela_da_fase", DimensaoConformidade.Cronograma, "Cronograma: a etapa acontece dentro da janela da fase que a abriga", JanelaDaEtapaNaFase.PendenciaDaJanelaDaEtapaNaFase(estado) is null),
     ];

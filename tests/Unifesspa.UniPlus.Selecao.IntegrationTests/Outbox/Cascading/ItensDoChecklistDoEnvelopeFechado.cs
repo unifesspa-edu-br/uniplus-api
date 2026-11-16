@@ -101,6 +101,7 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "cronograma_ancora_do_recurso",
         "cronograma_ancora_do_recurso_da_etapa",
         "cronograma_recorte_de_competencia_das_bancas",
+        "cronograma_procedimento_de_recurso",
         "cronograma_etapa_fora_da_janela_da_fase",
         "cronograma_resultado_declarado_com_papel",
         "cronograma_tipo_que_congela_nao_eh_resultado",
