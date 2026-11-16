@@ -125,6 +125,16 @@ public sealed class ReferenciaCidadeGeoTests
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.NomeTamanho);
     }
 
+    [Fact(DisplayName = "Nome decomposto que só cabe depois da composição é rejeitado: a coluna recebe o texto como veio")]
+    public void Validar_NomeDecompostoMaiorQueOLimite_Rejeita()
+    {
+        string decomposto = string.Concat(Enumerable.Repeat("e\u0301", ReferenciaCidadeGeo.NomeMaxLength));
+
+        Result resultado = ReferenciaCidadeGeo.Validar("1504208", decomposto, "PA");
+
+        resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.NomeTamanho);
+    }
+
     [Fact(DisplayName = "Nome com caractere nulo é rejeitado antes da persistência")]
     public void Validar_NomeComCaractereNulo_Rejeita()
     {
@@ -133,7 +143,18 @@ public sealed class ReferenciaCidadeGeoTests
         Result resultado = ReferenciaCidadeGeo.Validar("1504208", nomeComNulo, "PA");
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.NomeCaractereNulo);
+        resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.NomeCaractereInvalido);
+    }
+
+    [Theory(DisplayName = "Nome com tabulação, quebra de linha ou formatação é rejeitado como caractere inválido")]
+    [InlineData("Mara\tbá")]
+    [InlineData("Mara\nbá")]
+    [InlineData("Mara\u202Ebá")]
+    public void Validar_NomeComInvisivel_Rejeita(string nome)
+    {
+        Result resultado = ReferenciaCidadeGeo.Validar("1504208", nome, "PA");
+
+        resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.NomeCaractereInvalido);
     }
 
     [Fact(DisplayName = "Nome exatamente no tamanho máximo é aceito (limite inclusivo)")]
