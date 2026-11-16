@@ -22586,7 +22586,10 @@
             ]
           },
           "contaComoAprovacao": {
-            "type": "boolean"
+            "type": [
+              "null",
+              "boolean"
+            ]
           }
         }
       },

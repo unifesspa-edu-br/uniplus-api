@@ -77,7 +77,7 @@ public sealed class CriarTipoConceitoCommandHandlerTests
 
         Result<Guid> resultado = await Criar(comando);
 
-        resultado.Errors.Select(e => e.Field).Should().Equal("valores[1].codigo", "valores[1].rotulo");
+        resultado.Errors.Select(e => e.Field).Should().Equal("valores[1].codigo", "valores[1].rotulo", "valores[1].contaComoAprovacao");
     }
 
     [Fact(DisplayName = "Corrida no índice único do código vira conflito e descarta o rastreamento")]

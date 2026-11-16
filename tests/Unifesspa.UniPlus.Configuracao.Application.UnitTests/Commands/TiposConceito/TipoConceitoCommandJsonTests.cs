@@ -7,10 +7,11 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposConceito;
 
 /// <summary>
-/// Se o valor conta como aprovação não pode ser omitido no JSON: um bool ausente viraria <c>false</c> e o valor
-/// nasceria sem aprovar sem que ninguém tivesse dito isso.
+/// Se o valor conta como aprovação, omitido no JSON, desserializa como nulo, para a validação de domínio
+/// recusá-lo no campo do valor: um bool ausente viraria <c>false</c> e o valor nasceria sem aprovar sem que
+/// ninguém tivesse dito isso.
 /// </summary>
-public sealed class TipoConceitoCommandJsonRequiredTests
+public sealed class TipoConceitoCommandJsonTests
 {
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -18,14 +19,14 @@ public sealed class TipoConceitoCommandJsonRequiredTests
         PropertyNameCaseInsensitive = true,
     };
 
-    [Fact(DisplayName = "Omitir contaComoAprovacao de um valor no JSON é rejeitado")]
-    public void Valor_SemContaComoAprovacao_LancaJsonException()
+    [Fact(DisplayName = "Omitir contaComoAprovacao de um valor no JSON desserializa como nulo, não como false")]
+    public void Valor_SemContaComoAprovacao_DesserializaComNulo()
     {
         const string json = """{ "codigo": "A", "rotulo": "Alfa" }""";
 
-        Action act = () => JsonSerializer.Deserialize<ValorCategoricoCommand>(json, Options);
+        ValorCategoricoCommand? valor = JsonSerializer.Deserialize<ValorCategoricoCommand>(json, Options);
 
-        act.Should().Throw<JsonException>();
+        valor!.ContaComoAprovacao.Should().BeNull();
     }
 
     [Fact(DisplayName = "JSON completo do tipo categórico desserializa na ordem dos valores")]

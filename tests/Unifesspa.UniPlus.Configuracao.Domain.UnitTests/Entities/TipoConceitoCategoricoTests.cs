@@ -74,6 +74,11 @@ public sealed class TipoConceitoCategoricoTests
             .DeveRecusarComo(TipoConceitoErrorCodes.ValorCategoricoRotuloInvalido, "valores[0].rotulo");
     }
 
+    [Fact(DisplayName = "Recusa valor sem a informação de que conta como aprovação, em vez de assumir que não conta")]
+    public void Valor_SemContaComoAprovacao_Recusa() =>
+        CriarComValores(Valor("A", "Alfa"), new ValorInformado("B", "Beta", null))
+            .DeveRecusarComo(TipoConceitoErrorCodes.ValorCategoricoContaComoAprovacaoObrigatoria, "valores[1].contaComoAprovacao");
+
     [Fact(DisplayName = "Recusa código de valor repetido, apontando a repetição")]
     public void Valor_CodigoRepetido_Recusa() =>
         CriarComValores(Valor("A", "Alfa"), Valor("B", "Beta"), Valor("A", "Gama"))
