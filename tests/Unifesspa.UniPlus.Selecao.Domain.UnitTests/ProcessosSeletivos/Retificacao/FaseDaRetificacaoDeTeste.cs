@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Retificacao;
 
+using AwesomeAssertions;
+
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
@@ -44,4 +46,14 @@ internal static class FaseDaRetificacaoDeTeste
         new() { Instante = Instante, FasesIniciadas = iniciadas, ItensPublicados = new HashSet<IdentidadeDoItemDoEdital>(publicados) };
 
     internal static IdentidadeDoItemDoEdital Item(FaseCronograma fase, ProdutoDaFase produto) => IdentidadeDoItemDoEdital.DaFase(fase, produto);
+
+    internal static EtapaProcesso EtapaComJanela(string nome, DateTimeOffset inicio, string? faseCodigo = null)
+    {
+        EtapaProcesso etapa = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: null, FaseCodigo: faseCodigo),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
+        etapa.DefinirJanelaEParecer(inicio, inicio.AddDays(3), emiteParecerIndividual: false).IsSuccess.Should().BeTrue();
+
+        return etapa;
+    }
 }

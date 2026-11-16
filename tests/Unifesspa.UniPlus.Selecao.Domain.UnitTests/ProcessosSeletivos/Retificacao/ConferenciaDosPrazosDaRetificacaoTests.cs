@@ -164,16 +164,6 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
         ConferenciaDosPrazosDaRetificacao.Conferir([], [CopiaComInicio(iniciada, Passado), porComecar], andamento).Should().BeEmpty();
     }
 
-    private static EtapaProcesso EtapaComJanela(string nome, DateTimeOffset inicio)
-    {
-        EtapaProcesso etapa = EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: null, FaseCodigo: null),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        etapa.DefinirJanelaEParecer(inicio, inicio.AddDays(3), emiteParecerIndividual: false).IsSuccess.Should().BeTrue();
-
-        return etapa;
-    }
-
     // A retificação preserva o Id da etapa; a cópia reproduz a proposta com o mesmo Id e o início trocado.
     private static EtapaProcesso CopiaComInicio(EtapaProcesso etapa, DateTimeOffset inicio)
     {

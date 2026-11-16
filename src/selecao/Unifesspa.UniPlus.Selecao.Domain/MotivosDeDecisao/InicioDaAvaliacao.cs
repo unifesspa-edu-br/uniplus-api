@@ -17,18 +17,43 @@ public static class InicioDaAvaliacao
     {
         ArgumentNullException.ThrowIfNull(processo);
 
+        return Instante(processo.CronogramaFases, processo.Etapas, tipo, primeiroRegistroDaDecisao);
+    }
+
+    /// <summary>
+    /// O instante em que a avaliação começa, medido sobre o cronograma e as etapas dados, que podem ser os de uma
+    /// versão publicada. Nulo enquanto nada a marca.
+    /// </summary>
+    public static DateTimeOffset? Instante(
+        IEnumerable<FaseCronograma> fases, IEnumerable<EtapaProcesso> etapas, TipoMotivoDeDecisao tipo, DateTimeOffset? primeiroRegistroDaDecisao)
+    {
+        ArgumentNullException.ThrowIfNull(fases);
+        ArgumentNullException.ThrowIfNull(etapas);
+
         IPoliticaDoTipoDeMotivo politica = PoliticasDosTiposDeMotivo.Do(tipo)
             ?? throw new ArgumentOutOfRangeException(nameof(tipo), tipo, "Tipo de motivo sem política.");
+        EtapaProcesso[] todasAsEtapas = [.. etapas];
 
-        IEnumerable<DateTimeOffset?> inicios = processo.CronogramaFases
+        return fases
             .Where(politica.AvaliaNaFase)
-            .SelectMany(fase => processo.EtapasDaFase(fase.Codigo).Select(static e => e.Inicio).Append(fase.Inicio))
-            .Append(primeiroRegistroDaDecisao);
-
-        return inicios.Where(static i => i.HasValue).Min();
+            .SelectMany(fase => IniciosDaFase(fase, todasAsEtapas))
+            .Append(primeiroRegistroDaDecisao)
+            .Where(static i => i.HasValue)
+            .Min();
     }
+
+    private static IEnumerable<DateTimeOffset?> IniciosDaFase(FaseCronograma fase, EtapaProcesso[] etapas) =>
+        etapas
+            .Where(e => string.Equals(e.FaseCodigo, fase.Codigo, StringComparison.Ordinal))
+            .Select(static e => e.Inicio)
+            .Append(fase.Inicio);
 
     /// <summary>Se a avaliação do tipo já começou em <paramref name="agora"/>; o próprio instante de início conta como começada.</summary>
     public static bool JaComecou(ProcessoSeletivo processo, TipoMotivoDeDecisao tipo, DateTimeOffset? primeiroRegistroDaDecisao, DateTimeOffset agora) =>
         Instante(processo, tipo, primeiroRegistroDaDecisao) is { } inicio && inicio <= agora;
+
+    /// <summary>Se a avaliação do tipo já começou em <paramref name="agora"/>, medida sobre o cronograma e as etapas dados.</summary>
+    public static bool JaComecou(
+        IEnumerable<FaseCronograma> fases, IEnumerable<EtapaProcesso> etapas, TipoMotivoDeDecisao tipo, DateTimeOffset? primeiroRegistroDaDecisao, DateTimeOffset agora) =>
+        Instante(fases, etapas, tipo, primeiroRegistroDaDecisao) is { } inicio && inicio <= agora;
 }

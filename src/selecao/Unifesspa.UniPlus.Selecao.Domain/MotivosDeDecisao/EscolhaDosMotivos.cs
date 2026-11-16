@@ -92,7 +92,7 @@ public static class EscolhaDosMotivos
                 : null);
     }
 
-    private static DomainError? RecusaDaJustificativa(string? justificativa)
+    internal static DomainError? RecusaDaJustificativa(string? justificativa)
     {
         if (string.IsNullOrWhiteSpace(justificativa))
         {
