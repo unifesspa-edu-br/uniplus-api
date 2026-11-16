@@ -142,6 +142,27 @@ public sealed class RegrasCatalogoEndpointTests : IAsyncLifetime
             JsonValueKind.Null, "rol aberto — a regra institucional não restringe o conjunto");
     }
 
+    [Fact(DisplayName = "ramoDaDistribuicao: a regra de distribuição diz o ramo do quadro; regra de outro tipo vem com null")]
+    public async Task Listar_ExpoeORamoDaDistribuicao()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+
+        using JsonDocument distribuicao = await ListarAsync(
+            client, $"?tipo={TipoRegraCodigo.RegraDistribuicaoVagas}&limit=10");
+        using JsonDocument desempate = await ListarAsync(client, $"?tipo={TipoRegraCodigo.CriterioDesempate}");
+
+        Dictionary<string, string?> ramoPorRegra = distribuicao.RootElement.EnumerateArray().ToDictionary(
+            static r => r.GetProperty("codigo").GetString()!, static r => r.GetProperty("ramoDaDistribuicao").GetString(), StringComparer.Ordinal);
+        ramoPorRegra.Values.Should().AllSatisfy(static ramo => ramo.Should().NotBeNull("toda regra de distribuição pertence a um dos dois ramos"));
+        ramoPorRegra[RegraDistribuicaoVagasCodigo.Lei12711].Should().Be("LEI_DE_COTAS");
+        ramoPorRegra[RegraDistribuicaoVagasCodigo.Lei12711ComAcPcd].Should().Be("LEI_DE_COTAS");
+        ramoPorRegra[RegraDistribuicaoVagasCodigo.Institucional].Should().Be("QUADRO_FIXADO_NO_EDITAL");
+        ramoPorRegra[RegraDistribuicaoVagasCodigo.Psiq].Should().Be("QUADRO_FIXADO_NO_EDITAL");
+        ramoPorRegra[RegraDistribuicaoVagasCodigo.ComAcPcd].Should().Be("QUADRO_FIXADO_NO_EDITAL");
+        desempate.RootElement.EnumerateArray()
+            .Should().AllSatisfy(r => r.GetProperty("ramoDaDistribuicao").ValueKind.Should().Be(JsonValueKind.Null));
+    }
+
     [Fact(DisplayName = "O filtro aceita o mesmo código de tipo que a resposta devolve — quem relê um valor da API e o usa como filtro é atendido")]
     public async Task Listar_FiltroAceitaOCodigoQueARespostaDevolve()
     {

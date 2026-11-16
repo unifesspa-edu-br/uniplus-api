@@ -25,6 +25,7 @@ public static class RegraCatalogoMapping
             Invariantes: regra.Invariantes,
             BaseLegal: regra.BaseLegal,
             Hash: regra.Hash,
-            ModalidadesAdmitidas: ModalidadesAdmitidasDoEsquemaArgs.Extrair(regra));
+            ModalidadesAdmitidas: ModalidadesAdmitidasDoEsquemaArgs.Extrair(regra),
+            RamoDaDistribuicao: regra.Tipo == TipoRegra.RegraDistribuicaoVagas ? RegraDistribuicaoVagasCodigo.RamoDe(regra.Codigo) : null);
     }
 }

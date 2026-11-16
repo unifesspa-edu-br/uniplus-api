@@ -67,4 +67,21 @@ public sealed class RegraDistribuicaoVagasCodigoTests
 
         rolComAcPcd.Should().BeEquivalentTo([.. rolPuro, "AC_PCD"]);
     }
+
+    [Fact(DisplayName = "RamoDe diz o ramo de cada código reconhecido, e nenhum fica sem ramo")]
+    public void RamoDe_CadaCodigoReconhecidoTemUmRamo()
+    {
+        foreach (string codigo in RegraDistribuicaoVagasCodigo.Todos)
+        {
+            string esperado = RegraDistribuicaoVagasCodigo.EhRamoFederal(codigo)
+                ? RamoDaDistribuicaoDeVagasCodigo.LeiDeCotas
+                : RamoDaDistribuicaoDeVagasCodigo.QuadroFixadoNoEdital;
+
+            RegraDistribuicaoVagasCodigo.RamoDe(codigo).Should().Be(esperado, $"'{codigo}' pertence a um dos dois ramos");
+        }
+    }
+
+    [Fact(DisplayName = "RamoDe é nulo para um código que não é de regra de distribuição")]
+    public void RamoDe_CodigoDesconhecido_Nulo() =>
+        RegraDistribuicaoVagasCodigo.RamoDe("DESEMPATE-QUALQUER").Should().BeNull();
 }

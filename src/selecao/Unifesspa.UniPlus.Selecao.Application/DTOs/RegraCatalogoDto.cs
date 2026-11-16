@@ -28,6 +28,11 @@ using System.Text.Json.Serialization;
 /// publicadas. O campo tipado poupa o cliente de ler uma chave nomeada de dentro de um esquema
 /// aberto por contrato.
 /// </para>
+/// <para>
+/// <see cref="RamoDaDistribuicao"/> diz, para uma regra de distribuição de vagas, se ela monta o quadro pelo
+/// cálculo da Lei de Cotas (<c>LEI_DE_COTAS</c>) ou se o edital o fixa (<c>QUADRO_FIXADO_NO_EDITAL</c>); é nulo
+/// nas regras de outros tipos. O cliente deixa de manter no código a lista de códigos de cada ramo.
+/// </para>
 /// </remarks>
 public sealed record RegraCatalogoDto(
     string Codigo,
@@ -37,7 +42,8 @@ public sealed record RegraCatalogoDto(
     JsonElement Invariantes,
     string BaseLegal,
     string Hash,
-    IReadOnlyList<string>? ModalidadesAdmitidas)
+    IReadOnlyList<string>? ModalidadesAdmitidas,
+    string? RamoDaDistribuicao)
 {
     /// <summary>
     /// Hypermedia links (HATEOAS Level 1, ADR-0029) — opt-in, populado no boundary HTTP para

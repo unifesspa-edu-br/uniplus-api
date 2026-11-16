@@ -22555,7 +22555,8 @@
           "invariantes",
           "baseLegal",
           "hash",
-          "modalidadesAdmitidas"
+          "modalidadesAdmitidas",
+          "ramoDaDistribuicao"
         ],
         "type": "object",
         "properties": {
@@ -22588,6 +22589,12 @@
             "items": {
               "type": "string"
             }
+          },
+          "ramoDaDistribuicao": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "_links": {
             "type": [

@@ -50,6 +50,15 @@ public static class RegraDistribuicaoVagasCodigo
         codigo is Lei12711 or Lei12711ComAcPcd;
 
     /// <summary>
+    /// O ramo em que a regra monta o quadro (<see cref="RamoDaDistribuicaoDeVagasCodigo"/>), ou
+    /// <see langword="null"/> para um código que não é de nenhum dos dois.
+    /// </summary>
+    public static string? RamoDe(string codigo) =>
+        EhRamoFederal(codigo)
+            ? RamoDaDistribuicaoDeVagasCodigo.LeiDeCotas
+            : EhQuadroFixo(codigo) ? RamoDaDistribuicaoDeVagasCodigo.QuadroFixadoNoEdital : null;
+
+    /// <summary>
     /// Regras cujo quadro é <b>fixado pelo edital</b>, e não calculado pelo art. 10. Todas
     /// compartilham a mesma montagem: as quantidades declaradas dividem o VO_base.
     /// </summary>
