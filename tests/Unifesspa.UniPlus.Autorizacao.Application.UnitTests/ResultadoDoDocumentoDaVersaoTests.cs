@@ -122,7 +122,7 @@ public sealed class ResultadoDoDocumentoDaVersaoTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         DocumentoDaVersao documento = PerfisDeTeste.Garantir(
-            perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
+            DocumentosDoPerfil.Confirmar(perfil, perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
 
         return (perfil, documento);
     }

@@ -166,7 +166,7 @@ public sealed class PerfilVersoesTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         VersaoDoPerfil versao = perfil.VersaoPendente!;
-        DocumentoDaVersao documento = PerfisDeTeste.Garantir(perfil.ConfirmarDocumento(versao.Id, "etag", PerfisDeTeste.Instante));
+        DocumentoDaVersao documento = PerfisDeTeste.Garantir(DocumentosDoPerfil.Confirmar(perfil, versao.Id, "etag", PerfisDeTeste.Instante));
         Cancelar(perfil, versao.Id);
 
         Verificar(perfil, documento).Should().BeTrue();
@@ -182,7 +182,7 @@ public sealed class PerfilVersoesTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         DocumentoDaVersao documento = PerfisDeTeste.Garantir(
-            perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
+            DocumentosDoPerfil.Confirmar(perfil, perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
 
         Verificar(perfil, documento).Should().BeTrue();
 
@@ -196,11 +196,11 @@ public sealed class PerfilVersoesTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         DocumentoDaVersao documento = PerfisDeTeste.Garantir(
-            perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
+            DocumentosDoPerfil.Confirmar(perfil, perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
 
         Verificar(perfil, documento).Should().BeTrue();
         Verificar(perfil, documento).Should().BeFalse();
-        perfil.RegistrarDocumentoVerificado(Guid.NewGuid(), "a", PerfisDeTeste.Instante).Should().BeFalse();
+        DocumentosDoPerfil.RegistrarVerificado(perfil, Guid.NewGuid(), "a", PerfisDeTeste.Instante).Should().BeFalse();
     }
 
     [Fact(DisplayName = "Recusa do verificador libera outro documento para a mesma versão")]
@@ -208,10 +208,10 @@ public sealed class PerfilVersoesTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         VersaoDoPerfil versao = perfil.VersaoPendente!;
-        DocumentoDaVersao primeiro = PerfisDeTeste.Garantir(perfil.ConfirmarDocumento(versao.Id, "etag", PerfisDeTeste.Instante));
+        DocumentoDaVersao primeiro = PerfisDeTeste.Garantir(DocumentosDoPerfil.Confirmar(perfil, versao.Id, "etag", PerfisDeTeste.Instante));
 
-        perfil.RegistrarDocumentoRecusado(primeiro.Id, PerfisDeTeste.Instante).Should().BeTrue();
-        DocumentoDaVersao segundo = PerfisDeTeste.Garantir(perfil.NovoDocumento(versao.Id, 4096));
+        DocumentosDoPerfil.RegistrarRecusado(perfil, primeiro.Id, PerfisDeTeste.Instante).Should().BeTrue();
+        DocumentoDaVersao segundo = PerfisDeTeste.Garantir(DocumentosDoPerfil.Novo(perfil, versao.Id, 4096));
 
         segundo.Id.Should().NotBe(primeiro.Id);
         segundo.Situacao.Should().Be(SituacaoDoAnexo.AguardandoEnvio);
@@ -224,7 +224,7 @@ public sealed class PerfilVersoesTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
 
-        CodigosDaRecusa(perfil.NovoDocumento(perfil.VersaoPendente!.Id, 10))
+        CodigosDaRecusa(DocumentosDoPerfil.Novo(perfil, perfil.VersaoPendente!.Id, 10))
             .Should().Equal(PerfilErrorCodes.DocumentoNaoRecusado);
     }
 
@@ -232,10 +232,10 @@ public sealed class PerfilVersoesTests
     public void NovoDocumento_TamanhoInvalido_Recusa()
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
-        DocumentoDaVersao documento = PerfisDeTeste.Garantir(perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
-        perfil.RegistrarDocumentoRecusado(documento.Id, PerfisDeTeste.Instante);
+        DocumentoDaVersao documento = PerfisDeTeste.Garantir(DocumentosDoPerfil.Confirmar(perfil, perfil.VersaoPendente!.Id, "etag", PerfisDeTeste.Instante));
+        DocumentosDoPerfil.RegistrarRecusado(perfil, documento.Id, PerfisDeTeste.Instante);
 
-        CodigosDaRecusa(perfil.NovoDocumento(perfil.VersaoPendente.Id, 0)).Should().Equal(PerfilErrorCodes.DocumentoInvalido);
+        CodigosDaRecusa(DocumentosDoPerfil.Novo(perfil, perfil.VersaoPendente.Id, 0)).Should().Equal(PerfilErrorCodes.DocumentoInvalido);
     }
 
     [Fact(DisplayName = "Perfil desativado não emite novo documento nem reemite o envio")]
@@ -245,8 +245,8 @@ public sealed class PerfilVersoesTests
         Guid versaoId = perfil.VersaoPendente!.Id;
         PerfisDeTeste.Desativar(perfil, Catalogo);
 
-        CodigosDaRecusa(perfil.NovoDocumento(versaoId, 10)).Should().Equal(PerfilErrorCodes.Inativo);
-        CodigosDaRecusa(perfil.DocumentoParaReemitirEnvio(versaoId)).Should().Equal(PerfilErrorCodes.Inativo);
+        CodigosDaRecusa(DocumentosDoPerfil.Novo(perfil, versaoId, 10)).Should().Equal(PerfilErrorCodes.Inativo);
+        CodigosDaRecusa(DocumentosDoPerfil.ParaReemitirEnvio(perfil, versaoId)).Should().Equal(PerfilErrorCodes.Inativo);
     }
 
     [Fact(DisplayName = "O envio só se reemite enquanto o documento aguarda o PUT")]
@@ -255,10 +255,10 @@ public sealed class PerfilVersoesTests
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         Guid versaoId = perfil.VersaoPendente!.Id;
 
-        PerfisDeTeste.Garantir(perfil.DocumentoParaReemitirEnvio(versaoId)).Situacao.Should().Be(SituacaoDoAnexo.AguardandoEnvio);
-        perfil.ConfirmarDocumento(versaoId, "etag", PerfisDeTeste.Instante);
+        PerfisDeTeste.Garantir(DocumentosDoPerfil.ParaReemitirEnvio(perfil, versaoId)).Situacao.Should().Be(SituacaoDoAnexo.AguardandoEnvio);
+        DocumentosDoPerfil.Confirmar(perfil, versaoId, "etag", PerfisDeTeste.Instante);
 
-        CodigosDaRecusa(perfil.DocumentoParaReemitirEnvio(versaoId)).Should().Equal(PerfilErrorCodes.DocumentoNaoAguardaEnvio);
+        CodigosDaRecusa(DocumentosDoPerfil.ParaReemitirEnvio(perfil, versaoId)).Should().Equal(PerfilErrorCodes.DocumentoNaoAguardaEnvio);
     }
 
     [Theory(DisplayName = "Confirmação sem ETag utilizável é recusada")]
@@ -268,7 +268,7 @@ public sealed class PerfilVersoesTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
 
-        CodigosDaRecusa(perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, etag, PerfisDeTeste.Instante))
+        CodigosDaRecusa(DocumentosDoPerfil.Confirmar(perfil, perfil.VersaoPendente!.Id, etag, PerfisDeTeste.Instante))
             .Should().Equal(PerfilErrorCodes.DocumentoInvalido);
     }
 
@@ -277,9 +277,9 @@ public sealed class PerfilVersoesTests
     {
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         Guid versaoId = perfil.VersaoPendente!.Id;
-        perfil.ConfirmarDocumento(versaoId, "etag", PerfisDeTeste.Instante);
+        DocumentosDoPerfil.Confirmar(perfil, versaoId, "etag", PerfisDeTeste.Instante);
 
-        CodigosDaRecusa(perfil.ConfirmarDocumento(versaoId, "etag", PerfisDeTeste.Instante))
+        CodigosDaRecusa(DocumentosDoPerfil.Confirmar(perfil, versaoId, "etag", PerfisDeTeste.Instante))
             .Should().Equal(PerfilErrorCodes.DocumentoNaoAguardaEnvio);
     }
 
@@ -290,7 +290,7 @@ public sealed class PerfilVersoesTests
         Guid versaoId = perfil.VersaoPendente!.Id;
         Cancelar(perfil, versaoId);
 
-        CodigosDaRecusa(perfil.ConfirmarDocumento(versaoId, "etag", PerfisDeTeste.Instante))
+        CodigosDaRecusa(DocumentosDoPerfil.Confirmar(perfil, versaoId, "etag", PerfisDeTeste.Instante))
             .Should().Equal(PerfilErrorCodes.VersaoNaoPendente);
     }
 
@@ -300,10 +300,10 @@ public sealed class PerfilVersoesTests
         Perfil perfil = PerfisDeTeste.Pendente("Analista", Descricao, [Consultar], Catalogo);
         Guid versaoId = perfil.VersaoPendente!.Id;
 
-        CodigosDaRecusa(perfil.DocumentoParaLeitura(versaoId)).Should().Equal(PerfilErrorCodes.DocumentoNaoVerificado);
+        CodigosDaRecusa(DocumentosDoPerfil.ParaLeitura(perfil, versaoId)).Should().Equal(PerfilErrorCodes.DocumentoNaoVerificado);
         PerfisDeTeste.EntrarEmVigor(perfil, Catalogo);
-        PerfisDeTeste.Garantir(perfil.DocumentoParaLeitura(versaoId)).Situacao.Should().Be(SituacaoDoAnexo.Verificado);
-        CodigosDaRecusa(perfil.DocumentoParaLeitura(Guid.NewGuid())).Should().Equal(PerfilErrorCodes.VersaoNaoEncontrada);
+        PerfisDeTeste.Garantir(DocumentosDoPerfil.ParaLeitura(perfil, versaoId)).Situacao.Should().Be(SituacaoDoAnexo.Verificado);
+        CodigosDaRecusa(DocumentosDoPerfil.ParaLeitura(perfil, Guid.NewGuid())).Should().Equal(PerfilErrorCodes.VersaoNaoEncontrada);
     }
 
     [Fact(DisplayName = "As chaves do documento ficam sob o perfil e a versão")]
@@ -358,7 +358,7 @@ public sealed class PerfilVersoesTests
         perfil.CancelarVersao(versaoId, PerfisDeTeste.Autor, Motivo, PerfisDeTeste.Instante);
 
     private static bool Verificar(Perfil perfil, DocumentoDaVersao documento) =>
-        perfil.RegistrarDocumentoVerificado(documento.Id, new string('b', 64), PerfisDeTeste.Instante);
+        DocumentosDoPerfil.RegistrarVerificado(perfil, documento.Id, new string('b', 64), PerfisDeTeste.Instante);
 
     private static string[] CodigosDaRecusa(Result resultado) => [.. resultado.Errors.Select(e => e.Error.Code)];
 

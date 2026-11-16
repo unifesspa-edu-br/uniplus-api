@@ -130,8 +130,8 @@ internal sealed class CenarioDaGovernancaDaVersao
     {
         Perfil perfil = PerfisDeTeste.Pendente("Análise de atendimento", "Analisa os pedidos de atendimento.", permissoes, new CatalogoDeTeste());
         VersaoDoPerfil versao = perfil.VersaoPendente!;
-        DocumentoDaVersao documento = PerfisDeTeste.Garantir(perfil.ConfirmarDocumento(versao.Id, "etag-de-teste", PerfisDeTeste.Instante));
-        perfil.RegistrarDocumentoVerificado(documento.Id, new string('a', 64), PerfisDeTeste.Instante);
+        DocumentoDaVersao documento = PerfisDeTeste.Garantir(DocumentosDoPerfil.Confirmar(perfil, versao.Id, "etag-de-teste", PerfisDeTeste.Instante));
+        DocumentosDoPerfil.RegistrarVerificado(perfil, documento.Id, new string('a', 64), PerfisDeTeste.Instante);
 
         return perfil;
     }

@@ -24,11 +24,11 @@ public static class VersaoMapping
             vigente.Numero,
             Descrever(vigente.Codigos(), catalogo),
             vigente.Protocolo,
-            perfil.DocumentoDe(vigente)?.VerificadoEm,
+            DocumentosDoPerfil.De(perfil, vigente)?.VerificadoEm,
             perfil.Vigencias.FirstOrDefault(v => v.VersaoId == vigente.Id && v.Aberta)?.Desde);
 
     internal static VersaoPendenteDto? PendenteDe(Perfil perfil, CatalogoDaAplicacao catalogo, Identidade? leitor) =>
-        perfil.VersaoPendente is { } pendente && perfil.DocumentoDe(pendente) is { } documento
+        perfil.VersaoPendente is { } pendente && DocumentosDoPerfil.De(perfil, pendente) is { } documento
             ? Pendente(perfil, pendente, documento, catalogo, leitor)
             : null;
 

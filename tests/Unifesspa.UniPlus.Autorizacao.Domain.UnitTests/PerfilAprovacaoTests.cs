@@ -160,9 +160,9 @@ public sealed class PerfilAprovacaoTests
         Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor, versaoId: versaoId).Erro!.Code,
         Decidir(perfil, EtapaDaVersao.GestaoDeAcessos, PerfisDeTeste.AutoriaDoGestor, ResultadoDaDecisao.Recusado, "Fora do escopo.", versaoId: versaoId).Erro!.Code,
         perfil.CancelarVersao(versaoId, PerfisDeTeste.Autor, "Motivo.", Agora).Erro!.Code,
-        perfil.NovoDocumento(versaoId, 1024).Errors.Single().Error.Code,
-        perfil.DocumentoParaReemitirEnvio(versaoId).Errors.Single().Error.Code,
-        perfil.ConfirmarDocumento(versaoId, "etag", Agora).Errors.Single().Error.Code,
+        DocumentosDoPerfil.Novo(perfil, versaoId, 1024).Errors.Single().Error.Code,
+        DocumentosDoPerfil.ParaReemitirEnvio(perfil, versaoId).Errors.Single().Error.Code,
+        DocumentosDoPerfil.Confirmar(perfil, versaoId, "etag", Agora).Errors.Single().Error.Code,
     ];
 
     [Fact(DisplayName = "No perfil desativado, a versão expirada responde versão expirada ao novo documento e à reemissão")]
@@ -175,8 +175,8 @@ public sealed class PerfilAprovacaoTests
 
         for (int tentativa = 0; tentativa < 2; tentativa++)
         {
-            perfil.NovoDocumento(versaoId, 1024).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
-            perfil.DocumentoParaReemitirEnvio(versaoId).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
+            DocumentosDoPerfil.Novo(perfil, versaoId, 1024).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
+            DocumentosDoPerfil.ParaReemitirEnvio(perfil, versaoId).Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.VersaoExpirada);
         }
     }
 
@@ -351,8 +351,8 @@ public sealed class PerfilAprovacaoTests
     private static void Verificar(Perfil perfil)
     {
         DocumentoDaVersao documento = PerfisDeTeste.Garantir(
-            perfil.ConfirmarDocumento(perfil.VersaoPendente!.Id, "etag-de-teste", Agora));
-        perfil.RegistrarDocumentoVerificado(documento.Id, new string('a', 64), Agora);
+            DocumentosDoPerfil.Confirmar(perfil, perfil.VersaoPendente!.Id, "etag-de-teste", Agora));
+        DocumentosDoPerfil.RegistrarVerificado(perfil, documento.Id, new string('a', 64), Agora);
     }
 
     private static PedidoDeDecisaoDaVersao Pedido(

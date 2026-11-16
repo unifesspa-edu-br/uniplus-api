@@ -62,7 +62,7 @@ public sealed class AvisoDeEtapaApta
 
         return pendente is not null
             && !perfil.VersaoPendente!.Expirou(_clock.GetUtcNow())
-            && perfil.DocumentoDe(perfil.VersaoPendente)?.Situacao == SituacaoDoAnexo.Verificado;
+            && DocumentosDoPerfil.De(perfil, perfil.VersaoPendente)?.Situacao == SituacaoDoAnexo.Verificado;
     }
 
     private ModeloDeAviso Modelo(Perfil perfil, VersaoDoPerfil versao, VersaoPendenteDto pendente, EtapaDaVersao etapa) =>

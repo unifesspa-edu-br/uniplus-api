@@ -79,7 +79,7 @@ public sealed class PerfilRemocaoTests
         VersaoDoPerfil segunda = perfil.VersaoVigente!;
         segunda.Numero.Should().Be(3);
         segunda.VersaoDoDocumento.Should().Be(instituidora.Id);
-        perfil.DocumentoDe(segunda).Should().BeSameAs(instituidora.Documento);
+        DocumentosDoPerfil.De(perfil, segunda).Should().BeSameAs(instituidora.Documento);
     }
 
     [Fact(DisplayName = "A remoção cancela por contenção a pendente que ainda vale")]
