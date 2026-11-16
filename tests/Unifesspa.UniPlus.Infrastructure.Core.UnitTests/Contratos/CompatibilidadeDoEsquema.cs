@@ -11,7 +11,7 @@ internal static class CompatibilidadeDoEsquema
 {
     private static readonly string[] LimitesInferiores = ["minimum", "exclusiveMinimum", "minLength", "minItems", "minProperties", "minContains"];
     private static readonly string[] LimitesSuperiores = ["maximum", "exclusiveMaximum", "maxLength", "maxItems", "maxProperties", "maxContains"];
-    private static readonly string[] IguaisPorInteiro = ["$ref", "not", "if", "oneOf"];
+    private static readonly string[] IguaisPorInteiro = ["$ref", "not", "if", "oneOf", "propertyNames"];
     private static readonly string[] RestricoesQueSoPodemSair = ["pattern", "const", "format", "multipleOf", "uniqueItems"];
     private static readonly string[] MapasDeEsquemas = ["properties", "$defs"];
     private static readonly string[] EsquemasFilhos = ["items", "then", "else", "additionalProperties", "unevaluatedProperties", "contains"];
