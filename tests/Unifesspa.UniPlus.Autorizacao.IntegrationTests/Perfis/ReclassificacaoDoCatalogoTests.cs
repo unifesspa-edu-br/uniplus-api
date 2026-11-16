@@ -26,39 +26,23 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-/// <summary>
-/// A conferência do catálogo contra o banco real: o catálogo anterior é simulado por uma linha nova de
-/// <c>implantacoes_das_permissoes</c> com a classe ou o escopo de uma permissão alterados, e a conciliação compara o catálogo da
-/// aplicação com ela.
-/// </summary>
+using static Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis.CenarioDaReclassificacao;
+
+/// <summary>A conferência do catálogo contra o banco real: o que a conciliação grava, suspende e avisa.</summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
 public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAsyncLifetime
 {
-    private const string Codigo = "selecao:leiautes-inep:consultar";
-    private const string Outra = ConsultarCatalogo;
-
-    // Uma implantação nova do catálogo, igual à atual exceto pela classe e pelo escopo do código pedido.
-    private const string CatalogoAnteriorSql =
-        """
-        WITH atual AS (SELECT id FROM autorizacao.implantacoes_das_permissoes ORDER BY sequencia DESC LIMIT 1),
-        novo AS (INSERT INTO autorizacao.implantacoes_das_permissoes (id, impressao, implantada_em) VALUES ({0}, {1}, now()) RETURNING id)
-        INSERT INTO autorizacao.permissoes_implantadas (implantacao_id, codigo, modulo, classificacao, de_unidade, reservada)
-        SELECT novo.id, p.codigo, p.modulo,
-               CASE WHEN p.codigo = {2} THEN {3} ELSE p.classificacao END,
-               CASE WHEN p.codigo = {2} THEN {4} ELSE p.de_unidade END,
-               p.reservada
-        FROM autorizacao.permissoes_implantadas p, atual, novo
-        WHERE p.implantacao_id = atual.id
-        """;
+    private readonly CenarioDaReclassificacao _cenario;
 
     public ReclassificacaoDoCatalogoTests(AutorizacaoEndpointFixture fixture)
         : base(fixture)
     {
+        _cenario = new CenarioDaReclassificacao(Fixture);
     }
 
-    public Task InitializeAsync() => ConciliarAsync();
+    public Task InitializeAsync() => _cenario.ConciliarAsync();
 
-    public Task DisposeAsync() => ConciliarAsync();
+    public Task DisposeAsync() => _cenario.ConciliarAsync();
 
     [Fact(DisplayName = "O catálogo da aplicação fica gravado na subida e a conciliação repetida não grava de novo")]
     public async Task Conciliacao_EhIdempotente()
@@ -66,8 +50,8 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
         string impressao = Fixture.Factory.Services.GetRequiredService<CatalogoDaAplicacao>().Impressao;
         long antes = await ContarCatalogosAsync();
 
-        await ConciliarAsync();
-        await ConciliarAsync();
+        await _cenario.ConciliarAsync();
+        await _cenario.ConciliarAsync();
 
         (await ImpressaoAtualAsync()).Should().Be(impressao);
         (await ContarCatalogosAsync()).Should().Be(antes);
@@ -76,12 +60,12 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
     [Fact(DisplayName = "A subida de classe suspende só a permissão reclassificada e o resto do perfil continua")]
     public async Task Subida_SuspendeSoAPermissaoReclassificada()
     {
-        (Guid perfil, string paulo) = await PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Publico, deUnidade: false);
+        (Guid perfil, string paulo) = await _cenario.PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Publico, deUnidade: false);
 
-        await ConciliarAsync();
+        await _cenario.ConciliarAsync();
 
-        IReadOnlyList<string> permissoes = await PermissoesDaPessoaAsync(paulo);
-        permissoes.Should().NotContain(Codigo).And.Contain(Outra);
+        IReadOnlyList<string> permissoes = await _cenario.PermissoesDaPessoaAsync(paulo);
+        permissoes.Should().NotContain(PermissaoReclassificada).And.Contain(OutraPermissaoDoPerfil);
         (await ContarReclassificacoesAsync(perfil)).Should().Be(1);
     }
 
@@ -89,9 +73,9 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
     public async Task Monitoramento_ContaAReclassificacaoPendente()
     {
         long antes = (await LerMonitoramentoAsync()).ReclassificacoesPendentes;
-        await PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Publico, deUnidade: false);
+        await _cenario.PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Publico, deUnidade: false);
 
-        await ConciliarAsync();
+        await _cenario.ConciliarAsync();
 
         (await LerMonitoramentoAsync()).ReclassificacoesPendentes.Should().Be(antes + 1);
     }
@@ -99,11 +83,11 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
     [Fact(DisplayName = "A descida de classe não suspende, não gera aviso e grava a base conciliada")]
     public async Task Descida_NaoSuspendeENaoAvisa()
     {
-        (Guid perfil, string pessoa) = await PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Sensivel, deUnidade: false);
+        (Guid perfil, string pessoa) = await _cenario.PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Sensivel, deUnidade: false);
 
-        await ConciliarAsync();
+        await _cenario.ConciliarAsync();
 
-        (await PermissoesDaPessoaAsync(pessoa)).Should().Contain(Codigo);
+        (await _cenario.PermissoesDaPessoaAsync(pessoa)).Should().Contain(PermissaoReclassificada);
         (await ContarReclassificacoesAsync(perfil)).Should().Be(1);
         (await FatosSemAvisoDoPerfilAsync(perfil)).Should().Be(0);
         (await ContarBasesConciliadasAsync(perfil)).Should().Be(1);
@@ -112,19 +96,19 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
     [Fact(DisplayName = "A mudança de escopo suspende a permissão ainda que a classe não suba")]
     public async Task Escopo_SuspendePelaMudancaDeEscopo()
     {
-        (Guid perfil, string pessoa) = await PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Interno, deUnidade: true);
+        (Guid perfil, string pessoa) = await _cenario.PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Interno, deUnidade: true);
 
-        await ConciliarAsync();
+        await _cenario.ConciliarAsync();
 
-        (await PermissoesDaPessoaAsync(pessoa)).Should().NotContain(Codigo).And.Contain(Outra);
+        (await _cenario.PermissoesDaPessoaAsync(pessoa)).Should().NotContain(PermissaoReclassificada).And.Contain(OutraPermissaoDoPerfil);
         (await FatosSemAvisoDoPerfilAsync(perfil)).Should().Be(1);
     }
 
     [Fact(DisplayName = "A rotina avisa cada fato uma só vez e grava uma linha de aviso por fato")]
     public async Task Avisos_UmaLinhaPorFato()
     {
-        (Guid perfil, _) = await PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Publico, deUnidade: false);
-        await ConciliarAsync();
+        (Guid perfil, _) = await _cenario.PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Publico, deUnidade: false);
+        await _cenario.ConciliarAsync();
 
         await ProcessarAvisosAsync();
         await ProcessarAvisosAsync();
@@ -136,218 +120,17 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
     [Fact(DisplayName = "A instância cujo catálogo difere do banco falha fechada na leitura do acesso e responde 503")]
     public async Task InstanciaAntiga_RespondeServicoIndisponivel()
     {
-        await GravarCatalogoAnteriorAsync(Codigo, ClassificacaoDeProtecao.Publico, false, new string('b', 64));
+        await _cenario.GravarCatalogoAnteriorAsync(PermissaoReclassificada, ClassificacaoDeProtecao.Publico, false, new string('b', 64));
         string pessoa = $"pessoa.{Guid.NewGuid():N}";
-        await ConcessoesDeTeste.ConcederPermissoesAsync(Fixture.Factory.Services, pessoa, Outra);
+        await ConcessoesDeTeste.ConcederPermissoesAsync(Fixture.Factory.Services, pessoa, OutraPermissaoDoPerfil);
 
-        Func<Task> leitura = () => PermissoesDaPessoaAsync(pessoa);
+        Func<Task> leitura = () => _cenario.PermissoesDaPessoaAsync(pessoa);
         using HttpClient cliente = Cliente(pessoa);
         using HttpResponseMessage resposta = await cliente.GetAsync(new Uri(Rota, UriKind.Relative));
 
         await leitura.Should().ThrowAsync<CatalogoDesatualizadoException>();
         resposta.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable);
     }
-
-    [Fact(DisplayName = "O Representante do controlador libera a subida de classe, a permissão volta à pessoa e a concessão liberada sai da reclassificação")]
-    public async Task Liberacao_DevolveAPermissaoERecusaARepeticao()
-    {
-        (Guid perfil, string pessoa, Guid reclassificacao) = await ReclassificacaoComRepresentanteAsync();
-        await LerODocumentoDaVersaoAsync(perfil, Diogo);
-        using HttpClient representante = Cliente(Diogo);
-
-        using HttpResponseMessage primeira = await EnviarAsync(
-            representante, HttpMethod.Post, $"/api/autorizacao/reclassificacoes/{reclassificacao}/decisoes", new { etapa = "protecao_de_dados", resultado = "liberada", todas = true });
-        using HttpResponseMessage segunda = await LiberarAConcessaoAsync(representante, reclassificacao, await ConcessaoDoPerfilAsync(perfil));
-
-        primeira.StatusCode.Should().Be(HttpStatusCode.OK, await primeira.Content.ReadAsStringAsync());
-        (await PermissoesDaPessoaAsync(pessoa)).Should().Contain(Codigo);
-        segunda.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        (await segunda.Content.ReadAsStringAsync()).Should().Contain("concessao_fora_da_reclassificacao");
-    }
-
-    [Fact(DisplayName = "A fila da proteção de dados lista a reclassificação, o detalhe traz a concessão suspensa e quem não tem a permissão da etapa recebe 403")]
-    public async Task Fila_EDetalhe_ListamAReclassificacao()
-    {
-        (_, _, Guid reclassificacao) = await ReclassificacaoComRepresentanteAsync();
-        using HttpClient representante = Cliente(Diogo);
-        using HttpClient semPermissao = Cliente($"pessoa.{Guid.NewGuid():N}");
-
-        using HttpResponseMessage fila = await representante.GetAsync(new Uri("/api/autorizacao/reclassificacoes?etapa=protecao_de_dados", UriKind.Relative));
-        using HttpResponseMessage detalhe = await representante.GetAsync(new Uri($"/api/autorizacao/reclassificacoes/{reclassificacao}", UriKind.Relative));
-        using HttpResponseMessage negada = await semPermissao.GetAsync(new Uri("/api/autorizacao/reclassificacoes?etapa=protecao_de_dados", UriKind.Relative));
-
-        fila.StatusCode.Should().Be(HttpStatusCode.OK);
-        (await fila.Content.ReadAsStringAsync()).Should().Contain(reclassificacao.ToString());
-        detalhe.StatusCode.Should().Be(HttpStatusCode.OK, await detalhe.Content.ReadAsStringAsync());
-        (await detalhe.Content.ReadAsStringAsync()).Should().Contain("protecao_de_dados");
-        negada.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact(DisplayName = "A fila com etapa inválida é recusada, e o detalhe da reclassificação inexistente responde 404")]
-    public async Task Fila_EtapaInvalidaEDetalheInexistente()
-    {
-        await ReclassificacaoComRepresentanteAsync();
-        using HttpClient representante = Cliente(Diogo);
-
-        using HttpResponseMessage invalida = await representante.GetAsync(new Uri("/api/autorizacao/reclassificacoes?etapa=outra", UriKind.Relative));
-        using HttpResponseMessage inexistente = await representante.GetAsync(new Uri($"/api/autorizacao/reclassificacoes/{Guid.NewGuid()}", UriKind.Relative));
-
-        invalida.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
-        inexistente.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Fact(DisplayName = "A divergência da governança aparece na tela de quem a vê e é negada a quem não tem permissão")]
-    public async Task Divergencias_SoParaQuemTemPermissao()
-    {
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Diogo, TipoDeGovernanca.RepresentanteDoControlador);
-        using HttpClient representante = Cliente(Diogo);
-        using HttpClient semPermissao = Cliente($"pessoa.{Guid.NewGuid():N}");
-
-        using HttpResponseMessage permitida = await representante.GetAsync(new Uri("/api/autorizacao/governanca/divergencias", UriKind.Relative));
-        using HttpResponseMessage negada = await semPermissao.GetAsync(new Uri("/api/autorizacao/governanca/divergencias", UriKind.Relative));
-
-        permitida.StatusCode.Should().Be(HttpStatusCode.OK);
-        negada.StatusCode.Should().Be(HttpStatusCode.Forbidden);
-    }
-
-    [Fact(DisplayName = "A decisão com resultado, etapa ou alvo inválidos é recusada antes de qualquer gravação")]
-    public async Task Decisao_ComPedidoInvalido_ERecusada()
-    {
-        (_, _, Guid reclassificacao) = await ReclassificacaoComRepresentanteAsync();
-        using HttpClient representante = Cliente(Diogo);
-        string rota = $"/api/autorizacao/reclassificacoes/{reclassificacao}/decisoes";
-
-        using HttpResponseMessage etapa = await EnviarAsync(representante, HttpMethod.Post, rota, new { etapa = "x", resultado = "liberada", todas = true });
-        using HttpResponseMessage resultado = await EnviarAsync(representante, HttpMethod.Post, rota, new { etapa = "protecao_de_dados", resultado = "x", todas = true });
-        using HttpResponseMessage alvo = await EnviarAsync(representante, HttpMethod.Post, rota, new { etapa = "protecao_de_dados", resultado = "liberada", todas = false });
-        using HttpResponseMessage mantidaSemMotivo = await EnviarAsync(representante, HttpMethod.Post, rota, new { etapa = "protecao_de_dados", resultado = "mantida", todas = true });
-        using HttpResponseMessage inexistente = await EnviarAsync(
-            representante, HttpMethod.Post, $"/api/autorizacao/reclassificacoes/{Guid.NewGuid()}/decisoes", new { etapa = "protecao_de_dados", resultado = "liberada", todas = true });
-
-        new[] { etapa, resultado, alvo, mantidaSemMotivo }.Select(static r => r.StatusCode).Should().OnlyContain(static c => c == HttpStatusCode.UnprocessableEntity);
-        inexistente.StatusCode.Should().Be(HttpStatusCode.NotFound);
-    }
-
-    [Fact(DisplayName = "A reclassificação da permissão que saiu do catálogo deixa de valer: sai da fila e não aceita decisão")]
-    public async Task PermissaoRemovidaDoCatalogo_DeixaDeValer()
-    {
-        (Guid perfil, _) = await PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Publico, deUnidade: false);
-        await ConciliarAsync();
-        Guid id = await ReclassificacaoDoPerfilAsync(perfil);
-
-        await GravarCatalogoSemAPermissaoAsync(Codigo, new string('b', 64));
-
-        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        IReclassificacaoRepository reclassificacoes = scope.ServiceProvider.GetRequiredService<IReclassificacaoRepository>();
-        (await reclassificacoes.ListarVigentesQueSuspendemAsync()).Should().NotContain(r => r.Id == id);
-        (await reclassificacoes.EstaVigenteAsync((await reclassificacoes.ObterAsync(id))!)).Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "A reclassificação deixa de valer quando a permissão volta ao catálogo com outra classe")]
-    public async Task PermissaoDeVoltaComOutraClasse_DeixaDeValer()
-    {
-        (Guid perfil, _) = await PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Publico, deUnidade: false);
-        await ConciliarAsync();
-        Guid id = await ReclassificacaoDoPerfilAsync(perfil);
-
-        await GravarCatalogoAnteriorAsync(Codigo, ClassificacaoDeProtecao.Publico, deUnidade: false, new string('c', 64));
-
-        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        IReclassificacaoRepository reclassificacoes = scope.ServiceProvider.GetRequiredService<IReclassificacaoRepository>();
-        (await reclassificacoes.ListarVigentesQueSuspendemAsync()).Should().NotContain(r => r.Id == id);
-        (await reclassificacoes.EstaVigenteAsync((await reclassificacoes.ObterAsync(id))!)).Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "A permissão que volta ao catálogo acima da base rebaixada da concessão suspende com reclassificação vigente")]
-    public async Task PermissaoDeVoltaAcimaDaBaseRebaixada_TemReclassificacaoVigente()
-    {
-        Guid perfil = await SemearPerfilVigenteAsync(Codigo, Outra);
-        string pessoa = $"pessoa.{Guid.NewGuid():N}";
-        await ConcessoesDeTeste.ConcederAsync(Fixture.Factory.Services, pessoa, perfil);
-        await GravarBaseRebaixadaAsync(perfil, await ConcessaoDoPerfilAsync(perfil), ClassificacaoDeProtecao.Publico);
-        await GravarCatalogoSemAPermissaoAsync(Codigo, new string('d', 64));
-
-        await ConciliarAsync();
-
-        (await PermissoesDaPessoaAsync(pessoa)).Should().NotContain(Codigo).And.Contain(Outra);
-        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        IReclassificacaoRepository reclassificacoes = scope.ServiceProvider.GetRequiredService<IReclassificacaoRepository>();
-        (await reclassificacoes.ListarVigentesQueSuspendemAsync()).Should().ContainSingle(r => r.PerfilId == perfil && r.Codigo == Codigo);
-    }
-
-    private async Task GravarBaseRebaixadaAsync(Guid perfil, Guid concessao, ClassificacaoDeProtecao classificacao)
-    {
-        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-        Guid implantacao = await db.ImplantacoesDasPermissoes.OrderByDescending(c => c.Sequencia).Select(c => c.Id).FirstAsync();
-        db.BasesDasPermissoes.Add(BaseDaPermissaoNaConcessao.Registrar(
-            perfil, concessao, Codigo, new BaseDaConcessao(classificacao, false), OrigemDaBase.Conciliacao, implantacao, 0));
-        await db.SaveChangesAsync();
-    }
-
-    private async Task<Guid> ConcessaoDoPerfilAsync(Guid perfil)
-    {
-        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-
-        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Concessoes
-            .Where(c => c.PerfilId == perfil).Select(c => c.Id).SingleAsync();
-    }
-
-    private async Task<Guid> ReclassificacaoDoPerfilAsync(Guid perfil)
-    {
-        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-
-        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().Reclassificacoes
-            .Where(r => r.PerfilId == perfil).Select(r => r.Id).SingleAsync();
-    }
-
-    private Task LerODocumentoDaVersaoAsync(Guid perfil, string leitor) =>
-        ExecutarAsync(
-            """
-            INSERT INTO autorizacao.acessos_ao_documento_da_versao (id, documento_id, leitor_emissor, leitor_conta_id, instante)
-            SELECT {0}, d.id, {1}, {2}, now() FROM autorizacao.documentos_da_versao d WHERE d.perfil_id = {3}
-            """,
-            Guid.CreateVersion7(), TestAuthHandler.DefaultIssuer, leitor, perfil);
-
-    private async Task<(Guid Perfil, string Pessoa)> PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao anterior, bool deUnidade)
-    {
-        Guid perfil = await SemearPerfilVigenteAsync(Codigo, Outra);
-        string pessoa = $"pessoa.{Guid.NewGuid():N}";
-        await ConcessoesDeTeste.ConcederAsync(Fixture.Factory.Services, pessoa, perfil);
-        Guid versao = await VersaoVigenteAsync(perfil);
-        await ExecutarAsync(
-            "UPDATE autorizacao.permissoes_da_versao_do_perfil SET classificacao = {0}, de_unidade = {1} WHERE versao_id = {2} AND codigo = {3}",
-            anterior.ToString().ToLowerInvariant(), deUnidade, versao, Codigo);
-        await GravarCatalogoAnteriorAsync(Codigo, anterior, deUnidade, new string('a', 64));
-
-        return (perfil, pessoa);
-    }
-
-    private Task GravarCatalogoAnteriorAsync(string codigo, ClassificacaoDeProtecao classificacao, bool deUnidade, string impressao) =>
-        ExecutarAsync(CatalogoAnteriorSql, Guid.CreateVersion7(), impressao, codigo, classificacao.ToString().ToLowerInvariant(), deUnidade);
-
-    // A reclassificação do perfil concedido, depois da conciliação, com Diogo designado Representante do controlador.
-    private async Task<(Guid Perfil, string Pessoa, Guid Reclassificacao)> ReclassificacaoComRepresentanteAsync()
-    {
-        (Guid perfil, string pessoa) = await PerfilConcedidoComCatalogoAnteriorAsync(ClassificacaoDeProtecao.Publico, deUnidade: false);
-        await ConciliarAsync();
-        Guid reclassificacao = await ReclassificacaoDoPerfilAsync(perfil);
-        await ConcessoesDeTeste.ConcederGovernancaAsync(Fixture.Factory.Services, Diogo, TipoDeGovernanca.RepresentanteDoControlador);
-
-        return (perfil, pessoa, reclassificacao);
-    }
-
-    private Task GravarCatalogoSemAPermissaoAsync(string codigo, string impressao) =>
-        ExecutarAsync(
-            """
-            WITH atual AS (SELECT id FROM autorizacao.implantacoes_das_permissoes ORDER BY sequencia DESC LIMIT 1),
-            novo AS (INSERT INTO autorizacao.implantacoes_das_permissoes (id, impressao, implantada_em) VALUES ({0}, {1}, now()) RETURNING id)
-            INSERT INTO autorizacao.permissoes_implantadas (implantacao_id, codigo, modulo, classificacao, de_unidade, reservada)
-            SELECT novo.id, p.codigo, p.modulo, p.classificacao, p.de_unidade, p.reservada
-            FROM autorizacao.permissoes_implantadas p, atual, novo
-            WHERE p.implantacao_id = atual.id AND p.codigo <> {2}
-            """,
-            Guid.CreateVersion7(), impressao, codigo);
 
     private async Task<AmostraDaGovernanca> LerMonitoramentoAsync()
     {
@@ -356,31 +139,13 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
         return await scope.ServiceProvider.GetRequiredService<ILeituraDoMonitoramento>().LerAsync(DateTimeOffset.UtcNow);
     }
 
-    private async Task ConciliarAsync()
-    {
-        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        await scope.ServiceProvider.GetRequiredService<ConciliacaoDoCatalogo>().ExecutarAsync(CancellationToken.None);
-    }
-
     private async Task ProcessarAvisosAsync()
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         await scope.ServiceProvider.GetRequiredService<ProcessamentoDosAvisosDaReclassificacao>().ExecutarAsync(CancellationToken.None);
     }
 
-    private async Task<IReadOnlyList<string>> PermissoesDaPessoaAsync(string contaId)
-    {
-        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-        UsuarioRef pessoa = UsuarioRef.From(TestAuthHandler.DefaultIssuer, contaId).Value!;
-        IReadOnlyList<ConcessaoAtiva> concessoes = await scope.ServiceProvider
-            .GetRequiredService<IConcessoesAtivasDoSujeito>().ListarAsync(pessoa, CancellationToken.None);
-
-        return [.. concessoes.SelectMany(static c => c.Permissoes)];
-    }
-
-    private Task<long> ContarAsync(string sql, params object[] parametros) => Consultar(sql, parametros);
-
-    private async Task<long> Consultar(string sql, object[] parametros)
+    private async Task<long> ContarAsync(string sql, params object[] parametros)
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
@@ -422,9 +187,4 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
 
         return (await db.ImplantacoesDasPermissoes.AsNoTracking().OrderByDescending(c => c.Sequencia).Select(c => c.Impressao).FirstAsync()).Trim();
     }
-
-    private static Task<HttpResponseMessage> LiberarAConcessaoAsync(HttpClient representante, Guid reclassificacao, Guid concessao) =>
-        EnviarAsync(
-            representante, HttpMethod.Post, $"/api/autorizacao/reclassificacoes/{reclassificacao}/decisoes",
-            new { etapa = "protecao_de_dados", resultado = "liberada", concessoes = new[] { concessao }, todas = false });
 }
