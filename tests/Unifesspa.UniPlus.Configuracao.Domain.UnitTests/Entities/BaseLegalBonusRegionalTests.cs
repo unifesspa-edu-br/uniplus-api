@@ -102,14 +102,42 @@ public sealed class BaseLegalBonusRegionalTests
         result.Errors.Should().Contain(e => e.Error.Code == BaseLegalBonusRegionalErrorCodes.IdentificacaoTamanho);
     }
 
-    [Fact(DisplayName = "Criar com caractere nulo na identificação retorna IdentificacaoCaractereNulo")]
+    [Fact(DisplayName = "Criar com caractere nulo na identificação retorna IdentificacaoCaractereInvalido")]
     public void Criar_ComIdentificacaoContendoCaractereNulo_RetornaValidationFailure()
     {
         Result<BaseLegalBonusRegional> result = BaseLegalBonusRegional.Criar(
             "LEI", "Lei\0Estadual", "Descricao", [MunicipioValido]);
 
         result.IsFailure.Should().BeTrue();
-        result.Errors.Should().Contain(e => e.Error.Code == BaseLegalBonusRegionalErrorCodes.IdentificacaoCaractereNulo);
+        result.Errors.Should().Contain(e => e.Error.Code == BaseLegalBonusRegionalErrorCodes.IdentificacaoCaractereInvalido);
+    }
+
+    [Fact(DisplayName = "Criar com quebra de linha na identificação retorna IdentificacaoCaractereInvalido")]
+    public void Criar_ComIdentificacaoComQuebraDeLinha_RetornaValidationFailure()
+    {
+        Result<BaseLegalBonusRegional> result = BaseLegalBonusRegional.Criar(
+            "LEI", "Lei\nEstadual", "Descricao", [MunicipioValido]);
+
+        result.Errors.Should().Contain(e => e.Error.Code == BaseLegalBonusRegionalErrorCodes.IdentificacaoCaractereInvalido);
+    }
+
+    [Fact(DisplayName = "Criar com descrição de várias linhas e tabulação cria a base legal")]
+    public void Criar_ComDescricaoDeVariasLinhas_Cria()
+    {
+        Result<BaseLegalBonusRegional> result = BaseLegalBonusRegional.Criar(
+            "LEI", "Identificacao", "Art. 1º\r\n\tArt. 2º", [MunicipioValido]);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Value!.Descricao.Should().Be("Art. 1º\r\n\tArt. 2º");
+    }
+
+    [Fact(DisplayName = "Criar com controle na descrição retorna DescricaoCaractereInvalido")]
+    public void Criar_ComDescricaoComControle_RetornaValidationFailure()
+    {
+        Result<BaseLegalBonusRegional> result = BaseLegalBonusRegional.Criar(
+            "LEI", "Identificacao", "Descricao\u0007", [MunicipioValido]);
+
+        result.Errors.Should().Contain(e => e.Error.Code == BaseLegalBonusRegionalErrorCodes.DescricaoCaractereInvalido);
     }
 
     [Fact(DisplayName = "Criar com descrição vazia retorna DescricaoObrigatoria")]
@@ -132,14 +160,14 @@ public sealed class BaseLegalBonusRegionalTests
         result.Errors.Should().Contain(e => e.Error.Code == BaseLegalBonusRegionalErrorCodes.DescricaoTamanho);
     }
 
-    [Fact(DisplayName = "Criar com caractere nulo na descrição retorna DescricaoCaractereNulo")]
+    [Fact(DisplayName = "Criar com caractere nulo na descrição retorna DescricaoCaractereInvalido")]
     public void Criar_ComDescricaoContendoCaractereNulo_RetornaValidationFailure()
     {
         Result<BaseLegalBonusRegional> result = BaseLegalBonusRegional.Criar(
             "LEI", "Identificacao", "Descricao\0com nulo", [MunicipioValido]);
 
         result.IsFailure.Should().BeTrue();
-        result.Errors.Should().Contain(e => e.Error.Code == BaseLegalBonusRegionalErrorCodes.DescricaoCaractereNulo);
+        result.Errors.Should().Contain(e => e.Error.Code == BaseLegalBonusRegionalErrorCodes.DescricaoCaractereInvalido);
     }
 
     [Fact(DisplayName = "Criar acumula todas as violações do payload no mesmo Result")]

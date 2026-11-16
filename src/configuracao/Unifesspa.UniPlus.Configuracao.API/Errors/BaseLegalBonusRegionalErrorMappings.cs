@@ -27,11 +27,11 @@ internal static class BaseLegalBonusRegionalErrorMappings
                 "uniplus.configuracao.base_legal_bonus_regional.identificacao_tamanho",
                 "Tamanho da identificação da base legal de bônus regional inválido")),
 
-        new(BaseLegalBonusRegionalErrorCodes.IdentificacaoCaractereNulo,
+        new(BaseLegalBonusRegionalErrorCodes.IdentificacaoCaractereInvalido,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.base_legal_bonus_regional.identificacao_caractere_nulo",
-                "Identificação da base legal de bônus regional não pode conter o caractere nulo")),
+                "uniplus.configuracao.base_legal_bonus_regional.identificacao_caractere_invalido",
+                "A identificação da base legal de bônus regional contém o caractere nulo ou caractere que não é texto")),
 
         new(BaseLegalBonusRegionalErrorCodes.DescricaoObrigatoria,
             new DomainErrorMapping(
@@ -45,11 +45,11 @@ internal static class BaseLegalBonusRegionalErrorMappings
                 "uniplus.configuracao.base_legal_bonus_regional.descricao_tamanho",
                 "Tamanho da descrição da base legal de bônus regional inválido")),
 
-        new(BaseLegalBonusRegionalErrorCodes.DescricaoCaractereNulo,
+        new(BaseLegalBonusRegionalErrorCodes.DescricaoCaractereInvalido,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.base_legal_bonus_regional.descricao_caractere_nulo",
-                "Descrição da base legal de bônus regional não pode conter o caractere nulo")),
+                "uniplus.configuracao.base_legal_bonus_regional.descricao_caractere_invalido",
+                "A descrição da base legal de bônus regional contém o caractere nulo, de controle ou de formatação")),
 
         new(BaseLegalBonusRegionalErrorCodes.SemMunicipios,
             new DomainErrorMapping(

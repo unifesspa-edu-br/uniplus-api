@@ -174,7 +174,7 @@ public sealed class BaseLegalBonusRegionalEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         doc.RootElement.GetProperty("code").GetString()
-            .Should().Be("uniplus.configuracao.base_legal_bonus_regional.identificacao_caractere_nulo");
+            .Should().Be("uniplus.configuracao.base_legal_bonus_regional.identificacao_caractere_invalido");
     }
 
     [Fact(DisplayName = "PUT com Id na URL divergente do corpo retorna 400")]
