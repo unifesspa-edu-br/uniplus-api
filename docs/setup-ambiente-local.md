@@ -80,6 +80,9 @@ e a base de CEP no Geo. Não há passo extra além de `cp .env.example .env`.
   `INGRESSO_WEB_PORT`, `PORTAL_WEB_PORT` e `CONFIGURACAO_WEB_PORT`. Com outros valores a restauração para com uma mensagem de erro que lista os
   divergentes; ajuste o `.env` e rode `docker compose down -v`, ou suba sem a base pronta. As demais portas (inclusive `API_PORT`) podem mudar: o
   `localhost:5200` que aparece no banco é só o cache de idempotência de respostas antigas, que nunca é reproduzido.
+- **Conferência no CI:** o job do ambiente local roda `tools/dev-up/confere-base-local.sh`, que reprova o PR quando a migration do código difere da
+  gravada em `dumps/uniplus.dump` (gere os dumps de novo) ou quando um valor exigido pelo restaurador difere do `.env.example`. Rode-o antes de abrir PR
+  que mexa em migration ou nessas variáveis.
 - **Versão da base:** vale para a migration `Inicial` da `main`. Quando a migration for regerada, os dumps precisam ser gerados de novo.
 
 ## Serviços e portas

@@ -122,6 +122,11 @@ jobs:
         # compose, a recusa de .env sem chave obrigatória e a coerência dos compose.
         run: bash tools/dev-up/validate.sh
 
+      - name: Conferir a base local pronta contra o código
+        # Lê o dump com pg_restore -f - (só imprime, não restaura banco): a migration do código tem de ser a gravada em
+        # docker/base-local/dumps/uniplus.dump, e as variáveis que o restaurador exige têm de bater com o .env.example.
+        run: bash tools/dev-up/confere-base-local.sh
+
   formatacao:
     name: Formatação (dotnet format)
     runs-on: ubuntu-latest
