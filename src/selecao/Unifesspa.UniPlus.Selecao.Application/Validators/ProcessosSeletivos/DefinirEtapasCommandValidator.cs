@@ -7,7 +7,7 @@ using FluentValidation;
 /// <summary>
 /// Trimado pela ADR-0125: Nome (obrigatoriedade + tamanho), Carater (obrigatoriedade +
 /// enum válido), Peso (positividade), NotaMinima (não negatividade), Ordem (positividade) e a
-/// coerência da escala (nota máxima, passo) saíram daqui — <see cref="Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso.ValidarFormaBasica"/>
+/// coerência da escala (nota máxima, passo) saíram daqui — <see cref="Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas.ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica"/>
 /// os cobre, acumulando, na primeira passada do <c>DefinirEtapasCommandHandler</c>. O que
 /// permanece é checagem de forma/rota sem equivalente de domínio: <c>PrecisionScale</c> de Peso,
 /// NotaMinima, NotaMaxima e PassoDoLancamento (limite de escala do wire/coluna

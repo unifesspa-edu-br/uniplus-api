@@ -12,29 +12,21 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Etapa <em>pontuada</em> do <see cref="ProcessoSeletivo"/> (peso, caráter, nota
-/// mínima e escala do lançamento) — distinta de fase do cronograma, que é o eixo temporal do
-/// certame. Entidade interna do agregado: criada, substituída e persistida
-/// exclusivamente pela raiz.
+/// Etapa <em>pontuada</em> do <see cref="ProcessoSeletivo"/> (peso, caráter, nota mínima e escala do
+/// lançamento), distinta da fase do cronograma, que é o eixo temporal do certame. Entidade interna do
+/// agregado: criada, substituída e persistida exclusivamente pela raiz.
 /// </summary>
 /// <remarks>
-/// Deriva de <see cref="EntityBase"/> puro (sem soft-delete) de propósito:
-/// a configuração em rascunho é substituível por inteiro (comandos
-/// <c>Definir*</c>) e a trilha auditável do que valeu em cada publicação é o
-/// snapshot de congelamento dos parâmetros na publicação (UNI-REQ-0019) da Story #759 — não faz sentido acumular linhas logicamente
-/// excluídas de rascunho. A <c>Etapa</c> ligada a <c>Edital</c> continua
-/// existindo para a conformidade da Story #460 e é aposentada junto com o
-/// CRUD de Edital na #759.
+/// Deriva de <see cref="EntityBase"/> puro (sem soft delete) porque a configuração em rascunho é
+/// substituível por inteiro; a trilha do que valeu em cada publicação é o snapshot de congelamento
+/// (UNI-REQ-0019).
 /// </remarks>
 public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
 {
     /// <summary>Alinhado a <c>EtapaProcessoConfiguration</c> (varchar(300)).</summary>
     public const int NomeMaxLength = 300;
 
-    /// <summary>
-    /// Caráter declarado que o tipo de etapa não admite — ver
-    /// <see cref="CaraterDaEtapa.ValidarAdmitido"/>.
-    /// </summary>
+    /// <summary>Caráter declarado que o tipo de etapa não admite (<see cref="CaraterDaEtapa.ValidarAdmitido"/>).</summary>
     public const string CaraterNaoAdmitidoPeloTipo = "EtapaProcesso.CaraterNaoAdmitidoPeloTipo";
 
     public const string NotaMaximaInvalida = "EtapaProcesso.NotaMaximaInvalida";
@@ -53,13 +45,10 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
 
     public Guid ProcessoSeletivoId { get; private set; }
 
-
     /// <summary>
-    /// Código canônico da fase declarada pelo cliente (ex.: <c>"AVALIACAO"</c>), e a única
-    /// forma de a etapa dizer onde acontece. É por código, e não por id, porque o id da fase
-    /// não sobrevive à reconciliação da restauração — mesmo motivo de
-    /// <c>FaseCronograma.FaseConcluinteCodigo</c>. A raiz resolve o código contra o cronograma
-    /// sempre que precisa da fase; nada guarda o resultado dessa resolução.
+    /// Código canônico da fase declarada (ex.: <c>"AVALIACAO"</c>), a única forma de a etapa dizer onde
+    /// acontece. É por código, e não por id, porque o id da fase não sobrevive à reconciliação da
+    /// restauração; a raiz o resolve contra o cronograma e nada guarda o resultado.
     /// </summary>
     public string? FaseCodigo { get; private set; }
 
@@ -67,9 +56,8 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     public CaraterEtapa Carater { get; private set; }
 
     /// <summary>
-    /// Cópia por valor do tipo de etapa resolvido em Configuração (ADR-0061). Fonte
-    /// estável de identidade para avaliação de conformidade legal — o rótulo editorial
-    /// (<see cref="Nome"/>) pode divergir do nome do tipo e não participa da avaliação.
+    /// Cópia por valor do tipo de etapa resolvido em Configuração (ADR-0061): a identidade que a
+    /// conformidade legal avalia, já que o rótulo editorial (<see cref="Nome"/>) pode divergir dele.
     /// </summary>
     public TipoEtapaSnapshot TipoEtapa { get; private set; } = null!;
 
@@ -77,32 +65,27 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     public decimal? Peso { get; private set; }
     public decimal? NotaMinima { get; private set; }
 
-    /// <summary>
-    /// Teto da escala em que a nota da etapa é lançada. Sem ele a nota lançada não tem como ser
-    /// recusada por estar fora da escala, e a nota mínima de uma regra não tem contra o que ser
-    /// conferida. Ausente na etapa sem nota e na de nota do ENEM, cuja escala vem do INEP.
-    /// </summary>
+    /// <summary>Teto da escala do lançamento; ausente na etapa sem nota e na de nota do ENEM (escala do INEP).</summary>
     public decimal? NotaMaxima { get; private set; }
 
     /// <summary>De quanto em quanto a nota pode ser lançada; vale só para a nota digitada.</summary>
     public decimal? PassoDoLancamento { get; private set; }
 
     /// <summary>
-    /// Como a nota da etapa é obtida. Declarada pela etapa, e não pelo tipo de etapa: o edital
-    /// decide, e o tipo não restringe a forma. Ausente em rascunho, na etapa sem nota e na de nota
-    /// do ENEM.
+    /// Como a nota da etapa é obtida, declarada pela etapa e não pelo tipo. Ausente em rascunho, na
+    /// etapa sem nota e na de nota do ENEM.
     /// </summary>
     public FormaDeAvaliacao? FormaDeAvaliacao { get; private set; }
 
     /// <summary>
-    /// Como as notas dos avaliadores viram a nota da etapa; só existe na forma humana. É referência
-    /// ao catálogo (código, versão e hash), congelada no snapshot como as regras da classificação.
+    /// Como as notas dos avaliadores viram a nota da etapa (só na forma humana): referência ao catálogo
+    /// (código, versão e hash), congelada no snapshot como as regras da classificação.
     /// </summary>
     public ReferenciaRegra? RegraConsolidacao { get; private set; }
 
     /// <summary>
-    /// Os níveis entre os quais a banca escolhe em cada item, em vez de digitar a nota; ausente
-    /// quando a etapa lança nota digitada. Do nível de maior fração ao de menor.
+    /// Os níveis entre os quais a banca escolhe em cada item, do de maior fração ao de menor; ausente
+    /// quando a etapa lança nota digitada.
     /// </summary>
     public IReadOnlyList<NivelDeAtendimento>? EscalaDeAtendimento { get; private set; }
 
@@ -114,10 +97,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// <summary>Fim da janela própria, em UTC.</summary>
     public DateTimeOffset? Fim { get; private set; }
 
-    /// <summary>
-    /// Se a etapa promete parecer individual por candidato. É a promessa de que existirá; o
-    /// parecer sai na execução, e é dele que o candidato tira fundamento para recorrer.
-    /// </summary>
+    /// <summary>Se a etapa promete parecer individual por candidato, de que o candidato tira fundamento para recorrer.</summary>
     public bool EmiteParecerIndividual { get; private set; }
 
     private readonly List<ProdutoDaEtapa> _produtos = [];
@@ -125,10 +105,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     private readonly List<RecursoDaEtapa> _recursos = [];
     private readonly List<ItemDeAvaliacao> _itensDeAvaliacao = [];
 
-    /// <summary>
-    /// Os itens de avaliação (critérios ou blocos) em que a nota da etapa se divide (0..*), em
-    /// ordem canônica: pelo conteúdo, nunca pelo id.
-    /// </summary>
+    /// <summary>Os itens em que a nota da etapa se divide, em ordem canônica: pelo conteúdo, nunca pelo id.</summary>
     public IReadOnlyList<ItemDeAvaliacao> ItensDeAvaliacao => [.. _itensDeAvaliacao
         .OrderBy(static i => HashCanonicalComputer.NormalizeNfc(i.Rotulo), StringComparer.Ordinal)
         .ThenBy(static i => i.PontuacaoMaxima)
@@ -147,28 +124,20 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     public bool ProduzResultado => _produtos.Exists(static p => p.Papel is not null);
 
     /// <summary>
-    /// Uma etapa compõe a nota final quando o seu caráter pontua
-    /// (classificatória ou ambas) e ela declara peso — é o critério que a
-    /// inclui no divisor da média (<see cref="ProcessoSeletivo.CalcularDivisorMedia"/>).
+    /// A etapa compõe a nota final quando o caráter pontua e ela declara peso: é o critério que a inclui
+    /// no divisor da média (<see cref="ProcessoSeletivo.CalcularDivisorMedia"/>).
     /// </summary>
     public bool ComponeNota => CaraterDaEtapa.Pontua(Carater) && Peso.HasValue;
 
-    /// <summary>
-    /// A etapa declara que sua nota vem do ENEM — é o atributo do tipo congelado que diz
-    /// isso, e é essa declaração que o motor de classificação consome.
-    /// </summary>
+    /// <summary>A etapa declara que a nota vem do ENEM, atributo do tipo congelado que o motor de classificação consome.</summary>
     public bool DeclaraNotaDoEnem => TipoEtapa.NotaDeOrigemNoEnem;
 
     private EtapaProcesso() { }
 
     /// <summary>
-    /// Cria a etapa acumulando toda violação independente em vez de retornar na primeira (ADR-0125), com
-    /// as mesmas recusas e a mesma ordem de <see cref="AtualizarDados"/>. A identidade da etapa nova é do
-    /// sistema, não do cliente, e os itens declarados entram todos como itens novos. Precisão/escala de
-    /// <see cref="Peso"/>, <see cref="NotaMinima"/>, <see cref="NotaMaxima"/> e
-    /// <see cref="PassoDoLancamento"/> (<c>numeric(18,4)</c>) permanecem só no validator: não há ainda um
-    /// helper de domínio para limite decimal, então checar aqui duplicaria uma regra de forma de
-    /// wire/coluna sem trazer nenhum ganho de correção.
+    /// Cria a etapa acumulando toda violação independente (ADR-0125), com as mesmas recusas e a mesma
+    /// ordem de <see cref="AtualizarDados"/>. A identidade é do sistema e os itens entram todos como novos.
+    /// A precisão decimal de peso e notas (<c>numeric(18,4)</c>) fica só no validator.
     /// </summary>
     public static Result<EtapaProcesso> Criar(
         IdentificacaoDaEtapa identificacao,
@@ -184,80 +153,14 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     }
 
     /// <summary>
-    /// Nome, caráter, ordem, peso, nota mínima e a escala (nota máxima e passo) não dependem de nenhum
-    /// cadastro cross-módulo — diferente de <see cref="TipoEtapa"/> (resolvido à parte, contra o cadastro
-    /// vivo de Configuração, por quem chama). Compartilhada entre <see cref="Criar"/> e
-    /// <see cref="AtualizarDados"/> (mesmas checagens) e exposta para o handler poder confirmar a forma de
-    /// TODAS as etapas do payload numa primeira passada, antes de resolver o tipo de etapa no cadastro
-    /// (mesmo padrão de <c>FormaDoItem.ValidarFormaBasica</c>, PR #1214).
+    /// Reidrata uma etapa de uma <see cref="VersaoConfiguracao"/> congelada, <b>preservando o
+    /// <see cref="EntityBase.Id"/></b>, que <see cref="Criar"/> não aceita.
     /// </summary>
     /// <remarks>
-    /// O nome, o caráter e a ordem chegam soltos porque o handler confere a forma antes de ter o tipo, e
-    /// <see cref="IdentificacaoDaEtapa"/> só existe depois dele. A forma de avaliação e a regra de
-    /// consolidação de <paramref name="avaliacao"/> não são conferidas aqui: a coerência entre elas é de
-    /// <see cref="CoerenciaDaAvaliacaoDaEtapa"/>.
-    /// </remarks>
-    public static List<FieldError> ValidarFormaBasica(
-        string? nome,
-        CaraterEtapa carater,
-        int? ordem,
-        DeclaracaoDaAvaliacaoDaEtapa avaliacao,
-        IReadOnlyList<ItemDeAvaliacaoDeclarado?>? itens)
-    {
-        ArgumentNullException.ThrowIfNull(avaliacao);
-
-        List<FieldError> erros = ValidarNome(nome);
-        erros.AddRange(CaraterDaEtapa.ValidarDeclarado(carater, avaliacao.Peso, avaliacao.NotaMinima));
-        decimal? notaMinimaAceita = erros.Exists(static e => e.Field == "notaMinima") ? null : avaliacao.NotaMinima;
-        erros.AddRange(EscalaDoLancamento.Validar(notaMinimaAceita, avaliacao.NotaMaxima, avaliacao.PassoDoLancamento));
-        erros.AddRange(ValidarOrdem(ordem));
-        erros.AddRange(ItemDeAvaliacao.Validar(itens, avaliacao.PassoDoLancamento));
-        erros.AddRange(NiveisDeAtendimento.Validar(avaliacao.EscalaDeAtendimento));
-
-        return erros;
-    }
-
-    private static List<FieldError> ValidarNome(string? nome)
-    {
-        if (string.IsNullOrWhiteSpace(nome))
-        {
-            return [new("nome", new DomainError("EtapaProcesso.NomeObrigatorio", "O nome da etapa é obrigatório."))];
-        }
-
-        return nome.Trim().Length > NomeMaxLength
-            ? [new("nome", new DomainError(
-                "EtapaProcesso.NomeTamanho", $"O nome da etapa deve ter no máximo {NomeMaxLength} caracteres."))]
-            : [];
-    }
-
-    private static List<FieldError> ValidarOrdem(int? ordem) =>
-        ordem is <= 0
-            ? [new("ordem", new DomainError(
-                "EtapaProcesso.OrdemInvalida", "A ordem da etapa, quando informada, deve ser maior que zero."))]
-            : [];
-
-    /// <summary>
-    /// Reidrata uma etapa a partir de uma <see cref="VersaoConfiguracao"/> congelada,
-    /// <b>preservando o <see cref="EntityBase.Id"/></b> — que <see cref="Criar"/> não
-    /// aceita, por decisão (a identidade de uma etapa nova é do sistema, não do cliente).
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// O <c>id</c> da etapa é congelado no envelope (ADR-0110 D2), porque
-    /// <c>criteriosDesempate.args.etapaRef</c> e <c>regrasEliminacao.args.etapaRef</c>
-    /// apontam para ele: sem preservá-lo, o snapshot reidratado teria referências que
-    /// não resolvem, e o desempate e a eliminação do certame ficariam inexecutáveis. O
-    /// mesmo vale para o id de cada item de avaliação (ADR-0150), a que o lançamento e o
-    /// recurso apontam, e que chega por <paramref name="itens"/>. Os ids das
-    /// demais filhas são regenerados — nenhuma referência de negócio exige estabilidade
-    /// deles, e as FKs internas são reconstruídas junto com o grafo.
-    /// </para>
-    /// <para>
-    /// Reidratar não é criar: os dados vêm de um documento com peso jurídico, já
-    /// validado quando foi congelado. As guardas aqui são a última linha contra erro de
-    /// programação — o decoder do envelope é quem recusa bytes inválidos, e o faz com
-    /// <c>Result</c>, nunca com exceção.
-    /// </para>
+    /// O id da etapa e o de cada item de avaliação (<paramref name="itens"/>) são congelados no
+    /// envelope porque o desempate, a eliminação, o lançamento e o recurso apontam para eles; os ids das
+    /// demais filhas são regenerados. Os dados vêm de um documento já validado, e o decoder recusa
+    /// bytes inválidos com <c>Result</c>: as guardas aqui são só contra erro de programação.
     /// </remarks>
     public static EtapaProcesso Reidratar(
         Guid id,
@@ -267,49 +170,27 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     {
         ArgumentNullException.ThrowIfNull(identificacao);
         ArgumentNullException.ThrowIfNull(avaliacao);
-        ExigirIdentidadeCongelada(id, identificacao.Nome, identificacao.Carater, identificacao.TipoEtapa);
+        ConferenciaDaDeclaracaoDaEtapa.ExigirIdentidadeCongelada(id, identificacao.Nome, identificacao.Carater, identificacao.TipoEtapa);
 
         EtapaProcesso etapa = new() { Id = id };
         etapa.DefinirIdentificacaoECarater(identificacao);
         etapa.DefinirLancamentoDaNota(avaliacao);
-        etapa.ReporItensCongelados(itens ?? []);
+        etapa.SubstituirItens(ReconciliacaoDosItensDeAvaliacao.ReporCongelados(etapa._itensDeAvaliacao, itens ?? []));
 
         return etapa;
     }
 
-    private static void ExigirTipoResolvido(TipoEtapaSnapshot tipoEtapa) => ArgumentNullException.ThrowIfNull(tipoEtapa);
-
-    private static void ExigirIdentidadeCongelada(Guid id, string nome, CaraterEtapa carater, TipoEtapaSnapshot tipoEtapa)
-    {
-        ArgumentException.ThrowIfNullOrWhiteSpace(nome);
-        ExigirTipoResolvido(tipoEtapa);
-        if (id == Guid.Empty)
-        {
-            throw new ArgumentException("A etapa reidratada deve declarar o Id congelado no envelope.", nameof(id));
-        }
-
-        if (carater == CaraterEtapa.Nenhum)
-        {
-            throw new ArgumentException(
-                "Caráter da etapa é obrigatório (classificatória, eliminatória ou ambas).", nameof(carater));
-        }
-    }
-
     /// <summary>
-    /// Atualiza os dados da MESMA etapa (mesmo <see cref="EntityBase.Id"/>) em
-    /// vez de recriá-la — permite que <c>DefinirEtapasCommandHandler</c>
-    /// reconcilie o payload de <c>PUT /etapas</c> com o agregado tracked
-    /// preservando a identidade de uma etapa já referenciada por critério de
-    /// desempate ou regra de eliminação da classificação (sem isso, qualquer
-    /// reconfiguração de etapas quebraria essas referências por construção).
-    /// Recusa sem mutar nada quando a declaração viola alguma regra.
+    /// Atualiza os dados da MESMA etapa (mesmo <see cref="EntityBase.Id"/>) em vez de recriá-la, para
+    /// que o desempate e a eliminação continuem apontando para ela. Recusa sem mutar nada quando a
+    /// declaração viola alguma regra.
     /// </summary>
     public Result AtualizarDados(
         IdentificacaoDaEtapa identificacao,
         DeclaracaoDaAvaliacaoDaEtapa avaliacao,
         IReadOnlyList<ItemDeAvaliacaoDeclarado>? itens = null)
     {
-        List<FieldError> erros = ViolacoesDaDeclaracao(identificacao, avaliacao, itens);
+        List<FieldError> erros = ConferenciaDaDeclaracaoDaEtapa.Violacoes(identificacao, avaliacao, itens);
         if (erros.Count > 0)
         {
             return Result.ValidationFailure(erros);
@@ -317,24 +198,9 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
 
         DefinirIdentificacaoECarater(identificacao);
         DefinirLancamentoDaNota(avaliacao);
-        ReconciliarItens(itens);
+        SubstituirItens(ReconciliacaoDosItensDeAvaliacao.Reconciliar(_itensDeAvaliacao, itens));
 
         return Result.Success();
-    }
-
-    private static List<FieldError> ViolacoesDaDeclaracao(
-        IdentificacaoDaEtapa identificacao, DeclaracaoDaAvaliacaoDaEtapa avaliacao, IReadOnlyList<ItemDeAvaliacaoDeclarado>? itens)
-    {
-        ArgumentNullException.ThrowIfNull(identificacao);
-        ArgumentNullException.ThrowIfNull(avaliacao);
-        ExigirTipoResolvido(identificacao.TipoEtapa);
-
-        List<FieldError> erros = ValidarFormaBasica(identificacao.Nome, identificacao.Carater, identificacao.Ordem, avaliacao, itens);
-        erros.AddRange(CoerenciaDaAvaliacaoDaEtapa.Validar(
-            identificacao.TipoEtapa.NotaDeOrigemNoEnem, avaliacao.PassoDoLancamento, avaliacao.FormaDeAvaliacao,
-            avaliacao.RegraConsolidacao?.Codigo, itens?.Count > 0, avaliacao.EscalaDeAtendimento?.Count > 0));
-
-        return erros;
     }
 
     private void DefinirIdentificacaoECarater(IdentificacaoDaEtapa identificacao)
@@ -365,47 +231,6 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
 
-    /// <summary>
-    /// Substitui os itens reconciliando pelo id: o item declarado com o id de um existente é a
-    /// mesma linha com rótulo e pontuação novos, e é isso que mantém o id estável para quem aponta
-    /// para ele. Sem id, ou com um que a etapa não conhece, é item novo.
-    /// </summary>
-    private void ReconciliarItens(IReadOnlyList<ItemDeAvaliacaoDeclarado>? declarados)
-    {
-        List<ItemDeAvaliacao> vivos = [.. _itensDeAvaliacao];
-
-        SubstituirItens((declarados ?? []).Select(declarado =>
-            ReaproveitarItemPeloId(vivos, declarado.Id, declarado.Rotulo, declarado.PontuacaoMaxima)
-                ?? ItemDeAvaliacao.Criar(declarado)));
-    }
-
-    /// <summary>
-    /// Repõe os itens congelados preservando o id: o item vivo de mesmo id é reaproveitado, e o
-    /// congelado que a linha viva não tem entra com o id do envelope.
-    /// </summary>
-    private void ReporItensCongelados(IReadOnlyList<ItemDeAvaliacao> congelados)
-    {
-        List<ItemDeAvaliacao> vivos = [.. _itensDeAvaliacao];
-
-        SubstituirItens(congelados.Select(congelado =>
-            ReaproveitarItemPeloId(vivos, congelado.Id, congelado.Rotulo, congelado.PontuacaoMaxima) ?? congelado));
-    }
-
-    private static ItemDeAvaliacao? ReaproveitarItemPeloId(
-        List<ItemDeAvaliacao> vivos, Guid? id, string rotulo, decimal pontuacaoMaxima)
-    {
-        ItemDeAvaliacao? existente = id is { } procurado ? vivos.Find(i => i.Id == procurado) : null;
-        if (existente is null)
-        {
-            return null;
-        }
-
-        vivos.Remove(existente);
-        existente.Atualizar(rotulo, pontuacaoMaxima);
-
-        return existente;
-    }
-
     /// <summary>Declara a janela própria da etapa, normalizada para UTC, e o parecer individual.</summary>
     public Result DefinirJanelaEParecer(DateTimeOffset? inicio, DateTimeOffset? fim, bool emiteParecerIndividual)
     {
@@ -429,21 +254,14 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     }
 
     /// <summary>
-    /// Substitui os produtos da etapa por inteiro, recusando o mesmo par ato e papel
-    /// declarado duas vezes — dois registros idênticos na mesma etapa tornariam ambíguo o
-    /// que o recurso ancora.
-    ///
-    /// A chave é o par, e não o ato sozinho: o catálogo nomeia a matéria, e a mesma matéria
-    /// é publicada uma vez como preliminar e outra como definitiva. Ver
-    /// <see cref="FaseCronograma"/>, onde a mesma chave governa os produtos da fase.
+    /// Substitui os produtos da etapa por inteiro, recusando o mesmo par ato e papel duas vezes: dois
+    /// registros idênticos tornariam ambíguo o que o recurso ancora. A chave é o par, e não o ato, porque
+    /// a mesma matéria é publicada como preliminar e como definitiva (a fase usa a mesma chave).
     /// </summary>
     /// <remarks>
-    /// O ato é comparado em NFC, como o documento canônico o emite: sem normalizar, o mesmo
-    /// código escrito uma vez com acento composto e outra com acento decomposto atravessaria a
-    /// guarda e produziria duas linhas com <c>atoCodigo</c> e papel idênticos no documento. A
-    /// reconciliação pelo par (<see cref="ProdutosPublicados"/>) preserva a linha do que não mudou
-    /// em vez de trocar a coleção: o cliente devolve o que leu, e recriar a linha giraria o Id, que
-    /// entra nos bytes canônicos — o hash da publicação mudaria a cada gravação idêntica.
+    /// O ato é comparado em NFC, como o documento canônico o emite. A reconciliação pelo par
+    /// (<see cref="ProdutosPublicados"/>) preserva a linha do que não mudou: recriá-la giraria o Id, que
+    /// entra nos bytes canônicos, e o hash da publicação mudaria a cada gravação idêntica.
     /// </remarks>
     public Result DefinirProdutos(IReadOnlyList<ProdutoDaEtapa> produtos)
     {
@@ -487,10 +305,9 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         CicloRecursal.TiposComCicloAberto(_produtos.Select(static p => (p.AtoCodigo, p.Papel)));
 
     /// <summary>
-    /// Substitui as janelas recursais por inteiro. Prova o que só a etapa enxerga: a âncora
-    /// em ato referencia um produto preliminar desta etapa; a âncora em ciência exige a
-    /// promessa de parecer individual, porque é dele que corre o prazo; e não há duas
-    /// janelas para o mesmo fato.
+    /// Substitui as janelas recursais por inteiro. Prova o que só a etapa enxerga: a âncora em ato
+    /// referencia um produto preliminar desta etapa, a âncora em ciência exige a promessa de parecer
+    /// individual, e não há duas janelas para o mesmo fato.
     /// </summary>
     public Result DefinirRecursos(IReadOnlyList<RecursoDaEtapa> recursos)
     {
@@ -508,51 +325,32 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     }
 
     /// <summary>
-    /// Repõe numa etapa viva os dados da sua versão congelada, preservando o
-    /// <see cref="EntityBase.Id"/> e o <c>CreatedAt</c> da instância rastreada.
+    /// Repõe numa etapa viva os dados da sua versão congelada, preservando o <see cref="EntityBase.Id"/>
+    /// e o <c>CreatedAt</c> da instância rastreada. Só a reconciliação da restauração
+    /// (<c>ProcessoSeletivo.AplicarGrafo</c>) chama.
     /// </summary>
     /// <remarks>
-    /// <para>
-    /// Não passa por <see cref="ValidarFormaBasica"/>, e é a diferença que importa em relação a
-    /// <see cref="AtualizarDados"/>: repor não é declarar. Os dados vêm de um envelope com peso
-    /// jurídico, válidos quando foram congelados, e uma regra de forma criada depois não pode
-    /// tornar a reposição impossível — isso trancaria o certame num estado do qual o descarte da
-    /// retificação nunca sairia. É a mesma postura de <see cref="Reidratar"/>, que decodifica o
-    /// envelope sem revalidar o que ele já provou.
-    /// </para>
-    /// <para>
-    /// Chamada apenas pela reconciliação da restauração, em <c>ProcessoSeletivo.AplicarGrafo</c>.
-    /// Lê tudo da etapa <paramref name="congelada"/> decodificada do envelope.
-    /// </para>
+    /// Não passa pela conferência da declaração: repor não é declarar. Os dados vêm de um envelope com
+    /// peso jurídico, e uma regra de forma criada depois não pode tornar a reposição impossível, o que
+    /// trancaria o certame num estado do qual o descarte da retificação nunca sairia.
     /// </remarks>
     internal void ReporDe(EtapaProcesso congelada)
     {
         ArgumentNullException.ThrowIfNull(congelada);
 
-        ReporDadosDe(congelada);
-        ReporFilhasDe(congelada);
-    }
-
-    private void ReporDadosDe(EtapaProcesso congelada)
-    {
         DefinirIdentificacaoECarater(congelada.IdentificacaoAtual());
         DefinirLancamentoDaNota(congelada.AvaliacaoAtual());
         AplicarJanelaEParecer(congelada.Inicio, congelada.Fim, congelada.EmiteParecerIndividual);
-    }
-
-    private void ReporFilhasDe(EtapaProcesso congelada)
-    {
-        ReporItensCongelados(congelada.ItensDeAvaliacao);
+        SubstituirItens(ReconciliacaoDosItensDeAvaliacao.ReporCongelados(_itensDeAvaliacao, congelada.ItensDeAvaliacao));
         IReadOnlyDictionary<Guid, Guid> produtoVivoPorCongelado = ReporProdutosDe(congelada);
         SubstituirBancas(congelada.Bancas);
         SubstituirRecursos(JanelasRecursaisDaEtapa.Repor(_recursos, congelada.Recursos, produtoVivoPorCongelado));
     }
 
     /// <summary>
-    /// Produtos em duas passadas, como na fase: a linha que só trocou de papel mantém o Id, senão
-    /// sairia como órfã e voltaria como inserção, com DELETE e INSERT disputando o mesmo slot do
-    /// índice único (etapa, ato, papel) dentro da mesma transação. O ato é comparado em NFC: o
-    /// envelope congela o ato em NFC e a linha viva guarda o que o cliente escreveu.
+    /// Produtos em duas passadas, como na fase: a linha que só trocou de papel mantém o Id, senão voltaria
+    /// como inserção disputando o slot do índice único (etapa, ato, papel) com o DELETE da órfã. O ato é
+    /// comparado em NFC: o envelope o congela assim e a linha viva guarda o que o cliente escreveu.
     /// </summary>
     /// <returns>O Id da linha que ficou, por Id do produto congelado.</returns>
     private IReadOnlyDictionary<Guid, Guid> ReporProdutosDe(EtapaProcesso congelada)
@@ -567,26 +365,14 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     }
 
     private void SubstituirProdutos(IEnumerable<ProdutoDaEtapa> produtos) =>
-        SubstituirFilhas(_produtos, produtos, produto => produto.VincularEtapa(Id));
+        FilhasDoAgregado.Substituir(_produtos, produtos, produto => produto.VincularEtapa(Id));
 
     private void SubstituirBancas(IEnumerable<BancaDaEtapa> declaradas) =>
-        SubstituirFilhas(_bancas, AlinhamentoDasBancasDaEtapa.Reconciliar(_bancas, declaradas), banca => banca.VincularEtapa(Id));
+        FilhasDoAgregado.Substituir(_bancas, AlinhamentoDasBancasDaEtapa.Reconciliar(_bancas, declaradas), banca => banca.VincularEtapa(Id));
 
     private void SubstituirRecursos(IEnumerable<RecursoDaEtapa> recursos) =>
-        SubstituirFilhas(_recursos, recursos, recurso => recurso.VincularEtapa(Id));
+        FilhasDoAgregado.Substituir(_recursos, recursos, recurso => recurso.VincularEtapa(Id));
 
     private void SubstituirItens(IEnumerable<ItemDeAvaliacao> itens) =>
-        SubstituirFilhas(_itensDeAvaliacao, itens, item => item.VincularEtapa(Id));
-
-    // Materializa antes de limpar: as novas podem ser derivadas da própria coleção que se esvazia.
-    private static void SubstituirFilhas<T>(List<T> atuais, IEnumerable<T> novas, Action<T> vincularEtapa)
-    {
-        List<T> substitutas = [.. novas];
-        atuais.Clear();
-        foreach (T filha in substitutas)
-        {
-            vincularEtapa(filha);
-            atuais.Add(filha);
-        }
-    }
+        FilhasDoAgregado.Substituir(_itensDeAvaliacao, itens, item => item.VincularEtapa(Id));
 }

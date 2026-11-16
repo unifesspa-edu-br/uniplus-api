@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed partial class EtapaProcessoTests
@@ -12,7 +13,7 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "A contradição da escala acumula com as demais recusas, cada uma no seu campo")]
     public void ValidarFormaBasica_ContradicaoDaEscala_AcumulaComAsDemais()
     {
-        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+        List<FieldError> erros = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Prova Objetiva", CaraterEtapa.Ambas, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 0m, NotaMinima: 12m, NotaMaxima: 10m, PassoDoLancamento: 0.3m, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null);
@@ -56,7 +57,7 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "Peso em etapa apenas eliminatória é recusado")]
     public void ValidarFormaBasica_PesoEmEtapaApenasEliminatoria_Recusa()
     {
-        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+        List<FieldError> erros = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Banca de heteroidentificação", CaraterEtapa.Eliminatoria, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null);
@@ -69,7 +70,7 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "Nota mínima em etapa apenas classificatória é recusada")]
     public void ValidarFormaBasica_NotaMinimaEmEtapaApenasClassificatoria_Recusa()
     {
-        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+        List<FieldError> erros = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Prova Objetiva", CaraterEtapa.Classificatoria, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3m, NotaMinima: 5m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null);
@@ -86,7 +87,7 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "Caráter ausente não gera também erro de coerência de peso")]
     public void ValidarFormaBasica_CaraterAusenteComPeso_ReportaSoOCarater()
     {
-        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+        List<FieldError> erros = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Etapa", CaraterEtapa.Nenhum, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3m, NotaMinima: 5m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null);
@@ -98,7 +99,7 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "ValidarFormaBasica sem violação retorna lote vazio")]
     public void ValidarFormaBasica_SemViolacao_Vazio()
     {
-        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+        List<FieldError> erros = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Prova Objetiva", CaraterEtapa.Ambas, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3m, NotaMinima: 5m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null);

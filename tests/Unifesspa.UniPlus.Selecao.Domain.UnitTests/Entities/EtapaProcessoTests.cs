@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public sealed partial class EtapaProcessoTests
@@ -268,7 +269,7 @@ public sealed partial class EtapaProcessoTests
     [InlineData(null, -0.5, "EtapaProcesso.PassoDoLancamentoInvalido", "passoDoLancamento")]
     public void ValidarFormaBasica_EscalaNaoPositiva_Recusa(double? notaMaxima, double? passo, string codigo, string campo)
     {
-        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+        List<FieldError> erros = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Prova Objetiva", CaraterEtapa.Classificatoria, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: (decimal?)notaMaxima, PassoDoLancamento: (decimal?)passo, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null);
@@ -280,11 +281,11 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "Nota mínima acima da nota máxima é recusada, e igual é aceita")]
     public void ValidarFormaBasica_NotaMinimaContraNotaMaxima_RecusaSoAcima()
     {
-        List<FieldError> acima = EtapaProcesso.ValidarFormaBasica(
+        List<FieldError> acima = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Entrevista", CaraterEtapa.Eliminatoria, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 10.5m, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null);
-        List<FieldError> igual = EtapaProcesso.ValidarFormaBasica(
+        List<FieldError> igual = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Entrevista", CaraterEtapa.Eliminatoria, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 10m, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null);
@@ -303,7 +304,7 @@ public sealed partial class EtapaProcessoTests
     [InlineData(10, 4, false)]
     public void ValidarFormaBasica_NotaMaximaContraPasso_RecusaForaDoMultiplo(double notaMaxima, double passo, bool aceita)
     {
-        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+        List<FieldError> erros = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Prova Objetiva", CaraterEtapa.Classificatoria, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: (decimal)notaMaxima, PassoDoLancamento: (decimal)passo, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null);
@@ -321,12 +322,12 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "Escala parcial é aceita na gravação: sem passo, ou sem nota máxima")]
     public void ValidarFormaBasica_EscalaParcial_Aceita()
     {
-        EtapaProcesso.ValidarFormaBasica(
+        ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Prova Objetiva", CaraterEtapa.Classificatoria, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null)
             .Should().BeEmpty();
-        EtapaProcesso.ValidarFormaBasica(
+        ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Prova Objetiva", CaraterEtapa.Classificatoria, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: 0.5m, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null)
@@ -336,7 +337,7 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "A nota mínima não precisa ser múltipla do passo")]
     public void ValidarFormaBasica_NotaMinimaForaDoPasso_Aceita()
     {
-        EtapaProcesso.ValidarFormaBasica(
+        ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Entrevista", CaraterEtapa.Eliminatoria, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: 5.1m, NotaMaxima: 10m, PassoDoLancamento: 0.5m, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null)
@@ -346,7 +347,7 @@ public sealed partial class EtapaProcessoTests
     [Fact(DisplayName = "Nota mínima já recusada por outro motivo não é comparada de novo com a nota máxima")]
     public void ValidarFormaBasica_NotaMinimaJaRecusada_NaoRepeteAComparacao()
     {
-        List<FieldError> erros = EtapaProcesso.ValidarFormaBasica(
+        List<FieldError> erros = ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Prova Objetiva", CaraterEtapa.Classificatoria, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: 12m, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null);

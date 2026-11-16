@@ -59,7 +59,7 @@ internal static class EscritaDasEtapasDoProcesso
         ComIndice(CaraterDaEtapa.ValidarAdmitido(carater, admitePontuacao, admiteEliminacao, nomeDoTipo), indice);
 
     private static List<FieldError> FormaDaEtapa(EtapaProcessoInput etapa) =>
-        EtapaProcesso.ValidarFormaBasica(
+        ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             etapa.Nome, etapa.Carater, etapa.Ordem,
             DeclaracaoDaAvaliacao(etapa, forma: null, regraConsolidacao: null), ItensDeclarados(etapa));
 }

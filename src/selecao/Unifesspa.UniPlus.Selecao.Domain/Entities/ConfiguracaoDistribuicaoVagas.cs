@@ -115,7 +115,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
     /// <see cref="ModalidadeSelecionada"/> já resolvida, não apenas da contagem), esta é
     /// exposta para o handler confirmar a forma de TODAS as distribuições do payload numa
     /// primeira passada, antes de resolver oferta/modalidades/regras nos cadastros vivos
-    /// (mesmo padrão de <c>EtapaProcesso.ValidarFormaBasica</c>, PR #1218).
+    /// (mesmo padrão de <c>ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica</c>).
     /// </summary>
     public static List<FieldError> ValidarFormaBasica(int voBase, decimal pr, int quantidadeModalidades)
     {

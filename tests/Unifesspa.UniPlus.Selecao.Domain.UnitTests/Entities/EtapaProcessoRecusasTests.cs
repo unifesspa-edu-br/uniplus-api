@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using Xunit;
@@ -62,7 +63,7 @@ public sealed class EtapaProcessoRecusasTests
 
     private static List<FieldError> FormaBasica(
         CaraterEtapa carater, decimal? peso = null, decimal? notaMinima = null, decimal? notaMaxima = null, decimal? passo = null) =>
-        EtapaProcesso.ValidarFormaBasica(
+        ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Entrevista", carater, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: notaMinima, NotaMaxima: notaMaxima, PassoDoLancamento: passo, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null);
@@ -227,7 +228,7 @@ public sealed class EtapaProcessoRecusasTests
     // ── Escala de atendimento com elemento nulo ──
 
     private static List<FieldError> FormaBasicaComEscala(IReadOnlyList<NivelDeAtendimento?> escala) =>
-        EtapaProcesso.ValidarFormaBasica(
+        ConferenciaDaDeclaracaoDaEtapa.ValidarFormaBasica(
             "Entrevista", CaraterEtapa.Ambas, ordem: 1,
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: null, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: escala),
             itens: null);
