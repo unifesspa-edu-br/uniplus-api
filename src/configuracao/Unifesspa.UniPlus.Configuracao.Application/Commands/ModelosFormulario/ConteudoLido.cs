@@ -22,12 +22,12 @@ internal sealed record ConteudoLido(
     IReadOnlyList<(int Indice, TermoDoModelo Termo)> Termos,
     IReadOnlyList<string> Pressupostos,
     IReadOnlyList<(int Indice, GrupoDoModelo Grupo)> Grupos,
-    IReadOnlyList<DocumentoExigidoDoModelo> Documentos,
+    IReadOnlyList<(int Indice, DocumentoExigidoDoModelo Documento)> Documentos,
     IReadOnlyList<FieldError> Erros)
 {
     public ConteudoDoModelo ParaConteudo() => new(
         Titulo, [.. Etapas.Select(static e => e.Etapa)], [.. Itens.Select(static i => i.Item)], [.. Termos.Select(static t => t.Termo)], Pressupostos,
-        [.. Grupos.Select(static g => g.Grupo)], Documentos);
+        [.. Grupos.Select(static g => g.Grupo)], [.. Documentos.Select(static d => d.Documento)]);
 
     /// <summary>
     /// Lê a entrada pela forma das regras do formulário (<see cref="EntradaDeRegras"/>): token
@@ -39,58 +39,36 @@ internal sealed record ConteudoLido(
     {
         ArgumentNullException.ThrowIfNull(formatos);
         List<FieldError> erros = [];
-        List<(int, EtapaDoModelo)> etapas = [];
-        List<(int, ItemDoModelo)> itens = [];
-        List<(int, TermoDoModelo)> termos = [];
+        return new(
+            entrada?.Titulo,
+            LerLista(entrada?.Etapas, "etapas", (etapa, campo) => LerEtapa(etapa, campo, erros)),
+            LerLista(entrada?.Itens, "itens", (item, campo) => LerItem(item, campo, formatos, erros)),
+            LerLista(entrada?.Termos, "termos", (termo, campo) => LerTermo(termo, campo, erros)),
+            [.. (entrada?.Pressupostos ?? []).Select(static p => p ?? string.Empty)],
+            LerLista(entrada?.Grupos, "grupos", (grupo, campo) => LerGrupo(grupo, campo, formatos, erros)),
+            LerLista(entrada?.DocumentosExigidos, "documentosExigidos", (documento, campo) => LerDocumento(documento, campo, erros)),
+            erros);
+    }
 
-        IReadOnlyList<EtapaFormularioInput?> etapasDeEntrada = entrada?.Etapas ?? [];
-        for (int i = 0; i < etapasDeEntrada.Count; i++)
+    /// <summary>
+    /// Lê cada parte da lista de entrada e guarda a posição que ela tem na entrada: a parte que não
+    /// se leu fica de fora, e as recusas da conferência seguinte ainda apontam a posição original.
+    /// </summary>
+    private static List<(int Indice, TLido Lido)> LerLista<TEntrada, TLido>(
+        IReadOnlyList<TEntrada?>? entradas, string prefixo, Func<TEntrada?, string, TLido?> ler)
+        where TLido : class
+    {
+        List<(int, TLido)> lidos = [];
+        IReadOnlyList<TEntrada?> lista = entradas ?? [];
+        for (int i = 0; i < lista.Count; i++)
         {
-            if (LerEtapa(etapasDeEntrada[i], $"etapas[{i}]", erros) is { } etapa)
+            if (ler(lista[i], $"{prefixo}[{i}]") is { } lido)
             {
-                etapas.Add((i, etapa));
+                lidos.Add((i, lido));
             }
         }
 
-        IReadOnlyList<FatoColetadoInput?> itensDeEntrada = entrada?.Itens ?? [];
-        for (int i = 0; i < itensDeEntrada.Count; i++)
-        {
-            if (LerItem(itensDeEntrada[i], $"itens[{i}]", formatos, erros) is { } item)
-            {
-                itens.Add((i, item));
-            }
-        }
-
-        IReadOnlyList<TermoExigidoInput?> termosDeEntrada = entrada?.Termos ?? [];
-        for (int i = 0; i < termosDeEntrada.Count; i++)
-        {
-            if (LerTermo(termosDeEntrada[i], $"termos[{i}]", erros) is { } termo)
-            {
-                termos.Add((i, termo));
-            }
-        }
-
-        List<(int, GrupoDoModelo)> grupos = [];
-        IReadOnlyList<GrupoColetadoInput?> gruposDeEntrada = entrada?.Grupos ?? [];
-        for (int i = 0; i < gruposDeEntrada.Count; i++)
-        {
-            if (LerGrupo(gruposDeEntrada[i], $"grupos[{i}]", formatos, erros) is { } grupo)
-            {
-                grupos.Add((i, grupo));
-            }
-        }
-
-        List<DocumentoExigidoDoModelo> documentos = [];
-        IReadOnlyList<DocumentoExigidoDoModeloInput?> documentosDeEntrada = entrada?.DocumentosExigidos ?? [];
-        for (int i = 0; i < documentosDeEntrada.Count; i++)
-        {
-            if (LerDocumento(documentosDeEntrada[i], $"documentosExigidos[{i}]", erros) is { } documento)
-            {
-                documentos.Add(documento);
-            }
-        }
-
-        return new(entrada?.Titulo, etapas, itens, termos, [.. (entrada?.Pressupostos ?? []).Select(static p => p ?? string.Empty)], grupos, documentos, erros);
+        return lidos;
     }
 
     /// <summary>
