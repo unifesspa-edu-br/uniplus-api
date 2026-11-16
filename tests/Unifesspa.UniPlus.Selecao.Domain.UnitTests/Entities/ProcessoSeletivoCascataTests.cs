@@ -299,7 +299,7 @@ public sealed class ProcessoSeletivoCascataTests
         ProcessoSeletivo processo = NovoProcessoComOferta(oferta);
 
         CoberturaDaCascata.PendenciaDaCascata(EstadoDaConfiguracao.De(processo)).Should().BeNull();
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(item => item.Codigo == "cascata_pendente" && item.Ok);
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().Contain(item => item.Codigo == "cascata_pendente" && item.Ok);
     }
 
     [Fact(DisplayName = "AvaliarConformidade com oferta federal sem cascata tem o item Cascata de remanejamento não-Ok")]
@@ -307,7 +307,7 @@ public sealed class ProcessoSeletivoCascataTests
     {
         ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
     }
 
     private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
@@ -366,6 +366,6 @@ public sealed class ProcessoSeletivoCascataTests
 
         ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo)).Should().BeNull("os itens estruturais estão todos completos — a cascata não é um deles");
         CoberturaDaCascata.PendenciaDaCascata(EstadoDaConfiguracao.De(processo)).Should().NotBeNull("a oferta federal tem SegueCascata sem cascata configurada");
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
     }
 }

@@ -35,6 +35,8 @@
     <Compile Include="../Shared/ProtecaoDoFatoDeTeste.cs" Link="ProtecaoDoFatoDeTeste.cs" />
     <Compile Include="../Shared/FatosDerivadosCongeladosDeTeste.cs" Link="FatosDerivadosCongeladosDeTeste.cs" />
     <Compile Include="../Shared/TiposDeAtoUnicosDeTeste.cs" Link="TiposDeAtoUnicosDeTeste.cs" />
+    <Compile Include="../Shared/BancasDeTeste.cs" Link="BancasDeTeste.cs" />
+    <Compile Include="../Shared/CorretoresDeTeste.cs" Link="CorretoresDeTeste.cs" />
     <Compile Include="../Shared/RegrasDeAplicabilidadeDeTeste.cs" Link="RegrasDeAplicabilidadeDeTeste.cs" />
     <Compile Include="../Shared/InstanteEmBelem.cs" Link="InstanteEmBelem.cs" />
     <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />

@@ -55,19 +55,20 @@ public static class ChecklistDeConformidade
     public static IReadOnlyList<ItemConformidade> AvaliarConformidade(
         EstadoDaConfiguracao estado,
         ContextoDeContagemDePrazos contexto, FatosDeModalidade fatosDeModalidade, TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos,
-        ProtecaoVigenteDasExigencias? protecao = null,
-        CorretoresDasEtapas? corretores = null)
+        CorretoresDasEtapas corretores,
+        ProtecaoVigenteDasExigencias? protecao = null)
     {
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(contexto);
         ArgumentNullException.ThrowIfNull(tiposDeAtoUnicos);
         ArgumentNullException.ThrowIfNull(fatosDeModalidade);
+        ArgumentNullException.ThrowIfNull(corretores);
 
         return
         [
             .. ItensDaContagemDePrazos.Avaliar(estado, contexto),
             .. ItensEstruturaisDeConformidade.Avaliar(estado),
-            .. ItensDoCronograma.Avaliar(estado, contexto, tiposDeAtoUnicos, corretores ?? CorretoresDasEtapas.Nenhum),
+            .. ItensDoCronograma.Avaliar(estado, contexto, tiposDeAtoUnicos, corretores),
             .. ItensDaCascata.Avaliar(estado),
             .. ItensDaPreCanonicalizacao.Avaliar(estado, fatosDeModalidade, protecao),
         ];

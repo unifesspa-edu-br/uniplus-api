@@ -201,7 +201,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
             processo, repository, codecs, new TipoAtoPublicadoView("ATO_X", "Ato X", false, false, false, true));
 
         result.Itens.Should().Contain(i =>
-            i.Codigo == ObterConformidadeProcessoSeletivoQueryHandler.CodigoDaVersaoPublicadaIlegivel
+            i.Codigo == AvaliacaoDaConformidade.CodigoDaVersaoPublicadaIlegivel
             && !i.Ok
             && i.Mensagem == "A versão do envelope não é suportada.");
     }

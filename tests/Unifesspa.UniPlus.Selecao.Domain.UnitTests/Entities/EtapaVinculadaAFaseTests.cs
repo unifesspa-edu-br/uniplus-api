@@ -310,7 +310,7 @@ public sealed class EtapaVinculadaAFaseTests
         // uma causa que o checklist declarava verde, e quem lê o painel não teria o que
         // corrigir.
         IReadOnlyList<ItemConformidade> checklist =
-            ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(ProcessoConformeFactory.Criar()), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(ProcessoConformeFactory.Criar()), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao);
 
         checklist.Should().ContainSingle(i => i.Codigo == "cronograma_etapa_fora_da_janela_da_fase")
             .Which.Ok.Should().BeTrue("o processo conforme não tem etapa pendurada fora da fase");

@@ -23,7 +23,7 @@ internal static class ProcessoSeletivoConformeBuilder
 {
     public static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
 
-    private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
+    private static FaseCronograma FaseDeResultadoFinal(IReadOnlyList<BancaRequerida> bancasRequeridas) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true,
             ColetaSolicitacaoIsencao: false),
@@ -31,14 +31,17 @@ internal static class ProcessoSeletivoConformeBuilder
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
-        bancasRequeridas: []).Value!;
+        bancasRequeridas).Value!;
 
-    public static ProcessoSeletivo Criar(string nome, out Guid faseId)
+    public static ProcessoSeletivo Criar(string nome, out Guid faseId) => Criar(nome, [], out faseId);
+
+    /// <summary>O processo conforme cuja fase do resultado final requer as bancas dadas.</summary>
+    public static ProcessoSeletivo Criar(string nome, IReadOnlyList<BancaRequerida> bancasDaFase, out Guid faseId)
     {
         ProcessoSeletivo processo = NovoProcessoComAtendimentoEDistribuicao(nome);
         DefinirClassificacaoImportada(processo);
 
-        FaseCronograma fase = FaseDeResultadoFinal();
+        FaseCronograma fase = FaseDeResultadoFinal(bancasDaFase);
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         faseId = fase.Id;
 

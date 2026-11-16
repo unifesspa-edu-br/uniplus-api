@@ -66,7 +66,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
             .Should().Contain(b => b.RecorteDeCompetencia.Count == 0,
                 "pré-condição: o EF hidratou a banca sem recorte sem passar por fábrica nenhuma");
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
             .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas")
             .Which.Ok.Should().BeFalse(
                 "quem monta o edital precisa ver a pendência; invariante que só existe no domínio não aparece no checklist");
@@ -142,7 +142,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
         linhasEsperadas: 1);
 
     private static ItemConformidade ItemDoRecorteDasBancas(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
             .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas").Which;
 
     private static void ConferirQueAsBancasDocumentaisSeguemComRecorte(ProcessoSeletivo processo) =>

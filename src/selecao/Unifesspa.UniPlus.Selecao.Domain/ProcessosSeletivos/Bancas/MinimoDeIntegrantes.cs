@@ -16,41 +16,59 @@ internal static class MinimoDeIntegrantes
     internal static int Exigido(RegraDeDeliberacao regra, IEnumerable<EtapaProcesso> julgadas, CorretoresDasEtapas corretores) =>
         Math.Max(regra.QuorumExigido, julgadas.Select(corretores.De).DefaultIfEmpty(0).Max());
 
-    internal static IEnumerable<DomainError> Violacoes(EstadoDaConfiguracao estado, CorretoresDasEtapas corretores) =>
-    [
-        .. estado.CronogramaFases.SelectMany(fase => ViolacoesDaFase(estado, fase, corretores)),
-        .. estado.Etapas.SelectMany(etapa => ViolacoesDaEtapa(etapa, corretores)),
-    ];
+    /// <summary>
+    /// Primeiro as bancas comprovadamente abaixo do mínimo, de todas as bancas, e depois as etapas cuja regra de
+    /// consolidação o catálogo não confirmou: o mínimo se confere sobre as etapas cuja regra foi lida, e a recusa por
+    /// regra não resolvida não esconde uma banca que já se sabe insuficiente.
+    /// </summary>
+    internal static IEnumerable<DomainError> Violacoes(EstadoDaConfiguracao estado, CorretoresDasEtapas corretores)
+    {
+        List<BancaJulgadora> bancas = [.. BancasDasFases(estado), .. BancasDasEtapas(estado)];
 
-    private static IEnumerable<DomainError> ViolacoesDaFase(
-        EstadoDaConfiguracao estado, FaseCronograma fase, CorretoresDasEtapas corretores) =>
-        fase.BancasRequeridas
+        return
+        [
+            .. bancas.Select(banca => AbaixoDoMinimo(banca, corretores)).OfType<DomainError>(),
+            .. bancas.SelectMany(banca => banca.Julgadas.Where(etapa => !corretores.Resolvida(etapa)).Select(etapa => NaoResolvida(banca, etapa))),
+        ];
+    }
+
+    private static IEnumerable<BancaJulgadora> BancasDasFases(EstadoDaConfiguracao estado) =>
+        estado.CronogramaFases.SelectMany(fase => fase.BancasRequeridas
             .Where(static banca => banca.RegraDeDeliberacao is not null)
-            .Select(banca => Conferir(
+            .Select(banca => new BancaJulgadora(
                 banca.Nome,
                 $"da fase '{fase.Codigo}'",
                 banca.RegraDeDeliberacao!,
-                JulgamentoDasBancas.EtapasJulgadasPelaBancaDaFase(estado, fase, banca),
-                corretores))
-            .OfType<DomainError>();
+                [.. JulgamentoDasBancas.EtapasJulgadasPelaBancaDaFase(estado, fase, banca)])));
 
-    private static IEnumerable<DomainError> ViolacoesDaEtapa(EtapaProcesso etapa, CorretoresDasEtapas corretores) =>
-        etapa.Bancas
+    private static IEnumerable<BancaJulgadora> BancasDasEtapas(EstadoDaConfiguracao estado) =>
+        estado.Etapas.SelectMany(etapa => etapa.Bancas
             .Where(static banca => banca.RegraDeDeliberacao is not null)
-            .Select(banca => Conferir(banca.Nome, $"da etapa '{Eco(etapa.Nome)}'", banca.RegraDeDeliberacao!, JulgamentoDasBancas.EtapasJulgadasPelaBancaDaEtapa(etapa, banca), corretores))
-            .OfType<DomainError>();
+            .Select(banca => new BancaJulgadora(
+                banca.Nome,
+                $"da etapa '{Eco(etapa.Nome)}'",
+                banca.RegraDeDeliberacao!,
+                [.. JulgamentoDasBancas.EtapasJulgadasPelaBancaDaEtapa(etapa, banca)])));
 
-    private static DomainError? Conferir(
-        string nome, string onde, RegraDeDeliberacao regra, IEnumerable<EtapaProcesso> julgadas, CorretoresDasEtapas corretores)
+    private static DomainError? AbaixoDoMinimo(BancaJulgadora banca, CorretoresDasEtapas corretores)
     {
-        int minimo = Exigido(regra, julgadas, corretores);
-        return regra.Integrantes >= minimo
+        int minimo = Exigido(banca.Regra, banca.Julgadas.Where(corretores.Resolvida), corretores);
+
+        return banca.Regra.Integrantes >= minimo
             ? null
             : new DomainError(
                 BancaErrorCodes.IntegrantesAbaixoDoMinimo,
-                $"A banca '{Eco(nome)}' {onde} declara {regra.Integrantes} integrantes, e o mínimo exigido é {minimo}, o maior entre o quórum e os corretores da regra de consolidação das etapas que ela julga.");
+                $"A banca '{Eco(banca.Nome)}' {banca.Onde} declara {banca.Regra.Integrantes} integrantes, e o mínimo exigido é {minimo}, o maior entre o quórum e os corretores da regra de consolidação das etapas que ela julga.");
     }
+
+    private static DomainError NaoResolvida(BancaJulgadora banca, EtapaProcesso etapa) =>
+        new(
+            BancaErrorCodes.RegraDeConsolidacaoNaoResolvida,
+            $"A banca '{Eco(banca.Nome)}' {banca.Onde} julga a etapa '{Eco(etapa.Nome)}', cuja regra de consolidação não pôde ser confirmada no catálogo, e a quantidade de corretores não é conhecida. Tente novamente ou fale com a equipe de suporte.");
 
     private static string Eco(string texto) =>
         CaracteresInvisiveis.ParaEco(texto, TextoCongelado.TamanhoMaximoEcoado);
+
+    /// <summary>Uma banca declarada com regra de deliberação, onde ela está e as etapas que julga.</summary>
+    private sealed record BancaJulgadora(string Nome, string Onde, RegraDeDeliberacao Regra, IReadOnlyList<EtapaProcesso> Julgadas);
 }

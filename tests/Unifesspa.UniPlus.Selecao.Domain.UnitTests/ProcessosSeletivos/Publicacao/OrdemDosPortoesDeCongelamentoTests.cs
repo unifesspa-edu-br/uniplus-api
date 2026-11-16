@@ -237,6 +237,7 @@ public sealed class OrdemDosPortoesDeCongelamentoTests
                 Contexto = contexto,
                 FatosDeModalidade = FatosDeModalidadeDeTeste.DoCatalogo,
                 TiposDeAtoUnicos = tipos,
+                Corretores = CorretoresDeTeste.SemConsolidacao,
             };
 
             if (transicao == "Publicar")

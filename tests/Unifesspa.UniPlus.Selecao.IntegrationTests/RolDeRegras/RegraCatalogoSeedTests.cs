@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Readers;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
@@ -299,5 +300,37 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         regra.BaseLegal.Should().Contain(normaEsperada)
             .And.NotContain("22/2014")
             .And.NotContain("64/2015");
+    }
+
+    [Fact(DisplayName = "Toda regra de consolidação do rol se lê pelos dois leitores, o dos corretores e o das naturezas")]
+    public async Task RegraDeConsolidacao_LidaPelosDoisLeitores()
+    {
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
+
+        List<RegraCatalogo> consolidacoes = await context.RolDeRegras.AsNoTracking()
+            .Where(r => r.Tipo == TipoRegra.RegraConsolidacao)
+            .ToListAsync(CancellationToken.None);
+
+        consolidacoes.Select(r => r.Codigo).Should().BeEquivalentTo(RegraConsolidacaoCodigo.Rol);
+        foreach (RegraCatalogo regra in consolidacoes)
+        {
+            CorretoresDaRegraDeConsolidacao.De(regra).Should().BePositive(regra.Codigo);
+            NaturezasDaConsolidacao.De(regra).Should().NotBeEmpty(regra.Codigo);
+        }
+    }
+
+    [Fact(DisplayName = "A avaliação única exige um corretor e aceita as duas naturezas; a correção independente exige três e só a numérica")]
+    public async Task RegraDeConsolidacao_DeclaraCorretoresENaturezas()
+    {
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
+        RegraCatalogoReader reader = new(context);
+
+        RegraCatalogo unica = (await reader.ObterAsync(RegraConsolidacaoCodigo.AvaliacaoUnica, RegraCatalogoSeed.VersaoV1, CancellationToken.None))!;
+        RegraCatalogo independente = (await reader.ObterAsync(RegraConsolidacaoCodigo.CorrecaoIndependente, RegraCatalogoSeed.VersaoV1, CancellationToken.None))!;
+
+        CorretoresDaRegraDeConsolidacao.De(unica).Should().Be(1);
+        NaturezasDaConsolidacao.De(unica).Should().BeEquivalentTo([NaturezaConceito.Numerico, NaturezaConceito.Categorico]);
+        CorretoresDaRegraDeConsolidacao.De(independente).Should().Be(3);
+        NaturezasDaConsolidacao.De(independente).Should().Equal(NaturezaConceito.Numerico);
     }
 }

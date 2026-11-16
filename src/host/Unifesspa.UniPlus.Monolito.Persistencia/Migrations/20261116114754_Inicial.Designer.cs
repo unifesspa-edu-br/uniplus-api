@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261116113057_Inicial")]
+    [Migration("20261116114754_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -14748,8 +14748,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "Decisão institucional da Unifesspa",
                             Codigo = "CONSOLIDACAO-AVALIACAO-UNICA",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{}",
-                            Hash = "0fdac8b1bc6a5f9f7e4d2f257d695e5028210d6c8cb16876157755e36c6b05b0",
+                            EsquemaArgs = "{\"corretores_distintos\":1,\"naturezas_do_conceito\":[\"categorico\",\"numerico\"]}",
+                            Hash = "cbf59beccc62ce3ecd2daa14097cc04c7a4d76ae8aed45acd10cbe0e2bca6bd2",
                             Invariantes = "[\"um só avaliador lança a nota de cada candidato na etapa\",\"a nota lançada é a nota da etapa, sem combinação com outra\"]",
                             Tipo = "regra_consolidacao",
                             Versao = "v1"
@@ -14760,8 +14760,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             BaseLegal = "UNI-REQ-0097 (dupla correção) e edital do processo seletivo",
                             Codigo = "CONSOLIDACAO-CORRECAO-INDEPENDENTE",
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
-                            EsquemaArgs = "{}",
-                            Hash = "376e2e3ace2ba3302fb7d2a957e390e4eeeceb2bdc0102d65db688dd744a67c3",
+                            EsquemaArgs = "{\"corretores_distintos\":3,\"naturezas_do_conceito\":[\"numerico\"]}",
+                            Hash = "94fe3353ad79b0f23dc3d0c732e8c631a518dd5505ecb17bbaf2c010faa93616",
                             Invariantes = "[\"mais de um avaliador corrige cada candidato na etapa, cada um sem conhecer a nota do outro\",\"a nota da etapa é a combinação das correções independentes, na forma que o edital determina\"]",
                             Tipo = "regra_consolidacao",
                             Versao = "v1"

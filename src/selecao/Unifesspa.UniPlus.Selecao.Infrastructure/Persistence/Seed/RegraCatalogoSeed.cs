@@ -285,14 +285,15 @@ public static class RegraCatalogoSeed
 
         // regra_consolidacao — como as notas lançadas pelos avaliadores de uma etapa de avaliação
         // humana viram a nota da etapa. A entrada descreve e congela a regra; quem a executa é a
-        // apuração. Escolhida pelo edital, não parametrizada: esquema_args vazio.
+        // apuração. Escolhida pelo edital, não parametrizada: o esquema_args é o que a versão declara de
+        // si, as naturezas de conceito a que se aplica e os corretores distintos que exige (ADR-0150).
         new(SeedId(30), RegraConsolidacaoCodigo.AvaliacaoUnica, VersaoV1, TipoRegra.RegraConsolidacao,
-            "{}",
+            """{"corretores_distintos":1,"naturezas_do_conceito":["categorico","numerico"]}""",
             """["um só avaliador lança a nota de cada candidato na etapa","a nota lançada é a nota da etapa, sem combinação com outra"]""",
             "Decisão institucional da Unifesspa"),
 
         new(SeedId(31), RegraConsolidacaoCodigo.CorrecaoIndependente, VersaoV1, TipoRegra.RegraConsolidacao,
-            "{}",
+            """{"corretores_distintos":3,"naturezas_do_conceito":["numerico"]}""",
             """["mais de um avaliador corrige cada candidato na etapa, cada um sem conhecer a nota do outro","a nota da etapa é a combinação das correções independentes, na forma que o edital determina"]""",
             "UNI-REQ-0097 (dupla correção) e edital do processo seletivo"),
     ];

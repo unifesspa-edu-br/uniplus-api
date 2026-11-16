@@ -89,5 +89,6 @@ internal static class CongelamentoDeTeste
             Contexto = contexto,
             FatosDeModalidade = fatosDeModalidade,
             TiposDeAtoUnicos = tiposDeAtoUnicos,
+            Corretores = CorretoresDeTeste.SemConsolidacao,
         };
 }

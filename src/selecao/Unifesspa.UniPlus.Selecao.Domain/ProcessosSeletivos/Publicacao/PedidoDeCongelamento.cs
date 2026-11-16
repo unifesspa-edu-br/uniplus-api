@@ -30,7 +30,7 @@ public sealed record PedidoDeCongelamento
     public required TiposDeAtoUnicosPorObjeto TiposDeAtoUnicos { get; init; }
 
     /// <summary>Os corretores que a regra de consolidação de cada etapa exige, para o mínimo de integrantes das bancas.</summary>
-    public CorretoresDasEtapas Corretores { get; init; } = CorretoresDasEtapas.Nenhum;
+    public required CorretoresDasEtapas Corretores { get; init; }
 }
 
 /// <summary>

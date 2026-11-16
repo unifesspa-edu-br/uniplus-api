@@ -78,6 +78,8 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public IResolvedorDaUnidadeResponsavel Unidades { get; private set; } = ResolvedorDeUnidadeDeTeste.ComAsUnidadesDeTeste();
 
+    public IRegraCatalogoReader RegrasDeConsolidacao { get; private set; } = RegrasDeConsolidacaoDeTeste.Catalogo();
+
     public IRegistroCodecsEnvelope Codecs { get; private set; } = CodecsDeTeste.QueReidrataSemTiposDeAto();
 
     public IFasesIniciadasDoProcesso FasesIniciadas { get; private set; } = FasesIniciadasDeTeste.Nenhuma();
@@ -202,6 +204,13 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return this;
     }
 
+    public ServicosDoCongelamentoDeTeste ComRegrasDeConsolidacao(IRegraCatalogoReader regras)
+    {
+        RegrasDeConsolidacao = regras;
+
+        return this;
+    }
+
     public ServicosDoCongelamentoDeTeste ComCodecs(IRegistroCodecsEnvelope codecs)
     {
         Codecs = codecs;
@@ -255,10 +264,12 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public LeituraDoContextoDeContagemDePrazos Contextos() => new(Calendario, Fuso);
 
+    public LeituraDosCorretoresDasEtapas Corretores() => new(RegrasDeConsolidacao);
+
     public ConferenciaDaConfiguracaoAoCongelar Conferencia() =>
         new(Catalogos(), Recopia(), Fuso, TiposDeAtoUnicos(), Anexos(), ConformidadeLegal(), Motivos());
 
-    public MontagemDoCongelamento Montagem() => new(Contextos(), Canonicalizer, Usuario);
+    public MontagemDoCongelamento Montagem() => new(Contextos(), Corretores(), Canonicalizer, Usuario);
 
     public MontagemDaDivulgacao Divulgacao() => new(Certames, EnderecoNoAcervo());
 
@@ -289,7 +300,8 @@ internal sealed class ServicosDoCongelamentoDeTeste
         FecharRetificacaoAsync(new FecharRetificacaoCommand(
             processoId, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: PublicacaoDeTeste.NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga));
 
+    public AvaliacaoDaConformidade Avaliacao() => new(Repositorio, Contextos(), Corretores(), TiposDeAtoUnicos(), Catalogos(), Codecs);
+
     public Task<ConformidadeProcessoSeletivoDto?> ConformidadeAsync(ObterConformidadeProcessoSeletivoQuery consulta) =>
-        ObterConformidadeProcessoSeletivoQueryHandler.Handle(
-            consulta, Repositorio, Contextos(), TiposDeAtoUnicos(), Catalogos(), Codecs, CancellationToken.None);
+        ObterConformidadeProcessoSeletivoQueryHandler.Handle(consulta, Repositorio, Avaliacao(), CancellationToken.None);
 }

@@ -33,6 +33,7 @@ internal static class ErrosDaBanca
     [
         new(BancaErrorCodes.RegraDeDeliberacaoObrigatoria, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.regra_de_deliberacao_obrigatoria", "Toda banca declara a regra de deliberação para o processo ser publicado")),
         new(BancaErrorCodes.IntegrantesAbaixoDoMinimo, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.integrantes_abaixo_do_minimo", "A banca declara menos integrantes que o mínimo exigido")),
+        new(BancaErrorCodes.RegraDeConsolidacaoNaoResolvida, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.regra_de_consolidacao_nao_resolvida", "A regra de consolidação de uma etapa julgada pela banca não pôde ser confirmada no catálogo")),
         new(BancaErrorCodes.RecorteEmBancaDeRecursos, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.banca.recorte_em_banca_de_recursos", "A banca de análise de recursos julga todos os recursos da fase e não declara recorte de competência")),
         new(BancaErrorCodes.RecursoSemBanca, new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.cronograma.recurso_sem_banca", "Fase ou etapa com recurso exige banca de análise de recursos")),
     ];

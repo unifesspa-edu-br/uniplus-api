@@ -28,9 +28,15 @@ public sealed class BancasDoProcessoTests
         new ArgsRegraPrazoRecurso(2m, UnidadePrazo.DiasUteis, null, null, false, null, null),
         ProcessoConformeFactory.ProdutoPreliminarId).Value!;
 
-    private static EtapaProcesso NovaEtapa(string nome, int ordem) => EtapaProcesso.Criar(
+    private static readonly ReferenciaRegra CorrecaoIndependente =
+        ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", new string('d', 64));
+
+    private static readonly ReferenciaRegra AvaliacaoUnica =
+        ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('e', 64));
+
+    private static EtapaProcesso NovaEtapa(string nome, int ordem, ReferenciaRegra? consolidacao = null) => EtapaProcesso.Criar(
         new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: "RESULTADO_FINAL"),
-        new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
+        new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: consolidacao is null ? FormaDeAvaliacao.Objetiva : FormaDeAvaliacao.Humana, RegraConsolidacao: consolidacao, EscalaDeAtendimento: null)).Value!;
 
     /// <summary>Dá à etapa o par preliminar e definitivo e uma janela de recurso ancorada no preliminar.</summary>
     private static EtapaProcesso ComRecurso(EtapaProcesso etapa)
@@ -59,11 +65,11 @@ public sealed class BancasDoProcessoTests
     private static BancaRequerida DeRecursosDaFase(int integrantes, int quorum) =>
         BancaRequerida.Criar(Tipo, TipoBancaCodigo.AnaliseDeRecursos, "Banca de análise de recursos", [], BancasDeTeste.Regra(integrantes, quorum));
 
-    private static CorretoresDasEtapas Corretores(params (EtapaProcesso Etapa, int Numero)[] porEtapa) =>
-        new(porEtapa.ToDictionary(static par => par.Etapa.Id, static par => par.Numero));
+    private static CorretoresDasEtapas Corretores(params (ReferenciaRegra Regra, int Numero)[] porRegra) =>
+        new(porRegra.ToDictionary(static par => par.Regra, static par => par.Numero));
 
     private static DomainError? Pendencia(ProcessoSeletivo processo, CorretoresDasEtapas? corretores = null) =>
-        PendenciasDasBancas.PendenciaDasBancas(EstadoDaConfiguracao.De(processo), corretores ?? CorretoresDasEtapas.Nenhum);
+        PendenciasDasBancas.PendenciaDasBancas(EstadoDaConfiguracao.De(processo), corretores ?? CorretoresDeTeste.SemConsolidacao);
 
     [Fact(DisplayName = "Fase com recurso sem banca de análise de recursos é recusada, citando a fase")]
     public void FaseComRecursoSemBanca_RecusaCitandoAFase()
@@ -147,11 +153,11 @@ public sealed class BancasDoProcessoTests
     [Fact(DisplayName = "Redação com três corretores e banca de 2 titulares com quórum 2 é recusada, citando mínimo e valor declarado")]
     public void BancaCurta_ParaTresCorretores_Recusa()
     {
-        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1));
+        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
         redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = Pendencia(processo, Corretores((redacao, 3)));
+        DomainError? pendencia = Pendencia(processo, Corretores((CorrecaoIndependente, 3)));
 
         pendencia!.Code.Should().Be("Banca.IntegrantesAbaixoDoMinimo");
         pendencia.Message.Should().Contain("declara 2 integrantes").And.Contain("o mínimo exigido é 3");
@@ -164,28 +170,30 @@ public sealed class BancasDoProcessoTests
     [InlineData(1, 1, 1)]
     public void BancaDaEtapa_NoMinimo_Aceita(int integrantes, int quorum, int corretores)
     {
-        EtapaProcesso etapa = ComRecurso(NovaEtapa("Redação", 1));
+        EtapaProcesso etapa = ComRecurso(NovaEtapa("Redação", 1, corretores == 0 ? null : CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas(null, etapa);
         etapa.DefinirBancas([DeRecursosDaEtapa(integrantes, quorum)]).IsSuccess.Should().BeTrue();
 
-        Pendencia(processo, Corretores((etapa, corretores))).Should().BeNull();
+        Pendencia(processo, Corretores((CorrecaoIndependente, corretores))).Should().BeNull();
     }
 
     [Fact(DisplayName = "Quórum maior que os corretores eleva o mínimo ao quórum")]
     public void Minimo_ComQuorumMaiorQueOsCorretores_ExigeOQuorum()
     {
-        MinimoDeIntegrantes.Exigido(BancasDeTeste.Regra(integrantes: 5, quorum: 4), [], CorretoresDasEtapas.Nenhum)
+        EtapaProcesso redacao = NovaEtapa("Redação", 1, CorrecaoIndependente);
+
+        MinimoDeIntegrantes.Exigido(BancasDeTeste.Regra(integrantes: 5, quorum: 4), [redacao], Corretores((CorrecaoIndependente, 3)))
             .Should().Be(4);
     }
 
-    [Fact(DisplayName = "Banca da fase que julga duas etapas usa o maior número de corretores entre elas")]
+    [Fact(DisplayName = "Banca da fase que julga uma etapa de avaliação única e outra de correção independente usa o maior número de corretores")]
     public void BancaDaFase_JulgandoDuasEtapas_UsaOMaiorNumeroDeCorretores()
     {
-        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1));
-        EtapaProcesso objetiva = ComRecurso(NovaEtapa("Objetiva", 2));
-        ProcessoSeletivo processo = ProcessoComEtapas([DeRecursosDaFase(integrantes: 2, quorum: 2)], redacao, objetiva);
+        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
+        EtapaProcesso entrevista = ComRecurso(NovaEtapa("Entrevista", 2, AvaliacaoUnica));
+        ProcessoSeletivo processo = ProcessoComEtapas([DeRecursosDaFase(integrantes: 2, quorum: 2)], redacao, entrevista);
 
-        DomainError? pendencia = Pendencia(processo, Corretores((redacao, 3), (objetiva, 0)));
+        DomainError? pendencia = Pendencia(processo, Corretores((CorrecaoIndependente, 3), (AvaliacaoUnica, 1)));
 
         pendencia!.Code.Should().Be("Banca.IntegrantesAbaixoDoMinimo");
         pendencia.Message.Should().Contain("o mínimo exigido é 3");
@@ -194,38 +202,105 @@ public sealed class BancasDoProcessoTests
     [Fact(DisplayName = "Banca da etapa julga só a própria etapa, mesmo que outra exija mais corretores")]
     public void BancaDaEtapa_JulgaSoAPropriaEtapa()
     {
-        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1));
-        EtapaProcesso objetiva = ComRecurso(NovaEtapa("Objetiva", 2));
-        ProcessoSeletivo processo = ProcessoComEtapas([DeRecursosDaFase(integrantes: 3, quorum: 2)], redacao, objetiva);
-        processo.Etapas.Single(e => e.Nome == "Objetiva").DefinirBancas([DeRecursosDaEtapa(integrantes: 1, quorum: 1)]).IsSuccess.Should().BeTrue();
+        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
+        EtapaProcesso entrevista = ComRecurso(NovaEtapa("Entrevista", 2, AvaliacaoUnica));
+        ProcessoSeletivo processo = ProcessoComEtapas([DeRecursosDaFase(integrantes: 3, quorum: 2)], redacao, entrevista);
+        processo.Etapas.Single(e => e.Nome == "Entrevista").DefinirBancas([DeRecursosDaEtapa(integrantes: 1, quorum: 1)]).IsSuccess.Should().BeTrue();
 
-        Pendencia(processo, Corretores((redacao, 3), (objetiva, 1))).Should().BeNull();
+        Pendencia(processo, Corretores((CorrecaoIndependente, 3), (AvaliacaoUnica, 1))).Should().BeNull();
     }
 
     [Fact(DisplayName = "Banca da etapa que não é de recursos não julga a etapa e não herda o mínimo de corretores")]
     public void BancaDaEtapaQueNaoEDeRecursos_NaoHerdaOMinimoDeCorretores()
     {
-        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1));
+        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas([BancasDeTeste.DeRecursosDaFase()], redacao);
         redacao.DefinirBancas([BancaDaEtapa.Criar(Tipo, "BANCA_EXAMINADORA", "Banca examinadora", BancasDeTeste.Regra(integrantes: 2, quorum: 2))])
             .IsSuccess.Should().BeTrue();
 
-        Pendencia(processo, Corretores((redacao, 3))).Should().BeNull();
+        Pendencia(processo, Corretores((CorrecaoIndependente, 3))).Should().BeNull();
     }
 
     [Fact(DisplayName = "O painel projeta a mesma pendência do gate em cada item das bancas")]
     public void Painel_ProjetaAPendenciaDoGate()
     {
-        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1));
+        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
         redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
-        CorretoresDasEtapas corretores = Corretores((redacao, 3));
+        CorretoresDasEtapas corretores = Corretores((CorrecaoIndependente, 3));
 
         IEnumerable<string> vermelhos = ItensDasBancas.Avaliar(EstadoDaConfiguracao.De(processo), corretores)
             .Where(static item => !item.Ok).Select(static item => item.Codigo);
 
         vermelhos.Should().Equal("cronograma_banca_com_o_minimo_de_integrantes");
-        ItensDasBancas.Avaliar(EstadoDaConfiguracao.De(processo), CorretoresDasEtapas.Nenhum).Should().OnlyContain(static item => item.Ok);
+        ItensDasBancas.Avaliar(EstadoDaConfiguracao.De(processo), Corretores((CorrecaoIndependente, 2))).Should().OnlyContain(static item => item.Ok);
+    }
+
+    [Fact(DisplayName = "Etapa com regra de consolidação não resolvida gera recusa própria, citando a etapa, e nunca vale zero corretores")]
+    public void EtapaComRegraNaoResolvida_RecusaSemPresumirNumero()
+    {
+        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
+        ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
+        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 3, quorum: 2)]).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = Pendencia(processo, CorretoresDeTeste.SemConsolidacao);
+
+        pendencia!.Code.Should().Be("Banca.RegraDeConsolidacaoNaoResolvida");
+        pendencia.Message.Should().Contain("'Redação'").And.NotContain(CorrecaoIndependente.Hash);
+    }
+
+    [Fact(DisplayName = "A etapa resolvida e a não resolvida julgadas pela mesma banca acumulam o mínimo e a regra não resolvida")]
+    public void EtapaResolvidaENaoResolvida_AcumulamAsDuasRecusas()
+    {
+        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
+        EtapaProcesso entrevista = ComRecurso(NovaEtapa("Entrevista", 2, AvaliacaoUnica));
+        ProcessoSeletivo processo = ProcessoComEtapas([DeRecursosDaFase(integrantes: 2, quorum: 2)], redacao, entrevista);
+
+        IEnumerable<DomainError> violacoes = MinimoDeIntegrantes.Violacoes(EstadoDaConfiguracao.De(processo), Corretores((CorrecaoIndependente, 3)));
+
+        violacoes.Select(static erro => erro.Code).Should().Equal("Banca.IntegrantesAbaixoDoMinimo", "Banca.RegraDeConsolidacaoNaoResolvida");
+        violacoes.Last().Message.Should().Contain("'Entrevista'");
+    }
+
+    [Fact(DisplayName = "A banca abaixo do mínimo vem antes da regra não resolvida de outra banca que a precede")]
+    public void BancaAbaixoDoMinimo_VemAntesDaRegraNaoResolvidaDeBancaAnterior()
+    {
+        ReferenciaRegra lida = ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v2", new string('f', 64));
+        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
+        EtapaProcesso entrevista = ComRecurso(NovaEtapa("Entrevista", 2, lida));
+        ProcessoSeletivo processo = ProcessoComEtapas([DeRecursosDaFase(integrantes: 3, quorum: 2)], redacao, entrevista);
+        entrevista.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
+        CorretoresDasEtapas corretores = Corretores((lida, 3));
+
+        IEnumerable<string> violacoes = MinimoDeIntegrantes.Violacoes(EstadoDaConfiguracao.De(processo), corretores).Select(static erro => erro.Code);
+
+        violacoes.Should().Equal("Banca.IntegrantesAbaixoDoMinimo", "Banca.RegraDeConsolidacaoNaoResolvida");
+        Pendencia(processo, corretores)!.Code.Should().Be("Banca.IntegrantesAbaixoDoMinimo");
+        ProntidaoParaCongelar.Portoes.Para(EstadoDaConfiguracao.De(processo), Pedido(corretores)).Estrutura.Bancas()!.Code
+            .Should().Be("Banca.IntegrantesAbaixoDoMinimo");
+    }
+
+    [Fact(DisplayName = "A etapa sem regra de consolidação julgada pela banca não gera recusa de regra não resolvida")]
+    public void EtapaSemRegra_NaoGeraRecusaDeRegraNaoResolvida()
+    {
+        EtapaProcesso objetiva = ComRecurso(NovaEtapa("Objetiva", 1));
+        ProcessoSeletivo processo = ProcessoComEtapas(null, objetiva);
+        objetiva.DefinirBancas([DeRecursosDaEtapa(integrantes: 3, quorum: 2)]).IsSuccess.Should().BeTrue();
+
+        Pendencia(processo, CorretoresDeTeste.SemConsolidacao).Should().BeNull();
+    }
+
+    [Fact(DisplayName = "O painel deixa vermelho o item do mínimo com a regra não resolvida, sem lançar")]
+    public void Painel_ComRegraNaoResolvida_DeixaOItemVermelho()
+    {
+        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
+        ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
+        redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 3, quorum: 2)]).IsSuccess.Should().BeTrue();
+
+        IEnumerable<string> vermelhos = ItensDasBancas.Avaliar(EstadoDaConfiguracao.De(processo), CorretoresDeTeste.SemConsolidacao)
+            .Where(static item => !item.Ok).Select(static item => item.Codigo);
+
+        vermelhos.Should().Equal("cronograma_banca_com_o_minimo_de_integrantes");
     }
 
     private static PedidoDeCongelamento Pedido(CorretoresDasEtapas corretores) => new()
@@ -243,14 +318,16 @@ public sealed class BancasDoProcessoTests
     [Fact(DisplayName = "O portão das bancas lê os corretores do pedido de congelamento")]
     public void PortaoDasBancas_LeOsCorretoresDoPedido()
     {
-        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1));
+        EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
         redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
         EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(processo);
 
-        ProntidaoParaCongelar.Portoes.Para(estado, Pedido(CorretoresDasEtapas.Nenhum)).Estrutura.Bancas().Should().BeNull();
-        ProntidaoParaCongelar.Portoes.Para(estado, Pedido(Corretores((redacao, 3)))).Estrutura.Bancas()!.Code
+        ProntidaoParaCongelar.Portoes.Para(estado, Pedido(Corretores((CorrecaoIndependente, 2)))).Estrutura.Bancas().Should().BeNull();
+        ProntidaoParaCongelar.Portoes.Para(estado, Pedido(Corretores((CorrecaoIndependente, 3)))).Estrutura.Bancas()!.Code
             .Should().Be("Banca.IntegrantesAbaixoDoMinimo");
+        ProntidaoParaCongelar.Portoes.Para(estado, Pedido(CorretoresDeTeste.SemConsolidacao)).Estrutura.Bancas()!.Code
+            .Should().Be("Banca.RegraDeConsolidacaoNaoResolvida");
     }
 
     [Fact(DisplayName = "Redefinir as bancas da etapa leva à linha reaproveitada o nome e a regra declarados")]

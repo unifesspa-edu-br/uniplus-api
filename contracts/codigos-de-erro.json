@@ -4417,6 +4417,11 @@
       "titulo": "A banca de análise de recursos julga todos os recursos da fase e não declara recorte de competência"
     },
     {
+      "codigo": "uniplus.selecao.banca.regra_de_consolidacao_nao_resolvida",
+      "status": 422,
+      "titulo": "A regra de consolidação de uma etapa julgada pela banca não pôde ser confirmada no catálogo"
+    },
+    {
       "codigo": "uniplus.selecao.banca.regra_de_deliberacao_obrigatoria",
       "status": 422,
       "titulo": "Toda banca declara a regra de deliberação para o processo ser publicado"

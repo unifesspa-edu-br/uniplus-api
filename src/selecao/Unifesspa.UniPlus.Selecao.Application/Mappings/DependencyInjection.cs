@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
+using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 
 /// <summary>
 /// Registra os recursos da camada Application do módulo Seleção. CQRS roda
@@ -32,6 +33,7 @@ public static class SelecaoApplicationServiceRegistration
         AddResolucaoDasDistribuicoesDeVagas(services);
         AddConferenciaDaObrigatoriedadeLegal(services);
         AddPublicacao(services);
+        AddAvaliacaoDaConformidade(services);
         AddAcessoAoCampoEAoDocumentoDaInscricao(services);
         AddSalvamentoDoRascunho(services);
         AddRotinaPeriodicaEPortaDePermissao(services);
@@ -90,6 +92,10 @@ public static class SelecaoApplicationServiceRegistration
         AddCopiaAoAcervo(services);
     }
 
+    // A consulta de conformidade recebe a avaliação pronta, sem service location: as portas entram pelo construtor.
+    private static void AddAvaliacaoDaConformidade(IServiceCollection services) =>
+        services.AddScoped<AvaliacaoDaConformidade>();
+
     // A conferência dos campos e das referências de uma obrigatoriedade legal guarda só as portas por construtor, e
     // os handlers de criar e atualizar a recebem pronta, sem service location.
     private static void AddConferenciaDaObrigatoriedadeLegal(IServiceCollection services)
@@ -104,6 +110,7 @@ public static class SelecaoApplicationServiceRegistration
     {
         AddConferenciasDoCongelamento(services);
         services.AddScoped<LeituraDoContextoDeContagemDePrazos>();
+        services.AddScoped<LeituraDosCorretoresDasEtapas>();
         services.AddScoped<MontagemDoCongelamento>();
         services.AddScoped<MontagemDaDivulgacao>();
         services.AddScoped<GravacaoDaVersaoCongelada>();
