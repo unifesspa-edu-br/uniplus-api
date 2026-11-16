@@ -32,12 +32,12 @@ public sealed partial class EnvelopeCodecRoundTripTests
     /// <summary>
     /// Prova de fidelidade do codec sobre a MESMA exigência documental rica que a golden
     /// fixture do canonicalizador congela
-    /// (<see cref="EnvelopeCanonicoGoldenTests.ProcessoDeReferencia"/>), incluindo o bloco
+    /// (<see cref="EnvelopeDeReferencia.ProcessoDeReferencia"/>), incluindo o bloco
     /// <c>metadadosFatos</c> (Story #919).
     /// </summary>
     /// <remarks>
     /// Sem arquivo congelado — diferente da golden 1.1 acima, que compara contra bytes
-    /// FIXOS gravados no repositório: <see cref="EnvelopeCanonicoGoldenTests.ProcessoDeReferencia"/>
+    /// FIXOS gravados no repositório: <see cref="EnvelopeDeReferencia.ProcessoDeReferencia"/>
     /// usa <c>Guid.CreateVersion7()</c> para a etapa, a fase e a exigência (a suíte de
     /// origem normaliza esses ids antes de comparar — ver <c>NormalizarIds</c>), então um
     /// arquivo com bytes crus nunca seria estável entre regenerações. A prova aqui é de
@@ -48,7 +48,7 @@ public sealed partial class EnvelopeCodecRoundTripTests
     [Fact(DisplayName = "Round-trip 1.3 — reidratar e recanonicalizar o processo de referência (exigência documental rica + metadadosFatos) reproduz os bytes")]
     public void RoundTrip13_ProcessoDeReferenciaComExigenciaDocumentalRica()
     {
-        ProcessoSeletivo processo = EnvelopeCanonicoGoldenTests.ProcessoDeReferencia();
+        ProcessoSeletivo processo = EnvelopeDeReferencia.ProcessoDeReferencia();
         EntradaCanonicalizacao entrada = EntradaDeReferencia(processo);
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(entrada);
         ConferirSchemaCorrente(congelado);
@@ -65,10 +65,10 @@ public sealed partial class EnvelopeCodecRoundTripTests
 
     private static EntradaCanonicalizacao EntradaDeReferencia(ProcessoSeletivo processo) =>
         new(
-            processo, EnvelopeCanonicoGoldenTests.DadosDeReferencia(), EnvelopeCanonicoGoldenTests.HashFixo,
+            processo, EnvelopeDeReferencia.DadosDeReferencia(), EnvelopeDeReferencia.HashFixo,
             FusoInstitucional.ZoneId,
-            MetadadosFatosCongelados: EnvelopeCanonicoGoldenTests.MetadadosFatosDeReferencia(),
-            ValoresSelecionaveisCongelados: EnvelopeCanonicoGoldenTests.ValoresSelecionaveisDeReferencia(),
+            MetadadosFatosCongelados: EnvelopeDeReferencia.MetadadosFatosDeReferencia(),
+            ValoresSelecionaveisCongelados: EnvelopeDeReferencia.ValoresSelecionaveisDeReferencia(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo),
             FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
 

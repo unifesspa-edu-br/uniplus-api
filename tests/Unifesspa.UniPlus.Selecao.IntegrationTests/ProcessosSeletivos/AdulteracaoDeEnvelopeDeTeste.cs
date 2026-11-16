@@ -34,14 +34,14 @@ internal static class AdulteracaoDeEnvelopeDeTeste
 
     /// <summary>
     /// Mesmo raciocínio de <see cref="ReidratarComEnvelopeAdulterado"/>, mas sobre o processo de
-    /// referência da golden fixture (<see cref="EnvelopeCanonicoGoldenTests.ProcessoDeReferencia"/>) —
+    /// referência da golden fixture (<see cref="EnvelopeDeReferencia.ProcessoDeReferencia"/>) —
     /// é ele, não <see cref="CorpusEnvelope.ProcessoRico"/>, quem tem <c>documentosExigidos</c>
     /// populado, e por isso <c>metadadosFatos[].valoresDominioDeclarados</c> só existe aqui.
     /// </summary>
     public static Result<EnvelopeReidratado> ReidratarComEnvelopeDeReferenciaAdulterado(Action<JsonObject> adulterar)
     {
-        ProcessoSeletivo processo = EnvelopeCanonicoGoldenTests.ProcessoDeReferencia();
-        DadosEdital dados = EnvelopeCanonicoGoldenTests.DadosDeReferencia();
+        ProcessoSeletivo processo = EnvelopeDeReferencia.ProcessoDeReferencia();
+        DadosEdital dados = EnvelopeDeReferencia.DadosDeReferencia();
         SnapshotCanonico congelado = CongelarReferencia(processo, dados);
 
         byte[] adulterados = BytesAdulterados(congelado.Bytes, adulterar);
@@ -83,9 +83,9 @@ internal static class AdulteracaoDeEnvelopeDeTeste
 
     private static SnapshotCanonico CongelarReferencia(ProcessoSeletivo processo, DadosEdital dados) =>
         new SnapshotPublicacaoCanonicalizer().Canonicalizar(new EntradaCanonicalizacao(
-            processo, dados, EnvelopeCanonicoGoldenTests.HashFixo, FusoInstitucional.ZoneId,
-            MetadadosFatosCongelados: EnvelopeCanonicoGoldenTests.MetadadosFatosDeReferencia(),
-            ValoresSelecionaveisCongelados: EnvelopeCanonicoGoldenTests.ValoresSelecionaveisDeReferencia(),
+            processo, dados, EnvelopeDeReferencia.HashFixo, FusoInstitucional.ZoneId,
+            MetadadosFatosCongelados: EnvelopeDeReferencia.MetadadosFatosDeReferencia(),
+            ValoresSelecionaveisCongelados: EnvelopeDeReferencia.ValoresSelecionaveisDeReferencia(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
     private static VersaoConfiguracao PublicarSobreBytes(
@@ -93,7 +93,7 @@ internal static class AdulteracaoDeEnvelopeDeTeste
     {
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            EnvelopeCanonicoGoldenTests.HashFixo, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            EnvelopeDeReferencia.HashFixo, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         processo.ClearDomainEvents();
 

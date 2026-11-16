@@ -18,7 +18,7 @@ internal static class EnvelopeDeReferenciaComModelo
     public static byte[] Montar(
         ModeloDeDocumento modelo, string identificador, Guid editalId, string hashDoEdital, IReadOnlyList<AnexoDoEdital>? anexos = null)
     {
-        JsonObject envelope = (JsonObject)JsonNode.Parse(EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+        JsonObject envelope = (JsonObject)JsonNode.Parse(EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
         envelope["identificadorLegivel"] = identificador;
         envelope["identidadesUnidade"]!["administradora"]!["slug"] = AcervoPublicoDeTeste.UnidadeDoEnvelope;
         envelope["hashesEdital"] = HashesDoEdital(editalId, hashDoEdital, anexos ?? []);

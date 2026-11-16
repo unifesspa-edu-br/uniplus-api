@@ -55,7 +55,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     public void Classificacao_QuandoEnvelopeTemBlocosCondicionais_NaoDeveTerBlocoSemClassificar()
     {
         // Cascata e bônus regional alternam presença; sem a variante em que existem, escapam.
-        SnapshotCanonico canonico = EnvelopeCanonicoGoldenTests.CanonicalizarReferenciaComCascata();
+        SnapshotCanonico canonico = EnvelopeDeReferencia.CanonicalizarReferenciaComCascata();
         IReadOnlyCollection<string> naoClassificados = NaoClassificados(ChavesDe(canonico));
 
         naoClassificados.Should().BeEmpty(
@@ -97,7 +97,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         // A lista envelhece nos dois sentidos.
         HashSet<string> emitidos = [
             .. ChavesDoEnvelopeDeReferencia(),
-            .. ChavesDe(EnvelopeCanonicoGoldenTests.CanonicalizarReferenciaComCascata()),
+            .. ChavesDe(EnvelopeDeReferencia.CanonicalizarReferenciaComCascata()),
             // Condicional da retificação: só existe depois que o edital é emendado, e a
             // canonicalização de referência publica pela primeira vez.
             "retificacao",
@@ -113,7 +113,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         // A fronteira acima compara só as chaves de topo: renomear chave interna a mantém verde e
         // faz a leitura pública recusar todo certame.
         JsonObject envelope = (JsonObject)JsonNode.Parse(
-            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+            EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
             Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
@@ -133,7 +133,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         // divulgação inalcançável pelo endereço público, e com valor fora da regra do cadastro
         // deixaria a busca casar o que o cadastro nunca aceitaria.
         JsonObject envelope = (JsonObject)JsonNode.Parse(
-            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+            EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
         envelope["identificadorLegivel"] = identificador;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
@@ -147,7 +147,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     public void Projetar_QuandoEnvelopeTrazIdentificador_DeveExpoLo()
     {
         JsonObject envelope = (JsonObject)JsonNode.Parse(
-            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+            EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
         envelope["identificadorLegivel"] = "psiq-2026";
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
@@ -160,7 +160,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     public void Projetar_DeveExporONomeDeCadaOferta()
     {
         JsonObject envelope = (JsonObject)JsonNode.Parse(
-            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+            EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
             Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
@@ -179,7 +179,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     public void Projetar_DeveExporONumeroDeOpcoesDeCurso(int numero, bool projeta)
     {
         JsonObject envelope = (JsonObject)JsonNode.Parse(
-            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+            EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
         envelope["opcoesDeCurso"]!["numero"] = numero;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
@@ -196,7 +196,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     public void Projetar_DeveExporOFusoComONome()
     {
         JsonObject envelope = (JsonObject)JsonNode.Parse(
-            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+            EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
             Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
@@ -210,7 +210,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     public void Projetar_QuandoAZonaCongeladaNaoEAInstitucional_DeveRecusar()
     {
         JsonObject envelope = (JsonObject)JsonNode.Parse(
-            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+            EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
         envelope["localidade"]!["fusoHorario"] = "America/Sao_Paulo";
 
         Result<CertamePublicadoDto> resultado = ProjecaoDoCertamePublicado.Projetar(
@@ -413,7 +413,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     private static string DocumentoInteiro()
     {
         JsonObject envelope = (JsonObject)JsonNode.Parse(
-            EnvelopeCanonicoGoldenTests.CanonicalizarReferencia().Bytes)!;
+            EnvelopeDeReferencia.CanonicalizarReferencia().Bytes)!;
 
         Result<CertamePublicadoDto> projecao = ProjecaoDoCertamePublicado.Projetar(
             Guid.CreateVersion7(), AtoDeTeste(), "Certame de referência", new string('a', 64), envelope, AcervoDeTeste.Endereco.De);
@@ -427,7 +427,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
         [.. chaves.Where(chave => !ClassificacaoDosBlocosDoCertame.Classificados.Contains(chave)).Order(StringComparer.Ordinal)];
 
     private static IReadOnlyCollection<string> ChavesDoEnvelopeDeReferencia() =>
-        ChavesDe(EnvelopeCanonicoGoldenTests.CanonicalizarReferencia());
+        ChavesDe(EnvelopeDeReferencia.CanonicalizarReferencia());
 
     private static IReadOnlyCollection<string> ChavesDe(SnapshotCanonico canonico)
     {
