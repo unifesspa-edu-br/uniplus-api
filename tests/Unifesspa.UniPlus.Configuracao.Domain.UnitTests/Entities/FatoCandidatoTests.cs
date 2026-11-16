@@ -12,41 +12,15 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.FatoCandidatoDeTeste;
+
 /// <summary>
 /// Invariantes de domínio do catálogo <c>FatoCandidato</c> (ADR-0136): a factory valida código,
-/// domínio, origem, cardinalidade, fonte dos valores, ponto de resolução, binding, escopo e
-/// proteção de dados; o fato de sistema só tem nome e descrição editáveis.
+/// domínio, origem, cardinalidade, fonte dos valores, escopo e proteção de dados; o fato de sistema só
+/// tem nome, descrição, componente de exibição e proteção editáveis.
 /// </summary>
 public sealed class FatoCandidatoTests
 {
-    private const string BindingCorRaca = "CAMPO_FORMULARIO:COR_RACA";
-    private const string PontoResolucaoInscricao = "INSCRICAO";
-
-    private const string Finalidade = "Enquadramento na reserva de vagas.";
-    private const string Descricao = "Cor ou raça que o candidato declara.";
-
-    private static Result<FatoCandidato> Criar(
-        string codigo = "COR_RACA",
-        string nome = "Cor ou raça",
-        string? descricao = Descricao,
-        DominioFato dominio = DominioFato.Categorico,
-        OrigemFato origem = OrigemFato.Declarado,
-        CardinalidadeFato cardinalidade = CardinalidadeFato.Escalar,
-        FonteValoresFato? fonteValores = FonteValoresFato.Global,
-        FormatoTexto? formato = null,
-        string pontoResolucao = PontoResolucaoInscricao,
-        string binding = BindingCorRaca,
-        ClassificacaoDeProtecao classificacao = ClassificacaoDeProtecao.Sensivel,
-        string finalidade = Finalidade,
-        HipoteseLegalTratamento hipotese = HipoteseLegalTratamento.CumprimentoObrigacaoLegal,
-        bool sistema = false,
-        EscopoFato escopo = EscopoFato.Candidato) =>
-        FatoCandidato.Criar(
-            codigo, nome, descricao, dominio, origem, cardinalidade,
-            dominio == DominioFato.Categorico ? fonteValores : null,
-            formato,
-            pontoResolucao, binding, escopo, classificacao, finalidade, hipotese, sistema);
-
     [Fact(DisplayName = "Criar categórico sem fonte dos valores é recusado")]
     public void Criar_CategoricoSemFonte_Recusa() =>
         Criar(fonteValores: null).Error!.Code.Should().Be(FatoCandidatoErrorCodes.FonteValoresObrigatoria);
@@ -58,16 +32,6 @@ public sealed class FatoCandidatoTests
             EscopoFato.Candidato, ClassificacaoDeProtecao.Sensivel, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal,
             sistema: false)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.FonteValoresForaDeCategorico);
-
-    [Fact(DisplayName = "Valor de domínio em fato de fonte do processo é recusado")]
-    public void AdicionarValorDominio_FonteProcesso_Recusa()
-    {
-        FatoCandidato fato = Criar(
-            codigo: "TIPO_DEFICIENCIA", fonteValores: FonteValoresFato.Processo, binding: "CAMPO_FORMULARIO:TIPO_DEFICIENCIA").Value!;
-
-        fato.AdicionarValorDominio("VISUAL", "Deficiência visual", 0, ativo: true)
-            .Error!.Code.Should().Be(FatoValorDominioErrorCodes.NaoPermitidoForaDeFonteGlobal);
-    }
 
     [Theory(DisplayName = "Escopo ausente ou fora do vocabulário é recusado")]
     [InlineData(EscopoFato.Nenhum)]
@@ -153,11 +117,6 @@ public sealed class FatoCandidatoTests
         fato.Sistema.Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Acrescentar valor acumula as violações do código, da descrição, da orientação e da ordem")]
-    public void AdicionarValorDominio_AcumulaViolacoes() =>
-        Criar().Value!.AdicionarValorDominio(" ", null, -1, ativo: true, new string('x', FatoValorDominio.OrientacaoMaxLength + 1))
-            .Errors.Select(static e => e.Field).Should().BeEquivalentTo(["codigo", "descricao", "orientacao", "ordem"]);
-
     [Fact(DisplayName = "Editar nome, descrição e componente acumula as três violações")]
     public void AlterarDescritivo_AcumulaViolacoes() =>
         Criar().Value!.AlterarDescritivo(" ", new string('x', 1001), (ComponenteDeExibicao)(-1))
@@ -198,114 +157,6 @@ public sealed class FatoCandidatoTests
         }
     }
 
-    [Fact(DisplayName = "Valor do fato do administrador desativa e reativa; o do fato de sistema, não")]
-    public void DesativarValor_SoNoFatoDoAdministrador()
-    {
-        FatoCandidato doAdministrador = Criar().Value!;
-        doAdministrador.AdicionarValorDominio("PRETA", "Preta", 0, ativo: true).IsSuccess.Should().BeTrue();
-
-        doAdministrador.DesativarValor("PRETA").IsSuccess.Should().BeTrue();
-        doAdministrador.DesativarValor("PRETA").Error!.Code.Should().Be(FatoValorDominioErrorCodes.JaDesativado);
-        doAdministrador.ReativarValor("PRETA").IsSuccess.Should().BeTrue();
-        doAdministrador.DesativarValor("INEXISTENTE").Error!.Code.Should().Be(FatoValorDominioErrorCodes.NaoEncontrado);
-
-        Criar(sistema: true).Value!.DesativarValor("PRETA")
-            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
-    }
-
-    [Fact(DisplayName = "Corrigir valor troca a descrição e a orientação, inclusive de valor desativado, e preserva o código")]
-    public void CorrigirValor_TrocaOsTextosEPreservaOCodigo()
-    {
-        FatoCandidato fato = Criar().Value!;
-        fato.AdicionarValorDominio("EJA", "Educação de jovens", 3, ativo: true, "Texto antigo").IsSuccess.Should().BeTrue();
-        fato.DesativarValor("EJA").IsSuccess.Should().BeTrue();
-
-        Result resultado = fato.CorrigirValor(" EJA ", "  Educação de jovens e adultos ", "  Cursou o supletivo. ");
-
-        resultado.IsSuccess.Should().BeTrue();
-        FatoValorDominio valor = fato.ValoresDominioDeclarados.Single();
-        (valor.Codigo, valor.Descricao, valor.Orientacao, valor.Ordem, valor.Ativo)
-            .Should().Be(("EJA", "Educação de jovens e adultos", "Cursou o supletivo.", 3, false));
-    }
-
-    [Fact(DisplayName = "Corrigir valor acumula a descrição obrigatória e o tamanho da orientação")]
-    public void CorrigirValor_AcumulaViolacoes()
-    {
-        FatoCandidato fato = Criar().Value!;
-        fato.AdicionarValorDominio("EJA", "Educação de jovens", 0, ativo: true).IsSuccess.Should().BeTrue();
-
-        Result resultado = fato.CorrigirValor("EJA", " ", new string('x', FatoValorDominio.OrientacaoMaxLength + 1));
-
-        resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
-        [
-            ("descricao", FatoValorDominioErrorCodes.DescricaoObrigatoria),
-            ("orientacao", FatoValorDominioErrorCodes.OrientacaoTamanho),
-        ]);
-        fato.ValoresDominioDeclarados.Single().Descricao.Should().Be("Educação de jovens");
-    }
-
-    [Fact(DisplayName = "Corrigir valor inexistente é recusado, e o fato de sistema não tem valor corrigido")]
-    public void CorrigirValor_InexistenteESistema_Recusa()
-    {
-        FatoCandidato fato = Criar().Value!;
-
-        fato.CorrigirValor("NAO_EXISTE", "Descrição", null).Error!.Code.Should().Be(FatoValorDominioErrorCodes.NaoEncontrado);
-        Criar(sistema: true).Value!.CorrigirValor("PRETA", "Descrição", null)
-            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
-    }
-
-    [Fact(DisplayName = "Reordenar valores põe ativos e desativados na ordem da lista")]
-    public void ReordenarValores_AplicaAListaInteira()
-    {
-        FatoCandidato fato = Criar().Value!;
-        foreach ((string codigo, int ordem) in new[] { ("A", 0), ("B", 1), ("C", 2) })
-        {
-            fato.AdicionarValorDominio(codigo, codigo, ordem, ativo: true).IsSuccess.Should().BeTrue();
-        }
-
-        fato.DesativarValor("B").IsSuccess.Should().BeTrue();
-
-        fato.ReordenarValores(["C", " B ", "A"]).IsSuccess.Should().BeTrue();
-
-        fato.ValoresDominioDeclarados.OrderBy(static v => v.Ordem).Select(static v => v.Codigo).Should().Equal("C", "B", "A");
-        fato.ValoresDominioDeclarados.Single(static v => v.Codigo == "B").Ativo.Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "Reordenar com código ausente, repetido e estranho acumula as três recusas e não muda a ordem")]
-    public void ReordenarValores_ListaIncompleta_AcumulaERecusaInteira()
-    {
-        FatoCandidato fato = Criar().Value!;
-        fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
-        fato.AdicionarValorDominio("B", "B", 1, ativo: true).IsSuccess.Should().BeTrue();
-
-        Result resultado = fato.ReordenarValores(["A", "A", "Z"]);
-
-        resultado.Errors.Select(static e => e.Error.Code).Should().BeEquivalentTo(
-        [
-            FatoValorDominioErrorCodes.OrdemComCodigoDesconhecido,
-            FatoValorDominioErrorCodes.OrdemComCodigoRepetido,
-            FatoValorDominioErrorCodes.OrdemSemTodosOsValores,
-        ]);
-        fato.ValoresDominioDeclarados.OrderBy(static v => v.Ordem).Select(static v => v.Codigo).Should().Equal("A", "B");
-    }
-
-    [Fact(DisplayName = "Reordenar com código nulo ou em branco recusa com mensagem própria")]
-    public void ReordenarValores_CodigoEmBranco_RecusaComMensagemClara()
-    {
-        FatoCandidato fato = Criar().Value!;
-        fato.AdicionarValorDominio("A", "A", 0, ativo: true).IsSuccess.Should().BeTrue();
-
-        Result resultado = fato.ReordenarValores(["A", null!, "  "]);
-
-        resultado.Errors.Select(static e => e.Error.Message).Should().Contain(static m => m.Contains("em branco", StringComparison.Ordinal));
-        resultado.Errors.Select(static e => e.Error.Message).Should().NotContain(static m => m.Contains("não tem os valores", StringComparison.Ordinal));
-    }
-
-    [Fact(DisplayName = "Reordenar valores do fato de sistema é recusado")]
-    public void ReordenarValores_FatoDeSistema_Recusa() =>
-        Criar(sistema: true).Value!.ReordenarValores([])
-            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.DefinicaoDoFatoDeSistemaTravada);
-
     [Theory(DisplayName = "Proteção de dados incompleta é recusada")]
     [InlineData(ClassificacaoDeProtecao.Nenhuma, Finalidade, HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.ClassificacaoProtecaoObrigatoria)]
     [InlineData(ClassificacaoDeProtecao.Pessoal, "  ", HipoteseLegalTratamento.CumprimentoObrigacaoLegal, FatoCandidatoErrorCodes.FinalidadeTratamentoObrigatoria)]
@@ -322,14 +173,6 @@ public sealed class FatoCandidatoTests
     public void Criar_HipoteseForaDoArtigo_Recusa(ClassificacaoDeProtecao classificacao, HipoteseLegalTratamento hipotese) =>
         Criar(classificacao: classificacao, hipotese: hipotese)
             .Error!.Code.Should().Be(FatoCandidatoErrorCodes.HipoteseLegalIncompativelComClassificacao);
-
-    [Theory(DisplayName = "Fato do administrador não usa vínculo que exige código do sistema")]
-    [InlineData(OrigemFato.Derivado, "ATRIBUTO_CANDIDATO:DADO")]
-    [InlineData(OrigemFato.Derivado, "CLASSIFICACAO:DADO")]
-    [InlineData(OrigemFato.Integracao, "INTEGRACAO:DADO")]
-    public void Criar_FatoDoAdministradorComVinculoDeSistema_Recusa(OrigemFato origem, string binding) =>
-        Criar(codigo: "DADO", origem: origem, binding: binding)
-            .Error!.Code.Should().Be(FatoCandidatoErrorCodes.VinculoExclusivoDeFatoDeSistema);
 
     [Fact(DisplayName = "Fato de sistema edita nome, descrição e componente, mas não é desativado nem recebe valor")]
     public void FatoDeSistema_EditaNomeEDescricao_NaoDesativa()
@@ -451,201 +294,6 @@ public sealed class FatoCandidatoTests
     }
 
     // ─── PontoResolucao (ADR-0116) ──────────────────────────────────────────
-
-    [Theory(DisplayName = "Ponto de resolução ausente ou em branco é rejeitado")]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Criar_PontoResolucaoAusente_Falha(string ponto)
-    {
-        Result<FatoCandidato> resultado = Criar(pontoResolucao: ponto);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.PontoResolucaoObrigatorio);
-    }
-
-    [Fact(DisplayName = "Ponto de resolução fora do conjunto canônico de fases é rejeitado")]
-    public void Criar_PontoResolucaoForaDoCanonico_Falha()
-    {
-        Result<FatoCandidato> resultado = Criar(pontoResolucao: "FASE_INEXISTENTE");
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.PontoResolucaoInvalido);
-    }
-
-    // ─── Binding (ADR-0116) ─────────────────────────────────────────────────
-
-    [Theory(DisplayName = "Binding ausente ou em branco é rejeitado")]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Criar_BindingAusente_Falha(string binding)
-    {
-        Result<FatoCandidato> resultado = Criar(binding: binding);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingObrigatorio);
-    }
-
-    [Theory(DisplayName = "Binding sem separador, ou com prefixo/referência vazios, é rejeitado como formato inválido")]
-    [InlineData("CAMPO_FORMULARIO_COR_RACA")]
-    [InlineData(":COR_RACA")]
-    [InlineData("CAMPO_FORMULARIO:")]
-    public void Criar_BindingFormatoInvalido_Falha(string binding)
-    {
-        Result<FatoCandidato> resultado = Criar(binding: binding);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingFormatoInvalido);
-    }
-
-    [Theory(DisplayName = "Binding com prefixo incoerente com a origem é rejeitado")]
-    [InlineData(OrigemFato.Declarado, "ATRIBUTO_CANDIDATO:COR_RACA")]
-    [InlineData(OrigemFato.Declarado, "REGRA_DERIVACAO:MODALIDADE")]
-    [InlineData(OrigemFato.Derivado, "CAMPO_FORMULARIO:FAIXA_ETARIA")]
-    [InlineData(OrigemFato.Integracao, "CAMPO_FORMULARIO:ANO_ENEM")]
-    [InlineData(OrigemFato.Integracao, "REGRA_DERIVACAO:ALGO")]
-    public void Criar_BindingPrefixoIncoerenteComOrigem_Falha(OrigemFato origem, string binding)
-    {
-        Result<FatoCandidato> resultado = Criar(origem: origem, binding: binding);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingPrefixoIncoerenteComOrigem);
-    }
-
-    [Fact(DisplayName = "REGRA_DERIVACAO cuja referência não é o código do próprio fato é recusado")]
-    public void Criar_BindingRegraDerivacaoReferenciaOutroFato_Falha()
-    {
-        Result<FatoCandidato> resultado = Criar(
-            codigo: "FAIXA_ETARIA", origem: OrigemFato.Derivado, binding: "REGRA_DERIVACAO:MODALIDADE");
-
-        resultado.IsFailure.Should().BeTrue(
-            "a regra de derivação referenciada é a do próprio fato — apontar para outro congelaria metadado de derivação alheio");
-        resultado.Error!.Code.Should().Be(FatoCandidatoErrorCodes.BindingReferenciaRegraIncoerente);
-    }
-
-    [Fact(DisplayName = "REGRA_DERIVACAO cuja referência é o código do próprio fato é aceito")]
-    public void Criar_BindingRegraDerivacaoReferenciaProprioFato_Aceita()
-    {
-        Result<FatoCandidato> resultado = Criar(
-            codigo: "MODALIDADE", dominio: DominioFato.Categorico,
-            cardinalidade: CardinalidadeFato.Multivalorado,
-            origem: OrigemFato.Derivado, binding: "REGRA_DERIVACAO:MODALIDADE");
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-    }
-
-    [Fact(DisplayName = "A mensagem de prefixo incoerente lista os dois prefixos aceitos quando a origem é derivada")]
-    public void Criar_BindingPrefixoIncoerente_Derivado_MensagemListaOsDois()
-    {
-        Result<FatoCandidato> resultado = Criar(origem: OrigemFato.Derivado, binding: "CAMPO_FORMULARIO:X");
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Message.Should().Contain("ATRIBUTO_CANDIDATO")
-            .And.Contain("REGRA_DERIVACAO",
-                "a origem derivada aceita dois prefixos — a mensagem precisa apontar ambos, não um só");
-    }
-
-    [Theory(DisplayName = "Binding com prefixo coerente com a origem é aceito")]
-    [InlineData(OrigemFato.Declarado, "CAMPO_FORMULARIO:COR_RACA")]
-    [InlineData(OrigemFato.Derivado, "ATRIBUTO_CANDIDATO:FAIXA_ETARIA")]
-    // REGRA_DERIVACAO referencia o próprio fato: a referência bate com o código FATO_QUALQUER.
-    [InlineData(OrigemFato.Derivado, "REGRA_DERIVACAO:FATO_QUALQUER")]
-    [InlineData(OrigemFato.Integracao, "INTEGRACAO:ANO_ENEM")]
-    public void Criar_BindingPrefixoCoerenteComOrigem_Aceita(OrigemFato origem, string binding)
-    {
-        // Atributo do candidato e integração só existem em fato de sistema.
-        Result<FatoCandidato> resultado = Criar(
-            codigo: "FATO_QUALQUER", dominio: DominioFato.Numerico,
-            origem: origem, binding: binding, sistema: true);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.Binding.Should().Be(binding);
-    }
-
-    // ─── AdicionarValorDominio (ADR-0116) ───────────────────────────────────
-
-    [Fact(DisplayName = "AdicionarValorDominio em categórico Declarado exige e aceita descrição")]
-    public void AdicionarValorDominio_CategoricoDeclarado_Aceita()
-    {
-        FatoCandidato fato = Criar().Value!;
-
-        Result resultado = fato.AdicionarValorDominio("PRETA", "Autodeclaração de cor/raça preta.", 0, ativo: true);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        fato.ValoresDominioDeclarados.Should().ContainSingle(v =>
-            v.Codigo == "PRETA" && v.Descricao == "Autodeclaração de cor/raça preta." && v.Ordem == 0 && v.Ativo);
-    }
-
-    [Fact(DisplayName = "AdicionarValorDominio fora de categórico é rejeitado")]
-    public void AdicionarValorDominio_ForaDeCategorico_Falha()
-    {
-        FatoCandidato fato = Criar(
-            codigo: "PCD", dominio: DominioFato.Booleano,
-            binding: "CAMPO_FORMULARIO:PCD").Value!;
-
-        Result resultado = fato.AdicionarValorDominio("SIM", "Descrição", 0, ativo: true);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.NaoPermitidoForaDeCategorico);
-    }
-
-    [Fact(DisplayName = "AdicionarValorDominio com código duplicado (normalizado, ordinal) é rejeitado")]
-    public void AdicionarValorDominio_CodigoDuplicado_Falha()
-    {
-        FatoCandidato fato = Criar().Value!;
-        fato.AdicionarValorDominio("PRETA", "Descrição", 0, ativo: true).IsSuccess.Should().BeTrue();
-
-        Result resultado = fato.AdicionarValorDominio("  PRETA  ", "Outra descrição", 1, ativo: true);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.CodigoDuplicado);
-    }
-
-    [Fact(DisplayName = "AdicionarValorDominio sem descrição quando a origem é Declarado é rejeitado")]
-    public void AdicionarValorDominio_SemDescricaoDeclarado_Falha()
-    {
-        FatoCandidato fato = Criar().Value!;
-
-        Result resultado = fato.AdicionarValorDominio("PRETA", null, 0, ativo: true);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.DescricaoObrigatoria);
-    }
-
-    [Fact(DisplayName = "AdicionarValorDominio sem descrição quando a origem é Derivado é aceito")]
-    public void AdicionarValorDominio_SemDescricaoDerivado_Aceita()
-    {
-        FatoCandidato fato = Criar(
-            codigo: "FATO_DERIVADO", dominio: DominioFato.Categorico,
-            origem: OrigemFato.Derivado, binding: "REGRA_DERIVACAO:FATO_DERIVADO").Value!;
-
-        Result resultado = fato.AdicionarValorDominio("X", null, 0, ativo: true);
-
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-    }
-
-    [Fact(DisplayName = "AdicionarValorDominio com código em branco é rejeitado")]
-    public void AdicionarValorDominio_CodigoEmBranco_Falha()
-    {
-        FatoCandidato fato = Criar().Value!;
-
-        Result resultado = fato.AdicionarValorDominio("   ", "Descrição", 0, ativo: true);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.CodigoObrigatorio);
-    }
-
-    [Fact(DisplayName = "AdicionarValorDominio com ordem negativa é rejeitado")]
-    public void AdicionarValorDominio_OrdemNegativa_Falha()
-    {
-        FatoCandidato fato = Criar().Value!;
-
-        Result resultado = fato.AdicionarValorDominio("PRETA", "Descrição", -1, ativo: true);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoValorDominioErrorCodes.OrdemInvalida);
-    }
-
-    // ─── Sem remoção lógica (EntityBase puro: o fato é desativado, nunca apagado) ──
 
     [Fact(DisplayName = "FatoCandidato deriva de EntityBase puro — não é soft-deletable")]
     public void FatoCandidato_EhEntityBasePuro()
