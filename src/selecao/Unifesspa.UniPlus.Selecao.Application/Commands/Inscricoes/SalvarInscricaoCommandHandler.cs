@@ -1,25 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 
-using System.Text.Json;
-
-using Abstractions;
-
-using Domain.Entities;
-using Domain.Interfaces;
-using Domain.Services;
-using Domain.ValueObjects;
-
 using DTOs;
 
-using Kernel.Domain.ValueObjects;
 using Kernel.Results;
 
-using Queries.ProcessosSeletivos;
+using Services;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Regras.Formularios;
-using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Salva o rascunho (issue #1859) sobre a versão do formulário em que está o rascunho (a divulgada) — nunca a vigente
@@ -30,203 +17,29 @@ public static class SalvarInscricaoCommandHandler
 {
     public static async Task<Result<InscricaoDto>> Handle(
         SalvarInscricaoCommand command,
-        IInscricaoRepository inscricaoRepository,
-        IProcessoSeletivoRepository processoSeletivoRepository,
-        IDocumentoDaInscricaoRepository documentoRepository,
-        ICertameDivulgadoRepository certameDivulgadoRepository,
-        IRegistroCodecsEnvelope registroCodecs,
-        IResolvedorFusoInstitucional resolvedorFuso,
-        IConferenciaEnderecoGeo conferenciaEnderecoGeo,
-        Services.EnderecosDosDocumentosDoAto enderecos,
-        IUnitOfWork unitOfWork,
+        RascunhoDoCandidato rascunho,
+        SalvamentoDoRascunho salvamento,
+        RespostaDoRascunho resposta,
         IUserContext userContext,
-        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(inscricaoRepository);
-        ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(documentoRepository);
-        ArgumentNullException.ThrowIfNull(certameDivulgadoRepository);
-        ArgumentNullException.ThrowIfNull(registroCodecs);
-        ArgumentNullException.ThrowIfNull(resolvedorFuso);
-        ArgumentNullException.ThrowIfNull(conferenciaEnderecoGeo);
-        ArgumentNullException.ThrowIfNull(enderecos);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(userContext);
-        ArgumentNullException.ThrowIfNull(timeProvider);
+        ArgumentNullException.ThrowIfNull(rascunho);
+        ArgumentNullException.ThrowIfNull(salvamento);
+        ArgumentNullException.ThrowIfNull(resposta);
 
-        if (userContext.Cpf is not { } cpfDoToken)
-        {
-            return Result<InscricaoDto>.Failure(new DomainError(
-                "Inscricao.CpfAusenteNoToken",
-                "O token não traz o claim cpf — só um candidato autenticado com CPF pode salvar a inscrição."));
-        }
-
-        Result<Cpf> cpfResult = Cpf.Criar(cpfDoToken);
-        if (cpfResult.IsFailure)
-        {
-            return Result<InscricaoDto>.Failure(new DomainError(
-                "Inscricao.CpfAusenteNoToken", "O claim cpf do token não é um CPF válido."));
-        }
-
-        Inscricao? inscricao = await inscricaoRepository
-            .ObterAtivaPorProcessoECpfAsync(command.ProcessoSeletivoId, cpfResult.Value!, cancellationToken)
-            .ConfigureAwait(false);
-        if (inscricao is null)
-        {
-            return Result<InscricaoDto>.Failure(Inscricao.NaoEncontrada);
-        }
-
-        if (inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono)
-        {
-            return Result<InscricaoDto>.Failure(erroDono);
-        }
-
-        // O mesmo instante confere o período e é o envio de que se contam os limites da faixa de data.
-        DateTimeOffset instante = timeProvider.GetUtcNow();
-        DomainError? foraDoPeriodo = await Services.PeriodoDaInscricaoResolver.ConferirAsync(
-            command.ProcessoSeletivoId, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, resolvedorFuso,
-            instante, cancellationToken).ConfigureAwait(false);
-        if (foraDoPeriodo is not null)
-        {
-            return Result<InscricaoDto>.Failure(foraDoPeriodo);
-        }
-
-        // A inscrição enviada não aceita rascunho: recusar antes das respostas evita pedir correção
-        // de um campo numa gravação que não seria aceita de jeito nenhum. Vem depois do período,
-        // porque fora dele nem o novo envio que a recusa orienta seria aceito.
-        if (inscricao.ConferirAindaEmRascunho() is { } erroRascunho)
-        {
-            return Result<InscricaoDto>.Failure(erroRascunho);
-        }
-
-        Result adotada = await Services.VersaoDaInscricaoResolver
-            .AdotarAsync(inscricao, certameDivulgadoRepository, processoSeletivoRepository, registroCodecs, cancellationToken)
-            .ConfigureAwait(false);
-        if (adotada.IsFailure)
-        {
-            return Result<InscricaoDto>.Failure(adotada.Error!);
-        }
-
-        Result<Services.ContextoDaVersaoFixada> contexto = await Services.ContextoDaVersaoFixadaResolver.ResolverAsync(
-            inscricao.VersaoFormularioId, command.ProcessoSeletivoId, processoSeletivoRepository, registroCodecs,
-            command.Request.OfertaCursoId, command.Request.OfertaCursoSegundaOpcaoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (contexto.IsFailure)
-        {
-            return Result<InscricaoDto>.Failure(contexto.Error!);
-        }
-
-        Result<TimeZoneInfo> fuso = resolvedorFuso.Resolver();
-        if (fuso.IsFailure)
-        {
-            return Result<InscricaoDto>.Failure(fuso.Error!);
-        }
-
-        EnvioDasRespostas envio = new(instante, fuso.Value!);
-        Dictionary<string, JsonElement> respostas = Services.InscricaoRequestMapper.ParaRespostas(command.Request.Respostas);
-        Result<Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>>> gruposLidos = Services.InscricaoRequestMapper.ParaGrupos(command.Request.Grupos);
-        if (gruposLidos.IsFailure)
-        {
-            return Result<InscricaoDto>.ValidationFailure(gruposLidos.Errors);
-        }
-
-        Dictionary<string, IReadOnlyList<OcorrenciaDeGrupoInscricao>> grupos = gruposLidos.Value!;
-
-        Result<List<AceiteDeTermo>> aceitesLidos = Services.InscricaoRequestMapper.ParaAceites(command.Request.Aceites);
-        if (aceitesLidos.IsFailure)
-        {
-            return Result<InscricaoDto>.ValidationFailure(aceitesLidos.Errors);
-        }
-
-        List<AceiteDeTermo> aceites = aceitesLidos.Value!;
-
-        // A mesma avaliação do envio e da consulta (ADR-0143), sem etapa concluída: o rascunho ainda
-        // está sendo preenchido, e só o que o corpo traz é conferido. As restrições vêm do formulário,
-        // que é um só para as duas opções; as modalidades por opção ficam para a avaliação devolvida.
-        Result<ResultadoDaAvaliacaoDaInscricao> avaliacao = AvaliacaoDaInscricao.Avaliar(contexto.Value!.Configuracao, EntradaDaAvaliacaoDaInscricao.Montar(
-            Services.DerivadosDoSistemaInscricao.ComOsDerivados(contexto.Value!.Admitidas.Definicoes),
-            respostas,
-            Services.InscricaoRequestMapper.ParaAvaliacao(grupos),
-            new Dictionary<string, FatoResolvido>(StringComparer.Ordinal),
-            new HashSet<string>(StringComparer.Ordinal),
-            envio,
-            EntradaDaAvaliacaoDaInscricao.SemApresentacoes,
-            naFaseDaInscricao: true));
-        if (avaliacao.IsFailure)
-        {
-            return Result<InscricaoDto>.Failure(avaliacao.Error!);
-        }
-
-        IReadOnlyList<FieldError> recusas = RecusasEstruturais(AvaliacaoDaInscricao.DaInscricao(avaliacao.Value!.Formulario), envio.Dia);
-        if (recusas.Count > 0)
-        {
-            return Result<InscricaoDto>.ValidationFailure(recusas);
-        }
-
-        // O CEP existir no Geo e ser da cidade declarada vale já no rascunho; o Geo fora do ar adia a
-        // conferência para o envio, e o rascunho continua salvável.
-        Services.ConferenciaDosEnderecos doEndereco = await Services.ConferenciaDoEnderecoDaInscricao
-            .ConferirAsync(respostas, contexto.Value!.Admitidas, conferenciaEnderecoGeo, aoEnviar: false, cancellationToken)
-            .ConfigureAwait(false);
-        if (doEndereco.Recusas.Count > 0)
-        {
-            return Result<InscricaoDto>.ValidationFailure(doEndereco.Recusas);
-        }
-
-        Result salvar = inscricao.Salvar(
-            command.Request.OfertaCursoId, command.Request.OfertaCursoSegundaOpcaoId, respostas, grupos, aceites, contexto.Value!.Admitidas with { NomeCivilDoLogin = userContext.NomeCompleto, NomeSocialDoLogin = userContext.NomeSocial }, command.Precondicao);
-        if (salvar.IsFailure)
-        {
-            return Result<InscricaoDto>.ValidationFailure(salvar.Errors);
-        }
-
-        await inscricaoRepository.AtualizarAsync(inscricao, cancellationToken).ConfigureAwait(false);
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-
-        // A avaliação devolvida é a do que ficou gravado, e não se grava: o rascunho a recalcula.
-        Services.ArquivosDaInscricao arquivos = await Services.ArquivosDaInscricao
-            .CarregarAsync(documentoRepository, inscricao.Id, cancellationToken).ConfigureAwait(false);
-        Result<ResultadoDaAvaliacaoDaInscricao> avaliada = await Services.PreparacaoDaAvaliacaoDaInscricao.AvaliarAsync(
-            inscricao,
-            contexto.Value!,
-            new Dictionary<string, JsonElement>(StringComparer.Ordinal),
-            new Dictionary<string, IReadOnlyList<OcorrenciaRespondida>>(StringComparer.Ordinal),
-            envio,
-            conferenciaEnderecoGeo,
-            arquivos,
-            cancellationToken).ConfigureAwait(false);
-        if (avaliada.IsFailure)
-        {
-            return Result<InscricaoDto>.Failure(avaliada.Error!);
-        }
-
-        DocumentosDoAtoNoAcervo acervo = await enderecos
-            .DoAtoAsync(inscricao.ProcessoSeletivoId, contexto.Value!.AtoCriadorId, cancellationToken)
-            .ConfigureAwait(false);
-        Result<AvaliacaoDaInscricaoDto> projetada = Services.ProjecaoDaAvaliacaoDaInscricao.Projetar(
-            avaliada.Value!, contexto.Value!, acervo, arquivos.ParaOCandidato());
-        return projetada.IsFailure
-            ? Result<InscricaoDto>.Failure(projetada.Error!)
-            : Result<InscricaoDto>.Success(InscricaoDto.De(
-                inscricao, projetada.Value!, contexto.Value!.Admitidas.NumeroDeOpcoesDeCurso, contexto.Value!.OfertasDeCurso));
+        Result<PedidoDoRascunho> pedido = await rascunho.PedidoAsync(command.ProcessoSeletivoId, command.Request, userContext, cancellationToken).ConfigureAwait(false);
+        return pedido.IsFailure
+            ? Result<InscricaoDto>.ValidationFailure(pedido.Errors)
+            : await SalvarEResponderAsync(command, pedido.Value!, salvamento, resposta, userContext, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>
-    /// Só a resposta que viola uma restrição do formulário é recusada — a ausência de resposta a um
-    /// item obrigatório não é, porque o rascunho não exige obrigatórios. Cobre os itens de nível
-    /// superior e os de cada ocorrência de grupo repetível: o membro do grupo responde um item como
-    /// qualquer outro, e uma restrição violada ali é tão inválida quanto no nível superior.
-    /// </summary>
-    private static IReadOnlyList<FieldError> RecusasEstruturais(AvaliacaoFormulario avaliacao, DateOnly diaDoEnvio) =>
-    [
-        .. avaliacao.Itens
-            .Where(static item => item.RestricoesVioladas.Count > 0)
-            .Select(item => Services.RecusaDaResposta.De(item.FatoCodigo, item, diaDoEnvio)),
-        .. avaliacao.Grupos
-            .SelectMany(grupo => grupo.Ocorrencias.SelectMany(ocorrencia => ocorrencia.Itens
-                .Where(static item => item.RestricoesVioladas.Count > 0)
-                .Select(item => Services.RecusaDaResposta.De($"{grupo.Codigo}.{ocorrencia.Id}.{item.FatoCodigo}", item, diaDoEnvio)))),
-    ];
+    private static async Task<Result<InscricaoDto>> SalvarEResponderAsync(
+        SalvarInscricaoCommand command, PedidoDoRascunho pedido, SalvamentoDoRascunho salvamento, RespostaDoRascunho resposta, IUserContext userContext, CancellationToken cancellationToken)
+    {
+        Result salvo = await salvamento.SalvarAsync(pedido, command.Request, command.Precondicao, userContext, cancellationToken).ConfigureAwait(false);
+        return salvo.IsFailure
+            ? Result<InscricaoDto>.ValidationFailure(salvo.Errors)
+            : await resposta.ResponderAsync(pedido, cancellationToken).ConfigureAwait(false);
+    }
 }

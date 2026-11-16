@@ -55,7 +55,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags(["\"x\""])),
             inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(),
             Substitute.For<IUnitOfWork>(), userContext, DivulgacaoDeTeste.Relogio, CancellationToken.None);
@@ -72,7 +72,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         IInscricaoRepository inscricaoRepository = Substitute.For<IInscricaoRepository>();
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns((Inscricao?)null);
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags(["\"x\""])),
             inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(),
             Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
@@ -91,7 +91,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         inscricaoRepository.ObterAtivaPorProcessoECpfAsync(ProcessoId, cpf, Arg.Any<CancellationToken>()).Returns(existente);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, Substitute.For<IProcessoSeletivoRepository>(), Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), Substitute.For<IRegistroCodecsEnvelope>(), DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(),
             unitOfWork, UsuarioComCpf(cpf, contaId: "conta-outro"), DivulgacaoDeTeste.Relogio, CancellationToken.None);
@@ -121,7 +121,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
 
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
@@ -177,7 +177,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         DivulgacaoDeTeste.ConfigurarVersao(processoRepository, registroCodecs, versao, grafo);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(),
             unitOfWork, UsuarioComCpf(cpf), new RelogioFixo(DivulgacaoDeTeste.DentroDoPeriodo.AddMonths(1)), CancellationToken.None);
@@ -207,7 +207,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
             divulgada: (divulgada, DivulgacaoDeTeste.FimDoPeriodo.AddDays(30)));
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, new InscricaoRequest(null, null, null, null), PrecondicaoIfMatch.DeTags([DivulgacaoDeTeste.ETagDepoisDeAdotar(existente, divulgada)])),
             inscricaoRepository, processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(),
             unitOfWork, UsuarioComCpf(cpf), new RelogioFixo(DivulgacaoDeTeste.FimDoPeriodo.AddDays(10)), CancellationToken.None);
@@ -239,7 +239,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         InscricaoRequest request = new(
             null, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["APELIDO"] = JsonSerializer.SerializeToElement("Nanda") }, null, null);
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
@@ -280,7 +280,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
             },
             null, null);
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(),
             Substitute.For<IUnitOfWork>(), UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
@@ -345,7 +345,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
             },
             null, null);
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(),
             geo, DivulgacaoDeTeste.Enderecos(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
@@ -377,7 +377,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         InscricaoRequest request = new(
             null, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["APELIDO"] = JsonSerializer.SerializeToElement("Apelido Enorme") }, null, null);
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
@@ -407,7 +407,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         InscricaoRequest request = new(
             null, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["DATA_NASCIMENTO"] = JsonSerializer.SerializeToElement("2027-01-10") }, null, null);
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
@@ -446,7 +446,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         InscricaoRequest request = new(
             null, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["APELIDO"] = JsonSerializer.SerializeToElement("Apelido Enorme") }, null, null);
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
@@ -485,7 +485,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
         InscricaoRequest request = new(
             null, new Dictionary<string, JsonElement>(StringComparer.Ordinal) { ["APELIDO"] = JsonSerializer.SerializeToElement("Apelido Enorme") }, null, null);
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), unitOfWork, UsuarioComCpf(cpf), new RelogioFixo(DivulgacaoDeTeste.DentroDoPeriodo.AddMonths(1)), CancellationToken.None);
 
@@ -539,7 +539,7 @@ public sealed class SalvarInscricaoCommandHandlerTests
             },
             null);
 
-        Result<InscricaoDto> resultado = await SalvarInscricaoCommandHandler.Handle(
+        Result<InscricaoDto> resultado = await SalvarDeTeste.Handle(
             new SalvarInscricaoCommand(ProcessoId, request, PrecondicaoIfMatch.DeTags([existente.ETag])),
             inscricaoRepository, processoRepository, Substitute.For<IDocumentoDaInscricaoRepository>(), DivulgacaoDeTeste.Certame(ProcessoId), registroCodecs, DivulgacaoDeTeste.Fuso(), Substitute.For<IConferenciaEnderecoGeo>(), DivulgacaoDeTeste.Enderecos(), unitOfWork, UsuarioComCpf(cpf), DivulgacaoDeTeste.Relogio, CancellationToken.None);
 
