@@ -74,9 +74,12 @@ e a base de CEP no Geo. Não há passo extra além de `cp .env.example .env`.
   minutos na primeira subida (o Geo tem 1,6 milhão de logradouros).
 - **Se a primeira subida for interrompida ou falhar** (disco cheio, `Ctrl+C`), o Postgres e o MinIO não repetem a restauração sobre um
   volume já iniciado: rode `docker compose down -v` e suba de novo.
-- **Valores obrigatórios no `docker/.env`:** a base pronta traz o admin do Keycloak e o emissor das concessões gravados nos dumps. Por isso exige
-  `KEYCLOAK_ADMIN=admin`, `KEYCLOAK_ADMIN_PASSWORD=admin` e `KEYCLOAK_PORT=8080` (os valores do `.env.example`). Com outros valores a restauração
-  para com uma mensagem de erro; ajuste o `.env` e rode `docker compose down -v`, ou suba sem a base pronta.
+- **Valores obrigatórios no `docker/.env`:** os dumps gravam o admin do Keycloak e endereços do ambiente padrão: o emissor das concessões
+  (`localhost:8080`), as URLs dos editais no MinIO (`localhost:9000`) e as origens dos clients web (`localhost:4200` a `4203`). Por isso a base pronta
+  exige os valores do `.env.example` em `KEYCLOAK_ADMIN`, `KEYCLOAK_ADMIN_PASSWORD`, `KEYCLOAK_PORT`, `MINIO_PORT`, `SELECAO_WEB_PORT`,
+  `INGRESSO_WEB_PORT`, `PORTAL_WEB_PORT` e `CONFIGURACAO_WEB_PORT`. Com outros valores a restauração para com uma mensagem de erro que lista os
+  divergentes; ajuste o `.env` e rode `docker compose down -v`, ou suba sem a base pronta. As demais portas (inclusive `API_PORT`) podem mudar: o
+  `localhost:5200` que aparece no banco é só o cache de idempotência de respostas antigas, que nunca é reproduzido.
 - **Versão da base:** vale para a migration `Inicial` da `main`. Quando a migration for regerada, os dumps precisam ser gerados de novo.
 
 ## Serviços e portas
