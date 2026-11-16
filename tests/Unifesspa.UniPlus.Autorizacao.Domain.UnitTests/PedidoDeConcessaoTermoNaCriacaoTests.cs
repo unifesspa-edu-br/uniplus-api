@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -10,7 +11,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
 
 /// <summary>A fixação do termo de responsabilidade na criação do pedido protegido.</summary>
-public sealed class PedidoDeConcessaoTermoNaCriacaoTests : PedidoDeConcessaoTestBase
+public sealed class PedidoDeConcessaoTermoNaCriacaoTests 
 {
     private static readonly VersaoDoTermo Vigente = TermosDeTeste.Publicada();
 

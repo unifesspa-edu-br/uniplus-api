@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -13,7 +14,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
 
 /// <summary>O perfil que muda entre as etapas, a recusa, o cancelamento, o anexo e a concessão do pedido.</summary>
-public sealed class PedidoDeConcessaoCicloTests : PedidoDeConcessaoTestBase
+public sealed class PedidoDeConcessaoCicloTests 
 {
     [Fact(DisplayName = "Perfil que mudou entre as etapas devolve o pedido ao gestor e nada é concedido")]
     public void Aprovar_PerfilAlterado_VoltaAoGestor()

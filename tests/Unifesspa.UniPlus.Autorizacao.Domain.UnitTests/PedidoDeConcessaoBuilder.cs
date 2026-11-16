@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
-using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoTestBase;
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 
 /// <summary>
 /// Monta o pedido de concessão de um cenário: quem pede, para quem, de qual perfil, se declara documento e se o termo de

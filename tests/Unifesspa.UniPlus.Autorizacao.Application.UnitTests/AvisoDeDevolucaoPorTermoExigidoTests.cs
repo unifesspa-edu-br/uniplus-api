@@ -23,10 +23,10 @@ public sealed class AvisoDeDevolucaoPorTermoExigidoTests
 
         EnviarEmail aviso = (await AvisarAsync(pedido)).Should().ContainSingle().Subject;
 
-        aviso.Destinatario.Should().Be(PedidoDeConcessaoTestBase.Betina.Email);
+        aviso.Destinatario.Should().Be(ApoioDoPedido.Betina.Email);
         aviso.Finalidade.Should().Be("perfil.pedido_devolvido_por_termo_exigido");
         aviso.CorpoTexto.Should().Contain("refaça-o").And.Contain($"/acessos/pedidos/{pedido.Id}")
-            .And.NotContain(PedidoDeConcessaoTestBase.Betina.Nome!).And.NotContain(PedidoDeConcessaoTestBase.Justificativa);
+            .And.NotContain(ApoioDoPedido.Betina.Nome!).And.NotContain(ApoioDoPedido.Justificativa);
     }
 
     [Fact(DisplayName = "O aviso da devolução por exigir o termo não se repete para o mesmo pedido")]
@@ -41,7 +41,7 @@ public sealed class AvisoDeDevolucaoPorTermoExigidoTests
     private static PedidoDeConcessao Devolvido()
     {
         PedidoDeConcessao pedido = PedidoDeConcessaoBuilder.Pedido().AguardandoGestor();
-        pedido.Aprovar(new Identidade(PedidoDeConcessaoTestBase.Emissor, "diogo.souza"), new(["a"], "sensivel", true, null), new(false), DateTimeOffset.UtcNow)
+        pedido.Aprovar(new Identidade(ApoioDoPedido.Emissor, "diogo.souza"), new(["a"], "sensivel", true, null), new(false), DateTimeOffset.UtcNow)
             .IsFailure.Should().BeTrue();
 
         return pedido;
