@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 /// cuja classe mudou. A governança nunca se trava nem se suspende: só se compara. O portão do catálogo vira junto com as
 /// reclassificações, porque nada disso é visível a outras transações antes do commit.
 /// </summary>
-public sealed partial class ConciliacaoDoCatalogo
+public sealed class ConciliacaoDoCatalogo
 {
     private const string NomeDaTrava = "autorizacao.conciliacao_do_catalogo";
 
