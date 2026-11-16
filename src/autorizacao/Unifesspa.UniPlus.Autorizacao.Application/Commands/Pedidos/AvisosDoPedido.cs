@@ -83,7 +83,7 @@ public sealed class AvisosDoPedido
             SituacaoDoPedido.AguardandoGestor => TitularesAsync(pedido, PerfisDeSistema.GestorDeAcessosId, [], cancellationToken),
             SituacaoDoPedido.AguardandoProtecaoDeDados => TitularesDosRepresentantesAsync(pedido, cancellationToken),
             SituacaoDoPedido.Aprovado or SituacaoDoPedido.Recusado =>
-                Imediato(Distintos([pedido.SolicitanteEmail, pedido.BeneficiarioEmail])),
+                Imediato(Distintos([pedido.Solicitante.Email, pedido.BeneficiarioEmail])),
             SituacaoDoPedido.Cancelado when situacaoAnterior != SituacaoDoPedido.AguardandoDocumento =>
                 Imediato(DestinatariosDoCancelamento(pedido)),
             _ => Imediato([]),
@@ -105,9 +105,9 @@ public sealed class AvisosDoPedido
 
     // Quem cancela é o solicitante; só o beneficiário, que já sabia do pedido, precisa saber que ele acabou.
     private static string[] DestinatariosDoCancelamento(PedidoDeConcessao pedido) =>
-        pedido.Beneficiario == pedido.Solicitante
+        pedido.Beneficiario == pedido.Solicitante.Identidade
             ? []
-            : [.. Distintos([pedido.BeneficiarioEmail]).Where(e => !MesmoEndereco(e, pedido.SolicitanteEmail))];
+            : [.. Distintos([pedido.BeneficiarioEmail]).Where(e => !MesmoEndereco(e, pedido.Solicitante.Email))];
 
     // Quem decide não pode ser parte do pedido, e o aprovador da etapa do gestor não decide a da proteção de dados:
     // avisar quem não pode agir só enche a caixa de entrada.
@@ -119,9 +119,9 @@ public sealed class AvisosDoPedido
             .ConfigureAwait(false);
 
         return Distintos(titulares
-            .Where(t => t.Pessoa != pedido.Solicitante
+            .Where(t => !pedido.Solicitante.Eh(t.Pessoa)
                 && !(pedido.Beneficiario is { } beneficiario && t.Pessoa == beneficiario)
-                && !MesmoEndereco(t.Email, pedido.SolicitanteEmail)
+                && !MesmoEndereco(t.Email, pedido.Solicitante.Email)
                 && !MesmoEndereco(t.Email, pedido.BeneficiarioEmail)
                 && !excluidos.Contains(t.Pessoa))
             .Select(t => t.Email));

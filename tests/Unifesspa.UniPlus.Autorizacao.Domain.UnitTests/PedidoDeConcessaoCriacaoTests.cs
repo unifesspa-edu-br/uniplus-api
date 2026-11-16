@@ -23,7 +23,7 @@ public sealed class PedidoDeConcessaoCriacaoTests : PedidoDeConcessaoTestBase
         pedido.BeneficiarioNome.Should().Be("Leandro Caleb Viana");
         pedido.BeneficiarioEmail.Should().Be("leandro-viana84@uniplus-test.local");
         pedido.BeneficiarioAceitouEm.Should().BeNull();
-        pedido.Solicitante.Should().Be(Leandro.Identidade);
+        pedido.Solicitante.Identidade.Should().Be(Leandro.Identidade);
     }
 
     [Fact(DisplayName = "Informar o próprio e-mail verificado equivale a pedir para si mesmo")]
@@ -58,7 +58,7 @@ public sealed class PedidoDeConcessaoCriacaoTests : PedidoDeConcessaoTestBase
         pedido.Beneficiario.Should().BeNull();
         pedido.BeneficiarioNome.Should().BeNull();
         pedido.BeneficiarioEmail.Should().Be("leandro-viana84@uniplus-test.local");
-        pedido.Solicitante.Should().Be(Betina.Identidade);
+        pedido.Solicitante.Identidade.Should().Be(Betina.Identidade);
     }
 
     [Theory(DisplayName = "O beneficiário de outra pessoa é identificado só por e-mail institucional válido")]

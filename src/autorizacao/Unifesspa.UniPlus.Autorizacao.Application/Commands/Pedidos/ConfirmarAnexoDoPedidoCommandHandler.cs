@@ -36,7 +36,7 @@ public static class ConfirmarAnexoDoPedidoCommandHandler
         }
 
         PedidoDeConcessao? pedido = await repository.ObterParaAlterarAsync(command.PedidoId, cancellationToken).ConfigureAwait(false);
-        if (pedido is null || pedido.Solicitante != solicitante)
+        if (pedido is null || !pedido.Solicitante.Eh(solicitante))
         {
             return Recusa(PedidoHandlerErros.NaoEncontrado());
         }

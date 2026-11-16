@@ -142,7 +142,7 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
         string contaId = filtro.Pessoa.ContaId;
         string? email = filtro.EmailVerificado;
 
-        return p => (p.SolicitanteEmissor == emissor && p.SolicitanteContaId == contaId)
+        return p => (p.Solicitante.Emissor == emissor && p.Solicitante.ContaId == contaId)
             || (p.BeneficiarioEmissor == emissor && p.BeneficiarioContaId == contaId)
             || (p.BeneficiarioContaId == null && email != null && p.BeneficiarioEmail == email);
     }

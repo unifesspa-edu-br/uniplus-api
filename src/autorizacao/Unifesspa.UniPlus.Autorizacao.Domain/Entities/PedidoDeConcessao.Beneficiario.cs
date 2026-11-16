@@ -40,7 +40,7 @@ public sealed partial class PedidoDeConcessao
     {
         ArgumentNullException.ThrowIfNull(pessoa);
 
-        return pessoa.Identidade == Solicitante
+        return Solicitante.Eh(pessoa.Identidade)
             || (Beneficiario is { } beneficiario && pessoa.Identidade == beneficiario)
             || (Beneficiario is null && EhOBeneficiarioPeloEmail(pessoa));
     }
@@ -95,7 +95,7 @@ public sealed partial class PedidoDeConcessao
     // quem usa o próprio e-mail já provou que é ele, e não há ninguém a quem esperar.
     private static (string? Email, bool ParaSiMesmo) ResolverBeneficiario(
         PartesDoPedido partes, IDominiosInstitucionais dominios, List<FieldError> erros) =>
-        ParaSiMesmo(partes.Solicitante, partes.EmailDoBeneficiario)
+        partes.ParaSiMesmo
             ? (ResolverParaSiMesmo(partes.Solicitante, dominios, erros), true)
             : (ResolverParaOutraPessoa(partes.EmailDoBeneficiario, dominios, erros), false);
 
@@ -128,24 +128,5 @@ public sealed partial class PedidoDeConcessao
         }
 
         return informado;
-    }
-
-    private static bool ParaSiMesmo(PessoaNoToken solicitante, string? emailInformado)
-    {
-        string? informado = EmailDaPessoa.Normalizar(emailInformado);
-        string? doToken = solicitante.EmailVerificadoNormalizado;
-
-        return string.IsNullOrWhiteSpace(emailInformado) || (informado is not null && informado == doToken);
-    }
-
-    /// <summary>O e-mail da sessão é verificado e de domínio institucional: quem pede por outra pessoa responde por ela.</summary>
-    public static bool SolicitanteInstitucional(PessoaNoToken pessoa, IDominiosInstitucionais dominios)
-    {
-        ArgumentNullException.ThrowIfNull(pessoa);
-        ArgumentNullException.ThrowIfNull(dominios);
-
-        return pessoa.EmailVerificado
-            && EmailDaPessoa.Normalizar(pessoa.Email) is { } email
-            && EmailDaPessoa.Institucional(email, dominios);
     }
 }

@@ -30,7 +30,7 @@ public sealed class AvisoDeDevolucaoPorTermoExigido
         ArgumentNullException.ThrowIfNull(pedido);
 
         ModeloDeAviso modelo = new(TipoDeAviso.PedidoDevolvidoPorTermoExigido, perfilNome, null, [], _link.Para(pedido.Id));
-        DestinatarioDoAviso[] solicitante = [new(pedido.Solicitante, pedido.SolicitanteEmail ?? string.Empty)];
+        DestinatarioDoAviso[] solicitante = [new(pedido.Solicitante.Identidade, pedido.Solicitante.Email ?? string.Empty)];
 
         return _emissor.EmitirAsync(
             new PedidoDeAviso(modelo, pedido.Id, ResultadoDaDecisaoCodigo.TermoExigido, solicitante, []), cancellationToken);

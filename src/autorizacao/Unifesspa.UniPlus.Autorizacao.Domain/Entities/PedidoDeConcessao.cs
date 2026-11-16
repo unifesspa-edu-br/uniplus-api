@@ -44,14 +44,8 @@ public sealed partial class PedidoDeConcessao : EntityBase
     private readonly List<DecisaoDoPedido> _decisoes = [];
     private readonly List<AnexoDoPedido> _anexos = [];
 
-    public string SolicitanteEmissor { get; private set; } = string.Empty;
-
-    public string SolicitanteContaId { get; private set; } = string.Empty;
-
-    public string? SolicitanteNome { get; private set; }
-
-    /// <summary>E-mail verificado do token do solicitante, em minúsculas; destino do aviso do desfecho. Nulo no pedido anterior ao registro.</summary>
-    public string? SolicitanteEmail { get; private set; }
+    /// <summary>Quem pediu o acesso. Só a identidade do token é gravada: nunca o CPF.</summary>
+    public SolicitanteDoPedido Solicitante { get; private set; } = null!;
 
     /// <summary>E-mail institucional do beneficiário, em minúsculas; é como o pedido o encontra até ele aceitar.</summary>
     public string BeneficiarioEmail { get; private set; } = string.Empty;
@@ -90,8 +84,6 @@ public sealed partial class PedidoDeConcessao : EntityBase
     public IReadOnlyList<DecisaoDoPedido> Decisoes => _decisoes;
 
     public IReadOnlyList<AnexoDoPedido> Anexos => _anexos;
-
-    public Identidade Solicitante => new(SolicitanteEmissor, SolicitanteContaId, SolicitanteNome);
 
     /// <summary>A identidade do beneficiário; nula enquanto ele não aceitou.</summary>
     public Identidade? Beneficiario => BeneficiarioEmissor is { } emissor && BeneficiarioContaId is { } contaId

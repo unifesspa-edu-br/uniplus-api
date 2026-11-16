@@ -42,7 +42,7 @@ public sealed partial class PedidoDeConcessao
     }
 
     private static DomainError? RecusaDoSolicitante(PartesDoPedido partes, IDominiosInstitucionais dominios) =>
-        !ParaSiMesmo(partes.Solicitante, partes.EmailDoBeneficiario) && !SolicitanteInstitucional(partes.Solicitante, dominios)
+        !partes.ParaSiMesmo && !PartesDoPedido.SolicitanteInstitucional(partes.Solicitante, dominios)
             ? new DomainError(
                 PedidoErrorCodes.SolicitanteNaoInstitucional,
                 "Para pedir acesso a outra pessoa, o e-mail da sessão deve ser institucional e verificado.")
@@ -79,14 +79,11 @@ public sealed partial class PedidoDeConcessao
     private void DefinirPartes(PessoaNoToken solicitante, (string Email, bool ParaSiMesmo) beneficiario)
     {
         BeneficiarioEmail = beneficiario.Email;
-        SolicitanteEmissor = solicitante.Identidade.Emissor;
-        SolicitanteContaId = solicitante.Identidade.ContaId;
-        SolicitanteNome = NomeDeExibicao.Normalizar(solicitante.Nome);
-        SolicitanteEmail = solicitante.EmailVerificadoNormalizado;
+        Solicitante = SolicitanteDoPedido.De(solicitante);
 
         if (beneficiario.ParaSiMesmo)
         {
-            DefinirBeneficiario(solicitante.Identidade, SolicitanteNome);
+            DefinirBeneficiario(Solicitante.Identidade, Solicitante.Nome);
         }
     }
 

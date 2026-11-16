@@ -58,7 +58,7 @@ public sealed class EventosDoPedido : IEventosDaOrigem
 
     private static IEnumerable<EventoDaTrilhaDto> DoSolicitante(PedidoDeConcessao pedido)
     {
-        IdentidadeDto solicitante = Dto(pedido.SolicitanteEmissor, pedido.SolicitanteContaId, pedido.SolicitanteNome);
+        IdentidadeDto solicitante = Dto(pedido.Solicitante.Emissor, pedido.Solicitante.ContaId, pedido.Solicitante.Nome);
 
         return
         [
