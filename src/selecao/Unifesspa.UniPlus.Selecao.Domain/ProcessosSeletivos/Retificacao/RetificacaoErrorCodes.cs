@@ -9,6 +9,9 @@ public static class RetificacaoErrorCodes
     /// <summary>A fase que já começou teve o início alterado.</summary>
     public const string InicioDeFaseIniciadaAlterado = "Retificacao.InicioDeFaseIniciadaAlterado";
 
+    /// <summary>O formulário que já recebeu envio de candidato saiu do documento.</summary>
+    public const string FormularioComEnvioNaoSai = "Retificacao.FormularioComEnvioNaoSai";
+
     /// <summary>A etapa que já começou teve o início alterado.</summary>
     public const string InicioDeEtapaIniciadaAlterado = "Retificacao.InicioDeEtapaIniciadaAlterado";
 
