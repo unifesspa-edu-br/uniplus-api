@@ -1591,7 +1591,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\",\n      \"{{modalidade_ac_pcd_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 38\n      },\n      {\n        \"modalidadeId\": \"{{modalidade_ac_pcd_id}}\",\n        \"quantidade\": 2\n      }\n    ]\n  }\n]",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"vagasOfertadasBase\": 40,\n    \"percentualDaReservaLegal\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\",\n      \"{{modalidade_ac_pcd_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 38\n      },\n      {\n        \"modalidadeId\": \"{{modalidade_ac_pcd_id}}\",\n        \"quantidade\": 2\n      }\n    ]\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -4920,7 +4920,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"vagasOfertadasBase\": 40,\n    \"percentualDaReservaLegal\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -5449,7 +5449,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"vagasOfertadasBase\": 40,\n    \"percentualDaReservaLegal\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6067,7 +6067,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"vagasOfertadasBase\": 40,\n    \"percentualDaReservaLegal\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -6678,7 +6678,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"vagasOfertadasBase\": 40,\n    \"percentualDaReservaLegal\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"
@@ -7293,7 +7293,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"voBase\": 40,\n    \"pr\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
+              "raw": "[\n  {\n    \"ofertaCursoId\": \"{{oferta_curso_id}}\",\n    \"vagasOfertadasBase\": 40,\n    \"percentualDaReservaLegal\": 1.0,\n    \"regraDistribuicaoCodigo\": \"DISTRIB-VAGAS-INSTITUCIONAL\",\n    \"regraDistribuicaoVersao\": \"v1\",\n    \"regraAjusteCodigo\": null,\n    \"regraAjusteVersao\": null,\n    \"referenciaReservaDemograficaId\": null,\n    \"modalidadeIds\": [\n      \"{{modalidade_id}}\"\n    ],\n    \"quadro\": [\n      {\n        \"modalidadeId\": \"{{modalidade_id}}\",\n        \"quantidade\": 40\n      }\n    ]\n  }\n]",
               "options": {
                 "raw": {
                   "language": "json"

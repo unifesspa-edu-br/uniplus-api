@@ -30,7 +30,7 @@ A DoR da #575 exigia essa conferência antes de codar o seed. Esta ADR registra 
 **Portaria MEC nº 704, de 17 de outubro de 2025** (Diário Oficial da União, publicada em 20/10/2025,
 Edição 200, Seção 1, p. 36-37). O **Art. 2º** desta portaria insere o **art. 20-A** na **Portaria
 Normativa MEC nº 21/2012 (Sisu)** — não na Portaria Normativa MEC nº 18, de 11 de outubro de 2012 (a
-mesma norma já citada como base legal de `DISTRIB-VAGAS-LEI-12711` no seed do rol de regras), que a
+mesma norma já citada como base legal de `DISTRIBUICAO-LEI-12711` no seed do rol de regras), que a
 mesma Portaria 704/2025 também altera, pelo **Art. 1º**, em dispositivos distintos.
 
 O art. 20-A determina, para vaga reservada da Lei 12.711/2012 sem candidato inscrito: primeiro aos
@@ -39,7 +39,7 @@ escola pública, **"de acordo com a ordem disposta no Anexo a esta Portaria"**, 
 concorrência.
 
 O Anexo — "Ordem para destinação das vagas remanescentes na chamada regular e na lista de espera do
-Sisu" — traz a matriz 8×7 completa, com os mesmos códigos já em uso no seed `DISTRIB-VAGAS-LEI-12711`
+Sisu" — traz a matriz 8×7 completa, com os mesmos códigos já em uso no seed `DISTRIBUICAO-LEI-12711`
 (`LB_PPI`, `LB_Q`, `LB_PCD`, `LB_EP`, `LI_PPI`, `LI_Q`, `LI_PCD`, `LI_EP`), em caixa alta, sem
 divergência de grafia a conciliar:
 
@@ -65,7 +65,7 @@ Conferida linha a linha, célula a célula, contra o `esquema_args` que a #575 s
 
 O Anexo da Portaria 704/2025, no seu texto literal, regula o remanejamento na chamada regular e na
 lista de espera **do Sisu**. A Unifesspa, ao ofertar vagas fora do Sisu sob o mesmo regime de reserva
-da Lei 12.711/2012 (`DISTRIB-VAGAS-LEI-12711`), não está automaticamente obrigada a seguir esse Anexo
+da Lei 12.711/2012 (`DISTRIBUICAO-LEI-12711`), não está automaticamente obrigada a seguir esse Anexo
 por processos seletivos próprios — a matriz precisa de uma decisão de alcance, não só de fonte.
 
 - **A. Restringir a matriz ao Sisu** e deixar processos federais fora do Sisu sem `esquema_args`
@@ -75,9 +75,9 @@ por processos seletivos próprios — a matriz precisa de uma decisão de alcanc
   explicita célula a célula; não há motivo jurídico para tratar o regime federal fora do Sisu como
   uma cascata diferente.
 - **B. Adotar a matriz do Anexo por prática institucional própria, para toda oferta que usa
-  `DISTRIB-VAGAS-LEI-12711`, dentro ou fora do Sisu — a escolha desta ADR.** Mesma razão pela qual a
+  `DISTRIBUICAO-LEI-12711`, dentro ou fora do Sisu — a escolha desta ADR.** Mesma razão pela qual a
   Portaria Normativa MEC 18/2012 já é adotada como base do cálculo de distribuição de vagas
-  reservadas em processos fora do Sisu (`DISTRIB-VAGAS-LEI-12711`, Story #772): a norma nasce no
+  reservadas em processos fora do Sisu (`DISTRIBUICAO-LEI-12711`, Story #772): a norma nasce no
   contexto do Sisu, mas a Unifesspa já a usa como referência para o regime federal em geral, por não
   haver prática institucional divergente.
 
@@ -85,7 +85,7 @@ por processos seletivos próprios — a matriz precisa de uma decisão de alcanc
 
 **Escolhida: opção B.** Não há registro de outra ordem já praticada pela Unifesspa em edital fora do
 Sisu que divirja desta. Não havendo norma institucional própria conflitante, a matriz do Anexo é a
-fonte para toda oferta que usa `DISTRIB-VAGAS-LEI-12711`, dentro ou fora do Sisu — decisão de negócio
+fonte para toda oferta que usa `DISTRIBUICAO-LEI-12711`, dentro ou fora do Sisu — decisão de negócio
 explícita, não presumida. Se a Unifesspa vier a adotar ordem própria divergente para processos fora
 do Sisu, é decisão de negócio nova, registrada como nova versão da regra — não uma correção desta ADR.
 
@@ -112,8 +112,8 @@ do Sisu, é decisão de negócio nova, registrada como nova versão da regra —
 ## Emenda 1 (2026-09-03) — "regime federal" alcança toda regra de `EhRamoFederal`
 
 Esta ADR e o gate de conformidade que a implementa (`ProcessoSeletivo.OfertaForaDoRegimeFederal`)
-nomeavam o alcance da matriz por igualdade com o código `DISTRIB-VAGAS-LEI-12711`. O catálogo
-passou a ter uma segunda regra do mesmo ramo — `DISTRIB-VAGAS-LEI-12711-COM-AC-PCD`, a mesma
+nomeavam o alcance da matriz por igualdade com o código `DISTRIBUICAO-LEI-12711`. O catálogo
+passou a ter uma segunda regra do mesmo ramo — `DISTRIBUICAO-LEI-12711-COM-AMPLA-CONCORRENCIA-E-PESSOA-COM-DEFICIENCIA`, a mesma
 fórmula do art. 10 com uma décima modalidade (`AC_PCD`) no rol admitido — e o alcance decidido
 nesta ADR não muda: a matriz do Anexo continua sendo a fonte para toda oferta que aplica a
 fórmula do art. 10, dentro ou fora do Sisu, porque a fórmula e a lógica de agrupamento (art. 3º,
@@ -121,7 +121,7 @@ fórmula do art. 10, dentro ou fora do Sisu, porque a fórmula e a lógica de ag
 o cálculo nem o remanejamento das oito modalidades federais.
 
 O que muda é só a nomeação: onde este documento e `OfertaForaDoRegimeFederal` liam
-"`DISTRIB-VAGAS-LEI-12711`", leem agora "toda regra para a qual
+"`DISTRIBUICAO-LEI-12711`", leem agora "toda regra para a qual
 `RegraDistribuicaoVagasCodigo.EhRamoFederal` é verdadeiro" — a mesma partição que decide o ramo
 de cálculo em `ConfiguracaoDistribuicaoVagas.Criar` (ADR-0115, Emenda 1). Uma terceira regra
 federal, se vier a existir, entra automaticamente no alcance desta ADR sem exigir emenda nova,

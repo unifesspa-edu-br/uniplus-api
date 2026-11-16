@@ -135,14 +135,14 @@ identidade** `(codigo, versao)` — o exemplo concreto (`RECURSO-MULTI-INSTANCIA
 conteúdo. A reescrita das cinco regras de `regra_distribuicao_vagas` para uma única versão
 `v1` é uma correção mais ampla: além de reescrever conteúdo (o rol de modalidades admitidas
 de cada regra), ela **muda a identidade `(codigo, versao)`** de duas delas —
-`DISTRIB-VAGAS-LEI-12711` e `DISTRIB-VAGAS-INSTITUCIONAL` saem de `v2` para `v1`.
+`DISTRIBUICAO-LEI-12711` e `DISTRIBUICAO-INSTITUCIONAL` saem de `v2` para `v1`.
 
 A fronteira já cobria isso em espírito — "enquanto nenhuma configuração congelada referenciar
 uma linha do catálogo por `(codigo, versao)`, essa linha pode ser corrigida por substituição"
 não distingue substituir o conteúdo de substituir a versão — mas o texto original só
 exemplificava o caso mais estreito. Esta emenda o torna explícito: **a fronteira do
 append-only é sobre referência congelada, não sobre qual campo da linha muda**. Sem
-produção, `(DISTRIB-VAGAS-INSTITUCIONAL, v1)` pode passar a designar conteúdo diferente do
+produção, `(DISTRIBUICAO-INSTITUCIONAL, v1)` pode passar a designar conteúdo diferente do
 que `v1` designava antes de ter sido apagada por uma migration anterior — o par não estava
 congelado em nenhuma `VersaoConfiguracao`, então reusar a identidade não viola RN08. A
 verificação mecânica continua a mesma: cruzar `VersaoConfiguracao` (e o rascunho vivo em

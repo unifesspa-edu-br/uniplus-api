@@ -5,17 +5,17 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// (snapshot-copy do <c>ComposicaoVagas</c> de <c>Modalidade</c>, ADR-0061).
 /// Determina como a modalidade entra na fórmula de conservação do
 /// <c>QuadroDeVagas</c> (derivado, motor futuro):
-/// <c>VR_final + RETIRADAS + AC = VO_base</c> e
+/// <c>reserva legal final + retiradas + ampla concorrência = vagas ofertadas base</c> e
 /// <c>total de vagas do edital = vagas ofertadas base + Σ(SuplementarAoTotal)</c>.
 /// </summary>
 public enum ComposicaoVagasModalidade
 {
     Nenhuma = 0,
 
-    /// <summary>Ampla concorrência: o residual do VO_base após as reservas.</summary>
+    /// <summary>Ampla concorrência: o residual das vagas ofertadas base após as reservas.</summary>
     RestanteDasVagasOfertadas = 1,
 
-    /// <summary>Sub-reserva dentro do total reservado (VR) da Lei 12.711.</summary>
+    /// <summary>Sub-reserva dentro do total da reserva legal da Lei 12.711.</summary>
     DentroDaReservaLegal = 2,
 
     /// <summary>Retira vagas de outra modalidade (<see cref="ModalidadeSelecionada.ComposicaoOrigemCodigo"/>) — não soma ao total.</summary>

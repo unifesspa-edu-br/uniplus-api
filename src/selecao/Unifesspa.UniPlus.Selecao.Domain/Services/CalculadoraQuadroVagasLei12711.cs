@@ -16,11 +16,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <para>
 /// <strong>Garantia mínima é floor-first, não proporcional add-only.</strong>
 /// Quando a soma das demandas dos 7 grupos garantidos (art. 10 §2º — todos
-/// menos <c>LI_Q</c>, que o art. 11 exclui da garantia) excede <c>VO</c>, o
+/// menos <c>LI_Q</c>, que o art. 11 exclui da garantia) excede as vagas ofertadas base, o
 /// quadro capa em duas passadas: primeiro 1 vaga a cada grupo, na ordem legal,
 /// enquanto houver espaço; só depois o excedente de cada grupo, na mesma
 /// ordem. Uma implementação "proporcional com mínimo, tudo de uma vez" já foi
-/// tentada num protótipo e falhou: em <c>VO=3, PR=1, ppi=100%</c> ela dava
+/// tentada num protótipo e falhou: em <c>3 vagas ofertadas base, percentual da reserva legal de 100% e PPI de 100%</c> ela dava
 /// <c>LB_PPI=2, LB_Q=0, LB_PCD=0</c> — o 2º de PPI vencendo o piso de 1 vaga
 /// de Q e PcD, o que a lei não autoriza. O correto é
 /// <c>LB_PPI=1, LB_Q=1, LB_PCD=1</c>.

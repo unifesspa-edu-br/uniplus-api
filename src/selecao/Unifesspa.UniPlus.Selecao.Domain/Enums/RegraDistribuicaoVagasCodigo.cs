@@ -60,7 +60,7 @@ public static class RegraDistribuicaoVagasCodigo
 
     /// <summary>
     /// Regras cujo quadro é <b>fixado pelo edital</b>, e não calculado pelo art. 10. Todas
-    /// compartilham a mesma montagem: as quantidades declaradas dividem o VO_base.
+    /// compartilham a mesma montagem: as quantidades declaradas dividem as vagas ofertadas base.
     /// </summary>
     public static bool EhQuadroFixo(string codigo) =>
         codigo is Institucional or Psiq or ComAcPcd;
