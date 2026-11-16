@@ -15,6 +15,16 @@ internal static class ConferenciasDaVersao
     /// <summary>Alcance diferente do da vigente. Sem versão vigente não há com que comparar: é uma nova primeira versão.</summary>
     public static DomainError? DaCriacao(VersaoDoPerfil versao, VersaoDoPerfil? vigente) => AlcanceDaVigente(versao, vigente);
 
+    public static DomainError? DoCancelamento(VersaoDoPerfil versao, string? motivo)
+    {
+        if (!versao.Pendente)
+        {
+            return versao.RecusaPorNaoPendente();
+        }
+
+        return MotivosDaVersao.Normalizar(motivo) is null ? PerfilErros.MotivoInvalido(MotivosDaVersao.MaxLength) : null;
+    }
+
     /// <summary>
     /// As conferências de cada aprovação: o documento do próprio perfil, o conteúdo pelo catálogo atual, o alcance
     /// gravado e a disponibilidade do nome.
