@@ -118,80 +118,96 @@ public sealed class TipoEtapa : EntityBase, IAuditableEntity
         string? nome, string? descricao, bool? admitePontuacao, bool? admiteEliminacao)
     {
         List<FieldError> erros = [];
+        string? nomeNormalizado = ConferirNome(nome, erros);
+        string? descricaoNormalizada = ConferirDescricao(descricao, erros);
+        erros.AddRange(ViolacoesDoCarater(admitePontuacao, admiteEliminacao));
 
-        string? nomeNormalizado = null;
+        return erros.Count > 0
+            ? Result<(string, string?, bool, bool)>.ValidationFailure(erros)
+            : Result<(string, string?, bool, bool)>.Success(
+                (nomeNormalizado!, descricaoNormalizada, admitePontuacao!.Value, admiteEliminacao!.Value));
+    }
+
+    private static string? ConferirNome(string? nome, List<FieldError> erros)
+    {
         if (string.IsNullOrWhiteSpace(nome))
         {
-            erros.Add(new("nome", new DomainError(
-                TipoEtapaErrorCodes.NomeObrigatorio, "Nome do tipo de etapa é obrigatório.")));
-        }
-        else
-        {
-            nomeNormalizado = nome.Trim().Normalize(NormalizationForm.FormC);
-            if (nomeNormalizado.Contains(CaractereNulo))
-            {
-                erros.Add(new("nome", new DomainError(
-                    TipoEtapaErrorCodes.NomeComCaractereNulo,
-                    "Nome do tipo de etapa não pode conter o caractere nulo (U+0000).")));
-                nomeNormalizado = null;
-            }
-            else if (nomeNormalizado.Length > NomeMaxLength)
-            {
-                erros.Add(new("nome", new DomainError(
-                    TipoEtapaErrorCodes.NomeTamanho,
-                    $"Nome do tipo de etapa deve ter no máximo {NomeMaxLength} caracteres.")));
-                nomeNormalizado = null;
-            }
+            erros.Add(Violacao("nome", TipoEtapaErrorCodes.NomeObrigatorio, "Nome do tipo de etapa é obrigatório."));
+            return null;
         }
 
-        string? descricaoNormalizada = NormalizarOpcional(descricao);
-        if (descricaoNormalizada is not null)
+        string normalizado = nome.Trim().Normalize(NormalizationForm.FormC);
+        if (ViolacaoDoNome(normalizado) is not { } violacao)
         {
-            if (descricaoNormalizada.Contains(CaractereNulo))
-            {
-                erros.Add(new("descricao", new DomainError(
-                    TipoEtapaErrorCodes.DescricaoComCaractereNulo,
-                    "Descrição do tipo de etapa não pode conter o caractere nulo (U+0000).")));
-            }
-            else if (descricaoNormalizada.Length > DescricaoMaxLength)
-            {
-                erros.Add(new("descricao", new DomainError(
-                    TipoEtapaErrorCodes.DescricaoTamanho,
-                    $"Descrição do tipo de etapa deve ter no máximo {DescricaoMaxLength} caracteres.")));
-            }
+            return normalizado;
         }
 
+        erros.Add(violacao);
+        return null;
+    }
+
+    private static FieldError? ViolacaoDoNome(string nome)
+    {
+        if (nome.Contains(CaractereNulo))
+        {
+            return Violacao("nome", TipoEtapaErrorCodes.NomeComCaractereNulo, "Nome do tipo de etapa não pode conter o caractere nulo (U+0000).");
+        }
+
+        return nome.Length > NomeMaxLength
+            ? Violacao("nome", TipoEtapaErrorCodes.NomeTamanho, $"Nome do tipo de etapa deve ter no máximo {NomeMaxLength} caracteres.")
+            : null;
+    }
+
+    private static string? ConferirDescricao(string? descricao, List<FieldError> erros)
+    {
+        string? normalizada = NormalizarOpcional(descricao);
+        if (normalizada is not null && ViolacaoDaDescricao(normalizada) is { } violacao)
+        {
+            erros.Add(violacao);
+        }
+
+        return normalizada;
+    }
+
+    private static FieldError? ViolacaoDaDescricao(string descricao)
+    {
+        if (descricao.Contains(CaractereNulo))
+        {
+            return Violacao("descricao", TipoEtapaErrorCodes.DescricaoComCaractereNulo, "Descrição do tipo de etapa não pode conter o caractere nulo (U+0000).");
+        }
+
+        return descricao.Length > DescricaoMaxLength
+            ? Violacao("descricao", TipoEtapaErrorCodes.DescricaoTamanho, $"Descrição do tipo de etapa deve ter no máximo {DescricaoMaxLength} caracteres.")
+            : null;
+    }
+
+    private static FieldError[] ViolacoesDoCarater(bool? admitePontuacao, bool? admiteEliminacao) =>
+        [.. SinalizadoresAusentes(admitePontuacao, admiteEliminacao), .. TipoSemCarater(admitePontuacao, admiteEliminacao)];
+
+    private static IEnumerable<FieldError> SinalizadoresAusentes(bool? admitePontuacao, bool? admiteEliminacao)
+    {
         if (admitePontuacao is null)
         {
-            erros.Add(new("admitePontuacao", new DomainError(
-                TipoEtapaErrorCodes.AdmitePontuacaoObrigatorio,
-                "É obrigatório declarar se o tipo de etapa admite compor a nota final.")));
+            yield return Violacao("admitePontuacao", TipoEtapaErrorCodes.AdmitePontuacaoObrigatorio, "É obrigatório declarar se o tipo de etapa admite compor a nota final.");
         }
 
         if (admiteEliminacao is null)
         {
-            erros.Add(new("admiteEliminacao", new DomainError(
-                TipoEtapaErrorCodes.AdmiteEliminacaoObrigatorio,
-                "É obrigatório declarar se o tipo de etapa admite eliminar candidato.")));
+            yield return Violacao("admiteEliminacao", TipoEtapaErrorCodes.AdmiteEliminacaoObrigatorio, "É obrigatório declarar se o tipo de etapa admite eliminar candidato.");
         }
+    }
 
-        // Um tipo que não compõe nota nem elimina não configura etapa nenhuma: toda etapa
-        // do certame declara um caráter, e nenhum caráter sobraria para escolher.
+    // Um tipo que não compõe nota nem elimina não configura etapa nenhuma: toda etapa
+    // do certame declara um caráter, e nenhum caráter sobraria para escolher.
+    private static IEnumerable<FieldError> TipoSemCarater(bool? admitePontuacao, bool? admiteEliminacao)
+    {
         if (admitePontuacao == false && admiteEliminacao == false)
         {
-            erros.Add(new("admitePontuacao", new DomainError(
-                TipoEtapaErrorCodes.SemCaraterAdmitido,
-                "O tipo de etapa deve admitir compor a nota final, eliminar candidato, ou os dois.")));
+            yield return Violacao("admitePontuacao", TipoEtapaErrorCodes.SemCaraterAdmitido, "O tipo de etapa deve admitir compor a nota final, eliminar candidato, ou os dois.");
         }
-
-        if (erros.Count > 0)
-        {
-            return Result<(string, string?, bool, bool)>.ValidationFailure(erros);
-        }
-
-        return Result<(string, string?, bool, bool)>.Success(
-            (nomeNormalizado!, descricaoNormalizada, admitePontuacao!.Value, admiteEliminacao!.Value));
     }
+
+    private static FieldError Violacao(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
 
     /// <summary>
     /// Cria um novo TipoEtapa. Revalida código, nome e descrição, acumulando toda
