@@ -29,6 +29,10 @@ internal static class InstalacaoHandlerErros
         new(InstalacaoErrorCodes.EmailNaoInstitucional,
             "O código só é enviado a e-mail institucional verificado, e o e-mail desta sessão não é.");
 
+    public static DomainError EnvioDoCodigoForaDaSituacao() =>
+        new(InstalacaoErrorCodes.SituacaoInvalida,
+            "O código só é enviado depois de o documento de designação ser verificado, e reenviado enquanto a instalação o aguarda.");
+
     // A mesma recusa, com a mesma mensagem, para cada motivo: quem tenta não descobre se há instalação pendente.
     public static DomainError CodigoInvalido() =>
         new(InstalacaoErrorCodes.CodigoInvalido, "O código informado não é válido. Se preciso, inicie a instalação de novo.");
