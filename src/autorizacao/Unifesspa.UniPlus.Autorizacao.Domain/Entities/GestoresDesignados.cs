@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -27,6 +28,15 @@ public static class GestoresDesignados
             : identidades.Contains(executor)
                 ? Recusa(InstalacaoErrorCodes.ExecutorEntreGestores, "Quem executa a instalação não pode estar entre os gestores instalados.")
                 : Result<IReadOnlyList<GestorDaInstalacao>>.Success(conferidos);
+    }
+
+    /// <summary>Algum dos e-mails informados é válido, mas de domínio que não é institucional; o e-mail inválido é recusado na conferência.</summary>
+    public static bool AlgumEmailForaDoDominioInstitucional(IEnumerable<IdentidadeInformada> informados, IDominiosInstitucionais dominios)
+    {
+        ArgumentNullException.ThrowIfNull(informados);
+        ArgumentNullException.ThrowIfNull(dominios);
+
+        return informados.Any(i => EmailDaPessoa.Normalizar(i.Email) is { } email && !EmailDaPessoa.Institucional(email, dominios));
     }
 
     private static Result<IReadOnlyList<GestorDaInstalacao>> Recusa(string codigo, string mensagem) =>

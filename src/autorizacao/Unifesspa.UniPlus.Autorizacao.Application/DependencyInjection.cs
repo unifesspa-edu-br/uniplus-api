@@ -88,6 +88,8 @@ public static class AutorizacaoApplicationServiceRegistration
 
     private static void AdicionarInstalacao(IServiceCollection services)
     {
+        services.AddScoped<ConferenciaDaNovaInstalacao>();
+        services.AddScoped<GravacaoDaNovaInstalacao>();
         services.AddScoped<TentativaDeConfirmacao>();
         services.AddScoped<ConcessaoDosGestores>();
     }
