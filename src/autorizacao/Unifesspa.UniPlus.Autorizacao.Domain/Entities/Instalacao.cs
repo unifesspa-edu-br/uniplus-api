@@ -193,14 +193,12 @@ public sealed class Instalacao : EntityBase
             return Result.Failure(SituacaoInvalida());
         }
 
-        if (string.IsNullOrWhiteSpace(etag) || etag.Length > 200 || etag.Contains('\0', StringComparison.Ordinal))
+        if (ETagDoArmazenamento.Normalizar(etag) is not { } normalizado)
         {
-            return Result.ValidationFailure([new FieldError("etag", new DomainError(
-                InstalacaoErrorCodes.DocumentoInvalido,
-                "O ETag que o armazenamento devolveu ao enviar o PDF é obrigatório."))]);
+            return ETagAusente();
         }
 
-        DocumentoETag = etag.Trim();
+        DocumentoETag = normalizado;
         Situacao = SituacaoDaInstalacao.DocumentoEmVerificacao;
         return Result.Success();
     }
@@ -324,6 +322,10 @@ public sealed class Instalacao : EntityBase
         CanceladaEm = instante;
         CodigoResumo = null;
     }
+
+    private static Result ETagAusente() => Result.ValidationFailure([new FieldError("etag", new DomainError(
+        InstalacaoErrorCodes.DocumentoInvalido,
+        "O ETag que o armazenamento devolveu ao enviar o PDF é obrigatório."))]);
 
     private static DomainError SituacaoInvalida() => new(
         InstalacaoErrorCodes.SituacaoInvalida,

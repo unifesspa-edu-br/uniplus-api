@@ -21,7 +21,6 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
 {
     private const int IdentidadeMaxLength = 255;
     private const int SituacaoMaxLength = 40;
-    private const int ETagMaxLength = 200;
     private const int Sha256HexLength = 64;
 
     private static readonly ValueConverter<SituacaoDaInstalacao, string> SituacaoConverter = new(
@@ -51,7 +50,7 @@ internal sealed class InstalacaoConfiguration : IEntityTypeConfiguration<Instala
         builder.Property(i => i.NumeroDoDocumento).HasMaxLength(Instalacao.NumeroDoDocumentoMaxLength).IsRequired();
         builder.Property(i => i.TamanhoDoPdf).IsRequired();
         builder.Property(i => i.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
-        builder.Property(i => i.DocumentoETag).HasColumnName("documento_etag").HasMaxLength(ETagMaxLength);
+        builder.Property(i => i.DocumentoETag).HasColumnName("documento_etag").HasMaxLength(ETagDoArmazenamento.MaxLength);
         builder.Property(i => i.DocumentoSha256).HasMaxLength(Sha256HexLength);
         // HMAC do código de confirmação: credencial, com a classe mais alta.
         builder.Property(i => i.CodigoResumo)
