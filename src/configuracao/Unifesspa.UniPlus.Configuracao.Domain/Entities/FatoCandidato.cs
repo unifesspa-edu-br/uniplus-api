@@ -317,34 +317,10 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// Desativa um valor do fato do administrador: condição nova que o cite é recusada, e a que já o
     /// citava continua. O valor do fato de sistema só muda por nova versão do sistema.
     /// </summary>
-    public Result DesativarValor(string codigo) => DefinirAtivoDoValor(codigo, ativo: false);
+    public Result DesativarValor(string codigo) => Valores.DefinirAtivo(codigo, ativo: false);
 
     /// <summary>Reativa um valor do fato do administrador.</summary>
-    public Result ReativarValor(string codigo) => DefinirAtivoDoValor(codigo, ativo: true);
-
-    private Result DefinirAtivoDoValor(string codigo, bool ativo)
-    {
-        if (RecusaSeSistema() is { } recusa)
-        {
-            return Result.Failure(recusa);
-        }
-
-        if (ValorPorCodigo(codigo) is not { } valor)
-        {
-            return Result.Failure(ValorNaoEncontrado);
-        }
-
-        if (valor.Ativo == ativo)
-        {
-            return Result.Failure(ativo
-                ? new DomainError(FatoValorDominioErrorCodes.JaAtivo, "O valor já está ativo.")
-                : new DomainError(FatoValorDominioErrorCodes.JaDesativado, "O valor já está desativado."));
-        }
-
-        valor.DefinirAtivo(ativo);
-        Aprovacao.AoEditarItem(protecaoMudou: false);
-        return Result.Success();
-    }
+    public Result ReativarValor(string codigo) => Valores.DefinirAtivo(codigo, ativo: true);
 
     /// <summary>
     /// Altera o nome, a descrição e o componente de exibição, que são a apresentação do fato e valem
@@ -581,45 +557,16 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     /// obrigatória quando <see cref="Origem"/> é <see cref="OrigemFato.Declarado"/>. A
     /// <paramref name="orientacao"/>, opcional, é o que o candidato vê abaixo da opção.
     /// </summary>
-    public Result AdicionarValorDominio(string codigo, string? descricao, int ordem, bool ativo, string? orientacao = null)
-    {
-        if (RecusaDeEstadoParaValores() is { } recusa)
-        {
-            return Result.Failure(recusa);
-        }
-
-        Result<NovoValorDoFato> novo = ConferenciaDosValoresDoFato.ConferirNovo(codigo, descricao, orientacao, ordem, Origem, CodigosDosValores);
-        if (novo.IsFailure)
-        {
-            return Result.ValidationFailure(novo.Errors);
-        }
-
-        _valoresDominioDeclarados.Add(FatoValorDominio.Criar(Id, novo.Value.Codigo, novo.Value.Textos.Descricao, novo.Value.Ordem, ativo, novo.Value.Textos.Orientacao));
-        Aprovacao.AoEditarItem(protecaoMudou: false);
-        return Result.Success();
-    }
+    public Result AdicionarValorDominio(string codigo, string? descricao, int ordem, bool ativo, string? orientacao = null) =>
+        Valores.Adicionar(codigo, descricao, ordem, ativo, orientacao);
 
     /// <summary>
     /// Corrige a descrição e a orientação de um valor do fato do administrador, com as mesmas regras
     /// do acréscimo. O código do valor não muda: mudar o sentido de uma opção é acrescentar outro
     /// valor e desativar o antigo.
     /// </summary>
-    public Result CorrigirValor(string codigo, string? descricao, string? orientacao)
-    {
-        Result<FatoValorDominio> alvo = ValorEditavel(codigo);
-        if (alvo.IsFailure)
-        {
-            return Result.Failure(alvo.Error!);
-        }
-        Result<TextosDoValor> textos = ConferenciaDosValoresDoFato.ConferirTextos(Origem, descricao, orientacao);
-        if (textos.IsFailure)
-        {
-            return Result.ValidationFailure(textos.Errors);
-        }
-        alvo.Value!.CorrigirTextos(textos.Value.Descricao, textos.Value.Orientacao);
-        Aprovacao.AoEditarItem(protecaoMudou: false);
-        return Result.Success();
-    }
+    public Result CorrigirValor(string codigo, string? descricao, string? orientacao) =>
+        Valores.Corrigir(codigo, descricao, orientacao);
 
     /// <summary>
     /// Reordena os valores do fato do administrador pela lista completa de códigos — ativos e
@@ -629,54 +576,11 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     public Result ReordenarValores(IReadOnlyList<string> codigosEmOrdem)
     {
         ArgumentNullException.ThrowIfNull(codigosEmOrdem);
-        if (RecusaDeEstadoParaValores() is { } recusa)
-        {
-            return Result.Failure(recusa);
-        }
-        Result<string[]> ordem = ConferenciaDosValoresDoFato.ConferirOrdem(codigosEmOrdem, CodigosDosValores);
-        if (ordem.IsFailure)
-        {
-            return Result.ValidationFailure(ordem.Errors);
-        }
 
-        AplicarOrdemDosValores(ordem.Value!);
-        return Result.Success();
+        return Valores.Reordenar(codigosEmOrdem);
     }
 
-    private IReadOnlyCollection<string> CodigosDosValores => [.. _valoresDominioDeclarados.Select(static v => v.Codigo)];
-
-    // Valor na posição em que já está não é regravado: sem mudança, o EF não marca a linha e a
-    // versão do fato não avança.
-    private void AplicarOrdemDosValores(string[] codigosEmOrdem)
-    {
-        foreach ((int posicao, string codigo) in codigosEmOrdem.Index())
-        {
-            ValorPorCodigo(codigo)!.DefinirOrdem(posicao);
-        }
-
-        Aprovacao.AoEditarItem(protecaoMudou: false);
-    }
-
-    private Result<FatoValorDominio> ValorEditavel(string codigo)
-    {
-        if (RecusaDeEstadoParaValores() is { } recusa)
-        {
-            return Result<FatoValorDominio>.Failure(recusa);
-        }
-
-        return ValorPorCodigo(codigo) is { } valor
-            ? Result<FatoValorDominio>.Success(valor)
-            : Result<FatoValorDominio>.Failure(ValorNaoEncontrado);
-    }
-
-    private DomainError? RecusaDeEstadoParaValores() =>
-        ConferenciaDosValoresDoFato.RecusaDeEstado(RecusaSeSistema(), Dominio, FatoDeMembroAgregado, FonteValores);
-
-    private static readonly DomainError ValorNaoEncontrado =
-        new(FatoValorDominioErrorCodes.NaoEncontrado, "Valor de domínio não encontrado neste fato.");
-
-    private FatoValorDominio? ValorPorCodigo(string codigo) =>
-        _valoresDominioDeclarados.FirstOrDefault(v => string.Equals(v.Codigo, codigo?.Trim(), StringComparison.Ordinal));
+    private ValoresDoDominioDoFato Valores => new(this, _valoresDominioDeclarados);
 
     private DomainError? RecusaSeSistema() => Sistema ? RedefinicaoDoFatoDeSistema.RecusaDaDefinicao : null;
 
