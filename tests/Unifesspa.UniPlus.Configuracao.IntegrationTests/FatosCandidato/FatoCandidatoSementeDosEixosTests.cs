@@ -56,7 +56,7 @@ public sealed class FatoCandidatoSementeDosEixosTests
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
 
         string[] derivados = [.. fatos
             .Where(f => f.Origem == OrigemFato.Derivado)
@@ -78,7 +78,7 @@ public sealed class FatoCandidatoSementeDosEixosTests
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
 
         fatos.Where(static f => f.Codigo is not "MODALIDADE_CONVOCACAO" and not "RENDA_ATE_UM_SALARIO_MINIMO_E_MEIO").Should().OnlyContain(static f => f.PontoResolucao == "INSCRICAO");
         fatos.Single(static f => f.Codigo == "MODALIDADE_CONVOCACAO").PontoResolucao.Should().Be("RESULTADO_FINAL");
@@ -90,7 +90,7 @@ public sealed class FatoCandidatoSementeDosEixosTests
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
 
         string[] multivalorados = [.. fatos
             .Where(f => f.Cardinalidade == CardinalidadeFato.Multivalorado)
@@ -109,7 +109,7 @@ public sealed class FatoCandidatoSementeDosEixosTests
 
         // Só os valores dos fatos de sistema: o catálogo também tem fatos do administrador semeados.
         List<FatoValorDominio> valores = await ctx.FatosValorDominio.AsNoTracking()
-            .Where(v => ctx.Set<FatoCandidato>().Any(f => f.Id == v.FatoCandidatoId && f.Sistema))
+            .Where(v => ctx.Set<FatoCandidato>().Any(f => f.Id == v.FatoCandidatoId && f.SemeadoPeloSistema))
             .ToListAsync();
         valores.Should().HaveCount(FatoValorDominioSeed.Itens.Count).And.HaveCount(80);
 
@@ -241,7 +241,7 @@ public sealed class FatoCandidatoSementeDosEixosTests
         ];
 
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
 
         fatos.Should().HaveCount(esperado.Length);
 

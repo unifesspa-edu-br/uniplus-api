@@ -121,7 +121,7 @@ internal static class ProtecaoDoCatalogoMapping
         new(
             DominiosFato.ParaTokenCanonico(fato.Dominio),
             CardinalidadesFato.ParaTokenCanonico(fato.Cardinalidade),
-            fato.Sistema,
+            fato.SemeadoPeloSistema,
             fato.ComponenteExibicao is { } componente ? ComponentesDeExibicao.ParaTokenCanonico(componente) : null,
             [.. fato.ValoresDominioDeclarados
                 .Where(static v => v.Ativo)

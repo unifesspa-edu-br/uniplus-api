@@ -27,7 +27,7 @@ internal static class FatoCandidatoMapping
             ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao),
             fato.FinalidadeTratamento,
             HipotesesLegaisTratamento.ParaTokenCanonico(fato.HipoteseLegal),
-            fato.Sistema,
+            fato.SemeadoPeloSistema,
             fato.Ativo,
             [.. fato.ValoresDominioDeclarados
                 .OrderBy(static v => v.Ordem)

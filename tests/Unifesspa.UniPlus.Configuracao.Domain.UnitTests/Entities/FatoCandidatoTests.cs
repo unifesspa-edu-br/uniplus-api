@@ -114,7 +114,7 @@ public sealed class FatoCandidatoTests
 
         fato.Origem.Should().Be(OrigemFato.Declarado);
         fato.Binding.Should().Be("CAMPO_FORMULARIO:ANO_CONCLUSAO");
-        fato.Sistema.Should().BeFalse();
+        fato.SemeadoPeloSistema.Should().BeFalse();
     }
 
     [Fact(DisplayName = "Editar nome, descrição e componente acumula as três violações")]

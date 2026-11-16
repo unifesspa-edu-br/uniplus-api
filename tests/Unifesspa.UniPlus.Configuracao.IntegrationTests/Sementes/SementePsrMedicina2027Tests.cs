@@ -245,7 +245,7 @@ public sealed class SementePsrMedicina2027Tests
             .Where(f => CodigosDosFatos.Contains(f.Codigo))
             .ToListAsync();
         fatos.Select(static f => f.Codigo).Should().BeEquivalentTo(CodigosDosFatos);
-        fatos.Should().OnlyContain(static f => !f.Sistema && f.Ativo && !string.IsNullOrWhiteSpace(f.Descricao));
+        fatos.Should().OnlyContain(static f => !f.SemeadoPeloSistema && f.Ativo && !string.IsNullOrWhiteSpace(f.Descricao));
         fatos.Single(static f => f.Codigo == "CATEGORIA_RENDA").ValoresDominioDeclarados.Should().HaveCount(7);
         fatos.Single(static f => f.Codigo == "CATEGORIAS_RENDA_FAMILIA").Binding.Should().Be("AGREGACAO_GRUPO:CATEGORIA_RENDA");
     }

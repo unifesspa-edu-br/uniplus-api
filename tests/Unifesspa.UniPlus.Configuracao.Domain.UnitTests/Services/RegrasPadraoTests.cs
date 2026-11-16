@@ -35,7 +35,7 @@ public sealed class RegrasPadraoTests
             Cardinalidade = CardinalidadeFato.Escalar,
             FonteValores = (FonteValoresFato?)null,
             Binding = "REGRA_DERIVACAO:EGRESSO_REDE_PUBLICA",
-            Sistema = false,
+            SemeadoPeloSistema = false,
         });
         categorico.Should().BeEquivalentTo(new { Cardinalidade = CardinalidadeFato.Multivalorado, FonteValores = FonteValoresFato.Global });
     }

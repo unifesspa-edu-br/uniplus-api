@@ -116,7 +116,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
         });
         builder.Navigation(f => f.Aprovacao).IsRequired();
 
-        builder.Property(f => f.Sistema).IsRequired();
+        builder.Property(f => f.SemeadoPeloSistema).IsRequired();
         builder.Property(f => f.Ativo).IsRequired();
         builder.Property(f => f.CreatedBy).HasMaxLength(255);
         builder.Property(f => f.UpdatedBy).HasMaxLength(255);
@@ -254,7 +254,7 @@ public sealed class FatoCandidatoConfiguration : IEntityTypeConfiguration<FatoCa
             item.ClassificacaoProtecao,
             item.FinalidadeTratamento,
             FatoCandidatoSeed.HipoteseLegal,
-            Sistema = true,
+            SemeadoPeloSistema = true,
             Ativo = true,
             RegrasPadrao = item.RegrasPadrao ?? (IReadOnlyList<RegraDerivacao>)[],
             Dependencias = DerivadosDoSistema.Dependencias.GetValueOrDefault(item.Codigo) ?? [],

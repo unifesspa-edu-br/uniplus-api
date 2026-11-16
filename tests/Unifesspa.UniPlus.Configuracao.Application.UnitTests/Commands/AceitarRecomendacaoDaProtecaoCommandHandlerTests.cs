@@ -95,7 +95,7 @@ public sealed class AceitarRecomendacaoDaProtecaoCommandHandlerTests
         (Result resposta, IEnumerable<object> mensagens) = await AceitarFatoAsync(corRaca.Id);
 
         resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
-        corRaca.Should().BeEquivalentTo(new { ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel, Sistema = true, Codigo = "COR_RACA" });
+        corRaca.Should().BeEquivalentTo(new { ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel, SemeadoPeloSistema = true, Codigo = "COR_RACA" });
         corRaca.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
         mensagens.Should().ContainSingle().Which.Should().BeOfType<EnviarEmail>().Which.CorpoTexto.Should().Contain("fato");
         _atos.Received(1).Adicionar(Arg.Is<AtoDaProtecaoDoCatalogo>(ato =>
