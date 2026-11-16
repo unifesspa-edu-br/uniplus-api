@@ -191,7 +191,8 @@ public sealed class ObrigatoriedadeLegal : SoftDeletableEntity, IAuditableEntity
     private static Result CodigoPreenchido(string? codigo, string mensagem) =>
         string.IsNullOrWhiteSpace(codigo) ? Falha(CodigoEmBranco, mensagem) : Result.Success();
 
-    private static Result Falha(string codigo, string mensagem) => Result.Failure(new DomainError(codigo, mensagem));
+    private static Result Falha(string codigo, string mensagem) =>
+        Result.ValidationFailure([new FieldError("predicado", new DomainError(codigo, mensagem))]);
 
     // Só recebe lote que passou por ValidarCampos: os campos obrigatórios chegam preenchidos.
     private void Aplicar(
