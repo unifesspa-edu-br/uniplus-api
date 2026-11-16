@@ -2,7 +2,9 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentiment
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.CalendariosDiasUteis;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -51,7 +53,8 @@ public static class PromoverVersaoTermoConsentimentoCommandHandler
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
         }
-        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex))
+        catch (Exception ex) when (OptimisticConcurrencyViolation.Is(ex)
+            || ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex) == RestricoesDoBanco.VersaoDoTermoNumeroUnico)
         {
             // Corrida com uma edição concorrente do MESMO rascunho (ex.: outra
             // requisição alterou texto/base legal entre a leitura e este commit,
@@ -63,7 +66,8 @@ public static class PromoverVersaoTermoConsentimentoCommandHandler
             // devolver a falha: o outbox do Wolverine chama SaveChangesAsync de novo
             // depois que este handler retorna (ADR-0004), e sem isso a mesma
             // DbUpdateConcurrencyException estouraria de novo fora deste catch,
-            // virando 500 em vez do 409 que acabamos de traduzir.
+            // virando 500 em vez do 409 que acabamos de traduzir. Duas promoções que leram o mesmo número de versão
+            // também caem aqui, pelo índice único (termo, número).
             unitOfWork.DescartarAlteracoesNaoSalvas();
             return Result.Failure(new DomainError(
                 TermoConsentimentoErrorCodes.ConflitoDeConcorrencia,

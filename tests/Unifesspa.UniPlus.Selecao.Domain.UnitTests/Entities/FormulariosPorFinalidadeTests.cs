@@ -63,7 +63,7 @@ public sealed class FormulariosPorFinalidadeTests
     private static TermoExigidoFormulario Termo(string codigo) =>
         TermoExigidoFormulario.Criar(
             codigo, 0,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "Declaração", "Texto", "Base legal", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
             null, Obrigatoriedade.Sempre).Value!;
 
     [Fact(DisplayName = "Itens e termos só entram em finalidade que tem formulário")]
@@ -428,7 +428,7 @@ public sealed class FormulariosPorFinalidadeTests
     private static TermoExigidoFormulario TermoQueCita(string fato, int ordem = 0) =>
         TermoExigidoFormulario.Criar(
             $"TERMO_{ordem}", ordem,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "Declaração", "Texto", "Base legal", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
             PredicadoDnf.CriarDeCondicoesAgrupadas([(0, CondicaoDnf.Criar(fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!,
             Obrigatoriedade.Sempre).Value!;
 

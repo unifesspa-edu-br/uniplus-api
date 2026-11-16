@@ -194,7 +194,7 @@ public sealed class EdicaoDoEnemNaInscricaoTests
         processo.DefinirItens([CampoDaEdicao()]).IsSuccess.Should().BeTrue();
         TermoExigidoFormulario termoSemForma = TermoExigidoFormulario.Criar(
             "DECLARACAO", 0,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "Declaração", "Texto", "Base legal", "A_DEFINIR", new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", "A_DEFINIR", new string('a', 64)),
             null, Obrigatoriedade.Sempre).Value!;
         processo.DefinirTermos([termoSemForma], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();

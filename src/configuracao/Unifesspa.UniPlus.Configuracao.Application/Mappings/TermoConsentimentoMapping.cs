@@ -11,6 +11,7 @@ public static class TermoConsentimentoMapping
         ArgumentNullException.ThrowIfNull(termo);
         return new TermoConsentimentoDto(
             termo.Id,
+            termo.Codigo.Valor,
             termo.Nome,
             termo.TextoRascunho,
             termo.BaseLegalRascunho,
@@ -26,6 +27,7 @@ public static class TermoConsentimentoMapping
         ArgumentNullException.ThrowIfNull(termo);
         return new TermoConsentimentoResumoDto(
             termo.Id,
+            termo.Codigo.Valor,
             termo.Nome,
             FormasAceite.ParaTokenCanonico(termo.FormaAceiteRascunho),
             termo.Revisado,
@@ -35,6 +37,7 @@ public static class TermoConsentimentoMapping
     private static TermoConsentimentoVersaoDto ToDto(TermoConsentimentoVersao versao) =>
         new(
             versao.Id,
+            versao.Numero,
             versao.Texto,
             versao.BaseLegal,
             FormasAceite.ParaTokenCanonico(versao.FormaAceite),

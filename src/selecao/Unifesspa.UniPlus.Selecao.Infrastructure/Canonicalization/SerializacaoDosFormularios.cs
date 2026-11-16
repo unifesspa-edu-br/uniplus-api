@@ -60,6 +60,8 @@ internal static class SerializacaoDosFormularios
         ["ordem"] = termo.Ordem,
         ["termoId"] = JsonValue.Create(termo.TermoId),
         ["versaoId"] = JsonValue.Create(termo.VersaoId),
+        ["termoCodigo"] = HashCanonicalComputer.NormalizeNfc(termo.TermoCodigo),
+        ["versaoNumero"] = termo.VersaoNumero,
         ["nome"] = HashCanonicalComputer.NormalizeNfc(termo.Nome),
         ["texto"] = HashCanonicalComputer.NormalizeNfc(termo.Texto),
         ["baseLegal"] = HashCanonicalComputer.NormalizeNfc(termo.BaseLegal),

@@ -318,7 +318,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     private static TermoExigidoFormulario TermoQueCita(string fato) =>
         TermoExigidoFormulario.Criar(
             "TERMO_0", 0,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "Declaração", "Texto", "Base legal", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", "REGISTRO_DIGITAL_SEM_LOG_IP", new string('a', 64)),
             Cita(fato), Obrigatoriedade.Sempre).Value!;
 
     /// <summary>As etapas mínimas da habilitação com uma segunda seção, que a exibição dada condiciona.</summary>

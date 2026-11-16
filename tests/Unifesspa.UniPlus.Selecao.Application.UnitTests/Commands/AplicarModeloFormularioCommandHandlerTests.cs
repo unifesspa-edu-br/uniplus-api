@@ -63,7 +63,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         Guid termoId = Guid.NewGuid();
         Guid versaoId = Guid.NewGuid();
         _cenario.Termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>()).Returns(
-            [new VersaoTermoConsentimentoView(termoId, versaoId, "Consulta", "Autorizo.", "Lei 12.711/2012", "REGISTRO_DIGITAL_COM_LOG_IP", new string('b', 64))]);
+            [new VersaoTermoConsentimentoView(termoId, versaoId, "CONSULTA", 1, "Consulta", "Autorizo.", "Lei 12.711/2012", "REGISTRO_DIGITAL_COM_LOG_IP", new string('b', 64))]);
         TermoExigidoInput termo = new(
             "CONSULTA", 0, termoId, versaoId, [[new CondicaoPrecondicaoInput("FAIXA_ETARIA", "MAIOR_IGUAL", JsonSerializer.SerializeToElement(18))]], "SEMPRE", null);
         FatoColetadoInput[] itens = coletaDataDeNascimento ? [Item("QUILOMBOLA", 0), Item("DATA_NASCIMENTO", 1, "DATA")] : [Item("QUILOMBOLA", 0)];
@@ -165,7 +165,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
         Guid termoId = Guid.NewGuid();
         Guid versaoId = Guid.NewGuid();
         _cenario.Termos.ListarVersoesAsync(Arg.Any<IReadOnlyCollection<Guid>>(), Arg.Any<CancellationToken>())
-            .Returns([new VersaoTermoConsentimentoView(termoId, versaoId, "Termo", "Texto", "Base", "LEITURA_E_ACEITE", "hash")]);
+            .Returns([new VersaoTermoConsentimentoView(termoId, versaoId, "TERMO", 1, "Termo", "Texto", "Base", "LEITURA_E_ACEITE", "hash")]);
         TermoExigidoInput removido = new("LGPD", 0, Guid.NewGuid(), Guid.NewGuid(), null, "SEMPRE", null);
         TermoExigidoInput citaIsencao = new("IMAGEM", 1, termoId, versaoId, [[new CondicaoPrecondicaoInput("CERTIFICADO", "IGUAL", JsonSerializer.SerializeToElement(true))]], "SEMPRE", null);
 

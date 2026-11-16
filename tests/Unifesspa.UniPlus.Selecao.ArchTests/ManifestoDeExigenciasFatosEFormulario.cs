@@ -118,7 +118,7 @@ internal static class ManifestoDeExigenciasFatosEFormulario
             ]),
 
         [typeof(TermoExigidoFormulario)] = (
-            ["Codigo", "Finalidade", "Ordem", "TermoId", "VersaoId", "Nome", "Texto", "BaseLegal", "FormaAceite", "HashVersao", "Exibicao", "Obrigatoriedade"],
+            ["Codigo", "Finalidade", "Ordem", "TermoId", "VersaoId", "TermoCodigo", "VersaoNumero", "Nome", "Texto", "BaseLegal", "FormaAceite", "HashVersao", "Exibicao", "Obrigatoriedade"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("FatosCitados", "Derivada da exibição e da obrigatoriedade — recomputada, nunca persistida."),

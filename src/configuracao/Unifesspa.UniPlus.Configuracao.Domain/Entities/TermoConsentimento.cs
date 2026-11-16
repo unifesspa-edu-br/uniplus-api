@@ -2,14 +2,16 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Um termo de consentimento/declaração do catálogo administrável
-/// (termos imunes após a publicação, UNI-REQ-0086). Identidade própria e estável — dois termos
-/// catalogados podem ter o mesmo <see cref="Nome"/>, sem colidir.
+/// (termos imunes após a publicação, UNI-REQ-0086). Identidade própria e estável (<c>Id</c>) e código
+/// estável (<see cref="Codigo"/>), formado do nome na criação e único entre os termos vivos: nomes que só
+/// diferem em acento, caixa ou pontuação geram o mesmo código e não convivem.
 /// </summary>
 /// <remarks>
 /// <para>Ciclo de vida do rascunho: <c>EM_ELABORACAO</c> (mutável) → <see cref="MarcarRevisado"/>
@@ -34,6 +36,7 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
     private readonly List<TermoConsentimentoVersao> _versoes = [];
 
     public string Nome { get; private set; } = string.Empty;
+    public CodigoTermoConsentimento Codigo { get; private set; } = null!;
     public string? TextoRascunho { get; private set; }
     public string? BaseLegalRascunho { get; private set; }
     public FormaAceite FormaAceiteRascunho { get; private set; }
@@ -61,22 +64,10 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
     {
         List<FieldError> erros = [];
 
-        string? nomeNorm = null;
-        if (string.IsNullOrWhiteSpace(nome))
+        Result<IdentificacaoDoTermo> identificacao = Identificar(nome);
+        if (identificacao.IsFailure)
         {
-            erros.Add(new("nome", new DomainError(
-                TermoConsentimentoErrorCodes.NomeObrigatorio, "Nome do termo é obrigatório.")));
-        }
-        else
-        {
-            nomeNorm = nome.Trim();
-            if (nomeNorm.Length is < NomeMinLength or > NomeMaxLength)
-            {
-                erros.Add(new("nome", new DomainError(
-                    TermoConsentimentoErrorCodes.NomeTamanho,
-                    $"Nome do termo deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")));
-                nomeNorm = null;
-            }
+            erros.Add(new("nome", identificacao.Error!));
         }
 
         Result<FormaAceite> camposEditaveis = ValidarCamposEditaveis(textoRascunho, baseLegalRascunho, formaAceiteRascunhoToken);
@@ -92,7 +83,8 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
 
         return Result<TermoConsentimento>.Success(new TermoConsentimento
         {
-            Nome = nomeNorm!,
+            Nome = identificacao.Value!.Nome,
+            Codigo = identificacao.Value.Codigo,
             TextoRascunho = NormalizarOpcional(textoRascunho),
             BaseLegalRascunho = NormalizarOpcional(baseLegalRascunho),
             FormaAceiteRascunho = camposEditaveis.Value,
@@ -221,7 +213,7 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
         }
 
         TermoConsentimentoVersao versao = TermoConsentimentoVersao.Promover(
-            Id, TextoRascunho, BaseLegalRascunho, FormaAceiteRascunho, agora, promovidoPor);
+            Id, ProximoNumeroDeVersao(), TextoRascunho, BaseLegalRascunho, FormaAceiteRascunho, agora, promovidoPor);
         _versoes.Add(versao);
 
         // A revisão é CONSUMIDA pela promoção — cada versão exige seu próprio sinal
@@ -270,6 +262,34 @@ public sealed class TermoConsentimento : SoftDeletableEntity, IAuditableEntity
             : Result<FormaAceite>.ValidationFailure(erros);
     }
 
+    // As versões do termo são carregadas com ele; duas promoções concorrentes leem o mesmo número e a segunda falha no
+    // índice único (termo, número) ou no token de concorrência do termo.
+    private int ProximoNumeroDeVersao() => _versoes.Count == 0 ? 1 : _versoes.Max(static v => v.Numero) + 1;
+
+    private static Result<IdentificacaoDoTermo> Identificar(string? nome)
+    {
+        if (string.IsNullOrWhiteSpace(nome))
+        {
+            return Result<IdentificacaoDoTermo>.Failure(new DomainError(
+                TermoConsentimentoErrorCodes.NomeObrigatorio, "Nome do termo é obrigatório."));
+        }
+
+        string nomeNorm = nome.Trim();
+        if (nomeNorm.Length is < NomeMinLength or > NomeMaxLength)
+        {
+            return Result<IdentificacaoDoTermo>.Failure(new DomainError(
+                TermoConsentimentoErrorCodes.NomeTamanho,
+                $"Nome do termo deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres."));
+        }
+
+        Result<CodigoTermoConsentimento> codigo = CodigoTermoConsentimento.Gerar(nomeNorm);
+        return codigo.IsFailure
+            ? Result<IdentificacaoDoTermo>.Failure(codigo.Error!)
+            : Result<IdentificacaoDoTermo>.Success(new IdentificacaoDoTermo(nomeNorm, codigo.Value!));
+    }
+
     private static string? NormalizarOpcional(string? valor) =>
         string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
+
+    private sealed record IdentificacaoDoTermo(string Nome, CodigoTermoConsentimento Codigo);
 }

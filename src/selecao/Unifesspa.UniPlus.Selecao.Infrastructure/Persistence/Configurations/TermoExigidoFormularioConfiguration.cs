@@ -38,6 +38,8 @@ public sealed class TermoExigidoFormularioConfiguration : IEntityTypeConfigurati
         builder.Property(t => t.Finalidade).HasConversion<int>().IsRequired();
         builder.Property(t => t.TermoId).IsRequired();
         builder.Property(t => t.VersaoId).IsRequired();
+        builder.Property(t => t.TermoCodigo).HasMaxLength(TermoExigidoFormulario.TermoCodigoMaxLength).IsRequired();
+        builder.Property(t => t.VersaoNumero).IsRequired();
         builder.Property(t => t.Nome).HasMaxLength(NomeMaxLength).IsRequired();
         builder.Property(t => t.Texto).HasMaxLength(TextoMaxLength).IsRequired();
         builder.Property(t => t.BaseLegal).HasMaxLength(BaseLegalMaxLength).IsRequired();

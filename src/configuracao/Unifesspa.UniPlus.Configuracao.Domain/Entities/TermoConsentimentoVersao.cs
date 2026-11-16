@@ -22,6 +22,9 @@ public sealed class TermoConsentimentoVersao : IForensicEntity
 
     public Guid TermoConsentimentoId { get; private init; }
 
+    /// <summary>Número da versão dentro do termo, sequencial a partir de 1: é o que o documento de configuração cita.</summary>
+    public int Numero { get; private init; }
+
     public string Texto { get; private init; } = null!;
 
     public string BaseLegal { get; private init; } = null!;
@@ -56,12 +59,14 @@ public sealed class TermoConsentimentoVersao : IForensicEntity
     /// </remarks>
     public static TermoConsentimentoVersao Promover(
         Guid termoConsentimentoId,
+        int numero,
         string texto,
         string baseLegal,
         FormaAceite formaAceite,
         DateTimeOffset promovidaEm,
         string promovidaPor)
     {
+        ArgumentOutOfRangeException.ThrowIfLessThan(numero, 1);
         ArgumentException.ThrowIfNullOrWhiteSpace(texto);
         ArgumentException.ThrowIfNullOrWhiteSpace(baseLegal);
         ArgumentException.ThrowIfNullOrWhiteSpace(promovidaPor);
@@ -74,6 +79,7 @@ public sealed class TermoConsentimentoVersao : IForensicEntity
         return new TermoConsentimentoVersao
         {
             TermoConsentimentoId = termoConsentimentoId,
+            Numero = numero,
             Texto = texto,
             BaseLegal = baseLegal,
             FormaAceite = formaAceite,

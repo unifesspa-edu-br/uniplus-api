@@ -2477,6 +2477,21 @@
       "titulo": "Tamanho da base legal do rascunho inválido"
     },
     {
+      "codigo": "uniplus.configuracao.termo_consentimento.codigo_formato_invalido",
+      "status": 422,
+      "titulo": "Código do termo de consentimento fora do formato"
+    },
+    {
+      "codigo": "uniplus.configuracao.termo_consentimento.codigo_ja_existe",
+      "status": 409,
+      "titulo": "Já existe um termo de consentimento com este código"
+    },
+    {
+      "codigo": "uniplus.configuracao.termo_consentimento.codigo_tamanho",
+      "status": 422,
+      "titulo": "Código do termo de consentimento passa do tamanho máximo"
+    },
+    {
       "codigo": "uniplus.configuracao.termo_consentimento.conflito_de_concorrencia",
       "status": 409,
       "titulo": "O rascunho foi modificado concorrentemente"

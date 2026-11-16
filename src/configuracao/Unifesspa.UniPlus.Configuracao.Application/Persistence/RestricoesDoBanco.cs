@@ -58,4 +58,8 @@ public static class RestricoesDoBanco
     public const string TipoDeDeficienciaNomeVivo = "ix_tipos_de_deficiencia_nome_vivo";
 
     public const string TipoDeDocumentoCodigoVivo = "ix_tipos_de_documento_codigo_vivo";
+
+    public const string TermoDeConsentimentoCodigoVivo = "ix_termos_de_consentimento_codigo_vivo";
+
+    public const string VersaoDoTermoNumeroUnico = "ux_versoes_do_termo_consentimento_termo_numero";
 }

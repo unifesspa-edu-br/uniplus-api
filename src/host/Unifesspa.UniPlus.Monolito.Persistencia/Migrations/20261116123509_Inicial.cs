@@ -1026,6 +1026,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    codigo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
                     texto_rascunho = table.Column<string>(type: "character varying(20000)", maxLength: 20000, nullable: true),
                     base_legal_rascunho = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     forma_aceite_rascunho = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
@@ -1044,6 +1045,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_termos_de_consentimento", x => x.id);
+                    table.CheckConstraint("ck_termos_de_consentimento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,99}$'");
                     table.CheckConstraint("ck_termos_de_consentimento_forma_aceite_rascunho", "forma_aceite_rascunho IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
                 });
 
@@ -2663,6 +2665,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     ordem = table.Column<int>(type: "integer", nullable: false),
                     termo_id = table.Column<Guid>(type: "uuid", nullable: false),
                     versao_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    termo_codigo = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    versao_numero = table.Column<int>(type: "integer", nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     texto = table.Column<string>(type: "character varying(20000)", maxLength: 20000, nullable: false),
                     base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
@@ -2729,6 +2733,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     termo_consentimento_id = table.Column<Guid>(type: "uuid", nullable: false),
+                    numero = table.Column<int>(type: "integer", nullable: false),
                     texto = table.Column<string>(type: "text", nullable: false),
                     base_legal = table.Column<string>(type: "text", nullable: false),
                     forma_aceite = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
@@ -2740,6 +2745,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_versoes_do_termo_consentimento", x => x.id);
                     table.CheckConstraint("ck_versoes_do_termo_consentimento_forma_aceite", "forma_aceite IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
+                    table.CheckConstraint("ck_versoes_do_termo_consentimento_numero", "numero >= 1");
                     table.ForeignKey(
                         name: "fk_versoes_do_termo_consentimento_termo_de_consentimento",
                         column: x => x.termo_consentimento_id,
@@ -7156,6 +7162,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "instalacao_id");
 
             migrationBuilder.CreateIndex(
+                name: "ix_termos_de_consentimento_codigo_vivo",
+                schema: "configuracao",
+                table: "termos_de_consentimento",
+                column: "codigo",
+                unique: true,
+                filter: "is_deleted = false");
+
+            migrationBuilder.CreateIndex(
                 name: "ix_termos_de_consentimento_nome",
                 schema: "configuracao",
                 table: "termos_de_consentimento",
@@ -7447,6 +7461,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "configuracao",
                 table: "versoes_do_termo_consentimento",
                 columns: new[] { "termo_consentimento_id", "promovida_em" });
+
+            migrationBuilder.CreateIndex(
+                name: "ux_versoes_do_termo_consentimento_termo_numero",
+                schema: "configuracao",
+                table: "versoes_do_termo_consentimento",
+                columns: new[] { "termo_consentimento_id", "numero" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "ix_vigencias_do_perfil_perfil_id_versao_id",

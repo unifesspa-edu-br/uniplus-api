@@ -29,7 +29,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         string codigo, int ordem, string formaAceite = "REGISTRO_DIGITAL_SEM_LOG_IP", PredicadoDnf? exibicao = null) =>
         TermoExigidoFormulario.Criar(
             codigo, ordem,
-            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "Declaração", "Texto", "Base legal", formaAceite, new string('a', 64)),
+            new VersaoTermoEscolhida(Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Declaração", "Texto", "Base legal", formaAceite, new string('a', 64)),
             exibicao, Obrigatoriedade.Sempre).Value!;
 
     private static PredicadoDnf CondicaoDeOpcaoDeTeste(string opcao) => PredicadoDnf.CriarDeCondicoesAgrupadas(

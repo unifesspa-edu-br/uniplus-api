@@ -795,6 +795,7 @@ configuracao.referencias_demograficas.quilombola_percentual: Interno
 configuracao.referencias_demograficas.updated_at: Interno
 configuracao.referencias_demograficas.updated_by: Pessoal
 configuracao.termos_de_consentimento.base_legal_rascunho: Interno
+configuracao.termos_de_consentimento.codigo: Interno
 configuracao.termos_de_consentimento.created_at: Interno
 configuracao.termos_de_consentimento.created_by: Pessoal
 configuracao.termos_de_consentimento.deleted_at: Interno
@@ -925,6 +926,7 @@ configuracao.versoes_do_termo_consentimento.base_legal: Interno
 configuracao.versoes_do_termo_consentimento.forma_aceite: Interno
 configuracao.versoes_do_termo_consentimento.hash: Interno
 configuracao.versoes_do_termo_consentimento.id: Interno
+configuracao.versoes_do_termo_consentimento.numero: Interno
 configuracao.versoes_do_termo_consentimento.promovida_em: Interno
 configuracao.versoes_do_termo_consentimento.promovida_por: Pessoal
 configuracao.versoes_do_termo_consentimento.termo_consentimento_id: Interno
@@ -1970,10 +1972,12 @@ selecao.termos_exigidos_formulario.nome: Interno
 selecao.termos_exigidos_formulario.obrigatoriedade: Interno
 selecao.termos_exigidos_formulario.ordem: Interno
 selecao.termos_exigidos_formulario.processo_seletivo_id: Interno
+selecao.termos_exigidos_formulario.termo_codigo: Interno
 selecao.termos_exigidos_formulario.termo_id: Interno
 selecao.termos_exigidos_formulario.texto: Interno
 selecao.termos_exigidos_formulario.updated_at: Interno
 selecao.termos_exigidos_formulario.versao_id: Interno
+selecao.termos_exigidos_formulario.versao_numero: Interno
 selecao.vagas_ofertadas.configuracao_distribuicao_vagas_id: Interno
 selecao.vagas_ofertadas.created_at: Interno
 selecao.vagas_ofertadas.id: Interno

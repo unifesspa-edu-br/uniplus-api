@@ -21783,6 +21783,7 @@
       "TermoConsentimentoDto": {
         "required": [
           "id",
+          "codigo",
           "nome",
           "textoRascunho",
           "baseLegalRascunho",
@@ -21797,6 +21798,9 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
           },
           "nome": {
             "type": "string"
@@ -21850,6 +21854,7 @@
       "TermoConsentimentoResumoDto": {
         "required": [
           "id",
+          "codigo",
           "nome",
           "formaAceiteRascunho",
           "revisado",
@@ -21860,6 +21865,9 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "codigo": {
+            "type": "string"
           },
           "nome": {
             "type": "string"
@@ -21888,6 +21896,7 @@
       "TermoConsentimentoVersaoDto": {
         "required": [
           "id",
+          "numero",
           "texto",
           "baseLegal",
           "formaAceite",
@@ -21899,6 +21908,10 @@
           "id": {
             "type": "string",
             "format": "uuid"
+          },
+          "numero": {
+            "type": "integer",
+            "format": "int32"
           },
           "texto": {
             "type": "string"

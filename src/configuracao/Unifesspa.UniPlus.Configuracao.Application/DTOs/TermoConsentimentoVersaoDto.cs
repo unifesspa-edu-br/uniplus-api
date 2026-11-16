@@ -10,6 +10,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.DTOs;
 /// </remarks>
 public sealed record TermoConsentimentoVersaoDto(
     Guid Id,
+    int Numero,
     string Texto,
     string BaseLegal,
     string FormaAceite,

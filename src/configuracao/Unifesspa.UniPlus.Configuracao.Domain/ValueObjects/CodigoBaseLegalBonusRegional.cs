@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
-using System.Globalization;
-using System.Text;
 using System.Text.RegularExpressions;
 
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -31,7 +29,7 @@ public sealed partial record CodigoBaseLegalBonusRegional
     {
         ArgumentNullException.ThrowIfNull(identificacao);
 
-        string normalizada = Normalizar(identificacao);
+        string normalizada = GeradorDeCodigoEstavel.Normalizar(identificacao);
 
         return normalizada.Length == 0
             ? Result<CodigoBaseLegalBonusRegional>.Failure(new DomainError(
@@ -73,23 +71,6 @@ public sealed partial record CodigoBaseLegalBonusRegional
                 $"O código da base legal, formado pelo tipo e pela identificação, passa de {TamanhoMaximo} caracteres: abrevie a identificação."))
             : Result<CodigoBaseLegalBonusRegional>.Success(new CodigoBaseLegalBonusRegional(codigo));
 
-    private static string Normalizar(string identificacao)
-    {
-        StringBuilder semAcento = new();
-        foreach (char c in identificacao.Normalize(NormalizationForm.FormKD))
-        {
-            if (CharUnicodeInfo.GetUnicodeCategory(c) != UnicodeCategory.NonSpacingMark)
-            {
-                semAcento.Append(char.ToUpperInvariant(c));
-            }
-        }
-
-        return SequenciaForaDoFormato().Replace(semAcento.ToString(), "_").Trim('_');
-    }
-
     [GeneratedRegex("^[A-Z][A-Z0-9_]{1,99}$", RegexOptions.CultureInvariant)]
     private static partial Regex FormatoValido();
-
-    [GeneratedRegex("[^A-Z0-9]+", RegexOptions.CultureInvariant)]
-    private static partial Regex SequenciaForaDoFormato();
 }

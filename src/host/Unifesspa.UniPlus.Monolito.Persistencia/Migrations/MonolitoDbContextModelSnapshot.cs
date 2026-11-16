@@ -7472,6 +7472,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("base_legal_rascunho");
 
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("codigo");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
@@ -7541,12 +7547,19 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_termos_de_consentimento");
 
+                    b.HasIndex("Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_termos_de_consentimento_codigo_vivo")
+                        .HasFilter("is_deleted = false");
+
                     b.HasIndex("Nome")
                         .HasDatabaseName("ix_termos_de_consentimento_nome")
                         .HasFilter("is_deleted = false");
 
                     b.ToTable("termos_de_consentimento", "configuracao", t =>
                         {
+                            t.HasCheckConstraint("ck_termos_de_consentimento_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,99}$'");
+
                             t.HasCheckConstraint("ck_termos_de_consentimento_forma_aceite_rascunho", "forma_aceite_rascunho IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
                         });
                 });
@@ -7576,6 +7589,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("hash")
                         .IsFixedLength();
 
+                    b.Property<int>("Numero")
+                        .HasColumnType("integer")
+                        .HasColumnName("numero");
+
                     b.Property<DateTimeOffset>("PromovidaEm")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("promovida_em");
@@ -7598,12 +7615,18 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_versoes_do_termo_consentimento");
 
+                    b.HasIndex("TermoConsentimentoId", "Numero")
+                        .IsUnique()
+                        .HasDatabaseName("ux_versoes_do_termo_consentimento_termo_numero");
+
                     b.HasIndex("TermoConsentimentoId", "PromovidaEm")
                         .HasDatabaseName("ix_versoes_do_termo_consentimento_termo_promovida_em");
 
                     b.ToTable("versoes_do_termo_consentimento", "configuracao", t =>
                         {
                             t.HasCheckConstraint("ck_versoes_do_termo_consentimento_forma_aceite", "forma_aceite IN ('A_DEFINIR', 'REGISTRO_DIGITAL_SEM_LOG_IP', 'REGISTRO_DIGITAL_COM_LOG_IP')");
+
+                            t.HasCheckConstraint("ck_versoes_do_termo_consentimento_numero", "numero >= 1");
                         });
                 });
 
@@ -14975,6 +14998,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
 
+                    b.Property<string>("TermoCodigo")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("termo_codigo");
+
                     b.Property<Guid>("TermoId")
                         .HasColumnType("uuid")
                         .HasColumnName("termo_id");
@@ -14992,6 +15021,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<Guid>("VersaoId")
                         .HasColumnType("uuid")
                         .HasColumnName("versao_id");
+
+                    b.Property<int>("VersaoNumero")
+                        .HasColumnType("integer")
+                        .HasColumnName("versao_numero");
 
                     b.HasKey("Id")
                         .HasName("pk_termos_exigidos_formulario");

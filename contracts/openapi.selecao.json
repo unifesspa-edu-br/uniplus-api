@@ -23681,6 +23681,8 @@
           "ordem",
           "termoId",
           "versaoId",
+          "termoCodigo",
+          "versaoNumero",
           "nome",
           "texto",
           "baseLegal",
@@ -23705,6 +23707,13 @@
           "versaoId": {
             "type": "string",
             "format": "uuid"
+          },
+          "termoCodigo": {
+            "type": "string"
+          },
+          "versaoNumero": {
+            "type": "integer",
+            "format": "int32"
           },
           "nome": {
             "type": "string"

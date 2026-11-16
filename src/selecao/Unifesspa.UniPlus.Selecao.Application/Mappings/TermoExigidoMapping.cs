@@ -13,6 +13,8 @@ internal static class TermoExigidoMapping
             termo.Ordem,
             termo.TermoId,
             termo.VersaoId,
+            termo.TermoCodigo,
+            termo.VersaoNumero,
             termo.Nome,
             termo.Texto,
             termo.BaseLegal,

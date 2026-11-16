@@ -233,6 +233,9 @@ public static class LimitesDoEnvelope
     /// <summary><c>TermoExigidoFormulario.Codigo</c>.</summary>
     public const int CodigoTermoExigido = FormaDoTermo.CodigoMaxLength;
 
+    /// <summary>Código estável do termo no catálogo de termos de consentimento.</summary>
+    public const int CodigoDoTermoNoCatalogo = Domain.Entities.TermoExigidoFormulario.TermoCodigoMaxLength;
+
     /// <summary>Nome do termo no catálogo de termos de consentimento.</summary>
     public const int NomeDoTermo = 200;
 

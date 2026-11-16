@@ -97,7 +97,7 @@ public sealed class TermoConsentimentoEndpointTests
         string token = Guid.NewGuid().ToString("N")[..10];
         string nomeAlvo = $"Termo Alvo {token}";
         await CriarTermoComNome(_fixture.Factory.CreateClient(), nomeAlvo);
-        await CriarTermoComNome(_fixture.Factory.CreateClient(), "Termo Fora Do Filtro");
+        await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo Fora Do Filtro {Guid.NewGuid():N}");
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await client.GetAsync(
@@ -116,7 +116,7 @@ public sealed class TermoConsentimentoEndpointTests
         // Duas ocorrências do token → com limit=1 há próxima página (rel=next).
         await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo {token} Um");
         await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo {token} Dois");
-        await CriarTermoComNome(_fixture.Factory.CreateClient(), "Termo Fora Do Filtro");
+        await CriarTermoComNome(_fixture.Factory.CreateClient(), $"Termo Fora Do Filtro {Guid.NewGuid():N}");
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage primeira = await client.GetAsync(
@@ -218,6 +218,8 @@ public sealed class TermoConsentimentoEndpointTests
         using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
         JsonElement versoes = doc.RootElement.GetProperty("versoes");
         versoes.GetArrayLength().Should().Be(1);
+        versoes[0].GetProperty("numero").GetInt32().Should().Be(1);
+        doc.RootElement.GetProperty("codigo").GetString().Should().MatchRegex("^TERMO_EM_BRANCO_[0-9A-F]{32}$");
 
         // A revisão é consumida pela promoção — status volta a EM_ELABORACAO mesmo
         // sem nenhuma edição posterior do rascunho.
@@ -244,6 +246,25 @@ public sealed class TermoConsentimentoEndpointTests
         editar.StatusCode.Should().Be(HttpStatusCode.NoContent);
 
         (await ObterRevisado(client, id)).Should().BeFalse("editar o rascunho revisado reverte a marca de revisão");
+    }
+
+    [Fact(DisplayName = "Criar com nome que só difere em acento, caixa ou pontuação retorna 409 com o código de erro CodigoJaExiste")]
+    public async Task Criar_NomeEquivalente_Retorna409()
+    {
+        using HttpClient client = _fixture.Factory.CreateClient();
+        string sufixo = Guid.NewGuid().ToString("N");
+        await CriarTermoComNome(client, $"Declaração de veracidade {sufixo}");
+
+        HttpResponseMessage repetido = await EnviarAdmin(client, HttpMethod.Post, AdminPath, new
+        {
+            nome = $"DECLARACAO DE VERACIDADE - {sufixo}!",
+            textoRascunho = (string?)null,
+            baseLegalRascunho = (string?)null,
+            formaAceiteRascunho = (string?)null,
+        });
+
+        repetido.StatusCode.Should().Be(HttpStatusCode.Conflict);
+        (await LerCodigoDeErro(repetido)).Should().Be("uniplus.configuracao.termo_consentimento.codigo_ja_existe");
     }
 
     [Fact(DisplayName = "Promover sem revisar retorna 422 com o código de erro PromocaoSemRevisao")]

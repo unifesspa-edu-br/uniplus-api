@@ -291,7 +291,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
             classificacaoProtecao: "PESSOAL", formato: "LIVRE", restricoes: [], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
         VersaoTermoEscolhida versaoDoTermo = new(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Termo de veracidade", "Declaro que as informações são verdadeiras.",
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo de veracidade", "Declaro que as informações são verdadeiras.",
             "Lei 9.784/1999", "ACEITE_EXPLICITO", new string('b', 64));
         TermoExigidoFormulario termo = TermoExigidoFormulario.Criar(
             "TERMO_VERACIDADE", 0, versaoDoTermo, exibicao: null, Obrigatoriedade.Sempre, FinalidadeFormulario.Inscricao).Value!;
@@ -910,7 +910,7 @@ public sealed class SubmeterInscricaoCommandHandlerTests
     public async Task Handle_ObrigatoriosDaIsencao_NaoRecusamOEnvio()
     {
         VersaoTermoEscolhida versaoDoTermo = new(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), "Termo da isenção", "Declaro a renda informada.",
+            Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo da isenção", "Declaro a renda informada.",
             "Lei 12.799/2013", "ACEITE_EXPLICITO", new string('d', 64));
 
         (Result<ReciboDaInscricaoDto> resultado, _) = await SubmeterComAsync(

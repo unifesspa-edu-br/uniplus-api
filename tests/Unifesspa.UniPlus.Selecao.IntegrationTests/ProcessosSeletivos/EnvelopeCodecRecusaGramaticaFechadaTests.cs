@@ -256,6 +256,32 @@ public sealed class EnvelopeCodecRecusaGramaticaFechadaTests
         resultado.IsFailure.Should().BeTrue("o snapshot do bônus sem código estável deixaria o certame sem a referência que o documento resolve");
     }
 
+    [Theory(DisplayName = "O código do termo e o número da versão ausentes, vazios ou fora do limite são recusados no envelope")]
+    [InlineData("termoCodigo", true, null)]
+    [InlineData("termoCodigo", false, "")]
+    [InlineData("termoCodigo", false, "UM_CODIGO_QUE_PASSA_DO_LIMITE_DO_CATALOGO_PORQUE_TEM_MUITO_MAIS_DE_CEM_CARACTERES_DE_COMPRIMENTO_TOTAL_DO_VALOR")]
+    [InlineData("versaoNumero", true, null)]
+    [InlineData("versaoNumero", false, 0)]
+    [InlineData("versaoNumero", false, -1)]
+    [InlineData("versaoNumero", false, "1")]
+    public void Termo_CodigoENumeroDaVersaoInvalidos_RecusaOEnvelope(string chave, bool removerChave, object? valor)
+    {
+        Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
+        {
+            JsonObject termo = envelope["formularios"]!.AsArray().First(f => f!["termos"]!.AsArray().Count > 0)!["termos"]![0]!.AsObject();
+            if (removerChave)
+            {
+                termo.Remove(chave);
+            }
+            else
+            {
+                termo[chave] = JsonValue.Create(valor);
+            }
+        });
+
+        resultado.IsFailure.Should().BeTrue("o termo congelado sem código estável ou com número inválido não é citável pelo documento");
+    }
+
     private static readonly string[] ArgsDoBonusAlemDoFator =
     [
         "regra", "teto", "baseLegalBonusRegionalId", "baseLegalBonusRegionalCodigo", "tipoInstrumento", "identificacao", "descricao", "municipios",

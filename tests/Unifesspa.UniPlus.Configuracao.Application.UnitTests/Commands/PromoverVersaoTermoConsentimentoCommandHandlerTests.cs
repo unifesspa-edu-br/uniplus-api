@@ -10,6 +10,8 @@ using NSubstitute.ExceptionExtensions;
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.TermosConsentimento;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -67,6 +69,24 @@ public sealed class PromoverVersaoTermoConsentimentoCommandHandlerTests
             _repository, _unitOfWork, UsuarioAutenticado(), new RelogioFixo(Agora), CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.ConflitoDeConcorrencia);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    [Fact(DisplayName = "Duas promoções que leram o mesmo número de versão: a barrada pelo índice vira conflito de concorrência")]
+    public async Task Handle_NumeroDeVersaoJaGravado_ViraConflitoEDescarta()
+    {
+        TermoConsentimento termo = TermoRevisado();
+        _repository.ObterPorIdAsync(termo.Id, Arg.Any<CancellationToken>()).Returns(termo);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateException(
+                "violação sintética de teste",
+                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.VersaoDoTermoNumeroUnico)));
+
+        Result resultado = await PromoverVersaoTermoConsentimentoCommandHandler.Handle(
+            new PromoverVersaoTermoConsentimentoCommand(termo.Id),
+            _repository, _unitOfWork, UsuarioAutenticado(), new RelogioFixo(Agora), CancellationToken.None);
+
         resultado.Error!.Code.Should().Be(TermoConsentimentoErrorCodes.ConflitoDeConcorrencia);
         _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }

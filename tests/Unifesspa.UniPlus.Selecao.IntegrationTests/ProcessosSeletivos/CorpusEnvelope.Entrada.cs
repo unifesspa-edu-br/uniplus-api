@@ -179,7 +179,7 @@ internal static partial class CorpusEnvelope
             codigo,
             ordem,
             new VersaoTermoEscolhida(
-                Guid.Parse("0199a000-0000-7000-8000-00000000a001"), Guid.Parse("0199a000-0000-7000-8000-00000000b001"),
+                Guid.Parse("0199a000-0000-7000-8000-00000000a001"), Guid.Parse("0199a000-0000-7000-8000-00000000b001"), "TERMO_DE_TESTE", 1,
                 "Declaração de veracidade", "Declaro que as informações prestadas são verdadeiras.", "Lei 9.784/1999, art. 4º",
                 formaAceite, new string('a', 64)),
             exibicao,
