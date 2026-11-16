@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -32,7 +33,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </remarks>
 public static class CalculadoraQuadroVagasLei12711
 {
-    public static Result<QuadroVagasCalculado> Calcular(
+    public static Result<QuadroDeVagasDaLeiDeCotas> Calcular(
         int vagasOfertadasBase,
         decimal percentualDaReservaLegal,
         ReferenciaReservaDemograficaSnapshot demografica,
@@ -45,11 +46,11 @@ public static class CalculadoraQuadroVagasLei12711
 
         Result entradas = ValidarEntradas(retiradas, suplementares);
         return entradas.IsFailure
-            ? Result<QuadroVagasCalculado>.Failure(entradas.Error!)
+            ? Result<QuadroDeVagasDaLeiDeCotas>.Failure(entradas.Error!)
             : Montar(vagasOfertadasBase, percentualDaReservaLegal, demografica, retiradas, suplementares);
     }
 
-    private static Result<QuadroVagasCalculado> Montar(
+    private static Result<QuadroDeVagasDaLeiDeCotas> Montar(
         int vagasOfertadasBase,
         decimal percentualDaReservaLegal,
         ReferenciaReservaDemograficaSnapshot demografica,
@@ -63,12 +64,12 @@ public static class CalculadoraQuadroVagasLei12711
         int ampla = vagasOfertadasBase - alocacao.Total - retiradas.Values.Sum();
 
         return ampla < 0
-            ? Result<QuadroVagasCalculado>.Failure(AmplaConcorrenciaNegativa(ampla, vagasOfertadasBase))
-            : Result<QuadroVagasCalculado>.Success(
+            ? Result<QuadroDeVagasDaLeiDeCotas>.Failure(AmplaConcorrenciaNegativa(ampla, vagasOfertadasBase))
+            : Result<QuadroDeVagasDaLeiDeCotas>.Success(
                 Compor(vagasOfertadasBase, reservaLegalNominal, alocacao, ampla, retiradas, suplementares));
     }
 
-    private static QuadroVagasCalculado Compor(
+    private static QuadroDeVagasDaLeiDeCotas Compor(
         int vagasOfertadasBase,
         int reservaLegalNominal,
         AlocacaoDasSubReservasFederais alocacao,
@@ -80,12 +81,11 @@ public static class CalculadoraQuadroVagasLei12711
         quadro[ModalidadesFederaisLei12711.Ac] = ampla;
         Acrescentar(quadro, retiradas);
         Acrescentar(quadro, suplementares);
-        int suplementaresTotal = suplementares.Values.Sum();
 
         return new(
-            quadro, reservaLegalNominal, alocacao.Total, Math.Max(0, alocacao.Total - reservaLegalNominal),
-            alocacao.VagasCortadasPorEscassez, ampla, retiradas.Values.Sum(), suplementaresTotal,
-            vagasOfertadasBase + suplementaresTotal);
+            [.. quadro.Select(static vaga => new VagasDaModalidade(vaga.Key, vaga.Value))],
+            vagasOfertadasBase + suplementares.Values.Sum(),
+            new ConferenciaDaReservaLegal(reservaLegalNominal, alocacao.Total, alocacao.VagasCortadasPorEscassez));
     }
 
     private static void Acrescentar(Dictionary<string, int> quadro, IReadOnlyDictionary<string, int> vagas)

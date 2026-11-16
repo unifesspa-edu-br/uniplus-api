@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -86,21 +87,18 @@ internal static class CenarioDeConformidadeLegal
             remanejamentoFallback: null,
             regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza),
             acaoQuandoIndeferido: null,
-            baseLegal: "Lei 12.711/2012").Value!;
+            baseLegal: "Lei 12.711/2012",
+            quantidadeDeclarada: VagasPorModalidade).Value!;
 
     private static RegraRemanejamentoModalidade RemanejamentoDa(NaturezaLegalModalidade natureza) =>
         natureza == NaturezaLegalModalidade.CotaReservada ? RegraRemanejamentoModalidade.SegueCascata : RegraRemanejamentoModalidade.Nenhuma;
 
+    private const int VagasPorModalidade = 10;
+
     internal static ConfiguracaoDistribuicaoVagas NovaOferta(params ModalidadeSelecionada[] modalidades) =>
-        ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 0.6m,
-            regraDistribuicao: ReferenciaRegra.De("DISTRIBUICAO-PADRAO", "v1", new string('a', 64)),
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: modalidades,
-            ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+        ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = VagasPorModalidade * modalidades.Length, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     internal static void DefinirOfertas(ProcessoSeletivo processo, params ConfiguracaoDistribuicaoVagas[] ofertas) =>
         processo.DefinirDistribuicaoVagas(ofertas, FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga)

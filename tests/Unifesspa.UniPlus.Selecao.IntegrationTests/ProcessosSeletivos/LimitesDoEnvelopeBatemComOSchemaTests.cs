@@ -151,7 +151,7 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         ("PrecisaoEtapa", LimitesDoEnvelope.PrecisaoEtapa, 4, typeof(ItemDeAvaliacao), nameof(ItemDeAvaliacao.PontuacaoMaxima)),
         ("PrecisaoBonus", LimitesDoEnvelope.PrecisaoBonus, 4, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.Fator)),
         ("PrecisaoBonus", LimitesDoEnvelope.PrecisaoBonus, 4, typeof(ConfiguracaoBonusRegional), nameof(ConfiguracaoBonusRegional.Teto)),
-        ("PrecisaoPr", LimitesDoEnvelope.PrecisaoPr, 4, typeof(ConfiguracaoDistribuicaoVagas), nameof(ConfiguracaoDistribuicaoVagas.Pr)),
+        ("PrecisaoPr", LimitesDoEnvelope.PrecisaoPr, 4, typeof(ConfiguracaoDistribuicaoVagas), nameof(ConfiguracaoDistribuicaoVagas.PercentualDaReservaLegal)),
         ("PrecisaoTaxaInscricao", LimitesDoEnvelope.PrecisaoTaxaInscricao, ConfiguracaoTaxaInscricao.ValorEscala, typeof(ConfiguracaoTaxaInscricao), nameof(ConfiguracaoTaxaInscricao.Valor)),
         ("PrecisaoPesoAreaEnem", LimitesDoEnvelope.PrecisaoPesoAreaEnem, 4, typeof(AreaPesoAreaEnemCongelada), nameof(AreaPesoAreaEnemCongelada.Peso)),
         ("PrecisaoCorteAreaEnem", LimitesDoEnvelope.PrecisaoCorteAreaEnem, 4, typeof(AreaPesoAreaEnemCongelada), nameof(AreaPesoAreaEnemCongelada.Corte)),

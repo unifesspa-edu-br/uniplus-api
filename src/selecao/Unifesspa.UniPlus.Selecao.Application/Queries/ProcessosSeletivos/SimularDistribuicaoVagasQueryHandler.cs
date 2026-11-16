@@ -48,47 +48,29 @@ public static class SimularDistribuicaoVagasQueryHandler
                 $"Processo Seletivo {query.ProcessoSeletivoId} não encontrado."));
         }
 
-        // Mesma ordem do comando de escrita (ADR-0125): forma de VoBase/PR de
-        // TODAS as ofertas antes de qualquer I/O cross-módulo.
-        List<FieldError> formaErros = [];
-        for (int indice = 0; indice < query.DistribuicaoVagas.Count; indice++)
-        {
-            ConfiguracaoDistribuicaoVagasInput itemForma = query.DistribuicaoVagas[indice];
-            formaErros.AddRange(ConfiguracaoDistribuicaoVagas
-                .ValidarFormaBasica(itemForma.VoBase, itemForma.Pr, itemForma.ModalidadeIds.Count)
-                .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{ConfiguracaoDistribuicaoVagasResolver.TraduzirFieldDoDominio(erro.Field)}" }));
-        }
-
+        // Mesma ordem do comando de escrita (ADR-0125): a forma de todas as ofertas antes de qualquer I/O.
+        IReadOnlyList<FieldError> formaErros = ConfiguracaoDistribuicaoVagasResolver.ConferirForma(query.DistribuicaoVagas);
         if (formaErros.Count > 0)
         {
             return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.ValidationFailure(formaErros);
         }
 
-        List<ConfiguracaoDistribuicaoVagasDto> simulacao = [];
-        for (int indice = 0; indice < query.DistribuicaoVagas.Count; indice++)
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>> resolvidas = await ConfiguracaoDistribuicaoVagasResolver.ResolverTodasAsync(
+            query.DistribuicaoVagas,
+            regraCatalogoReader,
+            ofertaCursoReader,
+            modalidadeReader,
+            referenciaReservaDemograficaReader,
+            cancellationToken).ConfigureAwait(false);
+        if (resolvidas.IsFailure)
         {
-            Result<ConfiguracaoDistribuicaoVagas> resultado = await ConfiguracaoDistribuicaoVagasResolver.ResolverDistribuicaoAsync(
-                query.DistribuicaoVagas[indice],
-                regraCatalogoReader,
-                ofertaCursoReader,
-                modalidadeReader,
-                referenciaReservaDemograficaReader,
-                cancellationToken).ConfigureAwait(false);
-
-            if (resultado.IsFailure)
-            {
-                IReadOnlyList<FieldError> errosComIndice = [.. resultado.Errors
-                    .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{ConfiguracaoDistribuicaoVagasResolver.TraduzirFieldDoDominio(erro.Field)}" })];
-                return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.ValidationFailure(errosComIndice);
-            }
-
-            // Nunca tocado por SalvarAlteracoesAsync — os Guids em
-            // resultado.Value!.Id (e de cada VagaOfertada) são efêmeros,
-            // gerados em memória por ConfiguracaoDistribuicaoVagas.Criar/
-            // VagaOfertada.Criar (EntityBase.Id = Guid.CreateVersion7()),
-            // nunca persistidos.
-            simulacao.Add(ProjecaoDasVagas.ProjetarDistribuicao(resultado.Value!));
+            return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.ValidationFailure(resolvidas.Errors);
         }
+
+        // Nunca tocadas por SalvarAlteracoesAsync: os Guids da configuração e de cada VagaOfertada são
+        // efêmeros, gerados em memória, e nunca persistidos.
+        IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> simulacao =
+            [.. resolvidas.Value!.Select(ProjecaoDasVagas.ProjetarDistribuicao)];
 
         return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.Success(simulacao);
     }

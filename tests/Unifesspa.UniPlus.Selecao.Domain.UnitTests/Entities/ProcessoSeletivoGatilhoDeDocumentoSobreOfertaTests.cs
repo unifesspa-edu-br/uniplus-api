@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -49,14 +50,9 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
     {
         ReferenciaRegra regra = ReferenciaRegra.De(
             RegraDistribuicaoVagasCodigo.Institucional, "v1", string.Concat(Enumerable.Repeat("ab01234567", 7))[..64]);
-        return ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: codigosModalidade.Length * 10,
-            pr: 1m,
-            regraDistribuicao: regra,
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [.. codigosModalidade.Select(Modalidade)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+        return ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = codigosModalidade.Length * 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regra, Modalidades = [.. codigosModalidade.Select(Modalidade)] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
     }
 
     private static DocumentoExigido ExigenciaCondicionada(

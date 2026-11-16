@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -110,27 +111,17 @@ internal static class ApoioDaCoerenciaDaConsequencia
                     Guid.CreateVersion7(), ModalidadesFederaisLei12711.Ac, null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
                     null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "base legal", quantidadeDeclarada: null).Value!,
             ];
-            distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-                ofertaCursoOrigemId: Guid.CreateVersion7(),
-                voBase: 40,
-                pr: 0.5m,
-                regraDistribuicao: ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Lei12711, "v1", HashFixo),
-                regraAjuste: ReferenciaRegra.De("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", HashFixo),
-                referenciaDemografica: ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!,
-                modalidades: modalidadesFederais, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+            distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 0.5m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Lei12711, "v1", HashFixo), RegraDeAjuste = ReferenciaRegra.De("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", HashFixo), ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!, Modalidades = modalidadesFederais },
+                new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
             processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
             processo.DefinirCascataRemanejamento(CascataLegalCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         }
         else
         {
-            distribuicao = ConfiguracaoDistribuicaoVagas.Criar(
-                ofertaCursoOrigemId: Guid.CreateVersion7(),
-                voBase: modalidade.QuantidadeDeclarada ?? 40,
-                pr: 1m,
-                regraDistribuicao: ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo),
-                regraAjuste: null,
-                referenciaDemografica: null,
-                modalidades: [modalidade], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+            distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = modalidade.QuantidadeDeclarada ?? 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
+                new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
             processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         }
 

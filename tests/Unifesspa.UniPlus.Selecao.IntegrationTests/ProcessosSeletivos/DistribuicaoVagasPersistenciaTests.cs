@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
@@ -80,9 +81,9 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
             RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, "v1", new string('d', 64));
 
         Guid ofertaCursoId = Guid.CreateVersion7();
-        Result<ConfiguracaoDistribuicaoVagas> configResult = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoId, voBase: 50, pr: 0.5m, regra, regraAjuste, demografica, modalidades,
-            grupoAreaEnem: ("HUMANISTICA_I", "Humanística I"), ofertaCurso: OfertaCursoDeTeste.Medicina);
+        Result<ConfiguracaoDistribuicaoVagas> configResult = ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoId,
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 50, PercentualDaReservaLegal = 0.5m, RegraDeDistribuicao = regra, RegraDeAjuste = regraAjuste, ReferenciaDemografica = demografica, Modalidades = modalidades },
+            new FatosDaOfertaNoCadastro { GrupoAreaEnem = ("HUMANISTICA_I", "Humanística I"), OfertaCurso = OfertaCursoDeTeste.Medicina });
         configResult.IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas([configResult.Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -105,8 +106,8 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
         distribuicao.GrupoAreaEnem.Should().NotBeNull();
         distribuicao.GrupoAreaEnem!.Codigo.Should().Be("HUMANISTICA_I");
         distribuicao.GrupoAreaEnem.Rotulo.Should().Be("Humanística I");
-        distribuicao.VoBase.Should().Be(50);
-        distribuicao.Pr.Should().Be(0.5m);
+        distribuicao.VagasOfertadasBase.Should().Be(50);
+        distribuicao.PercentualDaReservaLegal.Should().Be(0.5m);
         distribuicao.RegraDistribuicao.Codigo.Should().Be(RegraDistribuicaoVagasCodigo.Lei12711);
         distribuicao.RegraDistribuicao.Hash.Should().Be(new string('a', 64));
         distribuicao.RegraAjuste.Should().NotBeNull();
@@ -140,9 +141,9 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente);
 
         ReferenciaRegra regra = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('b', 64));
-        Result<ConfiguracaoDistribuicaoVagas> configResult = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 60, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
-            [NovaModalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60)], ofertaCurso: OfertaCursoDeTeste.Medicina);
+        Result<ConfiguracaoDistribuicaoVagas> configResult = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 60, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regra, Modalidades = [NovaModalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60)] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina });
         configResult.IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas([configResult.Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -172,10 +173,9 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         ReferenciaRegra regra = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('b', 64));
-        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), voBase: 60, pr: 1m, regra, regraAjuste: null, referenciaDemografica: null,
-            [NovaModalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60)],
-            grupoAreaEnem: ("TECNOLOGICA", "Tecnológica"), ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 60, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regra, Modalidades = [NovaModalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 60)] },
+            new FatosDaOfertaNoCadastro { GrupoAreaEnem = ("TECNOLOGICA", "Tecnológica"), OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
         processo.DefinirDistribuicaoVagas([oferta], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -208,9 +208,9 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
 
         ReferenciaRegra regra = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('c', 64));
         Guid ofertaCursoId = Guid.CreateVersion7();
-        ConfiguracaoDistribuicaoVagas original = ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoId, voBase: 40, pr: 1m, regra, null, null,
-            [NovaModalidade("QUIL", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 40)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+        ConfiguracaoDistribuicaoVagas original = ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoId,
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regra, Modalidades = [NovaModalidade("QUIL", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 40)] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
         processo.DefinirDistribuicaoVagas([original], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
@@ -225,12 +225,12 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
             ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
-            ConfiguracaoDistribuicaoVagas nova = ConfiguracaoDistribuicaoVagas.Criar(
-                ofertaCursoId, voBase: 45, pr: 1m, regra, null, null,
-                [
+            ConfiguracaoDistribuicaoVagas nova = ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoId,
+                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 45, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regra, Modalidades = [
                     NovaModalidade("QUIL", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 20),
                     NovaModalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 25),
-                ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+                ] },
+                new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
             Result result = carregado.DefinirDistribuicaoVagas([nova], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
             result.IsSuccess.Should().BeTrue();
@@ -246,7 +246,7 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
 
         recarregado.Should().NotBeNull();
         ConfiguracaoDistribuicaoVagas distribuicao = recarregado!.DistribuicaoVagas.Single();
-        distribuicao.VoBase.Should().Be(45);
+        distribuicao.VagasOfertadasBase.Should().Be(45);
         distribuicao.Modalidades.Should().HaveCount(2);
 
         // CA-15: redefinir substitui o quadro por inteiro, na mesma transação —

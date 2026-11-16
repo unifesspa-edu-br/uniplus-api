@@ -33,10 +33,9 @@ public sealed class MontagemDoQuadroDeVagasTests
         MontagemDoQuadroDeVagas.Montar(declarada).Value!;
 
     private static ConfiguracaoDistribuicaoVagas DaEntidade(DistribuicaoDeVagasDeclarada declarada) =>
-        ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), declarada.VagasOfertadasBase, declarada.PercentualDaReservaLegal ?? 1m,
-            declarada.RegraDeDistribuicao, declarada.RegraDeAjuste, declarada.ReferenciaDemografica, declarada.Modalidades,
-            argsAjuste: declarada.AjusteDoQuadro, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+        ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = declarada.VagasOfertadasBase, PercentualDaReservaLegal = declarada.PercentualDaReservaLegal ?? 1m, RegraDeDistribuicao = declarada.RegraDeDistribuicao, RegraDeAjuste = declarada.RegraDeAjuste, ReferenciaDemografica = declarada.ReferenciaDemografica, AjusteDoQuadro = declarada.AjusteDoQuadro, Modalidades = declarada.Modalidades },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     private static (string Codigo, int Quantidade)[] DoQuadro(QuadroDeVagas quadro) =>
         [.. quadro.Vagas.Select(static v => (v.ModalidadeCodigo, v.Quantidade))];
@@ -154,8 +153,8 @@ public sealed class MontagemDoQuadroDeVagasTests
         QuadroDeVagasDaLeiDeCotas quadro = (QuadroDeVagasDaLeiDeCotas)Montar(declarada);
 
         DoQuadro(quadro).Should().Equal(DaEntidade(entidade));
-        quadro.TotalDeVagasDoEdital.Should().Be(entidade.TotalPublicado);
-        quadro.ConferenciaDaReservaLegal.Should().Be(new ConferenciaDaReservaLegal(entidade.VrNominal, entidade.VrFinal, 0));
+        quadro.TotalDeVagasDoEdital.Should().Be(entidade.TotalDeVagasDoEdital);
+        quadro.ConferenciaDaReservaLegal.Should().Be(((QuadroDeVagasDaLeiDeCotas)entidade.Quadro).ConferenciaDaReservaLegal);
     }
 
     [Fact(DisplayName = "A declaração fixada com ajuste reproduz o quadro que a entidade monta")]
@@ -167,7 +166,7 @@ public sealed class MontagemDoQuadroDeVagasTests
         QuadroDeVagasFixadoNoEdital quadro = (QuadroDeVagasFixadoNoEdital)Montar(declarada);
 
         DoQuadro(quadro).Should().Equal(DaEntidade(entidade));
-        quadro.TotalDeVagasDoEdital.Should().Be(entidade.TotalPublicado);
-        quadro.TotalDeVagasRetiradasNoAjuste.Should().Be(entidade.Estouro);
+        quadro.TotalDeVagasDoEdital.Should().Be(entidade.TotalDeVagasDoEdital);
+        quadro.TotalDeVagasRetiradasNoAjuste.Should().Be(((QuadroDeVagasFixadoNoEdital)entidade.Quadro).TotalDeVagasRetiradasNoAjuste);
     }
 }

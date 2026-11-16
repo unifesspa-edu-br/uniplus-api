@@ -280,5 +280,5 @@ public static class PendenciasDoCronograma
 
     /// <summary>Há vagas ofertadas (VoBase > 0), mas nenhuma fase do cronograma produz resultado (§3.4).</summary>
     internal static bool HaVagasSemFaseQueProduzResultado(EstadoDaConfiguracao estado) =>
-        estado.DistribuicaoVagas.Any(static d => d.VoBase > 0) && !estado.CronogramaFases.Any(static f => f.ProduzResultado);
+        estado.DistribuicaoVagas.Any(static d => d.VagasOfertadasBase > 0) && !estado.CronogramaFases.Any(static f => f.ProduzResultado);
 }

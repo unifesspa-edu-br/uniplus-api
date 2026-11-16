@@ -74,44 +74,27 @@ public static class DefinirDistribuicaoVagasCommandHandler
             return Result<MutacaoComDistribuicaoVagasDto>.Failure(bloqueio);
         }
 
-        // Acumula (ADR-0125) a forma de VoBase/PR de TODAS as distribuições do payload —
-        // as únicas checagens de ConfiguracaoDistribuicaoVagas.Criar que não dependem de
-        // nenhum cadastro cross-módulo nem do catálogo de regras. Roda antes de qualquer
-        // I/O (validação vence I/O dentro do bucket 422, PR #1211).
-        List<FieldError> formaErros = [];
-        for (int indice = 0; indice < command.DistribuicaoVagas.Count; indice++)
-        {
-            ConfiguracaoDistribuicaoVagasInput itemForma = command.DistribuicaoVagas[indice];
-            formaErros.AddRange(ConfiguracaoDistribuicaoVagas
-                .ValidarFormaBasica(itemForma.VoBase, itemForma.Pr, itemForma.ModalidadeIds.Count)
-                .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{ConfiguracaoDistribuicaoVagasResolver.TraduzirFieldDoDominio(erro.Field)}" }));
-        }
-
+        // A forma de todas as distribuições do payload não depende de nenhum cadastro nem do catálogo de
+        // regras, e roda antes de qualquer I/O (validação vence I/O dentro do bucket 422, ADR-0125).
+        IReadOnlyList<FieldError> formaErros = ConfiguracaoDistribuicaoVagasResolver.ConferirForma(command.DistribuicaoVagas);
         if (formaErros.Count > 0)
         {
             return Result<MutacaoComDistribuicaoVagasDto>.ValidationFailure(formaErros);
         }
 
-        List<ConfiguracaoDistribuicaoVagas> distribuicoes = [];
-        for (int indice = 0; indice < command.DistribuicaoVagas.Count; indice++)
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>> resolvidas = await ConfiguracaoDistribuicaoVagasResolver.ResolverTodasAsync(
+            command.DistribuicaoVagas,
+            regraCatalogoReader,
+            ofertaCursoReader,
+            modalidadeReader,
+            referenciaReservaDemograficaReader,
+            cancellationToken).ConfigureAwait(false);
+        if (resolvidas.IsFailure)
         {
-            Result<ConfiguracaoDistribuicaoVagas> resultado = await ConfiguracaoDistribuicaoVagasResolver.ResolverDistribuicaoAsync(
-                command.DistribuicaoVagas[indice],
-                regraCatalogoReader,
-                ofertaCursoReader,
-                modalidadeReader,
-                referenciaReservaDemograficaReader,
-                cancellationToken).ConfigureAwait(false);
-
-            if (resultado.IsFailure)
-            {
-                IReadOnlyList<FieldError> errosComIndice = [.. resultado.Errors
-                    .Select(erro => erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{ConfiguracaoDistribuicaoVagasResolver.TraduzirFieldDoDominio(erro.Field)}" })];
-                return Result<MutacaoComDistribuicaoVagasDto>.ValidationFailure(errosComIndice);
-            }
-
-            distribuicoes.Add(resultado.Value!);
+            return Result<MutacaoComDistribuicaoVagasDto>.ValidationFailure(resolvidas.Errors);
         }
+
+        IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicoes = resolvidas.Value!;
 
         // Uma modalidade retirada da oferta não pode deixar sem valor válido a condição viva sobre
         // qualquer fato cujos valores são modalidades — a fonte vem do catálogo, não do código.

@@ -287,7 +287,8 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
             mocks.ReferenciaReservaDemograficaReader, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["distribuicaoVagas[0].modalidadeIds"]);
+        result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeDuplicada");
+        result.Errors.Should().OnlyContain(e => e.Field == "distribuicaoVagas[0].modalidadeIds");
     }
 
     [Fact(DisplayName = "ADR-0125: ModalidadeIds vazio recusa com ModalidadesVazias na 1ª passada, mesmo com oferta/regra inexistentes")]

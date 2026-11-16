@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -87,14 +88,9 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         baseLegal: "Res. Unifesspa 532/2021",
         quantidadeDeclarada: 40).Value!;
 
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoDaModalidadeAmpla() => ConfiguracaoDistribuicaoVagas.Criar(
-        ofertaCursoOrigemId: Guid.CreateVersion7(),
-        voBase: 40,
-        pr: 1m,
-        regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-        regraAjuste: null,
-        referenciaDemografica: null,
-        modalidades: [ModalidadeAmplaDeTeste()], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+    private static ConfiguracaoDistribuicaoVagas DistribuicaoDaModalidadeAmpla() => ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+        new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [ModalidadeAmplaDeTeste()] },
+        new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     private static void DefinirClassificacaoImportadaEFaseDeResultadoFinal(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null)
     {
@@ -203,15 +199,10 @@ internal static class ProcessoSeletivoPublicacaoSeeder
                 baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!);
         }
 
-        return ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: Guid.CreateVersion7(),
-            voBase: 50,
-            pr: 0.5m,
-            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Lei12711, 'd'),
-            regraAjuste: Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, 'e'),
-            referenciaDemografica: ReferenciaReservaDemograficaSnapshot.Criar(
-                Guid.CreateVersion7(), "Censo IBGE 2022", 78.55m, 1.20m, 8.40m, "Lei 12.711/2012 art. 3º").Value!,
-            modalidades: modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+        return ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 50, PercentualDaReservaLegal = 0.5m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711, 'd'), RegraDeAjuste = Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, 'e'), ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(
+                Guid.CreateVersion7(), "Censo IBGE 2022", 78.55m, 1.20m, 8.40m, "Lei 12.711/2012 art. 3º").Value!, Modalidades = modalidades },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
     }
 
     /// <summary>A matriz legal completa (8×7), fallback AC — mesma forma semeada em REMANEJ-CASCATA-LEI-12711 v1.</summary>

@@ -1,13 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
-using Domain.Enums;
 using Domain.Interfaces;
-using Domain.ValueObjects;
+using Domain.ProcessosSeletivos.Vagas;
 
 using Kernel.Results;
-
-using Services;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 
@@ -28,193 +25,56 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 internal static class ConfiguracaoDistribuicaoVagasResolver
 {
     /// <summary>
-    /// <see cref="ConfiguracaoDistribuicaoVagas.Criar"/> reporta violações do conjunto de
-    /// modalidades sob o field <c>modalidades</c> — o nome da propriedade do agregado
-    /// (<see cref="ConfiguracaoDistribuicaoVagas.Modalidades"/>), não do payload do cliente,
-    /// que expõe <see cref="ConfiguracaoDistribuicaoVagasInput.ModalidadeIds"/>. Sem esta
-    /// tradução, a resposta de validação apontaria o cliente para uma propriedade
-    /// inexistente no request.
+    /// A distribuição reporta as violações com os nomes do domínio — o conjunto de modalidades sob
+    /// <c>modalidades</c>, as vagas ofertadas base sob <c>vagasOfertadasBase</c> —, e o cliente envia os
+    /// campos de <see cref="ConfiguracaoDistribuicaoVagasInput"/>. Sem esta tradução, a resposta de validação
+    /// apontaria para uma propriedade inexistente no request.
     /// </summary>
     internal static string TraduzirFieldDoDominio(string fieldDominio) =>
         fieldDominio switch
         {
             "modalidades" => "modalidadeIds",
+            "vagasOfertadasBase" => "voBase",
+            "percentualDaReservaLegal" => "pr",
+            "regraDeAjuste" => "regraAjusteCodigo",
+            "ajusteDoQuadro" => "argsAjuste",
             _ => fieldDominio,
         };
 
-    internal static async Task<Result<ConfiguracaoDistribuicaoVagas>> ResolverDistribuicaoAsync(
-        ConfiguracaoDistribuicaoVagasInput input,
-        IRegraCatalogoReader regraCatalogoReader,
-        IOfertaCursoReader ofertaCursoReader,
-        IModalidadeReader modalidadeReader,
-        IReferenciaReservaDemograficaReader referenciaReservaDemograficaReader,
-        CancellationToken cancellationToken)
-    {
-        OfertaCursoView? oferta = await ofertaCursoReader
-            .ObterPorIdAsync(input.OfertaCursoId, cancellationToken)
-            .ConfigureAwait(false);
-        if (oferta is null)
-        {
-            return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.OfertaCursoNaoEncontrada",
-                $"Oferta de curso {input.OfertaCursoId} não encontrada ou não está mais viva."));
-        }
-
-        Result<OfertaCursoSnapshot> ofertaCurso = OfertaCursoSnapshot.Criar(
-            oferta.CursoNome, oferta.CursoGrau, oferta.UnidadeOfertanteNome, oferta.Turnos);
-        if (ofertaCurso.IsFailure)
-        {
-            return Result<ConfiguracaoDistribuicaoVagas>.Failure(ofertaCurso.Error!);
-        }
-
-        RegraCatalogo? regra = await regraCatalogoReader
-            .ObterAsync(input.RegraDistribuicaoCodigo, input.RegraDistribuicaoVersao, cancellationToken)
-            .ConfigureAwait(false);
-        if (regra is null)
-        {
-            return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.RegraDistribuicaoNaoEncontrada",
-                $"Regra de distribuição {input.RegraDistribuicaoCodigo}/{input.RegraDistribuicaoVersao} não encontrada no catálogo de regras."));
-        }
-
-        if (regra.Tipo != TipoRegra.RegraDistribuicaoVagas)
-        {
-            return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.RegraDistribuicaoTipoInvalido",
-                $"A regra {input.RegraDistribuicaoCodigo}/{input.RegraDistribuicaoVersao} não é do tipo regra_distribuicao_vagas."));
-        }
-
-        Result<ReferenciaRegra?> regraAjusteResult = await ResolverRegraAjusteAsync(
-            input, regraCatalogoReader, cancellationToken).ConfigureAwait(false);
-        if (regraAjusteResult.IsFailure)
-        {
-            return Result<ConfiguracaoDistribuicaoVagas>.Failure(regraAjusteResult.Error!);
-        }
-
-        // ADR-0115 §2.1: o quadro traz um código que não
-        // é modalidade selecionada é reconciliação de IDs crus — Application, não Domain.
-        DomainError? erroQuadroOrfao = input.Quadro
-            .Where(q => !input.ModalidadeIds.Contains(q.ModalidadeId))
-            .Select(q => new DomainError(
-                "ConfiguracaoDistribuicaoVagas.QuadroModalidadeNaoSelecionada",
-                $"A modalidade {q.ModalidadeId} no quadro não está entre as modalidades selecionadas desta oferta."))
-            .FirstOrDefault();
-        if (erroQuadroOrfao is not null)
-        {
-            return Result<ConfiguracaoDistribuicaoVagas>.Failure(erroQuadroOrfao);
-        }
-
-        Dictionary<Guid, int> quadroPorModalidade = input.Quadro.ToDictionary(q => q.ModalidadeId, q => q.Quantidade);
-
-        ReferenciaReservaDemograficaSnapshot? demografica = null;
-        if (input.ReferenciaReservaDemograficaId is { } referenciaId)
-        {
-            ReferenciaReservaDemograficaView? view = await referenciaReservaDemograficaReader
-                .ObterPorIdAsync(referenciaId, cancellationToken)
-                .ConfigureAwait(false);
-            if (view is null)
-            {
-                return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
-                    "ConfiguracaoDistribuicaoVagas.ReferenciaDemograficaNaoEncontrada",
-                    $"Referência de reserva demográfica {referenciaId} não encontrada ou não está mais viva."));
-            }
-
-            Result<ReferenciaReservaDemograficaSnapshot> snapshotResult = ReferenciaReservaDemograficaSnapshot.Criar(
-                view.Id, view.CensoReferencia, view.PpiPercentual, view.QuilombolaPercentual, view.PcdPercentual, view.BaseLegal);
-            if (snapshotResult.IsFailure)
-            {
-                return Result<ConfiguracaoDistribuicaoVagas>.Failure(snapshotResult.Error!);
-            }
-
-            demografica = snapshotResult.Value;
-        }
-
-        List<ModalidadeSelecionada> modalidades = [];
-        foreach (Guid modalidadeId in input.ModalidadeIds)
-        {
-            ModalidadeView? view = await modalidadeReader
-                .ObterPorIdAsync(modalidadeId, cancellationToken)
-                .ConfigureAwait(false);
-            if (view is null)
-            {
-                return Result<ConfiguracaoDistribuicaoVagas>.Failure(new DomainError(
-                    "ConfiguracaoDistribuicaoVagas.ModalidadeNaoEncontrada",
-                    $"Modalidade {modalidadeId} não encontrada ou não está mais viva."));
-            }
-
-            int? quantidadeDeclarada = quadroPorModalidade.TryGetValue(modalidadeId, out int quantidade) ? quantidade : null;
-
-            Result<ModalidadeSelecionada> modalidadeResult = ModalidadeSelecionada.Criar(
-                view.Id,
-                view.Codigo,
-                view.Descricao,
-                NaturezaLegalModalidadeCodigo.FromCodigo(view.NaturezaLegal),
-                ComposicaoVagasModalidadeCodigo.FromCodigo(view.ComposicaoVagas),
-                view.ComposicaoOrigem,
-                RegraRemanejamentoModalidadeCodigo.FromCodigo(view.RegraRemanejamento),
-                view.RemanejamentoDestino,
-                view.RemanejamentoPar,
-                view.RemanejamentoFallback,
-                view.RegraDeAplicabilidade,
-                view.AcaoQuandoIndeferido,
-                view.BaseLegal ?? string.Empty,
-                quantidadeDeclarada);
-
-            if (modalidadeResult.IsFailure)
-            {
-                return Result<ConfiguracaoDistribuicaoVagas>.Failure(modalidadeResult.Error!);
-            }
-
-            modalidades.Add(modalidadeResult.Value!);
-        }
-
-        return ConfiguracaoDistribuicaoVagas.Criar(
-            input.OfertaCursoId,
-            input.VoBase,
-            input.Pr,
-            regra.Referencia(),
-            regraAjusteResult.Value,
-            demografica,
-            modalidades,
-            oferta.VagasAnuaisAutorizadas,
-            ModalidadesAdmitidasDoEsquemaArgs.Extrair(regra),
-            input.ArgsAjuste,
-            oferta.GrupoAreaEnem is { } grupo ? (grupo.Codigo, grupo.Rotulo) : null,
-            ofertaCurso.Value);
-    }
-
     /// <summary>
-    /// Resolve a regra de ajuste (<c>TipoRegra.RegraAjusteDistribuicaoVagas</c>)
-    /// no catálogo, quando informada. Ausência é válida — o Domain decide se é
-    /// obrigatória conforme o ramo (federal exige, institucional não).
+    /// A forma de todas as distribuições do payload, acumulada (ADR-0125) antes de qualquer I/O: a recusa de
+    /// forma vence a de cadastro dentro do bucket 422.
     /// </summary>
-    private static async Task<Result<ReferenciaRegra?>> ResolverRegraAjusteAsync(
-        ConfiguracaoDistribuicaoVagasInput input,
-        IRegraCatalogoReader regraCatalogoReader,
-        CancellationToken cancellationToken)
+    internal static IReadOnlyList<FieldError> ConferirForma(IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> pedidos) =>
+        [.. pedidos.SelectMany((pedido, indice) => ConferenciaDaDistribuicaoDeVagas
+            .ConferirForma(pedido.VoBase, pedido.Pr, pedido.ModalidadeIds.Count)
+            .Select(erro => ComIndice(erro, indice)))];
+
+    internal static async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>> ResolverTodasAsync(
+        IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> pedidos, IRegraCatalogoReader regraCatalogoReader, IOfertaCursoReader ofertaCursoReader,
+        IModalidadeReader modalidadeReader, IReferenciaReservaDemograficaReader referenciaReservaDemograficaReader, CancellationToken cancellationToken)
     {
-        if (input.RegraAjusteCodigo is null)
+        List<ConfiguracaoDistribuicaoVagas> distribuicoes = [];
+        for (int indice = 0; indice < pedidos.Count; indice++)
         {
-            return Result<ReferenciaRegra?>.Success(null);
+            Result<ConfiguracaoDistribuicaoVagas> resultado = await new ResolucaoDaDistribuicao(pedidos[indice], regraCatalogoReader, ofertaCursoReader, modalidadeReader, referenciaReservaDemograficaReader)
+                .ResolverAsync(cancellationToken).ConfigureAwait(false);
+            if (resultado.IsFailure)
+            {
+                return FalhaDoPedido(resultado, indice);
+            }
+
+            distribuicoes.Add(resultado.Value!);
         }
 
-        RegraCatalogo? regraAjuste = await regraCatalogoReader
-            .ObterAsync(input.RegraAjusteCodigo, input.RegraAjusteVersao!, cancellationToken)
-            .ConfigureAwait(false);
-        if (regraAjuste is null)
-        {
-            return Result<ReferenciaRegra?>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.RegraAjusteNaoEncontrada",
-                $"Regra de ajuste {input.RegraAjusteCodigo}/{input.RegraAjusteVersao} não encontrada no catálogo de regras."));
-        }
-
-        if (regraAjuste.Tipo != TipoRegra.RegraAjusteDistribuicaoVagas)
-        {
-            return Result<ReferenciaRegra?>.Failure(new DomainError(
-                "ConfiguracaoDistribuicaoVagas.RegraAjusteTipoInvalido",
-                $"A regra {input.RegraAjusteCodigo}/{input.RegraAjusteVersao} não é do tipo regra_ajuste_distribuicao_vagas."));
-        }
-
-        return Result<ReferenciaRegra?>.Success(regraAjuste.Referencia());
+        return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.Success(distribuicoes);
     }
+
+    private static Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>> FalhaDoPedido(
+        Result<ConfiguracaoDistribuicaoVagas> resultado, int indice) =>
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>.ValidationFailure(
+            [.. resultado.Errors.Select(erro => ComIndice(erro, indice))]);
+
+    private static FieldError ComIndice(FieldError erro, int indice) =>
+        erro.Field is null ? erro : erro with { Field = $"distribuicaoVagas[{indice}].{TraduzirFieldDoDominio(erro.Field)}" };
 }

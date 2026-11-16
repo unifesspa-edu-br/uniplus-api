@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -105,20 +106,15 @@ public sealed class OrdemDasRecusasDoGrafoTests
             itens: null);
 
     private static ConfiguracaoDistribuicaoVagas Oferta(Guid? ofertaCursoOrigemId = null) =>
-        ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: ofertaCursoOrigemId ?? Guid.CreateVersion7(),
-            voBase: 40,
-            pr: 1m,
-            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [
+        ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId ?? Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [
                 ModalidadeSelecionada.Criar(
                     Guid.CreateVersion7(), "AC", null,
                     NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
                     RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                     RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
-            ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+            ] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     private static CriterioDesempate Desempate(int ordem) =>
         CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!;

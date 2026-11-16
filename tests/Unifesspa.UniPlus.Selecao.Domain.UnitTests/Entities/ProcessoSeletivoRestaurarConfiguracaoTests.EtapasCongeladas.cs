@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -111,12 +112,12 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 
         ReferenciaRegra regra = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a');
 
-        ConfiguracaoDistribuicaoVagas ofertaA = ConfiguracaoDistribuicaoVagas.Criar(
-            new Guid("bbbb0000-0000-4000-8000-000000000001"), voBase: 10, pr: 1m, regra,
-            regraAjuste: null, referenciaDemografica: null, [V("RECLASSIFICAR_AC", 2), Ac(8)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
-        ConfiguracaoDistribuicaoVagas ofertaB = ConfiguracaoDistribuicaoVagas.Criar(
-            new Guid("bbbb0000-0000-4000-8000-000000000002"), voBase: 10, pr: 1m, regra,
-            regraAjuste: null, referenciaDemografica: null, [V("RECLASSIFICAR_REGRA_EDITAL", 2), Ac(8)], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+        ConfiguracaoDistribuicaoVagas ofertaA = ConfiguracaoDistribuicaoVagas.Criar(new Guid("bbbb0000-0000-4000-8000-000000000001"),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regra, Modalidades = [V("RECLASSIFICAR_AC", 2), Ac(8)] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
+        ConfiguracaoDistribuicaoVagas ofertaB = ConfiguracaoDistribuicaoVagas.Criar(new Guid("bbbb0000-0000-4000-8000-000000000002"),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regra, Modalidades = [V("RECLASSIFICAR_REGRA_EDITAL", 2), Ac(8)] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
         GrafoConfiguracao invalido = new(
             etapas: [EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Prova", ordem: 1)],
@@ -154,9 +155,9 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
             Guid.CreateVersion7(), "LI_EP", null, NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.SuplementarAoTotal,
             null, RegraRemanejamentoModalidade.SegueCascata, null, null, null, PredicadoDnf.SemClausula, null, "base legal",
             quantidadeDeclarada: 2).Value!;
-        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
-            new Guid("bbbb0000-0000-4000-8000-000000000001"), voBase: 10, pr: 1m, Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-            regraAjuste: null, referenciaDemografica: null, [cotaSemOpcao, ac], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(new Guid("bbbb0000-0000-4000-8000-000000000001"),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [cotaSemOpcao, ac] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
         GrafoConfiguracao invalido = new(
             etapas: [EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Prova", ordem: 1)],
@@ -194,9 +195,9 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
             "AC", RegraRemanejamentoModalidade.Nenhuma, null, null, null,
             RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), null, "base legal",
             quantidadeDeclarada: 2).Value!;
-        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(
-            new Guid("bbbb0000-0000-4000-8000-000000000001"), voBase: 10, pr: 1m, Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-            regraAjuste: null, referenciaDemografica: null, [reservaSemRemanejamento, ac], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(new Guid("bbbb0000-0000-4000-8000-000000000001"),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [reservaSemRemanejamento, ac] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
         GrafoConfiguracao invalido = new(
             etapas: [EtapaCongeladaDeProvaObjetiva(EtapaCongelada, "Prova", ordem: 1)],

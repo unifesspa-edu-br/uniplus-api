@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
@@ -121,10 +122,9 @@ internal static class ProcessoDoEnemPublicadoDeTeste
             null, RegraRemanejamentoModalidade.Nenhuma, null, null, null,
             RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
 
-        return ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId, 40, 1m,
-            ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo),
-            null, null, [modalidade], grupoAreaEnem: grupoAreaEnem, ofertaCurso: ofertaCurso).Value!;
+        return ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId,
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
+            new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = ofertaCurso }).Value!;
     }
 
     private static void Exigir(Result resultado) => resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);

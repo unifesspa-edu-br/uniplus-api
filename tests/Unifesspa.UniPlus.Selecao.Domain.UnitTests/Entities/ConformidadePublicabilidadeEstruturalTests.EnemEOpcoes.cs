@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -62,10 +63,8 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
     public void OfertaSemNomeCongelado()
     {
         ConfiguracaoDistribuicaoVagas nomeada = OfertaAmpla(10, grupoAreaEnem: null);
-        ConfiguracaoDistribuicaoVagas semNome = ConfiguracaoDistribuicaoVagas.Criar(
-            Guid.CreateVersion7(), 5, pr: 1m,
-            Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), regraAjuste: null, referenciaDemografica: null,
-            [Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, 5, null)]).Value!;
+        ConfiguracaoDistribuicaoVagas semNome = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 5, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, 5, null)] }).Value!;
         ProcessoSeletivo processo = ProcessoConforme([nomeada, semNome]);
 
         SoEstesItensVermelhos(processo, "distribuicao_vagas_oferta_sem_nome");

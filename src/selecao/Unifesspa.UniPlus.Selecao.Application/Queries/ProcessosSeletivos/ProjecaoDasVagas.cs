@@ -4,6 +4,7 @@ using System.Text.Json;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ProcessosSeletivos.Vagas;
 using Domain.ValueObjects;
 
 using DTOs;
@@ -26,21 +27,31 @@ internal static class ProjecaoDasVagas
     /// definição que poderia divergir em silêncio.
     /// </summary>
     internal static ConfiguracaoDistribuicaoVagasDto ProjetarDistribuicao(ConfiguracaoDistribuicaoVagas configuracao) => new(
-        configuracao.Id,
-        configuracao.OfertaCursoOrigemId,
-        configuracao.VoBase,
-        configuracao.Pr,
+        configuracao.Id, configuracao.OfertaCursoOrigemId, configuracao.VagasOfertadasBase, configuracao.PercentualDaReservaLegal ?? 0m,
         ProjecaoDoProcessoSeletivo.Referencia(configuracao.RegraDistribuicao),
         configuracao.RegraAjuste is { } regraAjuste ? ProjecaoDoProcessoSeletivo.Referencia(regraAjuste) : null,
         configuracao.ReferenciaDemografica is { } demografica ? ProjetarReferenciaDemografica(demografica) : null,
         configuracao.GrupoAreaEnem is { } grupo ? new GrupoAreaEnemSnapshotDto(grupo.Codigo, grupo.Rotulo) : null,
         [.. configuracao.Modalidades.Select(ProjetarModalidade)],
         [.. configuracao.VagasOfertadas.Select(v => new VagaOfertadaDto(v.Id, v.ModalidadeOrigemId, v.ModalidadeCodigo, v.Quantidade))],
-        configuracao.VrNominal,
-        configuracao.VrFinal,
-        configuracao.Estouro,
-        configuracao.CapadoEmVo,
-        configuracao.TotalPublicado);
+        configuracao.ReservaLegalNominal ?? 0, configuracao.ReservaLegalEfetiva ?? 0, VagasAjustadas(configuracao.Quadro),
+        QuadroLimitadoPelasVagasOfertadas(configuracao.Quadro), configuracao.TotalDeVagasDoEdital);
+
+    // O contrato ainda descreve os dois ramos pelo mesmo par de campos: no ramo da Lei de Cotas, o que a
+    // reserva efetiva passou da nominal; no quadro fixado, o que o ajuste retirou.
+    private static int VagasAjustadas(QuadroDeVagas quadro) => quadro switch
+    {
+        QuadroDeVagasDaLeiDeCotas leiDeCotas => leiDeCotas.ConferenciaDaReservaLegal.ExcedenteSobreAReservaLegal,
+        QuadroDeVagasFixadoNoEdital fixado => fixado.TotalDeVagasRetiradasNoAjuste,
+        _ => 0,
+    };
+
+    private static bool QuadroLimitadoPelasVagasOfertadas(QuadroDeVagas quadro) => quadro switch
+    {
+        QuadroDeVagasDaLeiDeCotas leiDeCotas => leiDeCotas.ConferenciaDaReservaLegal.VagasCortadasPorEscassez > 0,
+        QuadroDeVagasFixadoNoEdital fixado => fixado.TotalDeVagasRetiradasNoAjuste > 0,
+        _ => false,
+    };
 
     private static ReferenciaReservaDemograficaSnapshotDto ProjetarReferenciaDemografica(ReferenciaReservaDemograficaSnapshot demografica) => new(
         demografica.OrigemId,

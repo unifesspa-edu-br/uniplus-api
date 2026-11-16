@@ -2177,8 +2177,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     id = table.Column<Guid>(type: "uuid", nullable: false),
                     processo_seletivo_id = table.Column<Guid>(type: "uuid", nullable: false),
                     oferta_curso_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
-                    vo_base = table.Column<int>(type: "integer", nullable: false),
-                    pr = table.Column<decimal>(type: "numeric(5,4)", precision: 5, scale: 4, nullable: false),
+                    vagas_ofertadas_base = table.Column<int>(type: "integer", nullable: false),
+                    percentual_da_reserva_legal = table.Column<decimal>(type: "numeric(5,4)", precision: 5, scale: 4, nullable: true),
                     regra_distribuicao_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     regra_distribuicao_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
                     regra_distribuicao_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: false),
@@ -2191,23 +2191,29 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     regra_ajuste_codigo = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: true),
                     regra_ajuste_versao = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: true),
                     regra_ajuste_hash = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true),
+                    ajuste_do_quadro = table.Column<string>(type: "jsonb", nullable: true),
                     grupo_area_enem_codigo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Código do grupo de área do ENEM do curso da oferta, sem abreviação e sem acento, congelado por valor do cadastro de cursos na definição da distribuição; casa a oferta com a linha de Pesos por Área. Nulo quando o curso não declara grupo."),
                     grupo_area_enem_rotulo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Rótulo do grupo de área do ENEM do curso da oferta, congelado por valor junto do código na definição da distribuição. Nulo quando o curso não declara grupo."),
                     oferta_curso_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true, comment: "Nome do curso da oferta, congelado por valor do cadastro na definição da distribuição."),
                     oferta_curso_grau = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Grau do curso da oferta, congelado por valor do cadastro na definição da distribuição."),
                     oferta_unidade_ofertante_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true, comment: "Nome da unidade ofertante, congelado por valor do cadastro na definição da distribuição."),
                     oferta_turnos = table.Column<string[]>(type: "text[]", nullable: true, comment: "Turnos que a oferta ocupa (tokens), congelados por valor do cadastro na definição da distribuição."),
-                    vr_nominal = table.Column<int>(type: "integer", nullable: false),
-                    vr_final = table.Column<int>(type: "integer", nullable: false),
-                    estouro = table.Column<int>(type: "integer", nullable: false),
-                    capado_em_vo = table.Column<bool>(type: "boolean", nullable: false),
-                    total_publicado = table.Column<int>(type: "integer", nullable: false),
+                    reserva_legal_nominal = table.Column<int>(type: "integer", nullable: true),
+                    reserva_legal_efetiva = table.Column<int>(type: "integer", nullable: true),
+                    excedente_sobre_reserva_legal = table.Column<int>(type: "integer", nullable: true),
+                    vagas_cortadas_por_escassez = table.Column<int>(type: "integer", nullable: true),
+                    vagas_retiradas_no_ajuste = table.Column<string>(type: "jsonb", nullable: true),
+                    total_de_vagas_do_edital = table.Column<int>(type: "integer", nullable: false),
                     created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
                     updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("pk_configuracoes_de_vagas", x => x.id);
+                    table.CheckConstraint("ck_configuracoes_de_vagas_excedente_sobre_reserva_legal", "excedente_sobre_reserva_legal IS NULL OR excedente_sobre_reserva_legal = GREATEST(0, reserva_legal_efetiva - reserva_legal_nominal)");
+                    table.CheckConstraint("ck_configuracoes_de_vagas_percentual_da_reserva_legal", "percentual_da_reserva_legal IS NULL OR (percentual_da_reserva_legal >= 0.5 AND percentual_da_reserva_legal <= 1)");
+                    table.CheckConstraint("ck_configuracoes_de_vagas_ramo_do_quadro", "reserva_legal_nominal IS NULL OR (vagas_retiradas_no_ajuste IS NULL AND ajuste_do_quadro IS NULL)");
+                    table.CheckConstraint("ck_configuracoes_de_vagas_reserva_legal_completa", "(percentual_da_reserva_legal IS NULL AND reserva_legal_nominal IS NULL AND reserva_legal_efetiva IS NULL AND excedente_sobre_reserva_legal IS NULL AND vagas_cortadas_por_escassez IS NULL) OR (percentual_da_reserva_legal IS NOT NULL AND reserva_legal_nominal IS NOT NULL AND reserva_legal_efetiva IS NOT NULL AND excedente_sobre_reserva_legal IS NOT NULL AND vagas_cortadas_por_escassez IS NOT NULL)");
                     table.ForeignKey(
                         name: "fk_configuracoes_de_vagas_processo_seletivo",
                         column: x => x.processo_seletivo_id,

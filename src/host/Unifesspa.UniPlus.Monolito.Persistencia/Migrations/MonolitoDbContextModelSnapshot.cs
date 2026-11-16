@@ -11764,50 +11764,58 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<bool>("CapadoEmVo")
-                        .HasColumnType("boolean")
-                        .HasColumnName("capado_em_vo");
+                    b.Property<string>("AjusteDoQuadro")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("ajuste_do_quadro");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
-                    b.Property<int>("Estouro")
+                    b.Property<int?>("ExcedenteSobreReservaLegal")
                         .HasColumnType("integer")
-                        .HasColumnName("estouro");
+                        .HasColumnName("excedente_sobre_reserva_legal");
 
                     b.Property<Guid>("OfertaCursoOrigemId")
                         .HasColumnType("uuid")
                         .HasColumnName("oferta_curso_origem_id");
 
-                    b.Property<decimal>("Pr")
+                    b.Property<decimal?>("PercentualDaReservaLegal")
                         .HasPrecision(5, 4)
                         .HasColumnType("numeric(5,4)")
-                        .HasColumnName("pr");
+                        .HasColumnName("percentual_da_reserva_legal");
 
                     b.Property<Guid>("ProcessoSeletivoId")
                         .HasColumnType("uuid")
                         .HasColumnName("processo_seletivo_id");
 
-                    b.Property<int>("TotalPublicado")
+                    b.Property<int?>("ReservaLegalEfetiva")
                         .HasColumnType("integer")
-                        .HasColumnName("total_publicado");
+                        .HasColumnName("reserva_legal_efetiva");
+
+                    b.Property<int?>("ReservaLegalNominal")
+                        .HasColumnType("integer")
+                        .HasColumnName("reserva_legal_nominal");
+
+                    b.Property<int>("TotalDeVagasDoEdital")
+                        .HasColumnType("integer")
+                        .HasColumnName("total_de_vagas_do_edital");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<int>("VoBase")
+                    b.Property<int?>("VagasCortadasPorEscassez")
                         .HasColumnType("integer")
-                        .HasColumnName("vo_base");
+                        .HasColumnName("vagas_cortadas_por_escassez");
 
-                    b.Property<int>("VrFinal")
+                    b.Property<int>("VagasOfertadasBase")
                         .HasColumnType("integer")
-                        .HasColumnName("vr_final");
+                        .HasColumnName("vagas_ofertadas_base");
 
-                    b.Property<int>("VrNominal")
-                        .HasColumnType("integer")
-                        .HasColumnName("vr_nominal");
+                    b.Property<string>("VagasRetiradasNoAjuste")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("vagas_retiradas_no_ajuste");
 
                     b.HasKey("Id")
                         .HasName("pk_configuracoes_de_vagas");
@@ -11816,7 +11824,16 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsUnique()
                         .HasDatabaseName("ux_configuracoes_de_vagas_processo_oferta");
 
-                    b.ToTable("configuracoes_de_vagas", "selecao");
+                    b.ToTable("configuracoes_de_vagas", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_configuracoes_de_vagas_excedente_sobre_reserva_legal", "excedente_sobre_reserva_legal IS NULL OR excedente_sobre_reserva_legal = GREATEST(0, reserva_legal_efetiva - reserva_legal_nominal)");
+
+                            t.HasCheckConstraint("ck_configuracoes_de_vagas_percentual_da_reserva_legal", "percentual_da_reserva_legal IS NULL OR (percentual_da_reserva_legal >= 0.5 AND percentual_da_reserva_legal <= 1)");
+
+                            t.HasCheckConstraint("ck_configuracoes_de_vagas_ramo_do_quadro", "reserva_legal_nominal IS NULL OR (vagas_retiradas_no_ajuste IS NULL AND ajuste_do_quadro IS NULL)");
+
+                            t.HasCheckConstraint("ck_configuracoes_de_vagas_reserva_legal_completa", "(percentual_da_reserva_legal IS NULL AND reserva_legal_nominal IS NULL AND reserva_legal_efetiva IS NULL AND excedente_sobre_reserva_legal IS NULL AND vagas_cortadas_por_escassez IS NULL) OR (percentual_da_reserva_legal IS NOT NULL AND reserva_legal_nominal IS NOT NULL AND reserva_legal_efetiva IS NOT NULL AND excedente_sobre_reserva_legal IS NOT NULL AND vagas_cortadas_por_escassez IS NOT NULL)");
+                        });
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.ConfiguracaoDivulgacao", b =>

@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -26,11 +27,9 @@ internal static class OfertasDeTeste
         DistribuicaoDoCurso(ofertaCursoId, "Medicina", codigos);
 
     public static ConfiguracaoDistribuicaoVagas DistribuicaoDoCurso(Guid ofertaCursoId, string cursoNome, params string[] codigos) =>
-        ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoId, voBase: 10 * codigos.Length, pr: 1m,
-            ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)),
-            regraAjuste: null, referenciaDemografica: null, [.. codigos.Select(Modalidade)],
-            ofertaCurso: OfertaCursoSnapshot.Criar(cursoNome, "Bacharelado", "Campus Universitário de Marabá", ["MATUTINO"]).Value!).Value!;
+        ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoId,
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10 * codigos.Length, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = [.. codigos.Select(Modalidade)] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoSnapshot.Criar(cursoNome, "Bacharelado", "Campus Universitário de Marabá", ["MATUTINO"]).Value! }).Value!;
 
     /// <summary>O mesmo grafo, com a distribuição de vagas dada no lugar da que ele tinha.</summary>
     public static GrafoConfiguracao ComDistribuicao(GrafoConfiguracao grafo, params ConfiguracaoDistribuicaoVagas[] distribuicao) =>

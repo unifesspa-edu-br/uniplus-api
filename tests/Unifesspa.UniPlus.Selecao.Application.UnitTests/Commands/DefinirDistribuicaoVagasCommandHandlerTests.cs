@@ -123,7 +123,7 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         processo.DistribuicaoVagas.Should().ContainSingle();
-        processo.DistribuicaoVagas.Single().VoBase.Should().Be(60);
+        processo.DistribuicaoVagas.Single().VagasOfertadasBase.Should().Be(60);
         processo.DistribuicaoVagas.Single().VagasOfertadas.Should().ContainSingle(v => v.Quantidade == 60);
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
 
@@ -333,8 +333,8 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         ConfiguracaoDistribuicaoVagasDto dto = result.Value!.DistribuicaoVagas.Should().ContainSingle().Subject;
         dto.Quadro.Should().HaveCount(9);
         dto.ReferenciaDemografica.Should().NotBeNull();
-        dto.VrFinal.Should().Be(processo.DistribuicaoVagas.Single().VrFinal);
-        dto.TotalPublicado.Should().Be(processo.DistribuicaoVagas.Single().TotalPublicado);
+        dto.VrFinal.Should().Be(processo.DistribuicaoVagas.Single().ReservaLegalEfetiva);
+        dto.TotalPublicado.Should().Be(processo.DistribuicaoVagas.Single().TotalDeVagasDoEdital);
         int ac = dto.Quadro.Single(v => v.ModalidadeCodigo == ModalidadesFederaisLei12711.Ac).Quantidade;
         (dto.VrFinal + ac).Should().Be(50);
     }
@@ -504,7 +504,8 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             mocks.ReferenciaReservaDemograficaReader, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
-        result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["distribuicaoVagas[0].modalidadeIds"]);
+        result.Errors.Should().Contain(e => e.Error.Code == "ConfiguracaoDistribuicaoVagas.ModalidadeDuplicada");
+        result.Errors.Select(e => e.Field).Should().OnlyContain(campo => campo == "distribuicaoVagas[0].modalidadeIds");
     }
 
     [Fact(DisplayName = "ADR-0125: ModalidadeIds vazio recusa com ModalidadesVazias na 1ª passada, mesmo com oferta/regra inexistentes")]

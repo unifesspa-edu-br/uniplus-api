@@ -40,34 +40,48 @@ public static class ConferenciaDaDistribuicaoDeVagas
         ];
     }
 
+    /// <summary>
+    /// A forma que não depende de modalidade já resolvida nem da regra: as vagas ofertadas base, o percentual
+    /// quando informado e a contagem das modalidades. O handler a confere de todas as ofertas antes de resolver
+    /// qualquer cadastro, para que a recusa de forma não perca para o I/O.
+    /// </summary>
+    public static IReadOnlyList<FieldError> ConferirForma(
+        int vagasOfertadasBase, decimal? percentualDaReservaLegal, int quantidadeDeModalidades) =>
+        [.. Presentes(
+            VagasOfertadasBaseInvalidas(vagasOfertadasBase),
+            PercentualForaDoLimite(percentualDaReservaLegal),
+            ModalidadesAusentes(quantidadeDeModalidades))];
+
     private static IEnumerable<FieldError> RecusasDeForma(DistribuicaoDeVagasDeclarada declarada) =>
         Presentes(
-            VagasOfertadasBaseInvalidas(declarada),
+            VagasOfertadasBaseInvalidas(declarada.VagasOfertadasBase),
             PercentualInvalido(declarada),
-            ModalidadesAusentes(declarada.Modalidades),
+            ModalidadesAusentes(declarada.Modalidades.Count),
             ModalidadesRepetidas(declarada.Modalidades));
 
-    private static FieldError? VagasOfertadasBaseInvalidas(DistribuicaoDeVagasDeclarada declarada) =>
-        declarada.VagasOfertadasBase <= 0
+    private static FieldError? VagasOfertadasBaseInvalidas(int vagasOfertadasBase) =>
+        vagasOfertadasBase <= 0
             ? Recusa("vagasOfertadasBase", DistribuicaoDeVagasErrorCodes.VagasOfertadasBaseInvalido,
                 "As vagas ofertadas base devem ser maior que zero.")
             : null;
 
     // O percentual é da Lei de Cotas: lá é obrigatório; no quadro fixado no edital não se usa.
-    private static FieldError? PercentualInvalido(DistribuicaoDeVagasDeclarada declarada)
-    {
-        bool foraDoLimite = declarada.PercentualDaReservaLegal is { } percentual
-            ? percentual is < PercentualMinimoDaReservaLegal or > PercentualMaximoDaReservaLegal
-            : RegraDistribuicaoVagasCodigo.EhRamoFederal(declarada.RegraDeDistribuicao.Codigo);
+    private static FieldError? PercentualInvalido(DistribuicaoDeVagasDeclarada declarada) =>
+        declarada.PercentualDaReservaLegal is null && RegraDistribuicaoVagasCodigo.EhRamoFederal(declarada.RegraDeDistribuicao.Codigo)
+            ? RecusaDoPercentual()
+            : PercentualForaDoLimite(declarada.PercentualDaReservaLegal);
 
-        return foraDoLimite
-            ? Recusa("percentualDaReservaLegal", DistribuicaoDeVagasErrorCodes.PercentualDaReservaLegalForaDoLimite,
-                $"O percentual da reserva legal deve estar entre {PercentualMinimoDaReservaLegal:0.0} e {PercentualMaximoDaReservaLegal:0.0} (art. 10, II).")
+    private static FieldError? PercentualForaDoLimite(decimal? percentual) =>
+        percentual is < PercentualMinimoDaReservaLegal or > PercentualMaximoDaReservaLegal
+            ? RecusaDoPercentual()
             : null;
-    }
 
-    private static FieldError? ModalidadesAusentes(IReadOnlyList<ModalidadeSelecionada> modalidades) =>
-        modalidades.Count == 0
+    private static FieldError RecusaDoPercentual() =>
+        Recusa("percentualDaReservaLegal", DistribuicaoDeVagasErrorCodes.PercentualDaReservaLegalForaDoLimite,
+            $"O percentual da reserva legal deve estar entre {PercentualMinimoDaReservaLegal:0.0} e {PercentualMaximoDaReservaLegal:0.0} (art. 10, II).");
+
+    private static FieldError? ModalidadesAusentes(int quantidadeDeModalidades) =>
+        quantidadeDeModalidades == 0
             ? Recusa("modalidades", DistribuicaoDeVagasErrorCodes.ModalidadesVazias,
                 "A oferta deve ter ao menos uma modalidade selecionada.")
             : null;

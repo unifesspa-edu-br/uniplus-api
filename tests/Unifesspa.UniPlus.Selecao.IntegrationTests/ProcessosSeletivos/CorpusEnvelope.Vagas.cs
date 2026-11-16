@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -109,21 +110,15 @@ internal static partial class CorpusEnvelope
             sufixo++;
         }
 
-        return ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: ofertaCursoOrigemId ?? OfertaMedicina,
-            voBase: 60,
-            pr: 0.7500m,
-            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Lei12711, '7'),
-            regraAjuste: Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, '0'),
-            referenciaDemografica: ReferenciaReservaDemograficaSnapshot.Criar(
+        return ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId ?? OfertaMedicina,
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 60, PercentualDaReservaLegal = 0.7500m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711, '7'), RegraDeAjuste = Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, '0'), ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(
                 ReferenciaDemografica,
                 censoReferencia: "Censo IBGE 2022",
                 ppiPercentual: 78.55m,
                 quilombolaPercentual: 1.20m,
                 pcdPercentual: 8.40m,
-                baseLegal: "Lei 12.711/2012 art. 3º").Value!,
-            modalidades: modalidades,
-            grupoAreaEnem: grupoAreaEnem ?? ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"), ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+                baseLegal: "Lei 12.711/2012 art. 3º").Value!, Modalidades = modalidades },
+            new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem ?? ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"), OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
     }
 
     /// <summary>
@@ -136,14 +131,8 @@ internal static partial class CorpusEnvelope
     /// grafos mínimos não, e mantêm a oferta sem grupo.
     /// </param>
     private static ConfiguracaoDistribuicaoVagas DistribuicaoInstitucional((string? Codigo, string? Rotulo)? grupoAreaEnem = null) =>
-        ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: OfertaDireito,
-            voBase: 40,
-            pr: 0.5000m,
-            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, '8'),
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [
+        ConfiguracaoDistribuicaoVagas.Criar(OfertaDireito,
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 0.5000m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, '8'), Modalidades = [
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000001"), "AC", null,
                     NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
@@ -164,6 +153,6 @@ internal static partial class CorpusEnvelope
                     NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade, "AC",
                     RegraRemanejamentoModalidade.Cruzado, null, "IND", "AC",
                     RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
-            ],
-            grupoAreaEnem: grupoAreaEnem, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+            ] },
+            new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 }

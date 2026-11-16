@@ -39,7 +39,7 @@ public static class MontagemDoQuadroDeVagas
 
     private static Result<QuadroDeVagas> MontarDaLeiDeCotas(DistribuicaoDeVagasDeclarada declarada)
     {
-        Result<QuadroVagasCalculado> calculo = CalculadoraQuadroVagasLei12711.Calcular(
+        Result<QuadroDeVagasDaLeiDeCotas> calculo = CalculadoraQuadroVagasLei12711.Calcular(
             declarada.VagasOfertadasBase,
             declarada.PercentualDaReservaLegal!.Value,
             declarada.ReferenciaDemografica!,
@@ -58,15 +58,15 @@ public static class MontagemDoQuadroDeVagas
             .ToDictionary(static m => m.Codigo, static m => m.QuantidadeDeclarada!.Value, StringComparer.Ordinal);
 
     private static Result<QuadroDeVagas> VagasDoQuadroCalculado(
-        IReadOnlyList<ModalidadeSelecionada> modalidades, QuadroVagasCalculado calculado) =>
-        modalidades.Select(static m => m.Codigo).FirstOrDefault(c => !calculado.Quadro.ContainsKey(c)) is { } ausente
+        IReadOnlyList<ModalidadeSelecionada> modalidades, QuadroDeVagasDaLeiDeCotas calculado) =>
+        modalidades.Select(static m => m.Codigo).FirstOrDefault(c => calculado.Vagas.All(v => v.ModalidadeCodigo != c)) is { } ausente
             ? Result<QuadroDeVagas>.Failure(new DomainError(
                 DistribuicaoDeVagasErrorCodes.QuadroModalidadeAusente,
                 $"A modalidade {ausente} está selecionada mas não aparece no quadro calculado."))
-            : Result<QuadroDeVagas>.Success(new QuadroDeVagasDaLeiDeCotas(
-                [.. modalidades.Select(m => new VagasDaModalidade(m.Codigo, calculado.Quadro[m.Codigo]))],
-                calculado.TotalPublicado,
-                new ConferenciaDaReservaLegal(calculado.VrNominal, calculado.VrFinal, calculado.VagasCortadasPorEscassez)));
+            : Result<QuadroDeVagas>.Success(calculado with
+            {
+                Vagas = [.. modalidades.Select(m => new VagasDaModalidade(m.Codigo, calculado.QuantidadeDe(m.Codigo)))],
+            });
 
     // As quantidades dividem o total da oferta; não o ampliam nem o deixam incompleto. Faltar não tem
     // motor: acrescer seria o sistema criar vaga que ninguém autorizou, e a quantidade de vagas do

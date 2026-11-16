@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -32,8 +33,10 @@ internal static class SerializacaoDasVagas
             array.Add(new JsonObject
             {
                 ["ofertaCursoOrigemId"] = configuracao.OfertaCursoOrigemId,
-                ["voBase"] = configuracao.VoBase,
-                ["pr"] = HashCanonicalComputer.SerializeDecimalCanonical(configuracao.Pr, EscritaCanonica.EscalaPadrao),
+                ["voBase"] = configuracao.VagasOfertadasBase,
+                ["pr"] = configuracao.PercentualDaReservaLegal is { } percentual
+                    ? HashCanonicalComputer.SerializeDecimalCanonical(percentual, EscritaCanonica.EscalaPadrao)
+                    : null,
                 ["regraDistribuicao"] = EscritaCanonica.SerializarReferenciaRegra(configuracao.RegraDistribuicao),
                 ["regraAjuste"] = configuracao.RegraAjuste is { } regraAjuste ? EscritaCanonica.SerializarReferenciaRegra(regraAjuste) : null,
                 ["referenciaDemografica"] = configuracao.ReferenciaDemografica is { } referencia
@@ -55,16 +58,32 @@ internal static class SerializacaoDasVagas
             {
                 ["ofertaCursoOrigemId"] = configuracao.OfertaCursoOrigemId,
                 ["quadro"] = SerializarQuadro(configuracao),
-                ["vrNominal"] = configuracao.VrNominal,
-                ["vrFinal"] = configuracao.VrFinal,
-                ["estouro"] = configuracao.Estouro,
-                ["capadoEmVo"] = configuracao.CapadoEmVo,
-                ["totalPublicado"] = configuracao.TotalPublicado,
+                ["vrNominal"] = configuracao.ReservaLegalNominal ?? 0,
+                ["vrFinal"] = configuracao.ReservaLegalEfetiva ?? 0,
+                ["estouro"] = VagasAjustadas(configuracao.Quadro),
+                ["capadoEmVo"] = QuadroLimitadoPelasVagasOfertadas(configuracao.Quadro),
+                ["totalPublicado"] = configuracao.TotalDeVagasDoEdital,
             });
         }
 
         return array;
     }
+
+    // O envelope ainda descreve os dois ramos pelo mesmo conjunto de campos: no ramo da Lei de Cotas, o que a
+    // reserva efetiva passou da nominal e a escassez; no quadro fixado, o que o ajuste retirou.
+    private static int VagasAjustadas(QuadroDeVagas quadro) => quadro switch
+    {
+        QuadroDeVagasDaLeiDeCotas leiDeCotas => leiDeCotas.ConferenciaDaReservaLegal.ExcedenteSobreAReservaLegal,
+        QuadroDeVagasFixadoNoEdital fixado => fixado.TotalDeVagasRetiradasNoAjuste,
+        _ => 0,
+    };
+
+    private static bool QuadroLimitadoPelasVagasOfertadas(QuadroDeVagas quadro) => quadro switch
+    {
+        QuadroDeVagasDaLeiDeCotas leiDeCotas => leiDeCotas.ConferenciaDaReservaLegal.VagasCortadasPorEscassez > 0,
+        QuadroDeVagasFixadoNoEdital fixado => fixado.TotalDeVagasRetiradasNoAjuste > 0,
+        _ => false,
+    };
 
     private static JsonArray SerializarQuadro(ConfiguracaoDistribuicaoVagas configuracao) =>
         new([.. configuracao.VagasOfertadas

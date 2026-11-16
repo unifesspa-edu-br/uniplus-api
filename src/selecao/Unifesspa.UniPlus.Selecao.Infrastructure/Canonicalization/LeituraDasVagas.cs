@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -180,7 +181,7 @@ internal static class LeituraDasVagas
 
         Guid ofertaId = leitor.Identificador(item, "ofertaCursoOrigemId", path);
         int voBase = leitor.Inteiro(item, "voBase", path);
-        decimal pr = leitor.Decimal(item, "pr", EscritaCanonica.EscalaPadrao, path, LimitesDoEnvelope.PrecisaoPr);
+        decimal? pr = leitor.DecimalOpcional(item, "pr", EscritaCanonica.EscalaPadrao, path, LimitesDoEnvelope.PrecisaoPr);
 
         // O rol deriva do catálogo de regras, não de literais: uma regra publicada sob qualquer código
         // do catálogo tem de reidratar, e uma lista escrita à mão deixaria de fora a que não a acompanhasse.
@@ -204,10 +205,7 @@ internal static class LeituraDasVagas
         foreach (InsumoDaDistribuicao insumo in insumos)
         {
             Result<ConfiguracaoDistribuicaoVagas> configuracao = ConfiguracaoDistribuicaoVagas.Criar(
-                insumo.Oferta, insumo.VoBase, insumo.Pr, insumo.Regra, insumo.RegraAjuste, insumo.Demografica, modalidadesPorOferta[insumo.Oferta],
-                modalidadesAdmitidas: RegraDistribuicaoVagasCodigo.RolFechado(insumo.Regra.Codigo),
-                grupoAreaEnem: insumo.GrupoAreaEnem,
-                ofertaCurso: nomePorOferta[insumo.Oferta]);
+                insumo.Oferta, insumo.Declarada(modalidadesPorOferta[insumo.Oferta]), insumo.FatosDoCadastro(nomePorOferta[insumo.Oferta]));
             if (configuracao.IsFailure)
             {
                 return leitor.Propagar<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>(configuracao.Error!) ?? [];
@@ -224,11 +222,30 @@ internal static class LeituraDasVagas
     private readonly record struct InsumoDaDistribuicao(
         Guid Oferta,
         int VoBase,
-        decimal Pr,
+        decimal? Pr,
         ReferenciaRegra Regra,
         ReferenciaRegra? RegraAjuste,
         ReferenciaReservaDemograficaSnapshot? Demografica,
-        (string? Codigo, string? Rotulo)? GrupoAreaEnem);
+        (string? Codigo, string? Rotulo)? GrupoAreaEnem)
+    {
+        internal DistribuicaoDeVagasDeclarada Declarada(IReadOnlyList<ModalidadeSelecionada> modalidades) => new()
+        {
+            RegraDeDistribuicao = Regra,
+            VagasOfertadasBase = VoBase,
+            PercentualDaReservaLegal = Pr,
+            ReferenciaDemografica = Demografica,
+            RegraDeAjuste = RegraAjuste,
+            Modalidades = modalidades,
+        };
+
+        // O rol deriva do catálogo de regras: a leitura confere o que a regra publicada admitia.
+        internal FatosDaOfertaNoCadastro FatosDoCadastro(OfertaCursoSnapshot nomeDaOferta) => new()
+        {
+            ModalidadesAdmitidas = RegraDistribuicaoVagasCodigo.RolFechado(Regra.Codigo),
+            GrupoAreaEnem = GrupoAreaEnem,
+            OfertaCurso = nomeDaOferta,
+        };
+    }
 
     /// <summary>
     /// Cada oferta de curso com o que a nomeia para o candidato, congelado na definição da

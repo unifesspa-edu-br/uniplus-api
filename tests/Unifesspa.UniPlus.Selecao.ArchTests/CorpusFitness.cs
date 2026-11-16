@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -45,20 +46,15 @@ internal static class CorpusFitness
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
 
         processo.DefinirDistribuicaoVagas([
-            ConfiguracaoDistribuicaoVagas.Criar(
-                ofertaCursoOrigemId: new Guid("11111111-1111-1111-1111-111111111111"),
-                voBase: 40,
-                pr: 1m,
-                regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-                regraAjuste: null,
-                referenciaDemografica: null,
-                modalidades: [
+            ConfiguracaoDistribuicaoVagas.Criar(new Guid("11111111-1111-1111-1111-111111111111"),
+                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [
                     ModalidadeSelecionada.Criar(
                         new Guid("22222222-2222-2222-2222-222222222222"), "AC", null,
                         NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
                         RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                         RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
-                ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!,
+                ] },
+                new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!,
         ], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(

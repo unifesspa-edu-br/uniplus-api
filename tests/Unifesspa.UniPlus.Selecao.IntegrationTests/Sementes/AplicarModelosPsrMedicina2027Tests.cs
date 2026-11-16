@@ -24,6 +24,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -179,16 +180,13 @@ public sealed class AplicarModelosPsrMedicina2027Tests
     private static void ComBonusRegionalEAtendimento(ProcessoSeletivo processo, bool ofertarAtendimento)
     {
         Result distribuida = processo.DefinirDistribuicaoVagas(
-            [ConfiguracaoDistribuicaoVagas.Criar(
-                Guid.CreateVersion7(), 40, 1m,
-                ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)),
-                null, null,
-                [
+            [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = [
                     Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula, 30),
                     Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, PredicadoDnf.CriarDeCondicoesAgrupadas(
                         [(0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!)]).Value!, 10),
-                ],
-                ofertaCurso: Testes.Compartilhado.OfertaCursoDeTeste.Medicina).Value!],
+                ] },
+                new FatosDaOfertaNoCadastro { OfertaCurso = Testes.Compartilhado.OfertaCursoDeTeste.Medicina }).Value!],
             Testes.Compartilhado.FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
         distribuida.IsSuccess.Should().BeTrue(distribuida.Error?.Message);
 

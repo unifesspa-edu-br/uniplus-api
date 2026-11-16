@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -264,20 +265,15 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         bancasRequeridas: []).Value!;
 
     private static ConfiguracaoDistribuicaoVagas Distribuicao() =>
-        ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoOrigemId: new Guid("bbbb0000-0000-4000-8000-000000000001"),
-            voBase: 40,
-            pr: 1m,
-            regraDistribuicao: Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-            regraAjuste: null,
-            referenciaDemografica: null,
-            modalidades: [
+        ConfiguracaoDistribuicaoVagas.Criar(new Guid("bbbb0000-0000-4000-8000-000000000001"),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [
                 ModalidadeSelecionada.Criar(
                     new Guid("cccc0000-0000-4000-8000-000000000001"), "AC", null,
                     NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
                     RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                     RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
-            ], ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+            ] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     private static ConfiguracaoClassificacao Classificacao(IReadOnlyList<RegraEliminacao> eliminacoes) =>
         ConfiguracaoClassificacao.Criar(
@@ -317,7 +313,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         StatusProcesso Status,
         IReadOnlyList<(Guid Id, string Nome, decimal? Peso, int? Ordem)> Etapas,
         int Condicoes,
-        IReadOnlyList<(Guid Oferta, int VoBase, decimal Pr, int Modalidades)> Distribuicao,
+        IReadOnlyList<(Guid Oferta, int VagasOfertadasBase, decimal? PercentualDaReservaLegal, int Modalidades)> Distribuicao,
         bool TemBonus,
         IReadOnlyList<int> OrdensDesempate,
         string RegraCalculo,
@@ -328,7 +324,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
             [.. processo.Etapas.Select(e => (e.Id, e.Nome, e.Peso, e.Ordem)).OrderBy(e => e.Id)],
             processo.AtendimentoEspecializado!.Condicoes.Count,
             [.. processo.DistribuicaoVagas
-                .Select(d => (d.OfertaCursoOrigemId, d.VoBase, d.Pr, d.Modalidades.Count))
+                .Select(d => (d.OfertaCursoOrigemId, d.VagasOfertadasBase, d.PercentualDaReservaLegal, d.Modalidades.Count))
                 .OrderBy(d => d.OfertaCursoOrigemId)],
             processo.BonusRegional is not null,
             [.. processo.CriteriosDesempate.Select(c => c.Ordem).Order()],

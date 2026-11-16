@@ -112,10 +112,9 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
     }
 
     private static ConfiguracaoDistribuicaoVagas Oferta(Guid ofertaCursoId, int voBase, IReadOnlyList<ModalidadeSelecionada> modalidades) =>
-        ConfiguracaoDistribuicaoVagas.Criar(
-            ofertaCursoId, voBase, pr: 1m,
-            ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)),
-            regraAjuste: null, referenciaDemografica: null, modalidades, ofertaCurso: OfertaCursoDeTeste.Medicina).Value!;
+        ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoId,
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = voBase, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     private static ModalidadeSelecionada Ac(int quantidade) => ModalidadeSelecionada.Criar(
         Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
