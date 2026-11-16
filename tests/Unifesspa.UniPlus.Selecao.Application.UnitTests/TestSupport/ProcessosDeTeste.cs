@@ -10,7 +10,7 @@ internal static class ProcessosDeTeste
 {
     public static ProcessoSeletivo SemConfiguracao(string nome, OrigemCandidatos origem) =>
         ProcessoSeletivo.Criar(
-            nome, TipoProcesso.SiSU, origem, Guid.NewGuid(),
+            nome, TiposDeProcessoDeTeste.SiSU, origem, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 }

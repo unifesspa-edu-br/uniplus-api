@@ -82,7 +82,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
     private static ProcessoSeletivo NovoProcesso(string nome) =>
         ProcessoSeletivo.Criar(
             $"{nome} {Guid.CreateVersion7()}",
-            TipoProcesso.SiSU,
+            TiposDeProcessoDeTeste.SiSU,
             OrigemCandidatos.InscricaoPropria,
             Guid.CreateVersion7(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,

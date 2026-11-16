@@ -86,7 +86,7 @@ public sealed class DesativacaoNoCatalogoTests
     public void Congelamento_ValoresAtivosMaisOsCitados()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Desativação", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Desativação", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirItens(

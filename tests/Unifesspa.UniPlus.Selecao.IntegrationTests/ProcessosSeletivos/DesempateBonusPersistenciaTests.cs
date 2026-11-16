@@ -44,7 +44,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     [Fact(DisplayName = "Persiste e recarrega os 5 critérios de desempate (args polimórficos) e o bônus regional")]
     public async Task PersisteERecarrega_DesempateEBonus()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Convênios 2026", TipoProcesso.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Convênios 2026", TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
 
@@ -117,7 +117,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     [Fact(DisplayName = "Reconfigurar desempate+bônus sobre o agregado tracked insere os filhos novos, não falha em UPDATE")]
     public async Task ReconfigurarDesempateBonusSobreAgregadoTracked_InsereFilhos()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026 — Reconfig", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026 — Reconfig", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirEtapas([EtapaProcesso.Criar("Entrevista", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1, faseCodigo: "RESULTADO_FINAL").Value!], PrecondicaoIfMatch.Ausente);
         processo.DefinirCriteriosDesempate(
             [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, "a"), new ArgsDesempateMaiorIdade()).Value!], PrecondicaoIfMatch.Ausente);
@@ -171,7 +171,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     [Fact(DisplayName = "Atualizar dados da MESMA etapa (Id preservado) mantém o desempate referenciando-a (INV-B6)")]
     public async Task AtualizarEtapaMesmoId_MantemDesempateReferenciado()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSVR", TipoProcesso.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSVR", TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         EtapaProcesso etapa = EtapaProcesso.Criar("Redação", CaraterEtapa.Classificatoria, TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, peso: 1m, ordem: 1).Value!;
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
         processo.DefinirCriteriosDesempate(

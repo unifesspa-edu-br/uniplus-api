@@ -38,7 +38,7 @@ public sealed class AplicarModeloFormularioCommandHandlerTests
     private readonly IModeloDeDocumentoRepository _modelosDeDocumento = Substitute.For<IModeloDeDocumentoRepository>();
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
     private readonly ProcessoSeletivo _processo = ProcessoSeletivo.Criar(
-        "PS Modelo", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
+        "PS Modelo", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
         LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 

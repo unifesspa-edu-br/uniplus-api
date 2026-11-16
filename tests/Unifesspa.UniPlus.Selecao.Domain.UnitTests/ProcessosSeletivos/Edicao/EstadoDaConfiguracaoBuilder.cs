@@ -18,7 +18,7 @@ internal sealed class EstadoDaConfiguracaoBuilder
 
     internal static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(
         "PS 2026 — SiSU",
-        TipoProcesso.SiSU,
+        TiposDeProcessoDeTeste.SiSU,
         OrigemCandidatos.InscricaoPropria,
         Guid.NewGuid(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,

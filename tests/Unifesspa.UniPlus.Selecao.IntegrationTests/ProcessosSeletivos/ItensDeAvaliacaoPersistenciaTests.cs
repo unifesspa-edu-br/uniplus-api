@@ -37,7 +37,7 @@ public sealed class ItensDeAvaliacaoPersistenciaTests(ProcessoSeletivoDbFixture 
         await using (UniPlusDbContext escrita = fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-                $"Certame de itens {Guid.CreateVersion7()}", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
+                $"Certame de itens {Guid.CreateVersion7()}", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
                 UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
                 LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
             EtapaProcesso etapa = Entrevista(

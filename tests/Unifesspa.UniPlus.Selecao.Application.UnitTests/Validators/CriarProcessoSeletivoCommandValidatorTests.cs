@@ -7,6 +7,7 @@ using FluentValidation.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Validators.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class CriarProcessoSeletivoCommandValidatorTests
 {
@@ -16,7 +17,7 @@ public sealed class CriarProcessoSeletivoCommandValidatorTests
     public void Aceita_ComandoValido()
     {
         ValidationResult result = new CriarProcessoSeletivoCommandValidator()
-            .Validate(new CriarProcessoSeletivoCommand("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"));
+            .Validate(new CriarProcessoSeletivoCommand("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"));
 
         result.IsValid.Should().BeTrue();
     }
@@ -25,7 +26,7 @@ public sealed class CriarProcessoSeletivoCommandValidatorTests
     public void Rejeita_NomeVazio()
     {
         ValidationResult result = new CriarProcessoSeletivoCommandValidator()
-            .Validate(new CriarProcessoSeletivoCommand(string.Empty, TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"));
+            .Validate(new CriarProcessoSeletivoCommand(string.Empty, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().ContainSingle(e => e.PropertyName == "Nome");
@@ -35,7 +36,7 @@ public sealed class CriarProcessoSeletivoCommandValidatorTests
     public void Rejeita_TipoNenhum()
     {
         ValidationResult result = new CriarProcessoSeletivoCommandValidator()
-            .Validate(new CriarProcessoSeletivoCommand("PS 2026", TipoProcesso.Nenhum, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"));
+            .Validate(new CriarProcessoSeletivoCommand("PS 2026", TiposDeProcessoDeTeste.Nenhum, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "TipoProcessoOrigemId");
@@ -45,7 +46,7 @@ public sealed class CriarProcessoSeletivoCommandValidatorTests
     public void Rejeita_OrigemCandidatosNenhuma()
     {
         ValidationResult result = new CriarProcessoSeletivoCommandValidator()
-            .Validate(new CriarProcessoSeletivoCommand("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.Nenhuma, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"));
+            .Validate(new CriarProcessoSeletivoCommand("PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.Nenhuma, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "OrigemCandidatos");
@@ -55,7 +56,7 @@ public sealed class CriarProcessoSeletivoCommandValidatorTests
     public void Rejeita_UnidadeAdministradoraOrigemIdVazio()
     {
         ValidationResult result = new CriarProcessoSeletivoCommandValidator()
-            .Validate(new CriarProcessoSeletivoCommand("PS 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.Empty, "1504208", "Marabá", "PA", "psiq-2026"));
+            .Validate(new CriarProcessoSeletivoCommand("PS 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.Empty, "1504208", "Marabá", "PA", "psiq-2026"));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "UnidadeAdministradoraOrigemId");

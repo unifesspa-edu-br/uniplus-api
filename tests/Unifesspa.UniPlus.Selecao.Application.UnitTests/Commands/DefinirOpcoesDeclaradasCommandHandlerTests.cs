@@ -27,7 +27,7 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
     public async Task Handle_FonteQueNaoEhDoProcesso_Recusa(string? fonte, string binding)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Opções", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
@@ -50,7 +50,7 @@ public sealed class DefinirOpcoesDeclaradasCommandHandlerTests
     public async Task Handle_OpcaoCitadaPeloAgregado_Recusa()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Opções", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirOpcoesDeclaradas(

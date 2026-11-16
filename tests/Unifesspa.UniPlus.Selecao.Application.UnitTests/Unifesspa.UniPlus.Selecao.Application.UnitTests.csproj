@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <Compile Include="../Shared/DecisaoDeAcessoDeTeste.cs" Link="DecisaoDeAcessoDeTeste.cs" />
+    <Compile Include="../Shared/TiposDeProcessoDeTeste.cs" Link="TiposDeProcessoDeTeste.cs" />
     <Using Include="Xunit" />
   </ItemGroup>
 

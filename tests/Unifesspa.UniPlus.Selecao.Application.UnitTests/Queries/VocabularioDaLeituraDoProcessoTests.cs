@@ -135,7 +135,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
 
     private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(
         "PS vocabulário",
-        TipoProcesso.SiSU,
+        TiposDeProcessoDeTeste.SiSU,
         OrigemCandidatos.InscricaoPropria,
         Guid.CreateVersion7(),
         UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,

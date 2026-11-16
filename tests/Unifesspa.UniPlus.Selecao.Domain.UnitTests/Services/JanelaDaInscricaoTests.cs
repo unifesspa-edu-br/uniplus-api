@@ -28,7 +28,7 @@ public sealed class JanelaDaInscricaoTests
     private static JanelaDaInscricao Janela(DateTimeOffset publicadaDe, DateTimeOffset publicadaAte)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Inscrição", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Inscrição", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseCronograma.Criar(

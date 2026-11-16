@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class CriarProcessoSeletivoCommandHandlerTests
 {
@@ -26,7 +27,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         "1504208", "Marabá", "PA");
 
     private static readonly TipoProcessoView TipoSisu = new(
-        TipoProcesso.SiSU.OrigemId, "SiSU", "SiSU", null);
+        TiposDeProcessoDeTeste.SiSU.OrigemId, "SiSU", "SiSU", null);
 
     [Fact(DisplayName = "Handle persiste o processo em rascunho com a Unidade resolvida e retorna o id (CA-01, CA-03)")]
     public async Task Handle_PersisteComUnidadeResolvidaERetornaId()
@@ -36,8 +37,8 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
-        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
-        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
+        tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
         ProcessoSeletivo? processoPersistido = null;
         repository.When(r => r.AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>()))
             .Do(ci => processoPersistido = ci.Arg<ProcessoSeletivo>());
@@ -75,7 +76,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
-        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
+        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
@@ -96,7 +97,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         UnidadeView unidadeSemCidade = new(
             UnidadeId, "CEPS", "ceps", "Centro de Processos Seletivos", null, "ADMINISTRATIVA", false, null);
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(unidadeSemCidade);
-        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
+        CriarProcessoSeletivoCommand command = new("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
@@ -116,10 +117,10 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
-        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns((TipoProcessoView?)null);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns((TipoProcessoView?)null);
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
-            new CriarProcessoSeletivoCommand("PS", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"),
+            new CriarProcessoSeletivoCommand("PS", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026"),
             repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -139,9 +140,9 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
-        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
         CriarProcessoSeletivoCommand command = new(
-            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, null, null, null, "psiq-2026");
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, null, null, null, "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
@@ -165,9 +166,9 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
-        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
         CriarProcessoSeletivoCommand command = new(
-            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, null, null, null, "psiq-2026");
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, null, null, null, "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
@@ -189,10 +190,10 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
-        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
         // Belém, não Marabá: a unidade fica numa cidade, o certame corre sob o calendário de outra.
         CriarProcessoSeletivoCommand command = new(
-            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1501402", "Belém", "PA", "psiq-2026");
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1501402", "Belém", "PA", "psiq-2026");
         ProcessoSeletivo? persistido = null;
         repository.When(r => r.AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>()))
             .Do(ci => persistido = ci.Arg<ProcessoSeletivo>());
@@ -213,9 +214,9 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
-        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
         CriarProcessoSeletivoCommand command = new(
-            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "SP", "psiq-2026");
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "SP", "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
@@ -232,9 +233,9 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
-        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
         CriarProcessoSeletivoCommand command = new(
-            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
         ProcessoSeletivo? persistido = null;
         repository.When(r => r.AdicionarAsync(Arg.Any<ProcessoSeletivo>(), Arg.Any<CancellationToken>()))
             .Do(ci => persistido = ci.Arg<ProcessoSeletivo>());
@@ -257,7 +258,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         CriarProcessoSeletivoCommand command = new(
-            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", identificador);
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", identificador);
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
@@ -275,7 +276,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         CriarProcessoSeletivoCommand command = new(
-            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "PSIQ-2026");
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "PSIQ-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
@@ -293,12 +294,12 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         ITipoProcessoReader tipoProcessoReader = Substitute.For<ITipoProcessoReader>();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         unidadeReader.ObterPorIdAsync(UnidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeCeps);
-        tipoProcessoReader.ObterAtivoPorIdAsync(TipoProcesso.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
+        tipoProcessoReader.ObterAtivoPorIdAsync(TiposDeProcessoDeTeste.SiSU.OrigemId, Arg.Any<CancellationToken>()).Returns(TipoSisu);
         repository.IdentificadorLegivelEmUsoAsync(
                 IdentificadorLegivel.Criar("psiq-2026").Value, null, Arg.Any<CancellationToken>())
             .Returns(true);
         CriarProcessoSeletivoCommand command = new(
-            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, VerificadorQue(ResultadoDoAcesso.Permitido), unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
@@ -325,7 +326,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         IVerificadorDeAcesso verificador = VerificadorQue(ResultadoDoAcesso.Negado);
         CriarProcessoSeletivoCommand command = new(
-            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command, repository, verificador, unidadeReader, tipoProcessoReader, unitOfWork, CancellationToken.None);
@@ -343,7 +344,7 @@ public sealed class CriarProcessoSeletivoCommandHandlerTests
     public async Task Handle_IdentidadeIncompleta_RecusaComOCodigoProprio()
     {
         CriarProcessoSeletivoCommand command = new(
-            "PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
+            "PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeId, "1504208", "Marabá", "PA", "psiq-2026");
 
         Result<Guid> result = await CriarProcessoSeletivoCommandHandler.Handle(
             command,

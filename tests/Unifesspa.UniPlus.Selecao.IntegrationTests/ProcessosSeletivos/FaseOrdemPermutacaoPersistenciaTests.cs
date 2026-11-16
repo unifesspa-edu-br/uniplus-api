@@ -85,7 +85,7 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
 
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             $"Certame de permutação {Guid.CreateVersion7()}",
-            TipoProcesso.SiSU,
+            TiposDeProcessoDeTeste.SiSU,
             OrigemCandidatos.InscricaoPropria,
             Guid.CreateVersion7(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,

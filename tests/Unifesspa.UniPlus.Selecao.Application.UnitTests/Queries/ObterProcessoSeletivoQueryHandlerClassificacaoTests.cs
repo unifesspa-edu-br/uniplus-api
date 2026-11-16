@@ -80,7 +80,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerClassificacaoTests
     private static async Task<ConfiguracaoClassificacaoDto?> ObterDtoComClassificacaoAsync(bool baseadoEmEnem)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Query Classificação", TipoProcesso.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Query Classificação", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         ReferenciaRegra regraCalculo = ReferenciaRegra.Criar(RegraCalculoCodigo.FormulaMediaPonderada, "v1", new string('a', 64)).Value!;

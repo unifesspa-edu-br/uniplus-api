@@ -141,7 +141,7 @@ public sealed class QuadroDePesoPorAreaEnemPersistenciaTests
 
     private static ProcessoSeletivo NovoProcessoComClassificacaoEnem()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS 2027 — Medicina", TipoProcesso.PSVR);
+        ProcessoSeletivo processo = NovoProcesso("PS 2027 — Medicina", TiposDeProcessoDeTeste.PSVR);
 
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(
             Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),

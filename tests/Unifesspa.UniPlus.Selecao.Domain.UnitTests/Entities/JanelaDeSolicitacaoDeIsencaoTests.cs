@@ -146,7 +146,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         // Certame de importação externa não tem fase de coleta, então as regras de posição não têm
         // a que se referir — mas os cinco dias independem da inscrição.
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Importado", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
+            "PS Importado", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
@@ -223,7 +223,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
     private static ProcessoSeletivo ProcessoComCronograma(FaseCronograma[] fases)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Isenção", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Isenção", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 

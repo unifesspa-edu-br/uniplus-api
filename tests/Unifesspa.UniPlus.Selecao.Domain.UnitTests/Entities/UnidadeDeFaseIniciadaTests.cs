@@ -103,7 +103,7 @@ public sealed class UnidadeDeFaseIniciadaTests
     private static ProcessoSeletivo ProcessoComCronograma(FaseCronograma fase)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Unidade da fase", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Unidade da fase", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

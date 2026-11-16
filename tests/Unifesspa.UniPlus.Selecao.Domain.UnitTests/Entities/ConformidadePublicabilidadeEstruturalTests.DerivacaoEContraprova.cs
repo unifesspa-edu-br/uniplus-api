@@ -265,7 +265,7 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
     public void Precedencia_GatesSimultaneos_PublicarDevolveOPrimeiroNaOrdem()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Precedência", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Precedência", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
                 "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         // AtendimentoEspecializado NUNCA definida — Gate 1 (PendenciaDeConformidade) fica pendente.

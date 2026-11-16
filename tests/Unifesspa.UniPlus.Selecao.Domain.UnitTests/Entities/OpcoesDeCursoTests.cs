@@ -114,7 +114,7 @@ public sealed class OpcoesDeCursoTests
     public void DuasOpcoesSemDistribuicao_AceitaEApontaAteHaverOfertas()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Opções", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
@@ -219,7 +219,7 @@ public sealed class OpcoesDeCursoTests
     public void UmaOpcaoSemDistribuicao_NaoAcusaAcimaDasOfertas()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Opções", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            "PS Opções", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 

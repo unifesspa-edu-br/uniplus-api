@@ -56,7 +56,7 @@ internal static partial class CorpusEnvelope
     private static ProcessoSeletivo NovoProcessoRico(int variante)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Rico 2026", TipoProcesso.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeAdministradora,
+            "PS Rico 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeAdministradora,
             UnidadeAdministradoraDoCorpus(),
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
             identificadorLegivel: IdentificadorLegivel.Criar($"ps-rico-2026-v{variante}").Value);

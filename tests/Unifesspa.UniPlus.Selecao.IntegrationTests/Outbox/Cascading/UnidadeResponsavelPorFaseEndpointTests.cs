@@ -172,7 +172,7 @@ public sealed class UnidadeResponsavelPorFaseEndpointTests
             UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
             ProcessoSeletivo processo = ProcessoSeletivo.Criar(
                 $"PS unidade por fase — {nome} {Guid.CreateVersion7()}",
-                Unifesspa.UniPlus.Selecao.Domain.Enums.TipoProcesso.SiSU,
+                TiposDeProcessoDeTeste.SiSU,
                 Unifesspa.UniPlus.Selecao.Domain.Enums.OrigemCandidatos.ImportacaoExterna,
                 Guid.CreateVersion7(),
                 UnidadeAdministradoraSnapshot.Criar(

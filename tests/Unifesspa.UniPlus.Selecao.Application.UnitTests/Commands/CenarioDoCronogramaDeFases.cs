@@ -59,7 +59,7 @@ internal sealed class CenarioDoCronogramaDeFases
 
     public static ProcessoSeletivo NovoProcessoEmRascunho() =>
         ProcessoSeletivo.Criar(
-            "PS", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
+            "PS", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!,
             IdentificadoresDeTeste.Novo());

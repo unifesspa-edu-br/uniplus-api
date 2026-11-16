@@ -291,7 +291,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
     private static (ProcessoSeletivo Processo, IProcessoSeletivoRepository Repositorio, IRegistroCodecsEnvelope Codecs) ProcessoPublicadoCom(
         ProdutoDaFase[] produtos, TipoDeAtoCongelado congelado)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TipoProcesso.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases(
             [FaseCronograma.Criar(
                 1, Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao,

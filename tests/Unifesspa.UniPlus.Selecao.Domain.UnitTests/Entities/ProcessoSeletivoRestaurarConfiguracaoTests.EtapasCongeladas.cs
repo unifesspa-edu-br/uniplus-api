@@ -28,7 +28,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "A âncora restaurada reencontra o produto preliminar, e não o definitivo do mesmo ato")]
     public void AncoraRestaurada_ReencontraOPreliminarDoMesmoAto()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
         ProdutoDaFase preliminar = ProdutoDaFase.Criar("RESULTADO", PapelProdutoFase.Preliminar);
@@ -75,7 +75,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Etapa congelada com combinação que a regra atual recusaria ainda assim é reposta")]
     public void EtapaCongeladaComCombinacaoHojeRecusada_AindaERestaurada()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
 
         // Nota mínima em etapa apenas classificatória: hoje o agregado recusa a declaração, e o
@@ -101,7 +101,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         // ofertas precisa estar também em ValidarGrafo, senão a restauração de um
         // envelope congelado (que nunca poderia ter sido produzido pelo caminho normal
         // de escrita) reintroduziria o mesmo código de modalidade com ações divergentes.
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -149,7 +149,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Restauração com a regra de uma cota da lei sem a opção pelas cotas é recusada")]
     public void RestauracaoComRegraIncoerenteComANatureza_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -188,7 +188,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Restauração com uma ação afirmativa sem remanejamento é recusada")]
     public void RestauracaoComAcaoAfirmativaSemRemanejamento_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -233,7 +233,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Árvore restaurada com uma FOLHA carregando filhos é recusada")]
     public void ArvoreComFolhaCarregandoFilhos_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -261,7 +261,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Árvore restaurada com um GRUPO vazio é recusada")]
     public void ArvoreComGrupoVazio_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -283,7 +283,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Árvore restaurada com grupo OU pedindo mais filhos do que tem é recusada")]
     public void ArvoreComGrupoOuQuantidadeMinimaExcedeFilhos_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
@@ -308,7 +308,7 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
     [Fact(DisplayName = "Árvore restaurada com grupo OU de consequência fora do catálogo fechado é recusada")]
     public void ArvoreComGrupoOuConsequenciaInvalida_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoPublicado(TipoProcesso.SiSU);
+        ProcessoSeletivo processo = ProcessoPublicado(TiposDeProcessoDeTeste.SiSU);
         VersaoConfiguracao versao = VersaoDo(processo);
         Estado antes = Estado.De(processo);
 
