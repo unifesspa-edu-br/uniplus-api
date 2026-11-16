@@ -255,6 +255,6 @@ public sealed class Providencia : EntityBase
             SolicitadaPorEmissor = solicitante.Identidade.Emissor,
             SolicitadaPorContaId = solicitante.Identidade.ContaId,
             SolicitadaPorNome = solicitante.Nome,
-            SolicitadaPorEmail = solicitante.EmailVerificado ? PedidoDeConcessao.EmailNormalizado(solicitante.Email) : null,
+            SolicitadaPorEmail = solicitante.EmailVerificadoNormalizado,
         };
 }

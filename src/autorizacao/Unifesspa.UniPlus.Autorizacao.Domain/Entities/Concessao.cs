@@ -277,7 +277,7 @@ public sealed class Concessao : EntityBase
             BeneficiarioEmissor = titular.Pessoa.Emissor,
             BeneficiarioContaId = titular.Pessoa.ContaId,
             BeneficiarioNome = titular.Pessoa.Nome,
-            BeneficiarioEmail = PedidoDeConcessao.EmailNormalizado(titular.Email),
+            BeneficiarioEmail = EmailDaPessoa.Normalizar(titular.Email),
             PerfilId = perfil.Id,
             VersaoId = perfil.VersaoVigente?.Id,
             EscopoTipo = escopo.Tipo,

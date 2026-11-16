@@ -70,7 +70,7 @@ internal sealed class ConcessaoConfiguration : IEntityTypeConfiguration<Concessa
         builder.Property(c => c.BeneficiarioEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(c => c.BeneficiarioContaId).HasMaxLength(IdentidadeMaxLength).IsRequired();
         builder.Property(c => c.BeneficiarioNome).HasMaxLength(NomeDeExibicao.MaxLength);
-        builder.Property(c => c.BeneficiarioEmail).HasMaxLength(PedidoDeConcessao.EmailMaxLength);
+        builder.Property(c => c.BeneficiarioEmail).HasMaxLength(EmailDaPessoa.MaxLength);
         builder.Property(c => c.ConcedidaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(c => c.RevogadaPorNome).HasMaxLength(NomeDeExibicao.MaxLength);
         builder.Property(c => c.ConcedidaPorEmissor).HasMaxLength(IdentidadeMaxLength).IsRequired();

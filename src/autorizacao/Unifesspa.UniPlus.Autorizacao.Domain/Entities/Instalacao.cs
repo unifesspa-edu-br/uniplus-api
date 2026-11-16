@@ -117,7 +117,7 @@ public sealed class Instalacao : EntityBase
                 && string.Equals(emissor, emissorAceito, StringComparison.Ordinal)
                 && Guid.TryParseExact(contaId, "D", out Guid guid)
                 && guid != Guid.Empty
-                && PedidoDeConcessao.EmailNormalizado(gestor.Email) is { } email)
+                && EmailDaPessoa.Normalizar(gestor.Email) is { } email)
             {
                 conferidos.Add(new Identidade(emissor, guid.ToString("D"), NomeDeExibicao.Normalizar(gestor.Nome)));
                 emails.Add(email);
