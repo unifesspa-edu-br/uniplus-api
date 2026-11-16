@@ -9,6 +9,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:?defina POSTGRES_USER no docker/.env}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD no docker/.env}
       POSTGRES_DB: ${POSTGRES_DB:?defina POSTGRES_DB no docker/.env}
+      # Só para o restaurador da base pronta conferir que o .env bate com os valores gravados nos dumps.
+      KEYCLOAK_ADMIN: "${KEYCLOAK_ADMIN:-admin}"
+      KEYCLOAK_ADMIN_PASSWORD: "${KEYCLOAK_ADMIN_PASSWORD:-admin}"
+      KEYCLOAK_PORT: "${KEYCLOAK_PORT:-8080}"
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:

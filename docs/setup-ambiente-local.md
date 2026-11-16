@@ -74,6 +74,9 @@ e a base de CEP no Geo. Não há passo extra além de `cp .env.example .env`.
   minutos na primeira subida (o Geo tem 1,6 milhão de logradouros).
 - **Se a primeira subida for interrompida ou falhar** (disco cheio, `Ctrl+C`), o Postgres e o MinIO não repetem a restauração sobre um
   volume já iniciado: rode `docker compose down -v` e suba de novo.
+- **Valores obrigatórios no `docker/.env`:** a base pronta traz o admin do Keycloak e o emissor das concessões gravados nos dumps. Por isso exige
+  `KEYCLOAK_ADMIN=admin`, `KEYCLOAK_ADMIN_PASSWORD=admin` e `KEYCLOAK_PORT=8080` (os valores do `.env.example`). Com outros valores a restauração
+  para com uma mensagem de erro; ajuste o `.env` e rode `docker compose down -v`, ou suba sem a base pronta.
 - **Versão da base:** vale para a migration `Inicial` da `main`. Quando a migration for regerada, os dumps precisam ser gerados de novo.
 
 ## Serviços e portas
