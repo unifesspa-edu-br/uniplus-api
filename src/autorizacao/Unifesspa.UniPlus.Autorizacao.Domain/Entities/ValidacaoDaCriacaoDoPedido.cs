@@ -12,7 +12,7 @@ internal static class ValidacaoDaCriacaoDoPedido
         Perfil perfil, EscopoDaConcessao escopo, ICatalogoDePermissoesConsultavel catalogo, DeclaracaoDoPedido declaracao, DateTimeOffset instante)
     {
         List<FieldError> erros = [.. ErrosDoPerfil(perfil), .. ErrosDoEscopo(perfil, escopo, catalogo)];
-        string? normalizada = TextoLivre.Normalizar(declaracao.Justificativa, PedidoDeConcessao.JustificativaMinLength, PedidoDeConcessao.JustificativaMaxLength);
+        string? normalizada = TextoLivre.Normalizar(declaracao.Justificativa, DeclaracaoDoPedido.JustificativaMinLength, DeclaracaoDoPedido.JustificativaMaxLength);
 
         if (normalizada is null)
         {
@@ -26,7 +26,7 @@ internal static class ValidacaoDaCriacaoDoPedido
 
     private static FieldError JustificativaInvalida() => new("justificativa", new DomainError(
         PedidoErrorCodes.JustificativaInvalida,
-        $"A justificativa é obrigatória e deve ter entre {PedidoDeConcessao.JustificativaMinLength} e {PedidoDeConcessao.JustificativaMaxLength} caracteres."));
+        $"A justificativa é obrigatória e deve ter entre {DeclaracaoDoPedido.JustificativaMinLength} e {DeclaracaoDoPedido.JustificativaMaxLength} caracteres."));
 
     private static IEnumerable<FieldError> ErrosDoPerfil(Perfil perfil)
     {

@@ -96,11 +96,11 @@ public sealed class PedidoDeConcessaoCriacaoTests
     }
 
     [Theory(DisplayName = "Justificativa em branco, curta, longa ou com caractere nulo é recusada")]
-    [InlineData(null)]
+    [InlineData("")]
     [InlineData("         ")]
     [InlineData("curta")]
     [InlineData("Justificativa com caractere\0 nulo")]
-    public void Criar_JustificativaInvalida_Recusa(string? justificativa) =>
+    public void Criar_JustificativaInvalida_Recusa(string justificativa) =>
         Codigos(PedidoDeConcessao.Criar(new PartesDoPedido(Betina, "leandro-viana84@uniplus-test.local"), PerfilComum(), EscopoDaConcessao.DaUnidade(Guid.NewGuid()), new DeclaracaoDoPedido(justificativa), Dominios, Catalogo, Agora))
             .Should().Equal(PedidoErrorCodes.JustificativaInvalida);
 

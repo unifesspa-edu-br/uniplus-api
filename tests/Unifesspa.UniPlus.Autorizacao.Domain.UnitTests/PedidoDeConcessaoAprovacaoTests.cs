@@ -59,7 +59,7 @@ public sealed class PedidoDeConcessaoAprovacaoTests
     {
         Result<PedidoDeConcessao> resultado = CriarComSugestao(PerfilComum(), Agora.AddMonths(6));
 
-        resultado.Value!.ValidaAteSugerida.Should().Be(Agora.AddMonths(6));
+        resultado.Value!.Declaracao.ValidaAteSugerida.Should().Be(Agora.AddMonths(6));
         resultado.Value.ValidaAte.Should().BeNull("quem define o fim da vigência é o gestor");
     }
 

@@ -70,7 +70,7 @@ public sealed class ConferenciaDoNovoPedido
         unidadeId is { } unidade ? EscopoDaConcessao.DaUnidade(unidade) : EscopoDaConcessao.DaInstituicao();
 
     private static DeclaracaoDoPedido Declaracao(CriarPedidoDeConcessaoCommand command) =>
-        new(command.Justificativa, command.ValidaAteSugerida, command.AnexaraDocumento);
+        new(command.Justificativa ?? string.Empty, command.ValidaAteSugerida, command.AnexaraDocumento);
 
     private async Task<Result<NovoPedido>> ConcluirAsync(
         CriarPedidoDeConcessaoCommand command, NovoPedido novo, DateTimeOffset agora, CancellationToken cancellationToken)

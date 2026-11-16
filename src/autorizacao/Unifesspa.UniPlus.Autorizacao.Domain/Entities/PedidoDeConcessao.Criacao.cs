@@ -38,12 +38,8 @@ public sealed partial class PedidoDeConcessao
 
         return recusa is not null ? Result<PedidoDeConcessao>.Failure(recusa)
             : erros.Count > 0 ? Result<PedidoDeConcessao>.ValidationFailure(erros)
-            : Result<PedidoDeConcessao>.Success(Novo(partes.Solicitante, perfil, escopo, Consolidada(declaracao, justificativa, perfil), instante, (email!, paraSiMesmo)));
+            : Result<PedidoDeConcessao>.Success(Novo(partes.Solicitante, perfil, escopo, declaracao.Consolidada(justificativa!, perfil), instante, (email!, paraSiMesmo)));
     }
-
-    // A justificativa já normalizada; o perfil de governança anexa sempre o documento de designação.
-    private static DeclaracaoDoPedido Consolidada(DeclaracaoDoPedido declaracao, string? justificativa, Perfil perfil) =>
-        declaracao with { Justificativa = justificativa, AnexaraDocumento = declaracao.AnexaraDocumento || perfil.Governanca is not null };
 
     private static PedidoDeConcessao Novo(
         PessoaNoToken solicitante,
@@ -58,9 +54,7 @@ public sealed partial class PedidoDeConcessao
             PerfilId = perfil.Id,
             VersaoId = perfil.VersaoVigente?.Id,
             UnidadeId = escopo.UnidadeId,
-            Justificativa = declaracao.Justificativa!,
-            ValidaAteSugerida = declaracao.ValidaAteSugerida?.ToUniversalTime(),
-            AnexaraDocumento = declaracao.AnexaraDocumento,
+            Declaracao = declaracao,
             Situacao = SituacaoInicial(declaracao.AnexaraDocumento, beneficiario.ParaSiMesmo),
             CriadoEm = instante,
         };

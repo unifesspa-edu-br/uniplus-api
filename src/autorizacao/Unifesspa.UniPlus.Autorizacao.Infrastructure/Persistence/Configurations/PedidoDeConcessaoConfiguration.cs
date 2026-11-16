@@ -71,13 +71,11 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         ConfigurarSolicitante(builder);
         builder.Property(p => p.BeneficiarioEmail).HasMaxLength(EmailDaPessoa.MaxLength).IsRequired();
         ConfigurarBeneficiario(builder);
-        builder.Property(p => p.Justificativa).HasMaxLength(PedidoDeConcessao.JustificativaMaxLength).IsRequired();
+        ConfigurarDeclaracao(builder);
         builder.Property(p => p.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
-        builder.Property(p => p.ValidaAteSugerida);
         builder.Property(p => p.ValidaAte);
         // A unidade é de outro módulo (ADR-0087): sem chave estrangeira entre schemas.
         builder.Property(p => p.UnidadeId);
-        builder.Property(p => p.AnexaraDocumento).IsRequired();
         ConfigurarTermo(builder);
 
         // Derivados do estado: não se gravam de novo.
@@ -87,10 +85,23 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         builder.Ignore(p => p.AguardaAceiteDoTermo);
     }
 
+    private static void ConfigurarDeclaracao(EntityTypeBuilder<PedidoDeConcessao> builder)
+    {
+        builder.OwnsOne(p => p.Declaracao, declaracao =>
+        {
+            declaracao.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
+            declaracao.Property(d => d.Justificativa).HasColumnName("justificativa").HasMaxLength(DeclaracaoDoPedido.JustificativaMaxLength).IsRequired();
+            declaracao.Property(d => d.ValidaAteSugerida).HasColumnName("valida_ate_sugerida");
+            declaracao.Property(d => d.AnexaraDocumento).HasColumnName("anexara_documento").IsRequired();
+        });
+        builder.Navigation(p => p.Declaracao).IsRequired();
+    }
+
     private static void ConfigurarTermo(EntityTypeBuilder<PedidoDeConcessao> builder)
     {
         builder.OwnsOne(p => p.Termo, termo =>
         {
+            termo.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
             termo.Property(t => t.VersaoId).HasColumnName("termo_versao_id");
             termo.Property(t => t.Numero).HasColumnName("termo_numero");
             termo.Property(t => t.Resumo).HasColumnName("termo_resumo").HasMaxLength(ConteudoDoTermo.ResumoLength).IsFixedLength();

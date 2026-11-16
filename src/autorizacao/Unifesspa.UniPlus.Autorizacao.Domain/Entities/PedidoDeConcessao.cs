@@ -29,9 +29,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed partial class PedidoDeConcessao : EntityBase
 {
-    public const int JustificativaMinLength = 10;
-    public const int JustificativaMaxLength = 2000;
-
     /// <summary>As situações em que o pedido ainda pode avançar: o mesmo pedido não se repete enquanto numa delas.</summary>
     public static readonly IReadOnlyList<SituacaoDoPedido> SituacoesAtivas =
     [
@@ -58,12 +55,10 @@ public sealed partial class PedidoDeConcessao : EntityBase
     /// <summary>Unidade do escopo; nula só no perfil de governança, de escopo institucional.</summary>
     public Guid? UnidadeId { get; private set; }
 
-    public string Justificativa { get; private set; } = string.Empty;
+    /// <summary>O que o solicitante declarou ao pedir.</summary>
+    public DeclaracaoDoPedido Declaracao { get; private set; } = null!;
 
     public SituacaoDoPedido Situacao { get; private set; }
-
-    /// <summary>O fim de vigência que o solicitante sugere ao gestor; nulo, sem sugestão. Só informa: quem define é o gestor.</summary>
-    public DateTimeOffset? ValidaAteSugerida { get; private set; }
 
     /// <summary>O fim de vigência que o gestor definiu ao aprovar e que a concessão herda; nulo, sem prazo.</summary>
     public DateTimeOffset? ValidaAte { get; private set; }
