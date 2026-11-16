@@ -52,9 +52,9 @@ public sealed record ConteudoDaVersao
     {
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        string? nomeNormalizado = Normalizar(nome, NomeMinLength, NomeMaxLength);
-        string? descricaoNormalizada = Normalizar(descricao, DescricaoMinLength, DescricaoMaxLength);
-        string? protocoloNormalizado = Normalizar(protocolo, ProtocoloMinLength, ProtocoloMaxLength);
+        string? nomeNormalizado = TextoLivre.Normalizar(nome, NomeMinLength, NomeMaxLength);
+        string? descricaoNormalizada = TextoLivre.Normalizar(descricao, DescricaoMinLength, DescricaoMaxLength);
+        string? protocoloNormalizado = TextoLivre.Normalizar(protocolo, ProtocoloMinLength, ProtocoloMaxLength);
 
         // Códigos repetidos na entrada se consolidam sem recusa.
         string[] codigos = [.. (permissoes ?? []).Select(static c => c?.Trim() ?? string.Empty).Distinct(StringComparer.Ordinal)];
@@ -122,20 +122,4 @@ public sealed record ConteudoDaVersao
     }
 
     private static FieldError Erro(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
-
-    // O caractere nulo não é espaço em branco e cabe no tamanho, mas a coluna textual do banco não o armazena: sem
-    // esta recusa o valor só falharia ao gravar, e o payload inválido responderia 500 em vez da validação de domínio.
-    private static string? Normalizar(string? texto, int min, int max)
-    {
-        if (string.IsNullOrWhiteSpace(texto))
-        {
-            return null;
-        }
-
-        string normalizado = texto.Trim();
-
-        return normalizado.Contains('\0', StringComparison.Ordinal) || normalizado.Length < min || normalizado.Length > max
-            ? null
-            : normalizado;
-    }
 }

@@ -132,7 +132,7 @@ public sealed partial class PedidoDeConcessao
         Perfil perfil, EscopoDaConcessao escopo, ICatalogoDePermissoesConsultavel catalogo, DeclaracaoDoPedido declaracao, DateTimeOffset instante)
     {
         List<FieldError> erros = [.. ErrosDoPerfil(perfil), .. ErrosDoEscopo(perfil, escopo, catalogo)];
-        string? normalizada = NormalizarTexto(declaracao.Justificativa, JustificativaMinLength, JustificativaMaxLength);
+        string? normalizada = TextoLivre.Normalizar(declaracao.Justificativa, JustificativaMinLength, JustificativaMaxLength);
 
         if (normalizada is null)
         {

@@ -31,7 +31,6 @@ public sealed partial class PedidoDeConcessao : EntityBase
 {
     public const int JustificativaMinLength = 10;
     public const int JustificativaMaxLength = 2000;
-    public const int MotivoMaxLength = 500;
 
     /// <summary>As situações em que o pedido ainda pode avançar: o mesmo pedido não se repete enquanto numa delas.</summary>
     public static readonly IReadOnlyList<SituacaoDoPedido> SituacoesAtivas =
@@ -149,21 +148,6 @@ public sealed partial class PedidoDeConcessao : EntityBase
     {
         Situacao = situacao;
         EncerradoEm = instante;
-    }
-
-    // O caractere nulo cabe no tamanho, mas a coluna textual do banco não o armazena.
-    private static string? NormalizarTexto(string? texto, int min, int max)
-    {
-        if (string.IsNullOrWhiteSpace(texto))
-        {
-            return null;
-        }
-
-        string normalizado = texto.Trim();
-
-        return normalizado.Contains('\0', StringComparison.Ordinal) || normalizado.Length < min || normalizado.Length > max
-            ? null
-            : normalizado;
     }
 
     private static DomainError SituacaoInvalida(string mensagem) => new(PedidoErrorCodes.SituacaoInvalida, mensagem);
