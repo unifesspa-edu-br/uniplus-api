@@ -35,4 +35,16 @@ public static class ConceitoDaEtapaErrorCodes
 
     /// <summary>Dois valores categóricos do conceito têm o mesmo rótulo.</summary>
     public const string ValorRotuloRepetido = "ConceitoDaEtapa.ValorRotuloRepetido";
+
+    /// <summary>O conceito declarado pela etapa não está entre os que o tipo da etapa admite.</summary>
+    public const string NaoAdmitidoPeloTipo = "ConceitoDaEtapa.NaoAdmitidoPeloTipo";
+
+    /// <summary>A etapa de conceito categórico declara um campo de nota (UNI-REQ-0175).</summary>
+    public const string NotaNoConceitoCategorico = "ConceitoDaEtapa.NotaNoConceitoCategorico";
+
+    /// <summary>A nota máxima da etapa passa da escala máxima do conceito numérico.</summary>
+    public const string NotaMaximaAcimaDaEscala = "ConceitoDaEtapa.NotaMaximaAcimaDaEscala";
+
+    /// <summary>A etapa de nota do ENEM declara conceito, e a nota dela vem do INEP.</summary>
+    public const string EtapaDoEnemNaoDeclaraConceito = "ConceitoDaEtapa.EtapaDoEnemNaoDeclaraConceito";
 }

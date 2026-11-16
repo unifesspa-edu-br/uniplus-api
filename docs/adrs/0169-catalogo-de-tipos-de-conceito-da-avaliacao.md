@@ -64,3 +64,11 @@ A etapa de um processo seletivo é avaliada por nota numérica, mas há etapas c
 ## Mais informações
 
 - [ADR-0061](0061-referencia-cross-modulo-via-snapshot-copy.md), [ADR-0112](0112-fronteira-append-only-do-catalogo-de-regras.md), [ADR-0123](0123-tipos-etapa-configuraveis.md), [ADR-0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md), [ADR-0150](0150-parametros-de-avaliacao-da-etapa.md).
+
+## Emenda 1 (2026-11-16) — a etapa declara o conceito entre os admitidos pelo tipo
+
+**Contexto.** A decisão diz que o tipo de etapa admite conceitos e que quem monta o certame diz o conceito de cada etapa, mas não diz onde a etapa guarda essa escolha, quando ela é conferida nem o que um conceito categórico implica para a nota da etapa.
+
+**Decisão.** A etapa declara um conceito, entre os que o tipo admite, e o copia por valor na declaração: código, nome, natureza e a escala ou os valores categóricos, na ordem do cadastro (ADR-0061). A admissão é conferida na declaração, e o snapshot do tipo de etapa não copia os conceitos admitidos. O conceito categórico não declara nota (UNI-REQ-0175): a etapa não declara nota máxima, nota mínima, peso, passo do lançamento, itens de avaliação nem escala de atendimento. No conceito numérico, a nota máxima da etapa não passa da escala máxima do conceito, e a gravação recusa o excesso. A etapa de nota do ENEM não declara conceito. Desativar o conceito no catálogo impede novas declarações e não invalida a etapa que já o copiou.
+
+**Consequências.** A consequência neutra da decisão original, de que a regra de consolidação segue como está, deixa de valer: a regra de consolidação passa a depender da natureza do conceito (emenda da ADR-0150). A etapa sem conceito é estado legítimo em rascunho, e as recusas que dependem do conceito ficam com quem cobra a publicação. Cada código de recusa novo tem página no portal de desenvolvedores.
