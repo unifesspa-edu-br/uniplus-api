@@ -165,7 +165,26 @@ public static class SchemaRegistryServiceCollectionExtensions
         }
 
         services.TryAddSingleton<ISchemaRegistryClient>(sp => CriarClienteDoContainer(sp, usaOAuthBearer));
-        services.AddHostedService<SchemaRegistrationHostedService>();
+        RegistrarRegistroDosSchemas(services);
+    }
+
+    /// <summary>
+    /// A subida e a nova tentativa registram pelo mesmo <see cref="RegistradorDeSchema"/>. O leitor da regra usa o
+    /// <see cref="IHttpClientFactory"/> e as mesmas opções do Schema Registry; o relógio da nova tentativa é o que o host
+    /// registra.
+    /// </summary>
+    private static void RegistrarRegistroDosSchemas(IServiceCollection services)
+    {
+        services.AddHttpClient<LeitorDaRegraDeCompatibilidadeDoSubject>();
+        services.TryAddSingleton<ILeitorDaRegraDeCompatibilidadeDoSubject>(sp => sp.GetRequiredService<LeitorDaRegraDeCompatibilidadeDoSubject>());
+        services.TryAddSingleton<RegistradorDeSchema>();
+        services.TryAddSingleton<RepetidorDoRegistroDeSchema>();
+        services.AddHostedService(sp => sp.GetRequiredService<RepetidorDoRegistroDeSchema>());
+        services.AddHostedService(sp => new SchemaRegistrationHostedService(
+            sp.GetRequiredService<RegistradorDeSchema>(),
+            sp.GetRequiredService<RepetidorDoRegistroDeSchema>(),
+            sp.GetServices<SchemaRegistration>(),
+            sp.GetRequiredService<ILogger<SchemaRegistrationHostedService>>()));
     }
 
     /// <summary>
@@ -249,6 +268,31 @@ public sealed class SchemaRegistryBuilder
         }
 
         _services.AddSingleton(new SchemaRegistration(subject, schemaResourceName, resourceAssembly));
+        return this;
+    }
+
+    /// <summary>
+    /// Adiciona um JSON Schema a ser registrado/confirmado no Schema Registry no startup. O subject precisa ter a regra
+    /// de compatibilidade <c>NONE</c>, declarada pela infraestrutura, e o registro que falhar por indisponibilidade do
+    /// Schema Registry é repetido em segundo plano (ver <see cref="FormatoDoSchema.JsonSchema"/>).
+    /// </summary>
+    /// <param name="subject">Subject do documento; não segue tópico (e.g. <c>configuracao-do-processo-seletivo-v1</c>).</param>
+    /// <param name="schemaResourceName">Nome canônico do embedded resource.</param>
+    /// <param name="resourceAssembly">Assembly que contém o resource.</param>
+    public SchemaRegistryBuilder AddJsonSchema(
+        string subject,
+        string schemaResourceName,
+        System.Reflection.Assembly resourceAssembly)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(subject);
+        ArgumentException.ThrowIfNullOrWhiteSpace(schemaResourceName);
+        ArgumentNullException.ThrowIfNull(resourceAssembly);
+
+        if (_schemaRegistryEnabled)
+        {
+            _services.AddSingleton(new SchemaRegistration(subject, schemaResourceName, resourceAssembly) { Formato = FormatoDoSchema.JsonSchema });
+        }
+
         return this;
     }
 }

@@ -11,6 +11,7 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
@@ -25,6 +26,7 @@
   <!-- Schemas Avro embedded usados por SchemaRegistrationHostedServiceTests (#362) -->
   <ItemGroup>
     <EmbeddedResource Include="Messaging\SchemaRegistry\Resources\*.avsc" />
+    <EmbeddedResource Include="Messaging\SchemaRegistry\Resources\*.schema.json" />
   </ItemGroup>
 
   <ItemGroup>
