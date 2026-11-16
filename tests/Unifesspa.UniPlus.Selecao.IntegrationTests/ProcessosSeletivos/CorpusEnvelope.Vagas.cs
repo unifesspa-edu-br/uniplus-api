@@ -111,13 +111,21 @@ internal static partial class CorpusEnvelope
         }
 
         return ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId ?? OfertaMedicina,
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 60, PercentualDaReservaLegal = 0.7500m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711, '7'), RegraDeAjuste = Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, '0'), ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(
+            new DistribuicaoDeVagasDeclarada
+            {
+                VagasOfertadasBase = 60,
+                PercentualDaReservaLegal = 0.7500m,
+                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711, '7'),
+                RegraDeAjuste = Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, '0'),
+                ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(
                 ReferenciaDemografica,
                 censoReferencia: "Censo IBGE 2022",
                 ppiPercentual: 78.55m,
                 quilombolaPercentual: 1.20m,
                 pcdPercentual: 8.40m,
-                baseLegal: "Lei 12.711/2012 art. 3º").Value!, Modalidades = modalidades },
+                baseLegal: "Lei 12.711/2012 art. 3º").Value!,
+                Modalidades = modalidades
+            },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem ?? ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"), OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
     }
 
@@ -132,7 +140,12 @@ internal static partial class CorpusEnvelope
     /// </param>
     private static ConfiguracaoDistribuicaoVagas DistribuicaoInstitucional((string? Codigo, string? Rotulo)? grupoAreaEnem = null) =>
         ConfiguracaoDistribuicaoVagas.Criar(OfertaDireito,
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 0.5000m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, '8'), Modalidades = [
+            new DistribuicaoDeVagasDeclarada
+            {
+                VagasOfertadasBase = 40,
+                PercentualDaReservaLegal = 0.5000m,
+                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, '8'),
+                Modalidades = [
                 ModalidadeSelecionada.Criar(
                     new Guid("3333cccc-0000-4000-8000-000000000001"), "AC", null,
                     NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
@@ -153,6 +166,7 @@ internal static partial class CorpusEnvelope
                     NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade, "AC",
                     RegraRemanejamentoModalidade.Cruzado, null, "IND", "AC",
                     RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.AcaoAfirmativa), "RECLASSIFICAR_REGRA_EDITAL", "Res. Unifesspa 326/2019", quantidadeDeclarada: 10).Value!,
-            ] },
+            ]
+            },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 }

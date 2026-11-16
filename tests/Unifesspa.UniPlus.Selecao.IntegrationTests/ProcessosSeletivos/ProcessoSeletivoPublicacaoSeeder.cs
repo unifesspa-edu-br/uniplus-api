@@ -200,8 +200,16 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         }
 
         return ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 50, PercentualDaReservaLegal = 0.5m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711, 'd'), RegraDeAjuste = Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, 'e'), ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(
-                Guid.CreateVersion7(), "Censo IBGE 2022", 78.55m, 1.20m, 8.40m, "Lei 12.711/2012 art. 3º").Value!, Modalidades = modalidades },
+            new DistribuicaoDeVagasDeclarada
+            {
+                VagasOfertadasBase = 50,
+                PercentualDaReservaLegal = 0.5m,
+                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Lei12711, 'd'),
+                RegraDeAjuste = Regra(RegraAjusteDistribuicaoVagasCodigo.ReconciliacaoArt11ParagrafoUnico, 'e'),
+                ReferenciaDemografica = ReferenciaReservaDemograficaSnapshot.Criar(
+                Guid.CreateVersion7(), "Censo IBGE 2022", 78.55m, 1.20m, 8.40m, "Lei 12.711/2012 art. 3º").Value!,
+                Modalidades = modalidades
+            },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
     }
 

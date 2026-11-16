@@ -32,7 +32,12 @@ internal static class ProcessoConformeFactory
     /// </summary>
     internal static ConfiguracaoDistribuicaoVagas Oferta(Guid? ofertaCursoOrigemId = null) =>
         ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId ?? Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"), Modalidades = [
+            new DistribuicaoDeVagasDeclarada
+            {
+                VagasOfertadasBase = 40,
+                PercentualDaReservaLegal = 1m,
+                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"),
+                Modalidades = [
                 ModalidadeSelecionada.Criar(
                     modalidadeOrigemId: Guid.CreateVersion7(),
                     codigo: "AC",
@@ -48,7 +53,8 @@ internal static class ProcessoConformeFactory
                     acaoQuandoIndeferido: null,
                     baseLegal: "Res. Unifesspa 532/2021",
                     quantidadeDeclarada: 40).Value!,
-            ] },
+            ]
+            },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     private static EtapaProcesso EtapaDaProvaObjetiva(string faseCodigo) =>

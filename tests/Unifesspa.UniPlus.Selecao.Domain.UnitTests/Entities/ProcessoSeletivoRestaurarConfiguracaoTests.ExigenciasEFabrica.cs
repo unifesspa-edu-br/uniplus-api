@@ -266,13 +266,19 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
 
     private static ConfiguracaoDistribuicaoVagas Distribuicao() =>
         ConfiguracaoDistribuicaoVagas.Criar(new Guid("bbbb0000-0000-4000-8000-000000000001"),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [
+            new DistribuicaoDeVagasDeclarada
+            {
+                VagasOfertadasBase = 40,
+                PercentualDaReservaLegal = 1m,
+                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
+                Modalidades = [
                 ModalidadeSelecionada.Criar(
                     new Guid("cccc0000-0000-4000-8000-000000000001"), "AC", null,
                     NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
                     RegraRemanejamentoModalidade.Nenhuma, null, null, null,
                     RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
-            ] },
+            ]
+            },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     private static ConfiguracaoClassificacao Classificacao(IReadOnlyList<RegraEliminacao> eliminacoes) =>

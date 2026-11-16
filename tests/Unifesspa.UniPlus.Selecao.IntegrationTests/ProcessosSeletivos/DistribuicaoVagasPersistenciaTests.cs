@@ -226,10 +226,16 @@ public sealed class DistribuicaoVagasPersistenciaTests : IClassFixture<ProcessoS
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
             ConfiguracaoDistribuicaoVagas nova = ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoId,
-                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 45, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regra, Modalidades = [
+                new DistribuicaoDeVagasDeclarada
+                {
+                    VagasOfertadasBase = 45,
+                    PercentualDaReservaLegal = 1m,
+                    RegraDeDistribuicao = regra,
+                    Modalidades = [
                     NovaModalidade("QUIL", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 20),
                     NovaModalidade("IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal, quantidadeDeclarada: 25),
-                ] },
+                ]
+                },
                 new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
             Result result = carregado.DefinirDistribuicaoVagas([nova], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
