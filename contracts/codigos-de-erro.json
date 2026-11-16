@@ -4797,7 +4797,7 @@
       "titulo": "A oferta deve ter ao menos uma modalidade selecionada"
     },
     {
-      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.motor_de_ajuste_vedado_na_lei_12711",
+      "codigo": "uniplus.selecao.configuracao_distribuicao_vagas.motor_de_ajuste_vedado_na_lei_de_cotas",
       "status": 422,
       "titulo": "Motor de redução não se aplica à distribuição pela Lei 12.711"
     },
