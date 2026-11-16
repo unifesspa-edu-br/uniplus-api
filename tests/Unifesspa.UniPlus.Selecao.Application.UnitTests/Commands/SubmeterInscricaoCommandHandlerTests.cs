@@ -21,6 +21,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Commands.Inscricoes;
 using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Application.DTOs.Comprovantes;
+using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -81,13 +82,22 @@ public sealed class SubmeterInscricaoCommandHandlerTests
         IConferenciaEnderecoGeo? conferenciaEnderecoGeo = null,
         IGeradorDeNumeroInscricao? geradorDeNumeroInscricao = null,
         TimeProvider? relogio = null,
-        IDocumentoDaInscricaoRepository? documentoRepository = null) =>
-        SubmeterInscricaoCommandHandler.Handle(
-            command, inscricaoRepository, processoSeletivoRepository, DivulgacaoDeTeste.Certame(ProcessoId), documentoRepository ?? Substitute.For<IDocumentoDaInscricaoRepository>(), registroCodecs,
-            DivulgacaoDeTeste.Fuso(),
-            conferenciaEnderecoGeo ?? ConferenciaQueAceitaTudo(),
-            geradorDeNumeroInscricao ?? GeradorQueDevolve("00000001"),
-            unitOfWork, userContext, relogio ?? DivulgacaoDeTeste.Relogio, CancellationToken.None);
+        IDocumentoDaInscricaoRepository? documentoRepository = null)
+    {
+        IDocumentoDaInscricaoRepository documentos = documentoRepository ?? Substitute.For<IDocumentoDaInscricaoRepository>();
+        ICertameDivulgadoRepository certames = DivulgacaoDeTeste.Certame(ProcessoId);
+        return SubmeterInscricaoCommandHandler.Handle(
+            command,
+            new InscricaoAtivaDoCandidato(inscricaoRepository),
+            new PeriodoDaInscricao(certames, processoSeletivoRepository, registroCodecs, DivulgacaoDeTeste.Fuso()),
+            new EnvioDaInscricao(
+                new PreparoDoEnvio(new VersaoDaInscricao(certames, processoSeletivoRepository, registroCodecs)),
+                new AvaliacaoDoEnvio(conferenciaEnderecoGeo ?? ConferenciaQueAceitaTudo(), DivulgacaoDeTeste.Fuso(), documentos),
+                new GravacaoDoEnvio(
+                    inscricaoRepository, documentos, geradorDeNumeroInscricao ?? GeradorQueDevolve("00000001"),
+                    new GravacaoDaInscricao(inscricaoRepository, unitOfWork))),
+            userContext, relogio ?? DivulgacaoDeTeste.Relogio, CancellationToken.None);
+    }
 
     private static IGeradorDeNumeroInscricao GeradorQueDevolve(string numero)
     {
