@@ -823,7 +823,7 @@ publicar() {
         \"documentoEditalId\": \"$DOCUMENTO_EDITAL_ID\",
         \"ato\": {
             \"orgao\": \"CEPS\", \"serie\": \"EDITAL\", \"ano\": $ano,
-            \"dataPublicacao\": \"$data_publicacao\",
+            \"dataDoAto\": \"$data_publicacao\",
             \"assinante\": \"Reitor da Unifesspa\", \"tipoAtoCodigo\": \"EDITAL_ABERTURA\"
         }
     }" >/dev/null
