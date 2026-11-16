@@ -169,7 +169,7 @@ public sealed class PedidoDeConcessaoCicloTests
         anexo.RegistrarRecusado(Agora).Should().BeTrue();
         anexo.RegistrarVerificado(new string('a', 64), Agora).Should().BeFalse("o veredicto repetido não reabre o anexo");
         anexo.Situacao.Should().Be(SituacaoDoAnexo.Recusado);
-        pedido.TemAnexoVerificado.Should().BeFalse();
+        pedido.Anexos.Should().NotContain(a => a.Situacao == SituacaoDoAnexo.Verificado);
     }
 
     [Fact(DisplayName = "As partes do pedido são o solicitante e o beneficiário, este também pelo e-mail antes do aceite")]

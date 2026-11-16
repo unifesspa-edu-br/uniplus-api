@@ -41,8 +41,8 @@ public sealed partial class PedidoDeConcessao : EntityBase
         SituacaoDoPedido.AguardandoProtecaoDeDados,
     ];
 
-    private readonly List<DecisaoDoPedido> _decisoes = [];
-    private readonly List<AnexoDoPedido> _anexos = [];
+    private readonly DecisoesDoPedido _decisoes = [];
+    private readonly AnexosDoPedido _anexos = [];
 
     /// <summary>Quem pediu o acesso. Só a identidade do token é gravada: nunca o CPF.</summary>
     public SolicitanteDoPedido Solicitante { get; private set; } = null!;
@@ -77,9 +77,7 @@ public sealed partial class PedidoDeConcessao : EntityBase
 
     public IReadOnlyList<DecisaoDoPedido> Decisoes => _decisoes;
 
-    private DecisoesDoPedido Registro => new(Id, _decisoes);
-
-    private SegregacaoDoPedido Segregacao => new(Solicitante, Beneficiario, Registro);
+    private SegregacaoDoPedido Segregacao => new(Solicitante, Beneficiario, _decisoes);
 
     public IReadOnlyList<AnexoDoPedido> Anexos => _anexos;
 

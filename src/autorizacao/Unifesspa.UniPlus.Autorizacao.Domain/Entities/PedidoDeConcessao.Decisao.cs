@@ -112,7 +112,7 @@ public sealed partial class PedidoDeConcessao
     private Result RegistrarRecusa(
         Identidade decisor, EtapaDoPedido etapa, string? motivo, PerfilAvaliado perfil, DateTimeOffset instante)
     {
-        Registro.Registrar(etapa, new AtoDoAgente(decisor, instante), ResultadoDaDecisao.Recusado, motivo, perfil);
+        _decisoes.Add(DecisaoDoPedido.Registrar(Id, etapa, new AtoDoAgente(decisor, instante), ResultadoDaDecisao.Recusado, motivo, perfil, null));
         Encerrar(SituacaoDoPedido.Recusado, instante);
         return Result.Success();
     }
@@ -131,7 +131,7 @@ public sealed partial class PedidoDeConcessao
 
     private (ResultadoDaDecisao Resultado, DomainError Erro)? MotivoDaDevolucao(PerfilAvaliado perfil, DateTimeOffset instante)
     {
-        if (!Registro.MesmoPerfilQueOGestorAvaliou(perfil))
+        if (!_decisoes.MesmoPerfilQueOGestorAvaliou(perfil))
         {
             return (ResultadoDaDecisao.PerfilAlterado, new DomainError(
                 PedidoErrorCodes.PerfilAlterado,
@@ -148,7 +148,7 @@ public sealed partial class PedidoDeConcessao
     private DomainError DevolverAoGestor(
         Identidade decisor, EtapaDoPedido etapa, PerfilAvaliado perfil, DateTimeOffset instante, ResultadoDaDecisao resultado, DomainError erro)
     {
-        Registro.Registrar(etapa, new AtoDoAgente(decisor, instante), resultado, null, perfil);
+        _decisoes.Add(DecisaoDoPedido.Registrar(Id, etapa, new AtoDoAgente(decisor, instante), resultado, null, perfil, null));
         Situacao = SituacaoDoPedido.AguardandoGestor;
         ValidaAte = null;
 
@@ -159,8 +159,8 @@ public sealed partial class PedidoDeConcessao
     {
         bool naEtapaDoGestor = aprovacao.Etapa == EtapaDoPedido.Gestor;
         string? dispensa = naEtapaDoGestor ? aprovacao.Contexto.MotivoDaDispensa(aprovacao.Perfil) : null;
-        Registro.Registrar(
-            aprovacao.Etapa, new AtoDoAgente(aprovacao.Decisor, aprovacao.Instante), ResultadoDaDecisao.Aprovado, null, aprovacao.Perfil, dispensa);
+        _decisoes.Add(DecisaoDoPedido.Registrar(
+            Id, aprovacao.Etapa, new AtoDoAgente(aprovacao.Decisor, aprovacao.Instante), ResultadoDaDecisao.Aprovado, null, aprovacao.Perfil, dispensa));
 
         if (naEtapaDoGestor)
         {
