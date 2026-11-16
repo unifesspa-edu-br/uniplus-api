@@ -6,9 +6,9 @@ namespace Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 /// agregado confere tudo e acumula as recusas.
 /// </summary>
 /// <param name="Codigo">Código da área informado, ou <see langword="null"/> quando ausente.</param>
-/// <param name="Peso">Peso informado para a área.</param>
+/// <param name="Peso">Peso informado para a área, ou <see langword="null"/> quando ausente.</param>
 /// <param name="Corte">Nota mínima informada, ou <see langword="null"/> para sem corte.</param>
 public sealed record AreaInformada(
     string? Codigo,
-    decimal Peso,
+    decimal? Peso,
     decimal? Corte);

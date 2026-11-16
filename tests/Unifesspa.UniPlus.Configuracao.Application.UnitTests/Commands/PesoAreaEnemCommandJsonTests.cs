@@ -7,12 +7,12 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.PesosAreaEnem;
 
 /// <summary>
-/// Garante que o peso de cada área rejeita a omissão no JSON (via <c>[JsonRequired]</c>),
-/// em vez de o System.Text.Json construir o item com <c>0m</c> — um peso válido que
-/// sobrescreveria silenciosamente o valor configurado numa atualização. O corte, ao
-/// contrário, é opcional: ausente é "sem corte".
+/// Garante que o peso omitido no JSON desserializa como nulo, para a validação de domínio recusá-lo no
+/// campo da área, em vez de o System.Text.Json construir o item com <c>0m</c> — um peso válido que
+/// sobrescreveria silenciosamente o valor configurado numa atualização. O corte é opcional: ausente é
+/// "sem corte".
 /// </summary>
-public sealed class PesoAreaEnemCommandJsonRequiredTests
+public sealed class PesoAreaEnemCommandJsonTests
 {
     private static readonly JsonSerializerOptions Options = new()
     {
@@ -20,8 +20,8 @@ public sealed class PesoAreaEnemCommandJsonRequiredTests
         PropertyNameCaseInsensitive = true,
     };
 
-    [Fact(DisplayName = "Atualizar: omitir o peso de uma área no JSON é rejeitado (não vira 0 silencioso)")]
-    public void Atualizar_SemPeso_LancaJsonException()
+    [Fact(DisplayName = "Atualizar: omitir o peso de uma área no JSON desserializa como nulo (não vira 0 silencioso)")]
+    public void Atualizar_SemPeso_DesserializaComNulo()
     {
         const string json = """
         {
@@ -37,9 +37,10 @@ public sealed class PesoAreaEnemCommandJsonRequiredTests
         }
         """;
 
-        Action act = () => JsonSerializer.Deserialize<AtualizarPesoAreaEnemCommand>(json, Options);
+        AtualizarPesoAreaEnemCommand? cmd = JsonSerializer.Deserialize<AtualizarPesoAreaEnemCommand>(json, Options);
 
-        act.Should().Throw<JsonException>();
+        cmd!.Areas![4].Peso.Should().BeNull();
+        cmd.Areas[3].Peso.Should().Be(2.5m);
     }
 
     [Fact(DisplayName = "Atualizar: JSON completo desserializa, e o corte ausente fica nulo")]
@@ -66,8 +67,8 @@ public sealed class PesoAreaEnemCommandJsonRequiredTests
         cmd.Areas[1].Corte.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Criar: omitir o peso de uma área no JSON é rejeitado")]
-    public void Criar_SemPeso_LancaJsonException()
+    [Fact(DisplayName = "Criar: omitir o peso de uma área no JSON desserializa como nulo")]
+    public void Criar_SemPeso_DesserializaComNulo()
     {
         const string json = """
         {
@@ -77,9 +78,9 @@ public sealed class PesoAreaEnemCommandJsonRequiredTests
         }
         """;
 
-        Action act = () => JsonSerializer.Deserialize<CriarPesoAreaEnemCommand>(json, Options);
+        CriarPesoAreaEnemCommand? cmd = JsonSerializer.Deserialize<CriarPesoAreaEnemCommand>(json, Options);
 
-        act.Should().Throw<JsonException>();
+        cmd!.Areas![0].Peso.Should().BeNull();
     }
 
     [Fact(DisplayName = "Criar: sem a lista de áreas desserializa com nulo, para a validação de domínio responder")]

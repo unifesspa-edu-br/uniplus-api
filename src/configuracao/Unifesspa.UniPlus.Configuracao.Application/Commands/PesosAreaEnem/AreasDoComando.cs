@@ -13,6 +13,6 @@ internal static class AreasDoComando
         areas is null
             ? null
             : [.. areas.Select(static area => area is null
-                ? new AreaInformada(null, 0m, null)
+                ? new AreaInformada(null, null, null)
                 : new AreaInformada(area.Codigo, area.Peso, area.Corte))];
 }

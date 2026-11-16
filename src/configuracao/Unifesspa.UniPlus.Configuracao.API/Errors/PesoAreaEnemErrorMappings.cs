@@ -40,6 +40,12 @@ internal static class PesoAreaEnemErrorMappings
                 "uniplus.configuracao.peso_area_enem.par_ja_existe",
                 "Já existe uma linha de pesos ativa para esta resolução e grupo de curso")),
 
+        new(PesoAreaEnemErrorCodes.PesoObrigatorio,
+            new DomainErrorMapping(
+                StatusCodes.Status422UnprocessableEntity,
+                "uniplus.configuracao.peso_area_enem.peso_obrigatorio",
+                "O peso da área é obrigatório")),
+
         new(PesoAreaEnemErrorCodes.PesoNegativo,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,

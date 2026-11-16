@@ -90,6 +90,15 @@ public sealed class PesoAreaEnemAreasTests
         resultado.Errors.Should().ContainSingle(e => e.Error.Code == PesoAreaEnemErrorCodes.AreaFaltando);
     }
 
+    [Fact(DisplayName = "Área sem o peso é recusada no campo do peso da área, sem virar peso zero")]
+    public void Criar_AreaSemPeso_Falha()
+    {
+        Result<PesoAreaEnem> resultado = Criar(ComArea(1, new AreaInformada(PesoAreaEnem.CodigoCienciasDaNatureza, null, null)));
+
+        resultado.Errors.Should().ContainSingle(e =>
+            e.Field == "areas[1].peso" && e.Error.Code == PesoAreaEnemErrorCodes.PesoObrigatorio);
+    }
+
     [Theory(DisplayName = "Peso fora da faixa é recusado no campo do peso da área")]
     [InlineData(-0.01, PesoAreaEnemErrorCodes.PesoNegativo)]
     [InlineData(100, PesoAreaEnemErrorCodes.PesoExcedeMaximo)]
