@@ -29,15 +29,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed partial class PedidoDeConcessao : EntityBase
 {
-    /// <summary>As situações em que o pedido ainda pode avançar: o mesmo pedido não se repete enquanto numa delas.</summary>
-    public static readonly IReadOnlyList<SituacaoDoPedido> SituacoesAtivas =
-    [
-        SituacaoDoPedido.AguardandoDocumento,
-        SituacaoDoPedido.AguardandoBeneficiario,
-        SituacaoDoPedido.AguardandoGestor,
-        SituacaoDoPedido.AguardandoProtecaoDeDados,
-    ];
-
     private readonly DecisoesDoPedido _decisoes = [];
     private readonly AnexosDoPedido _anexos = [];
 
@@ -58,14 +49,10 @@ public sealed partial class PedidoDeConcessao : EntityBase
     /// <summary>O que o solicitante declarou ao pedir.</summary>
     public DeclaracaoDoPedido Declaracao { get; private set; } = null!;
 
-    public SituacaoDoPedido Situacao { get; private set; }
-
-    /// <summary>O fim de vigência que o gestor definiu ao aprovar e que a concessão herda; nulo, sem prazo.</summary>
-    public DateTimeOffset? ValidaAte { get; private set; }
+    /// <summary>Onde o pedido está: a situação, o prazo que o gestor definiu e o encerramento.</summary>
+    public AndamentoDoPedido Andamento { get; private set; } = null!;
 
     public DateTimeOffset CriadoEm { get; private set; }
-
-    public DateTimeOffset? EncerradoEm { get; private set; }
 
     /// <summary>A concessão que a última aprovação gerou; nula até lá.</summary>
     public Guid? ConcessaoId { get; private set; }
@@ -80,16 +67,6 @@ public sealed partial class PedidoDeConcessao : EntityBase
         ? EscopoDaConcessao.DaUnidade(unidade)
         : EscopoDaConcessao.DaInstituicao();
 
-    public bool Ativo => SituacoesAtivas.Contains(Situacao);
-
-    /// <summary>A etapa que o pedido aguarda; nula quando ele não espera aprovador.</summary>
-    public EtapaDoPedido? EtapaAtual => Situacao switch
-    {
-        SituacaoDoPedido.AguardandoGestor => EtapaDoPedido.Gestor,
-        SituacaoDoPedido.AguardandoProtecaoDeDados => EtapaDoPedido.ProtecaoDeDados,
-        _ => null,
-    };
-
     // Construtor de materialização do EF Core.
     private PedidoDeConcessao()
     {
@@ -103,14 +80,14 @@ public sealed partial class PedidoDeConcessao : EntityBase
             return Result.Failure(SituacaoInvalida("O pedido só se cancela antes da primeira decisão."));
         }
 
-        Encerrar(SituacaoDoPedido.Cancelado, instante);
+        Andamento = Andamento.Encerrado(SituacaoDoPedido.Cancelado, instante);
         return Result.Success();
     }
 
     /// <summary>Registra a concessão que a última aprovação gerou.</summary>
     public void RegistrarConcessao(Guid concessaoId)
     {
-        if (Situacao != SituacaoDoPedido.Aprovado)
+        if (Andamento.Situacao != SituacaoDoPedido.Aprovado)
         {
             throw new InvalidOperationException("Só o pedido aprovado tem concessão.");
         }
@@ -119,14 +96,8 @@ public sealed partial class PedidoDeConcessao : EntityBase
     }
 
     private bool PodeSerAlteradoPeloSolicitante =>
-        Situacao is SituacaoDoPedido.AguardandoDocumento or SituacaoDoPedido.AguardandoBeneficiario or SituacaoDoPedido.AguardandoGestor
+        Andamento.Situacao is SituacaoDoPedido.AguardandoDocumento or SituacaoDoPedido.AguardandoBeneficiario or SituacaoDoPedido.AguardandoGestor
         && _decisoes.Count == 0;
-
-    private void Encerrar(SituacaoDoPedido situacao, DateTimeOffset instante)
-    {
-        Situacao = situacao;
-        EncerradoEm = instante;
-    }
 
     private static DomainError SituacaoInvalida(string mensagem) => new(PedidoErrorCodes.SituacaoInvalida, mensagem);
 }

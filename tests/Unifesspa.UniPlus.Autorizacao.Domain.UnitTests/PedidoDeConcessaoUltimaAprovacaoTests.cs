@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
-using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using System.Reflection;
 
 using AwesomeAssertions;
@@ -10,13 +9,14 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
 
 /// <summary>
 /// A aprovação do gestor que a proteção de dados confere é a última registrada. Com o gestor aprovando de novo no mesmo
 /// instante, o que decide é a ordem de registro, e a decisão ainda não gravada é a mais recente.
 /// </summary>
-public sealed class PedidoDeConcessaoUltimaAprovacaoTests 
+public sealed class PedidoDeConcessaoUltimaAprovacaoTests
 {
     private static readonly PerfilAvaliado Ampliado = new([.. Sensivel.Permissoes, "selecao:inscricoes:exportar"], "sensivel", true, null);
 

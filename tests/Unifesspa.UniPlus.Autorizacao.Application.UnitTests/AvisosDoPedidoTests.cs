@@ -115,7 +115,7 @@ public sealed class AvisosDoPedidoTests
 
         IReadOnlyList<EnviarEmail> avisos = await Avisar(pedido, SituacaoDoPedido.AguardandoGestor, concessoes);
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
         EnviarEmail aviso = avisos.Should().ContainSingle().Subject;
         aviso.Destinatario.Should().Be(EmailMarlene);
         aviso.Finalidade.Should().Be("pedido.fila_da_protecao_de_dados");
@@ -184,7 +184,7 @@ public sealed class AvisosDoPedidoTests
     public async Task AguardandoDocumento_NaoAvisa()
     {
         PedidoDeConcessao pedido = Pedido(paraSiMesmo: false, perfil: PerfilDeGovernanca());
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
 
         (await Avisar(pedido, situacaoAnterior: null)).Should().BeEmpty();
     }

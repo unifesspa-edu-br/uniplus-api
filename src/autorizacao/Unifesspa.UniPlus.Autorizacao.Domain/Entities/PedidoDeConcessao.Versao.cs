@@ -24,12 +24,12 @@ public sealed partial class PedidoDeConcessao
     {
         ArgumentNullException.ThrowIfNull(nova);
 
-        if (!Ativo)
+        if (!Andamento.Ativo)
         {
             return DesfechoDaTrocaDeVersao.Inalterado;
         }
 
-        DesfechoDaTrocaDeVersao desfecho = DesfechoDaTroca(comAcrescimo);
+        DesfechoDaTrocaDeVersao desfecho = Andamento.DesfechoDaTroca(comAcrescimo);
         Aplicar(desfecho, nova, instante);
         _trocasDeVersao.Add(TrocaDeVersaoDoPedido.Registrar(Id, numeroAnterior, nova.Numero, desfecho, instante));
 
@@ -45,30 +45,18 @@ public sealed partial class PedidoDeConcessao
     {
         ArgumentNullException.ThrowIfNull(perfil);
 
-        if (Ativo && VersaoId != perfil.VersaoVigente?.Id)
+        if (Andamento.Ativo && VersaoId != perfil.VersaoVigente?.Id)
         {
             throw new InvalidOperationException(
                 $"O pedido {Id} segue a versão {VersaoId} e o perfil {perfil.Id} tem outra em vigor.");
         }
     }
 
-    private DesfechoDaTrocaDeVersao DesfechoDaTroca(bool comAcrescimo)
-    {
-        if (comAcrescimo)
-        {
-            return DesfechoDaTrocaDeVersao.Devolvido;
-        }
-
-        return Situacao == SituacaoDoPedido.AguardandoProtecaoDeDados
-            ? DesfechoDaTrocaDeVersao.VoltouAoGestor
-            : DesfechoDaTrocaDeVersao.VersaoAtualizada;
-    }
-
     private void Aplicar(DesfechoDaTrocaDeVersao desfecho, VersaoDoPerfil nova, DateTimeOffset instante)
     {
         if (desfecho == DesfechoDaTrocaDeVersao.Devolvido)
         {
-            Encerrar(SituacaoDoPedido.Devolvido, instante);
+            Andamento = Andamento.Encerrado(SituacaoDoPedido.Devolvido, instante);
             return;
         }
 
@@ -76,8 +64,7 @@ public sealed partial class PedidoDeConcessao
 
         if (desfecho == DesfechoDaTrocaDeVersao.VoltouAoGestor)
         {
-            Situacao = SituacaoDoPedido.AguardandoGestor;
-            ValidaAte = null;
+            Andamento = Andamento.DeVoltaAoGestor();
         }
     }
 }

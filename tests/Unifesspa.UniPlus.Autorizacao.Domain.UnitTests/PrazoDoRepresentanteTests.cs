@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
-using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -9,6 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
 
 /// <summary>
@@ -17,7 +17,7 @@ using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBui
 /// pedido, na aprovação do gestor, na segunda etapa do pedido que já trazia o prazo de antes da regra e na própria
 /// concessão; o Encarregado de dados continua com prazo opcional.
 /// </summary>
-public sealed class PrazoDoRepresentanteTests 
+public sealed class PrazoDoRepresentanteTests
 {
     private static readonly OrigemDaConcessao Origem = new(TipoDeOrigem.Pedido, Guid.NewGuid());
 
@@ -41,7 +41,7 @@ public sealed class PrazoDoRepresentanteTests
 
         FieldError erro = resultado.Errors.Should().ContainSingle().Which;
         (erro.Field, erro.Error.Code).Should().Be(("validaAte", PedidoErrorCodes.ValidadeInvalida));
-        (pedido.Decisoes.Count, pedido.ValidaAte).Should().Be((0, (DateTimeOffset?)null));
+        (pedido.Decisoes.Count, pedido.Andamento.ValidaAte).Should().Be((0, (DateTimeOffset?)null));
     }
 
     [Fact(DisplayName = "O pedido de Representante com prazo gravado antes da regra é recusado na segunda etapa, sem registrar a decisão")]
@@ -50,13 +50,13 @@ public sealed class PrazoDoRepresentanteTests
         PedidoDeConcessao pedido = Pedido().Protegido().AguardandoGestor();
         pedido.Aprovar(Diogo.Identidade, DeRepresentante, new ContextoDaAprovacao(HaRepresentanteVigente: true), Agora)
             .Value.Should().Be(DesfechoDaAprovacao.AguardaProtecaoDeDados);
-        typeof(PedidoDeConcessao).GetProperty(nameof(PedidoDeConcessao.ValidaAte))!.SetValue(pedido, Agora.AddMonths(3));
+        typeof(AndamentoDoPedido).GetProperty(nameof(AndamentoDoPedido.ValidaAte))!.SetValue(pedido.Andamento, Agora.AddMonths(3));
 
         Result<DesfechoDaAprovacao> resultado = pedido.Aprovar(Marlene.Identidade, DeRepresentante, Contexto, Agora.AddHours(1));
 
         FieldError erro = resultado.Errors.Should().ContainSingle().Which;
         (erro.Field, erro.Error.Code, erro.Error.Message).Should().Be(("validaAte", PedidoErrorCodes.ValidadeInvalida, MensagensDoPrazo.PerfilSemPrazo));
-        (pedido.Situacao, pedido.Decisoes.Count, pedido.ValidaAte).Should().Be((SituacaoDoPedido.AguardandoProtecaoDeDados, 1, (DateTimeOffset?)Agora.AddMonths(3)));
+        (pedido.Andamento.Situacao, pedido.Decisoes.Count, pedido.Andamento.ValidaAte).Should().Be((SituacaoDoPedido.AguardandoProtecaoDeDados, 1, (DateTimeOffset?)Agora.AddMonths(3)));
     }
 
     [Fact(DisplayName = "A concessão de Representante com prazo é recusada com a mensagem que nomeia os dois perfis")]
@@ -80,7 +80,7 @@ public sealed class PrazoDoRepresentanteTests
 
         Conceder(PerfilDeGovernanca(TipoDeGovernanca.EncarregadoDeDados), Agora.AddDays(30)).Value!.ValidaAte.Should().Be(Agora.AddDays(30));
         pedido.Aprovar(Diogo.Identidade, deEncarregado, Contexto, Agora, Agora.AddMonths(3)).IsSuccess.Should().BeTrue();
-        pedido.ValidaAte.Should().Be(Agora.AddMonths(3));
+        pedido.Andamento.ValidaAte.Should().Be(Agora.AddMonths(3));
     }
 
     private static Result<Concessao> Conceder(Perfil perfil, DateTimeOffset? validaAte) =>

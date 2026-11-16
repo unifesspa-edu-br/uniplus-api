@@ -87,12 +87,12 @@ internal sealed class PedidoDeConcessaoBuilder
     public PedidoDeConcessao AguardandoGestor()
     {
         PedidoDeConcessao pedido = Criado();
-        if (pedido.Situacao == SituacaoDoPedido.AguardandoDocumento)
+        if (pedido.Andamento.Situacao == SituacaoDoPedido.AguardandoDocumento)
         {
             VerificarDocumento(pedido);
         }
 
-        if (pedido.Situacao == SituacaoDoPedido.AguardandoBeneficiario)
+        if (pedido.Andamento.Situacao == SituacaoDoPedido.AguardandoBeneficiario)
         {
             pedido.Aceitar(_paraSiMesmo ? _solicitante : _beneficiario, pedido.Termo?.VersaoId, Agora).IsSuccess.Should().BeTrue();
         }

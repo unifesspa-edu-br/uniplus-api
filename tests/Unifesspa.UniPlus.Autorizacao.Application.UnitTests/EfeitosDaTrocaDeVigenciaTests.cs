@@ -67,7 +67,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         IReadOnlyList<EnviarEmail> avisos = await Efeitos(pedidos: [pedido]).AplicarAsync(perfil, troca, Diogo, CancellationToken.None);
 
         avisos.Should().BeEmpty();
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
         pedido.VersaoId.Should().Be(troca.Nova.Id);
         pedido.TrocasDeVersao.Should().ContainSingle().Which.Desfecho.Should().Be(DesfechoDaTrocaDeVersao.VersaoAtualizada);
     }
@@ -82,8 +82,8 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
 
         IReadOnlyList<EnviarEmail> avisos = await Efeitos(pedidos: [pedido], titulares: [gestor]).AplicarAsync(perfil, troca, Diogo, CancellationToken.None);
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
-        pedido.ValidaAte.Should().BeNull();
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.ValidaAte.Should().BeNull();
         pedido.TrocasDeVersao.Should().ContainSingle().Which.Desfecho.Should().Be(DesfechoDaTrocaDeVersao.VoltouAoGestor);
         EnviarEmail aviso = avisos.Should().ContainSingle().Subject;
         aviso.Finalidade.Should().Be("pedido.fila_do_gestor");
@@ -99,8 +99,8 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
 
         IReadOnlyList<EnviarEmail> avisos = await Efeitos(pedidos: [pedido]).AplicarAsync(perfil, troca, Diogo, CancellationToken.None);
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.Devolvido);
-        pedido.EncerradoEm.Should().NotBeNull();
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.Devolvido);
+        pedido.Andamento.EncerradoEm.Should().NotBeNull();
         avisos.Should().HaveCount(2).And.OnlyContain(a => a.Finalidade == "perfil.pedido_devolvido_pela_janela");
         avisos.Select(a => a.Destinatario).Should().BeEquivalentTo([Betina.Email, Leandro.Email]);
         avisos.Should().AllSatisfy(ConferirAvisoDeDevolucao);
@@ -124,7 +124,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
 
         avisos.Should().BeEmpty();
         doOutro.TrocasDeVersao.Should().BeEmpty();
-        cancelado.Situacao.Should().Be(SituacaoDoPedido.Cancelado);
+        cancelado.Andamento.Situacao.Should().Be(SituacaoDoPedido.Cancelado);
         cancelado.TrocasDeVersao.Should().BeEmpty();
     }
 
@@ -178,7 +178,7 @@ public sealed class EfeitosDaTrocaDeVigenciaTests
         PedidoDeConcessao pedido = Pedido(perfil, paraSiMesmo: true);
         PerfilAvaliado sensivel = new([A, B], "sensivel", true, null);
         pedido.Aprovar(Diogo, sensivel, new ContextoDaAprovacao(false), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
 
         return pedido;
     }

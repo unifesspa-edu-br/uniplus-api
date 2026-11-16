@@ -55,7 +55,7 @@ public sealed partial class PedidoDeConcessao
             VersaoId = perfil.VersaoVigente?.Id,
             UnidadeId = escopo.UnidadeId,
             Declaracao = declaracao,
-            Situacao = SituacaoInicial(declaracao.AnexaraDocumento, beneficiario.ParaSiMesmo),
+            Andamento = AndamentoDoPedido.Inicial(SituacaoInicial(declaracao.AnexaraDocumento, beneficiario.ParaSiMesmo)),
             CriadoEm = instante,
         };
         pedido.DefinirPartes(solicitante, beneficiario);

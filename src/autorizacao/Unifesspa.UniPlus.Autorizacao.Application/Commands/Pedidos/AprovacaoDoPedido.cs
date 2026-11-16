@@ -78,7 +78,7 @@ public sealed class AprovacaoDoPedido
         DecisaoDaEtapa decisao, DateTimeOffset? validaAte, CancellationToken cancellationToken)
     {
         DateTimeOffset agora = _clock.GetUtcNow();
-        SituacaoDoPedido situacaoAnterior = decisao.Pedido.Situacao;
+        SituacaoDoPedido situacaoAnterior = decisao.Pedido.Andamento.Situacao;
         ContextoDaAprovacao contexto = await ContextoAsync(decisao, agora, cancellationToken).ConfigureAwait(false);
 
         Result<DesfechoDaAprovacao> aprovacao = decisao.Pedido.Aprovar(decisao.Decisor, decisao.Avaliado, contexto, agora, validaAte);

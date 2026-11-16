@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
-using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using System.Reflection;
 
 using AwesomeAssertions;
@@ -8,11 +7,13 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
 
 /// <summary>O anexo declarado, a aprovação com documento pendente e o perfil que passa a exigir o termo.</summary>
-public sealed class PedidoDeConcessaoTermoNaDecisaoTests 
+public sealed class PedidoDeConcessaoTermoNaDecisaoTests
 {
     [Fact(DisplayName = "Pedido protegido sem documento declarado não recebe anexo")]
     public void NovoAnexo_ProtegidoSemDeclaracao_Recusa() =>
@@ -31,9 +32,9 @@ public sealed class PedidoDeConcessaoTermoNaDecisaoTests
         recusado.RegistrarRecusado(Agora);
 
         pedido.LiberarAoVerificarDocumento().Should().BeFalse();
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
         VerificarDocumento(pedido);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
         Codigos(pedido.NovoAnexo(1024)).Should().Equal(PedidoErrorCodes.SituacaoInvalida);
     }
 
@@ -46,8 +47,8 @@ public sealed class PedidoDeConcessaoTermoNaDecisaoTests
     public void Aprovar_TermoSemAceite_Recusa()
     {
         PedidoDeConcessao pedido = Pedido().Protegido().Criado();
-        typeof(PedidoDeConcessao).GetProperty(nameof(PedidoDeConcessao.Situacao))!
-            .SetValue(pedido, SituacaoDoPedido.AguardandoGestor, BindingFlags.NonPublic, null, null, null);
+        typeof(AndamentoDoPedido).GetProperty(nameof(AndamentoDoPedido.Situacao))!
+            .SetValue(pedido.Andamento, SituacaoDoPedido.AguardandoGestor, BindingFlags.NonPublic, null, null, null);
 
         Codigos(pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora)).Should().Equal(PedidoErrorCodes.SituacaoInvalida);
         pedido.Decisoes.Should().BeEmpty();
@@ -60,8 +61,8 @@ public sealed class PedidoDeConcessaoTermoNaDecisaoTests
 
         Codigos(pedido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora)).Should().Equal(PedidoErrorCodes.TermoExigido);
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.Devolvido);
-        pedido.EncerradoEm.Should().Be(Agora);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.Devolvido);
+        pedido.Andamento.EncerradoEm.Should().Be(Agora);
         pedido.Decisoes.Single().Resultado.Should().Be(ResultadoDaDecisao.TermoExigido);
     }
 

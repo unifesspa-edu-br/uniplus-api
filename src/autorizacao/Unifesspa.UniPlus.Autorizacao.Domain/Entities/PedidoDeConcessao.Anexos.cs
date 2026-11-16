@@ -14,7 +14,7 @@ public sealed partial class PedidoDeConcessao
     public Result<AnexoDoPedido> NovoAnexo(long tamanhoDoPdf)
     {
         DomainError? recusa = PodeSerAlteradoPeloSolicitante
-            ? Declaracao.RecusaDoDocumento(Termo, Situacao)
+            ? Declaracao.RecusaDoDocumento(Termo, Andamento.Situacao)
             : SituacaoInvalida("O anexo só se envia antes da primeira decisão.");
         return recusa is null ? _anexos.Novo(Id, tamanhoDoPdf) : Result<AnexoDoPedido>.Failure(recusa);
     }
@@ -37,12 +37,12 @@ public sealed partial class PedidoDeConcessao
     /// </summary>
     public bool LiberarAoVerificarDocumento()
     {
-        if (Situacao != SituacaoDoPedido.AguardandoDocumento || !_anexos.TemVerificado)
+        if (Andamento.Situacao != SituacaoDoPedido.AguardandoDocumento || !_anexos.TemVerificado)
         {
             return false;
         }
 
-        Situacao = EtapaSeguinteAoDocumento();
+        Andamento = Andamento.Em(EtapaSeguinteAoDocumento());
         return true;
     }
 }

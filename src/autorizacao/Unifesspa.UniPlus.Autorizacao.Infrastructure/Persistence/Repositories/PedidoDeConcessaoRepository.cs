@@ -9,6 +9,7 @@ using Microsoft.EntityFrameworkCore.Query;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Pagination;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Pagination;
@@ -75,7 +76,7 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
         await ComDecisoesEmOrdem(_context.Pedidos)
             .Include(p => p.TrocasDeVersao)
             .AsSplitQuery()
-            .Where(p => p.PerfilId == perfilId && PedidoDeConcessao.SituacoesAtivas.Contains(p.Situacao))
+            .Where(p => p.PerfilId == perfilId && AndamentoDoPedido.SituacoesAtivas.Contains(p.Andamento.Situacao))
             .OrderBy(p => p.Id)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -128,8 +129,8 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
     {
         return filtro.Fila switch
         {
-            FilaDePedidos.Gestor => consulta.Where(p => p.Situacao == SituacaoDoPedido.AguardandoGestor),
-            FilaDePedidos.ProtecaoDeDados => consulta.Where(p => p.Situacao == SituacaoDoPedido.AguardandoProtecaoDeDados),
+            FilaDePedidos.Gestor => consulta.Where(p => p.Andamento.Situacao == SituacaoDoPedido.AguardandoGestor),
+            FilaDePedidos.ProtecaoDeDados => consulta.Where(p => p.Andamento.Situacao == SituacaoDoPedido.AguardandoProtecaoDeDados),
             FilaDePedidos.Todos => consulta,
             _ => consulta.Where(EnvolvendoAPessoa(filtro)),
         };
@@ -148,7 +149,7 @@ public sealed class PedidoDeConcessaoRepository : IPedidoDeConcessaoRepository
     }
 
     private static IQueryable<PedidoDeConcessao> FiltrarPorSituacao(IQueryable<PedidoDeConcessao> consulta, SituacaoDoPedido? situacao) =>
-        situacao is { } escolhida ? consulta.Where(p => p.Situacao == escolhida) : consulta;
+        situacao is { } escolhida ? consulta.Where(p => p.Andamento.Situacao == escolhida) : consulta;
 
     private static object ChaveDaPagina(string sortKey, Guid id) => new { CriadoEm = InstanteDaSortKey(sortKey), Id = id };
 

@@ -45,7 +45,7 @@ public static class CancelarPedidoDeConcessaoCommandHandler
             return Recusa(PedidoHandlerErros.NaoEncontrado());
         }
 
-        SituacaoDoPedido situacaoAnterior = pedido.Situacao;
+        SituacaoDoPedido situacaoAnterior = pedido.Andamento.Situacao;
         Result cancelado = pedido.Cancelar(timeProvider.GetUtcNow());
         if (cancelado.IsFailure)
         {

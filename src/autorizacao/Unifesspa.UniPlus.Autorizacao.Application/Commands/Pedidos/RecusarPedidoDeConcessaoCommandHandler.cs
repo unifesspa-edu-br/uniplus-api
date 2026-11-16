@@ -50,7 +50,7 @@ public static class RecusarPedidoDeConcessaoCommandHandler
         }
 
         DecisaoDaEtapa decisao = preparada.Value!;
-        SituacaoDoPedido situacaoAnterior = decisao.Pedido.Situacao;
+        SituacaoDoPedido situacaoAnterior = decisao.Pedido.Andamento.Situacao;
 
         Result recusa = decisao.Pedido.Recusar(decisao.Decisor, command.Motivo, decisao.Avaliado, timeProvider.GetUtcNow());
         if (recusa.IsFailure)

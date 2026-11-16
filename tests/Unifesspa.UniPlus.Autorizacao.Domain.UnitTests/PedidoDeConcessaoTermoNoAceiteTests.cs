@@ -1,16 +1,16 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
-using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
 
 /// <summary>A ordem documento verificado, aceite do termo e gestor, e quem aceita.</summary>
-public sealed class PedidoDeConcessaoTermoNoAceiteTests 
+public sealed class PedidoDeConcessaoTermoNoAceiteTests
 {
     [Fact(DisplayName = "Pedido próprio protegido com documento: o aceite espera a verificação e só então vai ao gestor")]
     public void Aceitar_ParaSiComDocumento_DepoisDaVerificacao()
@@ -19,10 +19,10 @@ public sealed class PedidoDeConcessaoTermoNoAceiteTests
 
         Codigos(pedido.Aceitar(Betina, pedido.Termo?.VersaoId, Agora)).Should().Equal(PedidoErrorCodes.AnexoNaoVerificado);
         VerificarDocumento(pedido);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario, "o pedido protegido passa pelo aceite antes do gestor");
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario, "o pedido protegido passa pelo aceite antes do gestor");
         pedido.Aceitar(Betina, pedido.Termo?.VersaoId, Agora).IsSuccess.Should().BeTrue();
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
         pedido.AceiteDoTermo!.Pessoa.Should().Be(Betina.Identidade);
     }
 
@@ -33,7 +33,7 @@ public sealed class PedidoDeConcessaoTermoNoAceiteTests
 
         VerificarDocumento(pedido);
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
     }
 
     [Theory(DisplayName = "Pedido protegido para outra pessoa: o aceite do termo é o aceite do pedido, depois do documento quando declarado")]
@@ -51,7 +51,7 @@ public sealed class PedidoDeConcessaoTermoNoAceiteTests
         pedido.Aceitar(Leandro, pedido.Termo?.VersaoId, Agora).IsSuccess.Should().BeTrue();
 
         pedido.AceiteDoTermo!.Pessoa.Should().Be(Leandro.Identidade);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
     }
 
     [Fact(DisplayName = "Só o beneficiário aceita: nem o solicitante nem outra pessoa aceitam por ele")]
@@ -75,7 +75,7 @@ public sealed class PedidoDeConcessaoTermoNoAceiteTests
         Codigos(comTermo.Aceitar(Leandro, null, Agora)).Should().Equal(PedidoErrorCodes.ApresentacaoDoTermoInvalida);
         Codigos(comTermo.Aceitar(Leandro, Guid.NewGuid(), Agora)).Should().Equal(PedidoErrorCodes.TermoDivergente);
         Codigos(semTermo.Aceitar(Leandro, Guid.NewGuid(), Agora)).Should().Equal(PedidoErrorCodes.ApresentacaoDoTermoInvalida);
-        comTermo.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
+        comTermo.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
     }
 
     [Fact(DisplayName = "A versão fixada continua a do pedido depois que outra versão é publicada")]

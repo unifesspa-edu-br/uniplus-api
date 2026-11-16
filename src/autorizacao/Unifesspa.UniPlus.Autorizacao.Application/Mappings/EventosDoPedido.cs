@@ -134,7 +134,7 @@ public sealed class EventosDoPedido : IEventosDaOrigem
 
     private static IEnumerable<EventoDaTrilhaDto> DoCancelamento(PedidoDeConcessao pedido, IdentidadeDto solicitante)
     {
-        if (pedido.Situacao == SituacaoDoPedido.Cancelado && pedido.EncerradoEm is { } canceladoEm)
+        if (pedido.Andamento.Situacao == SituacaoDoPedido.Cancelado && pedido.Andamento.EncerradoEm is { } canceladoEm)
         {
             yield return new("cancelado", canceladoEm, solicitante, null);
         }

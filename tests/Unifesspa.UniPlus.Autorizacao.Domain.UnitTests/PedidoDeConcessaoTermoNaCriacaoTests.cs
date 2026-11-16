@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
-using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -8,10 +7,11 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
 
 /// <summary>A fixação do termo de responsabilidade na criação do pedido protegido.</summary>
-public sealed class PedidoDeConcessaoTermoNaCriacaoTests 
+public sealed class PedidoDeConcessaoTermoNaCriacaoTests
 {
     private static readonly VersaoDoTermo Vigente = TermosDeTeste.Publicada();
 
@@ -20,7 +20,7 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests
     {
         PedidoDeConcessao pedido = Pedido().ParaSiMesmo().Protegido().ComVigente(Vigente).Criado();
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
         pedido.Termo.Should().Be(new TermoFixado(Vigente.Id, 1, Vigente.Resumo));
         pedido.AceiteDoTermo!.Pessoa.Should().Be(Betina.Identidade);
         pedido.AceiteDoTermo.AceitoEm.Should().Be(Agora);
@@ -32,7 +32,7 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests
     {
         PedidoDeConcessao pedido = Pedido().Protegido().ComVigente(Vigente).Criado();
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
         pedido.Termo?.VersaoId.Should().Be(Vigente.Id);
         pedido.AceiteDoTermo.Should().BeNull();
         pedido.AguardaAceiteDoTermo.Should().BeTrue();
@@ -43,7 +43,7 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests
     {
         PedidoDeConcessao pedido = Pedido().ParaSiMesmo().DeclarandoDocumento().Protegido().ComVigente(Vigente).Criado();
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
         pedido.Declaracao.AnexaraDocumento.Should().BeTrue();
         pedido.AceiteDoTermo.Should().BeNull();
     }
@@ -104,7 +104,7 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests
         ExigenciaDoTermo.Do(PerfilDeGovernanca(), Catalogo).Should().BeTrue();
         ExigenciaDoTermo.Do(PerfilComum(), Catalogo).Should().BeFalse();
         pedido.Declaracao.AnexaraDocumento.Should().BeTrue();
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
         pedido.Termo?.VersaoId.Should().Be(Vigente.Id);
     }
 

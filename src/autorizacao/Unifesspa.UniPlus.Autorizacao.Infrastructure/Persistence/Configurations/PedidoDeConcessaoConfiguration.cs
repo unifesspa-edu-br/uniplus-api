@@ -72,17 +72,29 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         builder.Property(p => p.BeneficiarioEmail).HasMaxLength(EmailDaPessoa.MaxLength).IsRequired();
         ConfigurarBeneficiario(builder);
         ConfigurarDeclaracao(builder);
-        builder.Property(p => p.Situacao).HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
-        builder.Property(p => p.ValidaAte);
+        ConfigurarAndamento(builder);
         // A unidade é de outro módulo (ADR-0087): sem chave estrangeira entre schemas.
         builder.Property(p => p.UnidadeId);
         ConfigurarTermo(builder);
 
         // Derivados do estado: não se gravam de novo.
         builder.Ignore(p => p.Escopo);
-        builder.Ignore(p => p.Ativo);
-        builder.Ignore(p => p.EtapaAtual);
         builder.Ignore(p => p.AguardaAceiteDoTermo);
+    }
+
+    private static void ConfigurarAndamento(EntityTypeBuilder<PedidoDeConcessao> builder)
+    {
+        builder.OwnsOne(p => p.Andamento, andamento =>
+        {
+            andamento.ClassificaPorPadrao(ClassificacaoDeProtecao.Pessoal);
+            andamento.Property(a => a.Situacao).HasColumnName("situacao").HasConversion(SituacaoConverter).HasMaxLength(SituacaoMaxLength).IsRequired();
+            andamento.Property(a => a.ValidaAte).HasColumnName("valida_ate");
+            andamento.Property(a => a.EncerradoEm).HasColumnName("encerrado_em");
+            andamento.Ignore(a => a.Ativo);
+            andamento.Ignore(a => a.EtapaAtual);
+            andamento.HasIndex(a => a.Situacao).HasDatabaseName("ix_pedidos_situacao");
+        });
+        builder.Navigation(p => p.Andamento).IsRequired();
     }
 
     private static void ConfigurarDeclaracao(EntityTypeBuilder<PedidoDeConcessao> builder)
@@ -190,11 +202,10 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
             .AreNullsDistinct(false)
             .HasFilter(
                 "situacao IN ("
-                + string.Join(", ", PedidoDeConcessao.SituacoesAtivas.Select(s => $"'{s.ToCodigo()}'"))
+                + string.Join(", ", AndamentoDoPedido.SituacoesAtivas.Select(s => $"'{s.ToCodigo()}'"))
                 + ")")
             .HasDatabaseName("ux_pedidos_ativo_unico");
 
         // As filas dos aprovadores e a lista de quem pediu.
-        builder.HasIndex(p => p.Situacao).HasDatabaseName("ix_pedidos_situacao");
     }
 }

@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
-using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -11,19 +10,20 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
 
 /// <summary>O pedido de perfil com designação, o documento e a dispensa da segunda etapa na designação do primeiro Representante do controlador.</summary>
-public sealed class PedidoDeConcessaoDesignacaoTests 
+public sealed class PedidoDeConcessaoDesignacaoTests
 {
     [Fact(DisplayName = "Pedido de perfil com designação nasce aguardando o documento, fora das etapas de decisão e do aceite")]
     public void Criar_PerfilComDesignacao_NasceAguardandoODocumento()
     {
         PedidoDeConcessao pedido = PedidoDeConcessao.Criar(new PartesDoPedido(Betina, Leandro.Email), PerfilDeGovernanca(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), Dominios, Catalogo, Agora).Value!;
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
-        pedido.Ativo.Should().BeTrue("o pedido repetido continua barrado enquanto espera o documento");
-        pedido.EtapaAtual.Should().BeNull();
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
+        pedido.Andamento.Ativo.Should().BeTrue("o pedido repetido continua barrado enquanto espera o documento");
+        pedido.Andamento.EtapaAtual.Should().BeNull();
         Codigos(pedido.Aceitar(Leandro, null, Agora)).Should().Equal(PedidoErrorCodes.AnexoNaoVerificado);
         Codigos(pedido.Aprovar(Diogo.Identidade, DeGestor, Contexto, Agora)).Should().Equal(PedidoErrorCodes.SituacaoInvalida);
         pedido.NovoAnexo(1024).IsSuccess.Should().BeTrue("o solicitante anexa o documento justamente nesta situação");
@@ -36,7 +36,7 @@ public sealed class PedidoDeConcessaoDesignacaoTests
 
         pedido.Cancelar(Agora).IsSuccess.Should().BeTrue();
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.Cancelado);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.Cancelado);
     }
 
     [Theory(DisplayName = "O documento verificado libera o pedido para o aceite do beneficiário, ou para o gestor no pedido para si mesmo")]
@@ -51,7 +51,7 @@ public sealed class PedidoDeConcessaoDesignacaoTests
         anexo.RegistrarVerificado(new string('a', 64), Agora).Should().BeTrue();
         pedido.LiberarAoVerificarDocumento().Should().BeTrue();
 
-        pedido.Situacao.Should().Be(esperada);
+        pedido.Andamento.Situacao.Should().Be(esperada);
         pedido.LiberarAoVerificarDocumento().Should().BeFalse("o pedido já seguiu");
     }
 
@@ -64,7 +64,7 @@ public sealed class PedidoDeConcessaoDesignacaoTests
         pedido.LiberarAoVerificarDocumento().Should().BeFalse("o anexo ainda não foi confirmado");
         pedido.ConfirmarAnexo(anexo.Id, "\"etag\"", Agora).IsSuccess.Should().BeTrue();
         pedido.LiberarAoVerificarDocumento().Should().BeFalse("o anexo está em verificação, sem veredicto");
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
     }
 
     private static PedidoDeConcessao PedidoComDesignacao(PessoaNoToken solicitante) =>
@@ -80,7 +80,7 @@ public sealed class PedidoDeConcessaoDesignacaoTests
 
         pedido.LiberarAoVerificarDocumento().Should().BeFalse();
 
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
     }
 
     [Fact(DisplayName = "A designação do primeiro Representante do controlador passa só pelo gestor, com a dispensa na trilha")]
@@ -91,7 +91,7 @@ public sealed class PedidoDeConcessaoDesignacaoTests
         Result<DesfechoDaAprovacao> resultado = pedido.Aprovar(Diogo.Identidade, DeRepresentante, SemRepresentante, Agora);
 
         resultado.Value.Should().Be(DesfechoDaAprovacao.Concluido);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.Aprovado);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.Aprovado);
         pedido.Decisoes.Single().Dispensa.Should().Be(MotivosDeDispensa.DesignacaoDeProtecaoDeDados);
     }
 
@@ -103,7 +103,7 @@ public sealed class PedidoDeConcessaoDesignacaoTests
         Result<DesfechoDaAprovacao> resultado = pedido.Aprovar(Diogo.Identidade, DeRepresentante, ComRepresentante, Agora);
 
         resultado.Value.Should().Be(DesfechoDaAprovacao.AguardaProtecaoDeDados);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoProtecaoDeDados);
         pedido.Decisoes.Single().Dispensa.Should().BeNull();
     }
 

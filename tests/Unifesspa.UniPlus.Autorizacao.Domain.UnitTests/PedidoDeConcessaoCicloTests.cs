@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
-using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -11,10 +10,11 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.PedidoDeConcessaoBuilder;
 
 /// <summary>O perfil que muda entre as etapas, a recusa, o cancelamento, o anexo e a concessão do pedido.</summary>
-public sealed class PedidoDeConcessaoCicloTests 
+public sealed class PedidoDeConcessaoCicloTests
 {
     [Fact(DisplayName = "Perfil que mudou entre as etapas devolve o pedido ao gestor e nada é concedido")]
     public void Aprovar_PerfilAlterado_VoltaAoGestor()
@@ -25,8 +25,8 @@ public sealed class PedidoDeConcessaoCicloTests
         Result<DesfechoDaAprovacao> resultado = pedido.Aprovar(Marlene.Identidade, Ampliado, Contexto, Agora.AddHours(1));
 
         Codigos(resultado).Should().Equal(PedidoErrorCodes.PerfilAlterado);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
-        pedido.EncerradoEm.Should().BeNull();
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.EncerradoEm.Should().BeNull();
         pedido.Decisoes.Select(d => d.Resultado).Should().Equal(ResultadoDaDecisao.Aprovado, ResultadoDaDecisao.PerfilAlterado);
         DecisaoDoPedido tentativa = pedido.Decisoes[1];
         tentativa.Etapa.Should().Be(EtapaDoPedido.ProtecaoDeDados);
@@ -57,11 +57,11 @@ public sealed class PedidoDeConcessaoCicloTests
         }
 
         PerfilAvaliado inativo = new(Sensivel.Permissoes, Sensivel.Sensibilidade, true, null, ativo: false);
-        SituacaoDoPedido antes = pedido.Situacao;
+        SituacaoDoPedido antes = pedido.Andamento.Situacao;
 
         Codigos(pedido.Aprovar(naEtapaDeProtecaoDeDados ? Marlene.Identidade : Diogo.Identidade, inativo, Contexto, Agora))
             .Should().Equal(PedidoErrorCodes.PerfilInativo);
-        pedido.Situacao.Should().Be(antes);
+        pedido.Andamento.Situacao.Should().Be(antes);
         pedido.Decisoes.Count.Should().Be(naEtapaDeProtecaoDeDados ? 1 : 0);
     }
 
@@ -73,8 +73,8 @@ public sealed class PedidoDeConcessaoCicloTests
         Result recusa = pedido.Recusar(Diogo.Identidade, "  Função não exige acesso a laudos.  ", Sensivel, Agora.AddHours(1));
 
         recusa.IsSuccess.Should().BeTrue();
-        pedido.Situacao.Should().Be(SituacaoDoPedido.Recusado);
-        pedido.EncerradoEm.Should().Be(Agora.AddHours(1));
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.Recusado);
+        pedido.Andamento.EncerradoEm.Should().Be(Agora.AddHours(1));
         pedido.ConcessaoId.Should().BeNull();
         DecisaoDoPedido decisao = pedido.Decisoes.Single();
         decisao.Resultado.Should().Be(ResultadoDaDecisao.Recusado);
@@ -92,7 +92,7 @@ public sealed class PedidoDeConcessaoCicloTests
 
         Codigos(pedido.Recusar(Diogo.Identidade, motivo, Interno, Agora)).Should().Equal(PedidoErrorCodes.MotivoInvalido);
         Codigos(pedido.Recusar(Diogo.Identidade, new string('a', 501), Interno, Agora)).Should().Equal(PedidoErrorCodes.MotivoInvalido);
-        pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        pedido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
     }
 
     [Fact(DisplayName = "O solicitante cancela antes da primeira decisão")]
@@ -102,9 +102,9 @@ public sealed class PedidoDeConcessaoCicloTests
 
         cancelavel.Cancelar(Agora.AddHours(1)).IsSuccess.Should().BeTrue();
 
-        cancelavel.Situacao.Should().Be(SituacaoDoPedido.Cancelado);
-        cancelavel.EncerradoEm.Should().Be(Agora.AddHours(1));
-        cancelavel.Ativo.Should().BeFalse();
+        cancelavel.Andamento.Situacao.Should().Be(SituacaoDoPedido.Cancelado);
+        cancelavel.Andamento.EncerradoEm.Should().Be(Agora.AddHours(1));
+        cancelavel.Andamento.Ativo.Should().BeFalse();
     }
 
     [Fact(DisplayName = "Depois da primeira decisão o pedido não se cancela, nem quando volta ao gestor")]
@@ -117,7 +117,7 @@ public sealed class PedidoDeConcessaoCicloTests
         PedidoDeConcessao devolvido = Pedido().Protegido().AguardandoGestor();
         devolvido.Aprovar(Diogo.Identidade, Sensivel, Contexto, Agora);
         devolvido.Aprovar(Marlene.Identidade, new PerfilAvaliado(["outra"], "sensivel", true, null), Contexto, Agora);
-        devolvido.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
+        devolvido.Andamento.Situacao.Should().Be(SituacaoDoPedido.AguardandoGestor);
         Codigos(devolvido.Cancelar(Agora)).Should().Equal(PedidoErrorCodes.SituacaoInvalida);
     }
 

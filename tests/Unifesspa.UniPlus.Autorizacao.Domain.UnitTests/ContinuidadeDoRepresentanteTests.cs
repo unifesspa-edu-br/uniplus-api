@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 
-using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Autorizacao.Apoio;
@@ -8,12 +7,14 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 
+using static Unifesspa.UniPlus.Autorizacao.Domain.UnitTests.ApoioDoPedido;
+
 /// <summary>
 /// Depois da primeira designação, a revogação não deixa a instituição sem Representante do controlador vigente
 /// (UNI-REQ-0394). Só a designação vigente da instituição reduz o papel, e a concessão anterior à regra, com prazo ainda
 /// não vencido, conta como vigente. Isabella é a Representante; Leandro, o outro beneficiário.
 /// </summary>
-public sealed class ContinuidadeDoRepresentanteTests 
+public sealed class ContinuidadeDoRepresentanteTests
 {
     [Fact(DisplayName = "A designação vigente de Representante na instituição reduz o papel quando revogada")]
     public void EDesignacaoVigente_RepresentanteAtivo() =>
