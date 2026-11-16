@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -96,6 +97,18 @@ public sealed class EntradaDoPreliminarDaEtapaTests
         Etapa(completar: e => AbrirRecurso(e, prazo: 3m, ancora: 0, Materia)).EntradaDoPreliminar()
             .Should().NotBe(Etapa(completar: e => AbrirRecurso(e, prazo: 2m, ancora: 0, Materia)).EntradaDoPreliminar());
 
+    [Fact(DisplayName = "O procedimento declarado na janela recursal entra na entrada, pela regra, e a ordem de declaração não importa")]
+    public void ProcedimentosDaJanela_EntramNaEntrada()
+    {
+        EntradaDoPreliminar recorrecao = ComProcedimentos(RegraProcedimentoRecursoCodigo.Recorrecao, TipoMotivoDeDecisao.Classificacao);
+        EntradaDoPreliminar recalculo = ComProcedimentos(RegraProcedimentoRecursoCodigo.Recalculo, TipoMotivoDeDecisao.Classificacao);
+
+        recorrecao.Should().NotBe(recalculo);
+        recorrecao.Should().NotBe(Etapa(completar: e => AbrirRecurso(e, prazo: 2m, ancora: 0, Materia)).EntradaDoPreliminar());
+        ProcedimentosEmOrdem(TipoMotivoDeDecisao.Classificacao, TipoMotivoDeDecisao.HomologacaoDasInscricoes)
+            .Should().Be(ProcedimentosEmOrdem(TipoMotivoDeDecisao.HomologacaoDasInscricoes, TipoMotivoDeDecisao.Classificacao));
+    }
+
     [Fact(DisplayName = "A âncora da janela recursal se identifica pelo tipo de ato e pelo papel, nunca pelo Id do produto")]
     public void AncoraDoRecurso_PeloAtoENuncaPeloId()
     {
@@ -110,6 +123,16 @@ public sealed class EntradaDoPreliminarDaEtapaTests
     public void DeliberacaoDaBanca_MudaAEntrada() =>
         Etapa(completar: e => e.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes: 5, quorum: 3))])).EntradaDoPreliminar()
             .Should().NotBe(Etapa(completar: e => e.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa()])).EntradaDoPreliminar());
+
+    private static EntradaDoPreliminar ComProcedimentos(string regra, TipoMotivoDeDecisao tipo) =>
+        Etapa(completar: e => AbrirRecursoComProcedimentos(e, 2m, 0, ProcedimentosDeRecurso.De([Procedimento(tipo, regra)]), Materia)).EntradaDoPreliminar();
+
+    private static EntradaDoPreliminar ProcedimentosEmOrdem(params TipoMotivoDeDecisao[] tipos) =>
+        Etapa(completar: e => AbrirRecursoComProcedimentos(
+            e, 2m, 0, ProcedimentosDeRecurso.De([.. tipos.Select(tipo => Procedimento(tipo, RegraProcedimentoRecursoCodigo.Recalculo))]), Materia)).EntradaDoPreliminar();
+
+    private static ProcedimentoDeRecursoDeclarado Procedimento(TipoMotivoDeDecisao tipo, string regra) =>
+        ProcedimentoDeRecursoDeclarado.De(tipo, null, ReferenciaRegra.De(regra, "v1", new string('a', 64)));
 
     private static EtapaProcesso Etapa(
         Func<IdentificacaoDaEtapa, IdentificacaoDaEtapa>? identificacao = null,
@@ -134,14 +157,18 @@ public sealed class EntradaDoPreliminarDaEtapaTests
         TipoEtapaSnapshot.Criar(origem, codigo, nome, admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
     // A âncora do recurso é um dos preliminares da própria etapa, escolhido pelo índice.
-    private static void AbrirRecurso(EtapaProcesso etapa, decimal prazo, int ancora, params string[] atos)
+    private static void AbrirRecurso(EtapaProcesso etapa, decimal prazo, int ancora, params string[] atos) =>
+        AbrirRecursoComProcedimentos(etapa, prazo, ancora, ProcedimentosDeRecurso.Nenhum, atos);
+
+    private static void AbrirRecursoComProcedimentos(EtapaProcesso etapa, decimal prazo, int ancora, ProcedimentosDeRecurso procedimentos, params string[] atos)
     {
         List<ProdutoDaEtapa> produtos = [.. atos.Select(static ato => ProdutoDaEtapa.Criar(ato, PapelProdutoFase.Preliminar))];
         RecursoDaEtapa recurso = RecursoDaEtapa.Criar(
             AncoraDoRecurso.AtoPublicado,
             ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
             new ArgsRegraPrazoRecurso(prazo, UnidadePrazo.DiasUteis, null, null, false, null, null),
-            produtos[ancora].Id).Value!;
+            produtos[ancora].Id,
+            procedimentos).Value!;
 
         etapa.DefinirProdutos(produtos).IsSuccess.Should().BeTrue();
         etapa.DefinirRecursos([recurso]).IsSuccess.Should().BeTrue();

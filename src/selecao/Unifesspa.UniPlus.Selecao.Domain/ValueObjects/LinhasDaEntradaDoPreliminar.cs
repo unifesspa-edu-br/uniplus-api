@@ -4,6 +4,8 @@ using System.Globalization;
 
 using Entities;
 
+using Enums;
+
 /// <summary>
 /// A forma canônica das linhas de <see cref="EntradaDoPreliminar"/> que a fase e a etapa escrevem do mesmo
 /// jeito: o par campo e valor, a referência de regra, os argumentos do prazo de recurso, a regra de
@@ -41,6 +43,13 @@ internal static class LinhasDaEntradaDoPreliminar
         Linha($"{campo}.suspensividadeSegundaInstanciaValor", args.SuspensividadeSegundaInstanciaValor),
         Linha($"{campo}.suspensividadeSegundaInstanciaUnidade", args.SuspensividadeSegundaInstanciaUnidade),
     ];
+
+    /// <summary>Os procedimentos declarados da janela: o tipo de decisão e o alvo identificam, e a regra congelada vale.</summary>
+    internal static IEnumerable<string> DosProcedimentos(string campo, ProcedimentosDeRecurso procedimentos) =>
+        procedimentos.Itens.SelectMany(procedimento => DaReferencia(
+            $"{campo}.procedimentos[{Valor(procedimento.TipoDeDecisao.ToCodigo())}|{ChaveDoAlvo(procedimento.Alvo)}].regra", procedimento.Regra));
+
+    private static string ChaveDoAlvo(AlvoDoProcedimentoDeRecurso? alvo) => alvo is null ? string.Empty : $"{alvo.Tipo}:{Valor(alvo.Valor)}";
 
     internal static IEnumerable<string> DaDeliberacao(string campo, RegraDeDeliberacao? regra) =>
         regra is null

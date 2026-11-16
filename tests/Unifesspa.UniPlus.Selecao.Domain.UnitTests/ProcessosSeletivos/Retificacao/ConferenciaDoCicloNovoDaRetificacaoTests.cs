@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Retifica
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
@@ -174,6 +175,23 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         declarado.CiclosRecursaisRefeitos.Should().Equal(item);
     }
 
+    [Fact(DisplayName = "Trocar só o procedimento de recurso da etapa do preliminar exige declarar o novo ciclo")]
+    public void ProcedimentoDeRecursoDaEtapaDoPreliminar_ExigeDeclararOCiclo()
+    {
+        Guid etapaId = Guid.CreateVersion7();
+        EtapaProcesso publicada = EtapaDaProvaComProcedimento(etapaId, RegraProcedimentoRecursoCodigo.Recalculo);
+        EtapaProcesso nova = EtapaDaProvaComProcedimento(etapaId, RegraProcedimentoRecursoCodigo.Recorrecao);
+        FaseCronograma prova = Fase(1, "PROVA");
+        IdentidadeDoItemDoEdital item = PreliminarDaEtapa(publicada);
+
+        ResultadoDoCicloNovo trocado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [publicada], [prova], [nova], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item));
+        ResultadoDoCicloNovo mantido = ConferenciaDoCicloNovoDaRetificacao.Conferir(
+            [prova], [publicada], [prova], [EtapaDaProvaComProcedimento(etapaId, RegraProcedimentoRecursoCodigo.Recalculo)], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item));
+
+        trocado.Recusas.Should().ContainSingle().Which.Error.Code.Should().Be(RetificacaoErrorCodes.CicloNovoNaoDeclarado);
+        mantido.Recusas.Should().BeEmpty();
+    }
+
     [Fact(DisplayName = "Preliminar de etapa com mudança numa fase de momento anterior à fase da etapa exige declarar o novo ciclo")]
     public void FaseAnteriorAFaseDaEtapa_ExigeDeclararOCiclo()
     {
@@ -250,6 +268,21 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
 
     private static EtapaProcesso EtapaDaProva(Guid id, decimal peso) =>
         EtapaComPeso(id, "Prova objetiva", peso, "PROVA", ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Preliminar), ProdutoDaEtapa.Criar(Materia, PapelProdutoFase.Definitivo));
+
+    private static EtapaProcesso EtapaDaProvaComProcedimento(Guid id, string regraDoProcedimento)
+    {
+        EtapaProcesso etapa = EtapaDaProva(id, peso: 1m);
+        RecursoDaEtapa recurso = RecursoDaEtapa.Criar(
+            AncoraDoRecurso.AtoPublicado,
+            ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
+            new ArgsRegraPrazoRecurso(2m, UnidadePrazo.DiasUteis, null, null, false, null, null),
+            etapa.Produtos.Single(static p => p.Papel == PapelProdutoFase.Preliminar).Id,
+            ProcedimentosDeRecurso.De([ProcedimentoDeRecursoDeclarado.De(
+                TipoMotivoDeDecisao.Classificacao, null, ReferenciaRegra.De(regraDoProcedimento, "v1", new string('a', 64)))])).Value!;
+        etapa.DefinirRecursos([recurso]).IsSuccess.Should().BeTrue();
+
+        return etapa;
+    }
 
     /// <summary>
     /// A versão publicada: inscrição, prova (que publica o preliminar e aponta o resultado como concluinte),

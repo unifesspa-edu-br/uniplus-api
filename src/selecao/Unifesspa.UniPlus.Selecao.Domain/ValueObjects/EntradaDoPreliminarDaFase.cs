@@ -47,6 +47,7 @@ internal static class EntradaDoPreliminarDaFase
             .. DaReferencia("regraRecurso.regra", recurso.Regra),
             .. DosArgumentosDoRecurso("regraRecurso.args", recurso.Args),
             .. DaAncora("regraRecurso.ancora", fase.Produtos, recurso.ProdutoAncoraId),
+            .. DosProcedimentos("regraRecurso", recurso.Procedimentos),
         ];
     }
 

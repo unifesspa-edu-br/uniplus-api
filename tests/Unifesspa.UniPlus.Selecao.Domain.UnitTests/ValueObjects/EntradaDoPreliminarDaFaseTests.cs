@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ValueObjects;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -77,6 +78,16 @@ public sealed class EntradaDoPreliminarDaFaseTests
     public void PrazoDoRecurso_MudaAEntrada() =>
         ComRecurso(prazo: 3m, ancora: 0, Materia).EntradaDoPreliminar().Should().NotBe(ComRecurso(prazo: 2m, ancora: 0, Materia).EntradaDoPreliminar());
 
+    [Fact(DisplayName = "O procedimento declarado na regra de recurso entra na entrada, pela regra")]
+    public void ProcedimentoDaRegraDeRecurso_MudaAEntrada()
+    {
+        FaseCronograma recalculo = ComRecursoEProcedimentos(2m, 0, Procedimentos(RegraProcedimentoRecursoCodigo.Recalculo), Materia);
+        FaseCronograma recorrecao = ComRecursoEProcedimentos(2m, 0, Procedimentos(RegraProcedimentoRecursoCodigo.Recorrecao), Materia);
+
+        recorrecao.EntradaDoPreliminar().Should().NotBe(recalculo.EntradaDoPreliminar());
+        recalculo.EntradaDoPreliminar().Should().NotBe(ComRecurso(prazo: 2m, ancora: 0, Materia).EntradaDoPreliminar());
+    }
+
     [Fact(DisplayName = "A âncora do recurso se identifica pelo tipo de ato e pelo papel, nunca pelo Id do produto")]
     public void AncoraDoRecurso_PeloAtoENuncaPeloId()
     {
@@ -125,16 +136,23 @@ public sealed class EntradaDoPreliminarDaFaseTests
     private static T Alterar<T>(Func<T, T>? alteracao, T valor) => alteracao is null ? valor : alteracao(valor);
 
     // A âncora do recurso é um dos preliminares da própria fase, escolhido pelo índice.
-    private static FaseCronograma ComRecurso(decimal prazo, int ancora, params string[] atos)
+    private static FaseCronograma ComRecurso(decimal prazo, int ancora, params string[] atos) =>
+        ComRecursoEProcedimentos(prazo, ancora, ProcedimentosDeRecurso.Nenhum, atos);
+
+    private static FaseCronograma ComRecursoEProcedimentos(decimal prazo, int ancora, ProcedimentosDeRecurso procedimentos, params string[] atos)
     {
         List<ProdutoDaFase> produtos = [.. atos.Select(static ato => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar))];
         RegraRecursoFase regra = RegraRecursoFase.Criar(
             ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
             new ArgsRegraPrazoRecurso(prazo, UnidadePrazo.DiasUteis, null, null, false, null, null),
-            produtos[ancora].Id).Value!;
+            produtos[ancora].Id,
+            procedimentos).Value!;
 
         return Fase(publicacoes: _ => new PublicacoesDaFase(produtos, false, regra));
     }
+
+    private static ProcedimentosDeRecurso Procedimentos(string regra) => ProcedimentosDeRecurso.De(
+        [ProcedimentoDeRecursoDeclarado.De(TipoMotivoDeDecisao.Classificacao, null, ReferenciaRegra.De(regra, "v1", new string('a', 64)))]);
 
     private static BancaRequerida Banca(Guid tipo, string codigo, RegraDeDeliberacao? regra = null, IReadOnlyList<CategoriaJulgada>? recorte = null) =>
         BancaRequerida.Criar(tipo, codigo, "Banca de teste", recorte ?? [], regra);
