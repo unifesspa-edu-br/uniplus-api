@@ -45,7 +45,8 @@ public static class OfertaCursoErrorCodes
 
     public const string NaoEncontrada = "OfertaCurso.NaoEncontrada";
 
-    // Resolução da oferta por referência natural (ResolucaoDeOferta).
-    public const string ReferenciaNaoEncontrada = "OfertaCurso.ReferenciaNaoEncontrada";
-    public const string ReferenciaAmbigua = "OfertaCurso.ReferenciaAmbigua";
+    // Código da oferta, informado pela gestão e único entre as ofertas vivas.
+    public const string CodigoObrigatorio = "OfertaCurso.CodigoObrigatorio";
+    public const string CodigoFormatoInvalido = "OfertaCurso.CodigoFormatoInvalido";
+    public const string CodigoJaEmUso = "OfertaCurso.CodigoJaEmUso";
 }

@@ -6983,6 +6983,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(500)")
                         .HasColumnName("base_legal");
 
+                    b.Property<string>("Codigo")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("codigo");
+
                     b.Property<string>("CodigoSga")
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
@@ -7067,6 +7073,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_ofertas_de_curso");
 
+                    b.HasIndex("Codigo")
+                        .IsUnique()
+                        .HasDatabaseName("ix_ofertas_de_curso_codigo_vivo")
+                        .HasFilter("is_deleted = false");
+
                     b.HasIndex("LocalOfertaId")
                         .HasDatabaseName("ix_ofertas_de_curso_local_oferta_id");
 
@@ -7076,6 +7087,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("ofertas_de_curso", "configuracao", t =>
                         {
                             t.HasCheckConstraint("ck_ofertas_de_curso_base_legal_programa", "programa_de_oferta = 'REGULAR' OR base_legal IS NOT NULL");
+
+                            t.HasCheckConstraint("ck_ofertas_de_curso_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
 
                             t.HasCheckConstraint("ck_ofertas_de_curso_formato_pedagogico", "formato_pedagogico IN ('PRESENCIAL', 'SEMIPRESENCIAL', 'EAD')");
 
@@ -18998,6 +19011,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             b1.Property<Guid>("ConfiguracaoDistribuicaoVagasId")
                                 .HasColumnType("uuid")
                                 .HasColumnName("id");
+
+                            b1.Property<string>("Codigo")
+                                .IsRequired()
+                                .HasMaxLength(50)
+                                .HasColumnType("character varying(50)")
+                                .HasColumnName("oferta_curso_codigo")
+                                .HasComment("Código da oferta de curso, congelado por valor do cadastro na definição da distribuição.");
 
                             b1.Property<string>("CursoGrau")
                                 .IsRequired()

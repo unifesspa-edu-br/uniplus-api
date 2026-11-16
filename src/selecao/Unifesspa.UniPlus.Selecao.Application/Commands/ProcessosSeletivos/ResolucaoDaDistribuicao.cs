@@ -57,7 +57,7 @@ internal sealed class ResolucaoDaDistribuicao(
         }
 
         Result<OfertaCursoSnapshot> nome = OfertaCursoSnapshot.Criar(
-            oferta.CursoNome, oferta.CursoGrau, oferta.UnidadeOfertanteNome, oferta.Turnos);
+            oferta.Codigo, oferta.CursoNome, oferta.CursoGrau, oferta.UnidadeOfertanteNome, oferta.Turnos);
         _oferta = oferta;
         _nomeDaOferta = nome.Value!;
         return nome.IsFailure ? nome.Error : null;

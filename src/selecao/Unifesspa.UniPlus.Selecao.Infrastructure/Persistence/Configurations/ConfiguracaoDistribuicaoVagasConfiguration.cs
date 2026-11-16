@@ -111,6 +111,10 @@ internal sealed class ConfiguracaoDistribuicaoVagasConfiguration : IEntityTypeCo
         builder.OwnsOne(c => c.OfertaCurso, oferta =>
         {
             oferta.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+            oferta.Property(o => o.Codigo)
+                .HasColumnName("oferta_curso_codigo")
+                .HasMaxLength(OfertaCursoSnapshot.CodigoMaxLength)
+                .HasComment("Código da oferta de curso, congelado por valor do cadastro na definição da distribuição.");
             oferta.Property(o => o.CursoNome)
                 .HasColumnName("oferta_curso_nome")
                 .HasMaxLength(OfertaCursoSnapshot.CursoNomeMaxLength)

@@ -2,129 +2,77 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
-using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
-using Unifesspa.UniPlus.Governance.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Handler do <see cref="CriarOfertaCursoCommand"/> (convention-based Wolverine):
-/// valida os campos regulatórios do payload primeiro (422, sem I/O — validação
-/// sempre vence I/O), depois a existência viva do curso e do local de oferta (o
-/// filtro global de soft-delete já exclui removidos), depois resolve a Unidade
-/// viva via <see cref="IUnidadeReader"/> (ADR-0056) e a congela por snapshot-copy
-/// (<see cref="UnidadeOfertante"/>, ADR-0061) — sem identidade viva não há o que
-/// congelar, então unidade inexistente/removida é rejeitada. Sem chave natural
-/// única: não há checagem de unicidade nem tradução de 23505.
+/// Handler do <see cref="CriarOfertaCursoCommand"/> (convention-based Wolverine): valida a declaração sem I/O (422 — validação
+/// sempre vence I/O), confere o curso, o local e a unidade e congela a unidade por cópia (ADR-0061), e só então confere o
+/// código contra as ofertas vivas (409). A corrida entre dois cadastros com o mesmo código cai no índice único parcial e
+/// recebe o mesmo 409.
 /// </summary>
 public static class CriarOfertaCursoCommandHandler
 {
     public static async Task<Result<Guid>> Handle(
-        CriarOfertaCursoCommand command,
-        IOfertaCursoRepository repository,
-        ICursoRepository cursoRepository,
-        ILocalOfertaRepository localOfertaRepository,
-        IUnidadeReader unidadeReader,
-        IUnitOfWork unitOfWork,
-        CancellationToken cancellationToken)
+        CriarOfertaCursoCommand command, ConferenciaDasReferenciasDaOferta referencias, IOfertaCursoRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(referencias);
         ArgumentNullException.ThrowIfNull(repository);
-        ArgumentNullException.ThrowIfNull(cursoRepository);
-        ArgumentNullException.ThrowIfNull(localOfertaRepository);
-        ArgumentNullException.ThrowIfNull(unidadeReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
-        // Validação sempre vence I/O: os dez campos regulatórios do payload não
-        // dependem de curso, local nem unidade — falham rápido antes de qualquer
-        // busca no próprio módulo ou em módulo cruzado.
-        Result preCheck = OfertaCurso.ValidarCamposDoPayload(
-            command.ProgramaDeOferta,
-            command.FormatoPedagogico,
-            command.RegimeDeFuncionamento,
-            command.RegimeDeTurno,
-            command.Turnos,
-            command.EMecCodigo,
-            command.CodigoSga,
-            command.VagasAnuaisAutorizadas,
-            command.BaseLegal,
-            command.AtoAutorizacaoMec);
+        Result<OfertaCurso> oferta = await MontarAsync(command, referencias, cancellationToken).ConfigureAwait(false);
 
-        if (preCheck.IsFailure)
+        return oferta.IsFailure
+            ? Result<Guid>.ValidationFailure(oferta.Errors)
+            : await GravarAsync(oferta.Value!, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<OfertaCurso>> MontarAsync(
+        CriarOfertaCursoCommand command, ConferenciaDasReferenciasDaOferta referencias, CancellationToken cancellationToken)
+    {
+        DeclaracaoDaOfertaDeCurso declaracao = command.Declaracao();
+        Result validada = OfertaCurso.ValidarDeclaracao(declaracao);
+        if (validada.IsFailure)
         {
-            return Result<Guid>.ValidationFailure(preCheck.Errors);
+            return Result<OfertaCurso>.ValidationFailure(validada.Errors);
         }
 
-        // Existência viva do curso: o query filter global de soft-delete já
-        // exclui mortos — inexistente e removido caem no mesmo erro.
-        Curso? curso = await cursoRepository
-            .ObterPorIdParaLeituraAsync(command.CursoId, cancellationToken)
+        Result<UnidadeOfertante> unidade = await referencias
+            .ConferirAsync(command.CursoId, command.LocalOfertaId, command.UnidadeOfertanteOrigemId, cancellationToken)
             .ConfigureAwait(false);
-        if (curso is null)
+
+        return unidade.IsFailure
+            ? Result<OfertaCurso>.ValidationFailure(unidade.Errors)
+            : OfertaCurso.Criar(command.CursoId, command.LocalOfertaId, unidade.Value!, declaracao);
+    }
+
+    private static async Task<Result<Guid>> GravarAsync(
+        OfertaCurso oferta, IOfertaCursoRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        if (await repository.CodigoExisteEntreVivosAsync(oferta.Codigo, null, cancellationToken).ConfigureAwait(false))
         {
-            return Result<Guid>.Failure(new DomainError(
-                OfertaCursoErrorCodes.CursoInexistenteOuRemovido,
-                "Curso inexistente ou removido — a oferta exige um curso vivo."));
+            return Result<Guid>.Failure(CodigoDaOfertaEmUso.Recusa(oferta.Codigo));
         }
 
-        LocalOferta? localOferta = await localOfertaRepository
-            .ObterPorIdParaLeituraAsync(command.LocalOfertaId, cancellationToken)
-            .ConfigureAwait(false);
-        if (localOferta is null)
-        {
-            return Result<Guid>.Failure(new DomainError(
-                OfertaCursoErrorCodes.LocalOfertaInexistenteOuRemovido,
-                "Local de oferta inexistente ou removido — a oferta exige um local vivo."));
-        }
-
-        // Snapshot-copy da unidade ofertante (ADR-0061): resolve a Unidade VIVA
-        // via reader cross-módulo (ADR-0056) e congela sigla/nome/tipo. Reader
-        // devolve null para inexistente/soft-deleted — não há identidade viva
-        // para congelar, então a criação é rejeitada.
-        UnidadeView? unidadeView = await unidadeReader
-            .ObterPorIdAsync(command.UnidadeOfertanteOrigemId, cancellationToken)
-            .ConfigureAwait(false);
-        if (unidadeView is null)
-        {
-            return Result<Guid>.Failure(new DomainError(
-                OfertaCursoErrorCodes.UnidadeOfertanteInexistente,
-                "Unidade ofertante inexistente ou removida — não há identidade viva para congelar."));
-        }
-
-        // O Tipo da UnidadeView já é a string estável do contrato (desacoplada do
-        // enum interno de Organização) — congela como veio.
-        Result<UnidadeOfertante> unidadeOfertanteResult = UnidadeOfertante.Criar(
-            unidadeView.Id, unidadeView.Sigla, unidadeView.Nome, unidadeView.Tipo);
-        if (unidadeOfertanteResult.IsFailure)
-        {
-            return Result<Guid>.Failure(unidadeOfertanteResult.Error!);
-        }
-
-        Result<OfertaCurso> ofertaResult = OfertaCurso.Criar(
-            command.CursoId,
-            command.LocalOfertaId,
-            unidadeOfertanteResult.Value!,
-            command.ProgramaDeOferta,
-            command.FormatoPedagogico,
-            command.RegimeDeFuncionamento,
-            command.RegimeDeTurno,
-            command.Turnos,
-            command.EMecCodigo,
-            command.CodigoSga,
-            command.VagasAnuaisAutorizadas,
-            command.BaseLegal,
-            command.AtoAutorizacaoMec);
-
-        if (ofertaResult.IsFailure)
-        {
-            return Result<Guid>.ValidationFailure(ofertaResult.Errors);
-        }
-
-        OfertaCurso oferta = ofertaResult.Value!;
         await repository.AdicionarAsync(oferta, cancellationToken).ConfigureAwait(false);
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<Guid>.Success(oferta.Id);
+        return await SalvarAsync(oferta, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<Guid>> SalvarAsync(OfertaCurso oferta, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            return Result<Guid>.Success(oferta.Id);
+        }
+        catch (Exception exception) when (CodigoDaOfertaEmUso.ViolaOIndice(exception))
+        {
+            // Sem descartar, a inserção continua rastreada e o SaveChanges do outbox a repete fora deste catch (500 em vez de 409).
+            unitOfWork.DescartarAlteracoesNaoSalvas();
+            return Result<Guid>.Failure(CodigoDaOfertaEmUso.Recusa(oferta.Codigo));
+        }
     }
 }

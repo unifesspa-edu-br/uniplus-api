@@ -10,6 +10,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// unidade ofertante já vem achatada (é, ela mesma, um snapshot-copy — ADR-0061).
 /// </summary>
 /// <param name="Id">Identificador único (Guid v7 — ADR-0032).</param>
+/// <param name="Codigo">Código da oferta, informado pela gestão e único entre as ofertas vivas.</param>
 /// <param name="CursoId">Curso curricular referenciado (FK intra-schema).</param>
 /// <param name="LocalOfertaId">Local de oferta referenciado (FK intra-schema).</param>
 /// <param name="UnidadeOfertanteOrigemId">Identificador de origem da unidade ofertante congelada.</param>
@@ -31,6 +32,7 @@ namespace Unifesspa.UniPlus.Configuracao.Contracts;
 /// <param name="CursoGrau">Grau do curso da oferta (ex.: "Bacharelado").</param>
 public sealed record OfertaCursoView(
     Guid Id,
+    string Codigo,
     Guid CursoId,
     Guid LocalOfertaId,
     Guid UnidadeOfertanteOrigemId,

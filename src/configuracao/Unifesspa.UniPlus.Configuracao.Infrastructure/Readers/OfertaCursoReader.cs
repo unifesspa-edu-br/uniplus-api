@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Configuracao.Infrastructure.Readers;
 
+using System.Text;
+
 using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
@@ -8,6 +10,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Implementação de <see cref="IOfertaCursoReader"/> (ADR-0056): leitura direta
@@ -54,15 +57,38 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
             .FirstOrDefaultAsync(o => o.Id == id, cancellationToken)
             .ConfigureAwait(false);
 
-        if (entidade is null)
-        {
-            return null;
-        }
+        return entidade is null ? null : await ParaViewComCursoAsync(entidade, cancellationToken).ConfigureAwait(false);
+    }
 
+    private async Task<OfertaCursoView> ParaViewComCursoAsync(OfertaCurso entidade, CancellationToken cancellationToken)
+    {
         Dictionary<Guid, CursoDaOferta> cursos = await ObterCursosAsync(
             [entidade.CursoId], cancellationToken).ConfigureAwait(false);
 
         return ParaView(entidade, cursos.GetValueOrDefault(entidade.CursoId));
+    }
+
+    public async Task<OfertaCursoView?> ObterVivaPorCodigoAsync(
+        string codigo,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+
+        // Trim + NFC antes da query, como no leitor de modalidade: o EF não traduz normalização Unicode para SQL e o
+        // cadastro guarda o código já normalizado. Código fora do formato não tem oferta viva, e a consulta é dispensável.
+        Result<CodigoOfertaCurso> codigoResult = CodigoOfertaCurso.Criar(codigo.Trim().Normalize(NormalizationForm.FormC));
+
+        return codigoResult.IsFailure ? null : await ObterPorCodigoNormalizadoAsync(codigoResult.Value!.Valor, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<OfertaCursoView?> ObterPorCodigoNormalizadoAsync(string codigo, CancellationToken cancellationToken)
+    {
+        OfertaCurso? entidade = await _dbContext.OfertasCurso
+            .AsNoTracking()
+            .FirstOrDefaultAsync(o => o.Codigo == codigo, cancellationToken)
+            .ConfigureAwait(false);
+
+        return entidade is null ? null : await ParaViewComCursoAsync(entidade, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -85,26 +111,13 @@ internal sealed class OfertaCursoReader : IOfertaCursoReader
         GrupoCurso? grupoAreaEnem = curso?.GrupoAreaEnem;
 
         return new OfertaCursoView(
-            o.Id,
-            o.CursoId,
-            o.LocalOfertaId,
-            unidade.OrigemId,
-            unidade.Sigla,
-            unidade.Nome,
-            unidade.Tipo,
-            ProgramasDeOferta.ParaTokenCanonico(o.ProgramaDeOferta),
-            FormatosPedagogicos.ParaTokenCanonico(o.FormatoPedagogico),
-            RegimesDeFuncionamento.ParaTokenCanonico(o.RegimeDeFuncionamento),
-            RegimesDeTurno.ParaTokenCanonico(o.RegimeDeTurno),
+            o.Id, o.Codigo, o.CursoId, o.LocalOfertaId, unidade.OrigemId, unidade.Sigla, unidade.Nome, unidade.Tipo,
+            ProgramasDeOferta.ParaTokenCanonico(o.ProgramaDeOferta), FormatosPedagogicos.ParaTokenCanonico(o.FormatoPedagogico),
+            RegimesDeFuncionamento.ParaTokenCanonico(o.RegimeDeFuncionamento), RegimesDeTurno.ParaTokenCanonico(o.RegimeDeTurno),
             [.. TurnosOferta.OrdenarCanonicamente(o.Turnos).Select(TurnosOferta.ParaTokenCanonico)],
-            o.EMecCodigo,
-            o.CodigoSga,
-            o.VagasAnuaisAutorizadas,
-            o.BaseLegal,
-            o.AtoAutorizacaoMec,
+            o.EMecCodigo, o.CodigoSga, o.VagasAnuaisAutorizadas, o.BaseLegal, o.AtoAutorizacaoMec,
             grupoAreaEnem is null ? null : new GrupoAreaEnemView(grupoAreaEnem.Codigo, grupoAreaEnem.Rotulo),
-            curso?.Nome ?? string.Empty,
-            curso?.Grau ?? string.Empty);
+            curso?.Nome ?? string.Empty, curso?.Grau ?? string.Empty);
     }
 
     private sealed record CursoDaOferta(string Nome, string Grau, GrupoCurso? GrupoAreaEnem);

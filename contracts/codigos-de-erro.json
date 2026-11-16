@@ -1982,6 +1982,21 @@
       "titulo": "Quantidade de turnos incompatível com o regime declarado"
     },
     {
+      "codigo": "uniplus.configuracao.oferta_curso.codigo_formato_invalido",
+      "status": 422,
+      "titulo": "O código da oferta de curso está fora do formato"
+    },
+    {
+      "codigo": "uniplus.configuracao.oferta_curso.codigo_ja_em_uso",
+      "status": 409,
+      "titulo": "Já existe uma oferta de curso ativa com este código"
+    },
+    {
+      "codigo": "uniplus.configuracao.oferta_curso.codigo_obrigatorio",
+      "status": 422,
+      "titulo": "O código da oferta de curso é obrigatório"
+    },
+    {
       "codigo": "uniplus.configuracao.oferta_curso.codigo_sga_tamanho",
       "status": 422,
       "titulo": "Tamanho do código SGA inválido"

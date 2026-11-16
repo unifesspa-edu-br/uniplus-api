@@ -6,6 +6,8 @@ using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
 
+using Unifesspa.UniPlus.Application.Abstractions.Persistence;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
@@ -18,6 +20,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
+
+using static Unifesspa.UniPlus.Configuracao.IntegrationTests.OfertasCurso.ApoioDaPersistenciaDeOfertaCurso;
 
 /// <summary>
 /// Integração ponta-a-ponta da OfertaCurso contra Postgres real (story #588,
@@ -39,22 +43,19 @@ using Unifesspa.UniPlus.Kernel.Results;
     Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class OfertaCursoPersistenceTests
 {
-    private const string AdminA = "admin-a";
-    private const string AdminB = "admin-b";
-
-    private static readonly DateTimeOffset Agora = new(2026, 7, 1, 12, 0, 0, TimeSpan.Zero);
-
     private readonly ConfiguracaoDbFixture _fixture;
+    private readonly ApoioDaPersistenciaDeOfertaCurso _apoio;
 
     public OfertaCursoPersistenceTests(ConfiguracaoDbFixture fixture)
     {
         _fixture = fixture;
+        _apoio = new ApoioDaPersistenciaDeOfertaCurso(fixture);
     }
 
     [Fact(DisplayName = "Criar persiste os campos, o snapshot unidade_oft_* faz roundtrip e a auditoria é carimbada")]
     public async Task Insert_Completa_PersisteComOwnedRoundtrip()
     {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+        (Guid cursoId, Guid localId) = await _apoio.SemearCursoELocalAsync();
         UnidadeOfertante unidade = NovaUnidade();
         OfertaCurso oferta = NovaOferta(cursoId, localId, unidade);
 
@@ -67,6 +68,7 @@ public sealed class OfertaCursoPersistenceTests
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
         OfertaCurso persistida = await readCtx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
 
+        persistida.Codigo.Should().Be(oferta.Codigo);
         persistida.CursoId.Should().Be(cursoId);
         persistida.LocalOfertaId.Should().Be(localId);
         persistida.UnidadeOfertante.Should().Be(unidade, "o owned type reidrata o snapshot por igualdade estrutural");
@@ -86,7 +88,8 @@ public sealed class OfertaCursoPersistenceTests
         var reader = new OfertaCursoReader(readCtx);
         OfertaCursoView? view = await reader.ObterPorIdAsync(oferta.Id);
         view.Should().NotBeNull();
-        view!.CursoId.Should().Be(cursoId);
+        view!.Codigo.Should().Be(oferta.Codigo);
+        view.CursoId.Should().Be(cursoId);
         view.LocalOfertaId.Should().Be(localId);
         view.UnidadeOfertanteOrigemId.Should().Be(unidade.OrigemId);
         view.UnidadeOfertanteSigla.Should().Be(unidade.Sigla);
@@ -97,15 +100,67 @@ public sealed class OfertaCursoPersistenceTests
         view.Turnos.Should().Equal("VESPERTINO", "NOTURNO");
 
         (await reader.ListarVivasAsync()).Should().Contain(v => v.Id == oferta.Id);
+        (await reader.ObterVivaPorCodigoAsync($"  {oferta.Codigo}  "))!.Id.Should().Be(oferta.Id, "a busca descarta os espaços das pontas");
+        (await reader.ObterVivaPorCodigoAsync(oferta.Codigo.ToLowerInvariant())).Should().BeNull("o código fora do formato não tem oferta");
+    }
+
+    [Fact(DisplayName = "O índice único parcial recusa o mesmo código em duas ofertas vivas e o libera após a remoção")]
+    public async Task Insert_CodigoRepetido_RecusaEntreVivasELiberaAposRemocao()
+    {
+        (Guid cursoId, Guid localId) = await _apoio.SemearCursoELocalAsync();
+        OfertaCurso primeira = NovaOferta(cursoId, localId, NovaUnidade());
+        OfertaCurso repetida = OfertaCurso.Criar(
+            cursoId, localId, NovaUnidade(),
+            new DeclaracaoDaOfertaDeCurso(primeira.Codigo, "REGULAR", null, "EXTENSIVO", "REGULAR", ["MATUTINO"])).Value!;
+
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.OfertasCurso.Add(primeira);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            ctx.OfertasCurso.Add(repetida);
+            DbUpdateException violacao = (await FluentActions.Awaiting(() => ctx.SaveChangesAsync()).Should().ThrowAsync<DbUpdateException>()).Which;
+            ConstraintVioladaNaGravacao.NomeDaConstraintViolada(violacao).Should().Be(RestricoesDoBanco.OfertaDeCursoCodigoVivo);
+        }
+
+        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
+        {
+            OfertaCurso rastreada = await ctx.OfertasCurso.SingleAsync(o => o.Id == primeira.Id);
+            ctx.OfertasCurso.Remove(rastreada);
+            await ctx.SaveChangesAsync();
+        }
+
+        await using UniPlusDbContext liberado = _fixture.CreateDbContext(AdminA);
+        liberado.OfertasCurso.Add(OfertaCurso.Criar(
+            cursoId, localId, NovaUnidade(),
+            new DeclaracaoDaOfertaDeCurso(primeira.Codigo, "REGULAR", null, "EXTENSIVO", "REGULAR", ["MATUTINO"])).Value!);
+        await liberado.SaveChangesAsync();
+    }
+
+    [Fact(DisplayName = "O CHECK do banco recusa código fora do formato em insert cru")]
+    public async Task Insert_CodigoForaDoFormato_RecusadoPeloCheck()
+    {
+        (Guid cursoId, Guid localId) = await _apoio.SemearCursoELocalAsync();
+        OfertaCurso oferta = NovaOferta(cursoId, localId, NovaUnidade());
+        typeof(OfertaCurso).GetProperty(nameof(OfertaCurso.Codigo))!.SetValue(oferta, "minusculo");
+
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.OfertasCurso.Add(oferta);
+
+        DbUpdateException violacao = (await FluentActions.Awaiting(() => ctx.SaveChangesAsync()).Should().ThrowAsync<DbUpdateException>()).Which;
+        ConstraintVioladaNaGravacao.NomeDaConstraintViolada(violacao).Should().Be("ck_ofertas_de_curso_codigo_formato");
     }
 
     [Fact(DisplayName = "Campos opcionais nulos persistem nulos e reidratam como nulos")]
     public async Task Insert_OpcionaisNulos_PersisteNulos()
     {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+        (Guid cursoId, Guid localId) = await _apoio.SemearCursoELocalAsync();
         OfertaCurso oferta = OfertaCurso.Criar(
-            cursoId, localId, NovaUnidade(), "REGULAR", null,
-            "EXTENSIVO", "REGULAR", ["MATUTINO"], null, null, null, null, null).Value!;
+            cursoId, localId, NovaUnidade(),
+            new DeclaracaoDaOfertaDeCurso($"OFERTA_{Guid.CreateVersion7():N}".ToUpperInvariant(), "REGULAR", null, "EXTENSIVO", "REGULAR", ["MATUTINO"])).Value!;
 
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
         {
@@ -130,7 +185,7 @@ public sealed class OfertaCursoPersistenceTests
     [Fact(DisplayName = "Atualizar a coleção de turnos após reidratação é detectado e persistido")]
     public async Task Atualizar_TrocaTurnosAposReidratacao_Persiste()
     {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
+        (Guid cursoId, Guid localId) = await _apoio.SemearCursoELocalAsync();
         OfertaCurso oferta = NovaOferta(cursoId, localId, NovaUnidade());
 
         await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
@@ -143,9 +198,9 @@ public sealed class OfertaCursoPersistenceTests
         {
             OfertaCurso rastreada = await ctx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
 
-            Result atualizacao = rastreada.Atualizar(
-                "PARFOR", "SEMIPRESENCIAL", "EXTENSIVO", "REGULAR", ["MATUTINO"],
-                "123456", "ENG-01", 40, "Decreto 6.755/2009", "Portaria MEC 9/2009");
+            Result atualizacao = rastreada.Atualizar(new DeclaracaoDaOfertaDeCurso(
+                "OFERTA_EDITADA", "PARFOR", "SEMIPRESENCIAL", "EXTENSIVO", "REGULAR", ["MATUTINO"],
+                "123456", "ENG-01", 40, "Decreto 6.755/2009", "Portaria MEC 9/2009"));
             atualizacao.IsSuccess.Should().BeTrue(atualizacao.Error?.Message);
 
             await ctx.SaveChangesAsync();
@@ -159,535 +214,4 @@ public sealed class OfertaCursoPersistenceTests
             "a troca do backing field da coleção primitiva precisa ser detectada pelo change tracker")
             .Which.Should().Be(TurnoOferta.Matutino);
     }
-
-    [Fact(DisplayName = "FK real: oferta apontando curso inexistente é rejeitada pelo banco (23503)")]
-    public async Task Fk_CursoInexistente_Rejeita()
-    {
-        (_, Guid localId) = await SemearCursoELocalAsync();
-        OfertaCurso orfa = NovaOferta(Guid.CreateVersion7(), localId, NovaUnidade());
-
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
-        ctx.OfertasCurso.Add(orfa);
-
-        Func<Task> act = async () => await ctx.SaveChangesAsync();
-
-        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
-        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        pg.SqlState.Should().Be("23503", "curso_id tem FK intra-schema real para configuracao.cursos");
-    }
-
-    [Fact(DisplayName = "FK real: oferta apontando local de oferta inexistente é rejeitada pelo banco (23503)")]
-    public async Task Fk_LocalOfertaInexistente_Rejeita()
-    {
-        (Guid cursoId, _) = await SemearCursoELocalAsync();
-        OfertaCurso orfa = NovaOferta(cursoId, Guid.CreateVersion7(), NovaUnidade());
-
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
-        ctx.OfertasCurso.Add(orfa);
-
-        Func<Task> act = async () => await ctx.SaveChangesAsync();
-
-        DbUpdateException ex = (await act.Should().ThrowAsync<DbUpdateException>()).Which;
-        Npgsql.PostgresException pg = ex.InnerException.Should().BeOfType<Npgsql.PostgresException>().Which;
-        pg.SqlState.Should().Be("23503", "local_oferta_id tem FK intra-schema real para configuracao.locais_de_oferta");
-    }
-
-    [Fact(DisplayName = "CHECK de banco rejeita programa de oferta fora do domínio via SQL cru")]
-    public async Task Check_RejeitaProgramaForaDoDominioViaSqlCru()
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        Func<Task> act = () => InserirCruAsync(
-            cursoId, localId, programa: "PROUNI", formato: "PRESENCIAL", regime: "REGULAR", turnos: ["MATUTINO"], vagas: null, baseLegal: "Lei X");
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_ofertas_de_curso_programa_de_oferta impede o INSERT direto");
-    }
-
-    [Theory(DisplayName = "CHECK de banco rejeita token de turno fora do domínio via SQL cru")]
-    [InlineData("DIURNO")]
-    [InlineData("INTEGRAL")]
-    [InlineData("Matutino")]
-    public async Task Check_TurnosDominio_RejeitaTokenForaDoDominio(string token)
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        Func<Task> act = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
-            regime: "REGULAR", turnos: [token], vagas: null, baseLegal: null);
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_ofertas_de_curso_turnos_dominio impede token fora do domínio");
-    }
-
-    [Fact(DisplayName = "CHECK de banco rejeita elemento nulo dentro do array de turnos")]
-    public async Task Check_TurnosDominio_RejeitaElementoNulo()
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        Func<Task> act = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
-            regime: "INTEGRAL", turnos: ["MATUTINO", null!], vagas: null, baseLegal: null);
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "containment não considera NULL contido — o elemento nulo cai no CHECK de domínio");
-    }
-
-    [Fact(DisplayName = "CHECK de banco rejeita regime fora do domínio via SQL cru")]
-    public async Task Check_RegimeDeTurno_RejeitaForaDoDominio()
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        Func<Task> act = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
-            regime: "PARCIAL", turnos: ["MATUTINO"], vagas: null, baseLegal: null);
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_ofertas_de_curso_regime_de_turno impede token fora do domínio");
-    }
-
-    [Theory(DisplayName = "CHECK de banco espelha a cardinalidade que cada regime exige")]
-    [InlineData("REGULAR", new string[0])]
-    [InlineData("REGULAR", new[] { "MATUTINO", "NOTURNO" })]
-    [InlineData("INTEGRAL", new string[0])]
-    [InlineData("INTEGRAL", new[] { "NOTURNO" })]
-    [InlineData("INTEGRAL", new[] { "MATUTINO", "VESPERTINO", "NOTURNO" })]
-    [InlineData("INTEGRAL", new[] { "MATUTINO", "MATUTINO" })]
-    public async Task Check_TurnosRegime_RejeitaCardinalidadeIncompativel(string regime, string[] turnos)
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        Func<Task> act = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
-            regime: regime, turnos: turnos, vagas: null, baseLegal: null);
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_ofertas_de_curso_turnos_regime espelha a invariante do agregado");
-    }
-
-    [Theory(DisplayName = "CHECK de banco rejeita regime de funcionamento fora do domínio via SQL cru")]
-    [InlineData("SEMI_INTENSIVO")]
-    [InlineData("Intensivo")]
-    [InlineData("INTEGRAL")]
-    [InlineData("")]
-    public async Task Check_RegimeDeFuncionamento_RejeitaForaDoDominio(string token)
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        Func<Task> act = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
-            regime: "REGULAR", turnos: ["MATUTINO"], vagas: null, baseLegal: null,
-            funcionamento: token);
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_ofertas_de_curso_regime_de_funcionamento impede token fora do domínio");
-    }
-
-    [Fact(DisplayName = "CHECK de banco recusa a oferta intensiva com regime de turno regular")]
-    public async Task Check_FuncionamentoRegimeDeTurno_RecusaIntensivoRegular()
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        Func<Task> act = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
-            regime: "REGULAR", turnos: ["MATUTINO"], vagas: null, baseLegal: null,
-            funcionamento: "INTENSIVO");
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_ofertas_de_curso_funcionamento_regime_de_turno espelha a invariante do agregado");
-    }
-
-    [Theory(DisplayName = "CHECK de banco aceita as cinco combinações válidas de funcionamento e regime de turno")]
-    [InlineData("EXTENSIVO", "REGULAR", new[] { "MATUTINO" })]
-    [InlineData("EXTENSIVO", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" })]
-    [InlineData("ALTERNANCIA_PEDAGOGICA", "REGULAR", new[] { "MATUTINO" })]
-    [InlineData("ALTERNANCIA_PEDAGOGICA", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" })]
-    [InlineData("INTENSIVO", "INTEGRAL", new[] { "MATUTINO", "VESPERTINO" })]
-    public async Task Check_FuncionamentoRegimeDeTurno_AceitaCombinacoesValidas(
-        string funcionamento, string regime, string[] turnos)
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        Func<Task> act = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
-            regime: regime, turnos: turnos, vagas: null, baseLegal: null,
-            funcionamento: funcionamento);
-
-        await act.Should().NotThrowAsync();
-    }
-
-    [Fact(DisplayName = "Coluna do regime de funcionamento é NOT NULL — nenhum default preenche a ausência")]
-    public async Task Insert_SemRegimeDeFuncionamento_ViolaNotNull()
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        Func<Task> act = () => ctx.Database.ExecuteSqlAsync(
-            $"""
-            INSERT INTO configuracao.ofertas_de_curso
-                (id, curso_id, local_oferta_id,
-                 unidade_oft_origem_id, unidade_oft_sigla, unidade_oft_nome, unidade_oft_tipo,
-                 programa_de_oferta, formato_pedagogico, regime_de_turno, turnos,
-                 vagas_anuais_autorizadas, base_legal, created_at, is_deleted)
-            VALUES
-                ({Guid.CreateVersion7()}, {cursoId}, {localId},
-                 {Guid.CreateVersion7()}, {"FACET"}, {"Faculdade de Computação"}, {"Faculdade"},
-                 {"REGULAR"}, {"PRESENCIAL"}, {"REGULAR"}, {new[] { "MATUTINO" }}::varchar(30)[],
-                 NULL, NULL, {DateTimeOffset.UtcNow}, {false})
-            """);
-
-        Npgsql.PostgresException pg =
-            (await act.Should().ThrowAsync<Npgsql.PostgresException>()).Which;
-        pg.SqlState.Should().Be(
-            "23502",
-            "a coluna nasce NOT NULL sem defaultValue — omitir o regime não vira valor presumido");
-    }
-
-    [Theory(DisplayName = "CHECK de banco aceita as combinações válidas de regime e turnos")]
-    [InlineData("REGULAR", new[] { "MATUTINO" })]
-    [InlineData("REGULAR", new[] { "NOTURNO" })]
-    [InlineData("INTEGRAL", new[] { "MATUTINO", "VESPERTINO" })]
-    [InlineData("INTEGRAL", new[] { "VESPERTINO", "NOTURNO" })]
-    public async Task Check_TurnosRegime_AceitaCombinacoesValidas(string regime, string[] turnos)
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        Func<Task> act = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
-            regime: regime, turnos: turnos, vagas: null, baseLegal: null);
-
-        await act.Should().NotThrowAsync();
-    }
-
-    [Fact(DisplayName = "Linha gravada com os turnos fora de ordem é lida em ordem canônica")]
-    public async Task Leitura_TurnosGravadosForaDeOrdem_DevolveOrdemCanonica()
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        await InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
-            regime: "INTEGRAL", turnos: ["NOTURNO", "MATUTINO"], vagas: null, baseLegal: null);
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var reader = new OfertaCursoReader(readCtx);
-
-        IReadOnlyList<OfertaCursoView> vivas = await reader.ListarVivasAsync();
-        OfertaCursoView view = vivas.Single(v => v.CursoId == cursoId);
-
-        view.Turnos.Should().Equal(["MATUTINO", "NOTURNO"],
-            "a ordem canônica é promessa do contrato de leitura, não consequência da ordem gravada");
-    }
-
-    [Theory(DisplayName = "CHECK de banco rejeita array de turnos malformado — multidimensional ou com limite inferior fora de 1")]
-    [InlineData("[0:1]={MATUTINO,MATUTINO}", "limite inferior 0 faz turnos[2] devolver NULL")]
-    [InlineData("[2:3]={MATUTINO,VESPERTINO}", "limite inferior 2 faz turnos[1] devolver NULL")]
-    [InlineData("{{MATUTINO,VESPERTINO}}", "array 2-D tem cardinalidade 2 mas o subscrito simples devolve NULL")]
-    public async Task Check_TurnosRegime_RejeitaArrayMalformado(string literalDoArray, string porque)
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        Func<Task> act = () => InserirCruComTurnosLiteraisAsync(
-            cursoId, localId, regime: "INTEGRAL", turnosLiteral: literalDoArray);
-
-        await act.Should().ThrowAsync<Npgsql.PostgresException>(porque);
-    }
-
-    [Fact(DisplayName = "CHECK de banco rejeita vagas negativas via SQL cru, mas aceita zero e nulo")]
-    public async Task Check_VagasAnuais_RejeitaNegativas()
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        Func<Task> negativa = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL", regime: "REGULAR", turnos: ["MATUTINO"], vagas: -1, baseLegal: null);
-        await negativa.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_ofertas_de_curso_vagas_anuais_autorizadas impede teto negativo");
-
-        Func<Task> zero = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL", regime: "REGULAR", turnos: ["MATUTINO"], vagas: 0, baseLegal: null);
-        await zero.Should().NotThrowAsync("zero é teto válido no e-MEC");
-    }
-
-    [Fact(DisplayName = "CHECK condicional da base legal via SQL cru: PARFOR sem base é rejeitado; REGULAR sem base passa")]
-    public async Task Check_BaseLegalCondicional()
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-
-        Func<Task> parforSemBase = () => InserirCruAsync(
-            cursoId, localId, programa: "PARFOR", formato: "PRESENCIAL",
-            regime: "REGULAR", turnos: ["MATUTINO"], vagas: null, baseLegal: null);
-        await parforSemBase.Should().ThrowAsync<Npgsql.PostgresException>(
-            "o CHECK ck_ofertas_de_curso_base_legal_programa espelha o guard de domínio (ADR-0066)");
-
-        Func<Task> regularSemBase = () => InserirCruAsync(
-            cursoId, localId, programa: "REGULAR", formato: "PRESENCIAL",
-            regime: "REGULAR", turnos: ["MATUTINO"], vagas: null, baseLegal: null);
-        await regularSemBase.Should().NotThrowAsync("REGULAR não exige base legal");
-    }
-
-    [Fact(DisplayName = "Soft-delete preserva a trilha e tira a oferta das leituras via query filter")]
-    public async Task SoftDelete_PreservaTrilha()
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-        OfertaCurso oferta = NovaOferta(cursoId, localId, NovaUnidade());
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.OfertasCurso.Add(oferta);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            OfertaCurso tracked = await ctx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
-            ctx.OfertasCurso.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        (await readCtx.OfertasCurso.AnyAsync(o => o.Id == oferta.Id))
-            .Should().BeFalse("o soft-delete tira a oferta das leituras");
-
-        OfertaCurso excluida = await readCtx.OfertasCurso
-            .IgnoreQueryFilters().SingleAsync(o => o.Id == oferta.Id);
-        excluida.IsDeleted.Should().BeTrue();
-        excluida.DeletedBy.Should().Be(AdminB);
-    }
-
-    [Fact(DisplayName = "ReferenciadoPorOfertaCursoVivaAsync: true com oferta viva; false após soft-delete da oferta")]
-    public async Task ReferenciadoPorOfertaCursoViva_ReflecteVida()
-    {
-        (Guid cursoId, Guid localId) = await SemearCursoELocalAsync();
-        OfertaCurso oferta = NovaOferta(cursoId, localId, NovaUnidade());
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.OfertasCurso.Add(oferta);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null))
-        {
-            var cursoRepository = new CursoRepository(ctx);
-            (await cursoRepository.ReferenciadoPorOfertaCursoVivaAsync(cursoId, CancellationToken.None))
-                .Should().BeTrue("há oferta viva referenciando o curso — a remoção do curso deve bloquear (CA-05)");
-            (await cursoRepository.ReferenciadoPorOfertaCursoVivaAsync(Guid.CreateVersion7(), CancellationToken.None))
-                .Should().BeFalse("curso sem oferta não é referenciado");
-        }
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            OfertaCurso tracked = await ctx.OfertasCurso.SingleAsync(o => o.Id == oferta.Id);
-            ctx.OfertasCurso.Remove(tracked);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var repositoryAposRemocao = new CursoRepository(readCtx);
-        (await repositoryAposRemocao.ReferenciadoPorOfertaCursoVivaAsync(cursoId, CancellationToken.None))
-            .Should().BeFalse("o soft-delete da oferta libera o curso para remoção");
-    }
-
-    [Fact(DisplayName = "ListarPaginadoAsync filtra por cursoId e o recorte respeita o cursor bidirecional (itens + âncoras)")]
-    public async Task ListarPaginado_FiltraPorCursoId_RespeitaCursorBidirecional()
-    {
-        // issue #755: o filtro entra no IQueryable ANTES do keyset — itens, prev e
-        // next devem ficar todos dentro do recorte do curso A, ignorando o curso B.
-        (Guid cursoA, Guid localId) = await SemearCursoELocalAsync();
-        Guid cursoB = await SemearCursoAsync();
-
-        // Intercala a criação (A, B, A, B, A) para provar que o filtro isola o curso.
-        await SemearOfertasAsync(
-            (cursoA, localId), (cursoB, localId), (cursoA, localId), (cursoB, localId), (cursoA, localId));
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var repository = new OfertaCursoRepository(readCtx);
-
-        // Ordem canônica do banco (uuid) das ofertas de A — base para fatiar as páginas.
-        // Derivada do próprio banco: evita depender da semântica de Guid.CompareTo no cliente.
-        List<Guid> ordemA = await readCtx.OfertasCurso.AsNoTracking()
-            .Where(o => o.CursoId == cursoA)
-            .OrderBy(o => o.Id)
-            .Select(o => o.Id)
-            .ToListAsync();
-        ordemA.Should().HaveCount(3);
-
-        // Dentro do recorte de um curso, nome e código são constantes e o Id é a
-        // única coluna que move o seek — por isso a ordem esperada é a de Id.
-        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo, int? Total) pagina1 =
-            await repository.ListarPaginadoAsync(
-                OrdenacaoPadraoDeOferta, busca: null, afterSortKey: null, afterId: null, limit: 2, PaginationDirection.Next, cursoA, includeTotal: false, CancellationToken.None);
-        pagina1.Itens.Select(o => o.Id).Should().Equal(ordemA[0], ordemA[1]);
-        pagina1.Itens.Should().OnlyContain(o => o.CursoId == cursoA);
-        pagina1.Anterior.Should().BeNull();
-        pagina1.Proximo!.Value.Id.Should().Be(ordemA[1]);
-
-        // Página 2 (Next a partir da 2ª): a 3ª de A; sem próximo; com anterior.
-        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo, int? Total) pagina2 =
-            await repository.ListarPaginadoAsync(
-                OrdenacaoPadraoDeOferta, busca: null, pagina1.Proximo!.Value.SortKey, ordemA[1], limit: 2, PaginationDirection.Next, cursoA, includeTotal: false, CancellationToken.None);
-        pagina2.Itens.Select(o => o.Id).Should().Equal(ordemA[2]);
-        pagina2.Itens.Should().OnlyContain(o => o.CursoId == cursoA);
-        pagina2.Proximo.Should().BeNull();
-        pagina2.Anterior!.Value.Id.Should().Be(ordemA[2]);
-
-        // Prev a partir da 3ª (limit 2): as 2 anteriores de A, já em ordem ascendente.
-        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo, int? Total) anterior =
-            await repository.ListarPaginadoAsync(
-                OrdenacaoPadraoDeOferta, busca: null, pagina2.Anterior!.Value.SortKey, ordemA[2], limit: 2, PaginationDirection.Prev, cursoA, includeTotal: false, CancellationToken.None);
-        anterior.Itens.Select(o => o.Id).Should().Equal(ordemA[0], ordemA[1]);
-        anterior.Itens.Should().OnlyContain(o => o.CursoId == cursoA);
-
-        // Curso sem ofertas → recorte vazio.
-        (IReadOnlyList<OfertaCurso> Itens, (string SortKey, Guid Id)? Anterior, (string SortKey, Guid Id)? Proximo, int? Total) vazio =
-            await repository.ListarPaginadoAsync(
-                OrdenacaoPadraoDeOferta, busca: null, afterSortKey: null, afterId: null, limit: 50, PaginationDirection.Next, Guid.CreateVersion7(), includeTotal: false, CancellationToken.None);
-        vazio.Itens.Should().BeEmpty();
-    }
-
-    [Fact(DisplayName = "O reader acompanha a oferta do grupo de área do ENEM do curso, ou de nulo quando o curso não o declara")]
-    public async Task Reader_ExpoeGrupoAreaEnemDoCurso()
-    {
-        Curso comGrupo = Curso.Criar(CodigoUnico(), "Medicina", "Bacharelado", "Graduação", GrupoCurso.SaudeEBiologicas).Value!;
-        Curso semGrupo = Curso.Criar(CodigoUnico(), "Pedagogia", "Licenciatura", "Graduação", null).Value!;
-        LocalOferta local = LocalOferta.Criar(
-            TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
-        OfertaCurso ofertaComGrupo = NovaOferta(comGrupo.Id, local.Id, NovaUnidade());
-        OfertaCurso ofertaSemGrupo = NovaOferta(semGrupo.Id, local.Id, NovaUnidade());
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.Cursos.AddRange(comGrupo, semGrupo);
-            ctx.LocaisOferta.Add(local);
-            ctx.OfertasCurso.AddRange(ofertaComGrupo, ofertaSemGrupo);
-            await ctx.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-        var reader = new OfertaCursoReader(readCtx);
-
-        (await reader.ObterPorIdAsync(ofertaComGrupo.Id))!.GrupoAreaEnem.Should().Be(new GrupoAreaEnemView("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"));
-        (await reader.ObterPorIdAsync(ofertaSemGrupo.Id))!.GrupoAreaEnem.Should().BeNull();
-
-        IReadOnlyList<OfertaCursoView> vivas = await reader.ListarVivasAsync();
-        vivas.Single(v => v.Id == ofertaComGrupo.Id).GrupoAreaEnem.Should().Be(new GrupoAreaEnemView("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"));
-        vivas.Single(v => v.Id == ofertaSemGrupo.Id).GrupoAreaEnem.Should().BeNull();
-    }
-
-    // ── Helpers ───────────────────────────────────────────────────────────
-
-    /// <summary>A ordem que a listagem usa quando a consulta não pede outra.</summary>
-    private static readonly IReadOnlyList<SortField> OrdenacaoPadraoDeOferta =
-    [
-        new(CamposOrdenacaoOfertaCurso.CursoNome, SortDirection.Ascending),
-        new(CamposOrdenacaoOfertaCurso.CursoCodigo, SortDirection.Ascending),
-    ];
-
-    private async Task<Guid> SemearCursoAsync()
-    {
-        Curso curso = Curso.Criar(
-            CodigoUnico(), "Engenharia Elétrica", "Bacharelado", "Graduação", null).Value!;
-
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
-        ctx.Cursos.Add(curso);
-        await ctx.SaveChangesAsync();
-
-        return curso.Id;
-    }
-
-    private async Task SemearOfertasAsync(params (Guid CursoId, Guid LocalOfertaId)[] ofertas)
-    {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
-        foreach ((Guid cursoId, Guid localOfertaId) in ofertas)
-        {
-            ctx.OfertasCurso.Add(NovaOferta(cursoId, localOfertaId, NovaUnidade()));
-        }
-
-        await ctx.SaveChangesAsync();
-    }
-
-    private async Task<(Guid CursoId, Guid LocalOfertaId)> SemearCursoELocalAsync()
-    {
-        Curso curso = Curso.Criar(
-            CodigoUnico(), "Engenharia Civil", "Bacharelado", "Graduação", null).Value!;
-        LocalOferta local = LocalOferta.Criar(
-            TipoLocalOferta.CampusSede, null, "1504208", "Marabá", "PA",
-            ReferenciaCidadeGeo.OrigemGeoApi, Agora, null, null).Value!;
-
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
-        ctx.Cursos.Add(curso);
-        ctx.LocaisOferta.Add(local);
-        await ctx.SaveChangesAsync();
-
-        return (curso.Id, local.Id);
-    }
-
-    private static UnidadeOfertante NovaUnidade() =>
-        UnidadeOfertante.Criar(
-            Guid.CreateVersion7(), "FACET", "Faculdade de Computação e Engenharia Elétrica", "Faculdade").Value!;
-
-    private static OfertaCurso NovaOferta(Guid cursoId, Guid localId, UnidadeOfertante unidade) =>
-        OfertaCurso.Criar(
-            cursoId, localId, unidade, "PARFOR", "SEMIPRESENCIAL",
-            "INTENSIVO", "INTEGRAL", ["NOTURNO", "VESPERTINO"],
-            "123456", "ENG-01", 40, "Decreto 6.755/2009", "Portaria MEC 9/2009").Value!;
-
-    private async Task InserirCruAsync(
-        Guid cursoId,
-        Guid localId,
-        string programa,
-        string formato,
-        string regime,
-        string?[] turnos,
-        int? vagas,
-        string? baseLegal,
-        string funcionamento = "EXTENSIVO")
-    {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        await ctx.Database.ExecuteSqlAsync(
-            $"""
-            INSERT INTO configuracao.ofertas_de_curso
-                (id, curso_id, local_oferta_id,
-                 unidade_oft_origem_id, unidade_oft_sigla, unidade_oft_nome, unidade_oft_tipo,
-                 programa_de_oferta, formato_pedagogico, regime_de_funcionamento,
-                 regime_de_turno, turnos,
-                 vagas_anuais_autorizadas, base_legal, created_at, is_deleted)
-            VALUES
-                ({Guid.CreateVersion7()}, {cursoId}, {localId},
-                 {Guid.CreateVersion7()}, {"FACET"}, {"Faculdade de Computação"}, {"Faculdade"},
-                 {programa}, {formato}, {funcionamento},
-                 {regime}, {turnos}::varchar(30)[],
-                 {vagas}, {baseLegal}, {DateTimeOffset.UtcNow}, {false})
-            """);
-    }
-
-    // Um array passado como string[] sempre chega unidimensional e com limite
-    // inferior 1. As formas malformadas que o CHECK precisa recusar só existem na
-    // representação textual do array — daí o parâmetro de texto com cast explícito,
-    // que o Postgres interpreta pela função de entrada do tipo.
-    private async Task InserirCruComTurnosLiteraisAsync(
-        Guid cursoId,
-        Guid localId,
-        string regime,
-        string turnosLiteral)
-    {
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
-        await ctx.Database.ExecuteSqlAsync(
-            $"""
-            INSERT INTO configuracao.ofertas_de_curso
-                (id, curso_id, local_oferta_id,
-                 unidade_oft_origem_id, unidade_oft_sigla, unidade_oft_nome, unidade_oft_tipo,
-                 programa_de_oferta, formato_pedagogico, regime_de_funcionamento,
-                 regime_de_turno, turnos,
-                 vagas_anuais_autorizadas, base_legal, created_at, is_deleted)
-            VALUES
-                ({Guid.CreateVersion7()}, {cursoId}, {localId},
-                 {Guid.CreateVersion7()}, {"FACET"}, {"Faculdade de Computação"}, {"Faculdade"},
-                 {"REGULAR"}, {"PRESENCIAL"}, {"EXTENSIVO"},
-                 {regime}, {turnosLiteral}::varchar(30)[],
-                 NULL, NULL, {DateTimeOffset.UtcNow}, {false})
-            """);
-    }
-
-    private static string CodigoUnico() => $"CUR_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 }

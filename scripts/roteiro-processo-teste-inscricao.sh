@@ -277,7 +277,8 @@ setup_configuracao() {
     if [ -z "$OFERTA_CURSO_ID" ]; then
         OFERTA_CURSO_ID=$(post_tolerante "/api/configuracao/admin/ofertas-curso" "{
             \"cursoId\": \"$CURSO_ID\", \"localOfertaId\": \"$LOCAL_OFERTA_ID\",
-            \"unidadeOfertanteOrigemId\": \"$UNIDADE_OFERTANTE_ID\", \"programaDeOferta\": \"REGULAR\",
+            \"unidadeOfertanteOrigemId\": \"$UNIDADE_OFERTANTE_ID\", \"codigo\": \"OFERTA_MEDICINA_MATUTINO\",
+            \"programaDeOferta\": \"REGULAR\",
             \"regimeDeFuncionamento\": \"EXTENSIVO\", \"formatoPedagogico\": \"PRESENCIAL\",
             \"regimeDeTurno\": \"REGULAR\", \"turnos\": [\"MATUTINO\"],
             \"eMecCodigo\": null, \"codigoSga\": null, \"vagasAnuaisAutorizadas\": null,

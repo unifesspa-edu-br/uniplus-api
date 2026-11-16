@@ -21,6 +21,8 @@ public static class RestricoesDoBanco
 
     public const string CursoCodigoVivo = "ix_cursos_codigo_vivo";
 
+    public const string OfertaDeCursoCodigoVivo = "ix_ofertas_de_curso_codigo_vivo";
+
     public const string FaseCanonicaCodigoVivo = "ix_fases_canonicas_codigo_vivo";
 
     public const string FatoDoCandidatoCodigoUnico = "ux_fatos_do_candidato_codigo";

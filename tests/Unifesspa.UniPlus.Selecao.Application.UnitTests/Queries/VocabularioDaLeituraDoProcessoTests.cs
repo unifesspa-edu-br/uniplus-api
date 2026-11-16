@@ -100,7 +100,7 @@ public sealed class VocabularioDaLeituraDoProcessoTests
                 Json("{}"), Json("[]"), "base legal"));
         IOfertaCursoReader ofertas = Substitute.For<IOfertaCursoReader>();
         ofertas.ObterPorIdAsync(ofertaCursoId, Arg.Any<CancellationToken>()).Returns(new OfertaCursoView(
-            ofertaCursoId, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
+            ofertaCursoId, "MEDICINA_MARABA", Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
             "CTIC", "Centro de Tecnologia", "CAMPUS", "REGULAR", "PRESENCIAL", "EXTENSIVO",
             "REGULAR", ["MATUTINO"], null, null, 100, null, null, null, "Medicina", "Bacharelado"));
         IModalidadeReader modalidades = Substitute.For<IModalidadeReader>();

@@ -2202,6 +2202,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     ajuste_do_quadro = table.Column<string>(type: "jsonb", nullable: true),
                     grupo_area_enem_codigo = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: true, comment: "Código do grupo de área do ENEM do curso da oferta, sem abreviação e sem acento, congelado por valor do cadastro de cursos na definição da distribuição; casa a oferta com a linha de Pesos por Área. Nulo quando o curso não declara grupo."),
                     grupo_area_enem_rotulo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Rótulo do grupo de área do ENEM do curso da oferta, congelado por valor junto do código na definição da distribuição. Nulo quando o curso não declara grupo."),
+                    oferta_curso_codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: true, comment: "Código da oferta de curso, congelado por valor do cadastro na definição da distribuição."),
                     oferta_curso_nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true, comment: "Nome do curso da oferta, congelado por valor do cadastro na definição da distribuição."),
                     oferta_curso_grau = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: true, comment: "Grau do curso da oferta, congelado por valor do cadastro na definição da distribuição."),
                     oferta_unidade_ofertante_nome = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: true, comment: "Nome da unidade ofertante, congelado por valor do cadastro na definição da distribuição."),
@@ -2908,6 +2909,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 columns: table => new
                 {
                     id = table.Column<Guid>(type: "uuid", nullable: false),
+                    codigo = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     curso_id = table.Column<Guid>(type: "uuid", nullable: false),
                     local_oferta_id = table.Column<Guid>(type: "uuid", nullable: false),
                     unidade_oft_origem_id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -2936,6 +2938,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_ofertas_de_curso", x => x.id);
                     table.CheckConstraint("ck_ofertas_de_curso_base_legal_programa", "programa_de_oferta = 'REGULAR' OR base_legal IS NOT NULL");
+                    table.CheckConstraint("ck_ofertas_de_curso_codigo_formato", "codigo ~ '^[A-Z][A-Z0-9_]{1,49}$'");
                     table.CheckConstraint("ck_ofertas_de_curso_formato_pedagogico", "formato_pedagogico IN ('PRESENCIAL', 'SEMIPRESENCIAL', 'EAD')");
                     table.CheckConstraint("ck_ofertas_de_curso_funcionamento_regime_de_turno", "(regime_de_funcionamento <> 'INTENSIVO' OR regime_de_turno = 'INTEGRAL')");
                     table.CheckConstraint("ck_ofertas_de_curso_programa_de_oferta", "programa_de_oferta IN ('REGULAR', 'FORMA_PARA', 'PARFOR', 'PRONERA', 'PEPETI', 'CONVENIO_OUTRO', 'OUTRO')");
@@ -6842,6 +6845,14 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 schema: "selecao",
                 table: "ocorrencias_do_lote_de_notas",
                 column: "lote_id");
+
+            migrationBuilder.CreateIndex(
+                name: "ix_ofertas_de_curso_codigo_vivo",
+                schema: "configuracao",
+                table: "ofertas_de_curso",
+                column: "codigo",
+                unique: true,
+                filter: "is_deleted = false");
 
             migrationBuilder.CreateIndex(
                 name: "ix_ofertas_de_curso_curso_id",

@@ -23,8 +23,8 @@ public sealed class RemoverOfertaCursoCommandHandlerTests
             Guid.CreateVersion7(), "FACET", "Faculdade de Computação e Engenharia Elétrica", "Faculdade").Value!;
 
         return OfertaCurso.Criar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), unidade, "REGULAR", null,
-            "EXTENSIVO", "REGULAR", ["MATUTINO"], null, null, null, null, null).Value!;
+            Guid.CreateVersion7(), Guid.CreateVersion7(), unidade,
+            new DeclaracaoDaOfertaDeCurso("OFERTA_REMOVIVEL", "REGULAR", null, "EXTENSIVO", "REGULAR", ["MATUTINO"])).Value!;
     }
 
     [Fact(DisplayName = "Oferta inexistente retorna NaoEncontrada (404)")]

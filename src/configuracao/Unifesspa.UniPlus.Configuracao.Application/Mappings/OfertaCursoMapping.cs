@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Configuracao.Application.Mappings;
 using Unifesspa.UniPlus.Configuracao.Application.DTOs;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 
 public static class OfertaCursoMapping
 {
@@ -10,24 +11,13 @@ public static class OfertaCursoMapping
     {
         ArgumentNullException.ThrowIfNull(oferta);
         return new OfertaCursoDto(
-            oferta.Id,
-            oferta.CursoId,
-            oferta.LocalOfertaId,
-            new UnidadeOfertanteDto(
-                oferta.UnidadeOfertante.OrigemId,
-                oferta.UnidadeOfertante.Sigla,
-                oferta.UnidadeOfertante.Nome,
-                oferta.UnidadeOfertante.Tipo),
-            ProgramasDeOferta.ParaTokenCanonico(oferta.ProgramaDeOferta),
-            FormatosPedagogicos.ParaTokenCanonico(oferta.FormatoPedagogico),
-            RegimesDeFuncionamento.ParaTokenCanonico(oferta.RegimeDeFuncionamento),
-            RegimesDeTurno.ParaTokenCanonico(oferta.RegimeDeTurno),
+            oferta.Id, oferta.Codigo, oferta.CursoId, oferta.LocalOfertaId, ParaDto(oferta.UnidadeOfertante),
+            ProgramasDeOferta.ParaTokenCanonico(oferta.ProgramaDeOferta), FormatosPedagogicos.ParaTokenCanonico(oferta.FormatoPedagogico),
+            RegimesDeFuncionamento.ParaTokenCanonico(oferta.RegimeDeFuncionamento), RegimesDeTurno.ParaTokenCanonico(oferta.RegimeDeTurno),
             [.. TurnosOferta.OrdenarCanonicamente(oferta.Turnos).Select(TurnosOferta.ParaTokenCanonico)],
-            oferta.EMecCodigo,
-            oferta.CodigoSga,
-            oferta.VagasAnuaisAutorizadas,
-            oferta.BaseLegal,
-            oferta.AtoAutorizacaoMec,
-            oferta.CreatedAt);
+            oferta.EMecCodigo, oferta.CodigoSga, oferta.VagasAnuaisAutorizadas, oferta.BaseLegal, oferta.AtoAutorizacaoMec, oferta.CreatedAt);
     }
+
+    private static UnidadeOfertanteDto ParaDto(UnidadeOfertante unidade) =>
+        new(unidade.OrigemId, unidade.Sigla, unidade.Nome, unidade.Tipo);
 }

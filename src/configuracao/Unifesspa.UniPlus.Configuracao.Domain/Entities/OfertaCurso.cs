@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// (story #588, issue #749, ADR-0066): liga um <see cref="Curso"/> (matriz
 /// curricular pura) a um <see cref="LocalOferta"/> e à unidade ofertante
 /// (instituto/faculdade, snapshot-copy — ADR-0061), carregando os atributos
-/// que variam por campus: código e-MEC, código no sistema de gestão acadêmica,
+/// que variam por campus: código da oferta, código e-MEC, código no sistema de gestão acadêmica,
 /// programa, formato pedagógico, regime de funcionamento, regime de turno e
 /// turnos, teto de vagas e-MEC e base legal.
 /// O mesmo curso tem ofertas distintas por campus, com códigos e-MEC diferentes.
@@ -53,10 +53,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </remarks>
 public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
 {
-    private const int EMecCodigoMaxLength = 20;
-    private const int CodigoSgaMaxLength = 30;
-    private const int BaseLegalMaxLength = 500;
-    private const int AtoAutorizacaoMecMaxLength = 300;
+    /// <summary>
+    /// Código informado pela gestão, com que o edital e o documento de configuração citam a oferta; único entre as ofertas
+    /// vivas (a conferência é do handler e o índice do banco decide a corrida) e editável — a identidade é o <c>Id</c>.
+    /// </summary>
+    public string Codigo { get; private set; } = string.Empty;
 
     public Guid CursoId { get; private set; }
     public Guid LocalOfertaId { get; private set; }
@@ -109,121 +110,73 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
-    /// Cria uma nova Oferta de Curso. Os enums chegam como tokens textuais
-    /// (UPPER_SNAKE): <paramref name="programaDeOferta"/> é obrigatório;
-    /// <paramref name="formatoPedagogico"/> aplica default PRESENCIAL quando
-    /// ausente; <paramref name="regimeDeFuncionamento"/>,
-    /// <paramref name="regimeDeTurno"/> e <paramref name="turnos"/> são
-    /// obrigatórios e conferidos entre si. O
-    /// <paramref name="unidadeOfertante"/> já chega congelado (resolvido pelo
-    /// handler via <c>IUnidadeReader</c>). A existência viva do curso e do local
-    /// de oferta é responsabilidade do handler.
+    /// Cria uma nova Oferta de Curso a partir da <paramref name="declaracao"/> da gestão. Os enums chegam como tokens
+    /// textuais (UPPER_SNAKE): o programa é obrigatório; o formato pedagógico vale PRESENCIAL quando ausente; o regime de
+    /// funcionamento, o regime de turno e os turnos são obrigatórios e conferidos entre si. A
+    /// <paramref name="unidadeOfertante"/> já chega congelada (resolvida pelo handler via <c>IUnidadeReader</c>). A existência
+    /// viva do curso e do local de oferta e a unicidade do código são responsabilidade do handler.
     /// </summary>
     public static Result<OfertaCurso> Criar(
         Guid cursoId,
         Guid localOfertaId,
         UnidadeOfertante unidadeOfertante,
-        string? programaDeOferta,
-        string? formatoPedagogico,
-        string? regimeDeFuncionamento,
-        string? regimeDeTurno,
-        IReadOnlyList<string?>? turnos,
-        string? eMecCodigo,
-        string? codigoSga,
-        int? vagasAnuaisAutorizadas,
-        string? baseLegal,
-        string? atoAutorizacaoMec)
+        DeclaracaoDaOfertaDeCurso declaracao)
     {
         ArgumentNullException.ThrowIfNull(unidadeOfertante);
 
-        Result<CamposResolvidos> camposResult = ValidarComuns(
-            programaDeOferta, formatoPedagogico, regimeDeFuncionamento, regimeDeTurno,
-            turnos, eMecCodigo, codigoSga, vagasAnuaisAutorizadas, baseLegal,
-            atoAutorizacaoMec);
-        if (camposResult.IsFailure)
+        Result<CamposDaOfertaDeCurso> campos = Conferir(declaracao);
+        if (campos.IsFailure)
         {
-            return Result<OfertaCurso>.ValidationFailure(camposResult.Errors);
+            return Result<OfertaCurso>.ValidationFailure(campos.Errors);
         }
 
-        var oferta = new OfertaCurso
-        {
-            CursoId = cursoId,
-            LocalOfertaId = localOfertaId,
-            UnidadeOfertante = unidadeOfertante,
-        };
-        oferta.AplicarCampos(camposResult.Value!);
+        var oferta = new OfertaCurso { CursoId = cursoId, LocalOfertaId = localOfertaId, UnidadeOfertante = unidadeOfertante };
+        oferta.AplicarCampos(campos.Value!);
 
         return Result<OfertaCurso>.Success(oferta);
     }
 
     /// <summary>
-    /// Atualiza os atributos editáveis da Oferta de Curso: programa, formato
-    /// pedagógico, regime de funcionamento, regime de turno e turnos, códigos
-    /// (e-MEC / SGA), teto de vagas, base legal e ato de autorização. <c>CursoId</c>, <c>LocalOfertaId</c> e
-    /// <c>UnidadeOfertante</c> são <b>imutáveis</b> — mudar curso×local×unidade
-    /// caracteriza outra oferta, não uma edição; este método não os recebe nem os
-    /// altera. Revalida o guard condicional da base legal na transição (ex.:
-    /// Regular→Parfor sem base legal é rejeitado).
+    /// Atualiza os atributos editáveis da oferta: o código, o programa, o formato pedagógico, os regimes, os turnos, os códigos
+    /// (e-MEC / SGA), o teto de vagas, a base legal e o ato de autorização. <c>CursoId</c>, <c>LocalOfertaId</c> e
+    /// <c>UnidadeOfertante</c> são <b>imutáveis</b> — mudar curso×local×unidade caracteriza outra oferta, não uma edição.
+    /// Revalida o guard condicional da base legal na transição (Regular→Parfor sem base legal é rejeitado).
     /// </summary>
-    public Result Atualizar(
-        string? programaDeOferta,
-        string? formatoPedagogico,
-        string? regimeDeFuncionamento,
-        string? regimeDeTurno,
-        IReadOnlyList<string?>? turnos,
-        string? eMecCodigo,
-        string? codigoSga,
-        int? vagasAnuaisAutorizadas,
-        string? baseLegal,
-        string? atoAutorizacaoMec)
+    public Result Atualizar(DeclaracaoDaOfertaDeCurso declaracao)
     {
-        Result<CamposResolvidos> camposResult = ValidarComuns(
-            programaDeOferta, formatoPedagogico, regimeDeFuncionamento, regimeDeTurno,
-            turnos, eMecCodigo, codigoSga, vagasAnuaisAutorizadas, baseLegal,
-            atoAutorizacaoMec);
-        if (camposResult.IsFailure)
+        Result<CamposDaOfertaDeCurso> campos = Conferir(declaracao);
+        if (campos.IsFailure)
         {
-            return Result.ValidationFailure(camposResult.Errors);
+            return Result.ValidationFailure(campos.Errors);
         }
 
-        AplicarCampos(camposResult.Value!);
+        AplicarCampos(campos.Value!);
 
         return Result.Success();
     }
 
     /// <summary>
-    /// Valida os dez campos regulatórios editáveis (o guard condicional da base
-    /// legal, a coerência regime de turno×turnos e a compatibilidade entre os dois
-    /// regimes inclusas), sem I/O e sem construir/mutar
-    /// nada — para os handlers de
-    /// criação e atualização falharem rápido antes de qualquer busca no banco ou
-    /// em módulo cruzado (validação sempre vence I/O). <see cref="Criar"/> e
-    /// <see cref="Atualizar"/> continuam revalidando por conta própria via
-    /// <see cref="ValidarComuns"/> — este método não substitui a invariante do
-    /// agregado, só antecipa a mesma checagem para antes do fetch.
+    /// Confere a declaração sem construir nem mutar nada, para os handlers falharem rápido antes de qualquer busca no banco
+    /// ou em módulo cruzado (validação sempre vence I/O). <see cref="Criar"/> e <see cref="Atualizar"/> revalidam por conta
+    /// própria: este método só antecipa a mesma checagem.
     /// </summary>
-    public static Result ValidarCamposDoPayload(
-        string? programaDeOferta,
-        string? formatoPedagogico,
-        string? regimeDeFuncionamento,
-        string? regimeDeTurno,
-        IReadOnlyList<string?>? turnos,
-        string? eMecCodigo,
-        string? codigoSga,
-        int? vagasAnuaisAutorizadas,
-        string? baseLegal,
-        string? atoAutorizacaoMec)
+    public static Result ValidarDeclaracao(DeclaracaoDaOfertaDeCurso declaracao)
     {
-        Result<CamposResolvidos> resultado = ValidarComuns(
-            programaDeOferta, formatoPedagogico, regimeDeFuncionamento, regimeDeTurno,
-            turnos, eMecCodigo, codigoSga, vagasAnuaisAutorizadas, baseLegal,
-            atoAutorizacaoMec);
+        Result<CamposDaOfertaDeCurso> campos = Conferir(declaracao);
 
-        return resultado.IsFailure ? Result.ValidationFailure(resultado.Errors) : Result.Success();
+        return campos.IsFailure ? Result.ValidationFailure(campos.Errors) : Result.Success();
     }
 
-    private void AplicarCampos(CamposResolvidos campos)
+    private static Result<CamposDaOfertaDeCurso> Conferir(DeclaracaoDaOfertaDeCurso declaracao)
     {
+        ArgumentNullException.ThrowIfNull(declaracao);
+
+        return new ValidacaoDaOfertaDeCurso(declaracao).Resolver();
+    }
+
+    private void AplicarCampos(CamposDaOfertaDeCurso campos)
+    {
+        Codigo = campos.Codigo;
         ProgramaDeOferta = campos.ProgramaDeOferta;
         FormatoPedagogico = campos.FormatoPedagogico;
         RegimeDeFuncionamento = campos.RegimeDeFuncionamento;
@@ -235,238 +188,4 @@ public sealed class OfertaCurso : SoftDeletableEntity, IAuditableEntity
         BaseLegal = campos.BaseLegal;
         AtoAutorizacaoMec = campos.AtoAutorizacaoMec;
     }
-
-    private static Result<CamposResolvidos> ValidarComuns(
-        string? programaDeOfertaToken,
-        string? formatoPedagogicoToken,
-        string? regimeDeFuncionamentoToken,
-        string? regimeDeTurnoToken,
-        IReadOnlyList<string?>? turnosTokens,
-        string? eMecCodigo,
-        string? codigoSga,
-        int? vagasAnuaisAutorizadas,
-        string? baseLegal,
-        string? atoAutorizacaoMec)
-    {
-        List<FieldError> erros = [];
-
-        // ProgramaDeOferta — obrigatório, sem default: a ausência é inválida.
-        bool programaOk = ProgramasDeOferta.TryAnalisar(programaDeOfertaToken, out ProgramaDeOferta programa);
-        if (!programaOk)
-        {
-            erros.Add(new("programaDeOferta", new DomainError(
-                OfertaCursoErrorCodes.ProgramaDeOfertaInvalido,
-                $"Programa de oferta deve ser um de: {string.Join(", ", ProgramasDeOferta.TokensCanonicos)}.")));
-        }
-
-        // FormatoPedagogico — obrigatório, default PRESENCIAL quando ausente
-        // (mesmo expediente do default AMPLA de NaturezasLegais).
-        FormatoPedagogico formato = FormatoPedagogico.Presencial;
-        if (!string.IsNullOrWhiteSpace(formatoPedagogicoToken) && !FormatosPedagogicos.TryAnalisar(formatoPedagogicoToken, out formato))
-        {
-            erros.Add(new("formatoPedagogico", new DomainError(
-                OfertaCursoErrorCodes.FormatoPedagogicoInvalido,
-                $"Formato pedagógico deve ser um de: {string.Join(", ", FormatosPedagogicos.TokensCanonicos)}.")));
-        }
-
-        // Regime de funcionamento — obrigatório, sem default, dimensão própria
-        // (UNI-REQ-0138). Ausência e token fora do domínio são erros distintos,
-        // pelo mesmo motivo do regime de turno.
-        bool funcionamentoOk = false;
-        RegimeDeFuncionamento funcionamento = RegimeDeFuncionamento.Nenhum;
-        if (string.IsNullOrWhiteSpace(regimeDeFuncionamentoToken))
-        {
-            erros.Add(new("regimeDeFuncionamento", new DomainError(
-                OfertaCursoErrorCodes.RegimeDeFuncionamentoObrigatorio,
-                $"Regime de funcionamento é obrigatório e deve ser um de: {string.Join(", ", RegimesDeFuncionamento.TokensCanonicos)}.")));
-        }
-        else if (RegimesDeFuncionamento.TryAnalisar(regimeDeFuncionamentoToken, out funcionamento))
-        {
-            funcionamentoOk = true;
-        }
-        else
-        {
-            erros.Add(new("regimeDeFuncionamento", new DomainError(
-                OfertaCursoErrorCodes.RegimeDeFuncionamentoInvalido,
-                $"Regime de funcionamento deve ser um de: {string.Join(", ", RegimesDeFuncionamento.TokensCanonicos)}.")));
-        }
-
-        // Regime de turno — obrigatório, sem default. Ausência e token fora do
-        // domínio são erros distintos: o operador que não informou nada precisa de
-        // orientação diferente de quem informou um token errado.
-        bool regimeOk = false;
-        RegimeDeTurno regime = RegimeDeTurno.Nenhum;
-        if (string.IsNullOrWhiteSpace(regimeDeTurnoToken))
-        {
-            erros.Add(new("regimeDeTurno", new DomainError(
-                OfertaCursoErrorCodes.RegimeDeTurnoObrigatorio,
-                $"Regime de turno é obrigatório e deve ser um de: {string.Join(", ", RegimesDeTurno.TokensCanonicos)}.")));
-        }
-        else if (RegimesDeTurno.TryAnalisar(regimeDeTurnoToken, out regime))
-        {
-            regimeOk = true;
-        }
-        else
-        {
-            erros.Add(new("regimeDeTurno", new DomainError(
-                OfertaCursoErrorCodes.RegimeDeTurnoInvalido,
-                $"Regime de turno deve ser um de: {string.Join(", ", RegimesDeTurno.TokensCanonicos)}.")));
-        }
-
-        // Turnos — obrigatórios em todo formato pedagógico, a distância inclusive:
-        // não há ramo por FormatoPedagogico aqui, de propósito (UNI-REQ-0137).
-        List<TurnoOferta> turnos = [];
-        bool turnosResolvidos = false;
-        if (turnosTokens is null || turnosTokens.Count == 0)
-        {
-            erros.Add(new("turnos", new DomainError(
-                OfertaCursoErrorCodes.TurnosObrigatorios,
-                "A oferta deve declarar seus turnos — nenhum formato pedagógico dispensa o turno.")));
-        }
-        else
-        {
-            bool todosValidos = true;
-            foreach (string? token in turnosTokens)
-            {
-                if (TurnosOferta.TryAnalisar(token, out TurnoOferta turnoResolvido))
-                {
-                    turnos.Add(turnoResolvido);
-                }
-                else
-                {
-                    todosValidos = false;
-                }
-            }
-
-            if (!todosValidos)
-            {
-                erros.Add(new("turnos", new DomainError(
-                    OfertaCursoErrorCodes.TurnoInvalido,
-                    $"Turno da oferta deve ser um de: {string.Join(", ", TurnosOferta.TokensCanonicos)}.")));
-            }
-            else if (turnos.Distinct().Count() != turnos.Count)
-            {
-                erros.Add(new("turnos", new DomainError(
-                    OfertaCursoErrorCodes.TurnoRepetido,
-                    "Os turnos da oferta devem ser distintos entre si.")));
-            }
-            else
-            {
-                turnosResolvidos = true;
-            }
-        }
-
-        // Coerência regime × cardinalidade: só avaliável com o regime reconhecido e
-        // os turnos já válidos e distintos — senão o erro seria derivado de outro
-        // erro, e não uma incoerência independente. O regime é o declarado: dois
-        // turnos sob REGULAR é recusa, nunca promoção silenciosa a INTEGRAL.
-        if (regimeOk && turnosResolvidos)
-        {
-            int exigidos = RegimesDeTurno.TurnosExigidos(regime);
-            if (turnos.Count != exigidos)
-            {
-                erros.Add(new("turnos", new DomainError(
-                    OfertaCursoErrorCodes.CardinalidadeTurnosIncompativelComRegime,
-                    $"O regime {RegimesDeTurno.ParaTokenCanonico(regime)} exige exatamente "
-                    + $"{exigidos} turno(s); foram informados {turnos.Count}.")));
-            }
-        }
-
-        // Compatibilidade entre as duas dimensões (UNI-REQ-0138): INTENSIVO exige
-        // regime de turno INTEGRAL; EXTENSIVO e ALTERNANCIA_PEDAGOGICA aceitam ambos.
-        // Só avaliável com os dois regimes reconhecidos — senão o erro seria derivado
-        // de um token inválido, e não uma incompatibilidade independente.
-        // Nenhuma dimensão é convertida para acomodar a outra: a recusa é o resultado.
-        if (funcionamentoOk && regimeOk)
-        {
-            RegimeDeTurno? regimeExigido = RegimesDeFuncionamento.RegimeDeTurnoExigido(funcionamento);
-            if (regimeExigido is not null && regime != regimeExigido)
-            {
-                erros.Add(new("regimeDeFuncionamento", new DomainError(
-                    OfertaCursoErrorCodes.RegimeDeFuncionamentoIncompativelComRegimeDeTurno,
-                    $"A oferta {RegimesDeFuncionamento.ParaTokenCanonico(funcionamento)} exige regime de turno "
-                    + $"{RegimesDeTurno.ParaTokenCanonico(regimeExigido.Value)}; foi declarado "
-                    + $"{RegimesDeTurno.ParaTokenCanonico(regime)}.")));
-            }
-        }
-
-        // Ordem canônica (matutino, vespertino, noturno) — estável qualquer que
-        // tenha sido a ordem de entrada, para leitura, snapshot e testes de
-        // contrato não oscilarem.
-        IReadOnlyList<TurnoOferta> turnosCanonicos = TurnosOferta.OrdenarCanonicamente(turnos);
-
-        if (vagasAnuaisAutorizadas is < 0)
-        {
-            erros.Add(new("vagasAnuaisAutorizadas", new DomainError(
-                OfertaCursoErrorCodes.VagasAnuaisNegativas,
-                "Vagas anuais autorizadas não podem ser negativas (zero é aceito).")));
-        }
-
-        string? eMecNorm = NormalizarOpcional(eMecCodigo);
-        if (eMecNorm is not null && eMecNorm.Length > EMecCodigoMaxLength)
-        {
-            erros.Add(new("eMecCodigo", new DomainError(
-                OfertaCursoErrorCodes.EMecCodigoTamanho,
-                $"Código e-MEC da oferta deve ter no máximo {EMecCodigoMaxLength} caracteres.")));
-        }
-
-        string? codigoSgaNorm = NormalizarOpcional(codigoSga);
-        if (codigoSgaNorm is not null && codigoSgaNorm.Length > CodigoSgaMaxLength)
-        {
-            erros.Add(new("codigoSga", new DomainError(
-                OfertaCursoErrorCodes.CodigoSgaTamanho,
-                $"Código no sistema de gestão acadêmica deve ter no máximo {CodigoSgaMaxLength} caracteres.")));
-        }
-
-        string? baseLegalNorm = NormalizarOpcional(baseLegal);
-        if (baseLegalNorm is not null && baseLegalNorm.Length > BaseLegalMaxLength)
-        {
-            erros.Add(new("baseLegal", new DomainError(
-                OfertaCursoErrorCodes.BaseLegalTamanho,
-                $"Base legal da oferta deve ter no máximo {BaseLegalMaxLength} caracteres.")));
-        }
-
-        string? atoNorm = NormalizarOpcional(atoAutorizacaoMec);
-        if (atoNorm is not null && atoNorm.Length > AtoAutorizacaoMecMaxLength)
-        {
-            erros.Add(new("atoAutorizacaoMec", new DomainError(
-                OfertaCursoErrorCodes.AtoAutorizacaoMecTamanho,
-                $"Ato de autorização MEC deve ter no máximo {AtoAutorizacaoMecMaxLength} caracteres.")));
-        }
-
-        // Guard condicional (ADR-0066): programa fora do Regular exige base legal —
-        // revalidado também na atualização (transição Regular→Parfor sem base
-        // falha). Só avalia com o token de programa já reconhecido — senão o erro
-        // seria derivado de um token inválido, não uma incoerência independente.
-        if (programaOk && programa != ProgramaDeOferta.Regular && baseLegalNorm is null)
-        {
-            erros.Add(new("baseLegal", new DomainError(
-                OfertaCursoErrorCodes.BaseLegalObrigatoriaParaProgramaNaoRegular,
-                "Base legal é obrigatória quando o programa de oferta não é REGULAR.")));
-        }
-
-        if (erros.Count > 0)
-        {
-            return Result<CamposResolvidos>.ValidationFailure(erros);
-        }
-
-        return Result<CamposResolvidos>.Success(new CamposResolvidos(
-            programa, formato, funcionamento, regime, turnosCanonicos, eMecNorm,
-            codigoSgaNorm, vagasAnuaisAutorizadas, baseLegalNorm, atoNorm));
-    }
-
-    private static string? NormalizarOpcional(string? valor) =>
-        string.IsNullOrWhiteSpace(valor) ? null : valor.Trim();
-
-    private sealed record CamposResolvidos(
-        ProgramaDeOferta ProgramaDeOferta,
-        FormatoPedagogico FormatoPedagogico,
-        RegimeDeFuncionamento RegimeDeFuncionamento,
-        RegimeDeTurno RegimeDeTurno,
-        IReadOnlyList<TurnoOferta> Turnos,
-        string? EMecCodigo,
-        string? CodigoSga,
-        int? VagasAnuaisAutorizadas,
-        string? BaseLegal,
-        string? AtoAutorizacaoMec);
 }

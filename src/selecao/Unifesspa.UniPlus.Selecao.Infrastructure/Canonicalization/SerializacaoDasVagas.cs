@@ -113,6 +113,7 @@ internal static class SerializacaoDasVagas
         return new JsonObject
         {
             ["ofertaCursoOrigemId"] = configuracao.OfertaCursoOrigemId,
+            ["ofertaCursoCodigo"] = HashCanonicalComputer.NormalizeNfc(oferta.Codigo),
             ["cursoNome"] = HashCanonicalComputer.NormalizeNfc(oferta.CursoNome),
             ["cursoGrau"] = HashCanonicalComputer.NormalizeNfc(oferta.CursoGrau),
             ["unidadeOfertanteNome"] = HashCanonicalComputer.NormalizeNfc(oferta.UnidadeOfertanteNome),

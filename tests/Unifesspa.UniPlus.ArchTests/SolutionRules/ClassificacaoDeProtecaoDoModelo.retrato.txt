@@ -725,6 +725,7 @@ configuracao.municipios_da_base_legal_bonus.nome: Interno
 configuracao.municipios_da_base_legal_bonus.uf: Interno
 configuracao.ofertas_de_curso.ato_autorizacao_mec: Interno
 configuracao.ofertas_de_curso.base_legal: Interno
+configuracao.ofertas_de_curso.codigo: Interno
 configuracao.ofertas_de_curso.codigo_sga: Interno
 configuracao.ofertas_de_curso.created_at: Interno
 configuracao.ofertas_de_curso.created_by: Pessoal
@@ -1381,6 +1382,7 @@ selecao.configuracoes_de_vagas.excedente_sobre_reserva_legal: Interno
 selecao.configuracoes_de_vagas.grupo_area_enem_codigo: Interno
 selecao.configuracoes_de_vagas.grupo_area_enem_rotulo: Interno
 selecao.configuracoes_de_vagas.id: Interno
+selecao.configuracoes_de_vagas.oferta_curso_codigo: Interno
 selecao.configuracoes_de_vagas.oferta_curso_grau: Interno
 selecao.configuracoes_de_vagas.oferta_curso_nome: Interno
 selecao.configuracoes_de_vagas.oferta_curso_origem_id: Interno

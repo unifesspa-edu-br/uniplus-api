@@ -2,10 +2,15 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
@@ -42,15 +47,15 @@ public sealed class CriarOfertaCursoCommandHandlerTests
         Guid unidadeOrigemId,
         string programa = "REGULAR",
         string? baseLegal = null) =>
-        new(cursoId, localOfertaId, unidadeOrigemId, programa,
+        new(cursoId, localOfertaId, unidadeOrigemId, "ENF_BACHARELADO_MARABA", programa,
             RegimeDeFuncionamento: "EXTENSIVO", RegimeDeTurno: "REGULAR", Turnos: ["MATUTINO"],
             FormatoPedagogico: "PRESENCIAL", EMecCodigo: "123456", CodigoSga: "ENG-01",
             VagasAnuaisAutorizadas: 40, BaseLegal: baseLegal, AtoAutorizacaoMec: null);
 
     private Task<Result<Guid>> HandleAsync(CriarOfertaCursoCommand comando) =>
         CriarOfertaCursoCommandHandler.Handle(
-            comando, _repository, _cursoRepository, _localOfertaRepository,
-            _unidadeReader, _unitOfWork, CancellationToken.None);
+            comando, new ConferenciaDasReferenciasDaOferta(_cursoRepository, _localOfertaRepository, _unidadeReader),
+            _repository, _unitOfWork, CancellationToken.None);
 
     [Fact(DisplayName = "Curso e local vivos + unidade viva: congela o snapshot da view, persiste e retorna o Id")]
     public async Task Handle_ReferenciasVivas_CongelaEPersiste()
@@ -150,7 +155,7 @@ public sealed class CriarOfertaCursoCommandHandlerTests
     public async Task Handle_CampoInvalido_RetornaErroSemConsultarNadaNemPersistir()
     {
         var comando = new CriarOfertaCursoCommand(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
+            Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "ENF_BACHARELADO_MARABA",
             ProgramaDeOferta: "PROUNI", RegimeDeFuncionamento: "EXTENSIVO",
             RegimeDeTurno: "REGULAR", Turnos: ["MATUTINO"]);
 
@@ -161,6 +166,62 @@ public sealed class CriarOfertaCursoCommandHandlerTests
         await _cursoRepository.DidNotReceive().ObterPorIdParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _unidadeReader.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Código já usado por oferta viva é recusado com CodigoJaEmUso, sem persistir")]
+    public async Task Handle_CodigoJaEmUso_RetornaConflitoSemPersistir()
+    {
+        PrepararReferenciasVivas(out Guid cursoId, out Guid localId, out Guid unidadeId);
+        _repository.CodigoExisteEntreVivosAsync("ENF_BACHARELADO_MARABA", null, Arg.Any<CancellationToken>()).Returns(true);
+
+        Result<Guid> resultado = await HandleAsync(Comando(cursoId, localId, unidadeId));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CodigoJaEmUso);
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<OfertaCurso>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Código com formato inválido é recusado em erro de campo codigo, sem consultar curso, local ou unidade")]
+    public async Task Handle_CodigoInvalido_RetornaErroDeCampoSemConsultarNada()
+    {
+        var comando = new CriarOfertaCursoCommand(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(), "enf-maraba",
+            ProgramaDeOferta: "REGULAR", RegimeDeFuncionamento: "EXTENSIVO", RegimeDeTurno: "REGULAR", Turnos: ["MATUTINO"]);
+
+        Result<Guid> resultado = await HandleAsync(comando);
+
+        resultado.Errors.Should().ContainSingle(e => e.Field == "codigo" && e.Error.Code == OfertaCursoErrorCodes.CodigoFormatoInvalido);
+        await _cursoRepository.DidNotReceive().ObterPorIdParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _repository.DidNotReceive().CodigoExisteEntreVivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Corrida no índice único do código: a violação vira CodigoJaEmUso e o rastreamento é descartado")]
+    public async Task Handle_ViolacaoDoIndiceDoCodigo_RetornaConflitoEDescarta()
+    {
+        PrepararReferenciasVivas(out Guid cursoId, out Guid localId, out Guid unidadeId);
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateException(
+                "violação sintética de teste",
+                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.OfertaDeCursoCodigoVivo)));
+
+        Result<Guid> resultado = await HandleAsync(Comando(cursoId, localId, unidadeId));
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(OfertaCursoErrorCodes.CodigoJaEmUso);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+    }
+
+    private void PrepararReferenciasVivas(out Guid cursoId, out Guid localId, out Guid unidadeId)
+    {
+        Curso curso = CursoVivo();
+        LocalOferta local = LocalVivo();
+        unidadeId = Guid.CreateVersion7();
+        cursoId = curso.Id;
+        localId = local.Id;
+        _cursoRepository.ObterPorIdParaLeituraAsync(curso.Id, Arg.Any<CancellationToken>()).Returns(curso);
+        _localOfertaRepository.ObterPorIdParaLeituraAsync(local.Id, Arg.Any<CancellationToken>()).Returns(local);
+        _unidadeReader.ObterPorIdAsync(unidadeId, Arg.Any<CancellationToken>()).Returns(UnidadeViva(unidadeId));
     }
 
     [Fact(DisplayName = "Programa não-REGULAR com base legal cria normalmente")]

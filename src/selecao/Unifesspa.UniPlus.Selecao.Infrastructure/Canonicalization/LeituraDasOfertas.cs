@@ -33,14 +33,15 @@ internal static class LeituraDasOfertas
 
     private static (Guid, OfertaCursoSnapshot)? LerOferta(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        leitor.ExigirChaves(item, path, "ofertaCursoOrigemId", "cursoNome", "cursoGrau", "unidadeOfertanteNome", "turnos");
+        leitor.ExigirChaves(item, path, "ofertaCursoOrigemId", "ofertaCursoCodigo", "cursoNome", "cursoGrau", "unidadeOfertanteNome", "turnos");
         Guid id = leitor.Identificador(item, "ofertaCursoOrigemId", path);
+        string codigo = leitor.TextoNaoVazio(item, "ofertaCursoCodigo", path, OfertaCursoSnapshot.CodigoMaxLength);
         string cursoNome = leitor.TextoNaoVazio(item, "cursoNome", path, OfertaCursoSnapshot.CursoNomeMaxLength);
         string cursoGrau = leitor.TextoNaoVazio(item, "cursoGrau", path, OfertaCursoSnapshot.CursoGrauMaxLength);
         string unidade = leitor.TextoNaoVazio(item, "unidadeOfertanteNome", path, OfertaCursoSnapshot.UnidadeOfertanteNomeMaxLength);
         IReadOnlyList<string> turnos = leitor.Textos(item, "turnos", path);
 
-        return leitor.Falhou ? null : Congelar(leitor, id, OfertaCursoSnapshot.Criar(cursoNome, cursoGrau, unidade, turnos));
+        return leitor.Falhou ? null : Congelar(leitor, id, OfertaCursoSnapshot.Criar(codigo, cursoNome, cursoGrau, unidade, turnos));
     }
 
     private static (Guid, OfertaCursoSnapshot)? Congelar(LeitorEnvelope leitor, Guid id, Result<OfertaCursoSnapshot> oferta)

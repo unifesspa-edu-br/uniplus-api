@@ -38,6 +38,19 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
             .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
     }
 
+    public Task<bool> CodigoExisteEntreVivosAsync(string codigo, Guid? excluirId, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(codigo);
+
+        // Espelha a normalização do código (Trim) e compara com sensibilidade a caixa, como o índice único parcial.
+        string codigoNormalizado = codigo.Trim();
+
+        return _dbContext.OfertasCurso
+            .AsNoTracking()
+            .Where(o => excluirId == null || o.Id != excluirId)
+            .AnyAsync(o => o.Codigo == codigoNormalizado, cancellationToken);
+    }
+
     public Task<OfertaCurso?> ObterPorIdParaLeituraAsync(Guid id, CancellationToken cancellationToken)
     {
         return _dbContext.OfertasCurso
@@ -79,6 +92,7 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
                 Id = oferta.Id,
                 NomeOrdenacao = EF.Property<string>(c, CursoConfiguration.NomeOrdenacaoPropriedade),
                 Codigo = c.Codigo,
+                OfertaCodigo = oferta.Codigo,
                 UnidadeSigla = oferta.UnidadeOfertante.Sigla,
                 ProgramaDeOferta = oferta.ProgramaDeOferta,
                 FormatoPedagogico = oferta.FormatoPedagogico,
@@ -89,7 +103,7 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
             };
 
         // A busca alcança o curso ofertado pela coluna já normalizada, o código do
-        // curso e a sigla da unidade — as três disponíveis sem junção adicional.
+        // curso, o código da oferta e a sigla da unidade — todos disponíveis sem junção adicional.
         string? termo = NormalizacaoTextual.PrepararTermoDeBusca(busca);
         if (termo is not null)
         {
@@ -97,6 +111,7 @@ public sealed class OfertaCursoRepository : IOfertaCursoRepository
             query = query.Where(o =>
                 EF.Functions.ILike(o.NomeOrdenacao, padrao, EscapeDoLike)
                 || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(o.Codigo), padrao, EscapeDoLike)
+                || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(o.OfertaCodigo), padrao, EscapeDoLike)
                 || EF.Functions.ILike(FuncoesDaPlataforma.NormalizarParaComparacao(o.UnidadeSigla), padrao, EscapeDoLike));
         }
 

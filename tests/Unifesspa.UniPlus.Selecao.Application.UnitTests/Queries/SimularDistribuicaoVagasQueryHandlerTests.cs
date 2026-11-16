@@ -51,7 +51,7 @@ public sealed class SimularDistribuicaoVagasQueryHandlerTests
     }
 
     private static OfertaCursoView NovaOferta(Guid id) => new(
-        id, Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
+        id, "MEDICINA_MARABA", Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7(),
         "CTIC", "Centro de Tecnologia", "CAMPUS", "REGULAR", "PRESENCIAL", "EXTENSIVO",
         "REGULAR", ["MATUTINO"], null, null, 100, null, null, null, "Medicina", "Bacharelado");
 

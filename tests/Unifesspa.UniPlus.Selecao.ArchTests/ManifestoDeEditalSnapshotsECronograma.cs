@@ -47,7 +47,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
 
         // O que nomeia a oferta para o candidato, congelado por valor; vai no bloco público de ofertas.
         [typeof(OfertaCursoSnapshot)] = (
-            ["CursoNome", "CursoGrau", "UnidadeOfertanteNome", "Turnos"],
+            ["Codigo", "CursoNome", "CursoGrau", "UnidadeOfertanteNome", "Turnos"],
             []),
 
         // As variantes polimórficas. Elas são persistidas INTEIRAS como JSON, e o codec as

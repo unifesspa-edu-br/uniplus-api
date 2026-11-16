@@ -4,6 +4,7 @@ using FluentValidation;
 
 using Microsoft.Extensions.DependencyInjection;
 
+using Unifesspa.UniPlus.Configuracao.Application.Commands.OfertasCurso;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.ProtecaoDoCatalogo;
 
 /// <summary>
@@ -20,6 +21,7 @@ public static class ConfiguracaoApplicationServiceRegistration
         System.Reflection.Assembly assembly = typeof(ConfiguracaoApplicationServiceRegistration).Assembly;
         services.AddValidatorsFromAssembly(assembly);
 
+        services.AddScoped<ConferenciaDasReferenciasDaOferta>();
         services.AddScoped<ItensSobAprovacao>();
         services.AddScoped<SolicitacaoDaProtecaoDoCatalogo>();
         services.AddScoped<DecisaoNaProtecaoDoCatalogo>();
