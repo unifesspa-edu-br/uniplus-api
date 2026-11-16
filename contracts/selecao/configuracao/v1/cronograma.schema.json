@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/cronograma.schema.json",
+  "title": "Cronograma",
+  "description": "As fases do processo, cada uma com a sua janela de datas, unidade responsável, atos que publica, bancas e regra de recurso.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "fases": {
+      "title": "Fases",
+      "description": "Fases do cronograma. A chave de cada fase é única no documento.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/fase"
+      }
+    }
+  },
+  "$defs": {
+    "fase": {
+      "title": "Fase do cronograma",
+      "description": "Uma fase do processo. Só a chave local é obrigatória: as datas, a unidade e o resto podem faltar num rascunho.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "chave"
+      ],
+      "properties": {
+        "chave": {
+          "title": "Chave da fase",
+          "description": "Chave local da fase, única no documento. Outras partes a usam para citar esta fase.",
+          "$ref": "comuns.schema.json#/$defs/chave"
+        },
+        "faseCanonicaCodigo": {
+          "title": "Fase canônica",
+          "description": "Código da fase no catálogo de fases canônicas, por exemplo INSCRICAO ou RESULTADO_FINAL.",
+          "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
+        },
+        "ordem": {
+          "title": "Ordem",
+          "description": "Posição da fase na linha do tempo do processo, a partir de 1. Não se repete entre as fases.",
+          "type": "integer",
+          "minimum": 1
+        },
+        "inicio": {
+          "title": "Início da fase",
+          "description": "Instante em que a fase começa, em UTC. Ausente enquanto não definido.",
+          "$ref": "comuns.schema.json#/$defs/instante"
+        },
+        "fim": {
+          "title": "Fim da fase",
+          "description": "Instante em que a fase termina, em UTC. Ausente enquanto não definido.",
+          "$ref": "comuns.schema.json#/$defs/instante"
+        },
+        "unidadeResponsavelCodigo": {
+          "title": "Unidade responsável pela fase",
+          "description": "Código estável da unidade responsável por conduzir a fase.",
+          "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
+        },
+        "unidadeResponsavelNome": {
+          "title": "Nome da unidade responsável",
+          "description": "Nome da unidade responsável pela fase, guardado no processo. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é unidadeResponsavelCodigo.",
+          "type": "string",
+          "maxLength": 250,
+          "readOnly": true
+        },
+        "unidadeResponsavelSigla": {
+          "title": "Sigla da unidade responsável",
+          "description": "Sigla da unidade responsável pela fase, guardada no processo. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é unidadeResponsavelCodigo.",
+          "type": "string",
+          "maxLength": 50,
+          "readOnly": true
+        },
+        "produtos": {
+          "title": "Atos que a fase publica",
+          "description": "Tipos de ato publicados pela fase, como o resultado preliminar. O par tipo de ato e papel não se repete na fase.",
+          "type": "array",
+          "items": {
+            "$ref": "comuns.schema.json#/$defs/produto"
+          }
+        },
+        "faseConcluinteChave": {
+          "title": "Fase que conclui o ciclo",
+          "description": "Chave local da fase do cronograma que conclui o ciclo de recurso desta fase.",
+          "$ref": "comuns.schema.json#/$defs/chave"
+        },
+        "emiteParecerIndividual": {
+          "title": "Emite parecer individual",
+          "description": "Se a fase emite parecer individual ao candidato, quando ela publica resultado.",
+          "type": "boolean"
+        },
+        "bancasRequeridas": {
+          "title": "Bancas requeridas",
+          "description": "Bancas que a fase exige. Cada uma tem uma chave local, porque o mesmo tipo de banca pode aparecer mais de uma vez com recortes diferentes.",
+          "type": "array",
+          "items": {
+            "$ref": "bancas.schema.json"
+          }
+        },
+        "regraRecurso": {
+          "title": "Regra de recurso",
+          "description": "Prazo e efeito suspensivo do recurso. A presença desta regra é o que faz a fase admitir recurso.",
+          "$ref": "#/$defs/regraRecurso"
+        }
+      }
+    },
+    "regraRecurso": {
+      "title": "Regra de recurso",
+      "description": "Regra do catálogo que define o prazo de interposição do recurso, a âncora dele e o efeito suspensivo.",
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "comuns.schema.json#/$defs/propriedadesDoRecurso"
+        }
+      ],
+      "unevaluatedProperties": false
+    }
+  }
+}

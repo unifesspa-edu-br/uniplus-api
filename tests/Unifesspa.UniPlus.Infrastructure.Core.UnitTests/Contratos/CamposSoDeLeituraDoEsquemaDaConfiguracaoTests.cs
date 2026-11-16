@@ -4,52 +4,55 @@ using System.Text.Json.Nodes;
 
 using AwesomeAssertions;
 
+using static Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Contratos.ContratoDaConfiguracao;
+
 /// <summary>
 /// Todo descritivo e todo valor derivado que a exportação traz ao lado do código é só de leitura: o esquema o marca como
 /// <c>readOnly</c> e a descrição diz que a importação o ignora e que a referência é o código.
 /// </summary>
 public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
 {
-    private static readonly JsonNode Esquema = JsonNode.Parse(File.ReadAllText(
-        Path.Join(AppContext.BaseDirectory, "Contratos", "selecao-configuracao", "v1.schema.json")))!;
+    private const string ArquivoDoDocumento = "documento.schema.json";
 
-    public static TheoryData<string> CamposSoDeLeitura =>
-    [
-        "properties/id",
-        "properties/versao",
-        "properties/publicadoEm",
-        "properties/tiposDeAtoCongelados",
-        "$defs/identificacao/properties/localidadeNome",
-        "$defs/identificacao/properties/localidadeUf",
-        "$defs/identificacao/properties/tipoProcessoNome",
-        "$defs/identificacao/properties/unidadeAdministradoraNome",
-        "$defs/identificacao/properties/unidadeAdministradoraSigla",
-        "$defs/fase/properties/unidadeResponsavelNome",
-        "$defs/fase/properties/unidadeResponsavelSigla",
-        "$defs/divulgacao/properties/regraNomeAbreviado",
-    ];
+    public static TheoryData<string, string> CamposSoDeLeitura => new()
+    {
+        { ArquivoDoDocumento, "properties/id" },
+        { ArquivoDoDocumento, "properties/versao" },
+        { ArquivoDoDocumento, "properties/publicadoEm" },
+        { ArquivoDoDocumento, "properties/tiposDeAtoCongelados" },
+        { "identificacao.schema.json", "properties/localidadeNome" },
+        { "identificacao.schema.json", "properties/localidadeUf" },
+        { "identificacao.schema.json", "properties/tipoProcessoNome" },
+        { "identificacao.schema.json", "properties/unidadeAdministradoraNome" },
+        { "identificacao.schema.json", "properties/unidadeAdministradoraSigla" },
+        { "cronograma.schema.json", "$defs/fase/properties/unidadeResponsavelNome" },
+        { "cronograma.schema.json", "$defs/fase/properties/unidadeResponsavelSigla" },
+        { "divulgacao.schema.json", "properties/regraNomeAbreviado" },
+    };
 
     [Theory(DisplayName = "O campo só de leitura é marcado readOnly e a descrição diz que a importação o ignora")]
     [MemberData(nameof(CamposSoDeLeitura))]
-    public void Campo_EReadOnlyComDescricao(string caminho)
+    public void Campo_EReadOnlyComDescricao(string arquivo, string caminho)
     {
+        ArgumentNullException.ThrowIfNull(arquivo);
         ArgumentNullException.ThrowIfNull(caminho);
-        JsonNode campo = Navegar(caminho);
+        JsonNode campo = Navegar(arquivo, caminho);
 
         campo["readOnly"]!.GetValue<bool>().Should().BeTrue();
         campo["description"]!.GetValue<string>().Should().Contain("ignorado na importação");
     }
 
     [Theory(DisplayName = "O código de referência de cada descritivo não é readOnly")]
-    [InlineData("$defs/identificacao/properties/localidadeCodigoIbge")]
-    [InlineData("$defs/identificacao/properties/tipoProcessoCodigo")]
-    [InlineData("$defs/identificacao/properties/unidadeAdministradoraCodigo")]
-    [InlineData("$defs/fase/properties/unidadeResponsavelCodigo")]
-    public void Codigo_NaoEReadOnly(string caminho)
+    [InlineData("identificacao.schema.json", "properties/localidadeCodigoIbge")]
+    [InlineData("identificacao.schema.json", "properties/tipoProcessoCodigo")]
+    [InlineData("identificacao.schema.json", "properties/unidadeAdministradoraCodigo")]
+    [InlineData("cronograma.schema.json", "$defs/fase/properties/unidadeResponsavelCodigo")]
+    public void Codigo_NaoEReadOnly(string arquivo, string caminho)
     {
+        ArgumentNullException.ThrowIfNull(arquivo);
         ArgumentNullException.ThrowIfNull(caminho);
 
-        Navegar(caminho)["readOnly"].Should().BeNull();
+        Navegar(arquivo, caminho)["readOnly"].Should().BeNull();
     }
 
     [Fact(DisplayName = "O esquema não tem campo interno nos itens nem na raiz: só o id e a versão do processo, de leitura")]
@@ -57,9 +60,11 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
     {
         string[] internos = ["id", "criadoEm", "atualizadoEm", "criadoPor", "atualizadoPor", "createdBy", "updatedBy"];
 
-        NomesDePropriedades(Esquema, ehRaiz: true).Intersect(internos, StringComparer.Ordinal).Should().BeEmpty();
-        Esquema["properties"]!.AsObject().Select(static par => par.Key).Intersect(internos.Where(static nome => nome != "id"), StringComparer.Ordinal)
-            .Should().BeEmpty();
+        string[] nomes = [.. ArquivosDoEsquema.SelectMany(static arquivo => NomesDePropriedades(Esquema(arquivo), ehRaiz: arquivo == ArquivoDoDocumento))];
+
+        nomes.Intersect(internos, StringComparer.Ordinal).Should().BeEmpty();
+        Esquema(ArquivoDoDocumento)["properties"]!.AsObject().Select(static par => par.Key)
+            .Intersect(internos.Where(static nome => nome != "id"), StringComparer.Ordinal).Should().BeEmpty();
     }
 
     // O id só é aceito na raiz do documento, onde identifica o processo; em qualquer item a identidade é a chave.
@@ -75,6 +80,6 @@ public sealed class CamposSoDeLeituraDoEsquemaDaConfiguracaoTests
             ? propriedades.SelectMany(p => (ehRaiz ? [] : new[] { p.Key }).Concat(NomesDePropriedades(p.Value)))
             : NomesDePropriedades(par.Value);
 
-    private static JsonNode Navegar(string caminho) =>
-        caminho.Split('/').Aggregate(Esquema, static (no, passo) => no[passo]!);
+    private static JsonNode Navegar(string arquivo, string caminho) =>
+        caminho.Split('/').Aggregate(Esquema(arquivo), static (no, passo) => no[passo]!);
 }

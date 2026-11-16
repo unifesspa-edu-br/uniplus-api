@@ -1,0 +1,106 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/identificacao.schema.json",
+  "title": "Identificação do processo",
+  "description": "Quem é o processo seletivo: nome, tipo, unidade administradora, origem dos candidatos, localidade e identificador legível, mais as convenções de contagem de prazo e a referência temporal dos fatos.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "nome": {
+      "title": "Nome do processo",
+      "description": "Nome do processo seletivo como aparece para as pessoas.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 300
+    },
+    "tipoProcessoCodigo": {
+      "title": "Tipo de processo",
+      "description": "Código do tipo de processo no catálogo de tipos de processo.",
+      "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
+    },
+    "tipoProcessoNome": {
+      "title": "Nome do tipo de processo",
+      "description": "Nome do tipo de processo guardado no processo. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é tipoProcessoCodigo.",
+      "type": "string",
+      "maxLength": 200,
+      "readOnly": true
+    },
+    "unidadeAdministradoraCodigo": {
+      "title": "Unidade administradora",
+      "description": "Código estável da unidade que administra o processo.",
+      "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
+    },
+    "unidadeAdministradoraNome": {
+      "title": "Nome da unidade administradora",
+      "description": "Nome da unidade administradora guardado no processo. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é unidadeAdministradoraCodigo.",
+      "type": "string",
+      "maxLength": 250,
+      "readOnly": true
+    },
+    "unidadeAdministradoraSigla": {
+      "title": "Sigla da unidade administradora",
+      "description": "Sigla da unidade administradora guardada no processo. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é unidadeAdministradoraCodigo.",
+      "type": "string",
+      "maxLength": 50,
+      "readOnly": true
+    },
+    "origemCandidatos": {
+      "title": "Origem dos candidatos",
+      "description": "Como os candidatos chegam ao processo: inscrevendo-se pelo sistema (inscricaoPropria) ou por importação de uma lista externa (importacaoExterna).",
+      "enum": [
+        "inscricaoPropria",
+        "importacaoExterna"
+      ]
+    },
+    "localidadeCodigoIbge": {
+      "title": "Localidade do processo",
+      "description": "Código IBGE do município (7 dígitos) que rege a contagem de prazos. O nome e a UF vêm do cadastro de localidades.",
+      "type": "string",
+      "pattern": "^[0-9]{7}$"
+    },
+    "localidadeNome": {
+      "title": "Nome da localidade",
+      "description": "Nome do município, guardado no processo como texto de exibição. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é localidadeCodigoIbge.",
+      "type": "string",
+      "maxLength": 150,
+      "readOnly": true
+    },
+    "localidadeUf": {
+      "title": "UF da localidade",
+      "description": "Sigla da unidade federativa do município, guardada como texto de exibição. Campo só de leitura: a exportação o traz para quem lê o arquivo, e ele é ignorado na importação; a referência é localidadeCodigoIbge.",
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "readOnly": true
+    },
+    "identificadorLegivel": {
+      "title": "Identificador legível",
+      "description": "Identificador do processo para endereços e referências: de 3 a 64 caracteres, minúsculas, números e hífens, começando por letra.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+      "minLength": 3,
+      "maxLength": 64
+    },
+    "algoritmoContagemPrazo": {
+      "title": "Convenção de contagem de prazo",
+      "description": "Regra do catálogo que define como os prazos do processo são contados.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "codigo": {
+          "title": "Código da regra",
+          "description": "Código da regra de contagem de prazo no catálogo de regras.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "versao": {
+          "title": "Versão da regra",
+          "description": "Versão da regra de contagem de prazo.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        }
+      }
+    }
+  }
+}

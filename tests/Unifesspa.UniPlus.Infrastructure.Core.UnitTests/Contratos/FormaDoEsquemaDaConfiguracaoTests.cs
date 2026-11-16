@@ -105,7 +105,7 @@ public sealed class FormaDoEsquemaDaConfiguracaoTests
     [Fact(DisplayName = "Nenhuma propriedade do esquema é referência por identificador interno")]
     public void Esquema_NaoTemReferenciaPorIdentificadorInterno()
     {
-        string[] referencias = [.. NomesDePropriedades(EsquemaComoNo())
+        string[] referencias = [.. ArquivosDoEsquema.SelectMany(static arquivo => NomesDePropriedades(Esquema(arquivo)))
             .Where(static nome => nome.EndsWith("Id", StringComparison.Ordinal) || nome.EndsWith("Ids", StringComparison.Ordinal))];
 
         referencias.Should().BeEmpty();
@@ -114,20 +114,25 @@ public sealed class FormaDoEsquemaDaConfiguracaoTests
     [Fact(DisplayName = "Toda propriedade e toda definição do esquema tem título e descrição")]
     public void Esquema_DescreveCadaPropriedadeEmPortugues()
     {
-        JsonNode esquema = EsquemaComoNo();
-        string[] semDescricao = [.. SubesquemasNomeados(esquema, "#")
-            .Where(par => Texto(par.No, "title", esquema) is null || Texto(par.No, "description", esquema) is null)
-            .Select(static par => par.Caminho)];
+        string[] semDescricao = [.. ArquivosDoEsquema.SelectMany(static arquivo => SemTituloOuDescricao(arquivo))];
 
         semDescricao.Should().BeEmpty();
     }
 
-    private static string? Texto(JsonNode subesquema, string campo, JsonNode esquema)
+    private static IEnumerable<string> SemTituloOuDescricao(string arquivo)
+    {
+        JsonNode raiz = Esquema(arquivo);
+        IEnumerable<(string Caminho, JsonNode No)> nomeados = SubesquemasNomeados(raiz, arquivo).Prepend((arquivo, raiz));
+        return nomeados.Where(par => Texto(par.No, "title", arquivo) is null || Texto(par.No, "description", arquivo) is null)
+            .Select(static par => par.Caminho);
+    }
+
+    private static string? Texto(JsonNode subesquema, string campo, string arquivo)
     {
         string? proprio = subesquema[campo]?.GetValue<string>();
         string? alvo = subesquema["$ref"]?.GetValue<string>();
         string? texto = string.IsNullOrWhiteSpace(proprio) && alvo is not null
-            ? esquema["$defs"]![alvo.Split('/')[^1]]![campo]?.GetValue<string>()
+            ? ResolverReferencia(arquivo, alvo)[campo]?.GetValue<string>()
             : proprio;
         return string.IsNullOrWhiteSpace(texto) ? null : texto;
     }

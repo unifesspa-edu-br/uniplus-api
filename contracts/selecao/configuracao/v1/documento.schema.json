@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/documento.schema.json",
+  "title": "Documento de configuração do processo seletivo",
+  "description": "Formato portável da configuração de um processo seletivo, na versão 1. Serve ao rascunho salvo pela tela e à importação e exportação de um processo, inclusive o preparado fora do sistema. O esquema descreve só a forma: tipo, formato, enumerações, limites de tamanho e o que é estruturalmente obrigatório. As regras de negócio (o que torna a configuração publicável) são do domínio e não se repetem aqui; por isso um rascunho incompleto é válido. Campo ainda não preenchido é campo ausente, nunca texto no lugar de número ou de data. Catálogos e unidades são citados pelo código estável, nunca pelo identificador interno do banco. As referências entre partes do documento usam a chave local da parte referenciada, definida no próprio documento e única nele.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "formato",
+    "versaoFormato"
+  ],
+  "properties": {
+    "formato": {
+      "title": "Formato do documento",
+      "description": "Identificador fixo do formato. Distingue este documento de qualquer outro JSON.",
+      "const": "uniplus.selecao.configuracao"
+    },
+    "versaoFormato": {
+      "title": "Versão do formato",
+      "description": "Versão principal do formato. Neste esquema é sempre 1. Mudança incompatível cria a versão 2 em outro esquema.",
+      "const": 1
+    },
+    "id": {
+      "title": "Id do processo",
+      "description": "Identificador único (uuid) do processo. No rascunho é o id do próprio rascunho, que vira o id do processo na publicação. Não concede pertencimento. Campo só de leitura: ignorado na importação, porque o processo importado ganha id novo.",
+      "type": "string",
+      "format": "uuid",
+      "readOnly": true
+    },
+    "versao": {
+      "title": "Versão",
+      "description": "Número da versão do processo que foi exportada, a partir de 1. Não existe no rascunho. Campo só de leitura: ignorado na importação e definido pela publicação.",
+      "type": "integer",
+      "minimum": 1,
+      "readOnly": true
+    },
+    "publicadoEm": {
+      "title": "Publicado em",
+      "description": "Instante da divulgação da versão exportada, em UTC. A publicidade é a divulgação gravada na transação; numa retificação o campo traz o instante da versão retificada. Não existe no rascunho. Campo só de leitura: ignorado na importação e definido pela divulgação.",
+      "$ref": "comuns.schema.json#/$defs/instante",
+      "readOnly": true
+    },
+    "identificacao": {
+      "$ref": "identificacao.schema.json"
+    },
+    "coleta": {
+      "$ref": "coleta.schema.json"
+    },
+    "cronograma": {
+      "$ref": "cronograma.schema.json"
+    },
+    "etapas": {
+      "title": "Etapas",
+      "description": "Etapas de avaliação do processo. A chave de cada etapa é única no documento e é a que as outras partes usam para citá-la. Lista vazia ou ausente é válida: há processos sem prova.",
+      "type": "array",
+      "items": {
+        "$ref": "etapas.schema.json"
+      }
+    },
+    "taxaDeInscricao": {
+      "$ref": "taxa-de-inscricao.schema.json"
+    },
+    "divulgacao": {
+      "$ref": "divulgacao.schema.json"
+    },
+    "tiposDeAtoCongelados": {
+      "title": "Tipos de ato congelados",
+      "description": "Cópia, congelada na publicação, dos tipos de ato do catálogo de Publicações que o processo usa, com o que cada um significa. Existe só no processo publicado. Campo só de leitura: ignorado na importação; a referência é o código do tipo de ato em cada produto de fase e de etapa.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "codigo": {
+            "title": "Código do tipo de ato",
+            "description": "Código do tipo de ato no catálogo de Publicações.",
+            "type": "string",
+            "maxLength": 128
+          },
+          "unicoPorObjeto": {
+            "title": "Único por objeto",
+            "description": "Verdadeiro quando o tipo só pode ser publicado uma vez para o mesmo objeto.",
+            "type": "boolean"
+          },
+          "ehResultado": {
+            "title": "É resultado",
+            "description": "Verdadeiro quando o tipo publica um resultado.",
+            "type": "boolean"
+          },
+          "congelaConfiguracao": {
+            "title": "Congela a configuração",
+            "description": "Verdadeiro quando publicar o ato congela a configuração do processo.",
+            "type": "boolean"
+          }
+        }
+      },
+      "readOnly": true
+    }
+  }
+}

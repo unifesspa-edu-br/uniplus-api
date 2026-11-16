@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/comuns.schema.json",
+  "title": "Definições comuns da configuração do processo seletivo",
+  "description": "Definições compartilhadas pelas partes do documento de configuração: chave local, código de catálogo, instante, produto e as propriedades do recurso.",
+  "$defs": {
+    "chave": {
+      "title": "Chave local",
+      "description": "Identificador legível de uma parte do documento, escolhido por quem escreve. É único no documento e é o que as outras partes usam para se referir a ela. Letras minúsculas, números e hífens, começando por letra.",
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "codigoDeCatalogo": {
+      "title": "Código estável de catálogo",
+      "description": "Código estável e legível de um item de catálogo ou de uma unidade. Nunca o identificador interno do banco: um valor com a forma de identificador único (UUID) é recusado.",
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9_.-]*$",
+      "minLength": 1,
+      "maxLength": 128,
+      "not": {
+        "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
+      }
+    },
+    "instante": {
+      "title": "Instante",
+      "description": "Instante em UTC, no formato RFC 3339 com o sufixo Z e, se necessário, até seis casas de fração de segundo. Exemplo: 2027-01-10T03:00:00Z.",
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,6})?Z$"
+    },
+    "produto": {
+      "title": "Ato publicado pela fase",
+      "description": "Um tipo de ato que a fase publica, com o papel dele no ciclo de recurso.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "atoCodigo": {
+          "title": "Tipo de ato",
+          "description": "Código do tipo de ato no catálogo de publicações.",
+          "type": "string",
+          "pattern": "^[A-Z]+(_[A-Z]+)*$",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "papel": {
+          "title": "Papel do ato",
+          "description": "PRELIMINAR para o resultado que admite recurso, DEFINITIVO para o resultado final. Ausente quando o ato não é um resultado.",
+          "enum": [
+            "PRELIMINAR",
+            "DEFINITIVO"
+          ]
+        }
+      },
+      "required": [
+        "atoCodigo"
+      ]
+    },
+    "propriedadesDoRecurso": {
+      "title": "Propriedades do recurso",
+      "description": "Prazo de interposição, âncora e efeito suspensivo do recurso, comuns à fase e à etapa.",
+      "type": "object",
+      "properties": {
+        "regraCodigo": {
+          "title": "Código da regra",
+          "description": "Código da regra de prazo de recurso no catálogo de regras.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "regraVersao": {
+          "title": "Versão da regra",
+          "description": "Versão da regra de prazo de recurso.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
+        },
+        "prazoValor": {
+          "title": "Prazo de interposição",
+          "description": "Quantidade de unidades do prazo para recorrer, com até quatro casas decimais.",
+          "type": "number",
+          "multipleOf": 0.0001
+        },
+        "prazoUnidade": {
+          "title": "Unidade do prazo",
+          "description": "Unidade do prazo de interposição: horas ou dias úteis (diasUteis).",
+          "enum": [
+            "horas",
+            "diasUteis"
+          ]
+        },
+        "atoAncoraCodigo": {
+          "title": "Ato âncora do prazo",
+          "description": "Código do tipo de ato, entre os atos preliminares da própria fase, a partir de cujo instante o prazo corre.",
+          "type": "string",
+          "pattern": "^[A-Z]+(_[A-Z]+)*$",
+          "minLength": 1,
+          "maxLength": 60
+        },
+        "suspensividadePrimeiraInstanciaValor": {
+          "title": "Efeito suspensivo na primeira instância, quantidade",
+          "description": "Quantidade de unidades do efeito suspensivo na primeira instância, com até quatro casas decimais.",
+          "type": "number",
+          "multipleOf": 0.0001
+        },
+        "suspensividadePrimeiraInstanciaUnidade": {
+          "title": "Efeito suspensivo na primeira instância, unidade",
+          "description": "Unidade do efeito suspensivo na primeira instância: horas, dias ou dias úteis (diasUteis).",
+          "enum": [
+            "horas",
+            "dias",
+            "diasUteis"
+          ]
+        },
+        "admiteInstanciaSuperior": {
+          "title": "Admite instância superior",
+          "description": "Se cabe recurso à instância superior.",
+          "type": "boolean"
+        },
+        "suspensividadeSegundaInstanciaValor": {
+          "title": "Efeito suspensivo na instância superior, quantidade",
+          "description": "Quantidade de unidades do efeito suspensivo na instância superior, com até quatro casas decimais.",
+          "type": "number",
+          "multipleOf": 0.0001
+        },
+        "suspensividadeSegundaInstanciaUnidade": {
+          "title": "Efeito suspensivo na instância superior, unidade",
+          "description": "Unidade do efeito suspensivo na instância superior: horas, dias ou dias úteis (diasUteis).",
+          "enum": [
+            "horas",
+            "dias",
+            "diasUteis"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://uniplus.unifesspa.edu.br/contracts/selecao/configuracao/v1/coleta.schema.json",
+  "title": "Coleta de fatos",
+  "description": "Regras de coleta dos fatos do candidato.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "referenciaTemporalFatos": {
+      "title": "Referência temporal dos fatos",
+      "description": "Instante a partir do qual se avaliam os fatos que dependem de data, como a idade do candidato. A fase citada é a do cronograma deste documento.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tipo": {
+          "title": "Tipo de referência",
+          "description": "Âncora da referência: fim da inscrição, início ou fim de uma fase, ou uma data específica.",
+          "enum": [
+            "FIM_INSCRICAO",
+            "INICIO_FASE",
+            "FIM_FASE",
+            "DATA_ESPECIFICA"
+          ]
+        },
+        "data": {
+          "title": "Data específica",
+          "description": "Data da referência, no formato AAAA-MM-DD. Usada quando o tipo é DATA_ESPECIFICA.",
+          "type": "string",
+          "format": "date"
+        },
+        "faseChave": {
+          "title": "Fase de referência",
+          "description": "Chave local da fase do cronograma que ancora a referência. Usada quando o tipo é INICIO_FASE ou FIM_FASE.",
+          "$ref": "comuns.schema.json#/$defs/chave"
+        }
+      }
+    }
+  }
+}
