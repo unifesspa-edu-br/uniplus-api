@@ -60,7 +60,7 @@ internal static class TermoNoHostDeTeste
         await using AsyncServiceScope escopo = servicos.CreateAsyncScope();
 
         return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Pedidos.AsNoTracking()
-            .Where(p => p.Id == pedidoId).Select(p => p.TermoVersaoId).SingleOrDefaultAsync();
+            .Where(p => p.Id == pedidoId).Select(p => (Guid?)p.Termo!.VersaoId).SingleOrDefaultAsync();
     }
 
     /// <summary>O beneficiário aceita o pedido apresentando a versão do termo que ele fixou, se fixou.</summary>

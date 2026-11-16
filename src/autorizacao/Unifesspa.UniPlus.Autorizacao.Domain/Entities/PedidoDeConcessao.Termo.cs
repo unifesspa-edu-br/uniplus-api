@@ -16,23 +16,14 @@ public sealed partial class PedidoDeConcessao
     /// <summary>O solicitante declarou, na criação, que anexaria documento; sempre verdadeiro no perfil de governança.</summary>
     public bool AnexaraDocumento { get; private set; }
 
-    /// <summary>A versão do termo fixada na criação; nula no pedido que não exige termo.</summary>
-    public Guid? TermoVersaoId { get; private set; }
-
-    public int? TermoNumero { get; private set; }
-
-    public string? TermoResumo { get; private set; }
+    /// <summary>A versão fixada na criação, com número e resumo; nula no pedido que não exige termo.</summary>
+    public TermoFixado? Termo { get; private set; }
 
     /// <summary>O aceite do termo pelo beneficiário; nulo até ele aceitar ou no pedido sem termo.</summary>
     public AceiteDoTermo? AceiteDoTermo { get; private set; }
 
-    /// <summary>A versão fixada, com número e resumo; nula no pedido que não exige termo.</summary>
-    public TermoFixado? Termo => TermoVersaoId is { } id && TermoNumero is { } numero && TermoResumo is { } resumo
-        ? new TermoFixado(id, numero, resumo)
-        : null;
-
     /// <summary>O pedido espera, do beneficiário, o aceite do termo fixado.</summary>
-    public bool AguardaAceiteDoTermo => TermoVersaoId is not null && Situacao == SituacaoDoPedido.AguardandoBeneficiario;
+    public bool AguardaAceiteDoTermo => Termo is not null && Situacao == SituacaoDoPedido.AguardandoBeneficiario;
 
     /// <summary>
     /// Fixa no pedido recém-criado a versão vigente do termo, quando o perfil o exige, e confere a versão que o cliente
@@ -49,9 +40,9 @@ public sealed partial class PedidoDeConcessao
             return recusa;
         }
 
-        if (termo.Exigido)
+        if (termo.Fixado is { } fixado)
         {
-            Fixar(termo.Vigente!, instante);
+            Fixar(fixado, instante);
         }
 
         return Result.Success();
@@ -59,15 +50,13 @@ public sealed partial class PedidoDeConcessao
 
     private bool EnvioEOAceite => Beneficiario.Identidade is not null && !AnexaraDocumento;
 
-    private void Fixar(VersaoDoTermo vigente, DateTimeOffset instante)
+    private void Fixar(TermoFixado fixado, DateTimeOffset instante)
     {
-        TermoVersaoId = vigente.Id;
-        TermoNumero = vigente.Numero;
-        TermoResumo = vigente.Resumo;
+        Termo = fixado;
 
         if (EnvioEOAceite)
         {
-            AceiteDoTermo = AceiteDoTermo.Registrar(Id, Termo!, Beneficiario.Identidade!, instante);
+            AceiteDoTermo = AceiteDoTermo.Registrar(Id, fixado, Beneficiario.Identidade!, instante);
         }
     }
 

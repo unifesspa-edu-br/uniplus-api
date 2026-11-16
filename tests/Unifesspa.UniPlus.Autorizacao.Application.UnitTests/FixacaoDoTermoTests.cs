@@ -30,7 +30,7 @@ public sealed class FixacaoDoTermoTests
         Result resultado = await FixarAsync(pedido, ApoioDoPedido.PerfilDeGovernanca(), vigente.Id);
 
         resultado.IsSuccess.Should().BeTrue();
-        pedido.TermoVersaoId.Should().Be(vigente.Id);
+        pedido.Termo?.VersaoId.Should().Be(vigente.Id);
     }
 
     [Fact(DisplayName = "O pedido não protegido não lê a vigência do termo")]

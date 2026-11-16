@@ -33,7 +33,7 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests
         PedidoDeConcessao pedido = Pedido().Protegido().ComVigente(Vigente).Criado();
 
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoBeneficiario);
-        pedido.TermoVersaoId.Should().Be(Vigente.Id);
+        pedido.Termo?.VersaoId.Should().Be(Vigente.Id);
         pedido.AceiteDoTermo.Should().BeNull();
         pedido.AguardaAceiteDoTermo.Should().BeTrue();
     }
@@ -65,7 +65,7 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests
 
         pedido.FixarTermo(new TermoNaCriacao(Vigente, null, true), Agora).Errors.Should().ContainSingle()
             .Which.Field.Should().Be("termoVersaoApresentadaId");
-        pedido.TermoVersaoId.Should().BeNull();
+        pedido.Termo.Should().BeNull();
     }
 
     [Fact(DisplayName = "No pedido protegido para outra pessoa, a versão apresentada também é obrigatória (UNI-REQ-0377)")]
@@ -74,7 +74,7 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests
         PedidoDeConcessao pedido = Novo(paraSiMesmo: false);
 
         Codigos(pedido.FixarTermo(new TermoNaCriacao(Vigente, null, true), Agora)).Should().Equal(PedidoErrorCodes.ApresentacaoDoTermoInvalida);
-        pedido.TermoVersaoId.Should().BeNull();
+        pedido.Termo.Should().BeNull();
     }
 
     [Fact(DisplayName = "No pedido protegido para outra pessoa, a versão apresentada se fixa sem registrar aceite de quem pede")]
@@ -83,7 +83,7 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests
         PedidoDeConcessao pedido = Novo(paraSiMesmo: false);
 
         pedido.FixarTermo(new TermoNaCriacao(Vigente, Vigente.Id, true), Agora).IsSuccess.Should().BeTrue();
-        (pedido.TermoVersaoId, pedido.AceiteDoTermo).Should().Be((Vigente.Id, null));
+        (pedido.Termo?.VersaoId, pedido.AceiteDoTermo).Should().Be((Vigente.Id, null));
     }
 
     [Fact(DisplayName = "Pedido não protegido não fixa termo e recusa a versão apresentada")]
@@ -105,7 +105,7 @@ public sealed class PedidoDeConcessaoTermoNaCriacaoTests
         ExigenciaDoTermo.Do(PerfilComum(), Catalogo).Should().BeFalse();
         pedido.AnexaraDocumento.Should().BeTrue();
         pedido.Situacao.Should().Be(SituacaoDoPedido.AguardandoDocumento);
-        pedido.TermoVersaoId.Should().Be(Vigente.Id);
+        pedido.Termo?.VersaoId.Should().Be(Vigente.Id);
     }
 
     private static PedidoDeConcessao Novo(bool paraSiMesmo) =>

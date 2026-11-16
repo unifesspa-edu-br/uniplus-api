@@ -89,7 +89,7 @@ public sealed class AvisosDoPedidoTests
     public async Task AguardandoGestor_AvisaOsGestoresForaDasPartes()
     {
         PedidoDeConcessao pedido = Pedido(paraSiMesmo: false);
-        pedido.Aceitar(Leandro, pedido.TermoVersaoId, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+        pedido.Aceitar(Leandro, pedido.Termo?.VersaoId, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         ConcessoesComTitulares concessoes = new(PerfisDeSistema.GestorDeAcessosId,
             new TitularComEmail(Diogo, EmailDiogo),
             new TitularComEmail(Diogo, EmailDiogo.ToUpperInvariant()),
@@ -239,7 +239,7 @@ public sealed class AvisosDoPedidoTests
     private static PedidoDeConcessao PedidoAprovadoPeloGestor(Identidade gestor)
     {
         PedidoDeConcessao pedido = Pedido(paraSiMesmo: false);
-        pedido.Aceitar(Leandro, pedido.TermoVersaoId, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+        pedido.Aceitar(Leandro, pedido.Termo?.VersaoId, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         pedido.Aprovar(gestor, Avaliado(sensivel: true), new ContextoDaAprovacao(false), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         return pedido;
     }
@@ -247,7 +247,7 @@ public sealed class AvisosDoPedidoTests
     private static PedidoDeConcessao PedidoDecidido(bool aprovar)
     {
         PedidoDeConcessao pedido = Pedido(paraSiMesmo: false);
-        pedido.Aceitar(Leandro, pedido.TermoVersaoId, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
+        pedido.Aceitar(Leandro, pedido.Termo?.VersaoId, DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
         if (aprovar)
         {
             pedido.Aprovar(Diogo, Avaliado(), new ContextoDaAprovacao(false), DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
