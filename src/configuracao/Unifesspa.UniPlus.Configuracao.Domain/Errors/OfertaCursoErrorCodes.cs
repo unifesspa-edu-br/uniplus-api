@@ -44,4 +44,8 @@ public static class OfertaCursoErrorCodes
     public const string AtoAutorizacaoMecTamanho = "OfertaCurso.AtoAutorizacaoMecTamanho";
 
     public const string NaoEncontrada = "OfertaCurso.NaoEncontrada";
+
+    // Resolução da oferta por referência natural (ResolucaoDeOferta).
+    public const string ReferenciaNaoEncontrada = "OfertaCurso.ReferenciaNaoEncontrada";
+    public const string ReferenciaAmbigua = "OfertaCurso.ReferenciaAmbigua";
 }
