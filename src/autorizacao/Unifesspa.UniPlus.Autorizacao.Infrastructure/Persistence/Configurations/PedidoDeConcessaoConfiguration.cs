@@ -205,7 +205,5 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
                 + string.Join(", ", AndamentoDoPedido.SituacoesAtivas.Select(s => $"'{s.ToCodigo()}'"))
                 + ")")
             .HasDatabaseName("ux_pedidos_ativo_unico");
-
-        // As filas dos aprovadores e a lista de quem pediu.
     }
 }
