@@ -27,6 +27,18 @@ public static class ProcessoSeletivoErrorCodes
     /// <summary>O tipo de documento do vínculo não existe mais no cadastro.</summary>
     public const string TipoDocumentoDoVinculoNaoEncontrado = "DocumentoExigido.TipoDocumentoNaoEncontrado";
 
+    /// <summary>Inscrição própria sem nenhuma fase que homologa as inscrições.</summary>
+    public const string InscricaoPropriaSemHomologacaoDasInscricoes = "ProcessoSeletivo.InscricaoPropriaSemHomologacaoDasInscricoes";
+
+    /// <summary>Inscrição própria com nota importada de exame e sem nenhuma fase que homologa as inscrições.</summary>
+    public const string ImportacaoDeExameSemHomologacaoDasInscricoes = "ProcessoSeletivo.ImportacaoDeExameSemHomologacaoDasInscricoes";
+
+    /// <summary>Importação externa sem nenhuma fase que homologa as inscrições.</summary>
+    public const string ImportacaoExternaSemHomologacaoDasInscricoes = "ProcessoSeletivo.ImportacaoExternaSemHomologacaoDasInscricoes";
+
+    /// <summary>Importação externa cuja fase que homologa as inscrições não tem a janela de recurso entre o preliminar e o definitivo.</summary>
+    public const string ImportacaoExternaSemJanelaDeRecurso = "ProcessoSeletivo.ImportacaoExternaSemJanelaDeRecurso";
+
     public const string CriteriosDesempateEmExcesso = "ProcessoSeletivo.CriteriosDesempateEmExcesso";
 
     public const string IdentificadorLegivelTamanho = "ProcessoSeletivo.IdentificadorLegivelTamanho";
