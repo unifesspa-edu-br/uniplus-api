@@ -132,7 +132,7 @@ internal static partial class CorpusEnvelope
     /// matéria que a fase 2 deixa aberta (o gabarito e o resultado da classificação), que é o que a
     /// declaração de concluinte da fase 2 exige que exista.
     /// </summary>
-    private static FaseCronograma FaseResultadoFinal(int variante = 0) => FaseCronograma.Reidratar(
+    private static FaseCronograma FaseResultadoFinal(int variante = 0, IReadOnlyList<string?>? tiposDeDecisao = null) => FaseCronograma.Reidratar(
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000003"),
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000003"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false,
@@ -141,13 +141,17 @@ internal static partial class CorpusEnvelope
             Ordem: 3, Inicio: new DateTimeOffset(2026, 4, 10, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 4, 10, 18, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
-            Produtos: [
-                ProdutoDaFase.Reidratar(ProdutoId(3, 1, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
-                ProdutoDaFase.Reidratar(ProdutoId(3, 2, variante), "GABARITO", PapelProdutoFase.Definitivo),
-            ],
+            Produtos: ProdutosDaFaseResultadoFinal(variante),
             EmiteParecerIndividual: false,
-            RegraRecurso: null),
+            RegraRecurso: null,
+            TiposDeDecisao: tiposDeDecisao),
         bancasRequeridas: []);
+
+    private static List<ProdutoDaFase> ProdutosDaFaseResultadoFinal(int variante) =>
+    [
+        ProdutoDaFase.Reidratar(ProdutoId(3, 1, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
+        ProdutoDaFase.Reidratar(ProdutoId(3, 2, variante), "GABARITO", PapelProdutoFase.Definitivo),
+    ];
 
     /// <summary>Fase mínima que satisfaz o bicondicional fase×etapa (uma etapa acompanha os dois grafos acima).</summary>
     private static FaseCronograma FaseCronogramaConforme(int variante) => FaseCronograma.Criar(

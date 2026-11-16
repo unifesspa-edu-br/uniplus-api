@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -83,6 +84,7 @@ internal static class ConferenciaDaDeclaracaoDaFase
     [
         .. JanelaDaFase.Violacoes(origem.Codigo, origem.OrigemData, cronograma),
         .. ViolacoesDasPublicacoes(origem.Codigo, publicacoes),
+        .. TiposDeDecisaoDeclarados.Validar(publicacoes.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo),
         .. RecorteDeCompetenciaDasBancas.Violacoes(origem.Codigo, bancasRequeridas),
     ];
 

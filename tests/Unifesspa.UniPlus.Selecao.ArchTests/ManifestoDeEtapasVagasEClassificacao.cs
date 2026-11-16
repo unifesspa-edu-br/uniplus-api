@@ -32,6 +32,7 @@ internal static class ManifestoDeEtapasVagasEClassificacao
                 ("ComponeNota", "Derivada de Carater + Peso — congelá-la duplicaria a fonte de verdade."),
                 ("DeclaraNotaDoEnem", "Derivada de TipoEtapa.NotaDeOrigemNoEnem — o atributo congelado já é a declaração."),
                 ("TipoEtapaOrigemId", "Derivada de TipoEtapa.OrigemId (issue #1071) — congelá-la duplicaria a fonte de verdade."),
+                ("TiposDeDecisao", "Ainda não entra no envelope congelado nem no hash."),
             ]),
 
         // O id do item ENTRA no envelope, como o da etapa: o lançamento e o recurso apontam para ele.

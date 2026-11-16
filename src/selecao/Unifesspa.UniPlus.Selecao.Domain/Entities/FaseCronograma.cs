@@ -7,6 +7,7 @@ using Services;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Formularios;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
 using ValueObjects;
@@ -100,6 +101,11 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// candidato tira fundamento para recorrer.
     /// </summary>
     public bool EmiteParecerIndividual { get; private set; }
+
+    private readonly List<string> _tiposDeDecisao = [];
+
+    /// <summary>Os tipos de decisão que a fase declara produzir, em ordem alfabética ordinal e sem repetição.</summary>
+    public IReadOnlyList<string> TiposDeDecisao => _tiposDeDecisao.AsReadOnly();
 
     /// <summary>
     /// Se a fase declara ao menos um produto com papel: decide o piso mínimo havendo vagas e é
@@ -209,6 +215,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         DefinirOrigemCanonica(origem);
         DefinirCronograma(cronograma);
         EmiteParecerIndividual = publicacoes.EmiteParecerIndividual;
+        FilhasDoAgregado.Substituir(_tiposDeDecisao, TiposDeDecisaoDeclarados.Canonicos(publicacoes.TiposDeDecisao));
         AdotarFilhas(publicacoes.Produtos, bancasRequeridas, publicacoes.RegraRecurso);
     }
 
@@ -267,6 +274,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         DefinirOrigemCanonica(origem.OrigemCanonica());
         DefinirCronograma(origem.DecisoesDeCronograma());
         EmiteParecerIndividual = origem.EmiteParecerIndividual;
+        FilhasDoAgregado.Substituir(_tiposDeDecisao, origem._tiposDeDecisao);
         ReconciliarProdutos(produtos);
         ReporBancasRequeridasDe(origem);
         ReporRegraDeRecursoDe(origem, produtos);

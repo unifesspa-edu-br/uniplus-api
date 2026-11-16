@@ -8,7 +8,12 @@ using Entities;
 /// a coleção somente leitura e as instâncias de <see cref="ProdutoDaFase"/> e
 /// <see cref="RegraRecursoFase"/> que a fase passa a possuir, e nunca é guardada pela entidade.
 /// </summary>
+/// <param name="TiposDeDecisao">
+/// Os tipos de decisão que a fase declara produzir, como chegaram; a fábrica confere e a entidade
+/// guarda a cópia canônica. Ausente ou vazio: a fase não declara nenhum.
+/// </param>
 public sealed record PublicacoesDaFase(
     IReadOnlyList<ProdutoDaFase> Produtos,
     bool EmiteParecerIndividual,
-    RegraRecursoFase? RegraRecurso);
+    RegraRecursoFase? RegraRecurso,
+    IReadOnlyList<string?>? TiposDeDecisao = null);

@@ -9,6 +9,7 @@ using Services;
 
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -17,9 +18,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// agregado: criada, substituída e persistida exclusivamente pela raiz.
 /// </summary>
 /// <remarks>
-/// Deriva de <see cref="EntityBase"/> puro (sem soft delete) porque a configuração em rascunho é
-/// substituível por inteiro; a trilha do que valeu em cada publicação é o snapshot de congelamento
-/// (UNI-REQ-0019).
+/// Sem soft delete: a configuração em rascunho é substituível por inteiro, e a trilha do que valeu em
+/// cada publicação é o snapshot de congelamento (UNI-REQ-0019).
 /// </remarks>
 public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
 {
@@ -46,19 +46,15 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     public Guid ProcessoSeletivoId { get; private set; }
 
     /// <summary>
-    /// Código canônico da fase declarada (ex.: <c>"AVALIACAO"</c>), a única forma de a etapa dizer onde
-    /// acontece. É por código, e não por id, porque o id da fase não sobrevive à reconciliação da
-    /// restauração; a raiz o resolve contra o cronograma e nada guarda o resultado.
+    /// Código canônico da fase onde a etapa acontece (ex.: <c>"AVALIACAO"</c>); é por código, e não por
+    /// id, porque o id da fase não sobrevive à reconciliação da restauração.
     /// </summary>
     public string? FaseCodigo { get; private set; }
 
     public string Nome { get; private set; } = string.Empty;
     public CaraterEtapa Carater { get; private set; }
 
-    /// <summary>
-    /// Cópia por valor do tipo de etapa resolvido em Configuração (ADR-0061): a identidade que a
-    /// conformidade legal avalia, já que o rótulo editorial (<see cref="Nome"/>) pode divergir dele.
-    /// </summary>
+    /// <summary>Cópia por valor do tipo de etapa resolvido em Configuração (ADR-0061), a identidade que a conformidade avalia.</summary>
     public TipoEtapaSnapshot TipoEtapa { get; private set; } = null!;
 
     public Guid TipoEtapaOrigemId => TipoEtapa.OrigemId;
@@ -104,6 +100,10 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     private readonly List<BancaDaEtapa> _bancas = [];
     private readonly List<RecursoDaEtapa> _recursos = [];
     private readonly List<ItemDeAvaliacao> _itensDeAvaliacao = [];
+    private readonly List<string> _tiposDeDecisao = [];
+
+    /// <summary>Os tipos de decisão que a etapa declara produzir, em ordem alfabética ordinal e sem repetição.</summary>
+    public IReadOnlyList<string> TiposDeDecisao => _tiposDeDecisao.AsReadOnly();
 
     /// <summary>Os itens em que a nota da etapa se divide, em ordem canônica: pelo conteúdo, nunca pelo id.</summary>
     public IReadOnlyList<ItemDeAvaliacao> ItensDeAvaliacao => [.. _itensDeAvaliacao
@@ -246,6 +246,20 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         return Result.Success();
     }
 
+    /// <summary>Declara por inteiro os tipos de decisão da etapa, acumulando toda recusa; recusada, a etapa fica como estava.</summary>
+    public Result DefinirTiposDeDecisao(IReadOnlyList<string?>? bruto)
+    {
+        IReadOnlyList<FieldError> erros = TiposDeDecisaoDeclarados.Validar(bruto, TiposDeDecisaoDeclarados.Campo);
+        if (erros.Count > 0)
+        {
+            return Result.ValidationFailure(erros);
+        }
+
+        FilhasDoAgregado.Substituir(_tiposDeDecisao, TiposDeDecisaoDeclarados.Canonicos(bruto));
+
+        return Result.Success();
+    }
+
     private void AplicarJanelaEParecer(DateTimeOffset? inicio, DateTimeOffset? fim, bool emiteParecerIndividual)
     {
         Inicio = inicio?.ToUniversalTime();
@@ -344,6 +358,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         DefinirIdentificacaoECarater(congelada.IdentificacaoAtual());
         DefinirLancamentoDaNota(congelada.AvaliacaoAtual());
         AplicarJanelaEParecer(congelada.Inicio, congelada.Fim, congelada.EmiteParecerIndividual);
+        FilhasDoAgregado.Substituir(_tiposDeDecisao, congelada._tiposDeDecisao);
         SubstituirItens(ReconciliacaoDosItensDeAvaliacao.ReporCongelados(_itensDeAvaliacao, congelada.ItensDeAvaliacao));
         IReadOnlyDictionary<Guid, Guid> produtoVivoPorCongelado = ReporProdutosDe(congelada);
         SubstituirBancas(congelada.Bancas);

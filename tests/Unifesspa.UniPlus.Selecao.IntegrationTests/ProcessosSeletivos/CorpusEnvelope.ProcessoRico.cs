@@ -39,10 +39,12 @@ internal static partial class CorpusEnvelope
     /// e <c>arvoreSatisfacao</c> vazios. Populá-la incondicionalmente mudaria os bytes desse envelope de
     /// referência para todo consumidor de <see cref="ProcessoRico"/>, não só quem testa a permutação.
     /// </param>
-    internal static ProcessoSeletivo ProcessoRico(int variante = 0, bool permutar = false, bool comArvoreSatisfacao = false)
+    /// <param name="tiposDeDecisaoDaFaseFinal">Os tipos de decisão que a fase de resultado final declara; ausentes por padrão.</param>
+    internal static ProcessoSeletivo ProcessoRico(
+        int variante = 0, bool permutar = false, bool comArvoreSatisfacao = false, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal = null)
     {
         ProcessoSeletivo processo = NovoProcessoRico(variante);
-        DefinirCronogramaEEtapas(processo, variante, permutar);
+        DefinirCronogramaEEtapas(processo, variante, permutar, tiposDeDecisaoDaFaseFinal);
         DefinirOfertaEClassificacao(processo, variante, permutar);
         DefinirFormularioDeInscricao(processo, permutar);
         DefinirCascataEDocumentos(processo, variante, permutar, comArvoreSatisfacao);
@@ -76,10 +78,11 @@ internal static partial class CorpusEnvelope
         processo.DefinirAlgoritmoContagemPrazo(
             AlgoritmoDeContagemDoCorpus(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-    private static void DefinirCronogramaEEtapas(ProcessoSeletivo processo, int variante, bool permutar)
+    private static void DefinirCronogramaEEtapas(
+        ProcessoSeletivo processo, int variante, bool permutar, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal)
     {
         processo.DefinirCronogramaFases(
-            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar), FaseResultadoFinal(variante)], permutar), [], PrecondicaoIfMatch.Ausente)
+            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar), FaseResultadoFinal(variante, tiposDeDecisaoDaFaseFinal)], permutar), [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(Ordem([
             EtapaObjetiva(variante, permutar),

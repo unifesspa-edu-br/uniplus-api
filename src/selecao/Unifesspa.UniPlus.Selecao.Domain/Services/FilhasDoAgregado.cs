@@ -4,6 +4,8 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Services;
 internal static class FilhasDoAgregado
 {
     // Materializa antes de limpar: as novas podem ser derivadas da própria coleção que se esvazia.
+    internal static void Substituir<T>(List<T> atuais, IEnumerable<T> novas) => Substituir(atuais, novas, static _ => { });
+
     internal static void Substituir<T>(List<T> atuais, IEnumerable<T> novas, Action<T> vincularAoPai)
     {
         List<T> substitutas = [.. novas];

@@ -43,6 +43,7 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
         [nameof(FaseCronograma.RegraRecurso)] = Entra("A regra de prazo do recurso muda o que o candidato pode contestar."),
         [nameof(FaseCronograma.Produtos)] = NaoEntra(PublicacoesDeclaradas),
         [nameof(FaseCronograma.BancasRequeridas)] = Entra("Quem julga e como delibera define a decisão do preliminar."),
+        [nameof(FaseCronograma.TiposDeDecisao)] = NaoEntra("Ainda fora do envelope congelado; passa a entrar no preliminar quando entrar no envelope."),
     };
 
     internal static readonly Dictionary<string, Classificacao> DaEtapa = new()
@@ -71,6 +72,7 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
         [nameof(EtapaProcesso.ItensDeAvaliacao)] = Entra("Os itens e a pontuação máxima de cada um compõem a nota."),
         [nameof(EtapaProcesso.Bancas)] = Entra("Quem julga e como delibera define a decisão do preliminar."),
         [nameof(EtapaProcesso.Recursos)] = Entra("As janelas recursais mudam o que o candidato pode contestar."),
+        [nameof(EtapaProcesso.TiposDeDecisao)] = NaoEntra("Ainda fora do envelope congelado; passa a entrar no preliminar quando entrar no envelope."),
         [nameof(EtapaProcesso.Produtos)] = NaoEntra(PublicacoesDeclaradas),
         [nameof(EtapaProcesso.ProduzResultado)] = NaoEntra("Derivada de Produtos."),
         [nameof(EtapaProcesso.ComponeNota)] = NaoEntra("Derivada do caráter e do peso, que entram."),
