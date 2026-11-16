@@ -193,7 +193,7 @@ public sealed class AvisosDoPedidoTests
     public async Task Aprovado_SemEmailDoSolicitante_AvisaOBeneficiario()
     {
         PedidoDeConcessao pedido = PedidoDecidido(aprovar: true);
-        typeof(PedidoDeConcessao).GetProperty(nameof(PedidoDeConcessao.SolicitanteEmail))!.SetValue(pedido, null);
+        typeof(SolicitanteDoPedido).GetProperty(nameof(SolicitanteDoPedido.Email))!.SetValue(pedido.Solicitante, null);
 
         IReadOnlyList<EnviarEmail> avisos = await Avisar(pedido, SituacaoDoPedido.AguardandoGestor);
 
@@ -205,7 +205,7 @@ public sealed class AvisosDoPedidoTests
     {
         PedidoDeConcessao pedido = PedidoDeConcessao.Criar(new PartesDoPedido(Betina with { Email = "Betina-DasNeves81@uniplus-test.local" }, Leandro.Email), PerfilComum(), EscopoDaConcessao.DaInstituicao(), new DeclaracaoDoPedido(Justificativa), new Dominios(), new Catalogo(), DateTimeOffset.UtcNow).Value!;
 
-        pedido.SolicitanteEmail.Should().Be(Betina.Email);
+        pedido.Solicitante.Email.Should().Be(Betina.Email);
     }
 
     private static Task<IReadOnlyList<EnviarEmail>> Avisar(

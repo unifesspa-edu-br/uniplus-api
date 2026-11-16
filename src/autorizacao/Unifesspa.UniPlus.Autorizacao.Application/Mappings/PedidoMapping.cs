@@ -15,7 +15,7 @@ public static class PedidoMapping
 
         return new PedidoDeConcessaoDto(
             p.Id, p.Situacao.ToCodigo(), p.EtapaAtual?.ToCodigo(),
-            new IdentidadeDto(p.SolicitanteEmissor, p.SolicitanteContaId, p.SolicitanteNome),
+            new IdentidadeDto(p.Solicitante.Emissor, p.Solicitante.ContaId, p.Solicitante.Nome),
             Beneficiario(p),
             new PerfilResumoDto(p.PerfilId, perfil?.Nome ?? string.Empty),
             NumeroDaVersao(p, perfil), Escopo(p), p.Justificativa,

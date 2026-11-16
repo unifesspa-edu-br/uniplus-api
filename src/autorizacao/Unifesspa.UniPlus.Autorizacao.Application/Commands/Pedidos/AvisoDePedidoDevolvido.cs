@@ -37,7 +37,7 @@ public sealed class AvisoDePedidoDevolvido
         ModeloDeAviso modelo = new(TipoDeAviso.PedidoDevolvidoPelaJanela, perfilNome, versao.Numero, [], _link.Para(pedido.Id));
         DestinatarioDoAviso[] partes =
         [
-            new(pedido.Solicitante, pedido.SolicitanteEmail ?? string.Empty),
+            new(pedido.Solicitante.Identidade, pedido.Solicitante.Email ?? string.Empty),
             new(pedido.Beneficiario ?? new Identidade(EmissorDoPapel, PapelDoBeneficiario), pedido.BeneficiarioEmail),
         ];
 

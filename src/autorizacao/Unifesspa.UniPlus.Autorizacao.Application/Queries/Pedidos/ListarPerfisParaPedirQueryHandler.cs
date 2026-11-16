@@ -46,7 +46,7 @@ public static class ListarPerfisParaPedirQueryHandler
             return Result<ListarPerfisParaPedirResult>.Failure(PedidoHandlerErros.IdentidadeIncompleta());
         }
 
-        if (!PedidoDeConcessao.SolicitanteInstitucional(pessoa, dominios))
+        if (!PartesDoPedido.SolicitanteInstitucional(pessoa, dominios))
         {
             ResultadoDoAcesso acesso = await verificador
                 .ExigirAsync(PermissaoManterPerfis, null, cancellationToken)

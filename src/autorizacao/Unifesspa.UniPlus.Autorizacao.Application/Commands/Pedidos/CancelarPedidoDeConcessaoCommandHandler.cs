@@ -40,7 +40,7 @@ public static class CancelarPedidoDeConcessaoCommandHandler
         }
 
         PedidoDeConcessao? pedido = await repository.ObterParaAlterarAsync(command.Id, cancellationToken).ConfigureAwait(false);
-        if (pedido is null || pedido.Solicitante != solicitante)
+        if (pedido is null || !pedido.Solicitante.Eh(solicitante))
         {
             return Recusa(PedidoHandlerErros.NaoEncontrado());
         }
