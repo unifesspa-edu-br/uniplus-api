@@ -252,6 +252,14 @@ public sealed class InstalacaoTests
     public void EnviarCodigo_Reenvio_AposOFim_Recusa(string fim)
     {
         Instalacao instalacao = AguardandoCodigo();
+        Encerrar(instalacao, fim);
+
+        instalacao.EnviarCodigo(Resumo, Agora.AddHours(3)).Error!.Code.Should().Be(InstalacaoErrorCodes.SituacaoInvalida);
+        instalacao.CodigoResumo.Should().BeNull();
+    }
+
+    private static void Encerrar(Instalacao instalacao, string fim)
+    {
         switch (fim)
         {
             case "confirmada":
@@ -264,9 +272,6 @@ public sealed class InstalacaoTests
                 instalacao.RegistrarTentativa(true, Agora.AddHours(2));
                 break;
         }
-
-        instalacao.EnviarCodigo(Resumo, Agora.AddHours(3)).Error!.Code.Should().Be(InstalacaoErrorCodes.SituacaoInvalida);
-        instalacao.CodigoResumo.Should().BeNull();
     }
 
     [Fact(DisplayName = "Código certo dentro do prazo é aceito e a confirmação descarta o resumo")]
