@@ -41,14 +41,7 @@ public sealed partial record CodigoBaseLegalBonusRegional
     /// <summary>Valida um código já formado, vindo de uma referência do documento ou do banco.</summary>
     public static Result<CodigoBaseLegalBonusRegional> Criar(string? valor)
     {
-        if (string.IsNullOrWhiteSpace(valor))
-        {
-            return Result<CodigoBaseLegalBonusRegional>.Failure(new DomainError(
-                BaseLegalBonusRegionalErrorCodes.CodigoObrigatorio,
-                "O código da base legal é obrigatório."));
-        }
-
-        string normalizado = valor.Trim();
+        string normalizado = valor?.Trim() ?? string.Empty;
 
         return FormatoValido().IsMatch(normalizado)
             ? Result<CodigoBaseLegalBonusRegional>.Success(new CodigoBaseLegalBonusRegional(normalizado))

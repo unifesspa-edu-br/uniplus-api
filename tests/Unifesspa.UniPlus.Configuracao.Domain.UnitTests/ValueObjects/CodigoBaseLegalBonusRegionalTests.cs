@@ -88,14 +88,14 @@ public sealed class CodigoBaseLegalBonusRegionalTests
         resultado.Value!.Valor.Should().Be(valor);
     }
 
-    [Theory(DisplayName = "Referência ausente ou em branco retorna CodigoObrigatorio")]
+    [Theory(DisplayName = "Referência ausente ou em branco retorna CodigoFormatoInvalido")]
     [InlineData(null)]
     [InlineData("  ")]
     public void Criar_EmBranco_Falha(string? valor)
     {
         Result<CodigoBaseLegalBonusRegional> resultado = CodigoBaseLegalBonusRegional.Criar(valor);
 
-        resultado.Error!.Code.Should().Be(BaseLegalBonusRegionalErrorCodes.CodigoObrigatorio);
+        resultado.Error!.Code.Should().Be(BaseLegalBonusRegionalErrorCodes.CodigoFormatoInvalido);
     }
 
     [Theory(DisplayName = "Referência fora do formato fechado retorna CodigoFormatoInvalido")]

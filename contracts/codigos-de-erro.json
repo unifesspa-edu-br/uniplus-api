@@ -867,16 +867,6 @@
       "titulo": "Já existe uma base legal de bônus regional com este código"
     },
     {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_nao_encontrado",
-      "status": 422,
-      "titulo": "Nenhuma base legal de bônus regional viva tem o código informado"
-    },
-    {
-      "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_obrigatorio",
-      "status": 422,
-      "titulo": "Código da base legal de bônus regional é obrigatório"
-    },
-    {
       "codigo": "uniplus.configuracao.base_legal_bonus_regional.codigo_tamanho",
       "status": 422,
       "titulo": "Código da base legal de bônus regional passa do tamanho máximo"
