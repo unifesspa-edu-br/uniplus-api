@@ -20,4 +20,10 @@ public static class DistribuicaoDeVagasErrorCodes
     public const string QuadroModalidadeAusente = Prefixo + "QuadroModalidadeAusente";
     public const string QuantidadeCalculadaNaoInformavel = Prefixo + "QuantidadeCalculadaNaoInformavel";
     public const string QuantidadeDeclaradaObrigatoria = Prefixo + "QuantidadeDeclaradaObrigatoria";
+    public const string ComposicaoOrigemNaoSelecionada = Prefixo + "ComposicaoOrigemNaoSelecionada";
+    public const string RemanejamentoDestinoNaoSelecionado = Prefixo + "RemanejamentoDestinoNaoSelecionado";
+    public const string RemanejamentoParNaoSelecionado = Prefixo + "RemanejamentoParNaoSelecionado";
+    public const string RemanejamentoFallbackNaoSelecionado = Prefixo + "RemanejamentoFallbackNaoSelecionado";
+    public const string ParCruzadoNaoReciproco = Prefixo + "ParCruzadoNaoReciproco";
+    public const string ReclassificacaoParaAmplaSemAmplaOfertada = Prefixo + "ReclassificacaoParaAmplaSemAmplaOfertada";
 }
