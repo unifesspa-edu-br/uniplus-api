@@ -1,0 +1,17 @@
+namespace Unifesspa.UniPlus.Configuracao.Domain.Entities;
+
+using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Regras.ValueObjects;
+
+/// <summary>Os campos editáveis da modalidade já normalizados, com os tokens resolvidos para os enums.</summary>
+public sealed record CamposResolvidosDaModalidade(
+    string? Descricao,
+    NaturezaLegal NaturezaLegal,
+    ComposicaoVagas ComposicaoVagas,
+    string? ComposicaoOrigem,
+    RegraRemanejamento? RegraRemanejamento,
+    RemanejamentoArgs RemanejamentoArgs,
+    PredicadoDnf? RegraDeAplicabilidade,
+    AcaoQuandoIndeferido? AcaoQuandoIndeferido,
+    string? BaseLegal);

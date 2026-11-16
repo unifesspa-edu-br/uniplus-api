@@ -40,7 +40,7 @@ public static class AtualizarModalidadeCommandHandler
         Result<PredicadoDnf?> regra = RegraDeAplicabilidadeDaEntrada.Montar(command.RegraDeAplicabilidade);
         PredicadoDnf? regraMontada = regra.IsSuccess ? regra.Value : null;
 
-        Result preCheck = Modalidade.ValidarCamposDoPayload(
+        Result preCheck = ValidacaoDosCamposDaModalidade.ValidarCamposDoPayload(
             command.Descricao,
             command.NaturezaLegal,
             command.ComposicaoVagas,

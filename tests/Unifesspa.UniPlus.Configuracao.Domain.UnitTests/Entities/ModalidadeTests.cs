@@ -673,7 +673,7 @@ public sealed class ModalidadeTests
     [Fact(DisplayName = "ValidarCampos isolado é público e reusável sem instanciar o agregado")]
     public void ValidarCampos_CamposValidos_Aceita()
     {
-        Result<Modalidade.CamposResolvidos> r = Modalidade.ValidarCampos(
+        Result<CamposResolvidosDaModalidade> r = ValidacaoDosCamposDaModalidade.ValidarCampos(
             descricao: null, naturezaLegalToken: "AMPLA", composicaoVagasToken: "RESIDUAL_DO_VO",
             composicaoOrigem: null, regraRemanejamentoToken: null, remanejamentoDestino: null,
             remanejamentoPar: null, remanejamentoFallback: null, regraDeAplicabilidade: Incondicional(),
@@ -688,7 +688,7 @@ public sealed class ModalidadeTests
         // AMPLA + SEGUE_CASCATA é incoerente (invariante 3), mas ValidarCamposDoPayload
         // não avalia coerência cruzada — só parse e tamanhos. A guarda do catálogo
         // legal fixo (handler) precisa rodar ANTES dessa incoerência ser reportada.
-        Result r = Modalidade.ValidarCamposDoPayload(
+        Result r = ValidacaoDosCamposDaModalidade.ValidarCamposDoPayload(
             descricao: null, naturezaLegalToken: "AMPLA", composicaoVagasToken: "DENTRO_DO_VR",
             composicaoOrigem: null, regraRemanejamentoToken: "SEGUE_CASCATA", remanejamentoDestino: null,
             remanejamentoPar: null, remanejamentoFallback: null, regraDeAplicabilidade: Incondicional(),
