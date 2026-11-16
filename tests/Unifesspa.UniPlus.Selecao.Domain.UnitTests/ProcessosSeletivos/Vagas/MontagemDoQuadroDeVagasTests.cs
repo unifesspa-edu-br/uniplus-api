@@ -105,8 +105,7 @@ public sealed class MontagemDoQuadroDeVagasTests
     [Fact(DisplayName = "O quadro fixado com excesso reduzido de uma modalidade registra as vagas retiradas dela")]
     public void Fixado_ReduzirDe_RegistraAsRetiradas()
     {
-        DistribuicaoDeVagasDeclarada declarada = FixadaNoEdital(Fixada("IND", 40), Fixada("QUI", 20))
-            with { AjusteDoQuadro = new ArgsReduzirDe("IND") };
+        DistribuicaoDeVagasDeclarada declarada = FixadaNoEdital(Fixada("IND", 40), Fixada("QUI", 20)) with { AjusteDoQuadro = new ArgsReduzirDe("IND") };
 
         QuadroDeVagasFixadoNoEdital quadro = (QuadroDeVagasFixadoNoEdital)Montar(declarada);
 
@@ -118,8 +117,7 @@ public sealed class MontagemDoQuadroDeVagasTests
     [Fact(DisplayName = "O quadro fixado com excesso repartido entre modalidades registra a retirada de cada uma")]
     public void Fixado_ReduzirProporcionalEm_RegistraAsRetiradas()
     {
-        DistribuicaoDeVagasDeclarada declarada = FixadaNoEdital(Fixada("IND", 30), Fixada("QUI", 30))
-            with { AjusteDoQuadro = new ArgsReduzirProporcionalEm(["IND", "QUI"]) };
+        DistribuicaoDeVagasDeclarada declarada = FixadaNoEdital(Fixada("IND", 30), Fixada("QUI", 30)) with { AjusteDoQuadro = new ArgsReduzirProporcionalEm(["IND", "QUI"]) };
 
         QuadroDeVagasFixadoNoEdital quadro = (QuadroDeVagasFixadoNoEdital)Montar(declarada);
 
@@ -163,8 +161,7 @@ public sealed class MontagemDoQuadroDeVagasTests
     [Fact(DisplayName = "A declaração fixada com ajuste reproduz o quadro que a entidade monta")]
     public void Fixado_ReproduzOQuadroDaEntidade()
     {
-        DistribuicaoDeVagasDeclarada declarada = FixadaNoEdital(Fixada("IND", 40), Fixada("QUI", 25))
-            with { AjusteDoQuadro = new ArgsReduzirDe("IND") };
+        DistribuicaoDeVagasDeclarada declarada = FixadaNoEdital(Fixada("IND", 40), Fixada("QUI", 25)) with { AjusteDoQuadro = new ArgsReduzirDe("IND") };
         ConfiguracaoDistribuicaoVagas entidade = DaEntidade(declarada);
 
         QuadroDeVagasFixadoNoEdital quadro = (QuadroDeVagasFixadoNoEdital)Montar(declarada);

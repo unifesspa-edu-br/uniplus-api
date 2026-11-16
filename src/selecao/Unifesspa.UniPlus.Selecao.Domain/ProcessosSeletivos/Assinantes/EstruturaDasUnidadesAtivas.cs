@@ -6,14 +6,14 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Assinantes;
 /// </summary>
 internal sealed record EstruturaDasUnidadesAtivas
 {
-    private readonly Dictionary<Guid, Guid?> superiorPorUnidade;
+    private readonly Dictionary<Guid, Guid?> _superiorPorUnidade;
 
     internal EstruturaDasUnidadesAtivas(IEnumerable<UnidadeAtiva> unidades)
     {
         ArgumentNullException.ThrowIfNull(unidades);
-        superiorPorUnidade = unidades.ToDictionary(static u => u.Id, static u => u.SuperiorId);
+        _superiorPorUnidade = unidades.ToDictionary(static u => u.Id, static u => u.SuperiorId);
     }
 
     internal bool TentaObterSuperior(Guid unidadeId, out Guid? superiorId) =>
-        superiorPorUnidade.TryGetValue(unidadeId, out superiorId);
+        _superiorPorUnidade.TryGetValue(unidadeId, out superiorId);
 }

@@ -246,6 +246,9 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
 
     [Fact(DisplayName = "O código de regra fora do vocabulário não recebe conferência de ramo nem de fronteira")]
     public void RegraDesconhecida_SoConferenciaDeForma() =>
-        Conferir(FixadaNoEdital(Modalidade("X", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.SuplementarAoTotal))
-            with { RegraDeDistribuicao = Regra("DISTRIB-OUTRA") }).Should().BeEmpty();
+        Conferir(ComRegraDeOutroCodigo(FixadaNoEdital(Modalidade("X", NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.SuplementarAoTotal))))
+            .Should().BeEmpty();
+
+    private static DistribuicaoDeVagasDeclarada ComRegraDeOutroCodigo(DistribuicaoDeVagasDeclarada declarada) =>
+        declarada with { RegraDeDistribuicao = Regra("DISTRIB-OUTRA") };
 }
