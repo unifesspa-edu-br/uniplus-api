@@ -1849,7 +1849,7 @@
     {
       "codigo": "uniplus.configuracao.modelo_formulario.entrada_malformada",
       "status": 422,
-      "titulo": "Uma etapa, item ou termo do modelo veio nulo"
+      "titulo": "Uma parte do conteúdo do modelo veio nula ou sem um campo obrigatório"
     },
     {
       "codigo": "uniplus.configuracao.modelo_formulario.exigencia_por_opcao_invalida",
@@ -1924,7 +1924,7 @@
     {
       "codigo": "uniplus.configuracao.modelo_formulario.tipo_processo_codigo_em_branco",
       "status": 422,
-      "titulo": "O tipo de processo é um código, ou ausente quando o modelo serve a todos"
+      "titulo": "O código do tipo de processo do modelo veio em branco"
     },
     {
       "codigo": "uniplus.configuracao.modelo_formulario.tipo_processo_codigo_tamanho",
