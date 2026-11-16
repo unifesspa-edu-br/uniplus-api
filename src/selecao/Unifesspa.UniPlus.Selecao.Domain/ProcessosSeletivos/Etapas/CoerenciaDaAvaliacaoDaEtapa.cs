@@ -19,48 +19,42 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </remarks>
 public static class CoerenciaDaAvaliacaoDaEtapa
 {
-    public static List<FieldError> Validar(
-        bool notaDeOrigemNoEnem,
-        decimal? passoDoLancamento,
-        FormaDeAvaliacao? forma,
-        string? regraConsolidacaoCodigo,
-        bool declaraItens = false,
-        bool declaraEscala = false)
+    public static List<FieldError> Validar(AvaliacaoParaCoerencia avaliacao)
     {
-        if (notaDeOrigemNoEnem)
+        ArgumentNullException.ThrowIfNull(avaliacao);
+        if (avaliacao.NotaDeOrigemNoEnem)
         {
-            return RecusasDaAvaliacaoNaEtapaDoEnem(forma, regraConsolidacaoCodigo, declaraItens, declaraEscala);
+            return RecusasDaAvaliacaoNaEtapaDoEnem(avaliacao);
         }
 
-        FieldError?[] recusas = [RecusaDaRegra(forma, regraConsolidacaoCodigo), RecusaDoPasso(forma, passoDoLancamento)];
+        FieldError?[] recusas = [RecusaDaRegra(avaliacao.Forma, avaliacao.RegraConsolidacaoCodigo), RecusaDoPasso(avaliacao.Forma, avaliacao.PassoDoLancamento)];
         List<FieldError> erros = [.. recusas.OfType<FieldError>()];
-        if (declaraEscala)
+        if (avaliacao.DeclaraEscala)
         {
-            erros.AddRange(RecusasDaEscalaDeAtendimento(forma, passoDoLancamento, declaraItens).OfType<FieldError>());
+            erros.AddRange(RecusasDaEscalaDeAtendimento(avaliacao).OfType<FieldError>());
         }
 
         return erros;
     }
 
-    private static List<FieldError> RecusasDaAvaliacaoNaEtapaDoEnem(
-        FormaDeAvaliacao? forma, string? regraConsolidacaoCodigo, bool declaraItens, bool declaraEscala) =>
-        [.. RecusasDaFormaEDaRegraNoEnem(forma, regraConsolidacaoCodigo)
-            .Concat(RecusasDosItensEDaEscalaNoEnem(declaraItens, declaraEscala))
+    private static List<FieldError> RecusasDaAvaliacaoNaEtapaDoEnem(AvaliacaoParaCoerencia avaliacao) =>
+        [.. RecusasDaFormaEDaRegraNoEnem(avaliacao)
+            .Concat(RecusasDosItensEDaEscalaNoEnem(avaliacao))
             .OfType<FieldError>()];
 
-    private static FieldError?[] RecusasDaFormaEDaRegraNoEnem(FormaDeAvaliacao? forma, string? regraConsolidacaoCodigo) =>
+    private static FieldError?[] RecusasDaFormaEDaRegraNoEnem(AvaliacaoParaCoerencia avaliacao) =>
     [
-        Recusa(forma is not null, "formaDeAvaliacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem,
+        Recusa(avaliacao.Forma is not null, "formaDeAvaliacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem,
             "A etapa de nota do ENEM não declara forma de avaliação: a nota vem do INEP."),
-        Recusa(regraConsolidacaoCodigo is not null, "regraConsolidacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem,
+        Recusa(avaliacao.RegraConsolidacaoCodigo is not null, "regraConsolidacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem,
             "A etapa de nota do ENEM não declara regra de consolidação: a nota vem do INEP."),
     ];
 
-    private static FieldError?[] RecusasDosItensEDaEscalaNoEnem(bool declaraItens, bool declaraEscala) =>
+    private static FieldError?[] RecusasDosItensEDaEscalaNoEnem(AvaliacaoParaCoerencia avaliacao) =>
     [
-        Recusa(declaraItens, "itensDeAvaliacao", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem,
+        Recusa(avaliacao.DeclaraItens, "itensDeAvaliacao", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem,
             "A etapa de nota do ENEM não declara itens de avaliação: a nota vem do INEP."),
-        Recusa(declaraEscala, "escalaDeAtendimento", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem,
+        Recusa(avaliacao.DeclaraEscala, "escalaDeAtendimento", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem,
             "A etapa de nota do ENEM não declara escala de atendimento: a nota vem do INEP."),
     ];
 
@@ -83,13 +77,13 @@ public static class CoerenciaDaAvaliacaoDaEtapa
             EtapaProcessoErrorCodes.PassoNaFormaObjetiva,
             "O passo do lançamento só se aplica à avaliação humana: na avaliação objetiva ninguém lança a nota.");
 
-    private static FieldError?[] RecusasDaEscalaDeAtendimento(FormaDeAvaliacao? forma, decimal? passoDoLancamento, bool declaraItens) =>
+    private static FieldError?[] RecusasDaEscalaDeAtendimento(AvaliacaoParaCoerencia avaliacao) =>
     [
-        Recusa(!declaraItens, "escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaSemItens,
+        Recusa(!avaliacao.DeclaraItens, "escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaSemItens,
             "A escala de atendimento é aplicada a cada item: sem itens de avaliação, não há o que atender."),
-        Recusa(forma == FormaDeAvaliacao.Objetiva, "escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaNaFormaObjetiva,
+        Recusa(avaliacao.Forma == FormaDeAvaliacao.Objetiva, "escalaDeAtendimento", EtapaProcessoErrorCodes.EscalaNaFormaObjetiva,
             "A escala de atendimento só se aplica à avaliação humana: na avaliação objetiva ninguém escolhe o nível."),
-        Recusa(passoDoLancamento is not null, "passoDoLancamento", EtapaProcessoErrorCodes.PassoComEscalaDeAtendimento,
+        Recusa(avaliacao.PassoDoLancamento is not null, "passoDoLancamento", EtapaProcessoErrorCodes.PassoComEscalaDeAtendimento,
             "Com escala de atendimento a banca escolhe o nível e não digita a nota, então a etapa não declara passo do lançamento."),
     ];
 

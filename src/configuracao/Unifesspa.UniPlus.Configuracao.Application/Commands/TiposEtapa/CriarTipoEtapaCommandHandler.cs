@@ -34,10 +34,11 @@ public static class CriarTipoEtapaCommandHandler
         CriarTipoEtapaCommand command, ITipoConceitoRepository conceitos, CancellationToken cancellationToken)
     {
         Result<TipoEtapa> criar = TipoEtapa.Criar(
-            command.Codigo, command.Nome, command.Descricao, command.AdmitePontuacao, command.AdmiteEliminacao);
+            command.Codigo, command.Nome, command.Descricao,
+            command.AdmitePontuacao, command.AdmiteEliminacao, command.ExigeCorrecaoIndependente);
         Result<IReadOnlyList<TipoConceito>> admitidos = await ResolucaoDosConceitosAdmitidos
             .Resolver(command.ConceitosAdmitidos, conceitos, cancellationToken).ConfigureAwait(false);
-        FieldError[] erros = [.. criar.Errors, .. admitidos.Errors];
+        FieldError[] erros = [.. criar.Errors, .. admitidos.Errors, .. ViolacoesDosConceitos(command, admitidos)];
         if (erros.Length > 0)
         {
             return Result<TipoEtapa>.ValidationFailure(erros);
@@ -46,6 +47,10 @@ public static class CriarTipoEtapaCommandHandler
         criar.Value!.SubstituirConceitosAdmitidos(admitidos.Value!);
         return criar;
     }
+
+    private static IReadOnlyList<FieldError> ViolacoesDosConceitos(
+        CriarTipoEtapaCommand command, Result<IReadOnlyList<TipoConceito>> admitidos) =>
+        admitidos.IsSuccess ? TipoEtapa.ViolacoesDaCorrecaoSemConceito(command.ExigeCorrecaoIndependente, admitidos.Value!) : [];
 
     private static async Task<Result<Guid>> RegistrarSeInedito(
         TipoEtapa tipo, ITipoEtapaRepository repository, IUnitOfWork unitOfWork, CancellationToken cancellationToken) =>

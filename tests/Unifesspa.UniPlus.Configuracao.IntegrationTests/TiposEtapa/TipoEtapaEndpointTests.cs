@@ -50,15 +50,15 @@ public sealed class TipoEtapaEndpointTests
     /// dependeria da idade do banco em que ela foi feita.
     /// </summary>
     [Theory(DisplayName = "Carga inicial declara o que cada tipo semeado admite e de onde vem a nota")]
-    [InlineData("ANALISE_DOCUMENTAL", false, true, false)]
-    [InlineData("BANCA_HETEROIDENTIFICACAO", false, true, false)]
-    [InlineData("PROVA_OBJETIVA", true, true, false)]
-    [InlineData("REDACAO", true, true, false)]
-    [InlineData("ENTREVISTA", true, true, false)]
-    [InlineData("ANALISE_HISTORICO", true, true, false)]
-    [InlineData("NOTA_ENEM", true, true, true)]
+    [InlineData("ANALISE_DOCUMENTAL", false, true, false, false)]
+    [InlineData("BANCA_HETEROIDENTIFICACAO", false, true, false, false)]
+    [InlineData("PROVA_OBJETIVA", true, true, false, false)]
+    [InlineData("REDACAO", true, true, false, true)]
+    [InlineData("ENTREVISTA", true, true, false, false)]
+    [InlineData("ANALISE_HISTORICO", true, true, false, false)]
+    [InlineData("NOTA_ENEM", true, true, true, false)]
     public async Task Listar_TiposSemeados_DeclaramOCaraterQueAdmitem(
-        string codigo, bool admitePontuacao, bool admiteEliminacao, bool notaDeOrigemNoEnem)
+        string codigo, bool admitePontuacao, bool admiteEliminacao, bool notaDeOrigemNoEnem, bool exigeCorrecaoIndependente)
     {
         using HttpClient client = _fixture.Factory.CreateDefaultClient();
 
@@ -73,6 +73,7 @@ public sealed class TipoEtapaEndpointTests
         tipo.GetProperty("admitePontuacao").GetBoolean().Should().Be(admitePontuacao);
         tipo.GetProperty("admiteEliminacao").GetBoolean().Should().Be(admiteEliminacao);
         tipo.GetProperty("notaDeOrigemNoEnem").GetBoolean().Should().Be(notaDeOrigemNoEnem);
+        tipo.GetProperty("exigeCorrecaoIndependente").GetBoolean().Should().Be(exigeCorrecaoIndependente);
     }
 
     [Fact(DisplayName = "Carga inicial usa UUIDv7 RFC 9562 nos sete tipos semeados")]
@@ -119,41 +120,40 @@ public sealed class TipoEtapaEndpointTests
     {
         string codigo = CodigoUnico();
         using HttpClient client = _fixture.Factory.CreateClient();
+        Guid id = await CriarSelecaoDeTeste(client, codigo);
 
-        HttpResponseMessage criar = await EnviarPostAdmin(client, new
-        {
-            codigo,
-            nome = "Seleção de teste",
-            descricao = "Descrição inicial",
-            conceitosAdmitidos = Array.Empty<string>(),
-            admitePontuacao = true,
-            admiteEliminacao = true,
-        });
+        await ConferirListadoComCodigo(client, id, codigo);
+
+        HttpResponseMessage atualizar = await EnviarPutAdmin(client, id, Corpo(
+            ("id", id), ("nome", "Seleção renomeada"), ("descricao", "Descrição atualizada"), ("admitePontuacao", false)));
+
+        atualizar.StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await ConferirRenomeado(client, id, codigo);
+    }
+
+    private static async Task<Guid> CriarSelecaoDeTeste(HttpClient client, string codigo)
+    {
+        HttpResponseMessage criar = await EnviarPostAdmin(client, Corpo(("codigo", codigo), ("nome", "Seleção de teste"), ("descricao", "Descrição inicial")));
 
         criar.StatusCode.Should().Be(HttpStatusCode.Created);
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
         id.Should().NotBe(Guid.Empty);
+        return id;
+    }
 
+    private static async Task ConferirListadoComCodigo(HttpClient client, Guid id, string codigo)
+    {
         HttpResponseMessage listar = await client.GetAsync(new Uri("/api/configuracao/tipos-etapa", UriKind.Relative));
         listar.StatusCode.Should().Be(HttpStatusCode.OK);
         using JsonDocument lista = JsonDocument.Parse(await listar.Content.ReadAsStringAsync());
         lista.RootElement.EnumerateArray()
             .Single(item => item.GetProperty("id").GetGuid() == id)
             .GetProperty("codigo").GetString().Should().Be(codigo);
+    }
 
-        HttpResponseMessage atualizar = await EnviarPutAdmin(client, id, new
-        {
-            id,
-            nome = "Seleção renomeada",
-            descricao = "Descrição atualizada",
-            conceitosAdmitidos = Array.Empty<string>(),
-            admitePontuacao = false,
-            admiteEliminacao = true,
-        });
-        atualizar.StatusCode.Should().Be(HttpStatusCode.NoContent);
-
-        HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/tipos-etapa/{id}", UriKind.Relative));
-        using JsonDocument item = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
+    private static async Task ConferirRenomeado(HttpClient client, Guid id, string codigo)
+    {
+        using JsonDocument item = await ObterTipo(client, id);
         item.RootElement.GetProperty("codigo").GetString().Should().Be(codigo, "o código é a identidade imutável do tipo de etapa");
         item.RootElement.GetProperty("nome").GetString().Should().Be("Seleção renomeada");
         item.RootElement.TryGetProperty("_links", out _).Should().BeTrue("a leitura pública expõe HATEOAS nível 1");
@@ -168,9 +168,9 @@ public sealed class TipoEtapaEndpointTests
         string invalido = $"valor{(char)0}invalido";
         object payload = campo switch
         {
-            "codigo" => new { codigo = invalido, nome = "Nome válido", descricao = "Descrição válida", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true },
-            "nome" => new { codigo = CodigoUnico(), nome = invalido, descricao = "Descrição válida", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true },
-            "descricao" => new { codigo = CodigoUnico(), nome = "Nome válido", descricao = invalido, conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true },
+            "codigo" => new { codigo = invalido, nome = "Nome válido", descricao = "Descrição válida", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true, exigeCorrecaoIndependente = false },
+            "nome" => new { codigo = CodigoUnico(), nome = invalido, descricao = "Descrição válida", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true, exigeCorrecaoIndependente = false },
+            "descricao" => new { codigo = CodigoUnico(), nome = "Nome válido", descricao = invalido, conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true, exigeCorrecaoIndependente = false },
             _ => throw new InvalidOperationException($"Campo de teste inesperado: {campo}"),
         };
         using HttpClient client = _fixture.Factory.CreateClient();
@@ -186,25 +186,10 @@ public sealed class TipoEtapaEndpointTests
     public async Task Atualizar_CampoTextualComCaractereNulo_Retorna422(string campo)
     {
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, new
-        {
-            codigo = CodigoUnico(),
-            nome = "Nome válido",
-            descricao = "Descrição válida",
-            conceitosAdmitidos = Array.Empty<string>(),
-            admitePontuacao = true,
-            admiteEliminacao = true,
-        });
+        HttpResponseMessage criar = await EnviarPostAdmin(client, Corpo(("codigo", CodigoUnico())));
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-        string invalido = $"valor{(char)0}invalido";
-        object payload = campo switch
-        {
-            "nome" => new { id, nome = invalido, descricao = "Descrição válida", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true },
-            "descricao" => new { id, nome = "Nome válido", descricao = invalido, conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true },
-            _ => throw new InvalidOperationException($"Campo de teste inesperado: {campo}"),
-        };
 
-        HttpResponseMessage response = await EnviarPutAdmin(client, id, payload);
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, Corpo(("id", id), (campo, $"valor{(char)0}invalido")));
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -212,7 +197,7 @@ public sealed class TipoEtapaEndpointTests
     [Fact(DisplayName = "ADR-0125: POST com código e nome ausentes ao mesmo tempo devolve as duas violações em errors[], campo em camelCase")]
     public async Task Criar_CodigoENomeAusentes_DevolveAsDuasViolacoesEmErrors()
     {
-        var body = new { codigo = "", nome = "", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true };
+        var body = new { codigo = "", nome = "", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true, exigeCorrecaoIndependente = false };
 
         using HttpClient client = _fixture.Factory.CreateClient();
         HttpResponseMessage response = await EnviarPostAdmin(client, body);
@@ -260,7 +245,7 @@ public sealed class TipoEtapaEndpointTests
         Guid id = Guid.NewGuid();
 
         using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage response = await EnviarPutAdmin(client, id, new { id, nome = "", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true });
+        HttpResponseMessage response = await EnviarPutAdmin(client, id, new { id, nome = "", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true, exigeCorrecaoIndependente = false });
 
         response.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
     }
@@ -271,7 +256,7 @@ public sealed class TipoEtapaEndpointTests
         string codigo = CodigoUnico();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage criar = await EnviarPostAdmin(client, new { codigo, nome = "Seleção temporária", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true });
+        HttpResponseMessage criar = await EnviarPostAdmin(client, new { codigo, nome = "Seleção temporária", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true, exigeCorrecaoIndependente = false });
         Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
 
         HttpResponseMessage desativar = await EnviarDeleteAdmin(client, id);
@@ -280,29 +265,19 @@ public sealed class TipoEtapaEndpointTests
         HttpResponseMessage obter = await client.GetAsync(new Uri($"/api/configuracao/tipos-etapa/{id}", UriKind.Relative));
         obter.StatusCode.Should().Be(HttpStatusCode.NotFound, "a API pública só expõe itens ativos");
 
-        HttpResponseMessage recriar = await EnviarPostAdmin(client, new { codigo, nome = "Tentativa de reuso", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true });
+        HttpResponseMessage recriar = await EnviarPostAdmin(client, new { codigo, nome = "Tentativa de reuso", conceitosAdmitidos = Array.Empty<string>(), admitePontuacao = true, admiteEliminacao = true, exigeCorrecaoIndependente = false });
         recriar.StatusCode.Should().Be(HttpStatusCode.Conflict, "desativar não libera a identidade regulatória do código");
     }
 
     [Fact(DisplayName = "POST não define a nota de origem no ENEM: o campo enviado é ignorado")]
     public async Task Criar_ComNotaDeOrigemNoEnem_Ignora()
     {
-        string codigo = CodigoUnico();
         using HttpClient client = _fixture.Factory.CreateClient();
 
-        HttpResponseMessage criar = await EnviarPostAdmin(client, new
-        {
-            codigo,
-            nome = "Tentativa de nota do ENEM",
-            conceitosAdmitidos = Array.Empty<string>(),
-            admitePontuacao = true,
-            admiteEliminacao = true,
-            notaDeOrigemNoEnem = true,
-        });
-        criar.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        HttpResponseMessage criar = await EnviarPostAdmin(client, Corpo(("codigo", CodigoUnico()), ("notaDeOrigemNoEnem", true)));
 
-        using JsonDocument item = await ObterTipo(client, id);
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        using JsonDocument item = await ObterTipo(client, await criar.Content.ReadFromJsonAsync<Guid>());
         item.RootElement.GetProperty("notaDeOrigemNoEnem").GetBoolean().Should().BeFalse(
             "a origem da nota vem só da carga do cadastro");
     }
@@ -313,33 +288,24 @@ public sealed class TipoEtapaEndpointTests
         await using TipoDoEnemRestauradoNoFim restauracao = await TipoDoEnemRestauradoNoFim.GuardarAsync(_fixture.ConnectionString);
         using HttpClient client = _fixture.Factory.CreateClient();
         (Guid id, string nome, string? descricao) = await TipoDoEnem(client);
+        (string, object?)[] corpoDoTipo = [("id", id), ("nome", nome), ("descricao", descricao)];
 
-        HttpResponseMessage semAtributo = await EnviarPutAdmin(client, id, new
-        {
-            id,
-            nome,
-            descricao,
-            conceitosAdmitidos = Array.Empty<string>(),
-            admitePontuacao = true,
-            admiteEliminacao = true,
-            notaDeOrigemNoEnem = false,
-        });
+        HttpResponseMessage semAtributo = await EnviarPutAdmin(client, id, Corpo([.. corpoDoTipo, ("notaDeOrigemNoEnem", false)]));
+
         semAtributo.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        using (JsonDocument item = await ObterTipo(client, id))
-        {
-            item.RootElement.GetProperty("notaDeOrigemNoEnem").GetBoolean().Should().BeTrue(
-                "o PUT não carrega a origem da nota, e o campo enviado é ignorado");
-        }
+        await ConferirOrigemDoEnemMantida(client, id);
+        await ConferirRecusaSemPontuacao(await EnviarPutAdmin(client, id, Corpo([.. corpoDoTipo, ("admitePontuacao", false)])));
+    }
 
-        HttpResponseMessage semPontuacao = await EnviarPutAdmin(client, id, new
-        {
-            id,
-            nome,
-            descricao,
-            conceitosAdmitidos = Array.Empty<string>(),
-            admitePontuacao = false,
-            admiteEliminacao = true,
-        });
+    private static async Task ConferirOrigemDoEnemMantida(HttpClient client, Guid id)
+    {
+        using JsonDocument item = await ObterTipo(client, id);
+        item.RootElement.GetProperty("notaDeOrigemNoEnem").GetBoolean().Should().BeTrue(
+            "o PUT não carrega a origem da nota, e o campo enviado é ignorado");
+    }
+
+    private static async Task ConferirRecusaSemPontuacao(HttpResponseMessage semPontuacao)
+    {
         semPontuacao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         using JsonDocument problema = JsonDocument.Parse(await semPontuacao.Content.ReadAsStringAsync());
         problema.RootElement.GetProperty("code").GetString()
@@ -398,6 +364,29 @@ public sealed class TipoEtapaEndpointTests
         obter.StatusCode.Should().Be(HttpStatusCode.OK);
         return JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
     }
+
+    // Corpo válido de escrita; cada cenário troca só o que o interessa.
+    private static Dictionary<string, object?> Corpo(params (string Campo, object? Valor)[] trocas)
+    {
+        Dictionary<string, object?> corpo = CorpoPadrao();
+        foreach ((string campo, object? valor) in trocas)
+        {
+            corpo[campo] = valor;
+        }
+
+        return corpo;
+    }
+
+    private static Dictionary<string, object?> CorpoPadrao() => new(StringComparer.Ordinal)
+    {
+        ["codigo"] = CodigoUnico(),
+        ["nome"] = "Nome válido",
+        ["descricao"] = "Descrição válida",
+        ["conceitosAdmitidos"] = Array.Empty<string>(),
+        ["admitePontuacao"] = true,
+        ["admiteEliminacao"] = true,
+        ["exigeCorrecaoIndependente"] = false,
+    };
 
     private static string CodigoUnico() => $"PS_{Guid.NewGuid().ToString("N")[..12].ToUpperInvariant()}";
 

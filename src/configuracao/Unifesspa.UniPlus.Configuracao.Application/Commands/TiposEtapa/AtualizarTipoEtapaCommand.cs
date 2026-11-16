@@ -13,5 +13,6 @@ public sealed record AtualizarTipoEtapaCommand(
     string? Nome,
     bool? AdmitePontuacao,
     bool? AdmiteEliminacao,
+    bool? ExigeCorrecaoIndependente,
     IReadOnlyList<string>? ConceitosAdmitidos,
     string? Descricao = null) : ICommand<Result>;

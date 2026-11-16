@@ -2872,6 +2872,16 @@
       "titulo": "Tipo de etapa alterado concorrentemente"
     },
     {
+      "codigo": "uniplus.configuracao.tipo_etapa.correcao_independente_com_nota_de_origem_no_enem",
+      "status": 422,
+      "titulo": "Tipo de etapa com nota de origem no ENEM não admite correção independente"
+    },
+    {
+      "codigo": "uniplus.configuracao.tipo_etapa.correcao_independente_sem_conceito",
+      "status": 422,
+      "titulo": "Tipo de etapa que exige correção independente deve admitir conceito"
+    },
+    {
       "codigo": "uniplus.configuracao.tipo_etapa.descricao_com_caractere_nulo",
       "status": 422,
       "titulo": "Descrição do tipo de etapa contém U+0000"
@@ -2880,6 +2890,11 @@
       "codigo": "uniplus.configuracao.tipo_etapa.descricao_tamanho",
       "status": 422,
       "titulo": "Tamanho da descrição do tipo de etapa inválido"
+    },
+    {
+      "codigo": "uniplus.configuracao.tipo_etapa.exige_correcao_independente_obrigatorio",
+      "status": 422,
+      "titulo": "Declaração de que o tipo de etapa exige correção independente é obrigatória"
     },
     {
       "codigo": "uniplus.configuracao.tipo_etapa.ja_desativado",

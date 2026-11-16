@@ -10,18 +10,24 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 
 public sealed class CoerenciaDaAvaliacaoDaEtapaTests
 {
+    private static List<FieldError> Validar(
+        bool notaDeOrigemNoEnem, decimal? passoDoLancamento, FormaDeAvaliacao? forma, string? regraConsolidacaoCodigo,
+        bool declaraItens = false, bool declaraEscala = false) =>
+        CoerenciaDaAvaliacaoDaEtapa.Validar(new AvaliacaoParaCoerencia(
+            notaDeOrigemNoEnem, forma, regraConsolidacaoCodigo, passoDoLancamento, declaraItens, declaraEscala));
+
     private static (string? Campo, string Codigo)[] Pares(IEnumerable<FieldError> erros) =>
         [.. erros.Select(static e => (e.Field, e.Error.Code))];
 
     private static List<FieldError> DaEtapaHumana(
         string? regra = null, decimal? passo = null, bool declaraItens = false, bool declaraEscala = false) =>
-        CoerenciaDaAvaliacaoDaEtapa.Validar(
+        Validar(
             notaDeOrigemNoEnem: false, passo, FormaDeAvaliacao.Humana, regra, declaraItens, declaraEscala);
 
     [Fact(DisplayName = "A etapa de nota do ENEM recusa a forma de avaliação declarada")]
     public void Validar_EtapaDoEnemComForma_RecusaAForma()
     {
-        List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
+        List<FieldError> erros = Validar(
             notaDeOrigemNoEnem: true, passoDoLancamento: null, FormaDeAvaliacao.Objetiva, regraConsolidacaoCodigo: null);
 
         Pares(erros).Should().Equal(("formaDeAvaliacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem));
@@ -30,7 +36,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
     [Fact(DisplayName = "A etapa de nota do ENEM recusa a regra de consolidação declarada")]
     public void Validar_EtapaDoEnemComRegra_RecusaARegra()
     {
-        List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
+        List<FieldError> erros = Validar(
             notaDeOrigemNoEnem: true, passoDoLancamento: null, forma: null, RegraConsolidacaoCodigo.AvaliacaoUnica);
 
         Pares(erros).Should().Equal(("regraConsolidacao", EtapaProcessoErrorCodes.AvaliacaoNaEtapaDoEnem));
@@ -39,7 +45,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
     [Fact(DisplayName = "A etapa de nota do ENEM recusa itens de avaliação")]
     public void Validar_EtapaDoEnemComItens_RecusaOsItens()
     {
-        List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
+        List<FieldError> erros = Validar(
             notaDeOrigemNoEnem: true, passoDoLancamento: null, forma: null, regraConsolidacaoCodigo: null, declaraItens: true);
 
         Pares(erros).Should().Equal(("itensDeAvaliacao", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem));
@@ -48,7 +54,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
     [Fact(DisplayName = "A etapa de nota do ENEM recusa a escala de atendimento")]
     public void Validar_EtapaDoEnemComEscala_RecusaAEscala()
     {
-        List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
+        List<FieldError> erros = Validar(
             notaDeOrigemNoEnem: true, passoDoLancamento: null, forma: null, regraConsolidacaoCodigo: null, declaraEscala: true);
 
         Pares(erros).Should().Equal(("escalaDeAtendimento", EtapaProcessoErrorCodes.ItensNaEtapaDoEnem));
@@ -57,7 +63,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
     [Fact(DisplayName = "A etapa de nota do ENEM não repete as demais recusas de avaliação")]
     public void Validar_EtapaDoEnem_NaoRepeteAsDemaisRecusas()
     {
-        List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
+        List<FieldError> erros = Validar(
             notaDeOrigemNoEnem: true,
             passoDoLancamento: 0.5m,
             FormaDeAvaliacao.Objetiva,
@@ -76,7 +82,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
     [InlineData(null)]
     public void Validar_RegraForaDaFormaHumana_Recusa(FormaDeAvaliacao? forma)
     {
-        List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
+        List<FieldError> erros = Validar(
             notaDeOrigemNoEnem: false, passoDoLancamento: null, forma, RegraConsolidacaoCodigo.AvaliacaoUnica);
 
         Pares(erros).Should().Equal(("regraConsolidacao", EtapaProcessoErrorCodes.RegraDeConsolidacaoForaDaFormaHumana));
@@ -100,7 +106,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
     [Fact(DisplayName = "O passo do lançamento não se aplica à forma objetiva")]
     public void Validar_PassoNaFormaObjetiva_Recusa()
     {
-        List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
+        List<FieldError> erros = Validar(
             notaDeOrigemNoEnem: false, passoDoLancamento: 0.5m, FormaDeAvaliacao.Objetiva, regraConsolidacaoCodigo: null);
 
         Pares(erros).Should().Equal(("passoDoLancamento", EtapaProcessoErrorCodes.PassoNaFormaObjetiva));
@@ -115,7 +121,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
     [Fact(DisplayName = "A escala de atendimento não se aplica à forma objetiva")]
     public void Validar_EscalaNaFormaObjetiva_Recusa()
     {
-        List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
+        List<FieldError> erros = Validar(
             notaDeOrigemNoEnem: false, passoDoLancamento: null, FormaDeAvaliacao.Objetiva, regraConsolidacaoCodigo: null,
             declaraItens: true, declaraEscala: true);
 
@@ -133,7 +139,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
     [Fact(DisplayName = "As recusas da escala de atendimento acumulam: sem itens, forma objetiva e passo, nesta ordem")]
     public void Validar_EscalaComTodasAsContradicoes_AcumulaNaOrdem()
     {
-        List<FieldError> erros = CoerenciaDaAvaliacaoDaEtapa.Validar(
+        List<FieldError> erros = Validar(
             notaDeOrigemNoEnem: false, passoDoLancamento: 0.5m, FormaDeAvaliacao.Objetiva, regraConsolidacaoCodigo: null,
             declaraItens: false, declaraEscala: true);
 
@@ -147,7 +153,7 @@ public sealed class CoerenciaDaAvaliacaoDaEtapaTests
     [Fact(DisplayName = "A etapa sem forma declarada e sem nada a coerir não é recusada: a falta é do gate de publicação")]
     public void Validar_EtapaSemNadaDeclarado_NaoRecusa()
     {
-        CoerenciaDaAvaliacaoDaEtapa.Validar(
+        Validar(
             notaDeOrigemNoEnem: false, passoDoLancamento: null, forma: null, regraConsolidacaoCodigo: null).Should().BeEmpty();
     }
 }

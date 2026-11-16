@@ -11,7 +11,7 @@ internal static class TipoEtapaDeTeste
     /// </summary>
     public static TipoEtapa NotaDoEnem()
     {
-        TipoEtapa tipo = TipoEtapa.Criar("NOTA_ENEM", "Nota do ENEM", null, true, true).Value!;
+        TipoEtapa tipo = TipoEtapa.Criar("NOTA_ENEM", "Nota do ENEM", null, true, true, false).Value!;
         typeof(TipoEtapa).GetProperty(nameof(TipoEtapa.NotaDeOrigemNoEnem))!.SetValue(tipo, true);
         return tipo;
     }

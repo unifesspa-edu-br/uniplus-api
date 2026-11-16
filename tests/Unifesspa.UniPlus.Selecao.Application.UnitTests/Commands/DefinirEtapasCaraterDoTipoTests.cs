@@ -43,7 +43,7 @@ public sealed class DefinirEtapasCaraterDoTipoTests
         reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
             .Returns(new TipoEtapaView(
                 TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", null,
-                AdmitePontuacao: false, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false, ConceitosAdmitidos: []));
+                AdmitePontuacao: false, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false, ExigeCorrecaoIndependente: false, ConceitosAdmitidos: []));
         return reader;
     }
 
@@ -102,7 +102,7 @@ public sealed class DefinirEtapasCaraterDoTipoTests
         // O cadastro, hoje: admite pontuação — e foi renomeado depois do congelamento.
         ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
         reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva (renomeada)", null, AdmitePontuacao: true, AdmiteEliminacao: false, NotaDeOrigemNoEnem: false, ConceitosAdmitidos: []));
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva (renomeada)", null, AdmitePontuacao: true, AdmiteEliminacao: false, NotaDeOrigemNoEnem: false, ExigeCorrecaoIndependente: false, ConceitosAdmitidos: []));
 
         DefinirEtapasCommand command = new(
             processo.Id,
@@ -135,9 +135,9 @@ public sealed class DefinirEtapasCaraterDoTipoTests
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
         reader.ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "REDACAO", "Redação", null, AdmitePontuacao: true, AdmiteEliminacao: false, NotaDeOrigemNoEnem: false, ConceitosAdmitidos: []));
+            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "REDACAO", "Redação", null, AdmitePontuacao: true, AdmiteEliminacao: false, NotaDeOrigemNoEnem: false, ExigeCorrecaoIndependente: false, ConceitosAdmitidos: []));
         reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", null, AdmitePontuacao: false, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false, ConceitosAdmitidos: []));
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva", null, AdmitePontuacao: false, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false, ExigeCorrecaoIndependente: false, ConceitosAdmitidos: []));
 
         DefinirEtapasCommand command = new(
             processo.Id,

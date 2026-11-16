@@ -126,7 +126,7 @@ public sealed class DefinirEtapasVinculoComTipoDeEtapaTests
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         ITipoAtoPublicadoReader tipoAtoPublicadoReader = Substitute.For<ITipoAtoPublicadoReader>();
         tipoEtapaReader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva (renomeada)", null, true, true, false, []));
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "PROVA_OBJETIVA", "Prova Objetiva (renomeada)", null, true, true, false, false, []));
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         DefinirEtapasCommand command = new(

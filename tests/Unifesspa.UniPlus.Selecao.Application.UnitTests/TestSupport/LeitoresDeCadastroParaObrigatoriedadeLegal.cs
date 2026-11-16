@@ -25,7 +25,7 @@ internal static class LeitoresDeCadastroParaObrigatoriedadeLegal
             new ReferenciasDoPredicado(tipoEtapaReader, modalidadeReader, tipoDocumentoReader, tipoDeficienciaReader, regraCatalogoReader));
 
     internal static ITipoEtapaReader TipoEtapaReaderAtivo() =>
-        TipoEtapaReaderComResposta(new TipoEtapaView(Guid.CreateVersion7(), TipoEtapaCodigo, "Prova Objetiva", null, true, true, false, []));
+        TipoEtapaReaderComResposta(new TipoEtapaView(Guid.CreateVersion7(), TipoEtapaCodigo, "Prova Objetiva", null, true, true, false, false, []));
 
     /// <summary>Leitor que dá por viva qualquer modalidade consultada — o caso comum dos testes de outro assunto.</summary>
     internal static IModalidadeReader ModalidadeReaderViva()

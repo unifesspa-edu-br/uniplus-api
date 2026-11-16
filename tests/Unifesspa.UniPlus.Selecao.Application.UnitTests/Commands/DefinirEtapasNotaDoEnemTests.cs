@@ -28,7 +28,7 @@ public sealed class DefinirEtapasNotaDoEnemTests
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
         reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: true, ConceitosAdmitidos: []));
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: true, ExigeCorrecaoIndependente: false, ConceitosAdmitidos: []));
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         regraCatalogoReader.ObterAsync(Arg.Any<string>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
             .Returns(RegraCatalogo.Criar(
@@ -67,9 +67,9 @@ public sealed class DefinirEtapasNotaDoEnemTests
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
         reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: true, ConceitosAdmitidos: []));
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: true, ExigeCorrecaoIndependente: false, ConceitosAdmitidos: []));
         reader.ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "REDACAO", "Redação", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false, ConceitosAdmitidos: []));
+            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "REDACAO", "Redação", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false, ExigeCorrecaoIndependente: false, ConceitosAdmitidos: []));
 
         DefinirEtapasCommand command = new(
             processo.Id,
@@ -105,7 +105,7 @@ public sealed class DefinirEtapasNotaDoEnemTests
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
         ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
         reader.ObterAtivoPorIdAsync(TipoProvaObjetivaOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false, ConceitosAdmitidos: []));
+            .Returns(new TipoEtapaView(TipoProvaObjetivaOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: false, ExigeCorrecaoIndependente: false, ConceitosAdmitidos: []));
 
         DefinirEtapasCommand command = new(
             processo.Id,

@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.UnitTests.TestSupport;
 /// <summary>O conjunto de tipos de conceito com que as etapas de um tipo podem ser avaliadas.</summary>
 public sealed class TipoEtapaConceitosAdmitidosTests
 {
-    private static TipoEtapa Tipo() => TipoEtapa.Criar("PROVA", "Prova", null, true, true).Value!;
+    private static TipoEtapa Tipo() => TipoEtapa.Criar("PROVA", "Prova", null, true, true, false).Value!;
 
     private static TipoConceito Conceito(string codigo) =>
         TipoConceito.Criar(codigo, DefinicoesDeTipoConceito.Numerica()).Value!;

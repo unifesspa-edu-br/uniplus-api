@@ -12,6 +12,7 @@ public sealed record TipoEtapaDto(
     bool AdmitePontuacao,
     bool AdmiteEliminacao,
     bool NotaDeOrigemNoEnem,
+    bool ExigeCorrecaoIndependente,
     IReadOnlyList<ConceitoAdmitidoDto> ConceitosAdmitidos,
     DateTimeOffset CriadoEm)
 {

@@ -81,13 +81,13 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
     }
 
     private static List<FieldError> ValidarAvaliacao(EtapaConferida etapa, FormaDeAvaliacao? forma, string? regraConsolidacaoCodigo) =>
-        CoerenciaDaAvaliacaoDaEtapa.Validar(
+        CoerenciaDaAvaliacaoDaEtapa.Validar(new AvaliacaoParaCoerencia(
             etapa.NotaDeOrigemNoEnem,
-            etapa.Declarada.PassoDoLancamento,
             forma,
             regraConsolidacaoCodigo,
-            declaraItens: etapa.Declarada.ItensDeAvaliacao is { Count: > 0 },
-            declaraEscala: etapa.Declarada.EscalaDeAtendimento is { Count: > 0 });
+            etapa.Declarada.PassoDoLancamento,
+            DeclaraItens: etapa.Declarada.ItensDeAvaliacao is { Count: > 0 },
+            DeclaraEscala: etapa.Declarada.EscalaDeAtendimento is { Count: > 0 }));
 
     // A referência da regra sai do catálogo; a etapa sem regra declarada fica sem consolidação.
     private async Task<(EtapaConferida Etapa, IReadOnlyList<FieldError> Recusas)> ComConsolidacaoAsync(

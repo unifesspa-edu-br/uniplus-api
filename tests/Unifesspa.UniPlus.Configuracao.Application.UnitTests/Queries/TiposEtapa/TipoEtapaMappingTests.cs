@@ -11,7 +11,7 @@ public sealed class TipoEtapaMappingTests
 {
     private static TipoEtapa TipoComConceitos(params TipoConceito[] conceitos)
     {
-        TipoEtapa tipo = TipoEtapa.Criar("PROVA", "Prova", null, true, true).Value!;
+        TipoEtapa tipo = TipoEtapa.Criar("PROVA", "Prova", null, true, true, false).Value!;
         tipo.SubstituirConceitosAdmitidos(conceitos);
         return tipo;
     }

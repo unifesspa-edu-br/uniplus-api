@@ -19,7 +19,7 @@ public sealed class CriarTipoEtapaCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static CriarTipoEtapaCommand ComandoValido() =>
-        new("TIPO_ETAPA_TESTE", "Tipo de etapa de teste", AdmitePontuacao: true, AdmiteEliminacao: true, ConceitosAdmitidos: []);
+        new("TIPO_ETAPA_TESTE", "Tipo de etapa de teste", AdmitePontuacao: true, AdmiteEliminacao: true, ExigeCorrecaoIndependente: false, ConceitosAdmitidos: []);
 
     private Task<Result<Guid>> Criar(CriarTipoEtapaCommand comando) =>
         CriarTipoEtapaCommandHandler.Handle(comando, _repository, _conceitos, _unitOfWork, CancellationToken.None);
@@ -101,6 +101,39 @@ public sealed class CriarTipoEtapaCommandHandlerTests
         resultado.IsSuccess.Should().BeTrue();
         await _conceitos.DidNotReceive().ListarPorCodigosAsync(
             Arg.Any<IReadOnlyCollection<string>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Exigir correção independente sem admitir conceito é recusado no campo dos conceitos, sem persistir")]
+    public async Task Handle_CorrecaoIndependenteSemConceito_RecusaSemPersistir()
+    {
+        Result<Guid> resultado = await Criar(ComandoValido() with { ExigeCorrecaoIndependente = true });
+
+        resultado.Errors.Select(erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("conceitosAdmitidos", TipoEtapaErrorCodes.CorrecaoIndependenteSemConceito));
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Exigir correção independente admitindo um conceito cria o tipo com o sinalizador ligado")]
+    public async Task Handle_CorrecaoIndependenteComConceito_CriaComOSinalizador()
+    {
+        TipoConceito nota = TiposConceitoDeTeste.Numerico();
+        CatalogoTem(nota);
+        TipoEtapa? gravado = null;
+        await _repository.AdicionarAsync(Arg.Do<TipoEtapa>(tipo => gravado = tipo), Arg.Any<CancellationToken>());
+
+        Result<Guid> resultado = await Criar(ComandoValido() with { ExigeCorrecaoIndependente = true, ConceitosAdmitidos = [nota.Codigo] });
+
+        resultado.IsSuccess.Should().BeTrue();
+        gravado!.ExigeCorrecaoIndependente.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Sinalizador de correção independente ausente é recusado como campo obrigatório")]
+    public async Task Handle_CorrecaoIndependenteAusente_Recusa()
+    {
+        Result<Guid> resultado = await Criar(ComandoValido() with { ExigeCorrecaoIndependente = null });
+
+        resultado.Errors.Select(erro => (erro.Field, erro.Error.Code)).Should().Equal(
+            ("exigeCorrecaoIndependente", TipoEtapaErrorCodes.ExigeCorrecaoIndependenteObrigatorio));
     }
 
     [Fact(DisplayName = "Lista ausente é recusada como campo obrigatório, sem consultar o catálogo nem persistir")]

@@ -16284,6 +16284,7 @@
           "nome",
           "admitePontuacao",
           "admiteEliminacao",
+          "exigeCorrecaoIndependente",
           "conceitosAdmitidos"
         ],
         "type": "object",
@@ -16305,6 +16306,12 @@
             ]
           },
           "admiteEliminacao": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "exigeCorrecaoIndependente": {
             "type": [
               "null",
               "boolean"
@@ -18216,6 +18223,7 @@
           "nome",
           "admitePontuacao",
           "admiteEliminacao",
+          "exigeCorrecaoIndependente",
           "conceitosAdmitidos"
         ],
         "type": "object",
@@ -18239,6 +18247,12 @@
             ]
           },
           "admiteEliminacao": {
+            "type": [
+              "null",
+              "boolean"
+            ]
+          },
+          "exigeCorrecaoIndependente": {
             "type": [
               "null",
               "boolean"
@@ -22336,6 +22350,7 @@
           "admitePontuacao",
           "admiteEliminacao",
           "notaDeOrigemNoEnem",
+          "exigeCorrecaoIndependente",
           "conceitosAdmitidos",
           "criadoEm"
         ],
@@ -22367,6 +22382,9 @@
             "type": "boolean"
           },
           "notaDeOrigemNoEnem": {
+            "type": "boolean"
+          },
+          "exigeCorrecaoIndependente": {
             "type": "boolean"
           },
           "conceitosAdmitidos": {

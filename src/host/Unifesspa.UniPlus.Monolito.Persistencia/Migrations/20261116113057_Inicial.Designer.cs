@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261116074002_Inicial")]
+    [Migration("20261116113057_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -9143,6 +9143,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("character varying(1000)")
                         .HasColumnName("descricao");
 
+                    b.Property<bool>("ExigeCorrecaoIndependente")
+                        .HasColumnType("boolean")
+                        .HasColumnName("exige_correcao_independente");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -9182,6 +9186,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("tipos_etapa", "configuracao", t =>
                         {
                             t.HasCheckConstraint("ck_tipos_etapa_carater_admitido", "admite_pontuacao OR admite_eliminacao");
+
+                            t.HasCheckConstraint("ck_tipos_etapa_correcao_independente_sem_nota_do_enem", "NOT (exige_correcao_independente AND nota_de_origem_no_enem)");
 
                             t.HasCheckConstraint("ck_tipos_etapa_nota_de_origem_no_enem_admite_pontuacao", "NOT nota_de_origem_no_enem OR admite_pontuacao");
                         });

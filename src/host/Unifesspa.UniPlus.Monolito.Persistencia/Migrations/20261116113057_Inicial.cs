@@ -1222,6 +1222,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     admite_pontuacao = table.Column<bool>(type: "boolean", nullable: false),
                     admite_eliminacao = table.Column<bool>(type: "boolean", nullable: false),
                     nota_de_origem_no_enem = table.Column<bool>(type: "boolean", nullable: false, comment: "Nota das etapas deste tipo vem do ENEM; definido só pela carga do cadastro, nunca pela API."),
+                    exige_correcao_independente = table.Column<bool>(type: "boolean", nullable: false),
                     created_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     updated_by = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
                     xmin = table.Column<uint>(type: "xid", rowVersion: true, nullable: false),
@@ -1232,6 +1233,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     table.PrimaryKey("pk_tipos_etapa", x => x.id);
                     table.CheckConstraint("ck_tipos_etapa_carater_admitido", "admite_pontuacao OR admite_eliminacao");
+                    table.CheckConstraint("ck_tipos_etapa_correcao_independente_sem_nota_do_enem", "NOT (exige_correcao_independente AND nota_de_origem_no_enem)");
                     table.CheckConstraint("ck_tipos_etapa_nota_de_origem_no_enem_admite_pontuacao", "NOT nota_de_origem_no_enem OR admite_pontuacao");
                 });
 

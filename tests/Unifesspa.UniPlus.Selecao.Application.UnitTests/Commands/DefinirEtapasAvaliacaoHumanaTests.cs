@@ -201,7 +201,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         ITipoEtapaReader reader = Substitute.For<ITipoEtapaReader>();
         reader.ObterAtivoPorIdAsync(TipoRedacaoOrigemId, Arg.Any<CancellationToken>())
-            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: true, ConceitosAdmitidos: []));
+            .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: true, ExigeCorrecaoIndependente: false, ConceitosAdmitidos: []));
         EtapaProcessoInput etapa = EntrevistaComItens(null, [new(null, "Clareza", 10m)]) with { FormaDeAvaliacao = null };
 
         Result<MutacaoAceita> resultado = await Executar(
