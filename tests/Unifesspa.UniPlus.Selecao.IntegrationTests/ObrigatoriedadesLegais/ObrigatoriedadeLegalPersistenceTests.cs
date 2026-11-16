@@ -91,16 +91,13 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
                 ;
 
             tracked.Atualizar(
-                tipoProcessoCodigo: tracked.TipoProcessoCodigo,
-                categoria: tracked.Categoria,
-                regraCodigo: tracked.RegraCodigo,
-                predicado: tracked.Predicado,
-                descricaoHumana: tracked.DescricaoHumana,
-                baseLegal: "Lei 14.723/2023 art.2º — atualizada",
-                vigenciaInicio: tracked.VigenciaInicio,
-                vigenciaFim: tracked.VigenciaFim,
-                atoNormativoUrl: tracked.AtoNormativoUrl,
-                portariaInternaCodigo: tracked.PortariaInternaCodigo);
+                tracked.TipoProcessoCodigo,
+                tracked.Categoria,
+                tracked.RegraCodigo,
+                tracked.Predicado,
+                new TextoNormativo(tracked.DescricaoHumana, "Lei 14.723/2023 art.2º — atualizada", tracked.AtoNormativoUrl, tracked.PortariaInternaCodigo),
+                tracked.VigenciaInicio,
+                tracked.VigenciaFim);
 
             await ctx.SaveChangesAsync();
         }
@@ -260,11 +257,21 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     {
         ObrigatoriedadeLegal universal = NovaRegraValida("RULESET_UNIVERSAL");
         ObrigatoriedadeLegal psiq = ObrigatoriedadeLegal.Criar(
-            "PSIQ", CategoriaObrigatoriedade.Outros, "RULESET_PSIQ", new ConcorrenciaDuplaObrigatoria(),
-            "PSIQ", "Lei", new DateOnly(2026, 6, 1), new DateOnly(2026, 7, 1)).Value!;
+            "PSIQ",
+            CategoriaObrigatoriedade.Outros,
+            "RULESET_PSIQ",
+            new ConcorrenciaDuplaObrigatoria(),
+            new TextoNormativo("PSIQ", "Lei", null, null),
+            new DateOnly(2026, 6, 1),
+            new DateOnly(2026, 7, 1)).Value!;
         ObrigatoriedadeLegal sisu = ObrigatoriedadeLegal.Criar(
-            "SiSU", CategoriaObrigatoriedade.Outros, "RULESET_SISU", new ConcorrenciaDuplaObrigatoria(),
-            "SiSU", "Lei", new DateOnly(2026, 6, 1), new DateOnly(2026, 7, 1)).Value!;
+            "SiSU",
+            CategoriaObrigatoriedade.Outros,
+            "RULESET_SISU",
+            new ConcorrenciaDuplaObrigatoria(),
+            new TextoNormativo("SiSU", "Lei", null, null),
+            new DateOnly(2026, 6, 1),
+            new DateOnly(2026, 7, 1)).Value!;
 
         await using (UniPlusDbContext context = _fixture.CreateDbContext(AdminA))
         {
@@ -313,11 +320,11 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
 
     private static ObrigatoriedadeLegal NovaRegraValida(string regraCodigo) =>
         ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Etapa,
-            regraCodigo: regraCodigo,
-            predicado: new EtapaObrigatoria("ProvaObjetiva"),
-            descricaoHumana: "Edital deve incluir etapa de Prova Objetiva.",
-            baseLegal: "Lei 12.711/2012 art.1º",
-            vigenciaInicio: new DateOnly(2026, 1, 1)).Value!;
+            ObrigatoriedadeLegal.TipoProcessoUniversal,
+            CategoriaObrigatoriedade.Etapa,
+            regraCodigo,
+            new EtapaObrigatoria("ProvaObjetiva"),
+            new TextoNormativo("Edital deve incluir etapa de Prova Objetiva.", "Lei 12.711/2012 art.1º", null, null),
+            new DateOnly(2026, 1, 1),
+            null).Value!;
 }

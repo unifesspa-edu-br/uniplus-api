@@ -1,126 +1,90 @@
 namespace Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Application.Abstractions.Persistence;
-using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Handler convention-based do <see cref="AtualizarObrigatoriedadeLegalCommand"/>.
-/// Semântica full-replace (ADR-0058 Emenda 1): o caller deve repassar todos os
-/// campos. A regra é cross-cutting por tipo de processo — sem proprietário nem
-/// áreas de interesse.
+/// Handler convention-based do <see cref="AtualizarObrigatoriedadeLegalCommand"/>. Semântica full-replace
+/// (ADR-0058 Emenda 1): o caller repassa todos os campos. Confere os campos antes de buscar a regra, e só muda
+/// a regra rastreada depois de todas as recusas, para que uma recusa não deixe estado alterado no contexto.
 /// </summary>
 public static class AtualizarObrigatoriedadeLegalCommandHandler
 {
     public static async Task<Result> Handle(
         AtualizarObrigatoriedadeLegalCommand command,
         IObrigatoriedadeLegalRepository repository,
-        ITipoProcessoReader tipoProcessoReader,
-        ITipoEtapaReader tipoEtapaReader,
-        IModalidadeReader modalidadeReader,
-        ITipoDocumentoReader tipoDocumentoReader,
-        ITipoDeficienciaReader tipoDeficienciaReader,
-        IRegraCatalogoReader regraCatalogoReader,
+        ConferenciaDaObrigatoriedadeLegal conferencia,
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
-        ArgumentNullException.ThrowIfNull(tipoProcessoReader);
-        ArgumentNullException.ThrowIfNull(tipoEtapaReader);
-        ArgumentNullException.ThrowIfNull(modalidadeReader);
-        ArgumentNullException.ThrowIfNull(tipoDocumentoReader);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(conferencia);
+        Result campos = ConferenciaDaObrigatoriedadeLegal.ConferirCampos(command);
 
-        ObrigatoriedadeLegal? regra = await repository
-            .ObterPorIdAsync(command.Id, cancellationToken)
-            .ConfigureAwait(false);
+        return campos.IsFailure
+            ? campos
+            : await ConferirEAtualizarAsync(command, repository, conferencia, unitOfWork, cancellationToken)
+                .ConfigureAwait(false);
+    }
+
+    private static async Task<Result> ConferirEAtualizarAsync(
+        AtualizarObrigatoriedadeLegalCommand command,
+        IObrigatoriedadeLegalRepository repository,
+        ConferenciaDaObrigatoriedadeLegal conferencia,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        ObrigatoriedadeLegal? regra = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
         if (regra is null)
         {
-            return Result.Failure(new DomainError(
-                "ObrigatoriedadeLegal.NaoEncontrada",
-                $"ObrigatoriedadeLegal {command.Id} não encontrada."));
+            return Result.Failure(RecusasDaObrigatoriedadeLegal.NaoEncontrada(command.Id));
         }
 
-        if (!await CriarObrigatoriedadeLegalCommandHandler
-                .TipoProcessoEhUniversalOuAtivoAsync(command.TipoProcessoCodigo, tipoProcessoReader, cancellationToken)
-                .ConfigureAwait(false))
+        Result<PredicadoObrigatoriedade> predicado = await conferencia
+            .ConferirReferenciasAsync(command, cancellationToken).ConfigureAwait(false);
+
+        return predicado.IsFailure
+            ? Result.Failure(predicado.Error!)
+            : await AtualizarEGravarAsync(command, regra, predicado.Value!, repository, unitOfWork, cancellationToken)
+                .ConfigureAwait(false);
+    }
+
+    private static async Task<Result> AtualizarEGravarAsync(
+        AtualizarObrigatoriedadeLegalCommand command,
+        ObrigatoriedadeLegal regra,
+        PredicadoObrigatoriedade predicado,
+        IObrigatoriedadeLegalRepository repository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        Result unica = await GravacaoDaObrigatoriedadeLegal
+            .ConferirUnicidadeAsync(repository, command.RegraCodigo, command.Id, cancellationToken).ConfigureAwait(false);
+        if (unica.IsFailure)
         {
-            return Result.Failure(CriarObrigatoriedadeLegalCommandHandler.TipoProcessoNaoEncontradoOuInativo(command.TipoProcessoCodigo));
+            return unica;
         }
 
-        Result<PredicadoObrigatoriedade> predicadoResult = await ReferenciasDoPredicado
-            .NormalizarEValidarAsync(command.Predicado, tipoEtapaReader,
-                modalidadeReader,
-                tipoDocumentoReader,
-                tipoDeficienciaReader,
-                regraCatalogoReader,
-                cancellationToken)
-            .ConfigureAwait(false);
-        if (predicadoResult.IsFailure)
-        {
-            return Result.Failure(predicadoResult.Error!);
-        }
-
-        PredicadoObrigatoriedade predicado = predicadoResult.Value!;
-
-        bool duplicado = await repository.ExisteRegraCodigoAtivoAsync(
-            command.RegraCodigo,
-            excluirId: command.Id,
-            cancellationToken).ConfigureAwait(false);
-        if (duplicado)
-        {
-            return Result.Failure(new DomainError(
-                "ObrigatoriedadeLegal.RegraCodigoDuplicada",
-                $"Já existe outra regra ativa com RegraCodigo '{command.RegraCodigo}'."));
-        }
-
-        Result atualizado = regra.Atualizar(
-            tipoProcessoCodigo: command.TipoProcessoCodigo,
-            categoria: command.Categoria,
-            regraCodigo: command.RegraCodigo,
-            predicado: predicado,
-            descricaoHumana: command.DescricaoHumana,
-            baseLegal: command.BaseLegal,
-            vigenciaInicio: command.VigenciaInicio,
-            vigenciaFim: command.VigenciaFim,
-            atoNormativoUrl: command.AtoNormativoUrl,
-            portariaInternaCodigo: command.PortariaInternaCodigo);
-        if (atualizado.IsFailure)
-        {
-            return atualizado;
-        }
-
+        Aplicar(command, regra, predicado);
         repository.Atualizar(regra);
 
-        try
-        {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ConstraintVioladaNaGravacao.NomeDaConstraintViolada(ex) is { } constraint)
-        {
-            // Mesmo tratamento do Criar: race entre o ExisteRegraCodigoAtivoAsync
-            // e o UPDATE (caller troca RegraCodigo para um valor que outra escrita
-            // concorrente acabou de assumir) dispara a constraint do banco.
-            if (ConstraintsDaRegraAtiva.EhConflitoDoCodigoDaRegra(constraint))
-            {
-                return Result.Failure(new DomainError(
-                    "ObrigatoriedadeLegal.RegraCodigoDuplicada",
-                    $"Já existe outra regra ativa com RegraCodigo '{command.RegraCodigo}'."));
-            }
-            if (ConstraintsDaRegraAtiva.EhConflitoDoHashDaRegra(constraint))
-            {
-                return Result.Failure(new DomainError(
-                    "ObrigatoriedadeLegal.HashColisao",
-                    "Já existe regra ativa com o mesmo conteúdo canônico após esta atualização."));
-            }
-            throw;
-        }
-
-        return Result.Success();
+        return await GravacaoDaObrigatoriedadeLegal
+            .SalvarAsync(unitOfWork, command.RegraCodigo, cancellationToken).ConfigureAwait(false);
     }
+
+    // Os campos já passaram pela conferência do domínio, então a atualização não falha.
+    private static void Aplicar(
+        AtualizarObrigatoriedadeLegalCommand command,
+        ObrigatoriedadeLegal regra,
+        PredicadoObrigatoriedade predicado) =>
+        regra.Atualizar(
+            command.TipoProcessoCodigo,
+            command.Categoria,
+            command.RegraCodigo,
+            predicado,
+            command.ComoTextoNormativo(),
+            command.VigenciaInicio,
+            command.VigenciaFim);
 }

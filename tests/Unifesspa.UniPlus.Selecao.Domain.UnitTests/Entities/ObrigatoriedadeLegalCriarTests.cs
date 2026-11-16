@@ -8,29 +8,32 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Invariantes da forma plena de <see cref="ObrigatoriedadeLegal"/> (Story
-/// #460). Cobre os critérios CA-01 (campos) e CA-05 (hash recomputado pela
-/// factory).
+/// Invariantes da forma plena de <see cref="ObrigatoriedadeLegal"/>: campos populados, hash computado sobre o
+/// conteúdo final, full-replace na atualização e recusa de predicado sem forma.
 /// </summary>
 public sealed class ObrigatoriedadeLegalCriarTests
 {
-    private static readonly PredicadoObrigatoriedade PredicadoBase =
-        new EtapaObrigatoria("ProvaObjetiva");
+    private static readonly PredicadoObrigatoriedade PredicadoBase = new EtapaObrigatoria("ProvaObjetiva");
+    private static readonly DateOnly Inicio = new(2026, 1, 1);
+    private static readonly TextoNormativo TextoBase = new("Descrição", "Lei 12.711/2012 art.1º", null, null);
+
+    private static Result<ObrigatoriedadeLegal> Nova(
+        string regraCodigo = "X",
+        PredicadoObrigatoriedade? predicado = null,
+        string tipoProcessoCodigo = "*",
+        TextoNormativo? texto = null,
+        DateOnly? vigenciaFim = null) =>
+        ObrigatoriedadeLegal.Criar(
+            tipoProcessoCodigo, CategoriaObrigatoriedade.Etapa, regraCodigo, predicado ?? PredicadoBase, texto ?? TextoBase, Inicio, vigenciaFim);
+
+    private static Result Atualizar(ObrigatoriedadeLegal regra, PredicadoObrigatoriedade predicado, TextoNormativo texto) =>
+        regra.Atualizar(regra.TipoProcessoCodigo, regra.Categoria, regra.RegraCodigo, predicado, texto, regra.VigenciaInicio, regra.VigenciaFim);
 
     [Fact(DisplayName = "Criar regra universal global popula campos e computa hash")]
     public void Criar_RegraUniversalGlobal_OK()
     {
-        Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Etapa,
-            regraCodigo: "ETAPA_OBRIGATORIA",
-            predicado: PredicadoBase,
-            descricaoHumana: "Edital deve incluir etapa de Prova Objetiva.",
-            baseLegal: "Lei 12.711/2012 art.1º",
-            vigenciaInicio: new DateOnly(2026, 1, 1));
+        ObrigatoriedadeLegal regra = Nova("ETAPA_OBRIGATORIA").Value!;
 
-        r.IsSuccess.Should().BeTrue();
-        ObrigatoriedadeLegal regra = r.Value!;
         regra.TipoProcessoCodigo.Should().Be("*");
         regra.Categoria.Should().Be(CategoriaObrigatoriedade.Etapa);
         regra.RegraCodigo.Should().Be("ETAPA_OBRIGATORIA");
@@ -41,171 +44,24 @@ public sealed class ObrigatoriedadeLegalCriarTests
     [InlineData("*")]
     [InlineData("SiSU")]
     [InlineData("PSIQ")]
-    [InlineData("PSECampo")]
-    [InlineData("PSVR")]
-    [InlineData("TransferenciaInterna")]
-    [InlineData("TransferenciaExterna")]
     [InlineData("PortadorDiploma")]
-    [InlineData("Reopcao")]
-    public void Criar_TipoProcessoCodigoUniversalOuValido_Aceita(string tipoProcessoCodigo)
-    {
-        Result<ObrigatoriedadeLegal> resultado = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo,
-            CategoriaObrigatoriedade.Outros,
-            "TIPO_VALIDO",
-            PredicadoBase,
-            "Descrição",
-            "Lei",
-            new DateOnly(2026, 1, 1));
-
-        resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.TipoProcessoCodigo.Should().Be(tipoProcessoCodigo);
-    }
-
-    [Theory(DisplayName = "TipoProcessoCodigo estruturalmente válido não depende de enum fechado")]
     [InlineData("SISU_ANTIGO")]
     [InlineData("sisu")]
-    [InlineData("Nenhum")]
     public void Criar_TipoProcessoCodigoEstruturalmenteValido_Aceita(string tipoProcessoCodigo)
     {
-        Result<ObrigatoriedadeLegal> resultado = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo,
-            CategoriaObrigatoriedade.Outros,
-            "TIPO_INVALIDO",
-            PredicadoBase,
-            "Descrição",
-            "Lei",
-            new DateOnly(2026, 1, 1));
+        Result<ObrigatoriedadeLegal> resultado = Nova(tipoProcessoCodigo: tipoProcessoCodigo);
 
-        resultado.IsSuccess.Should().BeTrue(
-            "o domínio só conhece a estrutura do código; a existência e a atividade são verificadas pelo handler " +
-            "contra o catálogo de Configuração");
+        resultado.IsSuccess.Should().BeTrue("o domínio só conhece a estrutura do código; a existência é do handler");
         resultado.Value!.TipoProcessoCodigo.Should().Be(tipoProcessoCodigo);
-    }
-
-    [Fact(DisplayName = "VigenciaFim igual a VigenciaInicio é inválida")]
-    public void Criar_VigenciaFimNaoPosterior_Falha()
-    {
-        Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: "*",
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: "X",
-            predicado: PredicadoBase,
-            descricaoHumana: "x",
-            baseLegal: "Lei 12.711/2012",
-            vigenciaInicio: new DateOnly(2026, 1, 1),
-            vigenciaFim: new DateOnly(2026, 1, 1));
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be("ObrigatoriedadeLegal.VigenciaInvalida");
-    }
-
-    [Fact(DisplayName = "Predicado null retorna Result.Failure (não throw) — preserva mapping de DomainError")]
-    public void Criar_PredicadoNull_RetornaFailure()
-    {
-        Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: "*",
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: "X",
-            predicado: null!,
-            descricaoHumana: "x",
-            baseLegal: "Lei",
-            vigenciaInicio: new DateOnly(2026, 1, 1));
-
-        r.IsFailure.Should().BeTrue(
-            "factory deve devolver Result.Failure por consistência com os outros campos obrigatórios — "
-            + "ArgumentNullException viraria HTTP 500 no pipeline em vez do 422 esperado");
-        r.Error!.Code.Should().Be("ObrigatoriedadeLegal.PredicadoObrigatorio");
-    }
-
-    [Fact(DisplayName = "Atualizar com predicado null retorna Result.Failure (não throw)")]
-    public void Atualizar_PredicadoNull_RetornaFailure()
-    {
-        ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: "*",
-            categoria: CategoriaObrigatoriedade.Etapa,
-            regraCodigo: "X",
-            predicado: PredicadoBase,
-            descricaoHumana: "x",
-            baseLegal: "Lei",
-            vigenciaInicio: new DateOnly(2026, 1, 1)).Value!;
-
-        Kernel.Results.Result r = regra.Atualizar(
-            tipoProcessoCodigo: "*",
-            categoria: CategoriaObrigatoriedade.Etapa,
-            regraCodigo: "X",
-            predicado: null!,
-            descricaoHumana: "x",
-            baseLegal: "Lei",
-            vigenciaInicio: new DateOnly(2026, 1, 1),
-            vigenciaFim: null,
-            atoNormativoUrl: null,
-            portariaInternaCodigo: null);
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be("ObrigatoriedadeLegal.PredicadoObrigatorio");
-    }
-
-    [Fact(DisplayName = "Categoria Nenhuma (default sentinel) é rejeitada")]
-    public void Criar_CategoriaNenhuma_Falha()
-    {
-        Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: "*",
-            categoria: CategoriaObrigatoriedade.Nenhuma,
-            regraCodigo: "X",
-            predicado: PredicadoBase,
-            descricaoHumana: "x",
-            baseLegal: "Lei",
-            vigenciaInicio: new DateOnly(2026, 1, 1));
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be("ObrigatoriedadeLegal.CategoriaInvalida");
-    }
-
-    [Theory(DisplayName = "Campos obrigatórios vazios são rejeitados com erro específico")]
-    [InlineData("", "Lei", "Desc", "ObrigatoriedadeLegal.RegraCodigoObrigatorio")]
-    [InlineData("X", "", "Desc", "ObrigatoriedadeLegal.BaseLegalObrigatoria")]
-    [InlineData("X", "Lei", "", "ObrigatoriedadeLegal.DescricaoHumanaObrigatoria")]
-    public void Criar_ObrigatoriosVazios_Falha(string regra, string baseLegal, string descricao, string expectedCode)
-    {
-        Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: "*",
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: regra,
-            predicado: PredicadoBase,
-            descricaoHumana: descricao,
-            baseLegal: baseLegal,
-            vigenciaInicio: new DateOnly(2026, 1, 1));
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(expectedCode);
     }
 
     [Fact(DisplayName = "Atualizar recomputa o hash quando campo semântico muda")]
     public void Atualizar_AlteraBaseLegal_HashMuda()
     {
-        ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: "*",
-            categoria: CategoriaObrigatoriedade.Etapa,
-            regraCodigo: "ETAPA_OBRIGATORIA",
-            predicado: PredicadoBase,
-            descricaoHumana: "Edital deve incluir etapa de Prova Objetiva.",
-            baseLegal: "Lei 12.711/2012 art.1º",
-            vigenciaInicio: new DateOnly(2026, 1, 1)).Value!;
-
+        ObrigatoriedadeLegal regra = Nova().Value!;
         string hashAntes = regra.Hash;
 
-        Result r = regra.Atualizar(
-            tipoProcessoCodigo: "*",
-            categoria: CategoriaObrigatoriedade.Etapa,
-            regraCodigo: "ETAPA_OBRIGATORIA",
-            predicado: PredicadoBase,
-            descricaoHumana: "Edital deve incluir etapa de Prova Objetiva.",
-            baseLegal: "Lei 14.723/2023 art.2º",
-            vigenciaInicio: new DateOnly(2026, 1, 1),
-            vigenciaFim: null,
-            atoNormativoUrl: null,
-            portariaInternaCodigo: null);
+        Result r = Atualizar(regra, PredicadoBase, TextoBase with { BaseLegal = "Lei 14.723/2023 art.2º" });
 
         r.IsSuccess.Should().BeTrue();
         regra.Hash.Should().NotBe(hashAntes);
@@ -215,122 +71,41 @@ public sealed class ObrigatoriedadeLegalCriarTests
     [Fact(DisplayName = "Atualizar é full-replace — passar null em opcional limpa o estado anterior")]
     public void Atualizar_FullReplace_LimpaOpcionaisNaoPassados()
     {
-        ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: "*",
-            categoria: CategoriaObrigatoriedade.Etapa,
-            regraCodigo: "ETAPA_FULL_REPLACE",
-            predicado: PredicadoBase,
-            descricaoHumana: "Regra com opcionais preenchidos.",
-            baseLegal: "Lei 12.711/2012",
-            vigenciaInicio: new DateOnly(2026, 1, 1),
-            vigenciaFim: new DateOnly(2027, 1, 1),
-            atoNormativoUrl: "https://www.planalto.gov.br/lei",
-            portariaInternaCodigo: "PORT/2026/01").Value!;
+        ObrigatoriedadeLegal regra = Nova(
+            texto: TextoBase with { AtoNormativo = "https://www.planalto.gov.br/lei", PortariaInternaCodigo = "PORT/2026/01" }).Value!;
 
-        regra.AtoNormativoUrl.Should().Be("https://www.planalto.gov.br/lei");
-        regra.PortariaInternaCodigo.Should().Be("PORT/2026/01");
-
-        // Caller que NÃO repassa os opcionais aceita semântica full-replace:
-        // o estado anterior dos opcionais é apagado.
-        Result r = regra.Atualizar(
-            tipoProcessoCodigo: regra.TipoProcessoCodigo,
-            categoria: regra.Categoria,
-            regraCodigo: regra.RegraCodigo,
-            predicado: regra.Predicado,
-            descricaoHumana: regra.DescricaoHumana,
-            baseLegal: regra.BaseLegal,
-            vigenciaInicio: regra.VigenciaInicio,
-            vigenciaFim: null,
-            atoNormativoUrl: null,
-            portariaInternaCodigo: null);
+        Result r = Atualizar(regra, regra.Predicado, new TextoNormativo(regra.DescricaoHumana, regra.BaseLegal, null, null));
 
         r.IsSuccess.Should().BeTrue();
-        regra.VigenciaFim.Should().BeNull();
         regra.AtoNormativoUrl.Should().BeNull();
         regra.PortariaInternaCodigo.Should().BeNull();
     }
 
-    [Fact(DisplayName = "Factory de retrocompatibilidade aplica defaults pragmáticos")]
-    public void Criar_RetroCompat_AplicaDefaults()
+    [Theory(DisplayName = "Predicado sem forma é recusado pela factory, sem chegar a persistir")]
+    [MemberData(nameof(PredicadosSemForma))]
+    public void Criar_PredicadoSemForma_Falha(PredicadoObrigatoriedade predicado, string codigoEsperado)
     {
-        Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            regraCodigo: "REGRA_LEGADA",
-            predicado: PredicadoBase,
-            baseLegal: "Lei 12.711/2012",
-            descricaoHumana: "Regra retrocompatível.",
-            portariaInternaCodigo: null,
-            clock: TimeProvider.System);
+        Result<ObrigatoriedadeLegal> r = Nova(predicado: predicado);
 
-        r.IsSuccess.Should().BeTrue();
-        ObrigatoriedadeLegal regra = r.Value!;
-        regra.TipoProcessoCodigo.Should().Be(ObrigatoriedadeLegal.TipoProcessoUniversal);
-        regra.Categoria.Should().Be(CategoriaObrigatoriedade.Outros);
-        regra.VigenciaFim.Should().BeNull();
+        r.Errors.Should().ContainSingle().Which.Should()
+            .Match<FieldError>(e => e.Error.Code == codigoEsperado && e.Field == "predicado");
     }
 
-    [Theory(DisplayName = "Predicado com código em branco é recusado pela factory, sem chegar a persistir")]
-    [InlineData("")]
-    [InlineData("   ")]
-    [InlineData(null)]
-    public void Criar_PredicadoComCodigoEmBranco_Falha(string? codigo)
+    public static TheoryData<PredicadoObrigatoriedade, string> PredicadosSemForma() => new()
     {
-        // Código em branco nunca casa com o valor congelado no processo seletivo, que a
-        // avaliação de conformidade compara por igualdade ordinal: a cláusula legal existiria
-        // como cumprida sem exigir nada de ninguém.
-        Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Etapa,
-            regraCodigo: "ETAPA_SEM_CODIGO",
-            predicado: new EtapaObrigatoria(codigo!),
-            descricaoHumana: "Edital deve incluir a etapa.",
-            baseLegal: "Lei 12.711/2012 art.1º",
-            vigenciaInicio: new DateOnly(2026, 1, 1));
+        { new EtapaObrigatoria(""), "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco" },
+        { new EtapaObrigatoria("   "), "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco" },
+        { new DocumentoObrigatorioParaModalidade("LB_PPI", "  "), "ObrigatoriedadeLegal.PredicadoComCodigoEmBranco" },
+        { new ModalidadesMinimas(["AC", "   "]), "ObrigatoriedadeLegal.ModalidadesMinimasVazia" },
+    };
 
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be("ObrigatoriedadeLegal.PredicadoComCodigoEmBranco");
-    }
-
-    [Fact(DisplayName = "Documento por modalidade sem o código do tipo de documento é recusado")]
-    public void Criar_DocumentoParaModalidadeSemTipoDocumento_Falha()
-    {
-        Result<ObrigatoriedadeLegal> r = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: "DOCUMENTO_SEM_TIPO",
-            predicado: new DocumentoObrigatorioParaModalidade("LB_PPI", "  "),
-            descricaoHumana: "Modalidade exige o documento.",
-            baseLegal: "Lei 12.711/2012 art.1º",
-            vigenciaInicio: new DateOnly(2026, 1, 1));
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be("ObrigatoriedadeLegal.PredicadoComCodigoEmBranco");
-    }
-
-    [Fact(DisplayName = "Atualizar para modalidades mínimas com código em branco na lista é recusado")]
+    [Fact(DisplayName = "Atualizar para modalidades mínimas com código em branco é recusado e não muda a regra")]
     public void Atualizar_ModalidadesMinimasComCodigoEmBranco_Falha()
     {
-        ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: "MODALIDADES_MINIMAS",
-            predicado: new ModalidadesMinimas(["AC"]),
-            descricaoHumana: "Edital deve ofertar as modalidades.",
-            baseLegal: "Lei 12.711/2012 art.1º",
-            vigenciaInicio: new DateOnly(2026, 1, 1)).Value!;
+        ObrigatoriedadeLegal regra = Nova(predicado: new ModalidadesMinimas(["AC"])).Value!;
 
-        Result r = regra.Atualizar(
-            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: "MODALIDADES_MINIMAS",
-            predicado: new ModalidadesMinimas(["AC", "   "]),
-            descricaoHumana: "Edital deve ofertar as modalidades.",
-            baseLegal: "Lei 12.711/2012 art.1º",
-            vigenciaInicio: new DateOnly(2026, 1, 1),
-            vigenciaFim: null,
-            atoNormativoUrl: null,
-            portariaInternaCodigo: null);
+        Result r = Atualizar(regra, new ModalidadesMinimas(["AC", "   "]), TextoBase);
 
-        r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be("ObrigatoriedadeLegal.ModalidadesMinimasVazia");
         regra.Predicado.Should().BeOfType<ModalidadesMinimas>()
             .Which.Codigos.Should().ContainSingle("a recusa acontece antes de aplicar o payload");

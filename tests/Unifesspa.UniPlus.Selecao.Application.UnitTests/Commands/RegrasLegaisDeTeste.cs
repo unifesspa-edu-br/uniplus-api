@@ -22,13 +22,13 @@ internal static class RegrasLegaisDeTeste
 
     public static ObrigatoriedadeLegal NovaRegra(string regraCodigo, PredicadoObrigatoriedade predicado) =>
         ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: regraCodigo,
-            predicado: predicado,
-            descricaoHumana: "Regra de teste do gate",
-            baseLegal: "Lei de teste",
-            vigenciaInicio: new DateOnly(2020, 1, 1)).Value!;
+            ObrigatoriedadeLegal.TipoProcessoUniversal,
+            CategoriaObrigatoriedade.Outros,
+            regraCodigo,
+            predicado,
+            new TextoNormativo("Regra de teste do gate", "Lei de teste", null, null),
+            new DateOnly(2020, 1, 1),
+            null).Value!;
 
     // PROVA_OBJETIVA é o código do tipo congelado na única etapa do processo conforme: a avaliação compara
     // pelo código do tipo, nunca pelo rótulo editorial da etapa. Exigir OUTRO código reprova; exigir o MESMO

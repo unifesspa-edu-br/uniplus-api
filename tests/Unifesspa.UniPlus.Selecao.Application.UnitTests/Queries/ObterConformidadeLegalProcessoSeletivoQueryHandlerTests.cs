@@ -30,13 +30,13 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
 {
     private static ObrigatoriedadeLegal NovaRegra(string regraCodigo, PredicadoObrigatoriedade predicado) =>
         ObrigatoriedadeLegal.Criar(
-            tipoProcessoCodigo: ObrigatoriedadeLegal.TipoProcessoUniversal,
-            categoria: CategoriaObrigatoriedade.Outros,
-            regraCodigo: regraCodigo,
-            predicado: predicado,
-            descricaoHumana: "Regra de teste",
-            baseLegal: "Lei de teste",
-            vigenciaInicio: new DateOnly(2020, 1, 1)).Value!;
+            ObrigatoriedadeLegal.TipoProcessoUniversal,
+            CategoriaObrigatoriedade.Outros,
+            regraCodigo,
+            predicado,
+            new TextoNormativo("Regra de teste", "Lei de teste", null, null),
+            new DateOnly(2020, 1, 1),
+            null).Value!;
 
     [Fact(DisplayName = "CA-16: o veredicto da consulta pública bate, item a item, com o do avaliador que também alimenta o gate")]
     public async Task Consulta_ComOMesmoProcessoERegras_BateComOAvaliadorDoGate()

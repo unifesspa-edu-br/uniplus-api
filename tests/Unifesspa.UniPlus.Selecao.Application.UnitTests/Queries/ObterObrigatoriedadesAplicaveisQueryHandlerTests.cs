@@ -97,7 +97,7 @@ public sealed class ObterObrigatoriedadesAplicaveisQueryHandlerTests
             CategoriaObrigatoriedade.Outros,
             regraCodigo,
             new ConcorrenciaDuplaObrigatoria(),
-            "Descrição",
-            "Lei",
-            new DateOnly(2026, 1, 1)).Value!;
+            new TextoNormativo("Descrição", "Lei", null, null),
+            new DateOnly(2026, 1, 1),
+            null).Value!;
 }

@@ -19,49 +19,6 @@ internal static class ErrosDoProcessoSeletivo
         new(ProcessoSeletivoErrorCodes.ImpedidoPorInscricaoNoProcesso, new DomainErrorMapping(StatusCodes.Status403Forbidden, "uniplus.auth.impedido_por_inscricao_no_processo", "Impedido de atuar no processo seletivo")),
         // O token não traz o que identifica o solicitante: não houve decisão de acesso a tomar, e a borda responde 401.
         new(ProcessoSeletivoErrorCodes.IdentidadeIncompleta, new DomainErrorMapping(StatusCodes.Status401Unauthorized, "uniplus.selecao.processo_seletivo.identidade_incompleta", "Identidade do solicitante incompleta")),
-        // ObrigatoriedadeLegal forma plena (ADR-0058). Os códigos refletem invariantes da
-        // forma plena (vigência, governance, hash UNIQUE, regra duplicada).
-        new("ObrigatoriedadeLegal.RegraCodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.regra_codigo_obrigatorio", "RegraCodigo obrigatório")),
-        new("ObrigatoriedadeLegal.RegraCodigoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.regra_codigo_invalido", "RegraCodigo inválido")),
-        new("ObrigatoriedadeLegal.RegraCodigoDuplicada", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.obrigatoriedade_legal.regra_codigo_duplicada", "Já existe regra ativa com este RegraCodigo")),
-        new("ObrigatoriedadeLegal.PredicadoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.predicado_obrigatorio", "Predicado obrigatório")),
-        new("ObrigatoriedadeLegal.BaseLegalObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.base_legal_obrigatoria", "BaseLegal obrigatória")),
-        new("ObrigatoriedadeLegal.BaseLegalInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.base_legal_invalida", "BaseLegal inválida")),
-        new("ObrigatoriedadeLegal.DescricaoHumanaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.descricao_humana_obrigatoria", "DescricaoHumana obrigatória")),
-        new("ObrigatoriedadeLegal.DescricaoHumanaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.descricao_humana_invalida", "DescricaoHumana inválida")),
-        new("ObrigatoriedadeLegal.TipoProcessoCodigoObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_obrigatorio", "TipoProcessoCodigo obrigatório")),
-        new("ObrigatoriedadeLegal.TipoProcessoCodigoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_invalido", "TipoProcessoCodigo inválido")),
-        new("ObrigatoriedadeLegal.TipoProcessoCodigoForaDoVocabulario", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_processo_codigo_fora_do_vocabulario", "TipoProcessoCodigo fora do vocabulário")),
-        new("ObrigatoriedadeLegal.CategoriaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.categoria_invalida", "Categoria inválida")),
-        new("ObrigatoriedadeLegal.AtoNormativoUrlInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.ato_normativo_url_invalido", "AtoNormativoUrl inválido")),
-        new("ObrigatoriedadeLegal.PortariaInternaCodigoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.portaria_interna_codigo_invalido", "PortariaInternaCodigo inválido")),
-        new("ObrigatoriedadeLegal.VigenciaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.vigencia_invalida", "Vigência inválida")),
-        new("ObrigatoriedadeLegal.HashColisao", new DomainErrorMapping(StatusCodes.Status409Conflict, "uniplus.selecao.obrigatoriedade_legal.hash_colisao", "Colisão de hash de regra ativa")),
-        new("ObrigatoriedadeLegal.NaoEncontrada", new DomainErrorMapping(StatusCodes.Status404NotFound, "uniplus.selecao.obrigatoriedade_legal.nao_encontrada", "ObrigatoriedadeLegal não encontrada")),
-        new("ObrigatoriedadeLegal.TipoProcessoNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_processo_nao_encontrado_ou_inativo", "Tipo de processo seletivo não encontrado ou não está ativo")),
-        new("ObrigatoriedadeLegal.TipoEtapaNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_etapa_nao_encontrado_ou_inativo", "Tipo de etapa não encontrado ou não está ativo")),
-        new("ObrigatoriedadeLegal.ModalidadeNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.modalidade_nao_encontrada", "Modalidade não encontrada entre as vivas do cadastro")),
-        new("ObrigatoriedadeLegal.TipoDocumentoNaoEncontrado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.tipo_documento_nao_encontrado", "Tipo de documento não encontrado entre os vivos do cadastro")),
-        new("ObrigatoriedadeLegal.AtendimentoDisponivelVazio",
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.selecao.obrigatoriedade_legal.atendimento_disponivel_vazio",
-                "Exigência de atendimento disponível sem nenhum tipo de deficiência")),
-
-        new("ObrigatoriedadeLegal.TipoDeficienciaNaoEncontrada",
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.selecao.obrigatoriedade_legal.tipo_deficiencia_nao_encontrada",
-                "Tipo de deficiência não encontrado entre os vivos do cadastro")),
-
-        new("ObrigatoriedadeLegal.CriterioDesempateNaoEncontrado",
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.selecao.obrigatoriedade_legal.criterio_desempate_nao_encontrado",
-                "Critério de desempate não encontrado no catálogo de regras")),
-
-        new("ObrigatoriedadeLegal.ModalidadesMinimasVazia", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.modalidades_minimas_vazia", "Exigência de modalidades mínimas sem nenhuma modalidade")),
-        new("ObrigatoriedadeLegal.PredicadoComCodigoEmBranco", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.obrigatoriedade_legal.predicado_com_codigo_em_branco", "Predicado da regra legal com código em branco")),
         // Configuração do Processo Seletivo (UNI-REQ-0014/0015).
         // Invariantes do agregado-raiz nesta fatia: etapas e atendimento
         // especializado (ADR-0067). Vagas/bônus/desempate/classificação entram

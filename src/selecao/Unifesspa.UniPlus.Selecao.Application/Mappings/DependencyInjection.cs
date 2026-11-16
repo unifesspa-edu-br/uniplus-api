@@ -9,6 +9,7 @@ using Services.AcessoPelaBanca;
 using Services.InscricaoAdministrativa;
 
 using Unifesspa.UniPlus.Authorization.Projecao;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Permissoes;
 
@@ -75,7 +76,16 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<LeituraDoInstanteDaPublicacao>();
         services.AddScoped<EnderecosDosDocumentosDoAto>();
         AddCongelamentoDaVersao(services);
+        AddConferenciaDaObrigatoriedadeLegal(services);
         AddCopiaAoAcervo(services);
+    }
+
+    // A conferência dos campos e das referências de uma obrigatoriedade legal guarda só as portas por construtor, e
+    // os handlers de criar e atualizar a recebem pronta, sem service location.
+    private static void AddConferenciaDaObrigatoriedadeLegal(IServiceCollection services)
+    {
+        services.AddScoped<ReferenciasDoPredicado>();
+        services.AddScoped<ConferenciaDaObrigatoriedadeLegal>();
     }
 
     // Os serviços que congelam uma versão (publicação, retificação de ato único e fechamento da sessão) guardam só as

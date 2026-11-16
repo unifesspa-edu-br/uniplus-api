@@ -15,22 +15,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public sealed class RelogioObrigatorioTests
 {
-    [Fact(DisplayName = "ObrigatoriedadeLegal.Criar (conveniência) exige TimeProvider não-nulo")]
-    public void ObrigatoriedadeLegalCriar_ClockNulo_Lanca()
-    {
-        PredicadoObrigatoriedade predicado = new EtapaObrigatoria("ProvaObjetiva");
-
-        Action act = () => ObrigatoriedadeLegal.Criar(
-            regraCodigo: "REGRA",
-            predicado: predicado,
-            baseLegal: "Lei 12.711/2012",
-            descricaoHumana: "desc",
-            portariaInternaCodigo: null,
-            clock: null!);
-
-        act.Should().Throw<ArgumentNullException>();
-    }
-
     [Fact(DisplayName = "DocumentoAPublicar.IniciarPendente exige TimeProvider não-nulo")]
     public void DocumentoAPublicarIniciarPendente_ClockNulo_Lanca()
     {

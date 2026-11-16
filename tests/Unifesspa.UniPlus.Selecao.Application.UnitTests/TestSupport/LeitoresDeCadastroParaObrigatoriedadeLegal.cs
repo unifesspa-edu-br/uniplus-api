@@ -5,10 +5,24 @@ using NSubstitute;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
+using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 internal static class LeitoresDeCadastroParaObrigatoriedadeLegal
 {
     internal const string TipoEtapaCodigo = "PROVA_OBJETIVA";
+
+    /// <summary>A conferência de campos e referências montada sobre os leitores dados, como o contêiner a monta.</summary>
+    internal static ConferenciaDaObrigatoriedadeLegal Conferencia(
+        ITipoProcessoReader tipoProcessoReader,
+        ITipoEtapaReader tipoEtapaReader,
+        IModalidadeReader modalidadeReader,
+        ITipoDocumentoReader tipoDocumentoReader,
+        ITipoDeficienciaReader tipoDeficienciaReader,
+        IRegraCatalogoReader regraCatalogoReader) =>
+        new(
+            tipoProcessoReader,
+            new ReferenciasDoPredicado(tipoEtapaReader, modalidadeReader, tipoDocumentoReader, tipoDeficienciaReader, regraCatalogoReader));
 
     internal static ITipoEtapaReader TipoEtapaReaderAtivo() =>
         TipoEtapaReaderComResposta(new TipoEtapaView(Guid.CreateVersion7(), TipoEtapaCodigo, "Prova Objetiva", null, true, true, false, []));

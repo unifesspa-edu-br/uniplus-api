@@ -20,8 +20,7 @@ public static class PredicadoDnfValidador
 {
     /// <summary>
     /// Percorre toda condição de toda cláusula do predicado; a primeira
-    /// falha interrompe a validação (early-return, mesmo estilo de
-    /// <c>ObrigatoriedadeLegalPayloadNormalizer</c>).
+    /// falha interrompe a validação (early-return).
     /// </summary>
     /// <param name="predicado">O predicado a validar.</param>
     /// <param name="vocabularioFechado">O vocabulário fechado de fatos, por código.</param>

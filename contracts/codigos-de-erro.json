@@ -6722,6 +6722,11 @@
       "titulo": "Tipo de processo seletivo não encontrado ou não está ativo"
     },
     {
+      "codigo": "uniplus.selecao.obrigatoriedade_legal.vigencia_inicio_obrigatorio",
+      "status": 422,
+      "titulo": "VigenciaInicio obrigatório"
+    },
+    {
       "codigo": "uniplus.selecao.obrigatoriedade_legal.vigencia_invalida",
       "status": 422,
       "titulo": "Vigência inválida"
