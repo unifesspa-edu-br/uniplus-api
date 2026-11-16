@@ -545,7 +545,7 @@
     },
     "coleta": {
       "title": "Coleta de fatos",
-      "description": "Regras de coleta dos fatos do candidato. Os formulários de coleta entram nesta seção numa versão posterior do formato.",
+      "description": "Regras de coleta dos fatos do candidato.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
