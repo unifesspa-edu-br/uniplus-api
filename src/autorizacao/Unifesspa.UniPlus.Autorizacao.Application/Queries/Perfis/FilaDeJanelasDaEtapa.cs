@@ -48,7 +48,7 @@ public sealed class FilaDeJanelasDaEtapa
 
         return
         [.. janelas
-            .Select(j => ItemDe(j, perfis[j.PerfilId], j.QuantidadeADecidir(etapa, quando.Leitor, [.. concessoes[j.PerfilId]], quando.Agora)))
+            .Select(j => ItemDe(j, perfis[j.PerfilId], PautaDaMigracao.QuantidadeADecidir(j, etapa, quando.Leitor, [.. concessoes[j.PerfilId]], quando.Agora)))
             .OfType<ItemDaFilaDeJanelasDto>()
             .OrderBy(static i => i.Prazo)];
     }

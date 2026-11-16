@@ -23,8 +23,8 @@ public sealed class JanelaDeMigracaoPautaTests
         cenario.Conceder(Diogo);
         JanelaDeMigracao janela = cenario.Abrir();
 
-        janela.QuantidadeADecidir(EtapaDaMigracao.GestaoDeAcessos, Betina, cenario.Concessoes, Agora).Should().Be(2);
-        janela.QuantidadeADecidir(EtapaDaMigracao.GestaoDeAcessos, Diogo, cenario.Concessoes, Agora).Should().Be(1);
+        PautaDaMigracao.QuantidadeADecidir(janela, EtapaDaMigracao.GestaoDeAcessos, Betina, cenario.Concessoes, Agora).Should().Be(2);
+        PautaDaMigracao.QuantidadeADecidir(janela, EtapaDaMigracao.GestaoDeAcessos, Diogo, cenario.Concessoes, Agora).Should().Be(1);
     }
 
     [Fact(DisplayName = "Quem só tem concessão própria ainda encontra o lote por enviar, que retém a dela")]
@@ -34,7 +34,7 @@ public sealed class JanelaDeMigracaoPautaTests
         cenario.Conceder(Diogo);
         JanelaDeMigracao janela = cenario.Abrir();
 
-        janela.QuantidadeADecidir(EtapaDaMigracao.GestaoDeAcessos, Diogo, cenario.Concessoes, Agora).Should().Be(0);
+        PautaDaMigracao.QuantidadeADecidir(janela, EtapaDaMigracao.GestaoDeAcessos, Diogo, cenario.Concessoes, Agora).Should().Be(0);
     }
 
     [Fact(DisplayName = "Depois do lote, a gestão só encontra as retidas que não são dela")]
@@ -47,8 +47,8 @@ public sealed class JanelaDeMigracaoPautaTests
         janela.EnviarLote(CenarioDeMigracao.Lote(false, (deLeandro, ResultadoDaMigracao.Migrar)), CenarioDeMigracao.Autoria(Diogo), cenario.Contexto(Agora))
             .IsSuccess.Should().BeTrue();
 
-        janela.QuantidadeADecidir(EtapaDaMigracao.GestaoDeAcessos, Betina, cenario.Concessoes, Agora).Should().Be(1);
-        janela.QuantidadeADecidir(EtapaDaMigracao.GestaoDeAcessos, Diogo, cenario.Concessoes, Agora).Should().BeNull();
+        PautaDaMigracao.QuantidadeADecidir(janela, EtapaDaMigracao.GestaoDeAcessos, Betina, cenario.Concessoes, Agora).Should().Be(1);
+        PautaDaMigracao.QuantidadeADecidir(janela, EtapaDaMigracao.GestaoDeAcessos, Diogo, cenario.Concessoes, Agora).Should().BeNull();
         janela.LinhaDe(deDiogo.Id)!.Situacao.Should().Be(SituacaoDaMigracao.Retida);
     }
 
@@ -65,10 +65,10 @@ public sealed class JanelaDeMigracaoPautaTests
                 cenario.Contexto(Agora))
             .IsSuccess.Should().BeTrue();
 
-        janela.QuantidadeADecidir(EtapaDaMigracao.ProtecaoDeDados, Marlene, cenario.Concessoes, Agora).Should().Be(1);
-        janela.QuantidadeADecidir(EtapaDaMigracao.ProtecaoDeDados, Betina, cenario.Concessoes, Agora).Should().Be(2);
-        janela.QuantidadeADecidir(EtapaDaMigracao.ProtecaoDeDados, Diogo, cenario.Concessoes, Agora).Should().BeNull();
-        janela.QuantidadeADecidir(EtapaDaMigracao.GestaoDeAcessos, Betina, cenario.Concessoes, Agora).Should().BeNull();
+        PautaDaMigracao.QuantidadeADecidir(janela, EtapaDaMigracao.ProtecaoDeDados, Marlene, cenario.Concessoes, Agora).Should().Be(1);
+        PautaDaMigracao.QuantidadeADecidir(janela, EtapaDaMigracao.ProtecaoDeDados, Betina, cenario.Concessoes, Agora).Should().Be(2);
+        PautaDaMigracao.QuantidadeADecidir(janela, EtapaDaMigracao.ProtecaoDeDados, Diogo, cenario.Concessoes, Agora).Should().BeNull();
+        PautaDaMigracao.QuantidadeADecidir(janela, EtapaDaMigracao.GestaoDeAcessos, Betina, cenario.Concessoes, Agora).Should().BeNull();
     }
 
     [Fact(DisplayName = "A proteção de dados não encontra nada antes do lote da gestão")]
@@ -78,7 +78,7 @@ public sealed class JanelaDeMigracaoPautaTests
         cenario.Conceder(Leandro);
         JanelaDeMigracao janela = cenario.Abrir();
 
-        janela.QuantidadeADecidir(EtapaDaMigracao.ProtecaoDeDados, Marlene, cenario.Concessoes, Agora).Should().BeNull();
+        PautaDaMigracao.QuantidadeADecidir(janela, EtapaDaMigracao.ProtecaoDeDados, Marlene, cenario.Concessoes, Agora).Should().BeNull();
     }
 
     [Fact(DisplayName = "Janela vencida, sem pendência ou encerrada não tem nada para ninguém")]
@@ -89,9 +89,9 @@ public sealed class JanelaDeMigracaoPautaTests
         Concessao vencendo = cenario.Conceder(Diogo, validaAte: CenarioDeMigracao.Abertura.AddHours(2));
         JanelaDeMigracao janela = cenario.Abrir();
 
-        janela.QuantidadeADecidir(EtapaDaMigracao.GestaoDeAcessos, Betina, cenario.Concessoes, janela.Prazo).Should().BeNull();
-        janela.QuantidadeADecidir(EtapaDaMigracao.GestaoDeAcessos, Betina, [], Agora).Should().BeNull();
-        janela.QuantidadeADecidir(EtapaDaMigracao.GestaoDeAcessos, Betina, cenario.Concessoes, CenarioDeMigracao.Abertura.AddHours(3)).Should().Be(1);
+        PautaDaMigracao.QuantidadeADecidir(janela, EtapaDaMigracao.GestaoDeAcessos, Betina, cenario.Concessoes, janela.Prazo).Should().BeNull();
+        PautaDaMigracao.QuantidadeADecidir(janela, EtapaDaMigracao.GestaoDeAcessos, Betina, [], Agora).Should().BeNull();
+        PautaDaMigracao.QuantidadeADecidir(janela, EtapaDaMigracao.GestaoDeAcessos, Betina, cenario.Concessoes, CenarioDeMigracao.Abertura.AddHours(3)).Should().Be(1);
         vencendo.EstaAtiva(CenarioDeMigracao.Abertura.AddHours(3)).Should().BeFalse();
     }
 }

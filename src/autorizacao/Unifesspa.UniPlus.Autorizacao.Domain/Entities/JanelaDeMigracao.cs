@@ -1,8 +1,10 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// A janela de migração de um perfil: abre quando entra em vigor uma versão que acrescenta permissão a um perfil com
@@ -21,7 +23,7 @@ using Unifesspa.UniPlus.Kernel.Domain.Entities;
 /// por ela: quem chama trava o perfil e as concessões e lhe entrega o contexto lido sob as travas.
 /// </para>
 /// </remarks>
-public sealed partial class JanelaDeMigracao : EntityBase
+public sealed class JanelaDeMigracao : EntityBase
 {
     /// <summary>A duração da janela, fixa.</summary>
     public static readonly TimeSpan Duracao = TimeSpan.FromHours(72);
@@ -152,4 +154,216 @@ public sealed partial class JanelaDeMigracao : EntityBase
     internal void Acrescentar(LoteDaMigracao lote) => _lotes.Add(lote);
 
     internal void Acrescentar(DecisaoDaMigracao decisao) => _decisoes.Add(decisao);
+
+    /// <summary>
+    /// O lote da gestão de acessos: decide cada elegível, menos as concessões do próprio gestor, que ficam retidas. O
+    /// envio só vale completo e é atômico: toda recusa sai antes da primeira alteração.
+    /// </summary>
+    public Result EnviarLote(PedidoDoLote pedido, AutoriaDaVersao autoria, ContextoDaMigracao contexto)
+    {
+        ArgumentNullException.ThrowIfNull(pedido);
+        ArgumentNullException.ThrowIfNull(autoria);
+        ArgumentNullException.ThrowIfNull(contexto);
+
+        AutoriaDaVersao quem = ComConcessaoDoPerfil(autoria, contexto);
+        if (ConferenciasDaMigracao.DoLote(this, pedido, quem.Pessoa, contexto) is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
+        List<Concessao> elegiveis = [.. contexto.Concessoes.Where(c => Elegivel(c, contexto.Agora)).OrderBy(static c => c.Id)];
+        LoteDaMigracao lote = LoteDaMigracao.Registrar(
+            this, EtapaDaMigracao.GestaoDeAcessos, quem, pedido.ConfirmouExclusao, elegiveis.Count, contexto.Agora);
+        Acrescentar(lote);
+        AplicarOLote(pedido, elegiveis, lote, new EfeitosDaDecisaoDaMigracao(this, contexto, quem));
+        EncerrarSeConcluida(contexto);
+
+        return Result.Success();
+    }
+
+    /// <summary>A concessão retida, que outra pessoa decide depois do lote; o que o lote decidiu não muda.</summary>
+    public Result DecidirRetida(PedidoDaRetida pedido, AutoriaDaVersao autoria, ContextoDaMigracao contexto)
+    {
+        ArgumentNullException.ThrowIfNull(pedido);
+        ArgumentNullException.ThrowIfNull(autoria);
+        ArgumentNullException.ThrowIfNull(contexto);
+
+        AutoriaDaVersao quem = ComConcessaoDoPerfil(autoria, contexto);
+        if (ConferenciasDaMigracao.DaRetida(this, pedido, quem.Pessoa, contexto) is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
+        new EfeitosDaDecisaoDaMigracao(this, contexto, quem).DaGestao(contexto.Concessao(pedido.ConcessaoId)!, pedido.Decisao!.Value, null);
+        EncerrarSeConcluida(contexto);
+
+        return Result.Success();
+    }
+
+    /// <summary>A etapa da proteção de dados, de uma concessão a várias; migra para a versão-alvo de agora ou revoga na hora.</summary>
+    public Result DecidirEtapaDaProtecao(PedidoDaEtapaDaProtecao pedido, AutoriaDaVersao autoria, ContextoDaMigracao contexto)
+    {
+        ArgumentNullException.ThrowIfNull(pedido);
+        ArgumentNullException.ThrowIfNull(autoria);
+        ArgumentNullException.ThrowIfNull(contexto);
+
+        AutoriaDaVersao quem = ComConcessaoDoPerfil(autoria, contexto);
+        if (ConferenciasDaMigracao.DaEtapaDaProtecao(this, pedido, quem.Pessoa, contexto) is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
+        LoteDaMigracao envio = LoteDaMigracao.Registrar(
+            this, EtapaDaMigracao.ProtecaoDeDados, quem, pedido.ConfirmouExclusao, pedido.Itens.Count, contexto.Agora);
+        Acrescentar(envio);
+        EfeitosDaDecisaoDaMigracao efeitos = new(this, contexto, quem);
+        pedido.Itens.ToList().ForEach(i => efeitos.DaProtecao(contexto.Concessao(i.ConcessaoId)!, i.Decisao!.Value, envio));
+        EncerrarSeConcluida(contexto);
+
+        return Result.Success();
+    }
+
+    // A decisão da gestão, por elegível: as do próprio gestor ficam retidas; o item que já não é elegível é ignorado.
+    private static void AplicarOLote(
+        PedidoDoLote pedido, IReadOnlyList<Concessao> elegiveis, LoteDaMigracao lote, EfeitosDaDecisaoDaMigracao efeitos)
+    {
+        Dictionary<Guid, ResultadoDaMigracao> decisoes = pedido.Itens.ToDictionary(static i => i.ConcessaoId, static i => i.Decisao!.Value);
+
+        foreach (Concessao concessao in elegiveis)
+        {
+            if (decisoes.TryGetValue(concessao.Id, out ResultadoDaMigracao decisao))
+            {
+                efeitos.DaGestao(concessao, decisao, lote);
+            }
+            else
+            {
+                efeitos.Reter(concessao);
+            }
+        }
+    }
+
+    // Ter o perfil não impede o ato, mas a trilha registra: a conferência vale no instante da decisão.
+    private static AutoriaDaVersao ComConcessaoDoPerfil(AutoriaDaVersao autoria, ContextoDaMigracao contexto) =>
+        autoria with { TemConcessao = contexto.TemConcessaoDoPerfil(autoria.Pessoa) };
+
+    /// <summary>
+    /// O que toda operação confere antes de qualquer outra coisa: o prazo vencido materializa o fim da janela, a
+    /// concessão que saiu da lista é reconciliada e a janela sem pendência se encerra. A recusa devolvida vem depois de a
+    /// janela ter mudado, e quem chama precisa gravá-la.
+    /// </summary>
+    public DomainError? ConferirEstado(ContextoDaMigracao contexto)
+    {
+        ArgumentNullException.ThrowIfNull(contexto);
+
+        if (contexto.Agora >= Prazo)
+        {
+            Materializar(contexto, FormaDoEncerramento.Prazo);
+            return MigracaoErros.PrazoEncerrado();
+        }
+
+        Reconciliar(contexto);
+
+        return EncerrarSeConcluida(contexto) ? MigracaoErros.JanelaEncerrada() : null;
+    }
+
+    /// <summary>
+    /// Materializa o fim da janela no corte, que é o menor entre o instante e o prazo: pendência no corte é quem não tinha
+    /// revogação nem vencimento até ali e não tinha situação final. Ela é revogada pelo sistema, no corte, se ainda não
+    /// foi; a linha cuja concessão saiu antes do corte fica fora da lista. Janela já encerrada não muda.
+    /// </summary>
+    public void Materializar(ContextoDaMigracao contexto, FormaDoEncerramento forma, EncerramentoManual? manual = null)
+    {
+        ArgumentNullException.ThrowIfNull(contexto);
+
+        if (Encerrada)
+        {
+            return;
+        }
+
+        DateTimeOffset corte = contexto.Agora < Prazo ? contexto.Agora : Prazo;
+        new FimDaJanelaNoCorte(this, contexto, corte).Encerrar();
+        Encerrar(forma, corte, manual);
+    }
+
+    /// <summary>Leva a fora da lista a linha ainda aberta cuja concessão foi revogada ou venceu.</summary>
+    public void Reconciliar(ContextoDaMigracao contexto)
+    {
+        ArgumentNullException.ThrowIfNull(contexto);
+
+        foreach (MigracaoDaConcessao linha in _migracoes.Where(static m => !m.Situacao.EhFinal()).ToList())
+        {
+            Concessao? concessao = contexto.Concessao(linha.ConcessaoId);
+            if (concessao is null || !concessao.EstaAtiva(contexto.Agora))
+            {
+                RegistrarDoSistema(concessao, linha.ConcessaoId, SituacaoDaMigracao.ForaDaLista, contexto, contexto.Agora);
+            }
+        }
+    }
+
+    /// <summary>Encerra como concluída a janela que não tem mais pendência; devolve se encerrou.</summary>
+    public bool EncerrarSeConcluida(ContextoDaMigracao contexto)
+    {
+        ArgumentNullException.ThrowIfNull(contexto);
+
+        if (Encerrada || Pendencias(contexto.Concessoes, contexto.Agora) > 0)
+        {
+            return false;
+        }
+
+        Encerrar(FormaDoEncerramento.Concluida, contexto.Agora, null);
+
+        return true;
+    }
+
+    /// <summary>
+    /// A gestão de acessos encerra a versão anterior antes do prazo, com motivo e a confirmação de que quem não migrou
+    /// perde o acesso. A condição de a aprovação da versão nova estar concluída vale sempre, porque a janela só abre nela.
+    /// </summary>
+    public Result EncerrarManualmente(EncerramentoManual encerramento, bool confirmouExclusao, ContextoDaMigracao contexto)
+    {
+        ArgumentNullException.ThrowIfNull(encerramento);
+        ArgumentNullException.ThrowIfNull(contexto);
+
+        string? motivo = MotivosDaVersao.Normalizar(encerramento.Motivo);
+        if (RecusaDoEncerramento(motivo, confirmouExclusao) is { } recusa)
+        {
+            return Result.Failure(recusa);
+        }
+
+        Materializar(contexto, FormaDoEncerramento.Manual, encerramento with { Motivo = motivo });
+
+        return Result.Success();
+    }
+
+    private static DomainError? RecusaDoEncerramento(string? motivo, bool confirmouExclusao)
+    {
+        if (motivo is null)
+        {
+            return MigracaoErros.MotivoInvalido(MotivoMaxLength);
+        }
+
+        return confirmouExclusao ? null : MigracaoErros.ExclusaoNaoConfirmada();
+    }
+
+    internal void RegistrarDoSistema(
+        Concessao? concessao, Guid concessaoId, SituacaoDaMigracao situacao, ContextoDaMigracao contexto, DateTimeOffset instante)
+    {
+        ComposicaoDoLote composicao = concessao is null
+            ? new ComposicaoDoLote([], [], false)
+            : contexto.ComposicaoDe(concessao);
+        ResultadoDaMigracao resultado = situacao == SituacaoDaMigracao.ForaDaLista ? ResultadoDaMigracao.ForaDaLista : ResultadoDaMigracao.NaoMigrada;
+
+        Registrar(concessaoId, situacao, composicao.ExigeProtecaoDeDados, instante);
+        Acrescentar(DecisaoDaMigracao.DoSistema(this, concessaoId, resultado, composicao, instante));
+    }
+
+    private void Encerrar(FormaDoEncerramento forma, DateTimeOffset instante, EncerramentoManual? manual)
+    {
+        EncerradaEm = instante;
+        Forma = forma;
+        MotivoDoEncerramento = manual?.Motivo;
+        EncerradaPorEmissor = manual?.Autoria.Pessoa.Emissor;
+        EncerradaPorContaId = manual?.Autoria.Pessoa.ContaId;
+        EncerradaPorNome = manual?.Autoria.Pessoa.Nome;
+    }
 }
