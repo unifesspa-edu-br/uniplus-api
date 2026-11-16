@@ -13,7 +13,11 @@ internal static class GravacaoDaInstalacao
 {
     private const string PendenciaUnicaConstraint = "ux_instalacoes_executor_pendente";
 
-    /// <summary>Grava; nula quando gravou, ou a recusa da violação reconhecida, com o rastreamento descartado.</summary>
+    /// <summary>
+    /// Grava; nula quando gravou, ou a recusa da violação reconhecida, com o rastreamento descartado. A concessão duplicada diz
+    /// que os gestores já estão instalados, ou que a origem já foi processada; a pendência duplicada, que duas iniciações do
+    /// mesmo executor correram juntas e a que perdeu recomeça.
+    /// </summary>
     public static async Task<DomainError?> GravarAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         try
@@ -24,9 +28,6 @@ internal static class GravacaoDaInstalacao
         catch (Exception ex) when (EhViolacaoReconhecida(ex))
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-
-            // A concessão duplicada diz que os gestores já estão instalados, ou que a origem já foi processada; a pendência
-            // duplicada, que duas iniciações do mesmo executor correram juntas e a que perdeu recomeça.
             return ConcessaoViolacoes.EhConcessaoDuplicada(ex)
                 ? InstalacaoHandlerErros.JaHaGestorAoIniciar()
                 : InstalacaoHandlerErros.ConflitoDeConcorrencia();

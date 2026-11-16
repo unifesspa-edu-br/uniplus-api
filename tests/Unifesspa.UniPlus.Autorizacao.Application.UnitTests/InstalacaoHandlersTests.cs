@@ -122,11 +122,8 @@ public sealed class InstalacaoHandlersTests
         IdentidadeInformada[] gestores, RepositorioComPendencia instalacoes, UnidadeDeTrabalho unidade) =>
         IniciarInstalacaoCommandHandler.Handle(
             new IniciarInstalacaoCommand(gestores, "456", 2048),
-            instalacoes,
-            new ConcessoesDaInstalacao(gestoresAtivos: 0, travas: []),
-            new UrlFixa(),
-            new DominiosDeTeste(),
-            unidade,
+            new ConferenciaDaNovaInstalacao(new ConcessoesDaInstalacao(gestoresAtivos: 0, travas: []), new DominiosDeTeste()),
+            new GravacaoDaNovaInstalacao(instalacoes, new UrlFixa(), unidade),
             new Usuario(Executor),
             TimeProvider.System,
             CancellationToken.None);
