@@ -23,7 +23,13 @@ public static class CaracteresInvisiveis
     /// O texto tem algum caractere invisível, ou um surrogate sem par. Este último não é
     /// caractere nenhum, e a normalização Unicode recusaria o texto com exceção.
     /// </summary>
-    public static bool Contem(string texto)
+    public static bool Contem(string texto) => Contem(texto, permitidos: []);
+
+    /// <summary>
+    /// Como <see cref="Contem(string)"/>, mas deixando passar os caracteres de
+    /// <paramref name="permitidos"/>: a quebra de linha e a tabulação de um texto de várias linhas.
+    /// </summary>
+    public static bool Contem(string texto, ReadOnlySpan<char> permitidos)
     {
         ArgumentNullException.ThrowIfNull(texto);
 
@@ -31,7 +37,7 @@ public static class CaracteresInvisiveis
         while (!resto.IsEmpty)
         {
             if (Rune.DecodeFromUtf16(resto, out Rune caractere, out int lidos) != OperationStatus.Done
-                || EhInvisivel(Rune.GetUnicodeCategory(caractere)))
+                || (EhInvisivel(Rune.GetUnicodeCategory(caractere)) && !permitidos.Contains(resto[0])))
             {
                 return true;
             }
