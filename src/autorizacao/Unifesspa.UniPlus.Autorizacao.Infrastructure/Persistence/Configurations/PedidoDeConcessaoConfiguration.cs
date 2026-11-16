@@ -85,7 +85,6 @@ internal sealed class PedidoDeConcessaoConfiguration : IEntityTypeConfiguration<
         builder.Ignore(p => p.Escopo);
         builder.Ignore(p => p.Ativo);
         builder.Ignore(p => p.EtapaAtual);
-        builder.Ignore(p => p.TemAnexoVerificado);
         builder.Ignore(p => p.Termo);
         builder.Ignore(p => p.AguardaAceiteDoTermo);
     }

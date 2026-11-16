@@ -7,10 +7,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <summary>Os anexos do pedido: o documento declarado na criação, como o de designação que o perfil de governança exige.</summary>
 public sealed partial class PedidoDeConcessao
 {
-    public bool TemAnexoVerificado => Cadastro.TemVerificado;
-
-    private AnexosDoPedido Cadastro => new(Id, _anexos);
-
     /// <summary>
     /// Cria o anexo e devolve-o para o handler emitir a URL de envio. Só antes da primeira decisão e, no pedido protegido,
     /// só o documento declarado na criação, enquanto o pedido o aguarda.
@@ -20,7 +16,7 @@ public sealed partial class PedidoDeConcessao
         DomainError? recusa = PodeSerAlteradoPeloSolicitante
             ? RecusaDoNovoAnexo()
             : SituacaoInvalida("O anexo só se envia antes da primeira decisão.");
-        return recusa is null ? Cadastro.Novo(tamanhoDoPdf) : Result<AnexoDoPedido>.Failure(recusa);
+        return recusa is null ? _anexos.Novo(Id, tamanhoDoPdf) : Result<AnexoDoPedido>.Failure(recusa);
     }
 
     /// <summary>Põe o anexo em verificação, com o ETag que o PUT devolveu. Só antes da primeira decisão.</summary>
@@ -31,7 +27,7 @@ public sealed partial class PedidoDeConcessao
             return Result<AnexoDoPedido>.Failure(SituacaoInvalida("O anexo só se confirma antes da primeira decisão."));
         }
 
-        return Cadastro.Confirmar(anexoId, etag, instante);
+        return _anexos.Confirmar(anexoId, etag, instante);
     }
 
     /// <summary>
@@ -41,7 +37,7 @@ public sealed partial class PedidoDeConcessao
     /// </summary>
     public bool LiberarAoVerificarDocumento()
     {
-        if (Situacao != SituacaoDoPedido.AguardandoDocumento || !TemAnexoVerificado)
+        if (Situacao != SituacaoDoPedido.AguardandoDocumento || !_anexos.TemVerificado)
         {
             return false;
         }
