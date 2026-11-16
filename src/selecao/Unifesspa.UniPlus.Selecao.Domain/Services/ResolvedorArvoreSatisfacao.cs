@@ -59,107 +59,46 @@ public static class ResolvedorArvoreSatisfacao
         ArgumentNullException.ThrowIfNull(fatosResolvidos);
         ArgumentNullException.ThrowIfNull(apresentacoesPorExigenciaId);
 
-        // A fronteira de disponibilidade por candidato (Story #928, §6): uma exigência cujo fato
-        // gatilho ainda não alcançou a fronteira (produtor não executado ou gate de fase não
-        // satisfeito) está BLOQUEADA. BLOQUEADO não é um 6º estado da árvore — é máscara+projeção:
-        // a folha projeta-se em INDETERMINADO na agregação (mantém o pai pendente) E tem a emissão
-        // suprimida pelo predicado recursivo emissionBlocked. Ausência = nada bloqueado (a resolução
-        // no ponto devido, sem fronteira a mascarar).
-        IReadOnlySet<Guid> bloqueadas = exigenciasBloqueadas ?? new HashSet<Guid>();
-
-        List<NoExigencia> todosOsNos = [.. arvore.Raizes.SelectMany(static raiz => raiz.AchatarComDescendentes())];
-        List<NoExigencia> folhas = [.. todosOsNos.Where(static no => no.Tipo == TipoNo.Folha)];
-
-        // Defesa em profundidade (ADR-0076: erros nomeados, nunca exceção) — folha sem
-        // DocumentoExigido só alcançaria este método via Reidratar mal-formado (nunca via
-        // NoExigencia.CriarFolha, que exige o documento); não confia na invariante de outra
-        // camada antes de desreferenciar.
-        if (folhas.Any(static no => no.DocumentoExigidoId is null || no.DocumentoExigido is null))
+        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instancias = InstanciasOuNenhuma(instanciasPorGrupo);
+        if (ConferenciaDaEntradaDaArvore.Pendencia(arvore, instancias) is { } pendencia)
         {
-            return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
-                "ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida",
-                "A árvore congelada tem folha sem DocumentoExigido — toda folha precisa envolver uma exigência."));
+            return Result<ResultadoResolucaoArvore>.Failure(pendencia);
         }
 
-        List<Guid> idsDeFolhas = [.. folhas.Select(static no => no.DocumentoExigidoId!.Value)];
-        if (idsDeFolhas.Distinct().Count() != idsDeFolhas.Count)
-        {
-            return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
-                "ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida",
-                "A árvore congelada tem exigenciaId repetido entre folhas — cada exigência precisa de identidade única (CA-09)."));
-        }
+        return Result<ResultadoResolucaoArvore>.Success(ResolverRaizes(
+            arvore, fatosResolvidos, apresentacoesPorExigenciaId, instancias, BloqueadasOuNenhuma(exigenciasBloqueadas)));
+    }
 
-        // Defesa em profundidade (mesmo raciocínio das duas checagens acima): NoExigencia.CriarGrupo
-        // recusa aninhamento na escrita, mas Reidratar confia no dado congelado sem revalidar — um
-        // envelope corrompido não pode suprimir em silêncio as consequências de uma repetição
-        // aninhada.
-        if (arvore.Raizes.Any(ContemRepeticaoAninhada))
-        {
-            return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
-                "ResolvedorArvoreSatisfacao.ArvoreEstruturalmenteInvalida",
-                "A árvore congelada tem repetição por entidade aninhada — uma subárvore repetePorEntidade não pode conter outra."));
-        }
-
-        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instancias =
-            instanciasPorGrupo ?? new Dictionary<string, IReadOnlyList<InstanciaEntidade>>(StringComparer.Ordinal);
-
-        // Story #922 — defesa em profundidade sobre o insumo do CHAMADOR (não da árvore
-        // congelada): duas instâncias do mesmo tipo com o mesmo entidade_id (ou um
-        // entidade_id vazio/em branco) tornariam a correlação (exigencia_id, grupo,
-        // entidade_id) ambígua — apresentações e estados de uma instância vazariam para outra.
-        foreach ((string grupo, IReadOnlyList<InstanciaEntidade> instanciasDoGrupo) in instancias)
-        {
-            List<string> ids = [.. instanciasDoGrupo.Select(static i => i.EntidadeId)];
-            if (ids.Any(static id => string.IsNullOrWhiteSpace(id)))
-            {
-                return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
-                    "ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida",
-                    $"Uma ocorrência do grupo {grupo} tem EntidadeId vazio ou em branco."));
-            }
-
-            if (ids.Distinct(StringComparer.Ordinal).Count() != ids.Count)
-            {
-                return Result<ResultadoResolucaoArvore>.Failure(new DomainError(
-                    "ResolvedorArvoreSatisfacao.InstanciaEntidadeInvalida",
-                    $"Duas ou mais ocorrências do grupo {grupo} declaram o mesmo EntidadeId — cada ocorrência precisa de identidade única."));
-            }
-        }
-
-        Dictionary<Guid, EstadoSatisfacao> estados = [];
-        Dictionary<Guid, StatusResolucaoExigencia> statusPorExigencia = [];
-        List<ConsequenciaEmitida> consequenciasVigentes = [];
-        List<PendenciaDeOrientacao> pendenciasDeOrientacao = [];
-        Dictionary<Guid, List<InstanciaResolvida>> instanciasResolvidasPorNo = [];
-        HashSet<Guid> nosEmissaoSuprimida = [];
-
+    private static ResultadoResolucaoArvore ResolverRaizes(
+        ArvoreExigenciasCongelada arvore,
+        IReadOnlyDictionary<string, FatoResolvido> fatos,
+        IReadOnlyDictionary<Guid, IReadOnlyList<ApresentacaoDocumento>> apresentacoes,
+        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> instanciasPorGrupo,
+        IReadOnlySet<Guid> bloqueadas)
+    {
+        PercursoDaArvore percurso = new(bloqueadas);
         foreach (NoExigencia raiz in arvore.Raizes)
         {
             EstadoSatisfacao estadoRaiz = ResolverNo(
-                raiz, fatosResolvidos, apresentacoesPorExigenciaId, instancias, bloqueadas, estados, statusPorExigencia, instanciasResolvidasPorNo);
-
-            // A máscara emissionBlocked é resolvida DEPOIS que a subárvore inteira tem estado — o
-            // predicado de um grupo depende do de todos os seus filhos decisivos.
-            FronteiraDeEmissao.CalcularEmissionBlocked(raiz, estados, bloqueadas, nosEmissaoSuprimida);
-            FronteiraDeEmissao.Emitir(raiz, estadoRaiz, estados, nosEmissaoSuprimida, consequenciasVigentes, pendenciasDeOrientacao, instanciasResolvidasPorNo);
+                raiz, fatos, apresentacoes, instanciasPorGrupo, bloqueadas,
+                percurso.Estados, percurso.StatusPorExigencia, percurso.InstanciasResolvidasPorNo);
+            percurso.Fechar(raiz, estadoRaiz);
         }
 
-        // Story #922 — achata o status por (folha, instância) de TODAS as subárvores
-        // repetidas: sem isto, uma folha Obrigatorio sem ConsequenciaIndeferimento configurada
-        // (nunca emite ConsequenciaEmitida) só apareceria pendente no AGREGADO da raiz
-        // repetida, sem sinalizar QUAL entidade_id ainda deve o documento.
-        List<StatusPorEntidade> statusPorEntidade = [.. instanciasResolvidasPorNo.Values
-            .SelectMany(static resolvidas => resolvidas)
-            .SelectMany(static instancia => instancia.StatusDescendentes.Select(
-                par => new StatusPorEntidade(par.Key, instancia.EntidadeId, par.Value)))];
-
-        List<EstadoPorEntidade> estadosPorEntidade = [.. instanciasResolvidasPorNo.Values
-            .SelectMany(static resolvidas => resolvidas)
-            .SelectMany(static instancia => instancia.EstadosDescendentes.Select(
-                par => new EstadoPorEntidade(par.Key, instancia.EntidadeId, par.Value)))];
-
-        return Result<ResultadoResolucaoArvore>.Success(new ResultadoResolucaoArvore(
-            estados, statusPorExigencia, consequenciasVigentes, pendenciasDeOrientacao, statusPorEntidade, estadosPorEntidade, nosEmissaoSuprimida));
+        return percurso.Resultado();
     }
+
+    // A fronteira de disponibilidade por candidato: uma exigência cujo fato gatilho ainda não alcançou a
+    // fronteira (produtor não executado ou gate de fase não satisfeito) está BLOQUEADA. BLOQUEADO não é um
+    // 6º estado da árvore — é máscara+projeção: a folha projeta-se em INDETERMINADO na agregação (mantém o
+    // pai pendente) E tem a emissão suprimida pelo predicado recursivo emissionBlocked. Ausência = nada
+    // bloqueado (a resolução no ponto devido, sem fronteira a mascarar).
+    private static IReadOnlySet<Guid> BloqueadasOuNenhuma(IReadOnlySet<Guid>? exigenciasBloqueadas) =>
+        exigenciasBloqueadas ?? new HashSet<Guid>();
+
+    private static IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>> InstanciasOuNenhuma(
+        IReadOnlyDictionary<string, IReadOnlyList<InstanciaEntidade>>? instanciasPorGrupo) =>
+        instanciasPorGrupo ?? new Dictionary<string, IReadOnlyList<InstanciaEntidade>>(StringComparer.Ordinal);
 
     private static EstadoSatisfacao ResolverNo(
         NoExigencia no,
@@ -337,17 +276,4 @@ public static class ResolvedorArvoreSatisfacao
 
         return indeterminados > 0 ? EstadoSatisfacao.Indeterminado : EstadoSatisfacao.Pendente;
     }
-
-    /// <summary>
-    /// Story #922 — defesa em profundidade: este nó é <c>repetePorEntidade</c> E algum
-    /// descendente (a qualquer profundidade) TAMBÉM é — o mesmo invariante que
-    /// <c>NoExigencia.CriarGrupo</c> já recusa na ESCRITA, revalidado aqui porque
-    /// <c>NoExigencia.Reidratar</c> confia no dado congelado sem revalidar.
-    /// </summary>
-    private static bool ContemRepeticaoAninhada(NoExigencia no) =>
-        (no.RepetePorEntidade is not null && no.Filhos.Any(ContemRepeticaoOuDescendente))
-        || no.Filhos.Any(ContemRepeticaoAninhada);
-
-    private static bool ContemRepeticaoOuDescendente(NoExigencia no) =>
-        no.RepetePorEntidade is not null || no.Filhos.Any(ContemRepeticaoOuDescendente);
 }
