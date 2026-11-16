@@ -19,19 +19,9 @@ internal static class ValidacaoDaCriacaoDoPedido
             erros.Add(JustificativaInvalida());
         }
 
-        ConferirValidade(declaracao.ValidaAteSugerida, perfil.AdmitePrazo, instante, "validaAteSugerida", erros);
+        ValidadeDoPedido.Conferir(declaracao.ValidaAteSugerida, perfil.AdmitePrazo, instante, "validaAteSugerida", erros);
 
         return (erros, normalizada);
-    }
-
-    internal static void ConferirValidade(
-        DateTimeOffset? data, bool admitePrazo, DateTimeOffset instante, string campo, List<FieldError> erros)
-    {
-        string? mensagem = data is { } fim ? MensagemDaValidadeInvalida(fim, admitePrazo, instante) : null;
-        if (mensagem is not null)
-        {
-            erros.Add(new(campo, new DomainError(PedidoErrorCodes.ValidadeInvalida, mensagem)));
-        }
     }
 
     private static FieldError JustificativaInvalida() => new("justificativa", new DomainError(
@@ -62,15 +52,5 @@ internal static class ValidacaoDaCriacaoDoPedido
         {
             yield return new("escopo", new DomainError(PedidoErrorCodes.EscopoInvalido, incoerencia));
         }
-    }
-
-    private static string? MensagemDaValidadeInvalida(DateTimeOffset fim, bool admitePrazo, DateTimeOffset instante)
-    {
-        if (!admitePrazo)
-        {
-            return MensagensDoPrazo.PerfilSemPrazo;
-        }
-
-        return fim <= instante ? "O fim da vigência deve ser posterior ao instante atual." : null;
     }
 }

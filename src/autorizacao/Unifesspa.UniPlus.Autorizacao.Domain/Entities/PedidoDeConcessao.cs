@@ -77,6 +77,10 @@ public sealed partial class PedidoDeConcessao : EntityBase
 
     public IReadOnlyList<DecisaoDoPedido> Decisoes => _decisoes;
 
+    private DecisoesDoPedido Registro => new(Id, _decisoes);
+
+    private SegregacaoDoPedido Segregacao => new(Solicitante, Beneficiario, Registro);
+
     public IReadOnlyList<AnexoDoPedido> Anexos => _anexos;
 
     public EscopoDaConcessao Escopo => UnidadeId is { } unidade

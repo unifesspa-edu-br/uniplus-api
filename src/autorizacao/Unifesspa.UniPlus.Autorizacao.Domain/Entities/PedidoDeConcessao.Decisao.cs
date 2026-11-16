@@ -60,13 +60,6 @@ public sealed partial class PedidoDeConcessao
             : RegistrarRecusa(decisor, etapa, motivoNormalizado, perfil, instante);
     }
 
-    // A mais recente é a de maior instante e, no mesmo instante, a registrada por último; relógio que regride vale pelo instante.
-    private DecisaoDoPedido? UltimaAprovacaoDoGestor => _decisoes
-        .Where(d => d.Etapa == EtapaDoPedido.Gestor && d.Resultado == ResultadoDaDecisao.Aprovado)
-        .OrderBy(d => d.Instante)
-        .ThenBy(d => d.PosicaoNoInstante)
-        .LastOrDefault();
-
     private Result<DesfechoDaAprovacao> AprovarNaEtapa(AprovacaoNaEtapa aprovacao)
     {
         List<FieldError> erros = ErrosDaAprovacao(aprovacao);
@@ -88,7 +81,7 @@ public sealed partial class PedidoDeConcessao
     private List<FieldError> ErrosDaAprovacao(AprovacaoNaEtapa aprovacao)
     {
         List<FieldError> erros = [];
-        ConferirPessoasDistintas(aprovacao.Decisor, aprovacao.Etapa, erros);
+        Segregacao.Conferir(aprovacao.Decisor, aprovacao.Etapa, erros);
 
         if (!aprovacao.Perfil.Ativo)
         {
@@ -97,41 +90,14 @@ public sealed partial class PedidoDeConcessao
                 "O perfil de acesso está desativado e não aceita aprovação.")));
         }
 
-        ConferirValidadeDaEtapa(aprovacao, erros);
+        ValidadeDoPedido.ConferirNaEtapa(aprovacao, ValidaAte, erros);
         return erros;
-    }
-
-    private void ConferirValidadeDaEtapa(AprovacaoNaEtapa aprovacao, List<FieldError> erros)
-    {
-        if (aprovacao.Etapa == EtapaDoPedido.Gestor)
-        {
-            ValidacaoDaCriacaoDoPedido.ConferirValidade(aprovacao.ValidaAte, aprovacao.Perfil.AdmitePrazo, aprovacao.Instante, "validaAte", erros);
-        }
-        else if (RecusaDaValidadeNaSegundaEtapa(aprovacao) is { } recusa)
-        {
-            erros.Add(recusa);
-        }
-    }
-
-    // Na segunda etapa o Representante não informa prazo. O pedido de perfil que não admite prazo e já traz o do gestor,
-    // gravado antes de o perfil de Representante deixar de admiti-lo (UNI-REQ-0200), é recusado aqui, antes de virar
-    // concessão: nada é gravado, e o pedido segue para ser recusado.
-    private FieldError? RecusaDaValidadeNaSegundaEtapa(AprovacaoNaEtapa aprovacao)
-    {
-        if (aprovacao.ValidaAte is not null)
-        {
-            return new("validaAte", new DomainError(PedidoErrorCodes.ValidadeInvalida, "O fim da vigência é definido pelo gestor de acessos, na etapa dele."));
-        }
-
-        return ValidaAte is not null && !aprovacao.Perfil.AdmitePrazo
-            ? new("validaAte", new DomainError(PedidoErrorCodes.ValidadeInvalida, MensagensDoPrazo.PerfilSemPrazo))
-            : null;
     }
 
     private List<FieldError> ErrosDaRecusa(Identidade decisor, EtapaDoPedido etapa, string? motivoNormalizado)
     {
         List<FieldError> erros = [];
-        ConferirPessoasDistintas(decisor, etapa, erros);
+        Segregacao.Conferir(decisor, etapa, erros);
 
         if (motivoNormalizado is null)
         {
@@ -146,8 +112,7 @@ public sealed partial class PedidoDeConcessao
     private Result RegistrarRecusa(
         Identidade decisor, EtapaDoPedido etapa, string? motivo, PerfilAvaliado perfil, DateTimeOffset instante)
     {
-        _decisoes.Add(DecisaoDoPedido.Registrar(
-            Id, etapa, new AtoDoAgente(decisor, instante), ResultadoDaDecisao.Recusado, motivo, perfil, null));
+        Registro.Registrar(etapa, new AtoDoAgente(decisor, instante), ResultadoDaDecisao.Recusado, motivo, perfil);
         Encerrar(SituacaoDoPedido.Recusado, instante);
         return Result.Success();
     }
@@ -166,7 +131,7 @@ public sealed partial class PedidoDeConcessao
 
     private (ResultadoDaDecisao Resultado, DomainError Erro)? MotivoDaDevolucao(PerfilAvaliado perfil, DateTimeOffset instante)
     {
-        if (!MesmoPerfilQueOGestorAvaliou(perfil))
+        if (!Registro.MesmoPerfilQueOGestorAvaliou(perfil))
         {
             return (ResultadoDaDecisao.PerfilAlterado, new DomainError(
                 PedidoErrorCodes.PerfilAlterado,
@@ -183,7 +148,7 @@ public sealed partial class PedidoDeConcessao
     private DomainError DevolverAoGestor(
         Identidade decisor, EtapaDoPedido etapa, PerfilAvaliado perfil, DateTimeOffset instante, ResultadoDaDecisao resultado, DomainError erro)
     {
-        _decisoes.Add(DecisaoDoPedido.Registrar(Id, etapa, new AtoDoAgente(decisor, instante), resultado, null, perfil, null));
+        Registro.Registrar(etapa, new AtoDoAgente(decisor, instante), resultado, null, perfil);
         Situacao = SituacaoDoPedido.AguardandoGestor;
         ValidaAte = null;
 
@@ -193,9 +158,9 @@ public sealed partial class PedidoDeConcessao
     private Result<DesfechoDaAprovacao> RegistrarAprovacao(AprovacaoNaEtapa aprovacao)
     {
         bool naEtapaDoGestor = aprovacao.Etapa == EtapaDoPedido.Gestor;
-        string? dispensa = naEtapaDoGestor ? MotivoDaDispensa(aprovacao.Perfil, aprovacao.Contexto) : null;
-        _decisoes.Add(DecisaoDoPedido.Registrar(
-            Id, aprovacao.Etapa, new AtoDoAgente(aprovacao.Decisor, aprovacao.Instante), ResultadoDaDecisao.Aprovado, null, aprovacao.Perfil, dispensa));
+        string? dispensa = naEtapaDoGestor ? aprovacao.Contexto.MotivoDaDispensa(aprovacao.Perfil) : null;
+        Registro.Registrar(
+            aprovacao.Etapa, new AtoDoAgente(aprovacao.Decisor, aprovacao.Instante), ResultadoDaDecisao.Aprovado, null, aprovacao.Perfil, dispensa);
 
         if (naEtapaDoGestor)
         {
@@ -217,43 +182,4 @@ public sealed partial class PedidoDeConcessao
         Situacao = SituacaoDoPedido.AguardandoProtecaoDeDados;
         return Result<DesfechoDaAprovacao>.Success(DesfechoDaAprovacao.AguardaProtecaoDeDados);
     }
-
-    private void ConferirPessoasDistintas(Identidade decisor, EtapaDoPedido etapa, List<FieldError> erros)
-    {
-        if (Solicitante.Eh(decisor) || Beneficiario.Eh(decisor))
-        {
-            erros.Add(new("decisor", new DomainError(
-                PedidoErrorCodes.DecisorEParte,
-                "Ninguém decide pedido em que é solicitante ou beneficiário.")));
-        }
-
-        if (etapa == EtapaDoPedido.ProtecaoDeDados && AprovouComoGestor(decisor))
-        {
-            erros.Add(new("decisor", new DomainError(
-                PedidoErrorCodes.MesmoDecisorNasDuasEtapas,
-                "Quem decidiu como gestor não decide na etapa de proteção de dados.")));
-        }
-    }
-
-    private bool AprovouComoGestor(Identidade decisor) => _decisoes.Exists(d =>
-        d.Etapa == EtapaDoPedido.Gestor && d.Resultado == ResultadoDaDecisao.Aprovado && d.Decisor == decisor);
-
-    private bool MesmoPerfilQueOGestorAvaliou(PerfilAvaliado perfil) =>
-        UltimaAprovacaoDoGestor is { } gestor
-        && gestor.PermissoesAvaliadas.SequenceEqual(perfil.Permissoes)
-        && gestor.SensibilidadeAvaliada == perfil.Sensibilidade;
-
-    // Só a designação do primeiro Representante dispensa a segunda etapa: havendo Representante vigente, outro decide.
-    private static string? MotivoDaDispensa(PerfilAvaliado perfil, ContextoDaAprovacao contexto) =>
-        perfil.Governanca == TipoDeGovernanca.RepresentanteDoControlador && !contexto.HaRepresentanteVigente
-            ? MotivosDeDispensa.DesignacaoDeProtecaoDeDados
-            : null;
-
-    private sealed record AprovacaoNaEtapa(
-        Identidade Decisor,
-        EtapaDoPedido Etapa,
-        PerfilAvaliado Perfil,
-        ContextoDaAprovacao Contexto,
-        DateTimeOffset Instante,
-        DateTimeOffset? ValidaAte);
 }
