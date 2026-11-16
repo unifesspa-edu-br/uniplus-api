@@ -887,6 +887,7 @@ configuracao.tipos_etapa.codigo: Interno
 configuracao.tipos_etapa.created_at: Interno
 configuracao.tipos_etapa.created_by: Pessoal
 configuracao.tipos_etapa.descricao: Interno
+configuracao.tipos_etapa.exige_correcao_independente: Interno
 configuracao.tipos_etapa.id: Interno
 configuracao.tipos_etapa.nome: Interno
 configuracao.tipos_etapa.nota_de_origem_no_enem: Interno
