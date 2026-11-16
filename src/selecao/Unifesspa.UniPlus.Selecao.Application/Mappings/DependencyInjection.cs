@@ -29,6 +29,7 @@ public static class SelecaoApplicationServiceRegistration
 
         services.AddValidatorsFromAssembly(typeof(SelecaoApplicationServiceRegistration).Assembly);
         AddDefinicaoDoCronogramaDeFases(services);
+        AddConferenciaDaObrigatoriedadeLegal(services);
         AddPublicacao(services);
         AddAcessoAoCampoEAoDocumentoDaInscricao(services);
         AddSalvamentoDoRascunho(services);
@@ -76,7 +77,6 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<LeituraDoInstanteDaPublicacao>();
         services.AddScoped<EnderecosDosDocumentosDoAto>();
         AddCongelamentoDaVersao(services);
-        AddConferenciaDaObrigatoriedadeLegal(services);
         AddCopiaAoAcervo(services);
     }
 

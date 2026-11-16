@@ -122,7 +122,16 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
 
     private async Task<Guid> SemearRegraVigenteAsync(string regraCodigo)
     {
-        ObrigatoriedadeLegal regra = ObrigatoriedadeLegal.Criar(
+        ObrigatoriedadeLegal regra = NovaRegraVigente(regraCodigo);
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
+        ObrigatoriedadeLegalRepository repository = new(context, TimeProvider.System);
+        await repository.AdicionarAsync(regra, CancellationToken.None);
+        await context.SaveChangesAsync(CancellationToken.None);
+        return regra.Id;
+    }
+
+    private static ObrigatoriedadeLegal NovaRegraVigente(string regraCodigo) =>
+        ObrigatoriedadeLegal.Criar(
             ObrigatoriedadeLegal.TipoProcessoUniversal,
             CategoriaObrigatoriedade.Outros,
             regraCodigo,
@@ -130,14 +139,6 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
             new TextoNormativo("Etapa objetiva obrigatória (teste de integração)", "Lei de teste", null, null),
             new DateOnly(2020, 1, 1),
             null).Value!;
-
-        await using UniPlusDbContext context = _fixture.CreateDbContext();
-        ObrigatoriedadeLegalRepository repository = new(context, TimeProvider.System);
-        await repository.AdicionarAsync(regra, CancellationToken.None);
-        await context.SaveChangesAsync(CancellationToken.None);
-
-        return regra.Id;
-    }
 
     private async Task<(Guid ProcessoId, Guid SnapshotId)> PublicarComConformidadeLegalAsync(string nome)
     {
