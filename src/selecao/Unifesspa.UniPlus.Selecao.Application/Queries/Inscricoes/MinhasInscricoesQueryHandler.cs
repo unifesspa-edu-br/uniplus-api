@@ -49,29 +49,26 @@ public static class MinhasInscricoesQueryHandler
     private static async Task<Result<IReadOnlyList<Inscricao>>> InscricoesDoDonoAsync(
         IInscricaoRepository inscricaoRepository, IUserContext userContext, CancellationToken cancellationToken)
     {
-        Result<Cpf> cpf = InscricaoDoDono.CpfDoToken(userContext);
-        if (cpf.IsFailure)
+        Result<Cpf> cpf = InscricaoDoDono.CpfDoToken(userContext, "acessar as próprias inscrições");
+        DomainError? recusa = cpf.IsFailure ? cpf.Error : ContaAusenteNoToken(userContext);
+        if (recusa is not null)
         {
-            return Result<IReadOnlyList<Inscricao>>.Failure(cpf.Error!);
-        }
-
-        if (string.IsNullOrWhiteSpace(userContext.UserId))
-        {
-            return Result<IReadOnlyList<Inscricao>>.Failure(new DomainError(
-                InscricaoErrorCodes.ContaIdObrigatorio, "O token precisa trazer o claim sub para listar as inscrições."));
+            return Result<IReadOnlyList<Inscricao>>.Failure(recusa);
         }
 
         IReadOnlyList<Inscricao> inscricoes = await inscricaoRepository.ObterTodasPorCpfAsync(cpf.Value!, cancellationToken).ConfigureAwait(false);
-
         return Result<IReadOnlyList<Inscricao>>.Success([.. inscricoes.Where(i => i.ConferirDono(userContext.UserId) is null)]);
     }
+
+    private static DomainError? ContaAusenteNoToken(IUserContext userContext) =>
+        string.IsNullOrWhiteSpace(userContext.UserId)
+            ? new DomainError(InscricaoErrorCodes.ContaIdObrigatorio, "O token precisa trazer o claim sub para listar as inscrições.")
+            : null;
 
     private static async Task<IReadOnlyList<MinhaInscricaoDto>> ListarAsync(
         IReadOnlyList<Inscricao> inscricoes, IInscricaoRepository inscricaoRepository, ProcessosDasInscricoes processos, CancellationToken cancellationToken)
     {
-        ILookup<Guid, DateTimeOffset> emissoes = (await inscricaoRepository
-            .ObterEmissoesAsync([.. inscricoes.Select(static i => i.Id)], cancellationToken).ConfigureAwait(false))
-            .ToLookup(static e => e.InscricaoId, static e => e.Instante);
+        ILookup<Guid, DateTimeOffset> emissoes = await EmissoesPorInscricaoAsync(inscricoes, inscricaoRepository, cancellationToken).ConfigureAwait(false);
         Dictionary<Guid, SituacaoDoProcessoDaInscricao> situacoes = await processos.SituacoesAsync(inscricoes, cancellationToken).ConfigureAwait(false);
         Dictionary<Guid, IReadOnlyList<OfertaDeCursoCertameDto>> ofertas = await processos.OfertasDasVersoesAsync(inscricoes, cancellationToken).ConfigureAwait(false);
 
@@ -85,4 +82,9 @@ public static class MinhasInscricoesQueryHandler
                 ofertas.GetValueOrDefault(i.VersaoFormularioId, []))),
         ];
     }
+
+    private static async Task<ILookup<Guid, DateTimeOffset>> EmissoesPorInscricaoAsync(
+        IReadOnlyList<Inscricao> inscricoes, IInscricaoRepository inscricaoRepository, CancellationToken cancellationToken) =>
+        (await inscricaoRepository.ObterEmissoesAsync([.. inscricoes.Select(static i => i.Id)], cancellationToken).ConfigureAwait(false))
+            .ToLookup(static e => e.InscricaoId, static e => e.Instante);
 }

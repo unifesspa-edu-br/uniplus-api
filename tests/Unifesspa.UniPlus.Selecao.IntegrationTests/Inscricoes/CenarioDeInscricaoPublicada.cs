@@ -95,12 +95,19 @@ internal sealed class CenarioDeInscricaoPublicada
             GeradorQueDevolve(numero), db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), DentroDoPeriodo, CancellationToken.None);
 
     public async Task<Result<InscricaoDto>> SalvarAsync(
-        UniPlusDbContext db, Guid processoId, InscricaoRequest pedido, string etag, IConferenciaEnderecoGeo? geo = null) =>
-        await SalvarInscricaoCommandHandler.Handle(
+        UniPlusDbContext db, Guid processoId, InscricaoRequest pedido, string etag, IConferenciaEnderecoGeo? geo = null)
+    {
+        IInscricaoRepository inscricoes = NovoRepositorioDeInscricao(db);
+        IConferenciaEnderecoGeo geoDoSalvar = geo ?? GeoQueConfirma();
+        return await SalvarInscricaoCommandHandler.Handle(
             new SalvarInscricaoCommand(processoId, pedido, PrecondicaoIfMatch.DeTags([etag])),
-            NovoRepositorioDeInscricao(db),
-            ProcessoSeletivoRepositoryDeTeste.Criar(db), Substitute.For<IDocumentoDaInscricaoRepository>(), new CertameDivulgadoRepository(db), RegistroCodecs, Fuso(), geo ?? GeoQueConfirma(),
-            EnderecosSemCopia(), db, UsuarioComCpf(PersonasDeTeste.FernandaDrumond), DentroDoPeriodo, CancellationToken.None);
+            new RascunhoDoCandidato(
+                inscricoes, new CertameDivulgadoRepository(db), ProcessoSeletivoRepositoryDeTeste.Criar(db), RegistroCodecs, Fuso(), DentroDoPeriodo),
+            new SalvamentoDoRascunho(geoDoSalvar, inscricoes, db),
+            new RespostaDoRascunho(Substitute.For<IDocumentoDaInscricaoRepository>(), geoDoSalvar, EnderecosSemCopia()),
+            UsuarioComCpf(PersonasDeTeste.FernandaDrumond),
+            CancellationToken.None);
+    }
 
     public async Task<(Inscricao Inscricao, IReadOnlyList<ComprovanteInscricao> Comprovantes)> RelerAsync(Guid processoId)
     {

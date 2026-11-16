@@ -18,28 +18,34 @@ internal static class InscricaoDoDono
         ArgumentNullException.ThrowIfNull(inscricaoRepository);
         ArgumentNullException.ThrowIfNull(userContext);
 
-        Result<Cpf> cpf = CpfDoToken(userContext);
+        Result<Cpf> cpf = CpfDoToken(userContext, "acessar as próprias inscrições");
         if (cpf.IsFailure)
         {
             return Result<Inscricao>.Failure(cpf.Error!);
         }
 
         Inscricao? inscricao = await inscricaoRepository.ObterPorIdAsync(inscricaoId, cancellationToken).ConfigureAwait(false);
-        if (inscricao is null || inscricao.Cpf != cpf.Value!)
-        {
-            return Result<Inscricao>.Failure(Inscricao.NaoEncontrada);
-        }
-
-        return inscricao.ConferirDono(userContext.UserId) is { } erroDono ? Result<Inscricao>.Failure(erroDono) : Result<Inscricao>.Success(inscricao);
+        return DoDono(inscricao is not null && inscricao.Cpf == cpf.Value! ? inscricao : null, userContext);
     }
 
-    /// <summary>O CPF do token, ou a recusa de quem chega sem o claim ou com um que não é CPF.</summary>
-    public static Result<Cpf> CpfDoToken(IUserContext userContext)
+    /// <summary>A inscrição como do dono do token: ausente responde como inexistente e a de outra conta é identidade trocada.</summary>
+    public static Result<Inscricao> DoDono(Inscricao? inscricao, IUserContext userContext) =>
+        inscricao is null
+            ? Result<Inscricao>.Failure(Inscricao.NaoEncontrada)
+            : inscricao.ConferirDono(userContext.UserId ?? string.Empty) is { } erroDono
+                ? Result<Inscricao>.Failure(erroDono)
+                : Result<Inscricao>.Success(inscricao);
+
+    /// <summary>
+    /// O CPF do token, ou a recusa de quem chega sem o claim ou com um que não é CPF; <paramref name="acao"/> diz o que o
+    /// candidato tentava fazer, para a mensagem orientar.
+    /// </summary>
+    public static Result<Cpf> CpfDoToken(IUserContext userContext, string acao)
     {
         if (userContext.Cpf is not { } cpfDoToken)
         {
             return Result<Cpf>.Failure(new DomainError(
-                "Inscricao.CpfAusenteNoToken", "O token não traz o claim cpf — só um candidato autenticado com CPF pode acessar as próprias inscrições."));
+                "Inscricao.CpfAusenteNoToken", $"O token não traz o claim cpf — só um candidato autenticado com CPF pode {acao}."));
         }
 
         Result<Cpf> cpf = Cpf.Criar(cpfDoToken);

@@ -30,6 +30,7 @@ public static class SelecaoApplicationServiceRegistration
         AddDefinicaoDoCronogramaDeFases(services);
         AddPublicacao(services);
         AddAcessoAoCampoEAoDocumentoDaInscricao(services);
+        AddSalvamentoDoRascunho(services);
 
         // Escopo por execução da rotina periódica: os repositórios e o DbContext são do escopo.
         services.AddScoped<RemocaoDeArquivosPendentesVencidos>();
@@ -58,6 +59,14 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<DecisaoDoAcessoAoDocumento>();
         services.AddScoped<EmissaoDoAcessoAoArquivo>();
         services.AddScoped<AcessoARevelacaoPelaBanca>();
+    }
+
+    // Salvar o rascunho: as portas entram por construtor de cada serviço, e o handler os recebe prontos, sem service location.
+    private static void AddSalvamentoDoRascunho(IServiceCollection services)
+    {
+        services.AddScoped<RascunhoDoCandidato>();
+        services.AddScoped<SalvamentoDoRascunho>();
+        services.AddScoped<RespostaDoRascunho>();
     }
 
     // Todo comando que publica (versão, ato avulso, item do edital) lê o relógio uma só vez por esta leitura.
