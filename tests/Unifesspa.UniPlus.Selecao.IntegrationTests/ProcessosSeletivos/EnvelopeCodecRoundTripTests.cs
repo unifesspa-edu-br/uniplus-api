@@ -78,7 +78,7 @@ public sealed class EnvelopeCodecRoundTripTests
         // A ordem é única dentro de cada formulário: a inscrição e a habilitação têm, as duas,
         // um item de ordem 0, e o decoder não pode tomar isso por repetição. O item da habilitação
         // depende da cor/raça respondida na inscrição (UNI-REQ-0145).
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         FaseCronograma habilitacao = FaseDeHabilitacaoDepoisDasDemais(processo);
         processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
@@ -89,13 +89,13 @@ public sealed class EnvelopeCodecRoundTripTests
                 CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
             ], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
             finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([CorpusEnvelope.Termo("VERACIDADE", 0)], finalidade: FinalidadeFormulario.Habilitacao)
+        processo.DefinirTermos([CorpusEnvelopeEntrada.Termo("VERACIDADE", 0)], finalidade: FinalidadeFormulario.Habilitacao)
             .IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        AssertRoundTrip(processo, CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+        AssertRoundTrip(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         Envelope(congelado)["formularios"]!.AsArray().Select(static f => f!["finalidade"]!.GetValue<string>())
             .Should().Equal("INSCRICAO", "HABILITACAO");
     }
@@ -103,7 +103,7 @@ public sealed class EnvelopeCodecRoundTripTests
     [Fact(DisplayName = "Item com obrigatoriedade QUANDO, ajuda e confirmação reproduz os bytes")]
     public void RoundTrip_RegrasDoItem()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         processo.DefinirItens(
         [
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
@@ -117,10 +117,10 @@ public sealed class EnvelopeCodecRoundTripTests
             FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 4, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
         ], grupos: []).IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        AssertRoundTrip(processo, CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+        AssertRoundTrip(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         JsonObject bolsa = Envelope(congelado)["fatosColetados"]!.AsArray()
             .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "TEM_BOLSA")!.AsObject();
         bolsa["obrigatoriedade"]!["tipo"]!.GetValue<string>().Should().Be("QUANDO");
@@ -132,17 +132,17 @@ public sealed class EnvelopeCodecRoundTripTests
     {
         // A opção pelas cotas da lei sai da oferta e não é gravada entre as derivações: o decoder
         // reconhece a citação pelas derivações efetivas, como a publicação.
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         PredicadoDnf optou = PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!;
         processo.DefinirTermos(
-            [CorpusEnvelope.Termo("CIENCIA_DA_RESERVA", 0, exibicao: optou, obrigatoriedade: Obrigatoriedade.Quando(optou))],
+            [CorpusEnvelopeEntrada.Termo("CIENCIA_DA_RESERVA", 0, exibicao: optou, obrigatoriedade: Obrigatoriedade.Quando(optou))],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         AssertRoundTrip(processo, versao, congelado);
         Envelope(congelado)["regrasDerivacao"]!.AsArray()
             .Select(static d => d!["codigoFato"]!.GetValue<string>())
@@ -164,7 +164,7 @@ public sealed class EnvelopeCodecRoundTripTests
     [Fact(DisplayName = "Campos de texto com formato, de data e de endereço reproduzem os bytes")]
     public void RoundTrip_CampoDeTexto()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         processo.DefinirItens(
         [
             FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
@@ -178,10 +178,10 @@ public sealed class EnvelopeCodecRoundTripTests
             FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 6, "Deseja concorrer às vagas de escola pública?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
         ], grupos: []).IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        AssertRoundTrip(processo, CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes), congelado);
+        AssertRoundTrip(processo, CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes), congelado);
         Envelope(congelado)["fatosColetados"]!.AsArray()
             .Single(static f => f!["fatoCodigo"]!.GetValue<string>() == "NOME_SOCIAL")!["formato"]!.GetValue<string>()
             .Should().Be("NOME_PESSOA");
@@ -196,15 +196,15 @@ public sealed class EnvelopeCodecRoundTripTests
         // tem também o bloco `retificacao`, que não vem do agregado — é parâmetro externo da
         // canonicalização. Recanonicalizar sem ele produziria um envelope sem esse bloco
         // e a comparação falharia por uma razão que nada tem a ver com a reidratação.
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         RetificacaoDoEdital retificacao = new(CorpusEnvelope.AtoAbertura, "Correção do quadro de vagas do curso de Direito");
 
-        SnapshotCanonico abertura = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo, retificacao));
-        CorpusEnvelope.Publicar(processo);
+        SnapshotCanonico abertura = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo, retificacao));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao v1 = CorpusEnvelope.VersaoDeAbertura(processo, abertura.Bytes);
-        VersaoConfiguracao v2 = CorpusEnvelope.VersaoDeRetificacao(v1, congelado.Bytes);
+        VersaoConfiguracao v1 = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, abertura.Bytes);
+        VersaoConfiguracao v2 = CorpusEnvelopeEntrada.VersaoDeRetificacao(v1, congelado.Bytes);
 
         EnvelopeReidratado envelope = AssertRoundTrip(processo, v2, congelado);
 
@@ -220,15 +220,15 @@ public sealed class EnvelopeCodecRoundTripTests
         // risco: as etapas seriam reconciliadas nos mesmos Ids e as demais dimensões
         // trocadas por instâncias equivalentes. É a divergência que exercita o caminho
         // real do descarte — repor o que a sessão editorial havia substituído.
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         // A "sessão editorial": a configuração viva vira outra coisa.
-        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoPobre()).IsSuccess.Should().BeTrue();
-        CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes
+        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelopeEntrada.GrafoPobre()).IsSuccess.Should().BeTrue();
+        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes
             .Should().NotEqual(congelado.Bytes, "pré-condição: a configuração viva TEM de estar divergente da congelada");
 
         AssertRoundTrip(processo, versao, congelado);
@@ -239,11 +239,11 @@ public sealed class EnvelopeCodecRoundTripTests
     [Fact(DisplayName = "Reidratar devolve o identificador legível congelado, e recanonicalizar o reproduz")]
     public void RoundTrip_IdentificadorLegivelCongelado()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         EnvelopeReidratado envelope = AssertRoundTrip(processo, versao, congelado);
 
@@ -257,14 +257,14 @@ public sealed class EnvelopeCodecRoundTripTests
         // O encoder emite null quando a raiz não tem identificador. A publicação recusa esse
         // estado, então os bytes são congelados antes de o identificador voltar à raiz, e a versão
         // é montada sobre eles.
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         IdentificadorLegivel? declarado = processo.IdentificadorLegivel;
         IdentificadoresDeTeste.Retirar(processo);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         processo.DefinirIdentificadorLegivel(declarado!.Value, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        CorpusEnvelope.Publicar(processo);
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         EnvelopeReidratado envelope = AssertRoundTrip(processo, versao, congelado);
 
@@ -277,7 +277,7 @@ public sealed class EnvelopeCodecRoundTripTests
     // ── Story #575 — cascataRemanejamento reidrata nos dois estados (presente/ausente) ──
 
     /// <summary>
-    /// O corpus rico (<see cref="CorpusEnvelope.ProcessoRico"/>) tem as 8 modalidades
+    /// O corpus rico (<see cref="CorpusEnvelopeProcessoRico.ProcessoRico"/>) tem as 8 modalidades
     /// federais de <c>DistribuicaoLei12711</c> como <c>SegueCascata</c> (INV-12) e, desde a
     /// Story #575, carrega a cascata que as cobre (sem ela <c>Publicar</c> recusaria com
     /// <c>ProcessoSeletivo.CascataOrigemAusente</c>) — é por isso que este teste, como todos
@@ -288,11 +288,11 @@ public sealed class EnvelopeCodecRoundTripTests
     [Fact(DisplayName = "Reidratar um envelope com cascataRemanejamento presente reconstrói ConfiguracaoCascataRemanejamento com a matriz legal completa")]
     public void RoundTrip_ComCascataPresente_ReconstroiConfiguracaoCascataRemanejamento()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         EnvelopeReidratado envelope = AssertRoundTrip(processo, versao, congelado);
 
@@ -314,11 +314,11 @@ public sealed class EnvelopeCodecRoundTripTests
     public void RoundTrip_SemCascata_ReconstroiCascataRemanejamentoComoNull()
     {
         ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme("PS Sem Cascata");
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            CorpusEnvelope.DadosRicos(), congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            CorpusEnvelopeDadosDoEdital.DadosRicos(), congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
 
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(publicacao.Value!);

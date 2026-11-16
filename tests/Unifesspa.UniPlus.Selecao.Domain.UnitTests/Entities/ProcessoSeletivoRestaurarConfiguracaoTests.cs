@@ -16,6 +16,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioProcessoSeletivoRestaurarConfiguracao;
+
 /// <summary>
 /// Reposição da configuração congelada: uma restauração recusada não pode alterar nada do
 /// agregado (tudo ou nada), e a identidade das etapas reconciliadas segue a regra de
@@ -29,11 +31,8 @@ using Xunit;
 /// etapas e distribuição — e o certame ficaria numa configuração que <b>nunca existiu</b>:
 /// nem a viva, nem a congelada.
 /// </remarks>
-public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
+public sealed class ProcessoSeletivoRestaurarConfiguracaoTests
 {
-    private static readonly Guid EtapaOriginal = new("aaaa0000-0000-4000-8000-000000000001");
-    private static readonly Guid EtapaCongelada = new("aaaa0000-0000-4000-8000-000000000002");
-
     [Fact(DisplayName = "Uma restauração que falha numa validação TARDIA não altera NADA")]
     public void RestauracaoQueFalha_NaoAlteraEstado()
     {
@@ -341,13 +340,4 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
         Estado.De(processo).Should().BeEquivalentTo(antes);
     }
-
-    private static EtapaProcesso EtapaCongeladaDeProvaObjetiva(
-        Guid id, string nome, int ordem, string? faseCodigo = null, decimal peso = 1m, decimal? notaMinima = null,
-        CaraterEtapa carater = CaraterEtapa.Classificatoria) =>
-        EtapaProcesso.Reidratar(
-            id,
-            new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: faseCodigo),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: notaMinima, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
-            itens: null);
 }

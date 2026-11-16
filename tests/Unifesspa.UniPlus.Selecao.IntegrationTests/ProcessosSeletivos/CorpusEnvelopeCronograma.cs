@@ -16,16 +16,24 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-internal static partial class CorpusEnvelope
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelope;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDadosDoEdital;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDocumentos;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEntrada;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEtapas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeProcessoRico;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeVagas;
+
+internal static class CorpusEnvelopeCronograma
 {
-    private static Guid ProdutoId(int fase, int posicao, int variante) =>
+    internal static Guid ProdutoId(int fase, int posicao, int variante) =>
         new($"7777bbbb-000{variante:x}-4000-8000-0000000{fase:x}000{posicao:x}");
 
     /// <summary>
     /// Fase 1: coleta inscrição e publica um ato SEM papel — o comunicado de abertura não é
     /// resultado, e publicá-lo não torna a fase produtora.
     /// </summary>
-    private static FaseCronograma FaseInscricao(int variante = 0) => FaseCronograma.Reidratar(
+    internal static FaseCronograma FaseInscricao(int variante = 0) => FaseCronograma.Reidratar(
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000001"),
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: true,
@@ -47,7 +55,7 @@ internal static partial class CorpusEnvelope
     /// </summary>
     /// <param name="variante">Ver <see cref="EtapaId"/> — só distingue processos no mesmo Postgres entre testes de persistência.</param>
     /// <param name="permutar">Inverte a ordem de ENTRADA dos produtos e das bancas requeridas desta fase — nunca o conteúdo.</param>
-    private static FaseCronograma FaseResultadoPreliminarComRecurso(int variante = 0, bool permutar = false) => FaseCronograma.Reidratar(
+    internal static FaseCronograma FaseResultadoPreliminarComRecurso(int variante = 0, bool permutar = false) => FaseCronograma.Reidratar(
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000002"),
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000002"), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
@@ -58,7 +66,7 @@ internal static partial class CorpusEnvelope
         new PublicacoesDaFase(Produtos: ProdutosDaFaseDeRecurso(variante, permutar), EmiteParecerIndividual: true, RegraRecurso: RegraDeRecursoDaFase(variante)),
         bancasRequeridas: BancasRequeridasDaFaseDeRecurso(permutar));
 
-    private static IReadOnlyList<ProdutoDaFase> ProdutosDaFaseDeRecurso(int variante, bool permutar) =>
+    internal static IReadOnlyList<ProdutoDaFase> ProdutosDaFaseDeRecurso(int variante, bool permutar) =>
         Ordem<ProdutoDaFase>([
             ProdutoDaFase.Reidratar(ProdutoId(2, 1, variante), "GABARITO", PapelProdutoFase.Preliminar),
             ProdutoDaFase.Reidratar(ProdutoId(2, 2, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
@@ -68,7 +76,7 @@ internal static partial class CorpusEnvelope
     // arranjo que (tipoBancaOrigemId, codigo) não separa. É o que prova que a política
     // de ordenação do array desempata pelo conteúdo do item, e que o recorte
     // atravessa o round-trip byte a byte.
-    private static IReadOnlyList<BancaRequerida> BancasRequeridasDaFaseDeRecurso(bool permutar) =>
+    internal static IReadOnlyList<BancaRequerida> BancasRequeridasDaFaseDeRecurso(bool permutar) =>
         Ordem<BancaRequerida>([
             BancaDeAnaliseDocumentalDeRenda(),
             BancaDeAnaliseDocumentalDeIdentificacao(),
@@ -76,7 +84,7 @@ internal static partial class CorpusEnvelope
             BancaDeAnaliseDeRecursos(),
         ], permutar);
 
-    private static BancaRequerida BancaDeAnaliseDocumentalDeRenda() =>
+    internal static BancaRequerida BancaDeAnaliseDocumentalDeRenda() =>
         BancaRequerida.Criar(
             new Guid("5555eeee-0000-4000-8000-000000000001"),
             "BANCA_ANALISE_DOCUMENTAL",
@@ -84,7 +92,7 @@ internal static partial class CorpusEnvelope
             [CategoriaJulgada.Criar(new Guid("7777ffff-0000-4000-8000-000000000001"), "RENDA")],
             BancasDeTeste.Regra());
 
-    private static BancaRequerida BancaDeAnaliseDocumentalDeIdentificacao() =>
+    internal static BancaRequerida BancaDeAnaliseDocumentalDeIdentificacao() =>
         BancaRequerida.Criar(
             new Guid("5555eeee-0000-4000-8000-000000000001"),
             "BANCA_ANALISE_DOCUMENTAL",
@@ -95,7 +103,7 @@ internal static partial class CorpusEnvelope
             ],
             BancasDeTeste.Regra());
 
-    private static BancaRequerida BancaDeHeteroidentificacao() =>
+    internal static BancaRequerida BancaDeHeteroidentificacao() =>
         BancaRequerida.Criar(
             new Guid("5555eeee-0000-4000-8000-000000000002"),
             "BANCA_HETEROIDENTIFICACAO",
@@ -105,7 +113,7 @@ internal static partial class CorpusEnvelope
 
     // Quem julga o recurso da fase e o das etapas que ela abriga: o ciclo recursal do corpus só é
     // publicável com a banca de análise de recursos declarada.
-    private static BancaRequerida BancaDeAnaliseDeRecursos() =>
+    internal static BancaRequerida BancaDeAnaliseDeRecursos() =>
         BancaRequerida.Criar(
             new Guid("5555eeee-0000-4000-8000-000000000003"),
             TipoBancaCodigo.AnaliseDeRecursos,
@@ -113,7 +121,7 @@ internal static partial class CorpusEnvelope
             [],
             BancasDeTeste.Regra());
 
-    private static RegraRecursoFase RegraDeRecursoDaFase(int variante) =>
+    internal static RegraRecursoFase RegraDeRecursoDaFase(int variante) =>
         RegraRecursoFase.Criar(
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
             new ArgsRegraPrazoRecurso(
@@ -139,7 +147,7 @@ internal static partial class CorpusEnvelope
     /// matéria que a fase 2 deixa aberta (o gabarito e o resultado da classificação), que é o que a
     /// declaração de concluinte da fase 2 exige que exista.
     /// </summary>
-    private static FaseCronograma FaseResultadoFinal(int variante = 0, IReadOnlyList<string?>? tiposDeDecisao = null) => FaseCronograma.Reidratar(
+    internal static FaseCronograma FaseResultadoFinal(int variante = 0, IReadOnlyList<string?>? tiposDeDecisao = null) => FaseCronograma.Reidratar(
         id: new Guid($"6666aaaa-000{variante:x}-4000-8000-000000000003"),
         new OrigemCanonicaDaFase(
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000003"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false,
@@ -154,14 +162,14 @@ internal static partial class CorpusEnvelope
             TiposDeDecisao: tiposDeDecisao),
         bancasRequeridas: []);
 
-    private static List<ProdutoDaFase> ProdutosDaFaseResultadoFinal(int variante) =>
+    internal static List<ProdutoDaFase> ProdutosDaFaseResultadoFinal(int variante) =>
     [
         ProdutoDaFase.Reidratar(ProdutoId(3, 1, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
         ProdutoDaFase.Reidratar(ProdutoId(3, 2, variante), "GABARITO", PapelProdutoFase.Definitivo),
     ];
 
     /// <summary>Fase mínima que satisfaz o bicondicional fase×etapa (uma etapa acompanha os dois grafos acima).</summary>
-    private static FaseCronograma FaseCronogramaConforme(int variante) => FaseCronograma.Criar(
+    internal static FaseCronograma FaseCronogramaConforme(int variante) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             OrigemId: new Guid($"9999eee{variante:x}-0000-4000-8000-000000000001"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),

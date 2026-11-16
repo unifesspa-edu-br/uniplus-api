@@ -10,7 +10,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed partial class ProcessoSeletivoCronogramaTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioProcessoSeletivoCronograma;
+
+public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
 {
     [Fact(DisplayName = "CA-09: fase que declara concluinte SEM publicar preliminar é recusada")]
     public void Conclusao_DeclaradaSemPreliminar_Recusa()

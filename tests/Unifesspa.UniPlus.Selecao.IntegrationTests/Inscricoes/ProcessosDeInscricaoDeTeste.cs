@@ -132,7 +132,7 @@ internal static class ProcessosDeInscricaoDeTeste
         }
 
         processo.DefinirTitulo("Formulário de Inscrição").IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([CorpusEnvelope.Termo("DECLARACAO_VERACIDADE", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([CorpusEnvelopeEntrada.Termo("DECLARACAO_VERACIDADE", 0)]).IsSuccess.Should().BeTrue();
 
         return processo;
     }

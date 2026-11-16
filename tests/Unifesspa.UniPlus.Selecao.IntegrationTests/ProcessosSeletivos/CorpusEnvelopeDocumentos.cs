@@ -15,7 +15,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-internal static partial class CorpusEnvelope
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelope;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeCronograma;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDadosDoEdital;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEntrada;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEtapas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeProcessoRico;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeVagas;
+
+internal static class CorpusEnvelopeDocumentos
 {
     /// <summary>
     /// A árvore de satisfação exercitada pela prova de permutação (Story #928, §7.5, issue
@@ -32,7 +40,7 @@ internal static partial class CorpusEnvelope
     /// montagens desta árvore (uma para o processo direto, outra para o permutado) produziriam
     /// ids distintos e os bytes nunca bateriam, mesmo sem nenhuma diferença de ORDEM.
     /// </remarks>
-    private static IReadOnlyList<NoExigencia> ArvoreSatisfacaoRica(int variante, bool permutar)
+    internal static IReadOnlyList<NoExigencia> ArvoreSatisfacaoRica(int variante, bool permutar)
     {
         Guid faseInscricaoId = FaseInscricao(variante).Id;
 
@@ -71,16 +79,16 @@ internal static partial class CorpusEnvelope
         return Ordem([raizSolteira, grupoRenda], permutar);
     }
 
-    private static Guid TipoDocumentoOrigemIdFixo(int indice) =>
+    internal static Guid TipoDocumentoOrigemIdFixo(int indice) =>
         new($"77771111-0000-4000-8000-00000000000{indice:x}");
 
-    private static Guid DocumentoExigidoIdFixo(int ordem, int variante) =>
+    internal static Guid DocumentoExigidoIdFixo(int ordem, int variante) =>
         new($"7777200{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
-    private static Guid NoExigenciaIdFixo(int ordem, int variante) =>
+    internal static Guid NoExigenciaIdFixo(int ordem, int variante) =>
         new($"7777300{variante:x}-0000-4000-8000-00000000000{ordem:x}");
 
-    private static DocumentoExigido DocumentoExigidoRico(
+    internal static DocumentoExigido DocumentoExigidoRico(
         Guid id, Guid exigidoNaFaseId, Guid tipoDocumentoOrigemId, string tipoDocumentoCodigo,
         string tipoDocumentoNome, string tipoDocumentoCategoria, bool obrigatorio) =>
         DocumentoExigido.Reidratar(

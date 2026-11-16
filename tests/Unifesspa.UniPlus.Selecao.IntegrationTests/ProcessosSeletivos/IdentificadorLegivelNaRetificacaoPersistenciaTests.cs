@@ -65,13 +65,13 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
         await using (UniPlusDbContext fechamento = fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await RestaurarConfiguracaoPersistenciaTests.CarregarAsync(fechamento, processoId);
-            SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(
+            SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(
                 tracked, new RetificacaoDoEdital(versao.AtoCriadorId, tracked.Rascunho!.Motivo)));
 
             Result<VersaoConfiguracao> fechar = tracked.FecharRetificacao(
-                CorpusEnvelope.DadosRicos(), versao, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+                CorpusEnvelopeDadosDoEdital.DadosRicos(), versao, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
                 CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, PrecondicaoIfMatch.Curinga, TimeProvider.System,
-                CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+                CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
             fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
             nova = fechar.Value!;
             fechamento.Add(nova);
@@ -107,18 +107,18 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
     /// </summary>
     private async Task<(Guid ProcessoId, VersaoConfiguracao Versao)> SemearPublicadoSemIdentificadorAsync(int variante)
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico(variante);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(variante);
         IdentificadorLegivel? original = processo.IdentificadorLegivel;
         IdentificadoresDeTeste.Retirar(processo);
-        SnapshotCanonico semIdentificador = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        SnapshotCanonico semIdentificador = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
 
         // A publicação de hoje exige o identificador: publica com ele e o retira em seguida, como
         // estaria a raiz de um processo publicado antes de o campo existir.
         processo.DefinirIdentificadorLegivel(original!.Value, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        CorpusEnvelope.Publicar(processo);
+        CorpusEnvelopeEntrada.Publicar(processo);
         IdentificadoresDeTeste.Retirar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(
             processo, semIdentificador.Bytes, new Guid($"01900000-0000-7000-8000-0000000014{variante:x2}"));
 
         await using UniPlusDbContext escrita = fixture.CreateDbContext();

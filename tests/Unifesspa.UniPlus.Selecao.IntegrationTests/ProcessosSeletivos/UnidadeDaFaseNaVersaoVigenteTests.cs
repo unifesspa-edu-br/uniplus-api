@@ -19,19 +19,22 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static CenarioDeFasesDoProcessoPublicado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDaUnidadeDaFaseNaVersaoVigente;
 
 /// <summary>
 /// A unidade da fase e a das fases iniciadas, lidas do envelope congelado da versão vigente num Postgres real.
 /// </summary>
-public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSeletivoDbFixture>
+public sealed class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
     private readonly ProcessoSeletivoDbFixture _fixture;
     private readonly CenarioDeFasesDoProcessoPublicado _cenario;
+    private readonly ApoioDaUnidadeDaFaseNaVersaoVigente _apoio;
 
     public UnidadeDaFaseNaVersaoVigenteTests(ProcessoSeletivoDbFixture fixture)
     {
         _fixture = fixture;
         _cenario = new CenarioDeFasesDoProcessoPublicado(fixture);
+        _apoio = new ApoioDaUnidadeDaFaseNaVersaoVigente(fixture);
     }
 
     [Fact(DisplayName = "A fase publicada resolve a unidade congelada na versão vigente")]
@@ -119,7 +122,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     {
         (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS avaliacao da etapa", Abertura);
         (Guid outroProcessoId, FaseCronograma outraFase, _) = await _cenario.PublicadoAsync("PS avaliacao de outra etapa", Abertura);
-        await SemearImportacaoDeNotasAsync(processoId, etapa.Id, DateTimeOffset.UtcNow);
+        await _apoio.SemearImportacaoDeNotasAsync(processoId, etapa.Id, DateTimeOffset.UtcNow);
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
         FasesIniciadas deOutroProcesso = await _cenario.IniciadasAsync(outroProcessoId, DateTimeOffset.UtcNow);
@@ -128,46 +131,11 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
         deOutroProcesso.Contem(outraFase.FaseCanonicaOrigemId).Should().BeFalse();
     }
 
-    private async Task SemearImportacaoDeNotasAsync(Guid processoId, Guid etapaId, DateTimeOffset importadoEm)
-    {
-        await using UniPlusDbContext semeadura = _fixture.CreateDbContext();
-        Guid versaoId = await semeadura.VersoesConfiguracao.Where(v => v.ProcessoSeletivoId == processoId).Select(v => v.Id).FirstAsync();
-        semeadura.LotesDeNotasDoEnem.Add(LoteDeNotasDoEnem.Registrar(
-            processoId, etapaId, "2026", "INEP_ENEM_RETORNO", "v1", new string('b', 64), new string('c', 64), "conta-admin", importadoEm, 0,
-            versaoId, new ResultadoDoCruzamento([], [], [], []), []));
-        await semeadura.SaveChangesAsync();
-    }
-
-    private async Task SemearInscricaoRecebidaAsync(Guid processoId, DateTimeOffset criadaEm)
-    {
-        await using UniPlusDbContext semeadura = _fixture.CreateDbContext();
-        semeadura.Inscricoes.Add(InscricaoSubmetida(processoId, criadaEm));
-        await semeadura.SaveChangesAsync();
-    }
-
-    private static InscricaoRecord InscricaoSubmetida(Guid processoId, DateTimeOffset criadaEm)
-    {
-        Guid id = Guid.CreateVersion7();
-        return new InscricaoRecord
-        {
-            Id = id,
-            ProcessoSeletivoId = processoId,
-            CpfIndice = id.ToByteArray(),
-            ContaId = $"conta-{id:N}",
-            EmissorToken = "https://issuer",
-            Situacao = SituacaoInscricao.Submetida,
-            VersaoFormularioId = Guid.CreateVersion7(),
-            NumeroInscricao = $"UNI-{id.ToString("N")[^8..]}",
-            Revisao = 1,
-            CreatedAt = criadaEm,
-        };
-    }
-
     [Fact(DisplayName = "A versão de vigência futura não vale: a unidade da fase é a da versão que já vige")]
     public async Task DaFase_VersaoComVigenciaFutura_NaoVale()
     {
         (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS vigencia futura");
-        await SucederAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), f => f["unidadeResponsavel"]!["origemId"] = UnidadesDeTeste.Cga.OrigemId);
+        await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), f => f["unidadeResponsavel"]!["origemId"] = UnidadesDeTeste.Cga.OrigemId);
         await using UniPlusDbContext context = _fixture.CreateDbContext();
 
         UnidadeDaFase? daFase = await new UnidadeDaFaseNaVersaoVigente(context, TimeProvider.System).DaFaseAsync(processoId, fase.Id);
@@ -183,7 +151,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     public async Task Iniciadas_JanelaAdiadaNaRetificacao_ContinuaIniciada()
     {
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS janela adiada");
-        await SucederAsync(processoId, DateTimeOffset.UtcNow, AdiaAJanela);
+        await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow, AdiaAJanela);
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
@@ -194,8 +162,8 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     public async Task Iniciadas_FaseRetiradaEReinserida_ContinuaIniciada()
     {
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS fase retirada");
-        await SucederAsync(processoId, DateTimeOffset.UtcNow, f => f["faseCanonicaOrigemId"] = Guid.CreateVersion7());
-        await SucederAsync(processoId, DateTimeOffset.UtcNow, f => f["unidadeResponsavel"]!["origemId"] = UnidadesDeTeste.Cga.OrigemId);
+        await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow, f => f["faseCanonicaOrigemId"] = Guid.CreateVersion7());
+        await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow, f => f["unidadeResponsavel"]!["origemId"] = UnidadesDeTeste.Cga.OrigemId);
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
@@ -206,7 +174,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     public async Task Iniciadas_JanelaAdiadaAntesDeAbrir_NaoConta()
     {
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS adiada antes de abrir", Abertura);
-        await SucederAsync(processoId, Abertura.AddDays(-9), AdiaAJanela);
+        await _apoio.SucederAsync(processoId, Abertura.AddDays(-9), AdiaAJanela);
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, Abertura.AddDays(5));
 
@@ -217,7 +185,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     public async Task Iniciadas_JanelaAdiadaDepoisDeAbrir_Conta()
     {
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS adiada depois de abrir", Abertura);
-        await SucederAsync(processoId, Abertura.AddDays(2), AdiaAJanela);
+        await _apoio.SucederAsync(processoId, Abertura.AddDays(2), AdiaAJanela);
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, Abertura.AddDays(5));
 
@@ -228,7 +196,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     public async Task Iniciadas_JanelaDeVersaoDeVigenciaFutura_NaoConta()
     {
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS janela de versao futura", Abertura);
-        await SucederAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), JanelaNoPassado);
+        await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), JanelaNoPassado);
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
@@ -240,8 +208,8 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     {
         (Guid processoId, FaseCronograma primeira, _) = await _cenario.PublicadoAsync("PS inscricao em uma fase", Abertura);
         Guid segundaOrigem = Guid.CreateVersion7();
-        await SucederNoEnvelopeAsync(processoId, DateTimeOffset.UtcNow, envelope => AcrescentaFaseQueColeta(envelope, segundaOrigem));
-        await SemearInscricaoRecebidaAsync(processoId, DateTimeOffset.UtcNow);
+        await _apoio.SucederNoEnvelopeAsync(processoId, DateTimeOffset.UtcNow, envelope => AcrescentaFaseQueColeta(envelope, segundaOrigem));
+        await _apoio.SemearInscricaoRecebidaAsync(processoId, DateTimeOffset.UtcNow);
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
@@ -254,8 +222,8 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     {
         (Guid processoId, FaseCronograma primeira, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS etapa movida", Abertura);
         Guid segundaOrigem = Guid.CreateVersion7();
-        await SucederNoEnvelopeAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), envelope => MoveAEtapaParaNovaFase(envelope, segundaOrigem));
-        await SemearImportacaoDeNotasAsync(processoId, etapa.Id, DateTimeOffset.UtcNow.AddDays(10));
+        await _apoio.SucederNoEnvelopeAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), envelope => MoveAEtapaParaNovaFase(envelope, segundaOrigem));
+        await _apoio.SemearImportacaoDeNotasAsync(processoId, etapa.Id, DateTimeOffset.UtcNow.AddDays(10));
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow.AddDays(60));
 
@@ -268,62 +236,12 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests : IClassFixture<Pr
     {
         (Guid processoId, FaseCronograma primeira, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS etapa movida nao divulgada", Abertura);
         Guid segundaOrigem = Guid.CreateVersion7();
-        await SucederNoEnvelopeAsync(processoId, DateTimeOffset.UtcNow, envelope => MoveAEtapaParaNovaFase(envelope, segundaOrigem));
-        await SemearImportacaoDeNotasAsync(processoId, etapa.Id, DateTimeOffset.UtcNow.AddDays(5));
+        await _apoio.SucederNoEnvelopeAsync(processoId, DateTimeOffset.UtcNow, envelope => MoveAEtapaParaNovaFase(envelope, segundaOrigem));
+        await _apoio.SemearImportacaoDeNotasAsync(processoId, etapa.Id, DateTimeOffset.UtcNow.AddDays(5));
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow.AddDays(10));
 
         iniciadas.Contem(primeira.FaseCanonicaOrigemId).Should().BeTrue("o lote fixou a versão em que a etapa era da primeira fase");
         iniciadas.Contem(segundaOrigem).Should().BeFalse("a versão da segunda fase ainda não foi divulgada");
-    }
-
-    private static void JanelaNoPassado(JsonObject fase)
-    {
-        fase["inicio"] = "2020-01-01T00:00:00+00:00";
-        fase["fim"] = "2020-01-31T00:00:00+00:00";
-    }
-
-    // A fase nova nasce com a janela no futuro, para só a inscrição ou a importação poderem iniciá-la.
-    private static JsonObject FaseNovaComAJanelaNoFuturo(JsonObject envelope, Guid origemId)
-    {
-        JsonArray fases = (JsonArray)envelope["cronogramaFases"]!["fases"]!;
-        JsonObject nova = JsonNode.Parse(fases[0]!.ToJsonString())!.AsObject();
-        nova["id"] = Guid.CreateVersion7();
-        nova["faseCanonicaOrigemId"] = origemId;
-        nova["codigo"] = "SEGUNDA_FASE";
-        AdiaAJanela(nova);
-        fases.Add(nova);
-        return nova;
-    }
-
-    private static void AcrescentaFaseQueColeta(JsonObject envelope, Guid origemId) =>
-        FaseNovaComAJanelaNoFuturo(envelope, origemId)["coletaInscricao"] = true;
-
-    private static void MoveAEtapaParaNovaFase(JsonObject envelope, Guid origemId)
-    {
-        FaseNovaComAJanelaNoFuturo(envelope, origemId)["coletaInscricao"] = false;
-        envelope["etapas"]!.AsArray()[0]!["faseCodigo"] = "SEGUNDA_FASE";
-    }
-
-    private static void AdiaAJanela(JsonObject fase)
-    {
-        fase["inicio"] = "2045-01-01T00:00:00+00:00";
-        fase["fim"] = "2045-01-31T00:00:00+00:00";
-    }
-
-    private Task SucederAsync(Guid processoId, DateTimeOffset vigenteAPartirDe, Action<JsonObject> alteraAFase) =>
-        SucederNoEnvelopeAsync(processoId, vigenteAPartirDe, envelope => alteraAFase((JsonObject)envelope["cronogramaFases"]!["fases"]![0]!));
-
-    private async Task SucederNoEnvelopeAsync(Guid processoId, DateTimeOffset vigenteAPartirDe, Action<JsonObject> alteraOEnvelope)
-    {
-        await using UniPlusDbContext context = _fixture.CreateDbContext();
-        VersaoConfiguracao anterior = await context.VersoesConfiguracao
-            .Where(v => v.ProcessoSeletivoId == processoId).OrderByDescending(v => v.NumeroVersao).FirstAsync();
-        JsonObject envelope = JsonNode.Parse(anterior.ConfiguracaoCongelada)!.AsObject();
-        alteraOEnvelope(envelope);
-        context.VersoesConfiguracao.Add(VersaoConfiguracao.Suceder(
-            anterior, Encoding.UTF8.GetBytes(envelope.ToJsonString()), anterior.SchemaVersion, anterior.AlgoritmoHash,
-            Guid.CreateVersion7(), anterior.AtoCriadorHash, anterior.AtoCriadorId, "plataforma-admin", vigenteAPartirDe));
-        await context.SaveChangesAsync();
     }
 }

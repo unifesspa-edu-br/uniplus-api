@@ -359,7 +359,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, "user-conta-predicado-1068", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            hashDocumento, "user-conta-predicado-1068", TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         VersaoConfiguracao v1 = publicacao.Value!;
 

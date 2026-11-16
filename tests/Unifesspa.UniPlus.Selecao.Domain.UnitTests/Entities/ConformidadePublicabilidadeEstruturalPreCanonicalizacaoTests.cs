@@ -24,7 +24,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed partial class ConformidadePublicabilidadeEstruturalTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
+
+public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
 {
     private static FaseCronograma FaseDeHomologacao() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
@@ -141,11 +143,6 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
     }
-
-    private static AtendimentoEspecializado OfertaComCondicaoPcd() => AtendimentoEspecializado.Criar(
-        [CondicaoOfertada.Criar(Guid.CreateVersion7(), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
-        [],
-        []).Value!;
 
     [Fact(DisplayName = "Pré-canonicalização: fato coletável CONDICAO_ATENDIMENTO sem nenhuma condição ofertada — item vermelho e Publicar recusa com FatoColetadoSemValoresOfertados (cenário da issue)")]
     public void PreCanon_FatoColetadoCondicaoAtendimentoSemValoresOfertados()
@@ -273,38 +270,6 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
     }
 
     /// <summary>
-    /// As oito cotas da lei, a ampla e a ação afirmativa de PcD retirando duas vagas da ampla, cada uma
-    /// com a regra de aplicabilidade dada.
-    /// </summary>
-    private static ProcessoSeletivo ProcessoComCotaEAcaoAfirmativa(PredicadoDnf regraDasCotas, PredicadoDnf regraDaAcaoAfirmativa)
-    {
-        ModalidadeSelecionada acPcd = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-            ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.DestinoUnico, ModalidadesFederaisLei12711.Ac, null, null, regraDaAcaoAfirmativa, null, "base legal", 2).Value!;
-        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada
-            {
-                VagasOfertadasBase = 40,
-                PercentualDaReservaLegal = 0.5m,
-                RegraDeDistribuicao = RegraLei12711(),
-                RegraDeAjuste = RegraAjusteArt11(),
-                ReferenciaDemografica = Demografica(),
-                Modalidades = [
-                .. OrigensFederais.Select(codigo =>
-                    Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, quantidadeDeclarada: null, regra: regraDasCotas)),
-                Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, quantidadeDeclarada: null),
-                acPcd,
-            ]
-            },
-            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-
-        ProcessoSeletivo processo = ProcessoConforme([oferta]);
-        processo.DefinirCascataRemanejamento(CascataCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        return processo;
-    }
-
-    /// <summary>
     /// A regra copiada sem a opção pelas cotas — a linha anterior à cópia da regra — dá cota e ação
     /// afirmativa a todo candidato: os dois itens acendem, e a publicação recusa pela forma da regra,
     /// que é o que pede gravar a distribuição de novo.
@@ -320,17 +285,6 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RegraIncoerenteComANatureza);
     }
-
-    private static bool ItemDaExclusividadeOk(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
-            .Single(i => i.Codigo == "derivacao_cota_e_acao_afirmativa_juntas").Ok;
-
-    private static ProcessoSeletivo CotaEAcaoAfirmativaPor(string fato, object valorDaCota, object valorDaAcaoAfirmativa) =>
-        ProcessoComCotaEAcaoAfirmativa(Exige((fato, valorDaCota)), Exige((fato, valorDaAcaoAfirmativa)));
-
-    private static PredicadoDnf Exige(params (string Fato, object Valor)[] atomos) =>
-        PredicadoDnf.CriarDeCondicoesAgrupadas([.. atomos.Select(static a => (0, CondicaoDnf.Criar(
-            a.Fato, Operador.Igual, JsonSerializer.SerializeToElement(a.Valor)).Value!))]).Value!;
 
     /// <summary>
     /// Sobre fato de seleção múltipla, <c>IGUAL</c> é pertinência: o candidato que marca os dois

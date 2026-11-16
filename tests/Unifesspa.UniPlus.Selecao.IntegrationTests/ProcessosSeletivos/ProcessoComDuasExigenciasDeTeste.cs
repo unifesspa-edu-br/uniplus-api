@@ -156,7 +156,7 @@ internal static class ProcessoComDuasExigenciasDeTeste
     private static VersaoConfiguracao Publicar(ProcessoSeletivo processo, DadosEdital dados, SnapshotCanonico congelado, byte[] bytes)
     {
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            dados, bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, HashDocumento, "testes", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            dados, bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, HashDocumento, "testes", TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
 
         return publicacao.Value!;

@@ -127,7 +127,7 @@ internal sealed class CenarioDeRetificacaoPersistida
         SnapshotCanonico canonico = Canonicalizar(processo, dados, documento);
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            documento.HashSha256!, "integration-test-user", relogio, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            documento.HashSha256!, "integration-test-user", relogio, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         return publicar.Value!;
     }
@@ -150,7 +150,7 @@ internal sealed class CenarioDeRetificacaoPersistida
         Result<VersaoConfiguracao> fechar = carregado.FecharRetificacao(
             dados, versaoAbertura, canonico.Bytes, canonico.SchemaVersion,
             canonico.AlgoritmoHash, documento.HashSha256!, "integration-test-user",
-            PrecondicaoIfMatch.Curinga, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            PrecondicaoIfMatch.Curinga, TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
 
         await repository.AdicionarVersaoConfiguracaoAsync(fechar.Value!, CancellationToken.None);
@@ -222,7 +222,7 @@ internal sealed class CenarioDeRetificacaoPersistida
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
         Result<VersaoConfiguracao> retificar = carregado.Retificar(
             dados, versaoAtual, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            documento.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", relogio, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            documento.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", relogio, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
         return retificar.Value!;
     }

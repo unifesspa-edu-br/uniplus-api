@@ -24,7 +24,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed partial class ConformidadePublicabilidadeEstruturalTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
+
+public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
 {
     [Theory(DisplayName = "ENEM com cálculo local: resolução ausente ou em branco, ou quadro vazio, estado que só chega sem passar pela fábrica — só o item da resolução fica vermelho, e Publicar recusa")]
     [InlineData(FaltaNaResolucao.ResolucaoAusente)]
@@ -280,13 +282,6 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
     // ══════════════════════════════════════════════════════════════════════════════════════
     // Opções declaradas pelo processo (issue #1619)
     // ══════════════════════════════════════════════════════════════════════════════════════
-
-    private static FatoColetado FatoDeOpcaoDeTeste() => FatoColetado.Criar(
-        "FATO_OPCAO_DE_TESTE", 0, "Fato de opção do processo", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-        origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-
-    private static OpcaoDeclaradaFato Opcao(string codigo, int ordem = 0) =>
-        OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", codigo, $"Opção {codigo}", ordem).Value!;
 
     [Fact(DisplayName = "Fato coletado de fonte do processo sem opção declarada: item vermelho e publicação recusada; com opção, liberado")]
     public void FatoDeFonteDoProcessoSemOpcao_RecusaAtePrimeiraOpcao()

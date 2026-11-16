@@ -11,13 +11,15 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioProcessoSeletivoRestaurarConfiguracao;
+
 /// <summary>
 /// Os tipos de decisão declarados por fase e etapa ainda não fazem parte da configuração congelada: o grafo
 /// reconstruído do envelope não os traz, e a restauração pelo processo repõe a fase e a etapa vivas sem eles.
 /// Estes testes caracterizam esse comportamento pelo caminho real da restauração, e não pela reposição direta
 /// da entidade.
 /// </summary>
-public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
+public sealed class ProcessoSeletivoRestaurarConfiguracaoTiposDeDecisaoTests
 {
     private const string TipoDeClassificacao = TipoMotivoDeDecisaoCodigo.Classificacao;
     private const string TipoDeIsencaoDaTaxa = TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa;

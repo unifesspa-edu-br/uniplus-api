@@ -52,7 +52,7 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
     {
         ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ArgsReduzirDe("AC"));
 
-        JsonObject envelope = Envelope(CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)));
+        JsonObject envelope = Envelope(CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)));
 
         JsonObject distribuicao = envelope["distribuicao"]!.AsArray()[0]!.AsObject();
         distribuicao["percentualDaReservaLegal"].Should().BeNull();
@@ -66,7 +66,7 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
     [Fact(DisplayName = "A Lei de Cotas com escassez de vagas volta do envelope com a conferência da reserva legal")]
     public void RoundTrip_LeiDeCotasComEscassez_VoltaComConferenciaDaReservaLegal()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico(vagasOfertadasBaseDaLeiDeCotas: 3);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(vagasOfertadasBaseDaLeiDeCotas: 3);
 
         EnvelopeReidratado envelope = ReidratarOEnvelopeDe(processo);
 
@@ -86,12 +86,12 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
         ArgumentNullException.ThrowIfNull(caminho);
 
         ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ArgsReduzirDe("AC"));
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
         JsonObject adulterado = Envelope(congelado);
         Mutar(adulterado, caminho, valorNovo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(adulterado));
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(adulterado));
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
 
         reidratado.IsFailure.Should().BeTrue($"'{caminho}' não bate com o quadro que a declaração monta");
@@ -100,9 +100,9 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
 
     private static EnvelopeReidratado ReidratarOEnvelopeDe(ProcessoSeletivo processo)
     {
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         return AssertRoundTrip(processo, versao, congelado);
     }
 

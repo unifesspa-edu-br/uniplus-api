@@ -50,9 +50,9 @@ public sealed class RestauradorDeConfiguracaoParametrosCongeladosTests
     {
         ConferirQueORestauradorNaoConheceOCatalogoVivo();
 
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         DefinirLaudoCondicionalAoTea(processo);
-        DadosEdital dados = CorpusEnvelope.DadosRicos();
+        DadosEdital dados = CorpusEnvelopeDadosDoEdital.DadosRicos();
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(EntradaComMetadadoCongelado(processo, dados, somenteOsValoresDoCorpus: true));
         congelado.SchemaVersion.Should().Be("0.0.48", "pré-condição: o codec corrente emite a forma única");
         VersaoConfiguracao versao = PublicadaPeloAtorDoCorpus(processo, dados, congelado);
@@ -120,9 +120,9 @@ public sealed class RestauradorDeConfiguracaoParametrosCongeladosTests
             processo, dados, CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: MetadadoCongeladoDoTipoDeDeficiencia(),
             ValoresSelecionaveisCongelados: somenteOsValoresDoCorpus
-                ? CorpusEnvelope.ValoresSelecionaveisRicos()
-                : CatalogoDoConjuntoBasico.ComValoresCongelados(CorpusEnvelope.ValoresSelecionaveisRicos()),
-            CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
+                ? CorpusEnvelopeDadosDoEdital.ValoresSelecionaveisRicos()
+                : CatalogoDoConjuntoBasico.ComValoresCongelados(CorpusEnvelopeDadosDoEdital.ValoresSelecionaveisRicos()),
+            CalendarioDiasUteis: CorpusEnvelopeDadosDoEdital.CalendarioRico(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
 
     // A prova final: recanonicalizar o agregado reposto reproduz os MESMOS bytes —
@@ -148,8 +148,8 @@ public sealed class RestauradorDeConfiguracaoParametrosCongeladosTests
     [Fact(DisplayName = "UNI-REQ-0111: a prova byte a byte usa o fuso CONGELADO, não o vigente")]
     public void Restaurar_ComFusoInstitucionalDiferenteDoCongelado_ProvaPeloCongelado()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        DadosEdital dados = CorpusEnvelope.DadosRicos();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        DadosEdital dados = CorpusEnvelopeDadosDoEdital.DadosRicos();
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(EntradaSobUmFusoQueNaoEOInstitucional(processo, dados));
         VersaoConfiguracao versao = PublicadaPeloAtorDoCorpus(processo, dados, congelado);
 
@@ -169,8 +169,8 @@ public sealed class RestauradorDeConfiguracaoParametrosCongeladosTests
         FusoDaEpoca.Should().NotBe(FusoInstitucional.ZoneId, "o teste perde o sentido se as duas coincidirem");
         return new(
             processo, dados, CorpusEnvelope.HashDocumento, FusoDaEpoca,
-            ValoresSelecionaveisCongelados: CorpusEnvelope.ValoresSelecionaveisRicos(),
-            CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
+            ValoresSelecionaveisCongelados: CorpusEnvelopeDadosDoEdital.ValoresSelecionaveisRicos(),
+            CalendarioDiasUteis: CorpusEnvelopeDadosDoEdital.CalendarioRico(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
     }
 
@@ -187,11 +187,11 @@ public sealed class RestauradorDeConfiguracaoParametrosCongeladosTests
     [Fact(DisplayName = "Restaurar reproduz o dicionário de valores selecionáveis com os dois tipos de categórico (estático e escopo-processo)")]
     public void Restaurar_ComValoresSelecionaveisDosDoisTipos_ReporEProvarConteudoDoDicionario()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         DefinirColetaComCondicaoDeAtendimento(processo);
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(EntradaComCondicaoDeAtendimento(processo));
         PublicarComOsBytesJaCodificados(processo, congelado);
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         ConferirODicionarioReidratado(Reidratado(versao).ValoresSelecionaveisCongelados);
         ReporORestauradoNaRaizViva(processo, versao);
         CorpusEnvelope.Codec.Codificar(EntradaComCondicaoDeAtendimento(processo)).Bytes
@@ -220,7 +220,7 @@ public sealed class RestauradorDeConfiguracaoParametrosCongeladosTests
     // Escopo-processo: os códigos batem com o atendimento especializado do corpus rico
     // (Pcd, LACTANTE), ordenados por CondicaoCodigo — "LACTANTE" antes de "PCD".
     private static Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?> ValoresComCondicaoDeAtendimento() =>
-        new(CorpusEnvelope.ValoresSelecionaveisRicos())
+        new(CorpusEnvelopeDadosDoEdital.ValoresSelecionaveisRicos())
         {
             ["CONDICAO_ATENDIMENTO"] =
             [
@@ -231,19 +231,19 @@ public sealed class RestauradorDeConfiguracaoParametrosCongeladosTests
 
     private static EntradaCanonicalizacao EntradaComCondicaoDeAtendimento(ProcessoSeletivo processo) =>
         new(
-            processo, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
+            processo, CorpusEnvelopeDadosDoEdital.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
             ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(ValoresComCondicaoDeAtendimento()),
-            CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
+            CalendarioDiasUteis: CorpusEnvelopeDadosDoEdital.CalendarioRico(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
 
-    // Publica DIRETAMENTE com os bytes já codificados — CorpusEnvelope.Publicar(..., CorpusEnvelope.ContextoRico())
-    // recodificaria com CorpusEnvelope.ValoresSelecionaveisRicos() (sem CONDICAO_ATENDIMENTO)
+    // Publica DIRETAMENTE com os bytes já codificados — CorpusEnvelopeEntrada.Publicar(..., CorpusEnvelopeDadosDoEdital.ContextoRico())
+    // recodificaria com CorpusEnvelopeDadosDoEdital.ValoresSelecionaveisRicos() (sem CONDICAO_ATENDIMENTO)
     // e produziria um envelope diferente do que este teste está provando.
     private static void PublicarComOsBytesJaCodificados(ProcessoSeletivo processo, SnapshotCanonico congelado)
     {
         processo.Publicar(
-            CorpusEnvelope.DadosRicos(), congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(),
+            CorpusEnvelopeDadosDoEdital.DadosRicos(), congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
+            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(),
             FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
         processo.ClearDomainEvents();
     }

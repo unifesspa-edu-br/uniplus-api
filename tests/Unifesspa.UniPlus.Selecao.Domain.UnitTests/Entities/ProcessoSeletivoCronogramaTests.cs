@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioProcessoSeletivoCronograma;
+
 /// <summary>
 /// Cobertura de <see cref="ProcessoSeletivo.DefinirCronogramaFases"/> (Story #851
 /// §3.3/§3.5): estrutura do cronograma (CA-06), precedência entre fases — inclusive a
@@ -17,32 +19,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// heteroidentificação (CA-10), a direção eager da bicondicional fase×etapa (CA-14) e a
 /// conclusão do ciclo recursal por matéria.
 /// </summary>
-public sealed partial class ProcessoSeletivoCronogramaTests
+public sealed class ProcessoSeletivoCronogramaTests
 {
-    private static ProcessoSeletivo NovoProcesso(OrigemCandidatos origem = OrigemCandidatos.ImportacaoExterna) =>
-        ProcessoSeletivo.Criar("PS Cronograma", TiposDeProcessoDeTeste.SiSU, origem, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-
-    private static Result<FaseCronograma> Fase(
-        int ordem,
-        string codigo,
-        bool agrupaEtapas = false,
-        bool produzResultado = false,
-        bool coletaInscricao = false,
-        DateTimeOffset? inicio = null,
-        DateTimeOffset? fim = null,
-        Guid? faseCanonicaOrigemId = null,
-        bool coletaSolicitacaoIsencao = false,
-        IReadOnlyList<ProdutoDaFase>? produtos = null,
-        string? faseConcluinteCodigo = null,
-        bool emiteParecerIndividual = false,
-        IReadOnlyList<BancaRequerida>? bancasRequeridas = null) =>
-        FaseCronograma.Criar(
-            new OrigemCanonicaDaFase(
-                faseCanonicaOrigemId ?? Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, agrupaEtapas, PermiteComplementacao: false, coletaInscricao, coletaSolicitacaoIsencao),
-            new DecisoesDeCronogramaDaFase(ordem, inicio, fim, faseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(produtos ?? (produzResultado ? [ProdutoDaFase.Criar(codigo, PapelProdutoFase.Definitivo)] : []), emiteParecerIndividual, RegraRecurso: null),
-            bancasRequeridas ?? []);
-
     private static ArestaPrecedencia Aresta(string antecessora, string sucessora, bool permiteSobreposicao = false) =>
         new(antecessora, sucessora, permiteSobreposicao);
 
@@ -165,19 +143,6 @@ public sealed partial class ProcessoSeletivoCronogramaTests
 
     // ── CA-09 — sobreposição de janelas ──
 
-    private static (FaseCronograma Inscricao, FaseCronograma Homologacao) InscricaoEHomologacaoComJanelasSobrepostas()
-    {
-        FaseCronograma inscricao = Fase(
-            1, "INSCRICAO", coletaInscricao: true, coletaSolicitacaoIsencao: false,
-            inicio: new DateTimeOffset(2026, 6, 1, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 6, 30, 0, 0, 0, TimeSpan.Zero)).Value!;
-        FaseCronograma homologacao = Fase(
-            2, "HOMOLOGACAO_INSCRICOES",
-            inicio: new DateTimeOffset(2026, 6, 15, 0, 0, 0, TimeSpan.Zero),
-            fim: new DateTimeOffset(2026, 7, 5, 0, 0, 0, TimeSpan.Zero)).Value!;
-        return (inscricao, homologacao);
-    }
-
     [Fact(DisplayName = "CA-09: janelas de fases dependentes que se sobrepõem são recusadas quando o cadastro NÃO permite sobreposição")]
     public void Sobreposicao_NaoPermitida_Recusa()
     {
@@ -236,12 +201,6 @@ public sealed partial class ProcessoSeletivoCronogramaTests
     }
 
     // ── Conclusão do ciclo recursal por matéria — os três estados legítimos e as violações ──
-
-    private static IReadOnlyList<ProdutoDaFase> Preliminar(string atoCodigo = "RESULTADO_CLASSIFICACAO") =>
-        [ProdutoDaFase.Criar(atoCodigo, PapelProdutoFase.Preliminar)];
-
-    private static IReadOnlyList<ProdutoDaFase> Definitiva(string atoCodigo = "RESULTADO_CLASSIFICACAO") =>
-        [ProdutoDaFase.Criar(atoCodigo, PapelProdutoFase.Definitivo)];
 
     [Fact(DisplayName = "Estado 1: fase que NÃO publica preliminar e não declara conclusão é aceita")]
     public void Conclusao_SemPreliminarESemDeclaracao_Aceita()

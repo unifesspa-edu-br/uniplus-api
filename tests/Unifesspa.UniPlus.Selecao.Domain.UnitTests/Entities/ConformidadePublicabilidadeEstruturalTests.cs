@@ -24,6 +24,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
+
 /// <summary>
 /// A matriz da issue #1092: pareia cada um dos códigos de recusa alcançáveis nos quatro gates
 /// estruturais (<c>PendenciaDeConformidade</c>, <c>PendenciaDoCronograma</c>,
@@ -38,118 +40,11 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// confundir com falso vermelho (SiSU/classificação importada sem etapa, cronograma coerente,
 /// cascata não aplicável, ausência de gatilho por faixa etária).
 /// </remarks>
-public sealed partial class ConformidadePublicabilidadeEstruturalTests
+public sealed class ConformidadePublicabilidadeEstruturalTests
 {
-    private static readonly string HashFixo = new('a', 64);
-
-    private static ReferenciaRegra Regra(string codigo, char semente) =>
-        ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
-
-    private static DadosEdital Dados() => DadosEdital.Criar(
-        "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
-
-    private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) =>
-        Publicar(processo, ContextoDeContagemDePrazos.SemCalendario);
-
-    private static Result<VersaoConfiguracao> Publicar(
-        ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto) => processo.Publicar(
-        Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste", TimeProvider.System, contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-
-    private static ConfiguracaoClassificacao ClassificacaoImportada() => ConfiguracaoClassificacao.Criar(
-        Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'), null, null,
-        Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: false, resolucaoPesoAreaEnem: null, quadroPesoAreaEnem: [], escalaNotaFinal: null).Value!;
-
-    private static ModalidadeSelecionada Modalidade(
-        string codigo,
-        NaturezaLegalModalidade natureza,
-        RegraRemanejamentoModalidade remanejamento,
-        int? quantidadeDeclarada,
-        string? acaoQuandoIndeferido = null,
-        PredicadoDnf? regra = null) =>
-        ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), codigo, null, natureza,
-            natureza == NaturezaLegalModalidade.Ampla ? ComposicaoVagasModalidade.RestanteDasVagasOfertadas : ComposicaoVagasModalidade.DentroDaReservaLegal,
-            null, remanejamento, null, null, null, regra ?? RegrasDeAplicabilidadeDeTeste.DaNatureza(natureza), acaoQuandoIndeferido, "base legal", quantidadeDeclarada).Value!;
-
-    private static readonly (string? Codigo, string? Rotulo) GrupoTecnologica = ("TECNOLOGICA", "Tecnológica");
-
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoAmpla(int vagasOfertadasBase, string? acaoQuandoIndeferido = null) =>
-        OfertaAmpla(vagasOfertadasBase, grupoAreaEnem: null, acaoQuandoIndeferido);
-
-    private static ConfiguracaoDistribuicaoVagas OfertaAmpla(
-        int vagasOfertadasBase, (string? Codigo, string? Rotulo)? grupoAreaEnem, string? acaoQuandoIndeferido = null) =>
-        ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = vagasOfertadasBase, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, vagasOfertadasBase, acaoQuandoIndeferido)] },
-            new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-
-    /// <summary>
-    /// Os itens vermelhos do checklist, sem os do formulário: os testes que isolam uma razão de
-    /// recusa montam processos sem formulário, ou com o formulário mínimo sem a fase de inscrição, e
-    /// os itens do formulário ficariam vermelhos por isso — legitimamente, mas fora do que o teste
-    /// isola.
-    /// </summary>
-    private static IEnumerable<ItemConformidade> VermelhosForaDoFormulario(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
-            .Where(static i => !i.Ok && !i.Codigo.StartsWith("formulario_", StringComparison.Ordinal));
-
-    /// <summary>Fase mínima e coerente: não agrupa etapas (dispensável sem prova), produz resultado, não coleta inscrição.</summary>
-    private static FaseCronograma FaseBase(
-        bool coletaInscricao = false, bool coletaSolicitacaoIsencao = false, Guid? faseCanonicaOrigemId = null,
-        bool semUnidadeResponsavel = false) => FaseCronograma.Criar(
-        new OrigemCanonicaDaFase(
-            faseCanonicaOrigemId ?? Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, coletaInscricao, coletaSolicitacaoIsencao),
-        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
-        bancasRequeridas: []).Value!;
-
-    /// <summary>
-    /// Processo estruturalmente conforme aos QUATRO gates: sem etapa (ImportacaoExterna +
-    /// ClassificacaoImportada dispensam prova), atendimento, distribuição, classificação e
-    /// cronograma coerente com uma única fase que produz resultado. Sem cascata (nenhuma
-    /// modalidade SegueCascata) e sem exigências/regras de derivação/fatos coletados — os quatro
-    /// gates ficam vazios/Ok até que o teste acrescente a única razão que quer isolar.
-    /// </summary>
-    private static ProcessoSeletivo ProcessoConforme(IReadOnlyList<ConfiguracaoDistribuicaoVagas>? distribuicao = null)
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Matriz Estrutural", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
-                "CEPS",
-                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas(distribuicao ?? [DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirCronogramaFases([FaseBase()], [], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada
-        // aqui para manter os QUATRO gates estruturais vazios/Ok até o teste acrescentar a
-        // única razão que quer isolar.
-        DeclararTaxaSemCobranca(processo);
-
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        return processo;
-    }
-
-    private static DocumentoExigidoBaseLegal BaseLegalResolvida() => DocumentoExigidoBaseLegal.Criar(
-        "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
-
-    private static NoExigenciaBaseLegal BaseLegalDoGrupo(StatusBaseLegal status) =>
-        NoExigenciaBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
-
     // ══════════════════════════════════════════════════════════════════════════════════════
     // PendenciaDoCronograma — quatro razões (§3.4/§3.5)
     // ══════════════════════════════════════════════════════════════════════════════════════
-
-    private static void ExigirPublicacaoRecusada(ProcessoSeletivo processo, string codigoDaRecusa)
-    {
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(codigoDaRecusa);
-    }
 
     private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
@@ -215,14 +110,6 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirDistribuicaoVagas([DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         return processo;
-    }
-
-    private static void DeclararTaxaSemCobranca(ProcessoSeletivo processo)
-    {
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }
 
     [Fact(DisplayName = "Cronograma: InscricaoPropria sem fase de coleta — item vermelho e Publicar recusa com InscricaoPropriaSemFaseDeColeta (cenário da issue)")]
@@ -304,39 +191,4 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
     // ══════════════════════════════════════════════════════════════════════════════════════
     // PendenciaDaCascata — cinco razões (cascata de remanejamento de cotas, UNI-REQ-0056)
     // ══════════════════════════════════════════════════════════════════════════════════════
-
-    private static ReferenciaRegra RegraLei12711() => Regra(RegraDistribuicaoVagasCodigo.Lei12711, 'f');
-
-    private static ReferenciaRegra RegraCascataRemanejamento() => Regra(RegraRemanejamentoCodigo.Cascata, 'e');
-
-    private static DestinoRemanejamento Destino(string origem, int ordem, string destino) =>
-        DestinoRemanejamento.Criar(origem, ordem, destino).Value!;
-
-    private static ReferenciaReservaDemograficaSnapshot Demografica() =>
-        ReferenciaReservaDemograficaSnapshot.Criar(Guid.CreateVersion7(), "2022", 79m, 1.5m, 8.5m, "Censo 2022").Value!;
-
-    private static readonly string[] OrigensFederais =
-    [
-        ModalidadesFederaisLei12711.LbPpi, ModalidadesFederaisLei12711.LbQ, ModalidadesFederaisLei12711.LbPcd, ModalidadesFederaisLei12711.LbEp,
-        ModalidadesFederaisLei12711.LiPpi, ModalidadesFederaisLei12711.LiQ, ModalidadesFederaisLei12711.LiPcd, ModalidadesFederaisLei12711.LiEp,
-    ];
-
-    /// <summary>
-    /// As 8 modalidades federais (SegueCascata) + AC — INV-6 exige o conjunto completo sob Lei
-    /// 12.711. Sem <c>quantidadeDeclarada</c>: sob o ramo federal, DENTRO_DA_RESERVA_LEGAL e RESTANTE_DAS_VAGAS_OFERTADAS
-    /// são CALCULADAS pela fórmula do art. 10 — declarar quantidade aqui é recusado
-    /// (QuantidadeCalculadaNaoInformavel).
-    /// </summary>
-    private static List<ModalidadeSelecionada> AsOitoFederaisMaisAc() =>
-    [
-        .. OrigensFederais.Select(codigo =>
-            Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, quantidadeDeclarada: null)),
-        Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, quantidadeDeclarada: null),
-    ];
-
-    private static ReferenciaRegra RegraAjusteArt11() => Regra("RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", 'd');
-
-    private static ConfiguracaoDistribuicaoVagas OfertaFederalCompleta() => ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-        new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 0.5m, RegraDeDistribuicao = RegraLei12711(), RegraDeAjuste = RegraAjusteArt11(), ReferenciaDemografica = Demografica(), Modalidades = AsOitoFederaisMaisAc() },
-        new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 }

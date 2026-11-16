@@ -48,14 +48,14 @@ public sealed class RestauradorDeConfiguracaoTests
     [Fact(DisplayName = "Restaurar decodifica, repõe e PROVA — e o agregado reposto recanonicaliza nos bytes congelados")]
     public void Restaurar_ReporEProvar()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         // A sessão editorial descaracterizou a configuração viva — é o que o descarte desfaz.
-        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoPobre()).IsSuccess.Should().BeTrue();
+        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelopeEntrada.GrafoPobre()).IsSuccess.Should().BeTrue();
 
         RestauradorDeConfiguracao restaurador = new(CorpusEnvelope.Registro);
 
@@ -68,18 +68,18 @@ public sealed class RestauradorDeConfiguracaoTests
         processo.LimparColetaEDerivacaoParaRestauracao();
         processo.RestaurarConfiguracaoCongelada(versao, resultado.Value!).IsSuccess.Should().BeTrue();
 
-        CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes
+        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes
             .Should().Equal(congelado.Bytes, "o agregado voltou a ser, byte a byte, o que a versão congelou");
     }
 
     [Fact(DisplayName = "Restaurar sobre o formulário vivo editado repõe o conteúdo congelado dele")]
     public void Restaurar_FormularioVivoEditado_RepoeOCongelado()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         string? tituloCongelado = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.Titulo;
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         Result<GrafoConfiguracao> grafo = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(processo, versao);
         grafo.IsSuccess.Should().BeTrue(grafo.Error?.Message);
 
@@ -93,7 +93,7 @@ public sealed class RestauradorDeConfiguracaoTests
     }
 
     /// <summary>
-    /// Story #575: o corpus rico (<see cref="CorpusEnvelope.ProcessoRico"/>) tem a cascata
+    /// Story #575: o corpus rico (<see cref="CorpusEnvelopeProcessoRico.ProcessoRico"/>) tem a cascata
     /// de remanejamento configurada (as 8 federais de <c>DistribuicaoLei12711</c> são
     /// <c>SegueCascata</c>, INV-12), então <see cref="Restaurar_ReporEProvar"/> já a exercita
     /// no round-trip de descarte — mas só implicitamente, via a comparação de bytes. Este
@@ -103,16 +103,16 @@ public sealed class RestauradorDeConfiguracaoTests
     [Fact(DisplayName = "Restaurar repõe a cascata de remanejamento na raiz viva — não só nos bytes recanonicalizados")]
     public void Restaurar_ComCascataCongelada_RepoeNaRaizViva()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         processo.Cascata.Should().NotBeNull("pré-condição: o corpus rico tem a cascata configurada");
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         // A sessão editorial descaracterizou a configuração viva — GrafoPobre não tem
         // cascata nenhuma. É o que o descarte tem de desfazer.
-        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoPobre()).IsSuccess.Should().BeTrue();
+        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelopeEntrada.GrafoPobre()).IsSuccess.Should().BeTrue();
         processo.Cascata.Should().BeNull("pré-condição: a sessão editorial removeu a cascata da raiz viva");
 
         RestauradorDeConfiguracao restaurador = new(CorpusEnvelope.Registro);
@@ -142,15 +142,15 @@ public sealed class RestauradorDeConfiguracaoTests
     [Fact(DisplayName = "Restaurar prova o round-trip com Unidade administradora — a sombra reproduz a identidade congelada (issue #849)")]
     public void Restaurar_ComUnidadeAdministradora_ProvaRoundTrip()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         Guid unidadeOrigemId = processo.UnidadeAdministradoraOrigemId;
         string siglaOriginal = processo.UnidadeAdministradora.Sigla;
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
-        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoPobre()).IsSuccess.Should().BeTrue();
+        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelopeEntrada.GrafoPobre()).IsSuccess.Should().BeTrue();
 
         RestauradorDeConfiguracao restaurador = new(CorpusEnvelope.Registro);
         Result<GrafoConfiguracao> resultado = restaurador.Restaurar(processo, versao);
@@ -177,7 +177,7 @@ public sealed class RestauradorDeConfiguracaoTests
     [Fact(DisplayName = "Restaurar repassa Conformidade adiante — a prova não diverge quando a versão congelou obrigatoriedades legais")]
     public void Restaurar_ComConformidadeCongelada_ReporEProvar()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
 
         RegraAvaliada regra = new(
             RegraId: Guid.CreateVersion7(),
@@ -197,12 +197,12 @@ public sealed class RestauradorDeConfiguracaoTests
         ResultadoConformidade conformidade = new([regra], []);
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(
-            CorpusEnvelope.Entrada(processo, conformidade: conformidade));
-        CorpusEnvelope.Publicar(processo);
+            CorpusEnvelopeEntrada.Entrada(processo, conformidade: conformidade));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
-        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoPobre()).IsSuccess.Should().BeTrue();
+        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelopeEntrada.GrafoPobre()).IsSuccess.Should().BeTrue();
 
         RestauradorDeConfiguracao restaurador = new(CorpusEnvelope.Registro);
 
@@ -219,19 +219,19 @@ public sealed class RestauradorDeConfiguracaoTests
     [Fact(DisplayName = "Um decoder que PERDE um campo faz a restauração FALHAR — não grava configuração empobrecida")]
     public void DecoderQuePerdeCampo_Falha()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         // Um registro cujo decoder devolve um grafo VÁLIDO, mas empobrecido — exatamente o
         // que um campo esquecido produziria. O agregado o aceita (é conforme); só a prova
         // de round-trip o rejeita.
         IRegistroCodecsEnvelope registroDefeituoso = Substitute.For<IRegistroCodecsEnvelope>();
         registroDefeituoso.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(new EnvelopeReidratado(
-            CorpusEnvelope.GrafoPobre(),
-            CorpusEnvelope.DadosRicos(),
+            CorpusEnvelopeEntrada.GrafoPobre(),
+            CorpusEnvelopeDadosDoEdital.DadosRicos(),
             CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
             retificacao: null,
             conformidade: null)));
@@ -242,7 +242,7 @@ public sealed class RestauradorDeConfiguracaoTests
 
         RestauradorDeConfiguracao restaurador = new(registroDefeituoso);
 
-        byte[] antesDaTentativa = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
+        byte[] antesDaTentativa = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
 
         Result<GrafoConfiguracao> resultado = restaurador.Restaurar(processo, versao);
 
@@ -255,7 +255,7 @@ public sealed class RestauradorDeConfiguracaoTests
         // raiz tracked empobrecida quando a prova falhasse, e bastaria um SaveChanges adiante
         // no mesmo escopo para gravar o estrago — a atomicidade dependeria de o handler
         // lembrar de não salvar. A prova roda sobre uma sombra destacada, antes.
-        CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes
+        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes
             .Should().Equal(antesDaTentativa,
                 "uma prova que falha não pode deixar resíduo no agregado — se ela repusesse primeiro e provasse " +
                 "depois, este assert falharia, e o campo perdido estaria a um SaveChanges de ser persistido");
@@ -264,9 +264,9 @@ public sealed class RestauradorDeConfiguracaoTests
     [Fact(DisplayName = "Uma versão de schema desconhecido faz a restauração falhar sem tocar no agregado")]
     public void VersaoNaoReidratavel_Falha()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        byte[] bytes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        byte[] bytes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        CorpusEnvelopeEntrada.Publicar(processo);
 
         VersaoConfiguracao versao10 = VersaoConfiguracao.Abrir(
             processo.Id,
@@ -278,14 +278,14 @@ public sealed class RestauradorDeConfiguracaoTests
             atorUsuarioContaId: CorpusEnvelope.Ator,
             instante: DateTimeOffset.UnixEpoch);
 
-        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
+        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
 
         Result<GrafoConfiguracao> resultado = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(processo, versao10);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.VersaoDesconhecida);
 
-        CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes
+        CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes
             .Should().Equal(antes, "uma restauração recusada não altera a configuração");
     }
 }

@@ -9,7 +9,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-public sealed partial class EtapaProcessoTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioEtapaProcesso;
+
+public sealed class EtapaProcessoTests
 {
     // ── A identidade do que não mudou sobrevive à regravação ──
     //
@@ -102,9 +104,6 @@ public sealed partial class EtapaProcessoTests
         EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: null, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-
-    private static TipoEtapaSnapshot TipoEtapaProvaObjetiva() =>
-        TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
 
     // ── Como a nota da etapa é obtida ──
 

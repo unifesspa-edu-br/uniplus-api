@@ -112,7 +112,7 @@ internal sealed class CenarioDeFormularioPublicado
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         processo.DefinirTitulo("Formulário de Inscrição", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([CorpusEnvelope.Termo("DECLARACAO_VERACIDADE", 0)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTermos([CorpusEnvelopeEntrada.Termo("DECLARACAO_VERACIDADE", 0)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         return processo;
@@ -128,7 +128,7 @@ internal sealed class CenarioDeFormularioPublicado
     {
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            hashDocumento, ator, TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         await PersistirDivulgadoAsync(processo, publicar.Value!, dados);
         return publicar.Value!;

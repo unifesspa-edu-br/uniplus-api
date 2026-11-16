@@ -33,7 +33,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 public sealed class EnvelopeCodecEnemEOpcoesTests
 {
     /// <summary>
-    /// Não reaproveita <see cref="MutarEReidratar"/>: o corpus rico (<see cref="CorpusEnvelope.ProcessoRico"/>)
+    /// Não reaproveita <see cref="MutarEReidratar"/>: o corpus rico (<see cref="CorpusEnvelopeProcessoRico.ProcessoRico"/>)
     /// já tem <c>ELIM-CORTE-REDACAO</c>/<c>ELIM-ZERO-EM-AREA</c> (<c>baseadoEmEnem: true</c>) —
     /// mutar o campo para <c>false</c> sobre esse corpus faria o decoder CORRETAMENTE recusar a
     /// reidratação (a invariante ENEM×eliminação é validada dentro de
@@ -49,8 +49,8 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     public void Decoder_NaoPerdeCampo_BaseadoEmEnem()
     {
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
         JsonObject mutado = Envelope(congelado);
         Mutar(mutado, "classificacao.baseadoEmEnem", "True");
@@ -58,7 +58,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
         byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
         bytesMutados.Should().NotEqual(congelado.Bytes, "pré-condição: mutar baseadoEmEnem tem de mudar os bytes");
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, bytesMutados);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, bytesMutados);
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
 
@@ -89,10 +89,10 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     public void Decoder_LeBaseadoEmEnemFalso()
     {
         ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes));
+        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes));
 
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
         reidratado.Value!.Grafo.Classificacao.BaseadoEmEnem.Should().BeFalse();
@@ -118,9 +118,9 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
             "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
         processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
@@ -150,11 +150,11 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
             "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         Envelope(congelado)["etapas"]![0]!["tipoEtapa"]!["notaDeOrigemNoEnem"]!.GetValue<bool>().Should().BeTrue(
             "o encoder congela o atributo ligado");
-        CorpusEnvelope.Publicar(processo);
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        CorpusEnvelopeEntrada.Publicar(processo);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
         processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
@@ -177,7 +177,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
              OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2024", "Opção 2024", 1).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo) with
+        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo) with
         {
             ValoresSelecionaveisCongelados = CatalogoDoConjuntoBasico.ComValoresCongelados(new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
             {
@@ -186,8 +186,8 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
             }),
         };
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
-        CorpusEnvelope.Publicar(processo, entrada);
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        CorpusEnvelopeEntrada.Publicar(processo, entrada);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
 
@@ -216,7 +216,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
             "LOCAL_PROVA", [OpcaoDeclaradaFato.Criar("LOCAL_PROVA", "MARABA", "Marabá", 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo) with
+        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo) with
         {
             ValoresSelecionaveisCongelados = CatalogoDoConjuntoBasico.ComValoresCongelados(new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
             {
@@ -225,8 +225,8 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
             }),
         };
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
-        CorpusEnvelope.Publicar(processo, entrada);
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        CorpusEnvelopeEntrada.Publicar(processo, entrada);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
 

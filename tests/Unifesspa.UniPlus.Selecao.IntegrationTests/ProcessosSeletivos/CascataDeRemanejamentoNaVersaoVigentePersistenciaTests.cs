@@ -129,7 +129,7 @@ public sealed class CascataDeRemanejamentoNaVersaoVigentePersistenciaTests
         Result<VersaoConfiguracao> fechar = carregado.FecharRetificacao(
             dados, versaoAtual, canonico.Bytes, canonico.SchemaVersion,
             canonico.AlgoritmoHash, documento.HashSha256!, "integration-test-user",
-            PrecondicaoIfMatch.Curinga, clock, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            PrecondicaoIfMatch.Curinga, clock, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
         return fechar.Value!;
     }

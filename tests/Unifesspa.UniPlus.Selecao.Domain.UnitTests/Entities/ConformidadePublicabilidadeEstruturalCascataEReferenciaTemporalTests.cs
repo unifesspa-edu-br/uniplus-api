@@ -24,33 +24,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed partial class ConformidadePublicabilidadeEstruturalTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
+
+public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTemporalTests
 {
-    /// <summary>A matriz legal completa (8×7), fallback AC — cada origem resolve nas outras sete, todas ofertadas.</summary>
-    private static ConfiguracaoCascataRemanejamento CascataCompleta()
-    {
-        List<DestinoRemanejamento> destinos = [];
-        foreach (string origem in OrigensFederais)
-        {
-            string[] ordemDestinos = [.. OrigensFederais.Where(o => o != origem)];
-            for (int i = 0; i < ordemDestinos.Length; i++)
-            {
-                destinos.Add(Destino(origem, i + 1, ordemDestinos[i]));
-            }
-        }
-
-        return ConfiguracaoCascataRemanejamento.Criar(RegraCascataRemanejamento(), ModalidadesFederaisLei12711.Ac, destinos).Value!;
-    }
-
-    /// <summary>Só os itens de <see cref="ProcessoSeletivo.AvaliarConformidade"/> que se espera ver vermelhos.</summary>
-    private static void SoEstesItensVermelhos(ProcessoSeletivo processo, params string[] itensVermelhos) =>
-        SoEstesItensVermelhos(processo, ContextoDeContagemDePrazos.SemCalendario, itensVermelhos);
-
-    private static void SoEstesItensVermelhos(
-        ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto, params string[] itensVermelhos) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Where(static i => !i.Ok).Select(static i => i.Codigo)
-            .Should().BeEquivalentTo(itensVermelhos);
-
     [Fact(DisplayName = "Cascata: modalidade SegueCascata fora do regime federal — item vermelho e Publicar recusa com CascataForaDoRegimeFederal")]
     public void Cascata_ForaDoRegimeFederal()
     {
@@ -298,9 +275,6 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga");
     }
-
-    private static CondicaoGatilho GatilhoFaixaEtaria() =>
-        CondicaoGatilho.Criar(0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
 
     [Fact(DisplayName = "Pré-canonicalização: gatilho por FAIXA_ETARIA sem referência temporal configurada — item vermelho e Publicar recusa com ReferenciaTemporalFatosAusente")]
     public void PreCanon_ReferenciaTemporalFatosAusente()

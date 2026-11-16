@@ -17,7 +17,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
-public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioProcessoSeletivoRestaurarConfiguracao;
+
+public sealed class ProcessoSeletivoRestaurarConfiguracaoEtapasCongeladasTests
 {
     // O definitivo vem PRIMEIRO: é a ordem em que o envelope canônico os devolve, e é ela que o casamento só
     // por ato lia como se fosse a âncora.

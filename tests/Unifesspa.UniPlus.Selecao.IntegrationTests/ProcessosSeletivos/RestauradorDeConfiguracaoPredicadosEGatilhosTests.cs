@@ -41,16 +41,16 @@ public sealed class RestauradorDeConfiguracaoPredicadosEGatilhosTests
     [Fact(DisplayName = "Predicado customizado com número decimal no bloco opaco publica e reidrata — a forma preserva, não recusa")]
     public void Restaurar_ComPredicadoCustomizadoDecimal_PublicaEReidrata()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         using JsonDocument parametros = JsonDocument.Parse("""{"limite":1.5,"regra":"transitoria"}""");
 
         // O publish canonicaliza; se a forma exigisse inteiro, estouraria aqui.
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(
-            CorpusEnvelope.Entrada(processo, conformidade: new ResultadoConformidade([RegraCustomizada(parametros)], [])));
-        CorpusEnvelope.Publicar(processo);
+            CorpusEnvelopeEntrada.Entrada(processo, conformidade: new ResultadoConformidade([RegraCustomizada(parametros)], [])));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
-        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoPobre()).IsSuccess.Should().BeTrue();
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
+        processo.RestaurarConfiguracaoCongelada(versao, CorpusEnvelopeEntrada.GrafoPobre()).IsSuccess.Should().BeTrue();
 
         RestauradoSemErro(processo, versao, "a restauração do predicado customizado com decimal deveria ter provado o round-trip");
     }
@@ -91,7 +91,7 @@ public sealed class RestauradorDeConfiguracaoPredicadosEGatilhosTests
         FaseCronograma fase = ProcessoBaseDeEnvelope.FaseUnica("RESULTADO_FINAL", "RESULTADO_CLASSIFICACAO", permiteComplementacao: false);
         ProcessoSeletivo processo = ProcessoBaseDeEnvelope.Montar("PS Restaurador FAIXA_ETARIA", fase);
         DefinirGatilhoDeMaioridadeAncoradoNoFimDaFase(processo, fase);
-        DadosEdital dados = CorpusEnvelope.DadosRicos();
+        DadosEdital dados = CorpusEnvelopeDadosDoEdital.DadosRicos();
         SnapshotCanonico congelado = new SnapshotPublicacaoCanonicalizer().Canonicalizar(EntradaDoProcessoDeFaixaEtaria(processo, dados));
         VersaoConfiguracao versao = PublicadaPeloAtorDoCorpus(processo, dados, congelado);
 
@@ -127,6 +127,6 @@ public sealed class RestauradorDeConfiguracaoPredicadosEGatilhosTests
     private static EntradaCanonicalizacao EntradaDoProcessoDeFaixaEtaria(ProcessoSeletivo processo, DadosEdital dados) =>
         new(
             processo, dados, CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
-            CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(), ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
+            CalendarioDiasUteis: CorpusEnvelopeDadosDoEdital.CalendarioRico(), ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao);
 }

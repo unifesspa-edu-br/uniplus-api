@@ -53,7 +53,7 @@ internal static class ApoioDoEnvelopeCodec
     {
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            entrada.HashDocumento, contaId, TimeProvider.System, CorpusEnvelope.ContextoRico(),
+            entrada.HashDocumento, contaId, TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(),
             FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         return publicacao.Value!;
@@ -139,9 +139,9 @@ internal static class ApoioDoEnvelopeCodec
     {
         ArgumentNullException.ThrowIfNull(caminho);
 
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
         // A mesma modalidade é ofertada pelos dois cursos do processo rico, e o processo não aceita
         // duas cópias diferentes dela: o caminho pode nomear as duas ocorrências, separadas por '|'.
@@ -154,7 +154,7 @@ internal static class ApoioDoEnvelopeCodec
         byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
         bytesMutados.Should().NotEqual(congelado.Bytes, $"pré-condição: mutar '{caminho}' tem de mudar os bytes");
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, bytesMutados);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, bytesMutados);
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
 
@@ -219,11 +219,11 @@ internal static class ApoioDoEnvelopeCodec
 
     internal static void ConferirRoundTripDaVersaoDeAbertura()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         AssertRoundTrip(processo, versao, congelado);
     }

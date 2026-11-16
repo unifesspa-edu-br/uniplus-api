@@ -23,7 +23,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed partial class ConformidadePublicabilidadeEstruturalTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
+
+public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTests
 {
     private static TermoExigidoFormulario Termo(
         string codigo, int ordem, string formaAceite = "REGISTRO_DIGITAL_SEM_LOG_IP", PredicadoDnf? exibicao = null) =>

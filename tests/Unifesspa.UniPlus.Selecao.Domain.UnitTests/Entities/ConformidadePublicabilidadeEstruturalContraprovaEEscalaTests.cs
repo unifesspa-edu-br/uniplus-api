@@ -24,7 +24,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed partial class ConformidadePublicabilidadeEstruturalTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
+
+public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
 {
     [Fact(DisplayName = "Contraprova: fato coletável CONDICAO_ATENDIMENTO com condição ofertada mantém o item Ok")]
     public void Contraprova_FatoColetadoCondicaoAtendimentoComOferta_ChecklistVerde()
@@ -254,39 +256,6 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
     // Processo baseado em ENEM com cálculo local: resolução, quadro e grupo das ofertas
     // ══════════════════════════════════════════════════════════════════════════════════════
 
-    private static readonly (string? Codigo, string? Rotulo) GrupoHumanisticaI = ("HUMANISTICA_I", "Humanística I");
-
-    private static ConfiguracaoClassificacao ClassificacaoEnemLocal(IReadOnlyList<GrupoPesoAreaEnemCongelado> quadro) =>
-        ConfiguracaoClassificacao.Criar(
-            Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'), Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'), 2,
-            Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'), [], baseadoEmEnem: true,
-            resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao, quadroPesoAreaEnem: quadro, escalaNotaFinal: 100m).Value!;
-
-    private static ProcessoSeletivo ProcessoEnemLocal(
-        IReadOnlyList<ConfiguracaoDistribuicaoVagas> ofertas,
-        IReadOnlyList<GrupoPesoAreaEnemCongelado>? quadro = null)
-    {
-        ProcessoSeletivo processo = ProcessoConformeComEtapaQueCompoeNota();
-        processo.DefinirDistribuicaoVagas(ofertas, FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoEnemLocal(quadro ?? QuadroPesoAreaEnemDeTeste.Completo()), PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
-        // Classificação baseada em ENEM exige ao menos uma edição admitida (issue #1620) — sem
-        // ela, o item "classificacao_edicao_enem_nao_declarada" ficaria vermelho e interferiria
-        // nos testes desta classe, que focam nos itens do quadro de pesos por área.
-        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        return processo;
-    }
-
-    /// <summary>A fábrica recusa quadro vazio; o EF hidrata a linha sem passar por ela.</summary>
-    private static void EsvaziarQuadro(ConfiguracaoClassificacao classificacao) =>
-        ((List<GrupoPesoAreaEnemCongelado>)typeof(ConfiguracaoClassificacao)
-            .GetField("_quadroPesoAreaEnem", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(classificacao)!).Clear();
-
-    private static ItemConformidade Item(ProcessoSeletivo processo, string codigo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Single(i => i.Codigo == codigo);
-
     [Fact(DisplayName = "ENEM com cálculo local: resolução, quadro e grupo do quadro em toda oferta — os itens existem, nenhum vermelho, e Publicar conclui")]
     public void Enem_ProcessoCompletoPublica()
     {
@@ -347,12 +316,5 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
 
         ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
             .Select(static i => i.Codigo).Should().NotContain("classificacao_escala_nota_final_nao_declarada");
-    }
-
-    public enum FaltaNaResolucao
-    {
-        ResolucaoAusente,
-        ResolucaoEmBranco,
-        QuadroVazio,
     }
 }

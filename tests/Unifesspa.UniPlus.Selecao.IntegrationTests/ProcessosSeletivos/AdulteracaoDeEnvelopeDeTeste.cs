@@ -25,7 +25,7 @@ internal static class AdulteracaoDeEnvelopeDeTeste
     public static Result<EnvelopeReidratado> ReidratarComEnvelopeAdulterado(Action<JsonObject> adulterar, bool comArvoreSatisfacao = false)
     {
         byte[] originais = CorpusEnvelope.Codec.Codificar(
-            CorpusEnvelope.Entrada(CorpusEnvelope.ProcessoRico(comArvoreSatisfacao: comArvoreSatisfacao))).Bytes;
+            CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico(comArvoreSatisfacao: comArvoreSatisfacao))).Bytes;
 
         // A versão é reconstruída SOBRE os bytes adulterados — o hash bate, e o gate de
         // integridade não é o que os recusa. É a gramática.
@@ -35,7 +35,7 @@ internal static class AdulteracaoDeEnvelopeDeTeste
     /// <summary>
     /// Mesmo raciocínio de <see cref="ReidratarComEnvelopeAdulterado"/>, mas sobre o processo de
     /// referência da golden fixture (<see cref="EnvelopeDeReferencia.ProcessoDeReferencia"/>) —
-    /// é ele, não <see cref="CorpusEnvelope.ProcessoRico"/>, quem tem <c>documentosExigidos</c>
+    /// é ele, não <see cref="CorpusEnvelopeProcessoRico.ProcessoRico"/>, quem tem <c>documentosExigidos</c>
     /// populado, e por isso <c>metadadosFatos[].valoresDominioDeclarados</c> só existe aqui.
     /// </summary>
     public static Result<EnvelopeReidratado> ReidratarComEnvelopeDeReferenciaAdulterado(Action<JsonObject> adulterar)
@@ -93,7 +93,7 @@ internal static class AdulteracaoDeEnvelopeDeTeste
     {
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             dados, bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            EnvelopeDeReferencia.HashFixo, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            EnvelopeDeReferencia.HashFixo, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         processo.ClearDomainEvents();
 

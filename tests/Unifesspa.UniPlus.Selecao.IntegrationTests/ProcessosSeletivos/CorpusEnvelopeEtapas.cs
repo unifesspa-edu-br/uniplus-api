@@ -16,14 +16,22 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-internal static partial class CorpusEnvelope
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelope;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeCronograma;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDadosDoEdital;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDocumentos;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEntrada;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeProcessoRico;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeVagas;
+
+internal static class CorpusEnvelopeEtapas
 {
     // A objetiva carrega o recurso da ETAPA, e carrega os dois casos que o envelope
     // precisava aprender a congelar: a suspensividade declarada nos dois pares — que voltava
     // nula — e a âncora por CIÊNCIA, cujo produto é ausente e cujo Guid vazio fazia o
     // envelope recusar a si mesmo na volta. Sem isto no corpus, o round-trip passava
     // exatamente por não exercitar recurso de etapa nenhum.
-    private static EtapaProcesso EtapaObjetiva(int variante, bool permutar)
+    internal static EtapaProcesso EtapaObjetiva(int variante, bool permutar)
     {
         EtapaProcesso etapa = NovaEtapaObjetiva(variante, permutar);
         etapa.DefinirJanelaEParecer(null, null, emiteParecerIndividual: true).IsSuccess.Should().BeTrue();
@@ -33,7 +41,7 @@ internal static partial class CorpusEnvelope
         return etapa;
     }
 
-    private static EtapaProcesso NovaEtapaObjetiva(int variante, bool permutar) =>
+    internal static EtapaProcesso NovaEtapaObjetiva(int variante, bool permutar) =>
         EtapaProcesso.Reidratar(
             EtapaId(1, variante),
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: "RESULTADO_PRELIMINAR"),
@@ -59,7 +67,7 @@ internal static partial class CorpusEnvelope
     //
     // De quebra, dão ao bloco de recursos uma segunda âncora preliminar de verdade. A etapa fecha
     // o próprio ciclo: cada preliminar tem o definitivo do mesmo tipo nela.
-    private static IReadOnlyList<ProdutoDaEtapa> ProdutosDaObjetiva(int variante, bool permutar) =>
+    internal static IReadOnlyList<ProdutoDaEtapa> ProdutosDaObjetiva(int variante, bool permutar) =>
         Ordem([
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(1, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
             ProdutoDaEtapa.Reidratar(ProdutoDaObjetivaId(2, variante), "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
@@ -75,21 +83,21 @@ internal static partial class CorpusEnvelope
     // por código não se manifestava. Duas delas são o mesmo par dos produtos — acento
     // decomposto e um companheiro escolhido para que a ordem entre eles vire com a
     // normalização —, aplicado ao outro campo que a canonicalização ordena por texto.
-    private static IReadOnlyList<BancaDaEtapa> BancasDaObjetiva(int variante, bool permutar) =>
+    internal static IReadOnlyList<BancaDaEtapa> BancasDaObjetiva(int variante, bool permutar) =>
         Ordem([
             BancaDaEtapa.Reidratar(BancaDaObjetivaId(2, variante), TipoBancaRecursal, BancaAnaliseDecomposta, "Banca de teste", BancasDeTeste.Regra()),
             BancaDaEtapa.Reidratar(BancaDaObjetivaId(3, variante), TipoBancaAnulacao, BancaAnulacao, "Banca de teste", BancasDeTeste.Regra()),
             BancaDaEtapa.Reidratar(BancaDaObjetivaId(1, variante), TipoBancaExaminadora, "BANCA_EXAMINADORA", "Banca de teste", BancasDeTeste.Regra()),
         ], permutar);
 
-    private static IReadOnlyList<RecursoDaEtapa> RecursosDaObjetiva(int variante) =>
+    internal static IReadOnlyList<RecursoDaEtapa> RecursosDaObjetiva(int variante) =>
     [
         RecursoDaObjetivaAncoradoNoPrimeiroProduto(variante),
         RecursoDaObjetivaAncoradoNoSegundoProduto(variante),
         RecursoDaObjetivaPorCiencia(variante),
     ];
 
-    private static RecursoDaEtapa RecursoDaObjetivaAncoradoNoPrimeiroProduto(int variante) =>
+    internal static RecursoDaEtapa RecursoDaObjetivaAncoradoNoPrimeiroProduto(int variante) =>
         RecursoDaEtapa.Reidratar(
             RecursoDaObjetivaId(1, variante),
             AncoraDoRecurso.AtoPublicado,
@@ -106,7 +114,7 @@ internal static partial class CorpusEnvelope
     // ordenação das janelas recursais precisa desempatar. Ela ordena pela chave do
     // produto âncora, não pelo id dele: com uma âncora só, trocar um critério pelo outro
     // não mudava nada, e era possível reverter a política sem quebrar fixture nenhuma.
-    private static RecursoDaEtapa RecursoDaObjetivaAncoradoNoSegundoProduto(int variante) =>
+    internal static RecursoDaEtapa RecursoDaObjetivaAncoradoNoSegundoProduto(int variante) =>
         RecursoDaEtapa.Reidratar(
             RecursoDaObjetivaId(2, variante),
             AncoraDoRecurso.AtoPublicado,
@@ -138,7 +146,7 @@ internal static partial class CorpusEnvelope
             TipoMotivoDeDecisao.Classificacao, AlvoDoProcedimentoDeRecurso.DaArea(AreaDoEnem.Linguagens), Regra(RegraProcedimentoRecursoCodigo.Recalculo, '7')),
     ]);
 
-    private static RecursoDaEtapa RecursoDaObjetivaPorCiencia(int variante) =>
+    internal static RecursoDaEtapa RecursoDaObjetivaPorCiencia(int variante) =>
         RecursoDaEtapa.Reidratar(
             RecursoDaObjetivaId(3, variante),
             AncoraDoRecurso.CienciaIndividual,
@@ -147,7 +155,7 @@ internal static partial class CorpusEnvelope
             Guid.Empty,
             ProcedimentosDeRecurso.Nenhum).Value!;
 
-    private static EtapaProcesso EtapaRedacao(int variante) =>
+    internal static EtapaProcesso EtapaRedacao(int variante) =>
         EtapaProcesso.Reidratar(
             EtapaId(2, variante),
             new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaRedacao(), Ordem: 2, FaseCodigo: "RESULTADO_PRELIMINAR"),
@@ -155,7 +163,7 @@ internal static partial class CorpusEnvelope
             itens: null);
 
     // A etapa de avaliação humana exige ao menos uma banca para publicar.
-    private static EtapaProcesso EtapaEntrevista(int variante, bool permutar)
+    internal static EtapaProcesso EtapaEntrevista(int variante, bool permutar)
     {
         EtapaProcesso etapa = EtapaProcesso.Reidratar(
             EtapaId(3, variante),
@@ -171,7 +179,7 @@ internal static partial class CorpusEnvelope
 
     // A banca escolhe o nível de cada critério, sem digitar a nota: é o caso que congela a
     // escala de atendimento e dispensa o passo do lançamento.
-    private static EtapaProcesso EtapaDefesa(int variante, bool permutar)
+    internal static EtapaProcesso EtapaDefesa(int variante, bool permutar)
     {
         EtapaProcesso etapa = EtapaProcesso.Reidratar(
             EtapaId(4, variante),
@@ -185,7 +193,7 @@ internal static partial class CorpusEnvelope
         return etapa;
     }
 
-    private static IReadOnlyList<NivelDeAtendimento> EscalaDeAtendimentoDaDefesa(bool permutar) =>
+    internal static IReadOnlyList<NivelDeAtendimento> EscalaDeAtendimentoDaDefesa(bool permutar) =>
         Ordem([
             new NivelDeAtendimento("Atendeu parcialmente", 0.5000m),
             new NivelDeAtendimento("Atendeu", 1.0000m),

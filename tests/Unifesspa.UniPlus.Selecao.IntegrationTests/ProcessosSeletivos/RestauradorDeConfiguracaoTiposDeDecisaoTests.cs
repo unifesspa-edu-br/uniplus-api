@@ -29,19 +29,19 @@ public sealed class RestauradorDeConfiguracaoTiposDeDecisaoTests
 
     private static VersaoConfiguracao PublicadoCongelandoTudo(ProcessoSeletivo processo)
     {
-        byte[] bytes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
-        CorpusEnvelope.Publicar(processo);
-        return CorpusEnvelope.VersaoDeAbertura(processo, bytes);
+        byte[] bytes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
+        CorpusEnvelopeEntrada.Publicar(processo);
+        return CorpusEnvelopeEntrada.VersaoDeAbertura(processo, bytes);
     }
 
     private static string HashCongeladoDe(ProcessoSeletivo processo) =>
-        CorpusEnvelope.VersaoDeAbertura(processo, CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes)
+        CorpusEnvelopeEntrada.VersaoDeAbertura(processo, CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes)
             .HashConfiguracao;
 
     [Fact(DisplayName = "Restaurar pelo caminho real ainda não preserva os tipos de decisão que a fase declarava na raiz viva")]
     public void Restaurar_AindaNaoPreservaOsTiposDeDecisaoDaFaseNaRaizViva()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico(tiposDeDecisaoDaFaseFinal: [TipoDeClassificacao, TipoDeIsencaoDaTaxa]);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [TipoDeClassificacao, TipoDeIsencaoDaTaxa]);
         VersaoConfiguracao versao = PublicadoCongelandoTudo(processo);
         FaseFinalDe(processo).TiposDeDecisao.Should().Equal(
             [TipoDeClassificacao, TipoDeIsencaoDaTaxa], "pré-condição: a fase publicada declarava os tipos");
@@ -55,7 +55,7 @@ public sealed class RestauradorDeConfiguracaoTiposDeDecisaoTests
     [Fact(DisplayName = "Restaurar pelo caminho real ainda não preserva os tipos de decisão que a etapa declarava na raiz viva")]
     public void Restaurar_AindaNaoPreservaOsTiposDeDecisaoDaEtapaNaRaizViva()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         EtapaDeProvaObjetivaDe(processo).DefinirTiposDeDecisao([TipoDeClassificacao, TipoDeIsencaoDaTaxa]).IsSuccess.Should().BeTrue();
         VersaoConfiguracao versao = PublicadoCongelandoTudo(processo);
         EtapaDeProvaObjetivaDe(processo).TiposDeDecisao.Should().Equal(
@@ -70,10 +70,10 @@ public sealed class RestauradorDeConfiguracaoTiposDeDecisaoTests
     [Fact(DisplayName = "Alterar só os tipos de decisão da fase ainda não muda o hash da configuração congelada")]
     public void AlterarSoOsTiposDeDecisaoDaFase_AindaNaoMudaOHash()
     {
-        string semTipos = HashCongeladoDe(CorpusEnvelope.ProcessoRico());
-        string comTipos = HashCongeladoDe(CorpusEnvelope.ProcessoRico(tiposDeDecisaoDaFaseFinal: [TipoDeClassificacao]));
+        string semTipos = HashCongeladoDe(CorpusEnvelopeProcessoRico.ProcessoRico());
+        string comTipos = HashCongeladoDe(CorpusEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [TipoDeClassificacao]));
         string comOutrosTipos = HashCongeladoDe(
-            CorpusEnvelope.ProcessoRico(tiposDeDecisaoDaFaseFinal: [TipoDeIsencaoDaTaxa, TipoDeAnaliseDocumental]));
+            CorpusEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [TipoDeIsencaoDaTaxa, TipoDeAnaliseDocumental]));
 
         comTipos.Should().Be(semTipos, "a declaração da fase ainda não entra no envelope");
         comOutrosTipos.Should().Be(semTipos, "trocar a declaração da fase ainda não altera o hash");
@@ -82,7 +82,7 @@ public sealed class RestauradorDeConfiguracaoTiposDeDecisaoTests
     [Fact(DisplayName = "Alterar só os tipos de decisão da etapa ainda não muda o hash da configuração congelada")]
     public void AlterarSoOsTiposDeDecisaoDaEtapa_AindaNaoMudaOHash()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         string semTipos = HashCongeladoDe(processo);
 
         EtapaDeProvaObjetivaDe(processo).DefinirTiposDeDecisao([TipoDeClassificacao]).IsSuccess.Should().BeTrue();

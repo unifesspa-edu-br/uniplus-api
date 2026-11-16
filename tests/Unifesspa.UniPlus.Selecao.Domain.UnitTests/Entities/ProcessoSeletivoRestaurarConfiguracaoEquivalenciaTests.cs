@@ -16,7 +16,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
-public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioProcessoSeletivoRestaurarConfiguracao;
+
+public sealed class ProcessoSeletivoRestaurarConfiguracaoEquivalenciaTests
 {
     [Fact(DisplayName = "Restaurar mais critérios de desempate que o teto é recusado, como na gravação")]
     public void Restaurar_CriteriosAcimaDoTeto_Recusa()
@@ -32,12 +34,6 @@ public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.CriteriosDesempateEmExcesso");
         Estado.De(processo).Should().BeEquivalentTo(antes);
     }
-
-    private static CriterioDesempate DesempatePorArea(params string[] areas) => DesempatePorArea(1, areas);
-
-    private static CriterioDesempate DesempatePorArea(int ordem, params string[] areas) =>
-        CriterioDesempate.Criar(
-            ordem, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(areas)).Value!;
 
     [Fact(DisplayName = "RestaurarConfiguracaoCongelada produz o mesmo resultado em processos de Tipo diferente com a mesma configuração (indistinguibilidade, #850)")]
     public void RestaurarConfiguracaoCongelada_TiposDiferentesMesmaConfiguracao_ResultadoIdentico()

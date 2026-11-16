@@ -44,12 +44,12 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         // etapa.Id é FIXO no corpus (é o que torna a golden fixture determinística). Dois
         // processos com as mesmas etapas colidiriam na chave primária de etapas_processo.
         const int Variante = 1;
-        ProcessoSeletivo original = CorpusEnvelope.ProcessoRico(Variante);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(original));
-        CorpusEnvelope.Publicar(original);
+        ProcessoSeletivo original = CorpusEnvelopeProcessoRico.ProcessoRico(Variante);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(original));
+        CorpusEnvelopeEntrada.Publicar(original);
 
         Guid processoId = original.Id;
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(
             original, congelado.Bytes, new Guid($"01900000-0000-7000-8000-00000000000{Variante:x}"));
 
         await using (UniPlusDbContext escrita = fixture.CreateDbContext())
@@ -64,7 +64,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         await using (UniPlusDbContext sessao = fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(sessao, processoId);
-            tracked.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoPobre(Variante)).IsSuccess.Should().BeTrue();
+            tracked.RestaurarConfiguracaoCongelada(versao, CorpusEnvelopeEntrada.GrafoPobre(Variante)).IsSuccess.Should().BeTrue();
             await sessao.SaveChangesAsync();
         }
 
@@ -127,7 +127,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         reposto.BonusRegional.Fator.Should().Be(1.2000m, "o bônus voltou — com o fator congelado");
 
         // (c) O Id congelado da etapa sobreviveu ao banco — é ele que o etapaRef referencia.
-        IEnumerable<Guid> idsCongelados = CorpusEnvelope.ProcessoRico(Variante).Etapas.Select(e => e.Id);
+        IEnumerable<Guid> idsCongelados = CorpusEnvelopeProcessoRico.ProcessoRico(Variante).Etapas.Select(e => e.Id);
         reposto.Etapas.Select(e => e.Id).Should().BeEquivalentTo(idsCongelados);
 
         // (d) E o agregado RELIDO DO BANCO recanonicaliza nos bytes congelados. É a prova
@@ -136,11 +136,11 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
             versao.SchemaVersion,
             new EntradaCanonicalizacao(
-                reposto, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
-                ValoresSelecionaveisCongelados: CorpusEnvelope.ValoresSelecionaveisRicos(),
-                CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
-                AgregadosDosGrupos: CorpusEnvelope.AgregadosRicos,
-                ApresentacaoDosPressupostos: CorpusEnvelope.ApresentacaoRica,
+                reposto, CorpusEnvelopeDadosDoEdital.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
+                ValoresSelecionaveisCongelados: CorpusEnvelopeDadosDoEdital.ValoresSelecionaveisRicos(),
+                CalendarioDiasUteis: CorpusEnvelopeDadosDoEdital.CalendarioRico(),
+                AgregadosDosGrupos: CorpusEnvelopeEntrada.AgregadosRicos,
+                ApresentacaoDosPressupostos: CorpusEnvelopeEntrada.ApresentacaoRica,
                 TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(reposto), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,
@@ -152,13 +152,13 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
     public async Task EtapaReconciliada_PreservaCreatedAt()
     {
         const int Variante = 2;
-        ProcessoSeletivo original = CorpusEnvelope.ProcessoRico(Variante);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(original));
-        CorpusEnvelope.Publicar(original);
+        ProcessoSeletivo original = CorpusEnvelopeProcessoRico.ProcessoRico(Variante);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(original));
+        CorpusEnvelopeEntrada.Publicar(original);
 
         Guid processoId = original.Id;
         Guid etapaId = original.Etapas.First().Id;
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(
             original, congelado.Bytes, new Guid($"01900000-0000-7000-8000-00000000000{Variante:x}"));
 
         await using (UniPlusDbContext escrita = fixture.CreateDbContext())
@@ -184,7 +184,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         await using (UniPlusDbContext sessao = fixture.CreateDbContext())
         {
             ProcessoSeletivo tracked = await CarregarAsync(sessao, processoId);
-            tracked.RestaurarConfiguracaoCongelada(versao, CorpusEnvelope.GrafoComEtapaAlterada(Variante))
+            tracked.RestaurarConfiguracaoCongelada(versao, CorpusEnvelopeEntrada.GrafoComEtapaAlterada(Variante))
                 .IsSuccess.Should().BeTrue();
             await sessao.SaveChangesAsync();
         }
@@ -216,7 +216,7 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
 
         await using UniPlusDbContext verificacao = fixture.CreateDbContext();
         EtapaProcesso reconciliada = (await CarregarAsync(verificacao, processoId)).Etapas.Single(e => e.Id == etapaId);
-        EtapaProcesso congeladaOriginal = CorpusEnvelope.ProcessoRico(Variante).Etapas.Single(e => e.Id == etapaId);
+        EtapaProcesso congeladaOriginal = CorpusEnvelopeProcessoRico.ProcessoRico(Variante).Etapas.Single(e => e.Id == etapaId);
 
         // Todos os dados voltaram ao que a versão congelou...
         reconciliada.Nome.Should().Be(congeladaOriginal.Nome);
@@ -251,127 +251,6 @@ public sealed class RestaurarConfiguracaoPersistenciaTests(ProcessoSeletivoDbFix
         reconciliada.CreatedAt.Should().Be(criadoEm,
             "a etapa reconciliada é a mesma linha — a D2 declara que ela preserva o CreatedAt original, ao contrário " +
             "das demais filhas, que são recriadas e recebem o instante do descarte");
-    }
-
-    [Fact(DisplayName = "O descarte devolve à etapa a janela, os produtos, as bancas e os recursos que o ato congelou")]
-    public async Task Restaurar_ReponAsFilhasDaEtapaRetida()
-    {
-        // Variante própria: a classe inteira compartilha um Postgres, e o id da etapa é fixo
-        // por variante — dois processos com as mesmas etapas colidiriam na chave primária.
-        const int Variante = 3;
-        ProcessoSeletivo original = CorpusEnvelope.ProcessoRico(Variante);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(original));
-        CorpusEnvelope.Publicar(original);
-
-        Guid processoId = original.Id;
-        Guid objetivaId = original.Etapas.Single(e => e.Nome == "Prova Objetiva").Id;
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(
-            original, congelado.Bytes, new Guid($"01900000-0000-7000-8000-00000000000{Variante:x}"));
-
-        await using (UniPlusDbContext escrita = fixture.CreateDbContext())
-        {
-            escrita.ProcessosSeletivos.Add(original);
-            escrita.Add(versao);
-            await escrita.SaveChangesAsync();
-        }
-
-        // A sessão editorial esvazia a etapa RETIDA pelos comandos que o operador tem à mão —
-        // não por um grafo. É a diferença que faz o teste dizer algo: aplicar um grafo cuja
-        // etapa nasce vazia passaria por inércia se a reposição não mexesse nas coleções, já
-        // que elas nunca teriam saído.
-        await using (UniPlusDbContext sessao = fixture.CreateDbContext())
-        {
-            ProcessoSeletivo tracked = await CarregarAsync(sessao, processoId);
-            EtapaProcesso objetiva = tracked.Etapas.Single(e => e.Id == objetivaId);
-
-            // Recursos antes dos produtos: a âncora em ato é conferida contra os produtos da
-            // etapa, e esvaziá-los primeiro deixaria a janela recursal sem onde ancorar.
-            objetiva.DefinirRecursos([]).IsSuccess.Should().BeTrue();
-            objetiva.DefinirProdutos([]).IsSuccess.Should().BeTrue();
-            objetiva.DefinirBancas([]).IsSuccess.Should().BeTrue();
-            objetiva.DefinirJanelaEParecer(
-                new DateTimeOffset(2027, 5, 1, 0, 0, 0, TimeSpan.Zero),
-                new DateTimeOffset(2027, 5, 2, 0, 0, 0, TimeSpan.Zero),
-                emiteParecerIndividual: false).IsSuccess.Should().BeTrue();
-
-            // Troca o rótulo de um item, mantendo o id, e acrescenta um item novo no lugar do outro.
-            ItemDeAvaliacao matematica = objetiva.ItensDeAvaliacao.Single(i => i.Rotulo == "Bloco de Matemática");
-            objetiva.AtualizarDados(
-                new IdentificacaoDaEtapa(Nome: objetiva.Nome, Carater: objetiva.Carater, TipoEtapa: objetiva.TipoEtapa, Ordem: objetiva.Ordem, FaseCodigo: objetiva.FaseCodigo),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: objetiva.Peso, NotaMinima: objetiva.NotaMinima, NotaMaxima: objetiva.NotaMaxima, PassoDoLancamento: objetiva.PassoDoLancamento, FormaDeAvaliacao: objetiva.FormaDeAvaliacao, RegraConsolidacao: objetiva.RegraConsolidacao, EscalaDeAtendimento: null),
-                [new(matematica.Id, "Bloco de Exatas", 40m), new(null, "Bloco de Humanidades", 60m)]).IsSuccess.Should().BeTrue();
-
-            await sessao.SaveChangesAsync();
-        }
-
-        await using (UniPlusDbContext leitura = fixture.CreateDbContext())
-        {
-            EtapaProcesso suja = (await CarregarAsync(leitura, processoId)).Etapas.Single(e => e.Id == objetivaId);
-            suja.ItensDeAvaliacao.Select(i => i.Rotulo).Should().BeEquivalentTo("Bloco de Exatas", "Bloco de Humanidades");
-            suja.Produtos.Should().BeEmpty("pré-condição: a sessão editorial esvaziou a etapa");
-            suja.Recursos.Should().BeEmpty("pré-condição: a sessão editorial esvaziou a etapa");
-            suja.EmiteParecerIndividual.Should().BeFalse("pré-condição: a sessão editorial retirou a promessa de parecer");
-        }
-
-        await using (UniPlusDbContext descarte = fixture.CreateDbContext())
-        {
-            ProcessoSeletivo tracked = await CarregarAsync(descarte, processoId);
-
-            Result<GrafoConfiguracao> prova = new RestauradorDeConfiguracao(CorpusEnvelope.Registro).Restaurar(tracked, versao);
-            prova.IsSuccess.Should().BeTrue(prova.Error?.Message);
-
-            tracked.LimparColetaEDerivacaoParaRestauracao();
-            await descarte.SaveChangesAsync();
-
-            tracked.RestaurarConfiguracaoCongelada(versao, prova.Value!).IsSuccess.Should().BeTrue();
-            await descarte.SaveChangesAsync();
-        }
-
-        await using UniPlusDbContext verificacao = fixture.CreateDbContext();
-        ProcessoSeletivo reposto = await CarregarAsync(verificacao, processoId);
-        EtapaProcesso objetivaReposta = reposto.Etapas.Single(e => e.Id == objetivaId);
-        EtapaProcesso congeladaOriginal = CorpusEnvelope.ProcessoRico(Variante).Etapas.Single(e => e.Id == objetivaId);
-
-        // O item volta pelo id que o envelope congela: lançamento e recurso apontam para ele, e a
-        // linha da sessão editorial que trocou de rótulo é a mesma que recupera o rótulo original.
-        objetivaReposta.ItensDeAvaliacao.Select(i => (i.Id, i.Rotulo, i.PontuacaoMaxima))
-            .Should().BeEquivalentTo(congeladaOriginal.ItensDeAvaliacao.Select(i => (i.Id, i.Rotulo, i.PontuacaoMaxima)));
-        objetivaReposta.Inicio.Should().Be(congeladaOriginal.Inicio);
-        objetivaReposta.Fim.Should().Be(congeladaOriginal.Fim);
-        objetivaReposta.EmiteParecerIndividual.Should().Be(congeladaOriginal.EmiteParecerIndividual);
-        // Só o lado esperado normalizado, pela mesma razão da outra reposição: o que volta tem
-        // de ser o texto canônico, e afrouxar os dois lados esconderia o dia em que deixar de
-        // ser.
-        objetivaReposta.Produtos.Select(p => (p.Id, p.AtoCodigo, p.Papel))
-            .Should().BeEquivalentTo(congeladaOriginal.Produtos.Select(p => (p.Id, HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), p.Papel)));
-        // A banca volta pelo CONTEÚDO, não pela identidade: o envelope congela o tipo e o
-        // código, e não o id — que a etapa refaz a cada gravação, porque o comando declara a
-        // banca pelo tipo. Cobrar o id aqui seria cobrar o que a publicação não promete.
-        objetivaReposta.Bancas.Select(b => (b.TipoBancaOrigemId, b.Codigo))
-            .Should().BeEquivalentTo(congeladaOriginal.Bancas.Select(b => (b.TipoBancaOrigemId, HashCanonicalComputer.NormalizeNfc(b.Codigo))));
-        // Como nas bancas, pelo CONTEÚDO: o envelope congela a janela — âncora, regra e prazos —,
-        // não a linha que a guarda. O produto que a âncora aponta continua sendo cobrado, porque
-        // esse id o envelope congela de fato.
-        objetivaReposta.Recursos.Select(r => (r.Ancora, r.Regra.Codigo, r.Args.PrazoValor, r.ProdutoAncoraId))
-            .Should().BeEquivalentTo(congeladaOriginal.Recursos
-                .Select(r => (r.Ancora, r.Regra.Codigo, r.Args.PrazoValor, r.ProdutoAncoraId)));
-
-        // A prova que fecha: o agregado relido recanonicaliza nos bytes que o ato congelou. Sem
-        // ela, repor "quase tudo" passaria — e o descarte relataria sucesso com a configuração
-        // viva ainda diferente da publicação.
-        Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
-            versao.SchemaVersion,
-            new EntradaCanonicalizacao(
-                reposto, CorpusEnvelope.DadosRicos(), CorpusEnvelope.HashDocumento, FusoInstitucional.ZoneId,
-                ValoresSelecionaveisCongelados: CorpusEnvelope.ValoresSelecionaveisRicos(),
-                CalendarioDiasUteis: CorpusEnvelope.CalendarioRico(),
-                AgregadosDosGrupos: CorpusEnvelope.AgregadosRicos,
-                ApresentacaoDosPressupostos: CorpusEnvelope.ApresentacaoRica,
-                TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(reposto), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
-
-        recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,
-            "a etapa que o descarte devolve tem de ser a que o documento publicado descreve — janela, produtos, " +
-            "bancas e janelas recursais inclusive");
     }
 
     internal static async Task<ProcessoSeletivo> CarregarAsync(UniPlusDbContext context, Guid id) =>

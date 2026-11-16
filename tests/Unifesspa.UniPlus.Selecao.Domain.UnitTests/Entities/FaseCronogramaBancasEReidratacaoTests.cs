@@ -8,7 +8,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed partial class FaseCronogramaTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioFaseCronograma;
+
+public sealed class FaseCronogramaBancasEReidratacaoTests
 {
     [Fact(DisplayName = "Bancas de TIPOS distintos com o mesmo recorte são aceitas — o tipo já as distingue")]
     public void RecorteDeCompetencia_TiposDistintosMesmoRecorte_Aceita()

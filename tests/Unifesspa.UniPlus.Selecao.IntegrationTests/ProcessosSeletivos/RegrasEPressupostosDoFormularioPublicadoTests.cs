@@ -40,8 +40,8 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         // O corpus rico tem seção, termo e grupo exibidos por condição, impedimento, três derivações
         // configuradas e as duas da oferta, que nenhuma regra da inscrição cita e dois agregados sobre a composição familiar, que o
         // envelope congela e nenhuma regra do formulário cita.
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico(variante: 9);
-        EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(variante: 9);
+        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo);
         SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(entrada);
         await _cenario.PublicarEPersistirAsync(processo, entrada.Dados, congelado, entrada.HashDocumento, CorpusEnvelope.Ator);
 
@@ -131,7 +131,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         // A habilitação pede o certificado de quem se declarou preto na inscrição e a declaração de
         // quem é maior de idade, faixa que o sistema calcula da data de nascimento na data de
         // referência dos fatos.
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico(variante: 10);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(variante: 10);
         FaseCronograma habilitacao = FaseDeHabilitacaoDepoisDasDemais(processo);
         processo.DefinirCronogramaFases([.. processo.CronogramaFases, habilitacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, habilitacao.Id, "Habilitação", FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
@@ -150,7 +150,7 @@ public sealed class RegrasEPressupostosDoFormularioPublicadoTests
         ], finalidade: FinalidadeFormulario.Habilitacao);
         itens.IsSuccess.Should().BeTrue(itens.Error?.Message);
 
-        EntradaCanonicalizacao entrada = CorpusEnvelope.Entrada(processo);
+        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo);
         SnapshotCanonico congelado = CenarioDeFormularioPublicado.Canonicalizar(entrada);
         await _cenario.PublicarEPersistirAsync(processo, entrada.Dados, congelado, entrada.HashDocumento, CorpusEnvelope.Ator);
 

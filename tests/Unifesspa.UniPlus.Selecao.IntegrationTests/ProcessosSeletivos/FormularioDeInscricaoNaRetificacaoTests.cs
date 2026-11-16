@@ -42,7 +42,7 @@ public sealed class FormularioDeInscricaoNaRetificacaoTests
         ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoComOfertaFederalECascata(nome);
         processo.DefinirTitulo(tituloPublicado, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirTermos(
-            termoPublicado is null ? [] : [CorpusEnvelope.Termo(termoPublicado, 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            termoPublicado is null ? [] : [CorpusEnvelopeEntrada.Termo(termoPublicado, 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         VersaoConfiguracao versaoAbertura = await _cenario.PublicarEPersistirAsync(processo);
 
         Guid processoId = processo.Id;
@@ -56,7 +56,7 @@ public sealed class FormularioDeInscricaoNaRetificacaoTests
             tracked.DefinirTitulo(tituloEditado, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
             // A ordem 0 do termo editado colide com a do publicado: a restauração tem de limpar
             // antes de repor, senão bateria no índice único.
-            tracked.DefinirTermos([CorpusEnvelope.Termo(termoEditado, 0)], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            tracked.DefinirTermos([CorpusEnvelopeEntrada.Termo(termoEditado, 0)], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
             tracked.FormularioDe(FinalidadeFormulario.Inscricao)!.Titulo.Should().Be(tituloEditado, "pré-condição: a sessão editorial trocou o título");
             tracked.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, "Habilitação", FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Curinga)
                 .IsSuccess.Should().BeTrue("a retificação acrescenta formulário");

@@ -16,7 +16,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-internal static partial class CorpusEnvelope
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelope;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeCronograma;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDocumentos;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEntrada;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEtapas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeProcessoRico;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeVagas;
+
+internal static class CorpusEnvelopeDadosDoEdital
 {
     /// <summary>
     /// O período espelha a janela da fase que coleta inscrição (<c>INSCRICAO</c>), porque é dela
@@ -38,7 +46,7 @@ internal static partial class CorpusEnvelope
     /// Os anexos do edital rico: um PDF e um DOCX, de formatos e tamanhos diferentes, para a fixture
     /// provar a ordem em que o edital os apresenta e o tipo de mídia de cada um.
     /// </summary>
-    private static readonly AnexoDoEdital[] AnexosRicos =
+    internal static readonly AnexoDoEdital[] AnexosRicos =
     [
         new(
             new Guid("0192a000-0000-7000-8000-0000000000e1"),
@@ -118,7 +126,7 @@ internal static partial class CorpusEnvelope
     /// dele e os campos, e o grafo conjunto liga os campos às regras. Sem máximo, o envelope grava
     /// o máximo nulo; o grupo inclui o candidato, identificado pelo parentesco.
     /// </summary>
-    private static GrupoColetado ComposicaoFamiliar(bool permutar) => GrupoColetado.Criar(
+    internal static GrupoColetado ComposicaoFamiliar(bool permutar) => GrupoColetado.Criar(
         "COMPOSICAO_FAMILIAR", 2, FormularioDeTeste.Secao, "Composição familiar", 1, null,
         PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!)]).Value!,

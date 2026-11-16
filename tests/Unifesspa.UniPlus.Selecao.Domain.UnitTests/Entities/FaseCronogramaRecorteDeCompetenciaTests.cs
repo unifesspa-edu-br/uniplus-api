@@ -8,7 +8,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed partial class FaseCronogramaTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioFaseCronograma;
+
+public sealed class FaseCronogramaRecorteDeCompetenciaTests
 {
     [Fact(DisplayName = "CA-03 (contraprova): dois atos DISTINTOS com o mesmo papel na mesma fase são aceitos")]
     public void Produtos_AtosDistintosComOMesmoPapel_Aceita()
@@ -229,13 +231,6 @@ public sealed partial class FaseCronogramaTests
     }
 
     // ── CA-02 / CA-03 — recorte de competência das bancas requeridas ──
-
-    private static BancaRequerida Banca(string codigo, params string[] categorias) =>
-        BancaRequerida.Criar(
-            Guid.CreateVersion7(),
-            codigo,
-            "Banca de teste",
-            [.. categorias.Select(static c => CategoriaJulgada.Criar(Guid.CreateVersion7(), c))]);
 
     [Fact(DisplayName = "CA-02: duas bancas do mesmo tipo, uma sem recorte, é recusada com erro nomeado")]
     public void RecorteDeCompetencia_DuasDoMesmoTipoUmaSemRecorte_Recusa()

@@ -41,7 +41,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     /// <c>regrasEliminacao</c> (issue #1067): as cláusulas da regra são ordenadas pela chave de
     /// conteúdo, e mutar o valor de uma condição pode mudar a posição da cláusula entre as duas —
     /// a modalidade <c>LB_EP</c> (índice 1 do array) tem exatamente duas cláusulas
-    /// (<see cref="CorpusEnvelope.ProcessoRico"/>), o mínimo para a reordenação ser observável.
+    /// (<see cref="CorpusEnvelopeProcessoRico.ProcessoRico"/>), o mínimo para a reordenação ser observável.
     /// </remarks>
     [Theory(DisplayName = "O decoder lê também os campos que são chave de ordenação")]
     [InlineData("etapas.0.ordem", "9")]
@@ -74,13 +74,13 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     {
         ArgumentNullException.ThrowIfNull(caminho);
 
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
         JsonObject mutado = Envelope(congelado);
         Mutar(mutado, caminho, valorNovo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(mutado));
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, PerfilCanonicoV1.Instancia.Serializar(mutado));
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
 
         reidratado.IsFailure.Should().BeTrue($"o quadro congelado não é o que '{caminho}' monta");
@@ -111,8 +111,8 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     [Fact(DisplayName = "Trocar o id do recurso da etapa não muda os bytes canônicos")]
     public void IdDoRecursoDaEtapa_NaoEntraNosBytes()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
 
         EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
         IReadOnlyList<RecursoDaEtapa> originais = [.. objetiva.Recursos];
@@ -125,7 +125,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
             .Should().NotIntersectWith(originais.Select(r => r.Id),
                 "pré-condição: as janelas reconstruídas têm identidade nova");
 
-        byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
+        byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
 
         depois.Should().Equal(antes,
             "a mesma janela recursal, numa linha nova, é a mesma publicação");
@@ -140,8 +140,8 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     [Fact(DisplayName = "Redeclarar a mesma banca da etapa preserva a linha e os bytes canônicos")]
     public void RedeclararAMesmaBancaDaEtapa_PreservaLinhaEBytes()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        byte[] antes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
         EtapaProcesso objetiva = processo.Etapas.Single(e => e.Nome == "Prova Objetiva");
         Dictionary<string, Guid> idsOriginais = IdsDasBancasPorCodigo(objetiva);
 
@@ -149,7 +149,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
 
         ConferirQueOCodigoGuardadoEOOriginal(objetiva, idsOriginais);
         ConferirQueALinhaNaoGirouDeId(objetiva, idsOriginais);
-        byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo)).Bytes;
+        byte[] depois = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes;
         depois.Should().Equal(antes, "a mesma configuração de banca é a mesma publicação");
     }
 
@@ -202,10 +202,10 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
         // é o artefato CONGELADO — se o encoder mudar sem bump de versão, é aqui que se vê.
         byte[] fixture = LerFixtureRica();
 
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        CorpusEnvelope.Publicar(processo);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao v1 = CorpusEnvelope.VersaoDeAbertura(processo, fixture);
+        VersaoConfiguracao v1 = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, fixture);
 
         Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(v1);
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
@@ -234,7 +234,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     [Fact(DisplayName = "Golden rica — a fixture é o envelope do corpus (regeneração explícita via UPDATE_ENVELOPE_FIXTURE=1)")]
     public void GoldenRica_EOEnvelopeDoCorpus()
     {
-        SnapshotCanonico atual = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(CorpusEnvelope.ProcessoRico()));
+        SnapshotCanonico atual = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(CorpusEnvelopeProcessoRico.ProcessoRico()));
 
         if (Environment.GetEnvironmentVariable("UPDATE_ENVELOPE_FIXTURE") == "1")
         {

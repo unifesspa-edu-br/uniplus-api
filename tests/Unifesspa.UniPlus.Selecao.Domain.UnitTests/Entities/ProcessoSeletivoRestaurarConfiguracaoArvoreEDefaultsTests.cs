@@ -16,7 +16,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
-public sealed partial class ProcessoSeletivoRestaurarConfiguracaoTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioProcessoSeletivoRestaurarConfiguracao;
+
+public sealed class ProcessoSeletivoRestaurarConfiguracaoArvoreEDefaultsTests
 {
     [Fact(DisplayName = "Árvore restaurada com base legal de grupo sem consequência é recusada")]
     public void ArvoreComBaseLegalDeGrupoSemConsequencia_Recusa()

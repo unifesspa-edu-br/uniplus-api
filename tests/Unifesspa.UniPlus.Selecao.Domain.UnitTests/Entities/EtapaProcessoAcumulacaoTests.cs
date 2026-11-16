@@ -8,7 +8,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-public sealed partial class EtapaProcessoTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioEtapaProcesso;
+
+public sealed class EtapaProcessoAcumulacaoTests
 {
     [Fact(DisplayName = "A contradição da escala acumula com as demais recusas, cada uma no seu campo")]
     public void ValidarFormaBasica_ContradicaoDaEscala_AcumulaComAsDemais()

@@ -23,7 +23,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed partial class ConformidadePublicabilidadeEstruturalTests
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
+
+public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTests
 {
     [Fact(DisplayName = "Pré-canonicalização: o derivado booleano é escalar, e IGUAL a verdadeiro e a falso separa cota de ação afirmativa")]
     public void PreCanon_DerivadoBooleano_ProvaExclusao()
@@ -94,29 +96,6 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.DesempateAreaEnemSemQuadro");
         resultado.Error.Message.Should().Contain("ordem 3", "a recusa nomeia o critério que o operador tem de corrigir");
-    }
-
-    /// <summary>
-    /// Processo conforme com uma etapa que compõe nota e a fase que a agrupa: sem elas o
-    /// divisor da média é zero e a publicação recusa antes, por outro item. A oferta tem um
-    /// grupo do quadro de teste, que a classificação ENEM com cálculo local exige.
-    /// </summary>
-    private static ProcessoSeletivo ProcessoConformeComEtapaQueCompoeNota()
-    {
-        ProcessoSeletivo processo = ProcessoConforme([OfertaAmpla(10, GrupoTecnologica)]);
-        processo.DefinirCronogramaFases(
-            [FaseCronograma.Criar(
-                new OrigemCanonicaDaFase(
-                    Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-                new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-                new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
-                bancasRequeridas: []).Value!],
-            [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas(
-            [EtapaDeProvaObjetiva("Prova", CaraterEtapa.Classificatoria, 1, 1m, null, "RESULTADO_FINAL")], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        return processo;
     }
 
     [Fact(DisplayName = "Pré-canonicalização: mais critérios de desempate que o teto — só o item do teto fica vermelho, e Publicar recusa")]
@@ -338,10 +317,4 @@ public sealed partial class ConformidadePublicabilidadeEstruturalTests
             checklist.Should().Contain(i => i.Codigo == item && i.Ok, $"cascata não se aplica — \"{item}\" não pode ficar vermelho");
         }
     }
-
-    private static EtapaProcesso EtapaDeProvaObjetiva(
-        string nome, CaraterEtapa carater, int? ordem, decimal? peso, decimal? notaMinima, string? faseCodigo) =>
-        EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: nome, Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: faseCodigo),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: notaMinima, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 }

@@ -8,6 +8,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioFaseCronograma;
+
 /// <summary>
 /// Cobertura de <see cref="FaseCronograma.Criar"/> (Story #851): as invariantes que a
 /// factory prova sozinha — janela × <see cref="OrigemDataFase"/> (CA-07), a unicidade do
@@ -15,55 +17,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// de resultado, e a âncora do prazo de recurso derivada do produto preliminar da própria
 /// fase.
 /// </summary>
-public sealed partial class FaseCronogramaTests
+public sealed class FaseCronogramaTests
 {
-    private static ReferenciaRegra RegraAncorada() =>
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
-
-    private static RegraRecursoFase Recurso(Guid produtoAncoraId) =>
-        RegraRecursoFase.Criar(RegraAncorada(), ArgsValidos(), produtoAncoraId).Value!;
-
-    private static FaseCronograma Reidratar(
-        IReadOnlyList<ProdutoDaFase> produtos,
-        RegraRecursoFase? regraRecurso,
-        IReadOnlyList<BancaRequerida>? bancasRequeridas = null) =>
-        FaseCronograma.Reidratar(
-            Guid.CreateVersion7(),
-            new OrigemCanonicaDaFase(
-                OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false,
-                ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(produtos, EmiteParecerIndividual: false, regraRecurso),
-            bancasRequeridas ?? []);
-
-    private static ArgsRegraPrazoRecurso ArgsValidos() => new(
-        PrazoValor: 48m,
-        PrazoUnidade: UnidadePrazo.Horas,
-        SuspensividadePrimeiraInstanciaValor: null,
-        SuspensividadePrimeiraInstanciaUnidade: null,
-        AdmiteInstanciaSuperior: false,
-        SuspensividadeSegundaInstanciaValor: null,
-        SuspensividadeSegundaInstanciaUnidade: null);
-
-    private static Result<FaseCronograma> Criar(
-        int ordem = 1,
-        OrigemDataFase origemData = OrigemDataFase.NoEdital,
-        DateTimeOffset? inicio = null,
-        DateTimeOffset? fim = null,
-        bool agrupaEtapas = false,
-        IReadOnlyList<ProdutoDaFase>? produtos = null,
-        string? faseConcluinteCodigo = null,
-        bool emiteParecerIndividual = false,
-        IReadOnlyList<BancaRequerida>? bancasRequeridas = null,
-        RegraRecursoFase? regraRecurso = null,
-        bool semUnidadeResponsavel = false,
-        UnidadeResponsavelSnapshot? unidadeResponsavel = null) =>
-        FaseCronograma.Criar(
-            new OrigemCanonicaDaFase(Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", origemData, agrupaEtapas, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(ordem, inicio, fim, faseConcluinteCodigo, semUnidadeResponsavel ? null : unidadeResponsavel ?? UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(produtos ?? [], emiteParecerIndividual, regraRecurso),
-            bancasRequeridas ?? []);
-
     // ── Unidade responsável pela fase (ADR-0061, ADR-0129) ──
 
     [Fact(DisplayName = "A fase guarda o id, a sigla e o nome da unidade responsável informada")]

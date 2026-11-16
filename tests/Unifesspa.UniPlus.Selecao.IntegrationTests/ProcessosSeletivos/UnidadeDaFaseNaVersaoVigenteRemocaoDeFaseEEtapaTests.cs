@@ -11,15 +11,27 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using static CenarioDeFasesDoProcessoPublicado;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDaUnidadeDaFaseNaVersaoVigente;
 
 /// <summary>A remoção de fase e de etapa iniciada: quais delas começaram e o que a versão publicada vigente ainda traz.</summary>
-public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
+public sealed class UnidadeDaFaseNaVersaoVigenteRemocaoDeFaseEEtapaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
+    private readonly ProcessoSeletivoDbFixture _fixture;
+    private readonly CenarioDeFasesDoProcessoPublicado _cenario;
+    private readonly ApoioDaUnidadeDaFaseNaVersaoVigente _apoio;
+
+    public UnidadeDaFaseNaVersaoVigenteRemocaoDeFaseEEtapaTests(ProcessoSeletivoDbFixture fixture)
+    {
+        _fixture = fixture;
+        _cenario = new CenarioDeFasesDoProcessoPublicado(fixture);
+        _apoio = new ApoioDaUnidadeDaFaseNaVersaoVigente(fixture);
+    }
+
     [Fact(DisplayName = "A fase encerrada conta como iniciada e não sai do cronograma")]
     public async Task Iniciadas_FaseEncerrada_ContaENaoSai()
     {
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS fase encerrada", Abertura);
-        await SucederAsync(processoId, DateTimeOffset.UtcNow, JanelaNoPassado);
+        await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow, JanelaNoPassado);
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
@@ -52,7 +64,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
     public async Task Remocao_VersaoDeVigenciaFutura_NaoLivraAFase()
     {
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS remocao e versao futura");
-        await SucederAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), f => f["faseCanonicaOrigemId"] = Guid.CreateVersion7());
+        await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow.AddDays(30), f => f["faseCanonicaOrigemId"] = Guid.CreateVersion7());
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
@@ -63,7 +75,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
     public async Task Remocao_FaseJaForaDaVersaoVigente_NaoRecusa()
     {
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS fase fora da vigente");
-        await SucederAsync(processoId, DateTimeOffset.UtcNow, f =>
+        await _apoio.SucederAsync(processoId, DateTimeOffset.UtcNow, f =>
         {
             f["faseCanonicaOrigemId"] = Guid.CreateVersion7();
             AdiaAJanela(f);
@@ -79,7 +91,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
     public async Task Iniciadas_ContaPelaJanelaDaEtapa()
     {
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS janela da etapa", Abertura);
-        await SucederNoEnvelopeAsync(
+        await _apoio.SucederNoEnvelopeAsync(
             processoId, DateTimeOffset.UtcNow, envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = "2020-01-01T00:00:00+00:00");
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
@@ -92,7 +104,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
     {
         (Guid processoId, FaseCronograma fase, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS envio ao INEP", Abertura);
         (Guid outroProcessoId, FaseCronograma outraFase, _) = await _cenario.PublicadoAsync("PS sem envio ao INEP", Abertura);
-        await SemearEnvioAoInepAsync(processoId, etapa.Id);
+        await _apoio.SemearEnvioAoInepAsync(processoId, etapa.Id);
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
         FasesIniciadas deOutroProcesso = await _cenario.IniciadasAsync(outroProcessoId, DateTimeOffset.UtcNow);
@@ -106,7 +118,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
     {
         (Guid processoId, _, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS janela aberta da etapa", Abertura);
         Guid irma = Guid.CreateVersion7();
-        await SucederNoEnvelopeAsync(processoId, DateTimeOffset.UtcNow, envelope => AbreAJanelaDaEtapaEAcrescentaAIrma(envelope, irma));
+        await _apoio.SucederNoEnvelopeAsync(processoId, DateTimeOffset.UtcNow, envelope => AbreAJanelaDaEtapaEAcrescentaAIrma(envelope, irma));
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
@@ -120,8 +132,8 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
     {
         (Guid processoId, _, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS avaliacao da etapa sem janela", Abertura);
         Guid irma = Guid.CreateVersion7();
-        await SucederNoEnvelopeAsync(processoId, DateTimeOffset.UtcNow, envelope => AcrescentaEtapaIrma(envelope, irma));
-        await SemearImportacaoDeNotasAsync(processoId, etapa.Id, DateTimeOffset.UtcNow);
+        await _apoio.SucederNoEnvelopeAsync(processoId, DateTimeOffset.UtcNow, envelope => AcrescentaEtapaIrma(envelope, irma));
+        await _apoio.SemearImportacaoDeNotasAsync(processoId, etapa.Id, DateTimeOffset.UtcNow);
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
@@ -133,7 +145,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
     public async Task Etapas_EncerradaEComAto_Iniciadas()
     {
         (Guid encerradaId, _, EtapaProcesso encerrada) = await _cenario.PublicadoAsync("PS etapa encerrada", Abertura);
-        await SucederNoEnvelopeAsync(encerradaId, DateTimeOffset.UtcNow, envelope => envelope["etapas"]!.AsArray()[0]!["fim"] = "2020-01-31T00:00:00+00:00");
+        await _apoio.SucederNoEnvelopeAsync(encerradaId, DateTimeOffset.UtcNow, envelope => envelope["etapas"]!.AsArray()[0]!["fim"] = "2020-01-31T00:00:00+00:00");
         (Guid comAtoId, _, EtapaProcesso comAto) = await _cenario.PublicadoAsync("PS etapa com ato", Abertura);
         await _cenario.SemearAtoAsync(comAtoId, IdentidadeDoItemDoEdital.DaEtapa(comAto, ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
 
@@ -156,7 +168,7 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
     public async Task Etapas_JanelaDeVersaoFutura_NaoConta()
     {
         (Guid processoId, _, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS etapa de versao futura", Abertura);
-        await SucederNoEnvelopeAsync(
+        await _apoio.SucederNoEnvelopeAsync(
             processoId, DateTimeOffset.UtcNow.AddDays(30), envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = "2020-01-01T00:00:00+00:00");
 
         (await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow)).ContemEtapa(etapa.Id).Should().BeFalse();
@@ -167,34 +179,9 @@ public sealed partial class UnidadeDaFaseNaVersaoVigenteTests
     {
         (Guid processoId, _, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS versao que nunca vigorou", Abertura);
         DateTimeOffset vigencia = DateTimeOffset.UtcNow.AddMinutes(-5);
-        await SucederNoEnvelopeAsync(processoId, vigencia, envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = "2020-01-01T00:00:00+00:00");
-        await SucederNoEnvelopeAsync(processoId, vigencia, envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = null);
+        await _apoio.SucederNoEnvelopeAsync(processoId, vigencia, envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = "2020-01-01T00:00:00+00:00");
+        await _apoio.SucederNoEnvelopeAsync(processoId, vigencia, envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = null);
 
         (await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow)).ContemEtapa(etapa.Id).Should().BeFalse();
-    }
-
-    private static void AcrescentaEtapaIrma(JsonObject envelope, Guid id)
-    {
-        JsonArray etapas = envelope["etapas"]!.AsArray();
-        JsonObject irma = JsonNode.Parse(etapas[0]!.ToJsonString())!.AsObject();
-        irma["id"] = id;
-        irma["nome"] = "Análise documental";
-        irma["inicio"] = null;
-        irma["fim"] = null;
-        etapas.Add(irma);
-    }
-
-    private static void AbreAJanelaDaEtapaEAcrescentaAIrma(JsonObject envelope, Guid irma)
-    {
-        AcrescentaEtapaIrma(envelope, irma);
-        envelope["etapas"]!.AsArray()[0]!["inicio"] = "2020-01-01T00:00:00+00:00";
-    }
-
-    private async Task SemearEnvioAoInepAsync(Guid processoId, Guid etapaId)
-    {
-        await using UniPlusDbContext semeadura = _fixture.CreateDbContext();
-        semeadura.GeracoesDeEnvioAoInep.Add(GeracaoDeEnvioAoInep.Registrar(
-            processoId, etapaId, "2026", "INEP_ENEM_ENVIO", "v1", new string('d', 64), "conta-admin", DateTimeOffset.UtcNow, 0));
-        await semeadura.SaveChangesAsync();
     }
 }

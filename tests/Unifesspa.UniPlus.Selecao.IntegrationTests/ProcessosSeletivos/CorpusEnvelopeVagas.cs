@@ -16,7 +16,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-internal static partial class CorpusEnvelope
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelope;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeCronograma;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDadosDoEdital;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDocumentos;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEntrada;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEtapas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeProcessoRico;
+
+internal static class CorpusEnvelopeVagas
 {
     internal const int VagasOfertadasBaseDaLeiDeCotasDoCorpus = 60;
 
@@ -27,7 +35,7 @@ internal static partial class CorpusEnvelope
     /// única vez na cascata, então permutar a sequência de origens não exercitaria a ordenação de
     /// <c>cascataRemanejamento…destinos</c> — só a dos destinos de uma MESMA origem prova isso.
     /// </summary>
-    private static ConfiguracaoCascataRemanejamento CascataLegalCompleta(bool permutar = false)
+    internal static ConfiguracaoCascataRemanejamento CascataLegalCompleta(bool permutar = false)
     {
         IReadOnlyList<string> origens = ModalidadesFederaisLei12711.Codigos;
         List<DestinoRemanejamento> destinos = [];
@@ -47,13 +55,13 @@ internal static partial class CorpusEnvelope
             Regra(RegraRemanejamentoCodigo.Cascata, '1'), ModalidadesFederaisLei12711.Ac, destinos).Value!;
     }
 
-    private static PredicadoDnf RegraDaCotaIndependenteDeRenda => PredicadoDnf.CriarDeCondicoesAgrupadas(
+    internal static PredicadoDnf RegraDaCotaIndependenteDeRenda => PredicadoDnf.CriarDeCondicoesAgrupadas(
     [
         (0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!),
         (0, CondicaoDnf.Criar("COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!),
     ]).Value!;
 
-    private static PredicadoDnf RegraDaCotaDeRenda => PredicadoDnf.CriarDeCondicoesAgrupadas(
+    internal static PredicadoDnf RegraDaCotaDeRenda => PredicadoDnf.CriarDeCondicoesAgrupadas(
     [
         (0, CondicaoDnf.Criar("RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ATE_1_SM")).Value!),
         (0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!),
@@ -68,7 +76,7 @@ internal static partial class CorpusEnvelope
     /// do processo rico são deste ramo, porque os cursos de um processo ofertam as mesmas cotas da
     /// lei; as variantes de remanejamento que as cotas não usam ficam na oferta institucional.
     /// </summary>
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoLei12711(
+    internal static ConfiguracaoDistribuicaoVagas DistribuicaoLei12711(
         Guid? ofertaCursoOrigemId = null, (string? Codigo, string? Rotulo)? grupoAreaEnem = null,
         int vagasOfertadasBase = VagasOfertadasBaseDaLeiDeCotasDoCorpus) =>
         ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId ?? OfertaMedicina,
@@ -83,7 +91,7 @@ internal static partial class CorpusEnvelope
             },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem ?? ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"), OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
-    private static ReferenciaReservaDemograficaSnapshot ReferenciaDemograficaDaLei() =>
+    internal static ReferenciaReservaDemograficaSnapshot ReferenciaDemograficaDaLei() =>
         ReferenciaReservaDemograficaSnapshot.Criar(
             ReferenciaDemografica,
             censoReferencia: "Censo IBGE 2022",
@@ -92,7 +100,7 @@ internal static partial class CorpusEnvelope
             pcdPercentual: 8.40m,
             baseLegal: "Lei 12.711/2012 art. 3º").Value!;
 
-    private static ModalidadeSelecionada ModalidadeAmplaDaLei() =>
+    internal static ModalidadeSelecionada ModalidadeAmplaDaLei() =>
         ModalidadeSelecionada.Criar(
             new Guid("2222bbbb-0000-4000-8000-000000000001"), "AC", "Ampla concorrência",
             NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
@@ -101,11 +109,11 @@ internal static partial class CorpusEnvelope
             baseLegal: "Lei 12.711/2012 art. 1º").Value!;
 
     // As 8 federais. Todas cota reservada ⇒ INV-12 obriga SEGUE_CASCATA.
-    private static IEnumerable<ModalidadeSelecionada> ModalidadesFederais() =>
+    internal static IEnumerable<ModalidadeSelecionada> ModalidadesFederais() =>
         new[] { "LB_PPI", "LB_Q", "LB_PCD", "LB_EP", "LI_PPI", "LI_Q", "LI_PCD", "LI_EP" }
             .Select(static (codigo, indice) => ModalidadeFederal(codigo, indice + 2));
 
-    private static ModalidadeSelecionada ModalidadeFederal(string codigo, int sufixo) =>
+    internal static ModalidadeSelecionada ModalidadeFederal(string codigo, int sufixo) =>
         ModalidadeSelecionada.Criar(
             new Guid($"2222bbbb-0000-4000-8000-00000000000{sufixo:x}"),
             codigo,
@@ -134,7 +142,7 @@ internal static partial class CorpusEnvelope
     /// O processo rico classifica pelo ENEM com cálculo local e exige grupo em toda oferta; os
     /// grafos mínimos não, e mantêm a oferta sem grupo.
     /// </param>
-    private static ConfiguracaoDistribuicaoVagas DistribuicaoInstitucional((string? Codigo, string? Rotulo)? grupoAreaEnem = null) =>
+    internal static ConfiguracaoDistribuicaoVagas DistribuicaoInstitucional((string? Codigo, string? Rotulo)? grupoAreaEnem = null) =>
         ConfiguracaoDistribuicaoVagas.Criar(OfertaDireito,
             new DistribuicaoDeVagasDeclarada
             {

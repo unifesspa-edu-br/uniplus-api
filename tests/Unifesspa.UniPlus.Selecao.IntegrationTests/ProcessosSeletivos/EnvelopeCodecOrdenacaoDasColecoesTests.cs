@@ -45,7 +45,7 @@ public sealed class EnvelopeCodecOrdenacaoDasColecoesTests
     [Fact(DisplayName = "O round-trip preserva obrigatoriedades[] ordenada pela chave de conteúdo — mesmo quando ordenar por RegraId daria o resultado oposto")]
     public void RoundTrip_ComConformidadeLegalCongelada_PreservaObrigatoriedadesOrdenadasPorConteudo()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
 
         // regraA e regraB só divergem em `atoNormativoUrl`/`portariaInterna`/`baseLegal`/
         // `descricaoHumana`/`vigenciaInicio`/`vigenciaFim`/`hash`/`predicado`/`regraCodigo` — e
@@ -136,10 +136,10 @@ public sealed class EnvelopeCodecOrdenacaoDasColecoesTests
         ResultadoConformidade conformidade = new(entrada, []);
 
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(
-            CorpusEnvelope.Entrada(processo, conformidade: conformidade));
-        CorpusEnvelope.Publicar(processo);
+            CorpusEnvelopeEntrada.Entrada(processo, conformidade: conformidade));
+        CorpusEnvelopeEntrada.Publicar(processo);
 
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         EnvelopeReidratado envelope = AssertRoundTrip(processo, versao, congelado);
 
@@ -161,10 +161,10 @@ public sealed class EnvelopeCodecOrdenacaoDasColecoesTests
     [Fact(DisplayName = "O decoder preserva o etapa.Id congelado; regenerá-lo faz o etapaRef deixar de resolver")]
     public void Decoder_PreservaIdDaEtapa()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(processo));
-        CorpusEnvelope.Publicar(processo);
-        VersaoConfiguracao versao = CorpusEnvelope.VersaoDeAbertura(processo, congelado.Bytes);
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
+        CorpusEnvelopeEntrada.Publicar(processo);
+        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
 
         EnvelopeReidratado envelope = CorpusEnvelope.Registro.Reidratar(versao).Value!;
 

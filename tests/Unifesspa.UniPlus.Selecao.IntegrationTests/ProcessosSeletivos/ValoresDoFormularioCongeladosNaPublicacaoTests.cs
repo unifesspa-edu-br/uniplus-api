@@ -155,7 +155,7 @@ public sealed class ValoresDoFormularioCongeladosNaPublicacaoTests
                 TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
             Result<VersaoConfiguracao> retificar = carregado.Retificar(
                 dados, versaoAtual, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-                documento.HashSha256!, "integration-test-user", "Correção do texto das opções", TimeProvider.System, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+                documento.HashSha256!, "integration-test-user", "Correção do texto das opções", TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
             retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
             retificacao = retificar.Value!;
 

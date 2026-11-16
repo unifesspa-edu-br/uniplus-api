@@ -7,111 +7,39 @@ using AwesomeAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
+using Npgsql;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Monolito.Persistencia;
 using Unifesspa.UniPlus.Regras.Enums;
+using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-public sealed partial class ProcessoSeletivoPersistenciaTests
+internal sealed class ApoioDaPersistenciaDoProcessoSeletivo
 {
-    [Fact(DisplayName = "Redefinir a regra de derivação sobre o agregado carregado apaga a árvore antiga inteira (cascade órfão nos três níveis)")]
-    public async Task RedefinirRegraDerivacao_SobreAgregadoTracked_ApagaArvoreAntiga()
+    private readonly ProcessoSeletivoDbFixture _fixture;
+
+    internal ApoioDaPersistenciaDoProcessoSeletivo(ProcessoSeletivoDbFixture fixture)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — Redefinição", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        processo.DefinirRegrasDerivacao(
-        [
-            ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA",
-            [
-                RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!,
-                RegraDerivacaoConfigurada.Criar(1, "AC_PCD",
-                    [CondicaoRegraDerivacao.Criar(1, "CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!,
-            ]).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        // Substitui a configuração por inteiro sobre o agregado JÁ tracked (fluxo real de reconfiguração):
-        // Clear+Add deve marcar as regras e condições antigas como órfãs e o cascade deve deletá-las.
-        await using (UniPlusDbContext mutateContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(mutateContext);
-            ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
-
-            carregado.DefinirRegrasDerivacao(
-            [
-                ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA",
-                [
-                    RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!,
-                ]).Value!,
-            ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-            await mutateContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        // Contexto novo: a árvore antiga inteira sumiu — sobra só a única regra âncora sem condição.
-        // Contagens escopadas a ESTE processo (a fixture é compartilhada entre testes da classe).
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        Guid configId = await readContext.Set<ConfiguracaoDerivacaoFato>()
-            .Where(c => c.ProcessoSeletivoId == processo.Id).Select(c => c.Id).SingleAsync(CancellationToken.None);
-
-        List<Guid> regraIds = await readContext.Set<RegraDerivacaoConfigurada>()
-            .Where(r => r.ConfiguracaoDerivacaoFatoId == configId).Select(r => r.Id).ToListAsync(CancellationToken.None);
-        regraIds.Should().HaveCount(1, "a regra AC_PCD antiga foi apagada como órfã");
-
-        int condicoesRestantes = await readContext.Set<CondicaoRegraDerivacao>()
-            .CountAsync(c => regraIds.Contains(c.RegraDerivacaoConfiguradaId), CancellationToken.None);
-        condicoesRestantes.Should().Be(0, "a condição da regra AC_PCD antiga foi apagada em cascata");
-
-        ProcessoSeletivoRepository readRepo = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
-        ProcessoSeletivo recarregado = (await readRepo.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
-        recarregado.RegrasDerivacao.Single().Regras.Should().ContainSingle(r => r.Contribui == "AC");
+        _fixture = fixture;
     }
 
-    /// <summary>
-    /// Prova mecânica (issue #850, §3.4/CA-05) de que <c>ObterComConfiguracaoAsync</c> emite
-    /// <b>mais de um</b> <c>SELECT</c> para o grafo de <c>Include</c> — o comportamento que
-    /// <c>.AsSplitQuery()</c> já produz em <c>ComConfiguracao</c> (adicionado na story do
-    /// cronograma de fases, 15/07). Sem esta prova, remover o <c>.AsSplitQuery()</c> ou
-    /// acrescentar uma nova coleção sem ele voltaria a arriscar o produto cartesiano de
-    /// TODAS as coleções irmãs (etapas × modalidades × eliminação × fases × bancas…) num
-    /// único <c>JOIN</c> — o defeito que a guarda de fitness test (ArchTests) impede em
-    /// texto, e que este teste prova em runtime.
-    /// </summary>
-    [Fact(DisplayName = "ObterComConfiguracaoAsync com AsSplitQuery emite mais de um SELECT (#850, CA-05)")]
-    public async Task ObterComConfiguracaoAsync_ComAsSplitQuery_EmiteMultiplosSelects()
-    {
-        GrafoDeTodasAsColecoes grafo = MontarGrafoDeTodasAsColecoes();
-        await GravarAsync(grafo.Processo);
-        CapturadorDeSql capturador = new();
-
-        ProcessoSeletivo? recarregado = await RecarregarCapturandoSqlAsync(grafo.Processo.Id, capturador);
-
-        recarregado.Should().NotBeNull();
-        capturador.Comandos.Where(c => c.Contains("SELECT", StringComparison.OrdinalIgnoreCase)).Should()
-            .HaveCountGreaterThan(1,
-                "AsSplitQuery() emite uma consulta própria por coleção incluída — um único SELECT indicaria que " +
-                "a flag foi removida e o carregamento voltou a produzir o produto cartesiano num JOIN só");
-        ConferirAsColecoesMaterializadas(recarregado!, grafo);
-    }
-
-    private sealed record GrafoDeTodasAsColecoes(
+    internal sealed record GrafoDeTodasAsColecoes(
         ProcessoSeletivo Processo, Guid CondicaoOrigemId, Guid RecursoOrigemId, Guid ModalidadeOrigemId);
 
-    private static GrafoDeTodasAsColecoes MontarGrafoDeTodasAsColecoes()
+    internal static GrafoDeTodasAsColecoes MontarGrafoDeTodasAsColecoes()
     {
         GrafoDeTodasAsColecoes grafo = new(NovoProcessoDoSplitQuery(), Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7());
         EtapaProcesso etapa = DefinirEtapaDoSplitQuery(grafo.Processo);
@@ -122,12 +50,12 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
         return grafo;
     }
 
-    private static ProcessoSeletivo NovoProcessoDoSplitQuery() =>
+    internal static ProcessoSeletivo NovoProcessoDoSplitQuery() =>
         ProcessoSeletivo.Criar(
             "PS 2026 — AsSplitQuery", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-    private static EtapaProcesso DefinirEtapaDoSplitQuery(ProcessoSeletivo processo)
+    internal static EtapaProcesso DefinirEtapaDoSplitQuery(ProcessoSeletivo processo)
     {
         EtapaProcesso etapa = EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
@@ -136,13 +64,13 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
         return etapa;
     }
 
-    private static void DefinirAtendimentoEspecializadoDoSplitQuery(GrafoDeTodasAsColecoes grafo) =>
+    internal static void DefinirAtendimentoEspecializadoDoSplitQuery(GrafoDeTodasAsColecoes grafo) =>
         grafo.Processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar(
             condicoes: [CondicaoOfertada.Criar(grafo.CondicaoOrigemId, "PCD", "Pessoa com deficiência")],
             recursos: [RecursoOfertado.Criar(grafo.RecursoOrigemId, "LEDOR", "Ledor")],
             tiposDeficiencia: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-    private static void DefinirDistribuicaoDoSplitQuery(GrafoDeTodasAsColecoes grafo)
+    internal static void DefinirDistribuicaoDoSplitQuery(GrafoDeTodasAsColecoes grafo)
     {
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(
             RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixoTeste);
@@ -156,7 +84,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
         grafo.Processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 
-    private static void DefinirClassificacaoDoSplitQuery(ProcessoSeletivo processo, EtapaProcesso etapa)
+    internal static void DefinirClassificacaoDoSplitQuery(ProcessoSeletivo processo, EtapaProcesso etapa)
     {
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", HashFixoTeste),
@@ -169,7 +97,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
         processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 
-    private static void DefinirCronogramaDoSplitQuery(ProcessoSeletivo processo)
+    internal static void DefinirCronogramaDoSplitQuery(ProcessoSeletivo processo)
     {
         FaseCronograma fase = FaseCronograma.Criar(
             new OrigemCanonicaDaFase(
@@ -183,7 +111,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 
-    private async Task GravarAsync(ProcessoSeletivo processo)
+    internal async Task GravarAsync(ProcessoSeletivo processo)
     {
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -193,7 +121,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
         }
     }
 
-    private async Task<ProcessoSeletivo?> RecarregarCapturandoSqlAsync(Guid processoId, CapturadorDeSql capturador)
+    internal async Task<ProcessoSeletivo?> RecarregarCapturandoSqlAsync(Guid processoId, CapturadorDeSql capturador)
     {
         DbContextOptions<MonolitoDbContext> options = new DbContextOptionsBuilder<MonolitoDbContext>()
             .UseNpgsql(_fixture.ConnectionString)
@@ -212,7 +140,7 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
     // Contagens materializadas batem com o fixture — cada navegação afirmada tem ao
     // menos 1 item (um fixture todo vazio não distingue "coleção carregada" de
     // "coleção omitida por engano").
-    private static void ConferirAsColecoesMaterializadas(ProcessoSeletivo recarregado, GrafoDeTodasAsColecoes grafo)
+    internal static void ConferirAsColecoesMaterializadas(ProcessoSeletivo recarregado, GrafoDeTodasAsColecoes grafo)
     {
         recarregado.Etapas.Should().ContainSingle();
         recarregado.AtendimentoEspecializado!.Condicoes.Should().ContainSingle().Which.CondicaoOrigemId.Should().Be(grafo.CondicaoOrigemId);
@@ -225,10 +153,10 @@ public sealed partial class ProcessoSeletivoPersistenciaTests
         recarregado.CronogramaFases.Single().BancasRequeridas.Should().ContainSingle();
     }
 
-    private const string HashFixoTeste = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+    internal const string HashFixoTeste = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
 
     /// <summary>Captura o SQL emitido — mesmo padrão de <c>FronteiraDoSeletorDaVersaoVigentePersistenciaTests.CapturadorDeSql</c>.</summary>
-    private sealed class CapturadorDeSql : DbCommandInterceptor
+    internal sealed class CapturadorDeSql : DbCommandInterceptor
     {
         public List<string> Comandos { get; } = [];
 

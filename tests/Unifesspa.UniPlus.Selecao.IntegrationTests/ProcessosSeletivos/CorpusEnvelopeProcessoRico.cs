@@ -15,7 +15,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
-internal static partial class CorpusEnvelope
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelope;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeCronograma;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDadosDoEdital;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeDocumentos;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEntrada;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeEtapas;
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CorpusEnvelopeVagas;
+
+internal static class CorpusEnvelopeProcessoRico
 {
     /// <summary>
     /// O agregado mais rico que o modelo permite: três etapas (uma de cada caráter),
@@ -56,7 +64,7 @@ internal static partial class CorpusEnvelope
     // SiSU é baseado em ENEM — é o que admite ELIM-CORTE-REDACAO e ELIM-ZERO-EM-AREA.
     // O identificador é determinístico, como os ids das etapas: ele entra no envelope e a golden
     // congela os bytes. A variante o mantém único entre os testes que persistem o corpus.
-    private static ProcessoSeletivo NovoProcessoRico(int variante)
+    internal static ProcessoSeletivo NovoProcessoRico(int variante)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(
             "PS Rico 2026", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, UnidadeAdministradora,
@@ -67,7 +75,7 @@ internal static partial class CorpusEnvelope
         return processo;
     }
 
-    private static UnidadeAdministradoraSnapshot UnidadeAdministradoraDoCorpus() =>
+    internal static UnidadeAdministradoraSnapshot UnidadeAdministradoraDoCorpus() =>
         UnidadeAdministradoraSnapshot.Criar(
             "CEPS",
             "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA",
@@ -75,11 +83,11 @@ internal static partial class CorpusEnvelope
 
     // O corpus tem fase com regra de recurso, e o prazo de interposição corre sobre dia
     // útil — logo a convenção de contagem é exigida para publicar.
-    private static void DefinirAlgoritmoDeContagem(ProcessoSeletivo processo) =>
+    internal static void DefinirAlgoritmoDeContagem(ProcessoSeletivo processo) =>
         processo.DefinirAlgoritmoContagemPrazo(
             AlgoritmoDeContagemDoCorpus(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-    private static void DefinirCronogramaEEtapas(
+    internal static void DefinirCronogramaEEtapas(
         ProcessoSeletivo processo, int variante, bool permutar, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal)
     {
         processo.DefinirCronogramaFases(
@@ -93,7 +101,7 @@ internal static partial class CorpusEnvelope
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
     }
 
-    private static void DefinirOfertaEClassificacao(ProcessoSeletivo processo, int variante, bool permutar, int vagasOfertadasBase)
+    internal static void DefinirOfertaEClassificacao(ProcessoSeletivo processo, int variante, bool permutar, int vagasOfertadasBase)
     {
         DefinirAtendimentoEspecializadoDoCorpus(processo, permutar);
         processo.DefinirDistribuicaoVagas(
@@ -108,7 +116,7 @@ internal static partial class CorpusEnvelope
             .IsSuccess.Should().BeTrue();
     }
 
-    private static void DefinirAtendimentoEspecializadoDoCorpus(ProcessoSeletivo processo, bool permutar) =>
+    internal static void DefinirAtendimentoEspecializadoDoCorpus(ProcessoSeletivo processo, bool permutar) =>
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar(
             condicoes: Ordem<CondicaoOfertada>([
                 CondicaoOfertada.Criar(new Guid("eeee0000-0000-4000-8000-000000000001"), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência"),
@@ -123,7 +131,7 @@ internal static partial class CorpusEnvelope
                 DeficienciaAtendida.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "DEFICIENCIA_AUDITIVA", "Deficiência auditiva"),
             ], permutar)).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-    private static void DefinirBonusRegional(ProcessoSeletivo processo) =>
+    internal static void DefinirBonusRegional(ProcessoSeletivo processo) =>
         processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
             Regra(RegraBonusCodigo.Multiplicativo, 'b'),
             fator: 1.2000m,
@@ -144,7 +152,7 @@ internal static partial class CorpusEnvelope
     // ordens distintas), que um decoder indexado por código colapsaria em uma. A ordem
     // das áreas do desempate por área do ENEM não é a alfabética, para que uma
     // canonicalização que as reordenasse mudasse o envelope.
-    private static void DefinirCriteriosDeDesempate(ProcessoSeletivo processo, int variante, bool permutar) =>
+    internal static void DefinirCriteriosDeDesempate(ProcessoSeletivo processo, int variante, bool permutar) =>
         processo.DefinirCriteriosDesempate(Ordem([
             CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.Idoso, 'c'), new ArgsDesempateIdoso(60)).Value!,
             CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ArgsDesempateMaiorNotaEtapa(EtapaId(1, variante))).Value!,
@@ -155,7 +163,7 @@ internal static partial class CorpusEnvelope
             CriterioDesempate.Criar(6, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, '8'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!,
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-    private static void DefinirClassificacao(ProcessoSeletivo processo, int variante, bool permutar) =>
+    internal static void DefinirClassificacao(ProcessoSeletivo processo, int variante, bool permutar) =>
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(
             regraCalculo: Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
             regraArredondamento: Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, '2'),
@@ -166,7 +174,7 @@ internal static partial class CorpusEnvelope
             resolucaoPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Resolucao,
             quadroPesoAreaEnem: QuadroPesoAreaEnemDeTeste.Completo(inverterOrdem: permutar), escalaNotaFinal: 100m).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-    private static List<RegraEliminacao> RegrasDeEliminacao(int variante) =>
+    internal static List<RegraEliminacao> RegrasDeEliminacao(int variante) =>
     [
         // DUAS do mesmo código, args distintos — o PS Convênios exige exatamente isso.
         RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, '4'), new ArgsElimNotaMinimaEtapa(EtapaId(1, variante), 45.0000m)).Value!,
@@ -177,7 +185,7 @@ internal static partial class CorpusEnvelope
         RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, '7'), new ArgsElimAusenciaNaEtapa(EtapaId(3, variante))).Value!,
     ];
 
-    private static void DefinirFormularioDeInscricao(ProcessoSeletivo processo, bool permutar)
+    internal static void DefinirFormularioDeInscricao(ProcessoSeletivo processo, bool permutar)
     {
         DefinirFatosColetados(processo, permutar);
         PredicadoDnf corPreta = PredicadoDnf.CriarDeCondicoesAgrupadas(
@@ -194,7 +202,7 @@ internal static partial class CorpusEnvelope
     // com predicado DNF de duas condições numa cláusula. A seção traz também a UF do Geo, seleção com as
     // UFs congeladas, e o município, sem lista, que cita a UF. A renda acima de dez salários
     // impede a inscrição de quem se declarou preto, com a mensagem ao candidato.
-    private static void DefinirFatosColetados(ProcessoSeletivo processo, bool permutar) =>
+    internal static void DefinirFatosColetados(ProcessoSeletivo processo, bool permutar) =>
         processo.DefinirItens(Ordem([
             .. FormularioDeTeste.DadosBasicos(),
             FatoDeRenda(),
@@ -204,7 +212,7 @@ internal static partial class CorpusEnvelope
             FatoDeOpcaoPelaEscolaPublica(),
         ], permutar), PrecondicaoIfMatch.Ausente, grupos: [ComposicaoFamiliar(permutar)]).IsSuccess.Should().BeTrue();
 
-    private static FatoColetado FatoDeRenda() =>
+    internal static FatoColetado FatoDeRenda() =>
         FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
             CondicaoPrecondicaoFato.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
         ], impedimento: new Impedimento(
@@ -216,19 +224,19 @@ internal static partial class CorpusEnvelope
             "A renda declarada está acima do limite deste processo."), classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
     // A faixa de data com os dois tipos de limite: uma data fixa e o dia do envio deslocado.
-    private static FatoColetado FatoDeConclusaoDoEnsinoMedio() =>
+    internal static FatoColetado FatoDeConclusaoDoEnsinoMedio() =>
         FatoColetado.Criar("CONCLUSAO_ENSINO_MEDIO", 4, "Data de conclusão do ensino médio", TipoRenderizacao.Data, Obrigatoriedade.Sempre, null,
             classificacaoProtecao: "PESSOAL",
             restricoes: [new FaixaDeData(LimiteDeData.Fixo(new DateOnly(1950, 1, 1)), LimiteDeData.NoEnvio(anos: 0, dias: -1))], hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
     // A opção pelas vagas de escola pública, de que a opção pelas cotas da lei depende.
-    private static FatoColetado FatoDeOpcaoPelaEscolaPublica() =>
+    internal static FatoColetado FatoDeOpcaoPelaEscolaPublica() =>
         FatoColetado.Criar(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 5, "Deseja concorrer às vagas de escola pública?",
             TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
 
     // Formulário de inscrição (Story #559, UNI-REQ-0086): título e um termo com exibição e
     // obrigatoriedade condicionais — o decoder tem de remontar o termo inteiro.
-    private static void DefinirTituloETermos(ProcessoSeletivo processo, PredicadoDnf corPreta)
+    internal static void DefinirTituloETermos(ProcessoSeletivo processo, PredicadoDnf corPreta)
     {
         processo.DefinirTitulo("Formulário de Inscrição — PS Rico 2026", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirTermos(
@@ -238,7 +246,7 @@ internal static partial class CorpusEnvelope
 
     // Seção com exibição condicional: aparece só para quem se declarou preto — o decoder remonta
     // a exibição da seção junto das demais etapas.
-    private static void DefinirEtapasDoFormulario(ProcessoSeletivo processo, PredicadoDnf corPreta)
+    internal static void DefinirEtapasDoFormulario(ProcessoSeletivo processo, PredicadoDnf corPreta)
     {
         FormularioProcesso inscricao = processo.FormularioDe(FinalidadeFormulario.Inscricao)!;
         processo.DefinirFormulario(
@@ -255,14 +263,14 @@ internal static partial class CorpusEnvelope
     // A lista EXTERNA de configurações de derivação é ordenada por codigoFato na projeção, e a
     // de regras, pela ordem; sem dois itens em cada uma, a permutação não seria exercitada.
     // Cita COR_RACA e RENDA (coletados), sem ciclo.
-    private static void DefinirRegrasDeDerivacao(ProcessoSeletivo processo, bool permutar) =>
+    internal static void DefinirRegrasDeDerivacao(ProcessoSeletivo processo, bool permutar) =>
         processo.DefinirRegrasDerivacao(Ordem([
             DerivacaoDoRegimeDeIngresso(permutar),
             DerivacaoDoEgressoDeEscolaPublica(),
             DerivacaoDoPretoDeclarado(),
         ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-    private static ConfiguracaoDerivacaoFato DerivacaoDoRegimeDeIngresso(bool permutar) =>
+    internal static ConfiguracaoDerivacaoFato DerivacaoDoRegimeDeIngresso(bool permutar) =>
         ConfiguracaoDerivacaoFato.Criar("REGIME_INGRESSO", Ordem([
             RegraDerivacaoConfigurada.Criar(0, "AMPLA", null).Value!,
             RegraDerivacaoConfigurada.Criar(1, "COTISTA", Ordem([
@@ -272,7 +280,7 @@ internal static partial class CorpusEnvelope
         ], permutar)).Value!;
 
     // O egresso de escola pública, de que a opção pelas cotas da lei depende.
-    private static ConfiguracaoDerivacaoFato DerivacaoDoEgressoDeEscolaPublica() =>
+    internal static ConfiguracaoDerivacaoFato DerivacaoDoEgressoDeEscolaPublica() =>
         ConfiguracaoDerivacaoFato.Criar(OrigemEscolar.FatoEgresso, [
             RegraDerivacaoConfigurada.Criar(0, null, [
                 CondicaoRegraDerivacao.Criar(0, OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
@@ -280,7 +288,7 @@ internal static partial class CorpusEnvelope
         ]).Value!;
 
     // Derivado booleano: as regras não contribuem código, e o envelope grava contribui nulo.
-    private static ConfiguracaoDerivacaoFato DerivacaoDoPretoDeclarado() =>
+    internal static ConfiguracaoDerivacaoFato DerivacaoDoPretoDeclarado() =>
         ConfiguracaoDerivacaoFato.Criar("PRETO_DECLARADO", [
             RegraDerivacaoConfigurada.Criar(0, null, [
                 CondicaoRegraDerivacao.Criar(0, "COR_RACA", Operador.Igual, JsonSerializer.SerializeToElement("PRETA")).Value!,
@@ -291,7 +299,7 @@ internal static partial class CorpusEnvelope
     // DistribuicaoLei12711 já são SegueCascata (INV-12) — sem uma cascata que as cubra,
     // Publicar() recusa com ProcessoSeletivo.CascataOrigemAusente (PendenciaDaCascata).
     // A matriz legal completa (8×7, fallback AC) é o que mantém este corpus PUBLICÁVEL.
-    private static void DefinirCascataEDocumentos(ProcessoSeletivo processo, int variante, bool permutar, bool comArvoreSatisfacao)
+    internal static void DefinirCascataEDocumentos(ProcessoSeletivo processo, int variante, bool permutar, bool comArvoreSatisfacao)
     {
         processo.DefinirCascataRemanejamento(CascataLegalCompleta(permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
@@ -308,7 +316,7 @@ internal static partial class CorpusEnvelope
     // Taxa de inscrição e isenção (issue #1112): o corpus RICO cobra taxa e referencia os
     // dois fundamentos — a combinação "cobra-com-fundamentos" do CA-08, que o corpus BASE
     // (sem cobrança) não cobre.
-    private static void DefinirTaxaEOpcoesDeCurso(ProcessoSeletivo processo, bool permutar)
+    internal static void DefinirTaxaEOpcoesDeCurso(ProcessoSeletivo processo, bool permutar)
     {
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(

@@ -81,7 +81,7 @@ internal sealed class CenarioDeVersaoVigentePersistida
         SnapshotCanonico canonico = Canonicalizar(processo, dados, documento);
         Result<VersaoConfiguracao> publicar = processo.Publicar(
             dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            documento.HashSha256!, "integration-test-user", clock, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            documento.HashSha256!, "integration-test-user", clock, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         return publicar.Value!;
     }
@@ -111,7 +111,7 @@ internal sealed class CenarioDeVersaoVigentePersistida
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
         Result<VersaoConfiguracao> retificar = carregado.Retificar(
             dados, versaoAtual, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            documento.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", clock, CorpusEnvelope.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            documento.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", clock, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
         retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
         return retificar.Value!;
     }

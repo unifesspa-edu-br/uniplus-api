@@ -22,6 +22,8 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
+using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDaPersistenciaDoProcessoSeletivo;
+
 /// <summary>
 /// Cobertura de integração (Postgres real via Testcontainers) do agregado
 /// <c>ProcessoSeletivo</c> na fatia F0 (fundação): persiste e recarrega a raiz
@@ -29,13 +31,15 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// validando o mapeamento EF (HasMany/HasOne + FK, sem owned types) e a
 /// migration aplicando limpo contra Postgres real.
 /// </summary>
-public sealed partial class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
+public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
     private readonly ProcessoSeletivoDbFixture _fixture;
+    private readonly ApoioDaPersistenciaDoProcessoSeletivo _apoio;
 
     public ProcessoSeletivoPersistenciaTests(ProcessoSeletivoDbFixture fixture)
     {
         _fixture = fixture;
+        _apoio = new ApoioDaPersistenciaDoProcessoSeletivo(fixture);
     }
 
     [Fact(DisplayName = "Persiste e recarrega o agregado com etapas e atendimento especializado")]

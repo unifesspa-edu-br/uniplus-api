@@ -170,7 +170,7 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
     [Fact(DisplayName = "Envelope que coleta a edição do ENEM com classificação sem ENEM é recusado pela regra da publicação")]
     public void EdicaoDoEnemSemClassificacaoEnem_Recusa()
     {
-        byte[] bytes = CorpusEnvelope.Codec.Codificar(CorpusEnvelope.Entrada(ProcessoComClassificacaoSemEnem())).Bytes;
+        byte[] bytes = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(ProcessoComClassificacaoSemEnem())).Bytes;
 
         Result<EnvelopeReidratado> resultado = ReidratarComoAbertura(bytes);
 
@@ -181,7 +181,7 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
 
     private static ProcessoSeletivo ProcessoComClassificacaoSemEnem()
     {
-        ProcessoSeletivo processo = CorpusEnvelope.ProcessoRico();
+        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         processo.DefinirCriteriosDesempate(
             [CriterioDesempate.Criar(1, CorpusEnvelope.Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();

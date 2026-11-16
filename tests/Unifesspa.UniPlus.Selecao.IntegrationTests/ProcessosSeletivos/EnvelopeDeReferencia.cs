@@ -109,7 +109,7 @@ internal static class EnvelopeDeReferencia
             ProcessoDeReferencia(), DadosDeReferencia(), HashFixo, FusoInstitucional.ZoneId,
             MetadadosFatosCongelados: MetadadosFatosDeReferencia(),
             ValoresSelecionaveisCongelados: ValoresSelecionaveisDeReferencia(),
-            ApresentacaoDosPressupostos: CorpusEnvelope.ApresentacaoRica,
+            ApresentacaoDosPressupostos: CorpusEnvelopeEntrada.ApresentacaoRica,
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(ProcessoDeReferencia()), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
     /// <summary>
@@ -203,7 +203,7 @@ internal static class EnvelopeDeReferencia
     private static void DefinirFormularioEDerivacao(ProcessoSeletivo processo)
     {
         processo.DefinirTitulo("Formulário de Inscrição", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([CorpusEnvelope.Termo("DECLARACAO_VERACIDADE", 0)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTermos([CorpusEnvelopeEntrada.Termo("DECLARACAO_VERACIDADE", 0)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirRegrasDerivacao([
