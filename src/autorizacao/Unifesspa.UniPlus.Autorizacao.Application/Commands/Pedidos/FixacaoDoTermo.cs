@@ -27,7 +27,7 @@ public sealed class FixacaoDoTermo
     internal async Task<Result> FixarAsync(
         PedidoDeConcessao pedido, Perfil perfil, Guid? apresentada, DateTimeOffset agora, CancellationToken cancellationToken)
     {
-        bool exigido = PedidoDeConcessao.ExigeTermo(perfil, _catalogo);
+        bool exigido = ExigenciaDoTermo.Do(perfil, _catalogo);
         VersaoDoTermo? vigente = exigido
             ? await _termos.ObterVigenteSobTravaCompartilhadaAsync(cancellationToken).ConfigureAwait(false)
             : null;

@@ -75,7 +75,7 @@ internal static class TermoNoHostDeTeste
         await using AsyncServiceScope escopo = servicos.CreateAsyncScope();
         Perfil? perfil = await escopo.ServiceProvider.GetRequiredService<IPerfilRepository>().ObterPorIdAsync(perfilId);
         bool exigido = perfil is not null
-            && PedidoDeConcessao.ExigeTermo(perfil, escopo.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>());
+            && ExigenciaDoTermo.Do(perfil, escopo.ServiceProvider.GetRequiredService<ICatalogoDePermissoesConsultavel>());
 
         return exigido ? (await escopo.ServiceProvider.GetRequiredService<ITermoDeResponsabilidadeRepository>().ObterVigenteAsync())?.Id : null;
     }

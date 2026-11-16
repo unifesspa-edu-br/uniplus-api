@@ -13,8 +13,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed partial class PedidoDeConcessao
 {
-    private const string CampoDaVersaoApresentada = "termoVersaoApresentadaId";
-
     /// <summary>O solicitante declarou, na criação, que anexaria documento; sempre verdadeiro no perfil de governança.</summary>
     public bool AnexaraDocumento { get; private set; }
 
@@ -37,17 +35,6 @@ public sealed partial class PedidoDeConcessao
     public bool AguardaAceiteDoTermo => TermoVersaoId is not null && Situacao == SituacaoDoPedido.AguardandoBeneficiario;
 
     /// <summary>
-    /// O perfil exige o termo: a composição em vigor tem permissão pessoal, identificadora ou sensível, ou o perfil é de
-    /// governança, que exige o termo mesmo que uma recomposição futura o deixe sem permissão pessoal (UNI-REQ-0377).
-    /// </summary>
-    public static bool ExigeTermo(Perfil perfil, ICatalogoDePermissoesConsultavel catalogo)
-    {
-        ArgumentNullException.ThrowIfNull(perfil);
-
-        return perfil.Governanca is not null || perfil.Protegido(catalogo);
-    }
-
-    /// <summary>
     /// Fixa no pedido recém-criado a versão vigente do termo, quando o perfil o exige, e confere a versão que o cliente
     /// apresentou, obrigatória em todo pedido protegido (UNI-REQ-0377): divergente da vigente, conflito; ausente no pedido
     /// protegido, ou presente quando o pedido não exige termo, recusa de campo. No pedido para si mesmo sem documento, o
@@ -57,7 +44,7 @@ public sealed partial class PedidoDeConcessao
     {
         ArgumentNullException.ThrowIfNull(termo);
 
-        if (RecusaDoTermoNaCriacao(termo) is { } recusa)
+        if (termo.Recusa() is { } recusa)
         {
             return recusa;
         }
@@ -72,21 +59,6 @@ public sealed partial class PedidoDeConcessao
 
     private bool EnvioEOAceite => Beneficiario.Identidade is not null && !AnexaraDocumento;
 
-    private static Result? RecusaDoTermoNaCriacao(TermoNaCriacao termo)
-    {
-        if (!termo.Exigido)
-        {
-            return termo.Apresentada is null ? null : ApresentacaoIndevida();
-        }
-
-        if (termo.Vigente is null)
-        {
-            return Result.Failure(SemTermoVigente());
-        }
-
-        return termo.Apresentada is { } apresentada ? Comparar(apresentada, termo.Vigente.Id) : ApresentacaoAusente();
-    }
-
     private void Fixar(VersaoDoTermo vigente, DateTimeOffset instante)
     {
         TermoVersaoId = vigente.Id;
@@ -97,17 +69,6 @@ public sealed partial class PedidoDeConcessao
         {
             AceiteDoTermo = AceiteDoTermo.Registrar(Id, Termo!, Beneficiario.Identidade!, instante);
         }
-    }
-
-    // O aceite do beneficiário confere a versão apresentada com a fixada, que não muda depois da criação.
-    private Result? RecusaDoTermoNoAceite(Guid? apresentada)
-    {
-        if (Termo is not { } fixado)
-        {
-            return apresentada is null ? null : ApresentacaoIndevida();
-        }
-
-        return apresentada is { } versao ? Comparar(versao, fixado.VersaoId) : ApresentacaoAusente();
     }
 
     private void RegistrarAceiteDoTermo(DateTimeOffset instante)
@@ -128,7 +89,7 @@ public sealed partial class PedidoDeConcessao
             return SituacaoInvalida("O pedido com termo fixado só se decide depois do aceite do beneficiário.");
         }
 
-        return aprovacao.Etapa == EtapaDoPedido.Gestor && Termo is null && ExigeTermo(aprovacao.Perfil)
+        return aprovacao.Etapa == EtapaDoPedido.Gestor && Termo is null && ExigenciaDoTermo.Do(aprovacao.Perfil)
             ? DevolverPorTermoExigido(aprovacao)
             : null;
     }
@@ -167,25 +128,4 @@ public sealed partial class PedidoDeConcessao
     // então vai ao gestor.
     private SituacaoDoPedido EtapaSeguinteAoDocumento() =>
         Beneficiario.Identidade is null || Termo is not null ? SituacaoDoPedido.AguardandoBeneficiario : SituacaoDoPedido.AguardandoGestor;
-
-    private static DomainError SemTermoVigente() => new(
-        PedidoErrorCodes.SemTermoVigente,
-        "O perfil pedido dá acesso a dado pessoal ou sensível e exige o aceite do termo de responsabilidade, mas nenhuma versão foi publicada. Peça ao gestor de acessos que publique o termo.");
-
-    private static bool ExigeTermo(PerfilAvaliado perfil) => perfil.ExigeAprovacaoDeProtecaoDeDados || perfil.Governanca is not null;
-
-    private static Result? Comparar(Guid apresentada, Guid esperada) =>
-        apresentada == esperada
-            ? null
-            : Result.Failure(new DomainError(
-                PedidoErrorCodes.TermoDivergente,
-                "A versão do termo apresentada não é a vigente (na criação) ou a fixada no pedido (no aceite). Leia o termo novamente e repita a operação."));
-
-    private static Result ApresentacaoAusente() => Result.ValidationFailure([new FieldError(CampoDaVersaoApresentada, new DomainError(
-        PedidoErrorCodes.ApresentacaoDoTermoInvalida,
-        "Este pedido exige informar a versão do termo de responsabilidade apresentada."))]);
-
-    private static Result ApresentacaoIndevida() => Result.ValidationFailure([new FieldError(CampoDaVersaoApresentada, new DomainError(
-        PedidoErrorCodes.ApresentacaoDoTermoInvalida,
-        "Este pedido não exige o termo de responsabilidade, e a versão não deve ser informada."))]);
 }

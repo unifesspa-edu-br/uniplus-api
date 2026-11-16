@@ -21,7 +21,7 @@ public sealed partial class PedidoDeConcessao
     {
         ArgumentNullException.ThrowIfNull(pessoa);
 
-        Result? recusa = RecusaDoAceite(pessoa) is { } erro ? Result.Failure(erro) : RecusaDoTermoNoAceite(termoApresentado);
+        Result? recusa = RecusaDoAceite(pessoa) is { } erro ? Result.Failure(erro) : ApresentacaoDoTermo.Conferir(termoApresentado, Termo?.VersaoId);
         if (recusa is not null)
         {
             return recusa;
