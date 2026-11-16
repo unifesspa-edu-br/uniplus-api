@@ -2147,6 +2147,11 @@
       "titulo": "Peso de área não pode ser negativo"
     },
     {
+      "codigo": "uniplus.configuracao.peso_area_enem.peso_obrigatorio",
+      "status": 422,
+      "titulo": "O peso da área é obrigatório"
+    },
+    {
       "codigo": "uniplus.configuracao.peso_area_enem.pesos_somam_zero",
       "status": 422,
       "titulo": "Os pesos das áreas não podem somar zero"

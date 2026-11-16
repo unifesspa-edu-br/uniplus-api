@@ -76,9 +76,9 @@ internal sealed class ConferenciaDasAreasDoPeso
         ConferirPeso(campo, informada.Peso, nomeDaArea);
         ConferirCorte(campo, informada.Corte, nomeDaArea);
 
-        if (descrita is not null && !repetida && _erros.Count == errosAntes)
+        if (descrita is not null && !repetida && _erros.Count == errosAntes && informada.Peso is { } peso)
         {
-            _validas.Add(new AreaValidada(descrita, Arredondar(informada.Peso, EscalaPeso), ArredondarCorte(informada.Corte)));
+            _validas.Add(new AreaValidada(descrita, Arredondar(peso, EscalaPeso), ArredondarCorte(informada.Corte)));
         }
     }
 
@@ -107,9 +107,13 @@ internal sealed class ConferenciaDasAreasDoPeso
         return true;
     }
 
-    private void ConferirPeso(string campo, decimal peso, string nomeDaArea)
+    private void ConferirPeso(string campo, decimal? peso, string nomeDaArea)
     {
-        if (peso < 0)
+        if (peso is null)
+        {
+            Recusar($"{campo}.peso", PesoAreaEnemErrorCodes.PesoObrigatorio, $"O peso é obrigatório para {nomeDaArea}.");
+        }
+        else if (peso < 0)
         {
             Recusar($"{campo}.peso", PesoAreaEnemErrorCodes.PesoNegativo,
                 $"O peso informado para {nomeDaArea} não pode ser negativo.");

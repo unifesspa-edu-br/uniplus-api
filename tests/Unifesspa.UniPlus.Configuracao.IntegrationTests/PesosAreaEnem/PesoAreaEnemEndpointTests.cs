@@ -185,6 +185,16 @@ public sealed class PesoAreaEnemEndpointTests
             "uniplus.configuracao.peso_area_enem.corte_excede_maximo");
     }
 
+    [Fact(DisplayName = "POST admin com área sem o peso retorna 422 no campo do peso da área")]
+    public async Task Criar_AreaSemPeso_Retorna422NoCampo()
+    {
+        object[] areas = AreasValidas();
+        areas[1] = new { codigo = "CIENCIAS_DA_NATUREZA" };
+
+        await AssertRecusaNoCampo(Corpo(ResolucaoUnica(), areas), "areas[1].peso",
+            "uniplus.configuracao.peso_area_enem.peso_obrigatorio");
+    }
+
     [Fact(DisplayName = "POST admin com corte em área que não é a Redação cria a linha com o corte")]
     public async Task Criar_CorteForaDaRedacao_Cria()
     {

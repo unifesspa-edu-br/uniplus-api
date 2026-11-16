@@ -21057,7 +21057,10 @@
             ]
           },
           "peso": {
-            "type": "number",
+            "type": [
+              "null",
+              "number"
+            ],
             "format": "double"
           },
           "corte": {

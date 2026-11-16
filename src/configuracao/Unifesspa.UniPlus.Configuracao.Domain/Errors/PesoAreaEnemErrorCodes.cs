@@ -11,6 +11,7 @@ public static class PesoAreaEnemErrorCodes
     public const string AreaRepetida = "PesoAreaEnem.AreaRepetida";
     public const string AreaFaltando = "PesoAreaEnem.AreaFaltando";
     public const string AreasEmExcesso = "PesoAreaEnem.AreasEmExcesso";
+    public const string PesoObrigatorio = "PesoAreaEnem.PesoObrigatorio";
     public const string PesoNegativo = "PesoAreaEnem.PesoNegativo";
     public const string PesosSomamZero = "PesoAreaEnem.PesosSomamZero";
     public const string PesoExcedeMaximo = "PesoAreaEnem.PesoExcedeMaximo";
