@@ -83,6 +83,44 @@ public sealed class CorretoresDaRegraDeConsolidacaoTests
         ler.Should().Throw<ArgumentException>().WithMessage("*consolidação*");
     }
 
+    [Theory(DisplayName = "Os corretores em campo são os distintos mais o adicional só quando o tratamento é o novo corretor")]
+    [InlineData("""{"corretores_distintos":3,"criterio":"maioria_simples","naturezas_do_conceito":["categorico"],"quando_nao_consolida":"novo_corretor"}""", 4)]
+    [InlineData("""{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["categorico"],"quando_nao_consolida":"novo_corretor"}""", 3)]
+    [InlineData("""{"corretores_distintos":2,"criterio":"unanimidade","naturezas_do_conceito":["categorico"],"quando_nao_consolida":"decisao_da_banca"}""", 2)]
+    [InlineData("""{"corretores_distintos":3,"naturezas_do_conceito":["numerico"]}""", 3)]
+    public void TentarEmCampo_DevolveOsDistintosEOAdicionalDoTratamento(string esquemaArgs, int esperado)
+    {
+        bool lida = CorretoresDaRegraDeConsolidacao.TentarEmCampo(DeConsolidacao(esquemaArgs), out int emCampo);
+
+        lida.Should().BeTrue();
+        emCampo.Should().Be(esperado);
+    }
+
+    [Theory(DisplayName = "Os corretores em campo não se leem quando os distintos ou o tratamento declarado são inválidos, ou quando há critério sem tratamento")]
+    [InlineData("""{"naturezas_do_conceito":["categorico"],"quando_nao_consolida":"novo_corretor"}""")]
+    [InlineData("""{"corretores_distintos":0,"quando_nao_consolida":"novo_corretor"}""")]
+    [InlineData("""{"corretores_distintos":3,"criterio":"maioria_simples","naturezas_do_conceito":["categorico"]}""")]
+    [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":"sorteio"}""")]
+    [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":"NovoCorretor"}""")]
+    [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":1}""")]
+    [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":null}""")]
+    [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":["novo_corretor"]}""")]
+    public void TentarEmCampo_DeclaracaoInvalida_Falha(string esquemaArgs)
+    {
+        bool lida = CorretoresDaRegraDeConsolidacao.TentarEmCampo(DeConsolidacao(esquemaArgs), out int emCampo);
+
+        lida.Should().BeFalse();
+        emCampo.Should().Be(0);
+    }
+
+    [Fact(DisplayName = "A regra que não é de consolidação não põe corretores em campo")]
+    public void TentarEmCampo_RegraDeOutroTipo_Falha()
+    {
+        RegraCatalogo regra = Regra("FORMULA-DE-TESTE", """{"corretores_distintos":3,"quando_nao_consolida":"novo_corretor"}""", TipoRegra.RegraCalculo);
+
+        CorretoresDaRegraDeConsolidacao.TentarEmCampo(regra, out _).Should().BeFalse();
+    }
+
     [Fact(DisplayName = "A regra nula é recusada")]
     public void De_Nula_Lanca()
     {

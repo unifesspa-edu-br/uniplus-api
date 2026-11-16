@@ -23,15 +23,22 @@ internal static class ProcessoComCorrecaoIndependente
 
     public static ReferenciaRegra AvaliacaoUnica => RegrasDeConsolidacaoDeTeste.AvaliacaoUnica.Referencia();
 
+    public static ReferenciaRegra MaioriaSimples => RegrasDeConsolidacaoDeTeste.ConceitoMaioriaSimples.Referencia();
+
+    public static ReferenciaRegra Unanimidade => RegrasDeConsolidacaoDeTeste.ConceitoUnanimidade.Referencia();
+
     /// <summary>Uma etapa de avaliação humana para cada regra dada, na ordem, sem banca declarada.</summary>
     public static ProcessoSeletivo ComRegras(params ReferenciaRegra[] consolidacoes) =>
         ComEtapas(ProcessoSeletivoConformeBuilder.Criar("PS regras de consolidação"), [.. consolidacoes.Select(static (regra, indice) => Entrevista($"Etapa {indice + 1}", indice + 1, regra))]);
 
-    /// <summary>Uma etapa de correção independente, cuja banca de recursos é a da própria etapa.</summary>
-    public static ProcessoSeletivo ComBancaDaEtapa(int integrantes, int quorum = 2)
+    /// <summary>
+    /// Uma etapa que referencia a regra de consolidação dada, a correção independente quando não se informa, cuja banca de
+    /// recursos é a da própria etapa.
+    /// </summary>
+    public static ProcessoSeletivo ComBancaDaEtapa(int integrantes, int quorum = 2, ReferenciaRegra? consolidacao = null)
     {
         ProcessoSeletivo processo = ComEtapas(
-            ProcessoSeletivoConformeBuilder.Criar("PS banca da etapa"), Entrevista("Redação", 1, CorrecaoIndependente));
+            ProcessoSeletivoConformeBuilder.Criar("PS banca da etapa"), Entrevista("Redação", 1, consolidacao ?? CorrecaoIndependente));
         DeclararBancaDaEtapa(processo.Etapas.Single(), integrantes, quorum);
 
         return processo;

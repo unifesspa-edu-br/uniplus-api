@@ -21,18 +21,36 @@ public static class NaturezasDaConsolidacao
     /// A versão não declara a chave, ou a declara vazia, fora de uma lista ou com token desconhecido: o
     /// catálogo é semeado por código, e esquema assim é defeito de quem semeia, não dado a recusar.
     /// </exception>
-    public static IReadOnlyList<NaturezaConceito> De(RegraCatalogo regra)
+    public static IReadOnlyList<NaturezaConceito> De(RegraCatalogo regra) =>
+        Tentar(regra, out IReadOnlyList<NaturezaConceito> naturezas) ? naturezas : throw EsquemaInvalido(regra);
+
+    /// <summary>
+    /// As naturezas que a versão declara, ou falso quando ela não as declara de forma válida: quem lê o catálogo para
+    /// recusar a etapa em vez de lançar usa este, e não presume natureza.
+    /// </summary>
+    public static bool Tentar(RegraCatalogo regra, out IReadOnlyList<NaturezaConceito> naturezas)
     {
         ArgumentNullException.ThrowIfNull(regra);
+
+        naturezas = [];
         if (regra.EsquemaArgs.ValueKind != JsonValueKind.Object
             || !regra.EsquemaArgs.TryGetProperty(ChaveDasNaturezas, out JsonElement declaradas)
             || declaradas.ValueKind != JsonValueKind.Array
             || declaradas.GetArrayLength() == 0)
         {
-            throw EsquemaInvalido(regra);
+            return false;
         }
 
-        return [.. declaradas.EnumerateArray().Select(natureza => Ler(natureza, regra)).Distinct()];
+        return TentarLerTodas(declaradas, out naturezas);
+    }
+
+    private static bool TentarLerTodas(JsonElement declaradas, out IReadOnlyList<NaturezaConceito> naturezas)
+    {
+        List<NaturezaConceito> lidas = [];
+        bool todasConhecidas = declaradas.EnumerateArray().All(declarada => TentarLer(declarada, lidas));
+        naturezas = todasConhecidas ? lidas : [];
+
+        return todasConhecidas;
     }
 
     /// <summary>
@@ -63,13 +81,20 @@ public static class NaturezasDaConsolidacao
                 "A etapa com regra de consolidação deve declarar o conceito com que é avaliada."))
             : null;
 
-    private static NaturezaConceito Ler(JsonElement declarada, RegraCatalogo regra)
+    private static bool TentarLer(JsonElement declarada, List<NaturezaConceito> lidas)
     {
         string? token = declarada.ValueKind == JsonValueKind.String ? declarada.GetString() : null;
+        if (!NaturezaConceitoCodigo.TentarConverter(token, out NaturezaConceito natureza))
+        {
+            return false;
+        }
 
-        return NaturezaConceitoCodigo.TentarConverter(token, out NaturezaConceito natureza)
-            ? natureza
-            : throw EsquemaInvalido(regra);
+        if (!lidas.Contains(natureza))
+        {
+            lidas.Add(natureza);
+        }
+
+        return true;
     }
 
     private static ArgumentException EsquemaInvalido(RegraCatalogo regra) =>

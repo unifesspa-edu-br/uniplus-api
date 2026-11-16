@@ -350,4 +350,51 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         CorretoresDaRegraDeConsolidacao.De(independente).Should().Be(3);
         NaturezasDaConsolidacao.De(independente).Should().Equal(NaturezaConceito.Numerico);
     }
+
+    [Fact(DisplayName = "As regras de conceito categórico declaram critério, corretores e tratamento, e só a natureza categórica")]
+    public async Task RegraDeConceitoCategorico_DeclaraCriterioCorretoresETratamento()
+    {
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
+        RegraCatalogoReader reader = new(context);
+
+        (string Codigo, CriterioDeConsolidacaoDoConceito Criterio, int Corretores, TratamentoDaFaltaDeConsolidacao Tratamento)[] esperadas =
+        [
+            (RegraConsolidacaoCodigo.ConceitoUnanimidade, CriterioDeConsolidacaoDoConceito.Unanimidade, 2, TratamentoDaFaltaDeConsolidacao.DecisaoDaBanca),
+            (RegraConsolidacaoCodigo.ConceitoMaioriaSimples, CriterioDeConsolidacaoDoConceito.MaioriaSimples, 3, TratamentoDaFaltaDeConsolidacao.NovoCorretor),
+            (RegraConsolidacaoCodigo.ConceitoMaioriaAbsoluta, CriterioDeConsolidacaoDoConceito.MaioriaAbsoluta, 3, TratamentoDaFaltaDeConsolidacao.NovoCorretor),
+        ];
+
+        foreach ((string codigo, CriterioDeConsolidacaoDoConceito criterio, int corretores, TratamentoDaFaltaDeConsolidacao tratamento) in esperadas)
+        {
+            RegraCatalogo regra = (await reader.ObterAsync(codigo, RegraCatalogoSeed.VersaoV1, CancellationToken.None))!;
+
+            DeclaracaoDaConsolidacaoDoConceito.De(regra).Should().Be(
+                new DeclaracaoDaConsolidacaoDoConceito(criterio, corretores, tratamento), codigo);
+            NaturezasDaConsolidacao.De(regra).Should().Equal([NaturezaConceito.Categorico], codigo);
+        }
+    }
+
+    [Fact(DisplayName = "As regras de consolidação numéricas não declaram critério de conceito")]
+    public async Task RegraDeConsolidacaoNumerica_NaoDeclaraCriterioDeConceito()
+    {
+        await using UniPlusDbContext context = _fixture.CreateDbContext();
+        RegraCatalogoReader reader = new(context);
+
+        foreach (string codigo in new[] { RegraConsolidacaoCodigo.AvaliacaoUnica, RegraConsolidacaoCodigo.CorrecaoIndependente })
+        {
+            RegraCatalogo regra = (await reader.ObterAsync(codigo, RegraCatalogoSeed.VersaoV1, CancellationToken.None))!;
+
+            DeclaracaoDaConsolidacaoDoConceito.Tentar(regra, out _).Should().BeFalse(codigo);
+        }
+    }
+
+    [Fact(DisplayName = "As regras de consolidação do seed têm código único e hash distinto")]
+    public void RegraDeConsolidacao_CodigoUnicoEHashDistinto()
+    {
+        List<RegraCatalogoSeedItem> consolidacoes =
+            [.. RegraCatalogoSeed.Itens.Where(item => item.Tipo == TipoRegra.RegraConsolidacao)];
+
+        consolidacoes.Select(item => item.Codigo).Should().BeEquivalentTo(RegraConsolidacaoCodigo.Rol).And.OnlyHaveUniqueItems();
+        consolidacoes.Select(item => item.ComputarHash()).Should().OnlyHaveUniqueItems();
+    }
 }

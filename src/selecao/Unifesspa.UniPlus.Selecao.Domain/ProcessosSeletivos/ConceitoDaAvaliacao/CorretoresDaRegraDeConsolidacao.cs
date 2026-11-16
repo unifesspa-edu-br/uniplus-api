@@ -40,6 +40,24 @@ public static class CorretoresDaRegraDeConsolidacao
             && corretores >= 1;
     }
 
+    /// <summary>
+    /// Os corretores que a regra põe em campo: os distintos e, quando o tratamento declarado para o critério que não
+    /// converge é o novo corretor, mais um, porque o novo corretor é pessoa da banca fora dos originais. A versão
+    /// que não declara tratamento, como as regras numéricas, não tem o adicional. Falso quando os distintos não são
+    /// declarados de forma válida ou o tratamento declarado é inválido: nenhum número é presumido.
+    /// </summary>
+    public static bool TentarEmCampo(RegraCatalogo regra, out int corretoresEmCampo)
+    {
+        corretoresEmCampo = 0;
+        if (!Tentar(regra, out int distintos) || !TratamentoDaRegraDeConsolidacao.Tentar(regra, out TratamentoDaFaltaDeConsolidacao? tratamento))
+        {
+            return false;
+        }
+
+        corretoresEmCampo = distintos + (tratamento == TratamentoDaFaltaDeConsolidacao.NovoCorretor ? 1 : 0);
+        return true;
+    }
+
     private static ArgumentException DeclaracaoInvalida(RegraCatalogo regra) =>
         new($"A regra '{regra.Codigo}' versão '{regra.Versao}' deve ser de consolidação e declarar '{ChaveDosCorretores}' no esquema_args como inteiro maior ou igual a um.", nameof(regra));
 }

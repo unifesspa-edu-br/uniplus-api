@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O número de corretores de cada etapa vem do catálogo, pela referência que a etapa guarda, e nunca de um padrão: a
+/// O número de corretores em campo de cada etapa vem do catálogo, pela referência que a etapa guarda, e nunca de um padrão: a
 /// etapa sem regra de consolidação nem consulta o catálogo, e a referência que o catálogo não confirma volta como não resolvida.
 /// </summary>
 public sealed class LeituraDosCorretoresDasEtapasTests
@@ -44,6 +44,31 @@ public sealed class LeituraDosCorretoresDasEtapasTests
 
         corretores.De(processo.Etapas.Single(etapa => etapa.Ordem == 1)).Should().Be(3);
         corretores.De(processo.Etapas.Single(etapa => etapa.Ordem == 2)).Should().Be(1);
+    }
+
+    [Theory(DisplayName = "A regra que declara o novo corretor põe em campo os distintos e mais um; a que declara a decisão da banca, só os distintos")]
+    [InlineData("novo_corretor", 4)]
+    [InlineData("decisao_da_banca", 3)]
+    public async Task TratamentoDeclarado_DefineOAdicional(string tratamento, int esperado)
+    {
+        RegraCatalogo regra = RegrasDeConsolidacaoDeTeste.Regra(
+            RegraConsolidacaoCodigo.ConceitoMaioriaSimples,
+            $$"""{"corretores_distintos":3,"criterio":"maioria_simples","naturezas_do_conceito":["categorico"],"quando_nao_consolida":"{{tratamento}}"}""");
+        ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComRegras(regra.Referencia());
+
+        CorretoresDasEtapas corretores = await Ler(RegrasDeConsolidacaoDeTeste.Catalogo(regra), processo);
+
+        corretores.De(processo.Etapas.Single()).Should().Be(esperado);
+    }
+
+    [Fact(DisplayName = "A regra de maioria simples do catálogo põe em campo os três corretores e o adicional")]
+    public async Task MaioriaSimplesDoCatalogo_PoeEmCampoQuatro()
+    {
+        ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComRegras(ProcessoComCorrecaoIndependente.MaioriaSimples);
+
+        CorretoresDasEtapas corretores = await Ler(RegrasDeConsolidacaoDeTeste.Catalogo(), processo);
+
+        corretores.De(processo.Etapas.Single()).Should().Be(4);
     }
 
     [Fact(DisplayName = "Cada referência distinta é lida uma só vez, ainda que várias etapas a compartilhem")]
@@ -89,10 +114,12 @@ public sealed class LeituraDosCorretoresDasEtapasTests
         corretores.Resolvida(processo.Etapas.Single()).Should().BeFalse();
     }
 
-    [Theory(DisplayName = "A versão sem o número de corretores, ou com número inválido, volta como não resolvida, sem lançar")]
+    [Theory(DisplayName = "A versão sem o número de corretores, com número ou tratamento inválido, volta como não resolvida, sem lançar")]
     [InlineData("{}")]
     [InlineData("""{"corretores_distintos":0}""")]
     [InlineData("""{"corretores_distintos":"3"}""")]
+    [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":"sorteio"}""")]
+    [InlineData("""{"corretores_distintos":3,"quando_nao_consolida":1}""")]
     public async Task EsquemaInvalido_VoltaNaoResolvida(string esquemaArgs)
     {
         RegraCatalogo invalida = RegrasDeConsolidacaoDeTeste.Regra(RegraConsolidacaoCodigo.CorrecaoIndependente, esquemaArgs);

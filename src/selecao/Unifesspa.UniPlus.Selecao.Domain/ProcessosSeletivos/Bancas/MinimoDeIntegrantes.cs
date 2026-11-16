@@ -8,8 +8,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O menor número de integrantes com que uma banca consegue cumprir a deliberação e a correção das
-/// etapas que julga: o maior valor entre o quórum e os corretores da regra de consolidação
-/// congelada de cada etapa julgada. Não olha o tipo da etapa nem o tipo do processo.
+/// etapas que julga: o maior valor entre o quórum e os corretores em campo da regra de consolidação
+/// congelada de cada etapa julgada, isto é, os corretores distintos e, quando a regra declara o novo corretor,
+/// mais um (o novo corretor é integrante da banca fora dos originais). Não olha o tipo da etapa nem o tipo do processo.
 /// </summary>
 internal static class MinimoDeIntegrantes
 {
@@ -58,7 +59,7 @@ internal static class MinimoDeIntegrantes
             ? null
             : new DomainError(
                 BancaErrorCodes.IntegrantesAbaixoDoMinimo,
-                $"A banca '{Eco(banca.Nome)}' {banca.Onde} declara {banca.Regra.Integrantes} integrantes, e o mínimo exigido é {minimo}, o maior entre o quórum e os corretores da regra de consolidação das etapas que ela julga.");
+                $"A banca '{Eco(banca.Nome)}' {banca.Onde} declara {banca.Regra.Integrantes} integrantes, e o mínimo exigido é {minimo}, o maior entre o quórum e os corretores da regra de consolidação das etapas que ela julga (com o corretor adicional, quando a regra declara novo corretor).");
     }
 
     private static DomainError NaoResolvida(BancaJulgadora banca, EtapaProcesso etapa) =>

@@ -21,8 +21,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using Xunit;
 
 /// <summary>
-/// O mínimo de integrantes da banca de recursos de uma etapa de correção independente vem do número de
-/// corretores que a regra do catálogo declara, lido na publicação sobre a regra semeada no banco.
+/// O mínimo de integrantes da banca de recursos de uma etapa vem dos corretores que a regra do catálogo põe em campo
+/// (os distintos e, quando a regra declara o novo corretor, mais um), lidos na publicação sobre a regra semeada no banco.
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
@@ -67,7 +67,35 @@ public sealed class MinimoDeIntegrantesNaPublicacaoEndpointTests
             .Should().Contain("cronograma_banca_com_o_minimo_de_integrantes");
     }
 
-    private async Task<HttpResponseMessage> PublicarComBancaDeAsync(int integrantes, string cenario, string? hashDaReferencia)
+    [Theory(DisplayName = "A publicação recusa a banca da etapa de maioria simples com novo corretor com três integrantes, abaixo dos três corretores e do adicional")]
+    [InlineData(3, HttpStatusCode.UnprocessableEntity)]
+    [InlineData(4, HttpStatusCode.NoContent)]
+    public async Task Publicar_MaioriaSimplesComNovoCorretor_ExigeOsCorretoresMaisUm(int integrantes, HttpStatusCode esperado)
+    {
+        HttpResponseMessage resposta = await PublicarComBancaDeAsync(
+            integrantes, $"{nameof(Publicar_MaioriaSimplesComNovoCorretor_ExigeOsCorretoresMaisUm)} {integrantes}", hashDaReferencia: null,
+            RegraConsolidacaoCodigo.ConceitoMaioriaSimples);
+
+        resposta.StatusCode.Should().Be(esperado);
+        if (esperado == HttpStatusCode.UnprocessableEntity)
+        {
+            using JsonDocument problema = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
+            problema.RootElement.GetProperty("code").GetString().Should().Be("uniplus.selecao.banca.integrantes_abaixo_do_minimo");
+            problema.RootElement.GetProperty("detail").GetString().Should().Contain("o mínimo exigido é 4");
+        }
+    }
+
+    [Fact(DisplayName = "A publicação aceita a banca da etapa de unanimidade com decisão da banca com dois integrantes, sem corretor adicional")]
+    public async Task Publicar_UnanimidadeComDecisaoDaBanca_Retorna204()
+    {
+        HttpResponseMessage resposta = await PublicarComBancaDeAsync(
+            integrantes: 2, nameof(Publicar_UnanimidadeComDecisaoDaBanca_Retorna204), hashDaReferencia: null, RegraConsolidacaoCodigo.ConceitoUnanimidade);
+
+        resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
+    }
+
+    private async Task<HttpResponseMessage> PublicarComBancaDeAsync(
+        int integrantes, string cenario, string? hashDaReferencia, string codigoDaRegra = RegraConsolidacaoCodigo.CorrecaoIndependente)
     {
         CascadingApiFactory api = _fixture.Factory;
         await TiposDeAtoSeeder.SemearAsync(api.Services);
@@ -76,11 +104,11 @@ public sealed class MinimoDeIntegrantesNaPublicacaoEndpointTests
         await using AsyncServiceScope scope = api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         ReferenciaRegra doRol = (await db.RolDeRegras.AsNoTracking().SingleAsync(regra =>
-            regra.Codigo == RegraConsolidacaoCodigo.CorrecaoIndependente && regra.Versao == RegraCatalogoSeed.VersaoV1)).Referencia();
-        ReferenciaRegra correcaoIndependente = hashDaReferencia is null ? doRol : ReferenciaRegra.De(doRol.Codigo, doRol.Versao, hashDaReferencia);
+            regra.Codigo == codigoDaRegra && regra.Versao == RegraCatalogoSeed.VersaoV1)).Referencia();
+        ReferenciaRegra consolidacao = hashDaReferencia is null ? doRol : ReferenciaRegra.De(doRol.Codigo, doRol.Versao, hashDaReferencia);
 
         (ProcessoSeletivo processo, DocumentoAPublicar documento) = await ProcessoSeletivoPublicavelSeeder.SemearAsync(
-            db, $"{cenario} {Guid.CreateVersion7()}", complementar: p => ComBancaDeRecursosNaEtapa(p, correcaoIndependente, integrantes));
+            db, $"{cenario} {Guid.CreateVersion7()}", complementar: p => ComBancaDeRecursosNaEtapa(p, consolidacao, integrantes));
 
         return await PublicacaoPeloEndpointDeTeste.PublicarAsync(client, processo.Id, documento.Id);
     }

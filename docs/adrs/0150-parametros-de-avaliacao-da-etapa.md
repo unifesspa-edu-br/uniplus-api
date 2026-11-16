@@ -108,3 +108,18 @@ Nenhum outro trecho desta ADR muda.
 - **O edital escolhe** qual regra e qual versão do rol a etapa referencia. A etapa com regra de consolidação declara conceito, e a regra cujas naturezas não incluem a do conceito é recusada.
 
 **Consequências.** A versão nova de uma regra pode ampliar as naturezas sem alcançar a versão que um edital publicado já congelou. A etapa com regra de consolidação e sem conceito é pendência tolerada em rascunho e cobrada na publicação e na retificação. Cada código de recusa novo tem página no portal de desenvolvedores.
+
+## Emenda 3 (2026-11-16) — a regra de consolidação de conceito categórico declara critério, corretores e tratamento
+
+**Contexto.** A emenda 2 prevê a consolidação categórica com critério e tratamento declarados pela versão, sem fixar o formato nem o conjunto de tratamentos. A apuração do valor do conceito precisa desses dados lidos do catálogo, e nenhum deles pode ficar fixo no código, porque as bancas variam o critério, o número de corretores e o que fazer quando os corretores não chegam a um valor.
+
+**Decisão.** O rol ganha três regras de consolidação, `CONSOLIDACAO-CONCEITO-UNANIMIDADE`, `CONSOLIDACAO-CONCEITO-MAIORIA-SIMPLES` e `CONSOLIDACAO-CONCEITO-MAIORIA-ABSOLUTA`, aplicáveis só ao conceito categórico. A versão da regra declara no `esquema_args`:
+
+- `criterio`: `unanimidade`, `maioria_simples` ou `maioria_absoluta`;
+- `corretores_distintos`: o número de corretores que a versão exige;
+- `naturezas_do_conceito`: as naturezas a que a versão se aplica;
+- `quando_nao_consolida`: o tratamento quando o critério não converge (falta de unanimidade ou empate), `novo_corretor` ou `decisao_da_banca`.
+
+O edital só escolhe qual regra e qual versão referenciar. Mudar o critério, os corretores ou o tratamento é versão nova da regra (ADR-0112), sem alcançar a versão que um edital publicado já congelou. O conjunto de tratamentos é fechado e só cresce por emenda desta ADR. A leitura do esquema falha, e nada é presumido, quando uma das chaves falta, tem tipo errado ou token desconhecido; as regras numéricas não declaram critério nem tratamento.
+
+**Consequências.** Critério, número de corretores e tratamento viram dado congelado com a versão da regra, e a apuração decide pelo snapshot, não pelo cadastro vivo. Um tratamento novo exige emenda, o que mantém o conjunto auditável. Na unanimidade, acrescentar corretores não resolve a divergência, então a versão semeada declara `decisao_da_banca`; as versões de maioria declaram `novo_corretor`, e a banca que prefere outro tratamento precisa de versão própria da regra. Quando o tratamento é `novo_corretor`, o mínimo de integrantes da banca (UNI-REQ-0387) conta os corretores distintos mais um, porque o novo corretor é pessoa da banca fora dos corretores originais; nos demais casos, o mínimo conta só os corretores distintos.

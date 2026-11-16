@@ -31,6 +31,9 @@ public sealed class BancasDoProcessoTests
     private static readonly ReferenciaRegra CorrecaoIndependente =
         ReferenciaRegra.De(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", new string('d', 64));
 
+    private static readonly ReferenciaRegra MaioriaSimples =
+        ReferenciaRegra.De(RegraConsolidacaoCodigo.ConceitoMaioriaSimples, "v1", new string('f', 64));
+
     private static readonly ReferenciaRegra AvaliacaoUnica =
         ReferenciaRegra.De(RegraConsolidacaoCodigo.AvaliacaoUnica, "v1", new string('e', 64));
 
@@ -175,6 +178,21 @@ public sealed class BancasDoProcessoTests
         etapa.DefinirBancas([DeRecursosDaEtapa(integrantes, quorum)]).IsSuccess.Should().BeTrue();
 
         Pendencia(processo, Corretores((CorrecaoIndependente, corretores))).Should().BeNull();
+    }
+
+    [Theory(DisplayName = "Banca da etapa de maioria simples com novo corretor exige os três corretores e mais um, e aceita quando os alcança")]
+    [InlineData(3, false)]
+    [InlineData(4, true)]
+    public void BancaDaEtapa_ComNovoCorretor_ExigeOsCorretoresMaisUm(int integrantes, bool aceita)
+    {
+        EtapaProcesso etapa = ComRecurso(NovaEtapa("Entrevista", 1, MaioriaSimples));
+        ProcessoSeletivo processo = ProcessoComEtapas(null, etapa);
+        etapa.DefinirBancas([DeRecursosDaEtapa(integrantes, quorum: 2)]).IsSuccess.Should().BeTrue();
+
+        DomainError? pendencia = Pendencia(processo, Corretores((MaioriaSimples, 4)));
+
+        (pendencia is null).Should().Be(aceita);
+        pendencia?.Message.Should().Contain($"declara {integrantes} integrantes").And.Contain("o mínimo exigido é 4");
     }
 
     [Fact(DisplayName = "Quórum maior que os corretores eleva o mínimo ao quórum")]

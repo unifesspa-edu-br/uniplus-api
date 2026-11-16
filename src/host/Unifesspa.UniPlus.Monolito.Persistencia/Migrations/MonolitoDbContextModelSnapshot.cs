@@ -14809,6 +14809,42 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         },
                         new
                         {
+                            Id = new Guid("d0a00000-0000-7000-8000-000000000037"),
+                            BaseLegal = "Decisão institucional da Unifesspa",
+                            Codigo = "CONSOLIDACAO-CONCEITO-UNANIMIDADE",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EsquemaArgs = "{\"corretores_distintos\":2,\"criterio\":\"unanimidade\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"decisao_da_banca\"}",
+                            Hash = "038cc670688c1cf2c3587c873468a4502dc6fbd13bb9f02293b00087f3f81c34",
+                            Invariantes = "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: todos os corretores atribuem o mesmo valor\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]",
+                            Tipo = "regra_consolidacao",
+                            Versao = "v1"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0a00000-0000-7000-8000-000000000038"),
+                            BaseLegal = "Decisão institucional da Unifesspa",
+                            Codigo = "CONSOLIDACAO-CONCEITO-MAIORIA-SIMPLES",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EsquemaArgs = "{\"corretores_distintos\":3,\"criterio\":\"maioria_simples\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"novo_corretor\"}",
+                            Hash = "2ab47d111c69de849597c6dccfb9459908ce9a389558447fbbeed72028e0e9d3",
+                            Invariantes = "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: um valor com mais atribuições que cada um dos outros\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]",
+                            Tipo = "regra_consolidacao",
+                            Versao = "v1"
+                        },
+                        new
+                        {
+                            Id = new Guid("d0a00000-0000-7000-8000-000000000039"),
+                            BaseLegal = "Decisão institucional da Unifesspa",
+                            Codigo = "CONSOLIDACAO-CONCEITO-MAIORIA-ABSOLUTA",
+                            CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            EsquemaArgs = "{\"corretores_distintos\":3,\"criterio\":\"maioria_absoluta\",\"naturezas_do_conceito\":[\"categorico\"],\"quando_nao_consolida\":\"novo_corretor\"}",
+                            Hash = "779b6d9d511a0f9f8f46e474f7e23da4be3a00cfa9256ed5b39428ff39ded2b5",
+                            Invariantes = "[\"cada corretor lança o conceito sem conhecer o dos demais\",\"o conceito da etapa é o valor em que o critério converge: um valor com mais da metade das atribuições\",\"quando o critério não converge, o tratamento que a versão declara é aplicado\"]",
+                            Tipo = "regra_consolidacao",
+                            Versao = "v1"
+                        },
+                        new
+                        {
                             Id = new Guid("d0a00000-0000-7000-8000-000000000033"),
                             BaseLegal = "UNI-REQ-0383 (procedimento de recurso por matéria) e UNI-REQ-0097 (correção cega)",
                             Codigo = "PROCEDIMENTO-RECURSO-RECORRECAO",

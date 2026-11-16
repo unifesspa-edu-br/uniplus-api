@@ -39,6 +39,33 @@ public sealed class MinimoDeIntegrantesNoCongelamentoTests
         }
     }
 
+    [Theory(DisplayName = "Publicar exige da maioria simples com novo corretor os três corretores e mais um")]
+    [InlineData(3, false)]
+    [InlineData(4, true)]
+    public async Task Publicar_MaioriaSimplesComNovoCorretor_ExigeOsCorretoresMaisUm(int integrantes, bool aceita)
+    {
+        ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComBancaDaEtapa(integrantes, consolidacao: ProcessoComCorrecaoIndependente.MaioriaSimples);
+
+        (Result resposta, IEnumerable<object> eventos) = await ProcessoComCorrecaoIndependente.Servicos(processo).PublicarAsync(processo.Id);
+
+        resposta.IsSuccess.Should().Be(aceita, resposta.Error?.Message);
+        if (!aceita)
+        {
+            AfirmarRecusaPeloMinimo(resposta, eventos, minimo: 4);
+        }
+    }
+
+    [Fact(DisplayName = "Publicar aceita a unanimidade com decisão da banca com dois integrantes, sem corretor adicional")]
+    public async Task Publicar_Unanimidade_ExigeSoOsCorretoresDistintos()
+    {
+        ProcessoSeletivo processo = ProcessoComCorrecaoIndependente.ComBancaDaEtapa(
+            integrantes: 2, consolidacao: ProcessoComCorrecaoIndependente.Unanimidade);
+
+        (Result resposta, _) = await ProcessoComCorrecaoIndependente.Servicos(processo).PublicarAsync(processo.Id);
+
+        resposta.IsSuccess.Should().BeTrue(resposta.Error?.Message);
+    }
+
     [Theory(DisplayName = "Retificar recusa a banca com menos integrantes do que os corretores da correção independente e aceita a que os alcança")]
     [InlineData(2, false)]
     [InlineData(3, true)]

@@ -4,8 +4,9 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Quantos corretores distintos exige cada regra de consolidação referenciada pelas etapas do processo. O número é
-/// dado da versão da regra no rol, congelado pela referência <c>(codigo, versao, hash)</c>, e chega pronto da
+/// Quantos corretores põe em campo cada regra de consolidação referenciada pelas etapas do processo: os distintos e,
+/// quando a regra declara o novo corretor para o critério que não converge, o adicional. O número é dado da versão da
+/// regra no rol, congelado pela referência <c>(codigo, versao, hash)</c>, e chega pronto da
 /// Application: o agregado guarda só a referência, e ler o rol é I/O (ADR-0042).
 /// </summary>
 /// <remarks>
@@ -18,8 +19,8 @@ public sealed record CorretoresDasEtapas
     private readonly Dictionary<ReferenciaRegra, int> _porRegra;
 
     /// <param name="porRegra">
-    /// O número lido do rol para cada regra de consolidação que as etapas referenciam e que o rol confirma; a regra
-    /// ausente do rol, ou cujo hash diverge do que ele guarda, fica de fora.
+    /// O número de corretores em campo lido do rol para cada regra de consolidação que as etapas referenciam e que o
+    /// rol confirma; a regra ausente do rol, ou cujo hash diverge do que ele guarda, fica de fora.
     /// </param>
     public CorretoresDasEtapas(IReadOnlyDictionary<ReferenciaRegra, int> porRegra)
     {
@@ -39,8 +40,8 @@ public sealed record CorretoresDasEtapas
     }
 
     /// <summary>
-    /// Zero para a etapa sem regra de consolidação (objetiva, ou nota do ENEM: não há consolidação humana); o número
-    /// lido para a regra que a etapa referencia.
+    /// Zero para a etapa sem regra de consolidação (objetiva, ou nota do ENEM: não há consolidação humana); os
+    /// corretores em campo lidos para a regra que a etapa referencia.
     /// </summary>
     /// <exception cref="InvalidOperationException">
     /// A etapa referencia regra cujo número não foi lido: quem pede o número confere antes <see cref="Resolvida"/>, e
