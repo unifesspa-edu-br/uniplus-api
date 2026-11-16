@@ -101,31 +101,18 @@ public sealed class FaseCanonicaEndpointTests
     public async Task Criar_ComAuthEIdempotency_Retorna201EPersiste()
     {
         await LiberarSlotDoSeedAsync("CHAMADA");
+        using HttpClient client = _fixture.Factory.CreateClient();
 
-        var body = new
+        Guid id = await CriarAsync(client, new
         {
             codigo = "CHAMADA",
             nome = "Chamada",
             descricao = "Convocação de aprovados",
             origemData = "NO_EDITAL",
-        };
+        });
 
-        using HttpClient client = _fixture.Factory.CreateClient();
-        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
-
-        criar.StatusCode.Should().Be(HttpStatusCode.Created);
-        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
-        id.Should().NotBe(Guid.Empty);
-
-        HttpResponseMessage obter = await client.GetAsync(
-            new Uri($"/api/configuracao/fases-canonicas/{id}", UriKind.Relative));
-        obter.StatusCode.Should().Be(HttpStatusCode.OK);
-
-        using JsonDocument doc = JsonDocument.Parse(await obter.Content.ReadAsStringAsync());
-        JsonElement root = doc.RootElement;
-        root.GetProperty("codigo").GetString().Should().Be("CHAMADA");
-        root.GetProperty("nome").GetString().Should().Be("Chamada");
-        root.GetProperty("agrupaEtapas").GetBoolean().Should().BeFalse();
+        JsonElement root = await ObterAsync(client, id);
+        ConfirmarChamadaSemSinalizadoresLigados(root);
         root.TryGetProperty("_links", out _).Should().BeTrue("HATEOAS Level 1 expõe _links.self (ADR-0029)");
     }
 
@@ -240,5 +227,14 @@ public sealed class FaseCanonicaEndpointTests
         JsonElement erros = doc.RootElement.GetProperty("errors");
         erros.GetArrayLength().Should().Be(1,
             "a coerência AgrupaEtapasApenasAvaliacao depende de um código já confiável e não deve somar ao erro de código");
+    }
+
+    private static void ConfirmarChamadaSemSinalizadoresLigados(JsonElement fase)
+    {
+        fase.GetProperty("codigo").GetString().Should().Be("CHAMADA");
+        fase.GetProperty("nome").GetString().Should().Be("Chamada");
+        fase.GetProperty("agrupaEtapas").GetBoolean().Should().BeFalse();
+        fase.GetProperty("admiteAgruparEtapas").GetBoolean().Should().BeFalse("só a avaliação admite agrupar etapas");
+        fase.GetProperty("admiteComplementacao").GetBoolean().Should().BeFalse("a chamada não está entre as fases que a lei permite complementar");
     }
 }

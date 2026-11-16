@@ -7,25 +7,13 @@ using Unifesspa.UniPlus.Configuracao.Domain.Enums;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
+using static Unifesspa.UniPlus.Configuracao.Domain.UnitTests.Entities.ApoioDosTestesDeFaseCanonica;
+
 public sealed class FaseCanonicaTests
 {
-    private static Result<FaseCanonica> Criar(
-        string codigo = "INSCRICAO",
-        string? nome = "Inscrição",
-        string? descricao = null,
-        bool agrupaEtapas = false,
-        bool permiteComplementacao = false,
-        string? baseLegal = null,
-        bool coletaInscricao = false,
-        bool? coletaSolicitacaoIsencao = null,
-        string? origemData = "NO_EDITAL") =>
-        FaseCanonica.Criar(
-            codigo, nome, descricao, agrupaEtapas, permiteComplementacao, baseLegal,
-            coletaInscricao,
-            // A marca acompanha o código por definição: os testes só a informam quando querem
-            // exercitar a divergência.
-            coletaSolicitacaoIsencao ?? codigo == FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
-            origemData);
+    private const int NomeMaximo = 200;
+    private const int DescricaoMaximo = 300;
+    private const int BaseLegalMaximo = 500;
 
     // ── Factory válida ─────────────────────────────────────────────────────────
 
@@ -33,13 +21,13 @@ public sealed class FaseCanonicaTests
     public void Criar_Valida_Aceita()
     {
         FaseCanonica f = Criar(
-            codigo: "AVALIACAO", nome: "Avaliação", agrupaEtapas: true).Value!;
+            codigo: "AVALIACAO", nome: "Avaliação", sinalizadores: Sinalizadores(agrupaEtapas: true)).Value!;
 
         f.Id.Should().NotBe(Guid.Empty);
         f.Codigo.Valor.Should().Be("AVALIACAO");
         f.Nome.Should().Be("Avaliação");
-        f.AgrupaEtapas.Should().BeTrue();
-        f.PermiteComplementacao.Should().BeFalse();
+        f.Sinalizadores.AgrupaEtapas.Should().BeTrue();
+        f.Sinalizadores.PermiteComplementacao.Should().BeFalse();
         f.IsDeleted.Should().BeFalse();
     }
 
@@ -93,56 +81,6 @@ public sealed class FaseCanonicaTests
         r.IsSuccess.Should().BeTrue();
     }
 
-    // ── Solicitação de isenção (UNI-REQ-0106) ──────────────────────────────────
-
-    [Fact(DisplayName = "Constante da solicitação de isenção pertence ao rol canônico")]
-    public void Catalogo_CodigoSolicitacaoIsencao_EhCanonico()
-    {
-        FaseCanonicaCatalogo.Codigos.Should().Contain(FaseCanonicaCatalogo.CodigoSolicitacaoIsencao);
-        FaseCanonicaCatalogo.EhCanonico(FaseCanonicaCatalogo.CodigoSolicitacaoIsencao).Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Solicitação de isenção não coleta inscrição — são janelas distintas")]
-    public void Criar_SolicitacaoIsencao_NaoColetaInscricao_Aceita()
-    {
-        FaseCanonica f = Criar(
-            codigo: FaseCanonicaCatalogo.CodigoSolicitacaoIsencao,
-            nome: "Solicitação de isenção").Value!;
-
-        f.ColetaSolicitacaoIsencao.Should().BeTrue();
-        f.ColetaInscricao.Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "Fase de isenção sem a marca é recusada — sem ela a janela publica sem validação")]
-    public void Criar_SolicitacaoIsencaoSemAMarca_Falha()
-    {
-        Result<FaseCanonica> r = Criar(
-            codigo: FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, coletaSolicitacaoIsencao: false);
-
-        r.IsFailure.Should().BeTrue();
-        r.Errors[0].Error.Code.Should().Be(FaseCanonicaErrorCodes.SolicitacaoIsencaoApenasNaFaseDeIsencao);
-    }
-
-    [Fact(DisplayName = "Solicitação de isenção não agrupa etapas — só a avaliação agrupa")]
-    public void Criar_SolicitacaoIsencaoAgrupandoEtapas_Falha()
-    {
-        Result<FaseCanonica> r = Criar(
-            codigo: FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, agrupaEtapas: true);
-
-        r.IsFailure.Should().BeTrue();
-        r.Errors[0].Error.Code.Should().Be(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao);
-    }
-
-    [Fact(DisplayName = "Solicitação de isenção não permite complementação documental")]
-    public void Criar_SolicitacaoIsencaoComComplementacao_Falha()
-    {
-        Result<FaseCanonica> r = Criar(
-            codigo: FaseCanonicaCatalogo.CodigoSolicitacaoIsencao, permiteComplementacao: true);
-
-        r.IsFailure.Should().BeTrue();
-        r.Errors[0].Error.Code.Should().Be(FaseCanonicaErrorCodes.ComplementacaoApenasFasesPermitidas);
-    }
-
     // ── Nome ───────────────────────────────────────────────────────────────────
 
     [Theory(DisplayName = "Nome ausente é rejeitado")]
@@ -154,15 +92,6 @@ public sealed class FaseCanonicaTests
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.NomeObrigatorio);
-    }
-
-    [Fact(DisplayName = "Nome acima de 200 caracteres é rejeitado")]
-    public void Criar_NomeLongo_Falha()
-    {
-        Result<FaseCanonica> r = Criar(nome: new string('a', 201));
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.NomeTamanho);
     }
 
     // ── Origem da data ─────────────────────────────────────────────────────────
@@ -211,81 +140,6 @@ public sealed class FaseCanonicaTests
         resultado.Error!.Code.Should().Be(FaseCanonicaErrorCodes.CodigoForaDoConjuntoCanonico);
     }
 
-    // ── Coerência agrupa_etapas ⇒ avaliação ────────────────────────────────────
-
-    [Fact(DisplayName = "Agrupar etapas verdadeiro para a fase de avaliação é aceito")]
-    public void Criar_AgrupaEtapasAvaliacao_Aceita()
-    {
-        Result<FaseCanonica> r = Criar(codigo: "AVALIACAO", nome: "Avaliação", agrupaEtapas: true);
-
-        r.IsSuccess.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Agrupar etapas verdadeiro para fase que não é avaliação é rejeitado")]
-    public void Criar_AgrupaEtapasForaDaAvaliacao_Falha()
-    {
-        Result<FaseCanonica> r = Criar(codigo: "HOMOLOGACAO_INSCRICOES", nome: "Homologação", agrupaEtapas: true);
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao);
-    }
-
-    [Fact(DisplayName = "Agrupar etapas é falso por omissão")]
-    public void Criar_SemAgrupaEtapas_DefaultFalso()
-    {
-        FaseCanonica f = Criar(codigo: "HOMOLOGACAO_INSCRICOES", nome: "Homologação").Value!;
-
-        f.AgrupaEtapas.Should().BeFalse();
-    }
-
-    // ── Coerência permite_complementacao ⇒ fases permitidas ────────────────────
-
-    [Theory(DisplayName = "Permitir complementação verdadeiro em fase permitida é aceito")]
-    [InlineData("HOMOLOGACAO_INSCRICOES")]
-    [InlineData("RECURSOS")]
-    public void Criar_ComplementacaoFasePermitida_Aceita(string codigo)
-    {
-        Result<FaseCanonica> r = Criar(codigo: codigo, nome: "Fase", permiteComplementacao: true);
-
-        r.IsSuccess.Should().BeTrue();
-    }
-
-    [Fact(DisplayName = "Permitir complementação verdadeiro em fase vedada (habilitação) é rejeitado")]
-    public void Criar_ComplementacaoFaseVedada_Falha()
-    {
-        Result<FaseCanonica> r = Criar(codigo: "HABILITACAO", nome: "Habilitação", permiteComplementacao: true);
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.ComplementacaoApenasFasesPermitidas);
-    }
-
-    [Fact(DisplayName = "Permitir complementação é falso por omissão")]
-    public void Criar_SemComplementacao_DefaultFalso()
-    {
-        FaseCanonica f = Criar(codigo: "HABILITACAO", nome: "Habilitação").Value!;
-
-        f.PermiteComplementacao.Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "Coletar inscrição é falso por omissão")]
-    public void Criar_SemColetaInscricao_DefaultFalso()
-    {
-        FaseCanonica f = Criar(codigo: "HABILITACAO", nome: "Habilitação").Value!;
-
-        f.ColetaInscricao.Should().BeFalse();
-    }
-
-    // ── Base legal ─────────────────────────────────────────────────────────────
-
-    [Fact(DisplayName = "Base legal acima de 500 caracteres é rejeitada")]
-    public void Criar_BaseLegalLonga_Falha()
-    {
-        Result<FaseCanonica> r = Criar(baseLegal: new string('a', 501));
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.BaseLegalTamanho);
-    }
-
     // ── Imutabilidade / atualização ────────────────────────────────────────────
 
     [Fact(DisplayName = "Atualizar troca atributos editáveis mantendo Codigo e Id imutáveis")]
@@ -295,10 +149,8 @@ public sealed class FaseCanonicaTests
         Guid idOriginal = f.Id;
 
         Result r = f.Atualizar(
-            nome: "Ensalamento (novo)", descricao: "Nova descrição",
-            agrupaEtapas: false, permiteComplementacao: false, baseLegal: null,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            origemData: "NA_EXECUCAO");
+            nome: "Ensalamento (novo)", descricao: "Nova descrição", baseLegal: null,
+            origemData: "NA_EXECUCAO", sinalizadores: Sinalizadores());
 
         r.IsSuccess.Should().BeTrue();
         f.Codigo.Valor.Should().Be("ENSALAMENTO", "o código é imutável");
@@ -307,28 +159,13 @@ public sealed class FaseCanonicaTests
         f.OrigemData.Should().Be(OrigemDataFase.NaExecucao);
     }
 
-    [Fact(DisplayName = "Atualizar revalida coerência de agrupar etapas contra o código congelado")]
-    public void Atualizar_AgrupaEtapasIncoerente_Falha()
-    {
-        FaseCanonica f = Criar(codigo: "HOMOLOGACAO_INSCRICOES", nome: "Homologação").Value!;
-
-        Result r = f.Atualizar(
-            nome: "Homologação", descricao: null,
-            agrupaEtapas: true, permiteComplementacao: false, baseLegal: null,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            origemData: "NO_EDITAL");
-
-        r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao);
-    }
-
     // ── Nulo não lança (ADR-0125) e acumulação ──────────────────────────────────
 
     [Fact(DisplayName = "Código nulo não lança e acumula com nome ausente")]
     public void Criar_CodigoNuloENomeAusente_NaoLancaEAcumulaAsDuasViolacoes()
     {
         Result<FaseCanonica> resultado = FaseCanonica.Criar(
-            null, "", null, false, false, null, false, false, "NO_EDITAL");
+            null, "", null, null, "NO_EDITAL", Sinalizadores());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
@@ -338,27 +175,142 @@ public sealed class FaseCanonicaTests
         resultado.Errors[1].Error.Code.Should().Be(FaseCanonicaErrorCodes.NomeObrigatorio);
     }
 
-    [Fact(DisplayName = "Código fora do conjunto canônico com AgrupaEtapas=true não soma a coerência dependente do código")]
-    public void Criar_CodigoInvalidoComAgrupaEtapas_NaoSomaCoerenciaDependente()
+    [Fact(DisplayName = "O que não depende do código acumula as violações independentes dele, sem I/O")]
+    public void ValidarOQueNaoDependeDoCodigo_DoisCamposInvalidos_AcumulaAsDuasViolacoes()
     {
-        Result<FaseCanonica> resultado = Criar(codigo: "ENTREVISTA_FINAL", agrupaEtapas: true);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().ContainSingle(
-            "a coerência AgrupaEtapasApenasAvaliacao depende de um código já confiável — "
-            + "com o código inválido, relatá-la seria um segundo erro derivado do primeiro");
-        resultado.Errors[0].Error.Code.Should().Be(FaseCanonicaErrorCodes.CodigoForaDoConjuntoCanonico);
-    }
-
-    [Fact(DisplayName = "ValidarCamposComuns isolado acumula violações independentes do código, sem I/O")]
-    public void ValidarCamposComuns_DoisCamposInvalidos_AcumulaAsDuasViolacoes()
-    {
-        Result<(string Nome, string? Descricao, string? BaseLegal, OrigemDataFase OrigemData)> resultado =
-            FaseCanonica.ValidarCamposComuns(null, null, null, null);
+        Result resultado = FaseCanonica.ValidarOQueNaoDependeDoCodigo(null, null, null, null, Sinalizadores());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
         resultado.Errors[0].Field.Should().Be("nome");
         resultado.Errors[1].Field.Should().Be("origemData");
     }
+
+    // ── Acumulação das recusas de campo ────────────────────────────────────────
+
+    [Fact(DisplayName = "As quatro recusas de campo acumulam no mesmo lote, na ordem nome, descrição, base legal e origem da data")]
+    public void Criar_QuatroCamposInvalidos_AcumulaAsQuatroRecusasNaOrdem()
+    {
+        Result<FaseCanonica> resultado = Criar(
+            nome: Texto(NomeMaximo + 1),
+            descricao: Texto(DescricaoMaximo + 1),
+            baseLegal: Texto(BaseLegalMaximo + 1),
+            origemData: "EXTERNA");
+
+        resultado.IsFailure.Should().BeTrue();
+        Recusas(resultado.Errors).Should().Equal(
+            ("nome", FaseCanonicaErrorCodes.NomeTamanho),
+            ("descricao", FaseCanonicaErrorCodes.DescricaoTamanho),
+            ("baseLegal", FaseCanonicaErrorCodes.BaseLegalTamanho),
+            ("origemData", FaseCanonicaErrorCodes.OrigemDataInvalida));
+    }
+
+    [Fact(DisplayName = "Atualizar acumula as recusas de campo com a dos sinalizadores no mesmo lote")]
+    public void Atualizar_CamposESinalizadorInvalidos_AcumulaTudoNoMesmoLote()
+    {
+        FaseCanonica fase = Criar(codigo: "INSCRICAO").Value!;
+
+        Result resultado = fase.Atualizar(
+            Texto(NomeMaximo + 1), Texto(DescricaoMaximo + 1), Texto(BaseLegalMaximo + 1),
+            "EXTERNA", Sinalizadores(agrupaEtapas: true));
+
+        Recusas(resultado.Errors).Should().Equal(
+            ("nome", FaseCanonicaErrorCodes.NomeTamanho),
+            ("descricao", FaseCanonicaErrorCodes.DescricaoTamanho),
+            ("baseLegal", FaseCanonicaErrorCodes.BaseLegalTamanho),
+            ("origemData", FaseCanonicaErrorCodes.OrigemDataInvalida),
+            ("agrupaEtapas", FaseCanonicaErrorCodes.AgrupaEtapasApenasAvaliacao));
+    }
+
+    // ── Limite acima do máximo: campo, código e mensagem ───────────────────────
+
+    [Fact(DisplayName = "Nome em branco recusa com a mensagem de nome obrigatório")]
+    public void Criar_NomeEmBranco_RecusaComMensagemDeNomeObrigatorio()
+    {
+        Result<FaseCanonica> resultado = Criar(nome: "  ");
+
+        UnicaRecusa(resultado).Should().Be(
+            ("nome", FaseCanonicaErrorCodes.NomeObrigatorio, "Nome da fase canônica é obrigatório."));
+    }
+
+    [Fact(DisplayName = "Nome com 201 caracteres recusa com a mensagem de tamanho do nome")]
+    public void Criar_NomeUmAcimaDoLimite_RecusaComMensagemDeTamanho()
+    {
+        Result<FaseCanonica> resultado = Criar(nome: Texto(NomeMaximo + 1));
+
+        UnicaRecusa(resultado).Should().Be(
+            ("nome", FaseCanonicaErrorCodes.NomeTamanho, "Nome da fase deve ter no máximo 200 caracteres."));
+    }
+
+    [Fact(DisplayName = "Descrição com 301 caracteres recusa com a mensagem de tamanho da descrição")]
+    public void Criar_DescricaoUmAcimaDoLimite_RecusaComMensagemDeTamanho()
+    {
+        Result<FaseCanonica> resultado = Criar(descricao: Texto(DescricaoMaximo + 1));
+
+        UnicaRecusa(resultado).Should().Be(
+            ("descricao", FaseCanonicaErrorCodes.DescricaoTamanho, "Descrição da fase deve ter no máximo 300 caracteres."));
+    }
+
+    [Fact(DisplayName = "Base legal com 501 caracteres recusa com a mensagem de tamanho da base legal")]
+    public void Criar_BaseLegalUmAcimaDoLimite_RecusaComMensagemDeTamanho()
+    {
+        Result<FaseCanonica> resultado = Criar(baseLegal: Texto(BaseLegalMaximo + 1));
+
+        UnicaRecusa(resultado).Should().Be(
+            ("baseLegal", FaseCanonicaErrorCodes.BaseLegalTamanho, "Base legal da fase deve ter no máximo 500 caracteres."));
+    }
+
+    // ── Limite exato ───────────────────────────────────────────────────────────
+
+    [Fact(DisplayName = "Nome, descrição e base legal com exatamente o tamanho máximo são aceitos")]
+    public void Criar_CamposNoLimiteExato_Aceita()
+    {
+        Result<FaseCanonica> resultado = Criar(
+            nome: Texto(NomeMaximo),
+            descricao: Texto(DescricaoMaximo),
+            baseLegal: Texto(BaseLegalMaximo));
+
+        resultado.IsSuccess.Should().BeTrue();
+    }
+
+    // ── Espaços nas pontas ─────────────────────────────────────────────────────
+
+    [Fact(DisplayName = "O tamanho é medido depois de remover os espaços das pontas, que não são gravados")]
+    public void Criar_CamposNoLimiteComEspacosNasPontas_AceitaEGravaSemOsEspacos()
+    {
+        FaseCanonica fase = Criar(
+            nome: ComEspacos(Texto(NomeMaximo)),
+            descricao: ComEspacos(Texto(DescricaoMaximo)),
+            baseLegal: ComEspacos(Texto(BaseLegalMaximo))).Value!;
+
+        fase.Nome.Should().Be(Texto(NomeMaximo));
+        fase.Descricao.Should().Be(Texto(DescricaoMaximo));
+        fase.BaseLegal.Should().Be(Texto(BaseLegalMaximo));
+    }
+
+    [Theory(DisplayName = "Descrição e base legal em branco são gravadas como nulas")]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData(null)]
+    public void Criar_DescricaoEBaseLegalEmBranco_GravaNulo(string? valor)
+    {
+        FaseCanonica fase = Criar(descricao: valor, baseLegal: valor).Value!;
+
+        fase.Descricao.Should().BeNull();
+        fase.BaseLegal.Should().BeNull();
+    }
+
+    private static string Texto(int tamanho) => new('a', tamanho);
+
+    private static string ComEspacos(string texto) => $"  {texto}  ";
+
+    private static (string? Campo, string Codigo, string Mensagem) UnicaRecusa(Result<FaseCanonica> resultado)
+    {
+        FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
+
+        return (recusa.Field, recusa.Error.Code, recusa.Error.Message);
+    }
+
+    private static IEnumerable<(string? Campo, string Codigo)> Recusas(IReadOnlyList<FieldError> erros) =>
+        erros.Select(e => (e.Field, e.Error.Code));
 }

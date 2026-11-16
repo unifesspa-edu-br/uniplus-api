@@ -12,6 +12,15 @@ using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 
 internal static class ApoioDosEndpointsDeFaseCanonica
 {
+    internal static async Task<Guid> CriarAsync(HttpClient client, object body)
+    {
+        HttpResponseMessage criar = await EnviarPostAdmin(client, body);
+        criar.StatusCode.Should().Be(HttpStatusCode.Created);
+        Guid id = await criar.Content.ReadFromJsonAsync<Guid>();
+        id.Should().NotBe(Guid.Empty);
+        return id;
+    }
+
     internal static async Task<JsonElement> ObterAsync(HttpClient client, Guid id)
     {
         HttpResponseMessage obter = await client.GetAsync(

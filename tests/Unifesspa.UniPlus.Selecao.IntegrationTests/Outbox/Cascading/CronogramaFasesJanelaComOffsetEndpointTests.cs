@@ -228,10 +228,9 @@ public sealed class CronogramaFasesJanelaComOffsetEndpointTests
         }
 
         Result<FaseCanonica> criada = FaseCanonica.Criar(
-            CodigoFaseComJanela, "Ensalamento", null,
-            agrupaEtapas: false, permiteComplementacao: false, baseLegal: null,
-            coletaInscricao: false, coletaSolicitacaoIsencao: false,
-            origemData: "NO_EDITAL");
+            CodigoFaseComJanela, "Ensalamento", null, baseLegal: null, origemData: "NO_EDITAL",
+            sinalizadores: new Unifesspa.UniPlus.Configuracao.Domain.ValueObjects.SinalizadoresDaFase(
+                AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false));
         criada.IsSuccess.Should().BeTrue(criada.Error?.Message);
 
         config.FasesCanonicas.Add(criada.Value!);

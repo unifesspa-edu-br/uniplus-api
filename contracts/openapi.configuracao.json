@@ -19405,6 +19405,8 @@
           "descricao",
           "agrupaEtapas",
           "permiteComplementacao",
+          "admiteAgruparEtapas",
+          "admiteComplementacao",
           "baseLegal",
           "coletaInscricao",
           "coletaSolicitacaoIsencao",
@@ -19434,6 +19436,12 @@
             "type": "boolean"
           },
           "permiteComplementacao": {
+            "type": "boolean"
+          },
+          "admiteAgruparEtapas": {
+            "type": "boolean"
+          },
+          "admiteComplementacao": {
             "type": "boolean"
           },
           "baseLegal": {

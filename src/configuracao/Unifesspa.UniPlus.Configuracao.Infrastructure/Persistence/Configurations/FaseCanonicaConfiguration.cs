@@ -51,15 +51,9 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
 
         builder.Property(f => f.Descricao).HasMaxLength(DescricaoMaxLength);
 
-        builder.Property(f => f.AgrupaEtapas).IsRequired().HasDefaultValue(false);
-
-        builder.Property(f => f.PermiteComplementacao).IsRequired().HasDefaultValue(false);
-
         builder.Property(f => f.BaseLegal).HasMaxLength(BaseLegalMaxLength);
 
-        builder.Property(f => f.ColetaInscricao).IsRequired().HasDefaultValue(false);
-
-        builder.Property(f => f.ColetaSolicitacaoIsencao).IsRequired().HasDefaultValue(false);
+        ConfigurarSinalizadores(builder);
 
         builder.Property(f => f.OrigemData)
             .HasConversion<OrigemDataFaseValueConverter>()
@@ -87,6 +81,33 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
         builder.HasData(MaterializarSeed());
     }
 
+    // Os sinalizadores são um valor da fase, gravado como as quatro colunas da própria linha (table
+    // splitting): o domínio os lê e os confere juntos, e os CHECKs os cruzam com o código.
+    private static void ConfigurarSinalizadores(EntityTypeBuilder<FaseCanonica> builder)
+    {
+        builder.OwnsOne(f => f.Sinalizadores, sinalizadores =>
+        {
+            sinalizadores.ClassificaPorPadrao(ClassificacaoDeProtecao.Interno);
+            sinalizadores.Property(s => s.AgrupaEtapas)
+                .HasColumnName("agrupa_etapas").IsRequired().HasDefaultValue(false);
+            sinalizadores.Property(s => s.PermiteComplementacao)
+                .HasColumnName("permite_complementacao").IsRequired().HasDefaultValue(false);
+            sinalizadores.Property(s => s.ColetaInscricao)
+                .HasColumnName("coleta_inscricao").IsRequired().HasDefaultValue(false);
+            sinalizadores.Property(s => s.ColetaSolicitacaoIsencao)
+                .HasColumnName("coleta_solicitacao_isencao").IsRequired().HasDefaultValue(false);
+            sinalizadores.HasData(FaseCanonicaSeed.Itens.Select(item => new
+            {
+                FaseCanonicaId = item.Id,
+                item.AgrupaEtapas,
+                item.PermiteComplementacao,
+                item.ColetaInscricao,
+                item.ColetaSolicitacaoIsencao,
+            }));
+        });
+        builder.Navigation(f => f.Sinalizadores).IsRequired();
+    }
+
     /// <summary>
     /// Projeta o seed (<see cref="FaseCanonicaSeed.Itens"/>) para linhas que o
     /// <c>HasData</c> congela como literais na migration inicial. O instante-âncora é fixo
@@ -112,10 +133,6 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
             item.Nome,
             item.Descricao,
             item.OrigemData,
-            item.ColetaInscricao,
-            item.ColetaSolicitacaoIsencao,
-            item.AgrupaEtapas,
-            item.PermiteComplementacao,
             item.BaseLegal,
             CreatedAt = seedCriadoEm,
             IsDeleted = false,
@@ -148,6 +165,16 @@ internal sealed class FaseCanonicaConfiguration : IEntityTypeConfiguration<FaseC
         table.HasCheckConstraint(
             "ck_fases_canonicas_complementacao",
             $"permite_complementacao = false OR codigo IN ({TokensSql(FaseCanonicaCatalogo.CodigosComComplementacaoPermitida)})");
+
+        // Coerência: a marca de solicitação de isenção existe na fase de isenção, e só nela.
+        table.HasCheckConstraint(
+            "ck_fases_canonicas_solicitacao_isencao",
+            $"coleta_solicitacao_isencao = (codigo = '{FaseCanonicaCatalogo.CodigoSolicitacaoIsencao}')");
+
+        // Coerência: coletar inscrição e coletar solicitação de isenção são janelas distintas.
+        table.HasCheckConstraint(
+            "ck_fases_canonicas_inscricao_e_isencao_exclusivas",
+            "NOT (coleta_inscricao AND coleta_solicitacao_isencao)");
     }
 
     private static string TokensSql(IReadOnlyList<string> tokens) =>

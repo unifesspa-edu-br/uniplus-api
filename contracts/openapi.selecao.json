@@ -14975,6 +14975,7 @@
           "vagasOfertadasBase",
           "percentualDaReservaLegal",
           "regraDistribuicao",
+          "ramoDaDistribuicao",
           "regraAjuste",
           "ajusteDoQuadro",
           "referenciaDemografica",
@@ -15008,6 +15009,12 @@
           },
           "regraDistribuicao": {
             "$ref": "#/components/schemas/ReferenciaRegraDto"
+          },
+          "ramoDaDistribuicao": {
+            "type": [
+              "null",
+              "string"
+            ]
           },
           "regraAjuste": {
             "oneOf": [

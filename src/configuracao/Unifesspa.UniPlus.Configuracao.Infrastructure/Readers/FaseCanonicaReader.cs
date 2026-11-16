@@ -59,10 +59,10 @@ internal sealed class FaseCanonicaReader : IFaseCanonicaReader
             f.Codigo.Valor,
             f.Nome,
             f.Descricao,
-            f.AgrupaEtapas,
-            f.PermiteComplementacao,
+            f.Sinalizadores.AgrupaEtapas,
+            f.Sinalizadores.PermiteComplementacao,
             f.BaseLegal,
-            f.ColetaInscricao,
-            f.ColetaSolicitacaoIsencao,
+            f.Sinalizadores.ColetaInscricao,
+            f.Sinalizadores.ColetaSolicitacaoIsencao,
             OrigensDataFase.ParaTokenCanonico(f.OrigemData));
 }

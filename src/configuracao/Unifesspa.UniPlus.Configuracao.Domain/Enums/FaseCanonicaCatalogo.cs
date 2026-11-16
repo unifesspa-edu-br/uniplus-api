@@ -83,7 +83,11 @@ public static class FaseCanonicaCatalogo
     public static bool EhCanonico(string? codigo) =>
         codigo is not null && CodigosSet.Contains(codigo);
 
+    /// <summary>Indica se a fase <paramref name="codigo"/> é a única que agrupa Etapas pontuadas — a de avaliação.</summary>
+    public static bool AdmiteAgruparEtapas(string? codigo) =>
+        string.Equals(codigo, CodigoAvaliacao, StringComparison.Ordinal);
+
     /// <summary>Indica se a fase <paramref name="codigo"/> admite complementação documental por lei.</summary>
-    public static bool PermiteComplementacao(string? codigo) =>
+    public static bool AdmiteComplementacao(string? codigo) =>
         codigo is not null && ComplementacaoSet.Contains(codigo);
 }

@@ -421,9 +421,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     codigo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     nome = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     descricao = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     agrupa_etapas = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     permite_complementacao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    base_legal = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
                     coleta_inscricao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     coleta_solicitacao_isencao = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
                     origem_data = table.Column<string>(type: "character varying(30)", maxLength: 30, nullable: false),
@@ -445,7 +445,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     table.CheckConstraint("ck_fases_canonicas_codigo_canonico", "codigo IN ('INSCRICAO', 'SOLICITACAO_ISENCAO', 'HOMOLOGACAO_INSCRICOES', 'ENSALAMENTO', 'AVALIACAO', 'CLASSIFICACAO', 'RESULTADO_PRELIMINAR', 'RECURSOS', 'RESULTADO_FINAL', 'HABILITACAO', 'HETEROIDENTIFICACAO', 'AVALIACAO_BIOPSICOSSOCIAL', 'MATRICULA', 'HOMOLOGACAO_RESULTADO_FINAL', 'LISTA_ESPERA', 'CHAMADA')");
                     table.CheckConstraint("ck_fases_canonicas_codigo_formato", "codigo ~ '^[A-Z_]+$'");
                     table.CheckConstraint("ck_fases_canonicas_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO_INSCRICOES', 'RECURSOS')");
+                    table.CheckConstraint("ck_fases_canonicas_inscricao_e_isencao_exclusivas", "NOT (coleta_inscricao AND coleta_solicitacao_isencao)");
                     table.CheckConstraint("ck_fases_canonicas_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')");
+                    table.CheckConstraint("ck_fases_canonicas_solicitacao_isencao", "coleta_solicitacao_isencao = (codigo = 'SOLICITACAO_ISENCAO')");
                 });
 
             migrationBuilder.CreateTable(
@@ -5160,20 +5162,20 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.InsertData(
                 schema: "configuracao",
                 table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "coleta_inscricao", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000001"), null, "INSCRICAO", true, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Período em que o candidato se inscreve no processo seletivo.", false, "Inscrição", "NO_EDITAL", null, null, null, null, null });
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "coleta_inscricao" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000001"), null, "INSCRICAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Período em que o candidato se inscreve no processo seletivo.", false, "Inscrição", "NO_EDITAL", null, null, null, null, null, true });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
                 table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "coleta_solicitacao_isencao", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000002"), "Lei nº 12.799/2013", "SOLICITACAO_ISENCAO", true, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Janela em que o candidato pede isenção da taxa de inscrição. Abre junto com as inscrições e termina antes delas.", false, "Solicitação de isenção", "NO_EDITAL", null, null, null, null, null });
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "coleta_solicitacao_isencao" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000002"), "Lei nº 12.799/2013", "SOLICITACAO_ISENCAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Janela em que o candidato pede isenção da taxa de inscrição. Abre junto com as inscrições e termina antes delas.", false, "Solicitação de isenção", "NO_EDITAL", null, null, null, null, null, true });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
                 table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "permite_complementacao", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000003"), null, "HOMOLOGACAO_INSCRICOES", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Conferência das inscrições recebidas e publicação de quais foram homologadas.", false, "Homologação das inscrições", "NO_EDITAL", true, null, null, null, null, null });
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "permite_complementacao" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000003"), null, "HOMOLOGACAO_INSCRICOES", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Conferência das inscrições recebidas e publicação de quais foram homologadas.", false, "Homologação das inscrições", "NO_EDITAL", null, null, null, null, null, true });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
@@ -5184,8 +5186,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.InsertData(
                 schema: "configuracao",
                 table: "fases_canonicas",
-                columns: new[] { "id", "agrupa_etapas", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000005"), true, null, "AVALIACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Fase que agrupa as etapas pontuadas do certame.", false, "Avaliação", "NO_EDITAL", null, null, null, null, null });
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "agrupa_etapas" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000005"), null, "AVALIACAO", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Fase que agrupa as etapas pontuadas do certame.", false, "Avaliação", "NO_EDITAL", null, null, null, null, null, true });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",
@@ -5200,8 +5202,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.InsertData(
                 schema: "configuracao",
                 table: "fases_canonicas",
-                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "permite_complementacao", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by" },
-                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000008"), null, "RECURSOS", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Interposição e análise dos recursos contra o resultado preliminar.", false, "Recursos", "NO_EDITAL", true, null, null, null, null, null });
+                columns: new[] { "id", "base_legal", "codigo", "created_at", "created_by", "deleted_at", "deleted_by", "descricao", "is_deleted", "nome", "origem_data", "unidade_sugerida_nome", "unidade_sugerida_origem_id", "unidade_sugerida_sigla", "updated_at", "updated_by", "permite_complementacao" },
+                values: new object[] { new Guid("f45e0000-0000-7000-8000-000000000008"), null, "RECURSOS", new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, null, null, "Interposição e análise dos recursos contra o resultado preliminar.", false, "Recursos", "NO_EDITAL", null, null, null, null, null, true });
 
             migrationBuilder.InsertData(
                 schema: "configuracao",

@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261116161133_Inicial")]
+    [Migration("20261116192633_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -3751,12 +3751,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<bool>("AgrupaEtapas")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("agrupa_etapas");
-
                     b.Property<string>("BaseLegal")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -3767,18 +3761,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(60)
                         .HasColumnType("character varying(60)")
                         .HasColumnName("codigo");
-
-                    b.Property<bool>("ColetaInscricao")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("coleta_inscricao");
-
-                    b.Property<bool>("ColetaSolicitacaoIsencao")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("coleta_solicitacao_isencao");
 
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -3817,12 +3799,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasMaxLength(30)
                         .HasColumnType("character varying(30)")
                         .HasColumnName("origem_data");
-
-                    b.Property<bool>("PermiteComplementacao")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("boolean")
-                        .HasDefaultValue(false)
-                        .HasColumnName("permite_complementacao");
 
                     b.Property<string>("UnidadeSugeridaNome")
                         .HasMaxLength(250)
@@ -3865,236 +3841,176 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 
                             t.HasCheckConstraint("ck_fases_canonicas_complementacao", "permite_complementacao = false OR codigo IN ('HOMOLOGACAO_INSCRICOES', 'RECURSOS')");
 
+                            t.HasCheckConstraint("ck_fases_canonicas_inscricao_e_isencao_exclusivas", "NOT (coleta_inscricao AND coleta_solicitacao_isencao)");
+
                             t.HasCheckConstraint("ck_fases_canonicas_origem_data", "origem_data IN ('NO_EDITAL', 'NA_EXECUCAO')");
+
+                            t.HasCheckConstraint("ck_fases_canonicas_solicitacao_isencao", "coleta_solicitacao_isencao = (codigo = 'SOLICITACAO_ISENCAO')");
                         });
 
                     b.HasData(
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000001"),
-                            AgrupaEtapas = false,
                             Codigo = "INSCRICAO",
-                            ColetaInscricao = true,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Período em que o candidato se inscreve no processo seletivo.",
                             IsDeleted = false,
                             Nome = "Inscrição",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = false
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000002"),
-                            AgrupaEtapas = false,
                             BaseLegal = "Lei nº 12.799/2013",
                             Codigo = "SOLICITACAO_ISENCAO",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = true,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Janela em que o candidato pede isenção da taxa de inscrição. Abre junto com as inscrições e termina antes delas.",
                             IsDeleted = false,
                             Nome = "Solicitação de isenção",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = false
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000003"),
-                            AgrupaEtapas = false,
                             Codigo = "HOMOLOGACAO_INSCRICOES",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Conferência das inscrições recebidas e publicação de quais foram homologadas.",
                             IsDeleted = false,
                             Nome = "Homologação das inscrições",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = true
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000004"),
-                            AgrupaEtapas = false,
                             Codigo = "ENSALAMENTO",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Distribuição dos candidatos pelos locais de prova.",
                             IsDeleted = false,
                             Nome = "Ensalamento",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = false
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000005"),
-                            AgrupaEtapas = true,
                             Codigo = "AVALIACAO",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Fase que agrupa as etapas pontuadas do certame.",
                             IsDeleted = false,
                             Nome = "Avaliação",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = false
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000006"),
-                            AgrupaEtapas = false,
                             Codigo = "CLASSIFICACAO",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Apuração das notas e ordenação dos candidatos por modalidade.",
                             IsDeleted = false,
                             Nome = "Classificação",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = false
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000007"),
-                            AgrupaEtapas = false,
                             Codigo = "RESULTADO_PRELIMINAR",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Publicação do resultado que ainda admite recurso.",
                             IsDeleted = false,
                             Nome = "Resultado preliminar",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = false
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000008"),
-                            AgrupaEtapas = false,
                             Codigo = "RECURSOS",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Interposição e análise dos recursos contra o resultado preliminar.",
                             IsDeleted = false,
                             Nome = "Recursos",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = true
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000009"),
-                            AgrupaEtapas = false,
                             Codigo = "RESULTADO_FINAL",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Publicação do resultado depois de julgados os recursos.",
                             IsDeleted = false,
                             Nome = "Resultado final",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = false
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000010"),
-                            AgrupaEtapas = false,
                             BaseLegal = "Lei nº 12.711/2012; Portaria Normativa MEC nº 4/2018",
                             Codigo = "HETEROIDENTIFICACAO",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Procedimento de heteroidentificação étnico-racial dos candidatos que concorrem por cota.",
                             IsDeleted = false,
                             Nome = "Heteroidentificação",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = false
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000016"),
-                            AgrupaEtapas = false,
                             BaseLegal = "Lei nº 13.146/2015, art. 2º §1º e art. 30; Lei nº 12.711/2012 c/c Lei nº 13.409/2016",
                             Codigo = "AVALIACAO_BIOPSICOSSOCIAL",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Avaliação multiprofissional e interdisciplinar que verifica se o candidato com deficiência atende aos requisitos legais para concorrer às vagas reservadas às pessoas com deficiência.",
                             IsDeleted = false,
                             Nome = "Avaliação biopsicossocial",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = false
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000011"),
-                            AgrupaEtapas = false,
                             Codigo = "HABILITACAO",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Comprovação documental dos requisitos declarados pelo candidato.",
                             IsDeleted = false,
                             Nome = "Habilitação",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = false
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000012"),
-                            AgrupaEtapas = false,
                             Codigo = "HOMOLOGACAO_RESULTADO_FINAL",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Ato do conselho que homologa o resultado final do processo seletivo.",
                             IsDeleted = false,
                             Nome = "Homologação do resultado final",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = false
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000013"),
-                            AgrupaEtapas = false,
                             Codigo = "MATRICULA",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Efetivação do vínculo do candidato aprovado com a instituição.",
                             IsDeleted = false,
                             Nome = "Matrícula",
-                            OrigemData = "NO_EDITAL",
-                            PermiteComplementacao = false
+                            OrigemData = "NO_EDITAL"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000014"),
-                            AgrupaEtapas = false,
                             Codigo = "LISTA_ESPERA",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Fila de candidatos classificados além das vagas, convocados conforme as vagas são liberadas.",
                             IsDeleted = false,
                             Nome = "Lista de espera",
-                            OrigemData = "NA_EXECUCAO",
-                            PermiteComplementacao = false
+                            OrigemData = "NA_EXECUCAO"
                         },
                         new
                         {
                             Id = new Guid("f45e0000-0000-7000-8000-000000000015"),
-                            AgrupaEtapas = false,
                             Codigo = "CHAMADA",
-                            ColetaInscricao = false,
-                            ColetaSolicitacaoIsencao = false,
                             CreatedAt = new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
                             Descricao = "Convocação dos candidatos da lista de espera para ocupar vagas remanescentes.",
                             IsDeleted = false,
                             Nome = "Chamada",
-                            OrigemData = "NA_EXECUCAO",
-                            PermiteComplementacao = false
+                            OrigemData = "NA_EXECUCAO"
                         });
                 });
 
@@ -16521,6 +16437,181 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .OnDelete(DeleteBehavior.ClientNoAction)
                         .IsRequired()
                         .HasConstraintName("fk_dias_nao_uteis_calendario_de_dias_uteis");
+                });
+
+            modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.FaseCanonica", b =>
+                {
+                    b.OwnsOne("Unifesspa.UniPlus.Configuracao.Domain.ValueObjects.SinalizadoresDaFase", "Sinalizadores", b1 =>
+                        {
+                            b1.Property<Guid>("FaseCanonicaId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<bool>("AgrupaEtapas")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("boolean")
+                                .HasDefaultValue(false)
+                                .HasColumnName("agrupa_etapas");
+
+                            b1.Property<bool>("ColetaInscricao")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("boolean")
+                                .HasDefaultValue(false)
+                                .HasColumnName("coleta_inscricao");
+
+                            b1.Property<bool>("ColetaSolicitacaoIsencao")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("boolean")
+                                .HasDefaultValue(false)
+                                .HasColumnName("coleta_solicitacao_isencao");
+
+                            b1.Property<bool>("PermiteComplementacao")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("boolean")
+                                .HasDefaultValue(false)
+                                .HasColumnName("permite_complementacao");
+
+                            b1.HasKey("FaseCanonicaId");
+
+                            b1.ToTable("fases_canonicas", "configuracao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("FaseCanonicaId")
+                                .HasConstraintName("fk_fases_canonicas_fases_canonicas_id");
+
+                            b1.HasData(
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000001"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = true,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = false
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000002"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = true,
+                                    PermiteComplementacao = false
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000003"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = true
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000004"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = false
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000005"),
+                                    AgrupaEtapas = true,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = false
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000006"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = false
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000007"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = false
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000008"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = true
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000009"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = false
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000010"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = false
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000016"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = false
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000011"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = false
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000012"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = false
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000013"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = false
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000014"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = false
+                                },
+                                new
+                                {
+                                    FaseCanonicaId = new Guid("f45e0000-0000-7000-8000-000000000015"),
+                                    AgrupaEtapas = false,
+                                    ColetaInscricao = false,
+                                    ColetaSolicitacaoIsencao = false,
+                                    PermiteComplementacao = false
+                                });
+                        });
+
+                    b.Navigation("Sinalizadores")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Configuracao.Domain.Entities.FatoCandidato", b =>

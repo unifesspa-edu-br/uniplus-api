@@ -20,7 +20,12 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
     private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
 
     private static FaseCanonica Existente(string codigo = "ENSALAMENTO") =>
-        FaseCanonica.Criar(codigo, "Ensalamento", null, false, false, null, false, false, "NO_EDITAL").Value!;
+        FaseCanonica.Criar(
+            codigo, "Ensalamento", null, null, "NO_EDITAL",
+            new SinalizadoresDaFase(AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false)).Value!;
+
+    private Task<Result> Executar(AtualizarFaseCanonicaCommand comando) =>
+        AtualizarFaseCanonicaCommandHandler.Handle(comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
 
     [Fact(DisplayName = "Fase inexistente retorna NaoEncontrada (404)")]
     public async Task Handle_Inexistente_RetornaNaoEncontrada()
@@ -88,6 +93,21 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Nome ausente com inscrição e isenção ligadas acumula as duas recusas sem buscar a fase por Id")]
+    public async Task Handle_NomeAusenteEAsDuasMarcas_AcumulaSemBuscarPorId()
+    {
+        var comando = new AtualizarFaseCanonicaCommand(
+            Guid.CreateVersion7(), Nome: "", ColetaInscricao: true, ColetaSolicitacaoIsencao: true, OrigemData: "NO_EDITAL");
+
+        Result resultado = await Executar(comando);
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("nome", FaseCanonicaErrorCodes.NomeObrigatorio),
+            ("coletaSolicitacaoIsencao", FaseCanonicaErrorCodes.ColetaInscricaoEIsencaoMutuamenteExclusivas));
+        await _repository.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Unidade sugerida viva troca a sugestão da fase pela cópia atual do cadastro")]
     public async Task Handle_UnidadeSugeridaViva_TrocaASugestao()
     {
@@ -148,15 +168,70 @@ public sealed class AtualizarFaseCanonicaCommandHandlerTests
         _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
         _unidadeReader.ObterPorIdAsync(gravada.OrigemId, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
 
-        Result resultado = await AtualizarFaseCanonicaCommandHandler.Handle(
-            new AtualizarFaseCanonicaCommand(
-                existente.Id, Nome: "Ensalamento (novo)", OrigemData: "NO_EDITAL", UnidadeSugeridaId: gravada.OrigemId),
-            _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
+        Result resultado = await Executar(new AtualizarFaseCanonicaCommand(
+            existente.Id, Nome: "Ensalamento (novo)", OrigemData: "NO_EDITAL", UnidadeSugeridaId: gravada.OrigemId));
 
         resultado.IsSuccess.Should().BeTrue();
         existente.Nome.Should().Be("Ensalamento (novo)");
         existente.UnidadeSugerida.Should().Be(gravada);
         await _unidadeReader.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Unidade sugerida inexistente descarta a edição já aplicada à fase rastreada e não grava")]
+    public async Task Handle_UnidadeSugeridaNaoViva_DescartaAEdicaoENaoGrava()
+    {
+        FaseCanonica existente = Existente();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        Guid ausente = Guid.CreateVersion7();
+        _unidadeReader.ObterPorIdAsync(ausente, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
+
+        Result resultado = await Executar(
+            new AtualizarFaseCanonicaCommand(existente.Id, Nome: "Ensalamento (novo)", OrigemData: "NO_EDITAL", UnidadeSugeridaId: ausente));
+
+        resultado.IsFailure.Should().BeTrue();
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Recusa do agregado descarta a edição rastreada e não grava")]
+    public async Task Handle_RecusaDoAgregado_DescartaENaoGrava()
+    {
+        FaseCanonica existente = Existente("HOMOLOGACAO_INSCRICOES");
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+
+        Result resultado = await Executar(
+            new AtualizarFaseCanonicaCommand(existente.Id, Nome: "Homologação", AgrupaEtapas: true, OrigemData: "NO_EDITAL"));
+
+        resultado.IsFailure.Should().BeTrue();
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Recusa do agregado e unidade inexistente acumulam, a recusa do campo antes da unidade")]
+    public async Task Handle_RecusaDoAgregadoEUnidadeInexistente_AcumulaAsDuasRecusas()
+    {
+        FaseCanonica existente = Existente("HOMOLOGACAO_INSCRICOES");
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        Guid ausente = Guid.CreateVersion7();
+        _unidadeReader.ObterPorIdAsync(ausente, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
+
+        Result resultado = await Executar(
+            new AtualizarFaseCanonicaCommand(
+                existente.Id, Nome: "Homologação", AgrupaEtapas: true, OrigemData: "NO_EDITAL", UnidadeSugeridaId: ausente));
+
+        resultado.Errors.Select(e => e.Field).Should().Equal("agrupaEtapas", "unidadeSugeridaId");
+    }
+
+    [Fact(DisplayName = "Edição válida grava sem descartar o rastreamento")]
+    public async Task Handle_EdicaoValida_NaoDescarta()
+    {
+        FaseCanonica existente = Existente();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+
+        await Executar(
+            new AtualizarFaseCanonicaCommand(existente.Id, Nome: "Ensalamento", OrigemData: "NO_EDITAL"));
+
+        _unitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
     }
 }

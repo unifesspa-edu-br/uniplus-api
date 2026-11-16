@@ -1,10 +1,12 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FasesCanonicas;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// Atualiza uma fase canônica existente. O <c>Codigo</c> e o <c>Id</c> são
+/// Atualiza uma fase canônica existente, substituindo tudo o que é editável pelo corpo: o que ele
+/// omite fica falso ou vazio, inclusive os sinalizadores. O <c>Codigo</c> e o <c>Id</c> são
 /// <b>imutáveis</b>: o comando <b>não</b> aceita código — o handler carrega a
 /// entidade e a atualiza sem alterá-lo. A origem da data chega como token canônico
 /// UPPER_SNAKE e a unidade sugerida como id (nulo retira a sugestão). O ator (<c>updated_by</c>) é carimbado
@@ -20,4 +22,9 @@ public sealed record AtualizarFaseCanonicaCommand(
     bool ColetaInscricao = false,
     bool ColetaSolicitacaoIsencao = false,
     string? OrigemData = null,
-    Guid? UnidadeSugeridaId = null) : ICommand<Result>;
+    Guid? UnidadeSugeridaId = null) : ICommand<Result>
+{
+    /// <summary>Os quatro sinalizadores do corpo, como o valor que a fase confere contra o código.</summary>
+    public SinalizadoresDaFase Sinalizadores() =>
+        new(AgrupaEtapas, PermiteComplementacao, ColetaInscricao, ColetaSolicitacaoIsencao);
+}

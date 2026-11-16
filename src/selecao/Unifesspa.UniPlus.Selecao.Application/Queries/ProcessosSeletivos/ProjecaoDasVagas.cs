@@ -29,6 +29,7 @@ internal static class ProjecaoDasVagas
     internal static ConfiguracaoDistribuicaoVagasDto ProjetarDistribuicao(ConfiguracaoDistribuicaoVagas configuracao) => new(
         configuracao.Id, configuracao.OfertaCursoOrigemId, configuracao.VagasOfertadasBase, configuracao.PercentualDaReservaLegal,
         ProjecaoDoProcessoSeletivo.Referencia(configuracao.RegraDistribuicao),
+        RegraDistribuicaoVagasCodigo.RamoDe(configuracao.RegraDistribuicao.Codigo),
         configuracao.RegraAjuste is { } regraAjuste ? ProjecaoDoProcessoSeletivo.Referencia(regraAjuste) : null,
         configuracao.AjusteDoQuadro,
         configuracao.ReferenciaDemografica is { } demografica ? ProjetarReferenciaDemografica(demografica) : null,

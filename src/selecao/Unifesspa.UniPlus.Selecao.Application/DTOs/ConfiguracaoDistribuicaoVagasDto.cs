@@ -68,12 +68,18 @@ public sealed record AjusteDoQuadroFixadoDto(
 /// edital. <see cref="GrupoAreaEnem"/> é o grupo de área do ENEM do curso da oferta, com código e
 /// rótulo, congelado na definição; <see langword="null"/> quando o curso não o declara.
 /// </summary>
+/// <param name="RamoDaDistribuicao">
+/// O ramo em que a distribuição foi montada (<c>LEI_DE_COTAS</c> ou <c>QUADRO_FIXADO_NO_EDITAL</c>), calculado
+/// do código da <paramref name="RegraDistribuicao"/> congelado na configuração, nunca do catálogo vivo;
+/// <see langword="null"/> para um código que não é de nenhum dos dois ramos.
+/// </param>
 public sealed record ConfiguracaoDistribuicaoVagasDto(
     Guid Id,
     Guid OfertaCursoOrigemId,
     int VagasOfertadasBase,
     decimal? PercentualDaReservaLegal,
     ReferenciaRegraDto RegraDistribuicao,
+    string? RamoDaDistribuicao,
     ReferenciaRegraDto? RegraAjuste,
     ArgsRegraAjusteDistribuicao? AjusteDoQuadro,
     ReferenciaReservaDemograficaSnapshotDto? ReferenciaDemografica,

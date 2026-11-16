@@ -2,10 +2,15 @@ namespace Unifesspa.UniPlus.Configuracao.Application.UnitTests.Commands;
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Configuracao.Application.Commands.FasesCanonicas;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
+using Unifesspa.UniPlus.Configuracao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -79,6 +84,21 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    [Fact(DisplayName = "Código fora do conjunto canônico com inscrição e isenção ligadas acumula o código e a exclusividade, sem persistir")]
+    public async Task Handle_ForaDoCanonicoComAsDuasMarcas_AcumulaCodigoEExclusividade()
+    {
+        var comando = new CriarFaseCanonicaCommand(
+            "ENTREVISTA_FINAL", Nome: "Entrevista", ColetaInscricao: true, ColetaSolicitacaoIsencao: true, OrigemData: "NO_EDITAL");
+
+        Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
+            comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
+            ("codigo", FaseCanonicaErrorCodes.CodigoForaDoConjuntoCanonico),
+            ("coletaSolicitacaoIsencao", FaseCanonicaErrorCodes.ColetaInscricaoEIsencaoMutuamenteExclusivas));
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
     [Fact(DisplayName = "Código ausente e nome ausente no mesmo payload acumulam as duas violações")]
     public async Task Handle_CodigoENomeAusentes_AcumulaAsDuasViolacoes()
     {
@@ -132,6 +152,38 @@ public sealed class CriarFaseCanonicaCommandHandlerTests
         resultado.Error!.Code.Should().Be(FaseCanonicaErrorCodes.UnidadeSugeridaNaoEncontrada);
         await _repository.DidNotReceive().AdicionarAsync(Arg.Any<FaseCanonica>(), Arg.Any<CancellationToken>());
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Campo inválido e unidade inexistente acumulam as duas recusas, o campo antes da unidade, sem persistir")]
+    public async Task Handle_CampoInvalidoEUnidadeInexistente_AcumulaAsDuasRecusas()
+    {
+        Guid ausente = Guid.CreateVersion7();
+        _unidadeReader.ObterPorIdAsync(ausente, Arg.Any<CancellationToken>()).Returns((UnidadeView?)null);
+        var comando = new CriarFaseCanonicaCommand("INSCRICAO", Nome: "", OrigemData: "NO_EDITAL", UnidadeSugeridaId: ausente);
+
+        Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
+            comando, _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
+
+        resultado.Errors.Select(e => e.Field).Should().Equal("nome", "unidadeSugeridaId");
+        resultado.Errors[0].Error.Code.Should().Be(FaseCanonicaErrorCodes.NomeObrigatorio);
+        resultado.Errors[1].Error.Code.Should().Be(FaseCanonicaErrorCodes.UnidadeSugeridaNaoEncontrada);
+        await _repository.DidNotReceive().AdicionarAsync(Arg.Any<FaseCanonica>(), Arg.Any<CancellationToken>());
+        await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Perder a corrida do índice único do código descarta a inserção e retorna CodigoJaExiste")]
+    public async Task Handle_CorridaDoIndiceUnico_DescartaERetornaConflito()
+    {
+        _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateException(
+                "violação sintética de teste",
+                PostgresExceptionFactory.Create("23505", RestricoesDoBanco.FaseCanonicaCodigoVivo)));
+
+        Result<Guid> resultado = await CriarFaseCanonicaCommandHandler.Handle(
+            Comando(), _repository, _unidadeReader, _unitOfWork, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(FaseCanonicaErrorCodes.CodigoJaExiste);
+        _unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
     }
 
     private static UnidadeView UnidadeCga() => new(

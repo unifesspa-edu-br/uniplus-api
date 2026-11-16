@@ -1,6 +1,8 @@
 namespace Unifesspa.UniPlus.Configuracao.Application.Commands.FasesCanonicas;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Configuracao.Application.Commands.TiposProcesso;
+using Unifesspa.UniPlus.Configuracao.Application.Persistence;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Errors;
 using Unifesspa.UniPlus.Configuracao.Domain.Interfaces;
@@ -10,12 +12,11 @@ using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Handler do <see cref="CriarFaseCanonicaCommand"/> (convention-based Wolverine).
-/// Orquestra: construção do agregado por inteiro primeiro (sem I/O — formato,
-/// pertença ao conjunto canônico e coerência acumulados no mesmo lote, 422), só
-/// então a unicidade do código entre vivos (409), persistência e commit. Protege
-/// a corrida check-then-act traduzindo a violação do índice único parcial em
-/// <c>CodigoJaExiste</c>. A unidade sugerida, quando informada, é resolvida por
-/// <see cref="IUnidadeReader"/> (ADR-0056) e congelada por snapshot-copy (ADR-0061).
+/// Constrói o agregado por inteiro e resolve a unidade sugerida no cadastro de unidades
+/// (<see cref="IUnidadeReader"/>, ADR-0056), acumulando as recusas dos dois no mesmo lote
+/// (422, ADR-0125): a unidade informada é congelada por snapshot-copy (ADR-0061). Só então
+/// confere a unicidade do código entre vivos (409), persiste e confirma. Protege a corrida
+/// check-then-act traduzindo a violação do índice único parcial em <c>CodigoJaExiste</c>.
 /// </summary>
 public static class CriarFaseCanonicaCommandHandler
 {
@@ -30,35 +31,33 @@ public static class CriarFaseCanonicaCommandHandler
         ArgumentNullException.ThrowIfNull(repository);
         ArgumentNullException.ThrowIfNull(unidadeReader);
         ArgumentNullException.ThrowIfNull(unitOfWork);
-
-        Result<FaseCanonica> criar = FaseCanonica.Criar(
-            command.Codigo,
-            command.Nome,
-            command.Descricao,
-            command.AgrupaEtapas,
-            command.PermiteComplementacao,
-            command.BaseLegal,
-            command.ColetaInscricao,
-            command.ColetaSolicitacaoIsencao,
-            command.OrigemData);
-
-        if (criar.IsFailure)
-        {
-            return Result<Guid>.ValidationFailure(criar.Errors);
-        }
-
-        FaseCanonica fase = criar.Value!;
-
+        Result<FaseCanonica> criar = ConstruirFase(command);
         Result<UnidadeSugerida?> unidade = await UnidadeSugeridaResolver
             .ResolverAsync(command.UnidadeSugeridaId, unidadeReader, cancellationToken)
             .ConfigureAwait(false);
-        if (unidade.IsFailure)
+        if (criar.IsFailure || unidade.IsFailure)
         {
-            return Result<Guid>.ValidationFailure(unidade.Errors);
+            return Result<Guid>.ValidationFailure([.. criar.Errors, .. unidade.Errors]);
         }
+        criar.Value!.DefinirUnidadeSugerida(unidade.Value);
+        return await GravarNovaAsync(criar.Value, repository, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
 
-        fase.DefinirUnidadeSugerida(unidade.Value);
+    private static Result<FaseCanonica> ConstruirFase(CriarFaseCanonicaCommand command) =>
+        FaseCanonica.Criar(
+            command.Codigo,
+            command.Nome,
+            command.Descricao,
+            command.BaseLegal,
+            command.OrigemData,
+            command.Sinalizadores());
 
+    private static async Task<Result<Guid>> GravarNovaAsync(
+        FaseCanonica fase,
+        IFaseCanonicaRepository repository,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
         if (await repository.CodigoExisteEntreVivosAsync(fase.Codigo.Valor, null, cancellationToken).ConfigureAwait(false))
         {
             return Result<Guid>.Failure(CodigoJaExisteErro());
@@ -66,21 +65,26 @@ public static class CriarFaseCanonicaCommandHandler
 
         await repository.AdicionarAsync(fase, cancellationToken).ConfigureAwait(false);
 
+        return await PerdeuACorridaDoCodigoAsync(unitOfWork, cancellationToken).ConfigureAwait(false)
+            ? Result<Guid>.Failure(CodigoJaExisteErro())
+            : Result<Guid>.Success(fase.Id);
+    }
+
+    private static async Task<bool> PerdeuACorridaDoCodigoAsync(IUnitOfWork unitOfWork, CancellationToken cancellationToken)
+    {
         try
         {
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+            return false;
         }
-        catch (Exception ex) when (UniqueConstraintViolation.GetViolatedConstraint(ex) is { } constraint
-            && UniqueConstraintViolation.IsCodigoConflict(constraint))
+        catch (Exception ex) when (UniqueConstraintViolation.EhConflito(ex, RestricoesDoBanco.FaseCanonicaCodigoVivo))
         {
             // Sem descartar, a entidade Added continua rastreada e qualquer SaveChanges
             // posterior no mesmo escopo repete a inserção fora deste catch — a mesma
             // violação estoura sem tradução, e o 409 pretendido vira 500.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<Guid>.Failure(CodigoJaExisteErro());
+            return true;
         }
-
-        return Result<Guid>.Success(fase.Id);
     }
 
     private static DomainError CodigoJaExisteErro() =>
