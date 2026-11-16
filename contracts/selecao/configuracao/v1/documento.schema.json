@@ -115,6 +115,16 @@
       "title": "Bônus regional",
       "description": "Declaração de que o processo aplica ou não o bônus regional e, se aplica, a regra e a base legal. Ausente no rascunho que ainda não decidiu.",
       "$ref": "bonus-regional.schema.json"
+    },
+    "importacao": {
+      "title": "Importação do resultado",
+      "description": "Relatórios e primeira fase depois da importação, nos processos de resultado importado. Ausente nos demais.",
+      "$ref": "importacao.schema.json"
+    },
+    "provaPresencial": {
+      "title": "Prova presencial",
+      "description": "Declaração de que o processo tem ou não prova presencial e, se tem, dos municípios de aplicação. Ausente no rascunho que ainda não a declarou.",
+      "$ref": "prova-presencial.schema.json"
     }
   }
 }
