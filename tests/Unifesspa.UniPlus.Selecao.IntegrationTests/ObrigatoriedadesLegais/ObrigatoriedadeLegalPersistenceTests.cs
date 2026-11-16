@@ -75,52 +75,17 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     public async Task Update_GeraSegundaLinhaDeHistorico()
     {
         ObrigatoriedadeLegal regra = NovaRegraValida("ETAPA_UPDATE");
-
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA))
-        {
-            ctx.ObrigatoriedadesLegais.Add(regra);
-            await ctx.SaveChangesAsync();
-        }
-
+        await GravarAsync(AdminA, regra);
         string hashOriginal = regra.Hash;
 
-        await using (UniPlusDbContext ctx = _fixture.CreateDbContext(AdminB))
-        {
-            ObrigatoriedadeLegal tracked = await ctx.ObrigatoriedadesLegais
-                .SingleAsync(o => o.Id == regra.Id)
-                ;
-
-            tracked.Atualizar(
-                tracked.TipoProcessoCodigo,
-                tracked.Categoria,
-                tracked.RegraCodigo,
-                tracked.Predicado,
-                new TextoNormativo(tracked.DescricaoHumana, "Lei 14.723/2023 art.2º — atualizada", tracked.AtoNormativoUrl, tracked.PortariaInternaCodigo),
-                tracked.VigenciaInicio,
-                tracked.VigenciaFim);
-
-            await ctx.SaveChangesAsync();
-        }
+        await AtualizarBaseLegalAsync(AdminB, regra.Id, "Lei 14.723/2023 art.2º — atualizada");
 
         await using UniPlusDbContext readCtx = _fixture.CreateDbContext(userId: null);
-
-        ObrigatoriedadeLegal atualizada = await readCtx.ObrigatoriedadesLegais
-            .SingleAsync(o => o.Id == regra.Id)
-            ;
-
-        atualizada.Hash.Should().NotBe(hashOriginal);
-
+        ObrigatoriedadeLegal atualizada = await readCtx.ObrigatoriedadesLegais.SingleAsync(o => o.Id == regra.Id);
         List<ObrigatoriedadeLegalHistorico> historico = await readCtx.ObrigatoriedadeLegalHistorico
-            .Where(h => h.RegraId == regra.Id)
-            .OrderBy(h => h.SnapshotAt)
-            .ToListAsync()
-            ;
-
-        historico.Should().HaveCount(2);
-        historico[0].Hash.Should().Be(hashOriginal);
-        historico[0].SnapshotBy.Should().Be(AdminA);
-        historico[1].Hash.Should().Be(atualizada.Hash);
-        historico[1].SnapshotBy.Should().Be(AdminB);
+            .Where(h => h.RegraId == regra.Id).OrderBy(h => h.SnapshotAt).ToListAsync();
+        atualizada.Hash.Should().NotBe(hashOriginal);
+        historico.Select(h => (h.Hash, h.SnapshotBy)).Should().Equal((hashOriginal, AdminA), (atualizada.Hash, AdminB));
     }
 
     [Fact(DisplayName = "UNIQUE parcial sobre Hash rejeita duas regras ativas com mesmo conteúdo (CA-02)")]
@@ -255,68 +220,75 @@ public sealed class ObrigatoriedadeLegalPersistenceTests : IClassFixture<Obrigat
     [Fact(DisplayName = "Ruleset reúne universal e específico, exclui outro tipo e respeita a data explícita")]
     public async Task ObterVigentesParaTipoProcesso_UniaoEDataReferencia()
     {
-        ObrigatoriedadeLegal universal = NovaRegraValida("RULESET_UNIVERSAL");
-        ObrigatoriedadeLegal psiq = ObrigatoriedadeLegal.Criar(
-            "PSIQ",
-            CategoriaObrigatoriedade.Outros,
-            "RULESET_PSIQ",
-            new ConcorrenciaDuplaObrigatoria(),
-            new TextoNormativo("PSIQ", "Lei", null, null),
-            new DateOnly(2026, 6, 1),
-            new DateOnly(2026, 7, 1)).Value!;
-        ObrigatoriedadeLegal sisu = ObrigatoriedadeLegal.Criar(
-            "SiSU",
-            CategoriaObrigatoriedade.Outros,
-            "RULESET_SISU",
-            new ConcorrenciaDuplaObrigatoria(),
-            new TextoNormativo("SiSU", "Lei", null, null),
-            new DateOnly(2026, 6, 1),
-            new DateOnly(2026, 7, 1)).Value!;
+        await GravarAsync(
+            AdminA, NovaRegraValida("RULESET_UNIVERSAL"), RegraDeJunho("PSIQ", "RULESET_PSIQ"), RegraDeJunho("SiSU", "RULESET_SISU"));
 
-        await using (UniPlusDbContext context = _fixture.CreateDbContext(AdminA))
-        {
-            context.ObrigatoriedadesLegais.AddRange(universal, psiq, sisu);
-            await context.SaveChangesAsync();
-        }
+        IReadOnlyList<string> emVigencia = await CodigosVigentesAsync("PSIQ", new DateOnly(2026, 6, 15));
+        IReadOnlyList<string> foraDaVigencia = await CodigosVigentesAsync("PSIQ", new DateOnly(2026, 7, 5));
 
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext(userId: null);
-        ObrigatoriedadeLegalRepository repository = new(readContext, TimeProvider.System);
-
-        IReadOnlyList<ObrigatoriedadeLegal> emVigencia = await repository
-            .ObterVigentesParaTipoProcessoAsync("PSIQ", new DateOnly(2026, 6, 15));
-        IReadOnlyList<ObrigatoriedadeLegal> foraDaVigencia = await repository
-            .ObterVigentesParaTipoProcessoAsync("PSIQ", new DateOnly(2026, 7, 5));
-
-        emVigencia.Select(static regra => regra.RegraCodigo).Should().Contain("RULESET_UNIVERSAL");
-        emVigencia.Select(static regra => regra.RegraCodigo).Should().Contain("RULESET_PSIQ");
-        emVigencia.Select(static regra => regra.RegraCodigo).Should().NotContain("RULESET_SISU");
-        foraDaVigencia.Select(static regra => regra.RegraCodigo).Should().Contain("RULESET_UNIVERSAL");
-        foraDaVigencia.Select(static regra => regra.RegraCodigo).Should().NotContain("RULESET_PSIQ");
+        emVigencia.Should().Contain(["RULESET_UNIVERSAL", "RULESET_PSIQ"]).And.NotContain("RULESET_SISU");
+        foraDaVigencia.Should().Contain("RULESET_UNIVERSAL").And.NotContain("RULESET_PSIQ");
     }
 
     [Fact(DisplayName = "FK historico→regra bloqueia INSERT de histórico órfão")]
     public async Task FkHistorico_BloqueiaOrfao()
     {
-        // Tentar inserir uma linha de histórico apontando para regra_id que
-        // não existe — o FK ON DELETE RESTRICT precisa rejeitar via Postgres.
-        Guid regraInexistente = Guid.CreateVersion7();
+        // O FK ON DELETE RESTRICT precisa rejeitar, via Postgres, um histórico que aponta para regra inexistente.
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
+        ctx.ObrigatoriedadeLegalHistorico.Add(HistoricoDeRegraInexistente());
 
-        ObrigatoriedadeLegalHistorico orphan = ObrigatoriedadeLegalHistorico.Snapshot(
-            regraId: regraInexistente,
+        Func<Task> act = async () => await ctx.SaveChangesAsync();
+
+        await act.Should().ThrowAsync<DbUpdateException>().WithInnerException(typeof(Npgsql.PostgresException));
+    }
+
+    private static ObrigatoriedadeLegalHistorico HistoricoDeRegraInexistente() =>
+        ObrigatoriedadeLegalHistorico.Snapshot(
+            regraId: Guid.CreateVersion7(),
             conteudoJson: "{}",
             hash: new string('a', 64),
             snapshotAt: DateTimeOffset.UtcNow,
             snapshotBy: AdminA);
 
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext(AdminA);
-        ctx.ObrigatoriedadeLegalHistorico.Add(orphan);
-
-        Func<Task> act = async () => await ctx.SaveChangesAsync();
-
-        await act.Should().ThrowAsync<DbUpdateException>()
-            .WithInnerException(typeof(Npgsql.PostgresException))
-            ;
+    private async Task GravarAsync(string usuario, params ObrigatoriedadeLegal[] regras)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(usuario);
+        ctx.ObrigatoriedadesLegais.AddRange(regras);
+        await ctx.SaveChangesAsync();
     }
+
+    private async Task AtualizarBaseLegalAsync(string usuario, Guid id, string baseLegal)
+    {
+        await using UniPlusDbContext ctx = _fixture.CreateDbContext(usuario);
+        ObrigatoriedadeLegal regra = await ctx.ObrigatoriedadesLegais.SingleAsync(o => o.Id == id);
+        regra.Atualizar(
+            regra.TipoProcessoCodigo,
+            regra.Categoria,
+            regra.RegraCodigo,
+            regra.Predicado,
+            new TextoNormativo(regra.DescricaoHumana, baseLegal, regra.AtoNormativoUrl, regra.PortariaInternaCodigo),
+            regra.VigenciaInicio,
+            regra.VigenciaFim);
+        await ctx.SaveChangesAsync();
+    }
+
+    private async Task<IReadOnlyList<string>> CodigosVigentesAsync(string tipoProcesso, DateOnly data)
+    {
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext(userId: null);
+        ObrigatoriedadeLegalRepository repository = new(readContext, TimeProvider.System);
+        IReadOnlyList<ObrigatoriedadeLegal> vigentes = await repository.ObterVigentesParaTipoProcessoAsync(tipoProcesso, data);
+        return [.. vigentes.Select(static regra => regra.RegraCodigo)];
+    }
+
+    private static ObrigatoriedadeLegal RegraDeJunho(string tipoProcesso, string regraCodigo) =>
+        ObrigatoriedadeLegal.Criar(
+            tipoProcesso,
+            CategoriaObrigatoriedade.Outros,
+            regraCodigo,
+            new ConcorrenciaDuplaObrigatoria(),
+            new TextoNormativo(tipoProcesso, "Lei", null, null),
+            new DateOnly(2026, 6, 1),
+            new DateOnly(2026, 7, 1)).Value!;
 
     private static ObrigatoriedadeLegal NovaRegraValida(string regraCodigo) =>
         ObrigatoriedadeLegal.Criar(
