@@ -78,7 +78,7 @@ public sealed class FatoCandidatoSementeTests
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
 
         // Os quatro blocos do formulário de cotas. A elegibilidade de PPI é COR_RACA
         // (categórico); as demais são booleanas. O opt-in é sempre booleano.
@@ -110,7 +110,7 @@ public sealed class FatoCandidatoSementeTests
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
 
         // Quatro fatos já existiam antes desta leva e são REUTILIZADOS, não recadastrados:
         // renomeá-los violaria a imutabilidade de código da ADR-0111.
@@ -165,7 +165,7 @@ public sealed class FatoCandidatoSementeTests
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
 
         fatos.Should().HaveCount(FatoCandidatoSeed.Itens.Count).And.HaveCount(58);
         fatos.Select(f => f.Codigo).Should().OnlyHaveUniqueItems();
@@ -184,7 +184,7 @@ public sealed class FatoCandidatoSementeTests
             persistido.ClassificacaoProtecao.Should().Be(item.ClassificacaoProtecao);
             persistido.Escopo.Should().Be(item.Escopo);
             persistido.FinalidadeTratamento.Should().Be(item.FinalidadeTratamento);
-            persistido.Sistema.Should().BeTrue($"{item.Codigo} é semeado pelo sistema");
+            persistido.SemeadoPeloSistema.Should().BeTrue($"{item.Codigo} é semeado pelo sistema");
             persistido.Ativo.Should().BeTrue();
         }
     }
@@ -205,7 +205,7 @@ public sealed class FatoCandidatoSementeTests
         foreach ((string codigo, string[] opcoes) in esperado)
         {
             FatoCandidato fato = await ctx.FatosCandidato.AsNoTracking().Include(f => f.ValoresDominioDeclarados).SingleAsync(f => f.Codigo == codigo);
-            fato.Sistema.Should().BeTrue($"{codigo} é fato de sistema: o administrador não acrescenta nem desativa opção");
+            fato.SemeadoPeloSistema.Should().BeTrue($"{codigo} é fato de sistema: o administrador não acrescenta nem desativa opção");
             fato.ValoresDominioDeclarados.OrderBy(v => v.Ordem).Select(v => v.Codigo).Should().Equal(opcoes);
             fato.ValoresDominioDeclarados.Should().OnlyContain(v => v.Ativo);
 
@@ -271,7 +271,7 @@ public sealed class FatoCandidatoSementeTests
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
 
-        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.Sistema).ToListAsync();
+        List<FatoCandidato> fatos = await ctx.FatosCandidato.AsNoTracking().Where(static f => f.SemeadoPeloSistema).ToListAsync();
 
         fatos.Where(f => f.ClassificacaoProtecao == ClassificacaoDeProtecao.Sensivel)
             .Select(f => f.Codigo).Order(StringComparer.Ordinal).Should().Equal(
@@ -298,7 +298,7 @@ public sealed class FatoCandidatoSementeTests
 
         FatoCandidato fato = await ctx.FatosCandidato.AsNoTracking().SingleAsync(f => f.Codigo == "MODALIDADE_SEGUNDA_OPCAO");
 
-        fato.Sistema.Should().BeTrue();
+        fato.SemeadoPeloSistema.Should().BeTrue();
         fato.Origem.Should().Be(OrigemFato.Derivado);
         fato.Cardinalidade.Should().Be(CardinalidadeFato.Multivalorado);
         fato.FonteValores.Should().Be(FonteValoresFato.Modalidade);

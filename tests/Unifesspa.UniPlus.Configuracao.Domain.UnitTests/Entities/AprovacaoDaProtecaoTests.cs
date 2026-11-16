@@ -428,7 +428,7 @@ public sealed class AprovacaoDaProtecaoTests
             ClassificacaoProtecao = ClassificacaoDeProtecao.Sensivel,
             Codigo = "COR_RACA",
             Dominio = DominioFato.Categorico,
-            Sistema = true,
+            SemeadoPeloSistema = true,
         });
         fato.Aprovacao.Situacao.Should().Be(SituacaoDaAprovacao.Aprovada);
         fato.Aprovacao.AceitaPor.Should().Be(Isabella);

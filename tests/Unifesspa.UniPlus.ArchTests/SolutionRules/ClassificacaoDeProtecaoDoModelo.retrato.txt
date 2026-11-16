@@ -640,7 +640,7 @@ configuracao.fatos_do_candidato.protecao_situacao: Interno
 configuracao.fatos_do_candidato.protecao_solicitada_em: Interno
 configuracao.fatos_do_candidato.protecao_solicitada_por: Pessoal
 configuracao.fatos_do_candidato.regras_padrao: Interno
-configuracao.fatos_do_candidato.sistema: Interno
+configuracao.fatos_do_candidato.semeado_pelo_sistema: Interno
 configuracao.fatos_do_candidato.updated_at: Interno
 configuracao.fatos_do_candidato.updated_by: Pessoal
 configuracao.fatos_do_candidato.xmin: Interno

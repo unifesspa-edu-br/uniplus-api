@@ -127,7 +127,7 @@ internal sealed class ValoresDoDominioDoFato(FatoCandidato fato, List<FatoValorD
     private DomainError? RecusaDeEstado() =>
         ConferenciaDosValoresDoFato.RecusaDeEstado(RecusaDeSistema(), fato.Dominio, fato.FatoDeMembroAgregado, fato.FonteValores);
 
-    private DomainError? RecusaDeSistema() => fato.Sistema ? RedefinicaoDoFatoDeSistema.RecusaDaDefinicao : null;
+    private DomainError? RecusaDeSistema() => fato.SemeadoPeloSistema ? RedefinicaoDoFatoDeSistema.RecusaDaDefinicao : null;
 
     private FatoValorDominio? PorCodigo(string codigo) =>
         valores.FirstOrDefault(v => string.Equals(v.Codigo, codigo?.Trim(), StringComparison.Ordinal));

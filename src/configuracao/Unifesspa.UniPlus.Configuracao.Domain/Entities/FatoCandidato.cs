@@ -95,10 +95,11 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
     public HipoteseLegalTratamento HipoteseLegal { get; private set; }
 
     /// <summary>
-    /// Fato semeado pelo sistema: só o nome, a descrição e a proteção de dados são editáveis; a
+    /// Fato semeado pelo sistema: o nome, a descrição e o componente de exibição são editáveis
+    /// (<see cref="AlterarDescritivo"/>), e a proteção de dados, por <see cref="AlterarDefinicao"/>; a
     /// definição que o sistema calcula ou lê é travada.
     /// </summary>
-    public bool Sistema { get; private set; }
+    public bool SemeadoPeloSistema { get; private set; }
 
     /// <summary>
     /// O circuito de aprovação da proteção de dados (ADR-0153): o fato só entra na configuração e na
@@ -182,7 +183,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         ClassificacaoProtecao = protecao.Classificacao;
         FinalidadeTratamento = protecao.Finalidade;
         HipoteseLegal = protecao.Hipotese;
-        Sistema = sistema;
+        SemeadoPeloSistema = sistema;
         Ativo = true;
     }
 
@@ -355,7 +356,7 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
         ArgumentNullException.ThrowIfNull(definicao);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        return Sistema ? AlterarProtecaoDoFatoDeSistema(definicao, catalogo) : AlterarDefinicaoDoFatoDoAdministrador(definicao, catalogo);
+        return SemeadoPeloSistema ? AlterarProtecaoDoFatoDeSistema(definicao, catalogo) : AlterarDefinicaoDoFatoDoAdministrador(definicao, catalogo);
     }
 
     private Result AlterarDefinicaoDoFatoDoAdministrador(DefinicaoDoFato definicao, CatalogoDeFatos catalogo)
@@ -582,6 +583,6 @@ public sealed class FatoCandidato : EntityBase, IAuditableEntity
 
     private ValoresDoDominioDoFato Valores => new(this, _valoresDominioDeclarados);
 
-    private DomainError? RecusaSeSistema() => Sistema ? RedefinicaoDoFatoDeSistema.RecusaDaDefinicao : null;
+    private DomainError? RecusaSeSistema() => SemeadoPeloSistema ? RedefinicaoDoFatoDeSistema.RecusaDaDefinicao : null;
 
 }

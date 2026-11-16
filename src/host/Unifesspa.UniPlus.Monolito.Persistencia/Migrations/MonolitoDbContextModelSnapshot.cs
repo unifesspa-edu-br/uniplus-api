@@ -4203,9 +4203,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnName("regras_padrao")
                         .HasDefaultValueSql("'[]'::jsonb");
 
-                    b.Property<bool>("Sistema")
+                    b.Property<bool>("SemeadoPeloSistema")
                         .HasColumnType("boolean")
-                        .HasColumnName("sistema");
+                        .HasColumnName("semeado_pelo_sistema");
 
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
@@ -4285,7 +4285,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4306,7 +4306,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4327,7 +4327,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4348,7 +4348,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DERIVADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[{\"contribui\":null,\"quando\":[[{\"fato\":\"ONDE_CURSOU_EM\",\"operador\":\"EM\",\"valor\":[\"SOMENTE_PUBLICA\",\"COMUNITARIA_CAMPO\",\"PUBLICA_E_COMUNITARIA\"]}],[{\"fato\":\"ONDE_CURSOU_EM\",\"operador\":\"IGUAL\",\"valor\":\"CERTIFICACAO\"},{\"fato\":\"FORMA_CONCLUSAO_EM\",\"operador\":\"EM\",\"valor\":[\"ENCCEJA\",\"PROFICIENCIA\",\"ENEM\"]}]]}]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4370,7 +4370,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DERIVADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4391,7 +4391,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DERIVADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4413,7 +4413,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4435,7 +4435,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DERIVADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4457,7 +4457,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4479,7 +4479,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4501,7 +4501,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4522,7 +4522,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4543,7 +4543,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4564,7 +4564,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4585,7 +4585,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4606,7 +4606,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4627,7 +4627,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4648,7 +4648,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4669,7 +4669,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4691,7 +4691,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DERIVADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4713,7 +4713,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DERIVADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4735,7 +4735,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DERIVADO",
                             PontoResolucao = "RESULTADO_FINAL",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4756,7 +4756,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4777,7 +4777,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4798,7 +4798,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4820,7 +4820,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4842,7 +4842,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4863,7 +4863,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4885,7 +4885,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4907,7 +4907,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4929,7 +4929,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4951,7 +4951,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4973,7 +4973,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -4994,7 +4994,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5016,7 +5016,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5038,7 +5038,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5060,7 +5060,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5082,7 +5082,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5104,7 +5104,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5126,7 +5126,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5148,7 +5148,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5170,7 +5170,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5192,7 +5192,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5214,7 +5214,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5236,7 +5236,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5258,7 +5258,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5280,7 +5280,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5302,7 +5302,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5324,7 +5324,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5346,7 +5346,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5368,7 +5368,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5389,7 +5389,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "SOLICITACAO_ISENCAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5411,7 +5411,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5432,7 +5432,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5453,7 +5453,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DERIVADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[{\"contribui\":null,\"quando\":[[{\"fato\":\"EGRESSO_ESCOLA_PUBLICA\",\"operador\":\"IGUAL\",\"valor\":true},{\"fato\":\"CONCORRER_EP\",\"operador\":\"IGUAL\",\"valor\":true}]]}]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5474,7 +5474,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5496,7 +5496,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DECLARADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         },
                         new
                         {
@@ -5518,7 +5518,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                             Origem = "DERIVADO",
                             PontoResolucao = "INSCRICAO",
                             RegrasPadrao = "[]",
-                            Sistema = true
+                            SemeadoPeloSistema = true
                         });
                 });
 

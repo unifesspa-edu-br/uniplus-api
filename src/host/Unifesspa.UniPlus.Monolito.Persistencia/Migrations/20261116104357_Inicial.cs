@@ -467,7 +467,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     classificacao_protecao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     finalidade_tratamento = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
                     hipotese_legal = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
-                    sistema = table.Column<bool>(type: "boolean", nullable: false),
+                    semeado_pelo_sistema = table.Column<bool>(type: "boolean", nullable: false),
                     protecao_situacao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     protecao_ciclo = table.Column<int>(type: "integer", nullable: false),
                     protecao_solicitada_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
@@ -5196,7 +5196,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.InsertData(
                 schema: "configuracao",
                 table: "fatos_do_candidato",
-                columns: new[] { "id", "ativo", "binding", "cardinalidade", "classificacao_protecao", "codigo", "componente_exibicao", "created_at", "created_by", "dependencias", "descricao", "dominio", "escopo", "finalidade_tratamento", "fonte_valores", "formato", "hipotese_legal", "nome", "origem", "ponto_resolucao", "regras_padrao", "sistema", "updated_at", "updated_by", "protecao_aceita_em", "protecao_aceita_por", "protecao_ciclo", "protecao_recomendada", "protecao_decidida_em", "protecao_decidida_por", "protecao_justificativa", "protecao_manifestacao_desfavoravel", "protecao_manifestacoes_no_ciclo", "protecao_manifestada_em", "protecao_situacao", "protecao_solicitada_em", "protecao_solicitada_por" },
+                columns: new[] { "id", "ativo", "binding", "cardinalidade", "classificacao_protecao", "codigo", "componente_exibicao", "created_at", "created_by", "dependencias", "descricao", "dominio", "escopo", "finalidade_tratamento", "fonte_valores", "formato", "hipotese_legal", "nome", "origem", "ponto_resolucao", "regras_padrao", "semeado_pelo_sistema", "updated_at", "updated_by", "protecao_aceita_em", "protecao_aceita_por", "protecao_ciclo", "protecao_recomendada", "protecao_decidida_em", "protecao_decidida_por", "protecao_justificativa", "protecao_manifestacao_desfavoravel", "protecao_manifestacoes_no_ciclo", "protecao_manifestada_em", "protecao_situacao", "protecao_solicitada_em", "protecao_solicitada_por" },
                 values: new object[,]
                 {
                     { new Guid("fa700000-0000-7000-8000-000000000001"), true, "CAMPO_FORMULARIO:COR_RACA", "ESCALAR", "SENSIVEL", "COR_RACA", null, new DateTimeOffset(new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)), null, new string[0], "Cor ou raça que o candidato declara. É o dado de que depende a concorrência às vagas reservadas a pretos, pardos e indígenas.", "CATEGORICO", "CANDIDATO", "Enquadramento do candidato na reserva de vagas da Lei nº 12.711/2012 e nas ações afirmativas do processo seletivo.", "GLOBAL", null, "CUMPRIMENTO_OBRIGACAO_LEGAL", "Cor ou raça", "DECLARADO", "INSCRICAO", "[]", true, null, null, null, null, 1, null, null, null, null, false, 0, null, "PENDENTE", null, null },

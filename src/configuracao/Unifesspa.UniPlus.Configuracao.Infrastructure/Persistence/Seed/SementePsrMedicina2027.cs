@@ -354,7 +354,7 @@ public static class SementePsrMedicina2027
         ("classificacao_protecao", Texto(ClassificacoesDeProtecao.ParaTokenCanonico(fato.ClassificacaoProtecao))),
         ("finalidade_tratamento", Texto(fato.FinalidadeTratamento)),
         ("hipotese_legal", Texto(HipotesesLegaisTratamento.ParaTokenCanonico(fato.HipoteseLegal))),
-        ("sistema", Logico(fato.Sistema)), ("ativo", Logico(fato.Ativo)), ("regras_padrao", "'[]'::jsonb"),
+        ("semeado_pelo_sistema", Logico(fato.SemeadoPeloSistema)), ("ativo", Logico(fato.Ativo)), ("regras_padrao", "'[]'::jsonb"),
         ("dependencias", ListaDeTexto(fato.Dependencias)), ("created_at", Momento(Instante)),
     ];
 
