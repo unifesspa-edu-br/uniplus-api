@@ -9,12 +9,12 @@ public sealed class ProntidaoParaCongelarTests
 {
     private static readonly string[] OrdemDosPortoes =
     [
-        "IdentificadorLegivel", "Localidade", "AlgoritmoDeContagem", "CalendarioVigente", "Conformidade", "Cronograma",
+        "IdentificadorLegivel", "Localidade", "AlgoritmoDeContagem", "CalendarioVigente", "Conformidade", "Cronograma", "Bancas",
         "TipoDeAtoUnico", "ResultadoSemPapel", "TipoQueCongelaDeclaradoComoResultado", "Cascata", "PreCanonicalizacao",
     ];
 
-    [Fact(DisplayName = "Sem pendência, os onze portões são avaliados uma vez, na ordem")]
-    public void SemPendencia_AvaliaOsOnzePortoesNaOrdem()
+    [Fact(DisplayName = "Sem pendência, os doze portões são avaliados uma vez, na ordem")]
+    public void SemPendencia_AvaliaOsDozePortoesNaOrdem()
     {
         List<string> avaliados = [];
 
@@ -47,8 +47,9 @@ public sealed class ProntidaoParaCongelarTests
         };
 
         return new(
-            Portao("IdentificadorLegivel"), Portao("Localidade"), Portao("AlgoritmoDeContagem"), Portao("CalendarioVigente"),
-            Portao("Conformidade"), Portao("Cronograma"), Portao("TipoDeAtoUnico"), Portao("ResultadoSemPapel"),
-            Portao("TipoQueCongelaDeclaradoComoResultado"), Portao("Cascata"), Portao("PreCanonicalizacao"));
+            new(Portao("IdentificadorLegivel"), Portao("Localidade"), Portao("AlgoritmoDeContagem"), Portao("CalendarioVigente")),
+            new(Portao("Conformidade"), Portao("Cronograma"), Portao("Bancas")),
+            new(Portao("TipoDeAtoUnico"), Portao("ResultadoSemPapel"), Portao("TipoQueCongelaDeclaradoComoResultado")),
+            new(Portao("Cascata"), Portao("PreCanonicalizacao")));
     }
 }

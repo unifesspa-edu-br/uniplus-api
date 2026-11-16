@@ -240,16 +240,16 @@ public sealed class BancasDoProcessoTests
         Corretores = corretores,
     };
 
-    [Fact(DisplayName = "O portão do cronograma lê os corretores do pedido de congelamento")]
-    public void PortaoDoCronograma_LeOsCorretoresDoPedido()
+    [Fact(DisplayName = "O portão das bancas lê os corretores do pedido de congelamento")]
+    public void PortaoDasBancas_LeOsCorretoresDoPedido()
     {
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1));
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
         redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
         EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(processo);
 
-        ProntidaoParaCongelar.Portoes.Para(estado, Pedido(CorretoresDasEtapas.Nenhum)).Cronograma().Should().BeNull();
-        ProntidaoParaCongelar.Portoes.Para(estado, Pedido(Corretores((redacao, 3)))).Cronograma()!.Code
+        ProntidaoParaCongelar.Portoes.Para(estado, Pedido(CorretoresDasEtapas.Nenhum)).Estrutura.Bancas().Should().BeNull();
+        ProntidaoParaCongelar.Portoes.Para(estado, Pedido(Corretores((redacao, 3)))).Estrutura.Bancas()!.Code
             .Should().Be("Banca.IntegrantesAbaixoDoMinimo");
     }
 

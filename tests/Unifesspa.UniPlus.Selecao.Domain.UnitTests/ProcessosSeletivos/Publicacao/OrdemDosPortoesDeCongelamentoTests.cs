@@ -19,7 +19,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// As três transições que congelam uma versão recusam os onze portões na mesma ordem. A ordem
+/// As três transições que congelam uma versão recusam os portões na mesma ordem (o das bancas, logo depois
+/// do cronograma, tem o teste próprio em <c>BancasDoProcessoTests</c>). A ordem
 /// decide qual código o cliente vê quando há mais de uma pendência, e cada portão chama um método
 /// diferente da raiz com os argumentos do pedido: trocar dois slots na composição dos portões
 /// deixaria o cliente vendo a pendência errada.

@@ -21,34 +21,19 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public static class ProntidaoParaCongelar
 {
-    /// <summary>Os portões, nomeados na ordem em que são avaliados.</summary>
+    /// <summary>Os portões, agrupados por assunto e na ordem em que são avaliados.</summary>
     internal sealed record Portoes(
-        Func<DomainError?> IdentificadorLegivel,
-        Func<DomainError?> Localidade,
-        Func<DomainError?> AlgoritmoDeContagem,
-        Func<DomainError?> CalendarioVigente,
-        Func<DomainError?> Conformidade,
-        Func<DomainError?> Cronograma,
-        Func<DomainError?> TipoDeAtoUnico,
-        Func<DomainError?> ResultadoSemPapel,
-        Func<DomainError?> TipoQueCongelaDeclaradoComoResultado,
-        Func<DomainError?> Cascata,
-        Func<DomainError?> PreCanonicalizacao)
+        PortoesDeIdentificacao Identificacao,
+        PortoesDaEstrutura Estrutura,
+        PortoesDosAtos Atos,
+        PortoesDoEncerramento Encerramento)
     {
-        /// <summary>Os onze portões do processo para este pedido, sobre a vista da configuração.</summary>
+        /// <summary>Os portões do processo para este pedido, sobre a vista da configuração.</summary>
         internal static Portoes Para(EstadoDaConfiguracao estado, PedidoDeCongelamento pedido) => new(
-            IdentificadorLegivel: () => ContagemDePrazos.PendenciaDoIdentificadorLegivel(estado),
-            Localidade: () => ContagemDePrazos.PendenciaDaLocalidade(estado),
-            AlgoritmoDeContagem: () => ContagemDePrazos.PendenciaDoAlgoritmoDeContagem(estado),
-            CalendarioVigente: () => ContagemDePrazos.PendenciaDoCalendarioVigente(estado, pedido.Contexto),
-            Conformidade: () => ChecklistDeConformidade.PendenciaDeConformidade(estado),
-            Cronograma: () => PendenciasDoCronograma.PendenciaDoCronograma(estado, pedido.Contexto.FusoInstitucional)
-                ?? PendenciasDasBancas.PendenciaDasBancas(estado, pedido.Corretores),
-            TipoDeAtoUnico: () => TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(estado, pedido.TiposDeAtoUnicos),
-            ResultadoSemPapel: () => TiposDeAtoDoCronograma.PendenciaDoResultadoSemPapel(estado, pedido.TiposDeAtoUnicos),
-            TipoQueCongelaDeclaradoComoResultado: () => TiposDeAtoDoCronograma.PendenciaDoTipoQueCongelaDeclaradoComoResultado(estado, pedido.TiposDeAtoUnicos),
-            Cascata: () => CoberturaDaCascata.PendenciaDaCascata(estado),
-            PreCanonicalizacao: () => PendenciaPreCanonicalizacao(estado, pedido.FatosDeModalidade));
+            PortoesDeIdentificacao.Para(estado, pedido),
+            PortoesDaEstrutura.Para(estado, pedido),
+            PortoesDosAtos.Para(estado, pedido),
+            PortoesDoEncerramento.Para(estado, pedido));
     }
 
     /// <summary>A primeira pendência, ou nulo se todos passam. Para no primeiro portão que recusa.</summary>
@@ -58,17 +43,10 @@ public static class ProntidaoParaCongelar
 
         Func<DomainError?>[] emOrdem =
         [
-            portoes.IdentificadorLegivel,
-            portoes.Localidade,
-            portoes.AlgoritmoDeContagem,
-            portoes.CalendarioVigente,
-            portoes.Conformidade,
-            portoes.Cronograma,
-            portoes.TipoDeAtoUnico,
-            portoes.ResultadoSemPapel,
-            portoes.TipoQueCongelaDeclaradoComoResultado,
-            portoes.Cascata,
-            portoes.PreCanonicalizacao,
+            .. portoes.Identificacao.EmOrdem(),
+            .. portoes.Estrutura.EmOrdem(),
+            .. portoes.Atos.EmOrdem(),
+            .. portoes.Encerramento.EmOrdem(),
         ];
 
         return emOrdem.Select(static portao => portao()).FirstOrDefault(static pendencia => pendencia is not null);
