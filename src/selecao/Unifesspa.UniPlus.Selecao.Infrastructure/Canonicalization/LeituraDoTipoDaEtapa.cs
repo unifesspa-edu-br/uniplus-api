@@ -31,21 +31,26 @@ internal static class LeituraDoTipoDaEtapa
     private static TipoEtapaSnapshot? LerSnapshot(LeitorEnvelope leitor, JsonObject tipo, string tipoPath)
     {
         leitor.ExigirChaves(
-            tipo, tipoPath, "origemId", "codigo", "nome", "admitePontuacao", "admiteEliminacao", "notaDeOrigemNoEnem");
+            tipo, tipoPath, "origemId", "codigo", "nome", "admitePontuacao", "admiteEliminacao", "notaDeOrigemNoEnem", "exigeCorrecaoIndependente");
         Guid origemId = leitor.Identificador(tipo, "origemId", tipoPath);
         string codigo = leitor.TextoNaoVazio(tipo, "codigo", tipoPath, LimitesDoEnvelope.TipoEtapaCodigo);
         string nome = leitor.TextoNaoVazio(tipo, "nome", tipoPath, LimitesDoEnvelope.TipoEtapaNome);
-        bool admitePontuacao = leitor.Booleano(tipo, "admitePontuacao", tipoPath);
-        bool admiteEliminacao = leitor.Booleano(tipo, "admiteEliminacao", tipoPath);
-        bool notaDeOrigemNoEnem = leitor.Booleano(tipo, "notaDeOrigemNoEnem", tipoPath);
-        return leitor.Falhou ? null : Criar(leitor, origemId, codigo, nome, admitePontuacao, admiteEliminacao, notaDeOrigemNoEnem);
+        Sinalizadores sinalizadores = new(
+            leitor.Booleano(tipo, "admitePontuacao", tipoPath),
+            leitor.Booleano(tipo, "admiteEliminacao", tipoPath),
+            leitor.Booleano(tipo, "notaDeOrigemNoEnem", tipoPath),
+            leitor.Booleano(tipo, "exigeCorrecaoIndependente", tipoPath));
+        return leitor.Falhou ? null : Criar(leitor, origemId, codigo, nome, sinalizadores);
     }
 
-    private static TipoEtapaSnapshot? Criar(
-        LeitorEnvelope leitor, Guid origemId, string codigo, string nome, bool admitePontuacao, bool admiteEliminacao, bool notaDeOrigemNoEnem)
+    private static TipoEtapaSnapshot? Criar(LeitorEnvelope leitor, Guid origemId, string codigo, string nome, Sinalizadores sinalizadores)
     {
         Result<TipoEtapaSnapshot> resultado = TipoEtapaSnapshot.Criar(
-            origemId, codigo, nome, admitePontuacao, admiteEliminacao, notaDeOrigemNoEnem);
+            origemId, codigo, nome, sinalizadores.AdmitePontuacao, sinalizadores.AdmiteEliminacao,
+            sinalizadores.NotaDeOrigemNoEnem, sinalizadores.ExigeCorrecaoIndependente);
         return resultado.IsFailure ? leitor.Propagar<TipoEtapaSnapshot>(resultado.Error!) : resultado.Value;
     }
+
+    private readonly record struct Sinalizadores(
+        bool AdmitePontuacao, bool AdmiteEliminacao, bool NotaDeOrigemNoEnem, bool ExigeCorrecaoIndependente);
 }

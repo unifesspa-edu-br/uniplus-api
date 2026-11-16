@@ -1555,6 +1555,7 @@ selecao.etapas_processo.regra_consolidacao_versao: Interno
 selecao.etapas_processo.tipo_etapa_admite_eliminacao: Interno
 selecao.etapas_processo.tipo_etapa_admite_pontuacao: Interno
 selecao.etapas_processo.tipo_etapa_codigo: Interno
+selecao.etapas_processo.tipo_etapa_exige_correcao_independente: Interno
 selecao.etapas_processo.tipo_etapa_nome: Interno
 selecao.etapas_processo.tipo_etapa_nota_de_origem_no_enem: Interno
 selecao.etapas_processo.tipo_etapa_origem_id: Interno

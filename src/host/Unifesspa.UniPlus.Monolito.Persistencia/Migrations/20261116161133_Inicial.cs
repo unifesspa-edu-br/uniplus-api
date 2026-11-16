@@ -2380,6 +2380,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     tipo_etapa_admite_pontuacao = table.Column<bool>(type: "boolean", nullable: false),
                     tipo_etapa_admite_eliminacao = table.Column<bool>(type: "boolean", nullable: false),
                     tipo_etapa_nota_de_origem_no_enem = table.Column<bool>(type: "boolean", nullable: false, comment: "Nota da etapa vem do ENEM, congelado do tipo junto com a identidade."),
+                    tipo_etapa_exige_correcao_independente = table.Column<bool>(type: "boolean", nullable: false, comment: "Etapas do tipo são corrigidas por mais de um corretor, cada um independente dos outros; congelado do tipo e regravado com os demais sinalizadores."),
                     peso = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true),
                     nota_minima = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true),
                     nota_maxima = table.Column<decimal>(type: "numeric(18,4)", precision: 18, scale: 4, nullable: true, comment: "Nota máxima da escala da etapa com nota; ausente na etapa sem nota e na do ENEM."),

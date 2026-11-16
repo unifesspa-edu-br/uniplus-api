@@ -27,7 +27,13 @@ public static class CoerenciaDaAvaliacaoDaEtapa
             return RecusasDaAvaliacaoNaEtapaDoEnem(avaliacao);
         }
 
-        FieldError?[] recusas = [RecusaDaRegra(avaliacao.Forma, avaliacao.RegraConsolidacaoCodigo), RecusaDoPasso(avaliacao.Forma, avaliacao.PassoDoLancamento)];
+        FieldError?[] recusas =
+        [
+            RecusaDaRegra(avaliacao.Forma, avaliacao.RegraConsolidacaoCodigo),
+            RecusaDoPasso(avaliacao.Forma, avaliacao.PassoDoLancamento),
+            RecusaDaFormaNoTipoQueExigeCorrecao(avaliacao),
+            RecusaDaRegraNoTipoQueExigeCorrecao(avaliacao),
+        ];
         List<FieldError> erros = [.. recusas.OfType<FieldError>()];
         if (avaliacao.DeclaraEscala)
         {
@@ -71,6 +77,16 @@ public static class CoerenciaDaAvaliacaoDaEtapa
                 EtapaProcessoErrorCodes.RegraDeConsolidacaoInvalida,
                 $"A regra '{regraConsolidacaoCodigo}' não é uma regra de consolidação do catálogo.");
     }
+
+    private static FieldError? RecusaDaFormaNoTipoQueExigeCorrecao(AvaliacaoParaCoerencia avaliacao) =>
+        Recusa(avaliacao.ExigeCorrecaoIndependente && avaliacao.Forma == FormaDeAvaliacao.Objetiva, "formaDeAvaliacao",
+            EtapaProcessoErrorCodes.FormaObjetivaEmTipoQueExigeCorrecaoIndependente,
+            "O tipo da etapa exige correção independente, que só existe na avaliação humana: na avaliação objetiva ninguém corrige.");
+
+    private static FieldError? RecusaDaRegraNoTipoQueExigeCorrecao(AvaliacaoParaCoerencia avaliacao) =>
+        Recusa(avaliacao.ExigeCorrecaoIndependente && avaliacao.RegraConsolidacaoCodigo == RegraConsolidacaoCodigo.AvaliacaoUnica,
+            "regraConsolidacao", EtapaProcessoErrorCodes.AvaliacaoUnicaEmTipoQueExigeCorrecaoIndependente,
+            "O tipo da etapa exige correção independente, e a avaliação única tem um só corretor: use uma regra de consolidação de mais de um corretor.");
 
     private static FieldError? RecusaDoPasso(FormaDeAvaliacao? forma, decimal? passoDoLancamento) =>
         Recusa(forma == FormaDeAvaliacao.Objetiva && passoDoLancamento is not null, "passoDoLancamento",

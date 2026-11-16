@@ -6,7 +6,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// O que a etapa declara sobre como a nota é obtida, no que a coerência da avaliação confere. Itens e
 /// escala chegam só como presença: a coerência pergunta se existem, e quem os valida é a conferência
 /// da declaração. A regra de consolidação chega só pelo código, para a Application poder rodar a
-/// coerência de todas as etapas antes de ler o catálogo.
+/// coerência de todas as etapas antes de ler o catálogo. <see cref="ExigeCorrecaoIndependente"/> diz que o tipo da
+/// etapa pede mais de um corretor por candidato.
 /// </summary>
 public sealed record AvaliacaoParaCoerencia(
     bool NotaDeOrigemNoEnem,
@@ -14,4 +15,5 @@ public sealed record AvaliacaoParaCoerencia(
     string? RegraConsolidacaoCodigo = null,
     decimal? PassoDoLancamento = null,
     bool DeclaraItens = false,
-    bool DeclaraEscala = false);
+    bool DeclaraEscala = false,
+    bool ExigeCorrecaoIndependente = false);

@@ -126,4 +126,7 @@ public sealed record ProdutoDaEtapaDto(Guid Id, string AtoCodigo, string? Papel)
 /// Se a nota da etapa vem do ENEM, como congelado na etapa: é por ele, e não pelo cadastro
 /// atual nem pelo código, que o cliente reconhece a etapa de nota do ENEM.
 /// </param>
-public sealed record TipoEtapaSnapshotDto(Guid OrigemId, string Codigo, string Nome, bool NotaDeOrigemNoEnem);
+/// <param name="ExigeCorrecaoIndependente">
+/// Se as etapas do tipo são corrigidas por mais de um corretor, cada um independente dos outros, como congelado na etapa.
+/// </param>
+public sealed record TipoEtapaSnapshotDto(Guid OrigemId, string Codigo, string Nome, bool NotaDeOrigemNoEnem, bool ExigeCorrecaoIndependente);

@@ -76,6 +76,10 @@ public sealed class EtapaProcessoConfiguration : IEntityTypeConfiguration<EtapaP
                 .HasColumnName("tipo_etapa_nota_de_origem_no_enem")
                 .IsRequired()
                 .HasComment("Nota da etapa vem do ENEM, congelado do tipo junto com a identidade.");
+            tipo.Property(x => x.ExigeCorrecaoIndependente)
+                .HasColumnName("tipo_etapa_exige_correcao_independente")
+                .IsRequired()
+                .HasComment("Etapas do tipo são corrigidas por mais de um corretor, cada um independente dos outros; congelado do tipo e regravado com os demais sinalizadores.");
         });
         builder.Navigation(e => e.TipoEtapa).IsRequired();
 

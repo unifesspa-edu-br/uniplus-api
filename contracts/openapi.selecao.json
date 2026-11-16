@@ -24082,7 +24082,8 @@
           "origemId",
           "codigo",
           "nome",
-          "notaDeOrigemNoEnem"
+          "notaDeOrigemNoEnem",
+          "exigeCorrecaoIndependente"
         ],
         "type": "object",
         "properties": {
@@ -24097,6 +24098,9 @@
             "type": "string"
           },
           "notaDeOrigemNoEnem": {
+            "type": "boolean"
+          },
+          "exigeCorrecaoIndependente": {
             "type": "boolean"
           }
         }

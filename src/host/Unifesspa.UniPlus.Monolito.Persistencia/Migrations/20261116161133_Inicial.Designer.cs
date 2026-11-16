@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
 {
     [DbContext(typeof(MonolitoDbContext))]
-    [Migration("20261116152627_Inicial")]
+    [Migration("20261116161133_Inicial")]
     partial class Inicial
     {
         /// <inheritdoc />
@@ -19474,6 +19474,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasMaxLength(64)
                                 .HasColumnType("character varying(64)")
                                 .HasColumnName("tipo_etapa_codigo");
+
+                            b1.Property<bool>("ExigeCorrecaoIndependente")
+                                .HasColumnType("boolean")
+                                .HasColumnName("tipo_etapa_exige_correcao_independente")
+                                .HasComment("Etapas do tipo são corrigidas por mais de um corretor, cada um independente dos outros; congelado do tipo e regravado com os demais sinalizadores.");
 
                             b1.Property<string>("Nome")
                                 .IsRequired()

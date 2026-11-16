@@ -87,7 +87,8 @@ internal sealed class ConferenciaDaAvaliacaoDasEtapas(LeituraMemoizada<(string C
             regraConsolidacaoCodigo,
             etapa.Declarada.PassoDoLancamento,
             DeclaraItens: etapa.Declarada.ItensDeAvaliacao is { Count: > 0 },
-            DeclaraEscala: etapa.Declarada.EscalaDeAtendimento is { Count: > 0 }));
+            DeclaraEscala: etapa.Declarada.EscalaDeAtendimento is { Count: > 0 },
+            ExigeCorrecaoIndependente: etapa.ExigeCorrecaoIndependente));
 
     // A referência da regra sai do catálogo; a etapa sem regra declarada fica sem consolidação.
     private async Task<(EtapaConferida Etapa, IReadOnlyList<FieldError> Recusas)> ComConsolidacaoAsync(

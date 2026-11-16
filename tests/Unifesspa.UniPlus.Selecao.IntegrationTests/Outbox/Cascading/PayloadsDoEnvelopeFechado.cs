@@ -52,10 +52,10 @@ internal static class PayloadsDoEnvelopeFechado
     internal static readonly Guid TipoEtapaRedacaoOrigemId = new("019fee1e-7000-7000-8000-000000000002");
     internal static readonly Guid TipoEtapaEntrevistaOrigemId = new("019fee1e-7000-7000-8000-000000000003");
 
-    internal static object[] EtapasIniciais() =>
+    internal static object[] EtapasIniciais(Guid tipoBancaId) =>
     [
         new { nome = "Prova Objetiva", carater = (int)CaraterEtapa.Ambas, tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId, peso = 3.5000m, notaMinima = 40.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 1, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
-        new { nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 2, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
+        new { nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, notaMaxima = 100m, formaDeAvaliacao = "HUMANA", passoDoLancamento = 0.5000m, regraConsolidacaoCodigo = RegraConsolidacaoCodigo.CorrecaoIndependente, regraConsolidacaoVersao = "v1", ordem = 2, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = new object[] { BancaDoTipo(tipoBancaId) }, recursos = Array.Empty<object>() },
         new { nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, tipoEtapaOrigemId = TipoEtapaEntrevistaOrigemId, peso = (decimal?)null, notaMinima = 60.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 3, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
     ];
 
@@ -64,10 +64,10 @@ internal static class PayloadsDoEnvelopeFechado
     /// <c>DefinirEtapasCommandHandler.cs:64-77</c>) e o peso da Objetiva alterado — é a
     /// dimensão que muda sob a sessão editorial (passo 18).
     /// </summary>
-    internal static object[] EtapasComPesoAlterado(Guid objetivaId, Guid redacaoId, Guid entrevistaId) =>
+    internal static object[] EtapasComPesoAlterado(Guid objetivaId, Guid redacaoId, Guid entrevistaId, Guid tipoBancaId) =>
     [
         new { id = objetivaId, nome = "Prova Objetiva", carater = (int)CaraterEtapa.Ambas, tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId, peso = 4.0000m, notaMinima = 40.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 1, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
-        new { id = redacaoId, nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 2, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
+        new { id = redacaoId, nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, notaMaxima = 100m, formaDeAvaliacao = "HUMANA", passoDoLancamento = 0.5000m, regraConsolidacaoCodigo = RegraConsolidacaoCodigo.CorrecaoIndependente, regraConsolidacaoVersao = "v1", ordem = 2, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = new object[] { BancaDoTipo(tipoBancaId) }, recursos = Array.Empty<object>() },
         new { id = entrevistaId, nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, tipoEtapaOrigemId = TipoEtapaEntrevistaOrigemId, peso = (decimal?)null, notaMinima = 60.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 3, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
     ];
 

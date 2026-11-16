@@ -172,7 +172,7 @@ internal static class CorpusEnvelope
     /// carregue os dois valores do sinalizador e o round-trip prove ambos.
     /// </summary>
     internal static TipoEtapaSnapshot TipoEtapaEntrevista() =>
-        TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000003"), "ENTREVISTA", "Entrevista", admitePontuacao: false, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!;
+        TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000003"), "ENTREVISTA", "Entrevista", admitePontuacao: false, admiteEliminacao: true, notaDeOrigemNoEnem: false, exigeCorrecaoIndependente: true).Value!;
 
     /// <summary>
     /// Permuta a ORDEM DE ENTRADA de uma coleção não ordenada, sem mudar o conteúdo (Story

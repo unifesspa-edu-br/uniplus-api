@@ -19472,6 +19472,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                                 .HasColumnType("character varying(64)")
                                 .HasColumnName("tipo_etapa_codigo");
 
+                            b1.Property<bool>("ExigeCorrecaoIndependente")
+                                .HasColumnType("boolean")
+                                .HasColumnName("tipo_etapa_exige_correcao_independente")
+                                .HasComment("Etapas do tipo são corrigidas por mais de um corretor, cada um independente dos outros; congelado do tipo e regravado com os demais sinalizadores.");
+
                             b1.Property<string>("Nome")
                                 .IsRequired()
                                 .HasMaxLength(200)

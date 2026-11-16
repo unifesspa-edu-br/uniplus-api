@@ -98,7 +98,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         grupo.Should().BeEquivalentTo(new IdentificacaoDaEtapaDto(
             Nome: "Prova discursiva",
             Carater: CaraterEtapa.Eliminatoria,
-            TipoEtapa: new TipoEtapaSnapshotDto(TipoEtapaId, "PROVA_DISCURSIVA", "Prova discursiva", NotaDeOrigemNoEnem: true),
+            TipoEtapa: new TipoEtapaSnapshotDto(TipoEtapaId, "PROVA_DISCURSIVA", "Prova discursiva", NotaDeOrigemNoEnem: true, ExigeCorrecaoIndependente: false),
             Ordem: 4,
             FaseCodigo: "AVALIACAO"));
     }

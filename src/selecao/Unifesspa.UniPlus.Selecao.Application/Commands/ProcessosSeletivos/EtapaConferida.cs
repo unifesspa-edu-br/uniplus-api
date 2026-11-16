@@ -35,6 +35,10 @@ internal sealed record EtapaConferida(
     /// <summary>Se a nota da etapa vem do ENEM: o snapshot congelado enquanto o vínculo não muda, o tipo lido quando muda.</summary>
     public bool NotaDeOrigemNoEnem => VinculoInalterado ? Existente!.TipoEtapa.NotaDeOrigemNoEnem : TipoLido!.NotaDeOrigemNoEnem;
 
+    /// <summary>Se o tipo da etapa exige correção independente: o snapshot congelado enquanto o vínculo não muda, o tipo lido quando muda.</summary>
+    public bool ExigeCorrecaoIndependente =>
+        VinculoInalterado ? Existente!.TipoEtapa.ExigeCorrecaoIndependente : TipoLido!.ExigeCorrecaoIndependente;
+
     public static EtapaConferida De(EtapaProcessoInput declarada, IReadOnlyDictionary<Guid, EtapaProcesso> existentes) =>
         new(declarada, declarada.Id is { } id && existentes.TryGetValue(id, out EtapaProcesso? existente) ? existente : null);
 }

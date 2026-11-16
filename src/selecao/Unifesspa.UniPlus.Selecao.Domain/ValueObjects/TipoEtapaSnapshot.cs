@@ -19,7 +19,7 @@ public sealed record TipoEtapaSnapshot
     private TipoEtapaSnapshot() { }
 
     private TipoEtapaSnapshot(
-        Guid origemId, string codigo, string nome, bool admitePontuacao, bool admiteEliminacao, bool notaDeOrigemNoEnem)
+        Guid origemId, string codigo, string nome, bool admitePontuacao, bool admiteEliminacao, bool notaDeOrigemNoEnem, bool exigeCorrecaoIndependente)
     {
         OrigemId = origemId;
         Codigo = codigo;
@@ -27,6 +27,7 @@ public sealed record TipoEtapaSnapshot
         AdmitePontuacao = admitePontuacao;
         AdmiteEliminacao = admiteEliminacao;
         NotaDeOrigemNoEnem = notaDeOrigemNoEnem;
+        ExigeCorrecaoIndependente = exigeCorrecaoIndependente;
     }
 
     /// <remarks>Usado apenas na construção; a identidade é persistida no próprio snapshot.</remarks>
@@ -46,13 +47,20 @@ public sealed record TipoEtapaSnapshot
     /// </summary>
     public bool NotaDeOrigemNoEnem { get; private set; }
 
+    /// <summary>
+    /// Se as etapas do tipo são corrigidas por mais de um corretor, cada um independente dos outros, quando o tipo foi
+    /// congelado. Regravado com os demais sinalizadores quando o caráter da etapa muda.
+    /// </summary>
+    public bool ExigeCorrecaoIndependente { get; private set; }
+
     public static Result<TipoEtapaSnapshot> Criar(
         Guid origemId,
         string codigo,
         string nome,
         bool admitePontuacao,
         bool admiteEliminacao,
-        bool notaDeOrigemNoEnem)
+        bool notaDeOrigemNoEnem,
+        bool exigeCorrecaoIndependente = false)
     {
         if (origemId == Guid.Empty)
         {
@@ -86,6 +94,15 @@ public sealed record TipoEtapaSnapshot
                 "Snapshot do tipo de etapa com nota de origem no ENEM deve admitir compor a nota final.");
         }
 
+        // A nota do ENEM vem do INEP e ninguém a corrige: o cadastro não admite o tipo que reúna as duas coisas, e
+        // o envelope que chegasse assim reporia uma etapa de nota do ENEM que exige correção.
+        if (notaDeOrigemNoEnem && exigeCorrecaoIndependente)
+        {
+            return Falha(
+                "TipoEtapaSnapshot.CorrecaoIndependenteComNotaDeOrigemNoEnem",
+                "Snapshot do tipo de etapa com nota de origem no ENEM não pode exigir correção independente: a nota vem do INEP.");
+        }
+
         // NFC na fronteira de congelamento (mesma normalização do payload canônico,
         // HashCanonicalComputer.NormalizeNfc): sem isso, o mesmo código digitado em forma
         // decomposta aqui e recomposta (NFC) ao serializar no envelope vira dois valores
@@ -112,7 +129,7 @@ public sealed record TipoEtapaSnapshot
         }
 
         return Result<TipoEtapaSnapshot>.Success(new TipoEtapaSnapshot(
-            origemId, codigoNormalizado, nomeNormalizado, admitePontuacao, admiteEliminacao, notaDeOrigemNoEnem));
+            origemId, codigoNormalizado, nomeNormalizado, admitePontuacao, admiteEliminacao, notaDeOrigemNoEnem, exigeCorrecaoIndependente));
     }
 
     /// <summary>
@@ -125,9 +142,10 @@ public sealed record TipoEtapaSnapshot
     /// cadastro, que já as cumpre; uma recusa aqui é erro de programação, não dado de entrada,
     /// e por isso lança em vez de devolver <c>Result</c>.
     /// </remarks>
-    public TipoEtapaSnapshot ComSinalizadores(bool admitePontuacao, bool admiteEliminacao)
+    public TipoEtapaSnapshot ComSinalizadores(bool admitePontuacao, bool admiteEliminacao, bool exigeCorrecaoIndependente)
     {
-        Result<TipoEtapaSnapshot> relido = Criar(OrigemId, Codigo, Nome, admitePontuacao, admiteEliminacao, NotaDeOrigemNoEnem);
+        Result<TipoEtapaSnapshot> relido = Criar(
+            OrigemId, Codigo, Nome, admitePontuacao, admiteEliminacao, NotaDeOrigemNoEnem, exigeCorrecaoIndependente);
         return relido.IsSuccess
             ? relido.Value!
             : throw new ArgumentException(relido.Error!.Message, nameof(admitePontuacao));

@@ -173,7 +173,7 @@ public sealed class DefinirEtapasCaraterDoTipoTests
             new IdentificacaoDaEtapa(Nome: "Objetiva I", Carater: CaraterEtapa.Classificatoria, TipoEtapa: congelado, Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         EtapaProcesso segunda = EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: "Objetiva II", Carater: CaraterEtapa.Classificatoria, TipoEtapa: congelado.ComSinalizadores(true, true), Ordem: 2, FaseCodigo: null),
+            new IdentificacaoDaEtapa(Nome: "Objetiva II", Carater: CaraterEtapa.Classificatoria, TipoEtapa: congelado.ComSinalizadores(true, true, false), Ordem: 2, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         processo.DefinirEtapas([primeira, segunda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();

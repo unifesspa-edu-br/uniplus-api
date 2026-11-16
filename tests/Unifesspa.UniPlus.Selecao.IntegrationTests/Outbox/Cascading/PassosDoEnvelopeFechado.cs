@@ -128,7 +128,7 @@ internal static class PassosDoEnvelopeFechado
     internal static async Task DeclararEtapasAsync(Cenario c)
     {
         await ExecutarPassoAsync(() => c.Ctx.PutCronogramaFasesAsync(), HttpStatusCode.NoContent, "PUT cronograma-fases", "/cronograma-fases");
-        await ExecutarPassoAsync(() => c.Ctx.PutEtapasAsync(EtapasIniciais(), ifMatch: null), HttpStatusCode.NoContent, "PUT etapas", "/etapas");
+        await ExecutarPassoAsync(() => c.Ctx.PutEtapasAsync(EtapasIniciais(c.Ctx.Catalogos.TipoBancaId), ifMatch: null), HttpStatusCode.NoContent, "PUT etapas", "/etapas");
 
         ProcessoSeletivoDto processo = await c.Ctx.ObterProcessoAsync();
         c.ObjetivaId = processo.Etapas.Single(e => e.Identificacao.Nome == "Prova Objetiva").Id;
@@ -263,7 +263,7 @@ internal static class PassosDoEnvelopeFechado
     // NOVO. Chave de idempotência nova por requisição: nunca reutilizar.
     internal static async Task AlterarEtapasSobASessaoAsync(Cenario c)
     {
-        object[] etapasAlteradas = EtapasComPesoAlterado(c.ObjetivaId, c.RedacaoId, c.EntrevistaId);
+        object[] etapasAlteradas = EtapasComPesoAlterado(c.ObjetivaId, c.RedacaoId, c.EntrevistaId, c.Ctx.Catalogos.TipoBancaId);
         HttpResponseMessage mutacao = await ExecutarPassoAsync(
             () => c.Ctx.PutEtapasAsync(etapasAlteradas, c.EtagDaAbertura),
             HttpStatusCode.NoContent, "PUT etapas sob sessão", "/etapas");

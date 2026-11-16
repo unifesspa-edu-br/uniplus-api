@@ -12,19 +12,22 @@ public sealed record CodigosDoProcedimentoDeRecurso(
     string Duplicado,
     string Conflitante,
     string AlvoInexistente,
-    string ParaDecisaoNaoDeclarada)
+    string ParaDecisaoNaoDeclarada,
+    string Ausente)
 {
     public static CodigosDoProcedimentoDeRecurso DaEtapa { get; } = new(
         "RecursoDaEtapa.ProcedimentoDeRecursoDesconhecido",
         "RecursoDaEtapa.ProcedimentoDeRecursoDuplicado",
         "RecursoDaEtapa.ProcedimentoDeRecursoConflitante",
         "RecursoDaEtapa.AlvoDoProcedimentoDeRecursoInexistente",
-        "RecursoDaEtapa.ProcedimentoParaDecisaoNaoDeclarada");
+        "RecursoDaEtapa.ProcedimentoParaDecisaoNaoDeclarada",
+        "RecursoDaEtapa.ProcedimentoDeRecursoAusente");
 
     public static CodigosDoProcedimentoDeRecurso DaFase { get; } = new(
         "RegraRecursoFase.ProcedimentoDeRecursoDesconhecido",
         "RegraRecursoFase.ProcedimentoDeRecursoDuplicado",
         "RegraRecursoFase.ProcedimentoDeRecursoConflitante",
         "RegraRecursoFase.AlvoDoProcedimentoDeRecursoInexistente",
-        "RegraRecursoFase.ProcedimentoParaDecisaoNaoDeclarada");
+        "RegraRecursoFase.ProcedimentoParaDecisaoNaoDeclarada",
+        "RegraRecursoFase.ProcedimentoDeRecursoAusente");
 }

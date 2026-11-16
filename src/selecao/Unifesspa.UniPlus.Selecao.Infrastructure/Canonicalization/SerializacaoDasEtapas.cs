@@ -140,5 +140,6 @@ internal static class SerializacaoDasEtapas
         ["admitePontuacao"] = etapa.TipoEtapa.AdmitePontuacao,
         ["admiteEliminacao"] = etapa.TipoEtapa.AdmiteEliminacao,
         ["notaDeOrigemNoEnem"] = etapa.TipoEtapa.NotaDeOrigemNoEnem,
+        ["exigeCorrecaoIndependente"] = etapa.TipoEtapa.ExigeCorrecaoIndependente,
     };
 }

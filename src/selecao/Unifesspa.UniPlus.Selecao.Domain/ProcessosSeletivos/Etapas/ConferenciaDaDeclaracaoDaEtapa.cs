@@ -46,7 +46,8 @@ public static class ConferenciaDaDeclaracaoDaEtapa
         List<FieldError> erros = ValidarFormaBasica(identificacao.Nome, identificacao.Carater, identificacao.Ordem, avaliacao, itens);
         erros.AddRange(CoerenciaDaAvaliacaoDaEtapa.Validar(new AvaliacaoParaCoerencia(
             identificacao.TipoEtapa.NotaDeOrigemNoEnem, avaliacao.FormaDeAvaliacao, avaliacao.RegraConsolidacao?.Codigo,
-            avaliacao.PassoDoLancamento, DeclaraItens: itens?.Count > 0, DeclaraEscala: avaliacao.EscalaDeAtendimento?.Count > 0)));
+            avaliacao.PassoDoLancamento, DeclaraItens: itens?.Count > 0, DeclaraEscala: avaliacao.EscalaDeAtendimento?.Count > 0,
+            ExigeCorrecaoIndependente: identificacao.TipoEtapa.ExigeCorrecaoIndependente)));
 
         return erros;
     }

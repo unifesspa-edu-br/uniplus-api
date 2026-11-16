@@ -153,7 +153,7 @@ internal static class CorpusEnvelopeEtapas
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
             new ArgsRegraPrazoRecurso(48.0000m, UnidadePrazo.Horas, null, null, false, null, null),
             Guid.Empty,
-            ProcedimentosDeRecurso.Nenhum).Value!;
+            ProcedimentosDoCorpusSemAlvo()).Value!;
 
     internal static EtapaProcesso EtapaRedacao(int variante) =>
         EtapaProcesso.Reidratar(

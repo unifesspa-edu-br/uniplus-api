@@ -30,7 +30,7 @@ internal static class ProjecaoDaEtapaDoProcesso
         etapa.FaseCodigo);
 
     private static TipoEtapaSnapshotDto ProjetarTipoDeEtapa(TipoEtapaSnapshot tipo) =>
-        new(tipo.OrigemId, tipo.Codigo, tipo.Nome, tipo.NotaDeOrigemNoEnem);
+        new(tipo.OrigemId, tipo.Codigo, tipo.Nome, tipo.NotaDeOrigemNoEnem, tipo.ExigeCorrecaoIndependente);
 
     private static NotaDaEtapaDto ProjetarNota(EtapaProcesso etapa) => new(
         Peso: etapa.Peso,

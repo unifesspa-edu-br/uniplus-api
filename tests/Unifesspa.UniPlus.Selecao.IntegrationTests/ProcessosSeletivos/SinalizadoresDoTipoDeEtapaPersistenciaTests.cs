@@ -57,7 +57,7 @@ public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<
 
             // O caminho do handler quando o caráter da etapa muda e o tipo relido passou a pontuar.
             tracked.AtualizarDados(
-                new IdentificacaoDaEtapa(Nome: "Análise documental", Carater: CaraterEtapa.Ambas, TipoEtapa: tracked.TipoEtapa.ComSinalizadores(true, true), Ordem: 1, FaseCodigo: null),
+                new IdentificacaoDaEtapa(Nome: "Análise documental", Carater: CaraterEtapa.Ambas, TipoEtapa: tracked.TipoEtapa.ComSinalizadores(true, true, false), Ordem: 1, FaseCodigo: null),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: 5m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null))
                 .IsSuccess.Should().BeTrue();
             await configureContext.SaveChangesAsync(CancellationToken.None);
@@ -103,7 +103,7 @@ public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<
             carregado.Etapas.Single(e => e.Id == prova.Id).DeclaraNotaDoEnem.Should().BeFalse();
 
             tracked.AtualizarDados(
-                new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: tracked.TipoEtapa.ComSinalizadores(true, false), Ordem: 1, FaseCodigo: null),
+                new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: tracked.TipoEtapa.ComSinalizadores(true, false, false), Ordem: 1, FaseCodigo: null),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null))
                 .IsSuccess.Should().BeTrue();
             await configureContext.SaveChangesAsync(CancellationToken.None);
@@ -115,5 +115,43 @@ public sealed class SinalizadoresDoTipoDeEtapaPersistenciaTests : IClassFixture<
         TipoEtapaSnapshot regravado = recarregado.Etapas.Single(e => e.Id == doEnem.Id).TipoEtapa;
         regravado.AdmiteEliminacao.Should().BeFalse("a regravação dos sinalizadores chegou ao banco");
         regravado.NotaDeOrigemNoEnem.Should().BeTrue("a regravação dos sinalizadores preserva a identidade");
+    }
+
+    [Fact(DisplayName = "A correção independente congelada sobrevive ao banco e a regravação dos sinalizadores a relê")]
+    public async Task CorrecaoIndependente_PersisteERegravacaoARele()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2028 — Redação", TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        EtapaProcesso redacao = EtapaProcesso.Criar(
+            new IdentificacaoDaEtapa(
+                Nome: "Redação", Carater: CaraterEtapa.Classificatoria,
+                TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "REDACAO", "Redação", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false, exigeCorrecaoIndependente: true).Value!,
+                Ordem: 1, FaseCodigo: null),
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
+        processo.DefinirEtapas([redacao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
+        {
+            await ProcessoSeletivoRepositoryDeTeste.Criar(writeContext).AdicionarAsync(processo, CancellationToken.None);
+            await writeContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using (UniPlusDbContext configureContext = _fixture.CreateDbContext())
+        {
+            ProcessoSeletivo carregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(configureContext)
+                .ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
+            EtapaProcesso tracked = carregado.Etapas.Single();
+            tracked.TipoEtapa.ExigeCorrecaoIndependente.Should().BeTrue("o sinalizador congelado chegou ao banco");
+
+            tracked.AtualizarDados(
+                new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: tracked.TipoEtapa.ComSinalizadores(true, true, false), Ordem: 1, FaseCodigo: null),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null))
+                .IsSuccess.Should().BeTrue();
+            await configureContext.SaveChangesAsync(CancellationToken.None);
+        }
+
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivo recarregado = (await ProcessoSeletivoRepositoryDeTeste.Criar(readContext)
+            .ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
+        recarregado.Etapas.Single().TipoEtapa.ExigeCorrecaoIndependente.Should().BeFalse("a regravação dos sinalizadores chegou ao banco");
     }
 }

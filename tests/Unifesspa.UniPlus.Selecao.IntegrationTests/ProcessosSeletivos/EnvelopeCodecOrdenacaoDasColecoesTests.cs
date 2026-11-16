@@ -250,6 +250,7 @@ public sealed class EnvelopeCodecOrdenacaoDasColecoesTests
     [InlineData("etapas.0.notaMinima", "12.3400")]
     [InlineData("etapas.0.carater", "Classificatoria")]
     [InlineData("etapas.1.tipoEtapa.notaDeOrigemNoEnem", "true")]
+    [InlineData("etapas.2.tipoEtapa.exigeCorrecaoIndependente", "false")]
     [InlineData("periodo.numero", "099/2026")]
     [InlineData("periodo.inicio", "2026-03-09T03:00:00Z")]
     [InlineData("periodo.fim", "2026-04-30T02:59:59Z")]

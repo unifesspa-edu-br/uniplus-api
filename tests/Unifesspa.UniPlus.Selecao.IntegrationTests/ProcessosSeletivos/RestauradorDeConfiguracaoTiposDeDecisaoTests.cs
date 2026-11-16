@@ -56,10 +56,10 @@ public sealed class RestauradorDeConfiguracaoTiposDeDecisaoTests
     public void Restaurar_AindaNaoPreservaOsTiposDeDecisaoDaEtapaNaRaizViva()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        EtapaDeProvaObjetivaDe(processo).DefinirTiposDeDecisao([TipoDeClassificacao, TipoDeIsencaoDaTaxa]).IsSuccess.Should().BeTrue();
+        EtapaDeProvaObjetivaDe(processo).DefinirTiposDeDecisao([TipoDeClassificacao]).IsSuccess.Should().BeTrue();
         VersaoConfiguracao versao = PublicadoCongelandoTudo(processo);
         EtapaDeProvaObjetivaDe(processo).TiposDeDecisao.Should().Equal(
-            [TipoDeClassificacao, TipoDeIsencaoDaTaxa], "pré-condição: a etapa publicada declarava os tipos");
+            [TipoDeClassificacao], "pré-condição: a etapa publicada declarava os tipos");
 
         ReporORestauradoNaRaizViva(processo, versao);
 

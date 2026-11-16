@@ -5472,6 +5472,11 @@
       "titulo": "A etapa de nota do ENEM não declara forma de avaliação nem regra de consolidação"
     },
     {
+      "codigo": "uniplus.selecao.etapa_processo.avaliacao_unica_em_tipo_que_exige_correcao_independente",
+      "status": 422,
+      "titulo": "O tipo da etapa exige correção independente, e a avaliação única tem um só corretor"
+    },
+    {
       "codigo": "uniplus.selecao.etapa_processo.banca_duplicada_na_etapa",
       "status": 422,
       "titulo": "O mesmo tipo de banca foi requerido duas vezes na etapa"
@@ -5505,6 +5510,11 @@
       "codigo": "uniplus.selecao.etapa_processo.forma_de_avaliacao_desconhecida",
       "status": 422,
       "titulo": "A forma de avaliação declarada não existe: use OBJETIVA ou HUMANA"
+    },
+    {
+      "codigo": "uniplus.selecao.etapa_processo.forma_objetiva_em_tipo_que_exige_correcao_independente",
+      "status": 422,
+      "titulo": "O tipo da etapa exige correção independente, que só existe na avaliação humana"
     },
     {
       "codigo": "uniplus.selecao.etapa_processo.itens_na_etapa_do_enem",
@@ -7712,6 +7722,11 @@
       "titulo": "O prazo de interposição precisa declarar dias úteis ou horas"
     },
     {
+      "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_de_recurso_ausente",
+      "status": 422,
+      "titulo": "A janela de recurso não declara procedimento para toda matéria que a decisão recorrida cobre"
+    },
+    {
       "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_de_recurso_conflitante",
       "status": 422,
       "titulo": "O tipo de decisão tem procedimento sem alvo e procedimento com alvo ao mesmo tempo"
@@ -7900,6 +7915,11 @@
       "codigo": "uniplus.selecao.regra_recurso_fase.prazo_sem_unidade_declaravel",
       "status": 422,
       "titulo": "O prazo de interposição precisa declarar dias úteis ou horas"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_de_recurso_ausente",
+      "status": 422,
+      "titulo": "A janela de recurso não declara procedimento para toda matéria que a decisão recorrida cobre"
     },
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_de_recurso_conflitante",

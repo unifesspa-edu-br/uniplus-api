@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -30,18 +31,20 @@ internal sealed record PortoesDeIdentificacao(
     internal Func<DomainError?>[] EmOrdem() => [IdentificadorLegivel, Localidade, AlgoritmoDeContagem, CalendarioVigente];
 }
 
-/// <summary>Os portões da estrutura da configuração: conformidade, cronograma e bancas.</summary>
+/// <summary>Os portões da estrutura da configuração: conformidade, cronograma, procedimentos de recurso e bancas.</summary>
 internal sealed record PortoesDaEstrutura(
     Func<DomainError?> Conformidade,
     Func<DomainError?> Cronograma,
+    Func<DomainError?> ProcedimentosDeRecurso,
     Func<DomainError?> Bancas)
 {
     internal static PortoesDaEstrutura Para(EstadoDaConfiguracao estado, PedidoDeCongelamento pedido) => new(
         Conformidade: () => ChecklistDeConformidade.PendenciaDeConformidade(estado),
         Cronograma: () => PendenciasDoCronograma.PendenciaDoCronograma(estado, pedido.Contexto.FusoInstitucional),
+        ProcedimentosDeRecurso: () => PendenciasDosProcedimentosDeRecurso.PendenciaDosProcedimentosDeRecurso(estado),
         Bancas: () => PendenciasDasBancas.PendenciaDasBancas(estado, pedido.Corretores));
 
-    internal Func<DomainError?>[] EmOrdem() => [Conformidade, Cronograma, Bancas];
+    internal Func<DomainError?>[] EmOrdem() => [Conformidade, Cronograma, ProcedimentosDeRecurso, Bancas];
 }
 
 /// <summary>Os portões dos tipos de ato que o cronograma declara.</summary>
