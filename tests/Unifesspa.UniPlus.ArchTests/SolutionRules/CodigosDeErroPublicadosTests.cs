@@ -5,9 +5,13 @@ using System.Text.Json;
 
 using AwesomeAssertions;
 
+using Microsoft.AspNetCore.Mvc;
+
 using Unifesspa.UniPlus.ArchTests.TestSupport;
 using Unifesspa.UniPlus.ArchTests.TestSupport.CodigosDeErro;
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
+
+using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 /// <summary>
 /// O arquivo <c>contracts/codigos-de-erro.json</c> é a lista dos códigos de erro de fio que a API
@@ -68,23 +72,28 @@ public sealed class CodigosDeErroPublicadosTests
         foraDoPadrao.Should().BeEmpty("o código de fio é uniplus.<módulo>.<assunto>.<motivo>, e o lint do portal parte desse prefixo");
     }
 
-    [Fact(DisplayName = "Todo módulo de negócio contribui com registro de erros para o catálogo")]
-    public void TodoModuloContribuiComRegistroDeErros()
+    [Fact(DisplayName = "Todo módulo cuja API expõe controller contribui com registro de erros para o catálogo")]
+    public void TodoModuloComControllerContribuiComRegistroDeErros()
     {
-        HashSet<string> assembliesComRegistro =
-        [
-            .. RegistrosDeErroDaSolucao.Instanciar().Select(static r => r.GetType().Assembly.GetName().Name!),
-        ];
+        HashSet<string> comRegistro = AssembliesDeApiComRegistroDeErros();
+        string[] comController = AssembliesDeApiComController();
 
-        string[] semRegistro =
-        [
-            .. ModulosDoMonolito.Nomes
-                .Select(static modulo => $"Unifesspa.UniPlus.{modulo}.API")
-                .Where(api => !assembliesComRegistro.Contains(api)),
-        ];
-
-        semRegistro.Should().BeEmpty("a descoberta não achou registro de erros na API destes módulos, e os códigos deles ficariam fora do catálogo");
+        comController.Should().NotBeEmpty("sem nenhum controller a conferência não confere nada");
+        comController.Where(api => !comRegistro.Contains(api)).Should().BeEmpty(
+            "a descoberta não achou registro de erros na API destes módulos, e os códigos deles ficariam fora do catálogo");
     }
+
+    private static HashSet<string> AssembliesDeApiComRegistroDeErros() =>
+        [.. RegistrosDeErroDaSolucao.Instanciar().Select(static r => r.GetType().Assembly.GetName().Name!)];
+
+    private static string[] AssembliesDeApiComController() =>
+    [
+        .. Classes().That().AreAssignableTo(typeof(ControllerBase)).And().AreNotAbstract()
+            .GetObjects(ArquiteturaDasTravas.Produto)
+            .Select(static c => c.Assembly.Name)
+            .Where(static nome => nome.StartsWith("Unifesspa.UniPlus.", StringComparison.Ordinal))
+            .Distinct(),
+    ];
 
     private static void RegerarSeSolicitado(string caminho, string gerado)
     {

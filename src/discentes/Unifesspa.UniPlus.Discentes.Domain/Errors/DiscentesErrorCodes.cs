@@ -4,9 +4,8 @@ namespace Unifesspa.UniPlus.Discentes.Domain.Errors;
 /// Códigos dos erros de domínio do módulo Discentes.
 /// </summary>
 /// <remarks>
-/// Existem como constantes, e não como texto solto no ponto de uso, para que o catálogo
-/// de erros possa ser conferido contra o que o módulo declara — um código escrito
-/// diretamente na chamada só se descobre lendo todo o código-fonte.
+/// Os códigos identificam a recusa nos value objects, nos testes e na mensagem da exceção de
+/// reidratação. Nenhum chega a uma resposta HTTP, porque o módulo não tem endpoints.
 /// </remarks>
 public static class DiscentesErrorCodes
 {
