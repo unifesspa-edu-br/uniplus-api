@@ -53,7 +53,7 @@ public sealed class RegraDeHomologacaoDasInscricoesTests
         Result<RegraDeHomologacaoDasInscricoes> resultado = RegraDeHomologacaoDasInscricoes.Criar(resultadoAtoCodigo, []);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado);
+        resultado.Error!.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
     }
 
     [Fact(DisplayName = "Regras com as mesmas alternativas na mesma ordem têm o mesmo conteúdo; a ordem diferente as distingue")]

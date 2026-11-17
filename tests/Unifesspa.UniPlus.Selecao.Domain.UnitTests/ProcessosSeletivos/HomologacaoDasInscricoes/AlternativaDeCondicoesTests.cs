@@ -31,7 +31,7 @@ public sealed class AlternativaDeCondicoesTests
         Result<AlternativaDeCondicoes> resultado = AlternativaDeCondicoes.Criar([]);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(HomologacaoInscricaoErrorCodes.AlternativaSemCondicao);
+        resultado.Error!.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.AlternativaSemCondicao);
     }
 
     [Fact(DisplayName = "Alternativa com condição nula é recusada")]

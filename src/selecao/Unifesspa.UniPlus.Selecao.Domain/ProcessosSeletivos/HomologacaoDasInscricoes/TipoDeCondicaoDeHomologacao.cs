@@ -31,5 +31,5 @@ public static class TiposDeCondicaoDeHomologacao
     };
 
     internal static DomainError CondicaoNaoDisponivel(string mensagem) =>
-        new(HomologacaoInscricaoErrorCodes.CondicaoNaoDisponivel, mensagem);
+        new(HomologacaoDasInscricoesErrorCodes.CondicaoNaoDisponivel, mensagem);
 }

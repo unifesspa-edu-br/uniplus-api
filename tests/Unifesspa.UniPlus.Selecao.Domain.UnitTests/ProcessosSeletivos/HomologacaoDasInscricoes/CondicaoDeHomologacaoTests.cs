@@ -74,7 +74,7 @@ public sealed class CondicaoDeHomologacaoTests
             TipoDeCondicaoDeHomologacao.ResultadoNoRetornoDoInep, edicao, "SEM_RESULTADO_INEP", enquadramento: null);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(HomologacaoInscricaoErrorCodes.EdicaoDoExameInvalida);
+        resultado.Error!.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.EdicaoDoExameInvalida);
     }
 
     [Theory(DisplayName = "Condição sem o código do motivo desfavorável, ou com código fora do formato, é recusada com o erro do código do motivo")]
@@ -96,6 +96,6 @@ public sealed class CondicaoDeHomologacaoTests
         Result<CondicaoDeHomologacao> resultado = CondicaoDeHomologacao.Criar(
             (TipoDeCondicaoDeHomologacao)99, 2026, "SEM_RESULTADO_INEP", enquadramento: null);
 
-        resultado.Error!.Code.Should().Be(HomologacaoInscricaoErrorCodes.CondicaoNaoDisponivel);
+        resultado.Error!.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.CondicaoNaoDisponivel);
     }
 }

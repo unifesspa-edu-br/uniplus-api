@@ -64,7 +64,7 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
 
         faltas.Should().ContainSingle();
         faltas[0].Field.Should().Be("regraDeHomologacao.resultadoAtoCodigo");
-        faltas[0].Error.Code.Should().Be(HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado);
+        faltas[0].Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
         faltas[0].Error.Message.Should().Be("O resultado indicado pela regra deve ser publicado nesta fase, com resultado definitivo nela ou na fase que a conclui.");
     }
 
@@ -74,7 +74,7 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
         FaseCronograma fase = FaseQueHomologa(1, "HOMOLOGACAO_INSCRICOES");
 
         Faltas(Regra(), fase).Should().ContainSingle()
-            .Which.Error.Code.Should().Be(HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado);
+            .Which.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
     }
 
     [Fact(DisplayName = "Fase com mais de um resultado aceita a regra: só o apontado leva a lista")]
@@ -91,7 +91,7 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
         FaseCronograma fase = FaseQueHomologa(1, "HOMOLOGACAO_INSCRICOES", [Preliminar()]);
 
         Faltas(Regra(), fase).Should().ContainSingle()
-            .Which.Error.Code.Should().Be(HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado);
+            .Which.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
     }
 
     [Fact(DisplayName = "O definitivo publicado pela fase concluinte do cronograma basta")]
@@ -110,7 +110,7 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
         FaseCronograma concluinte = Fase(2, "RESULTADO_FINAL", [Definitivo("OUTRO_RESULTADO")]);
 
         Faltas(Regra(), fase, exame: false, concluinte).Should().ContainSingle()
-            .Which.Error.Code.Should().Be(HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado);
+            .Which.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
     }
 
     [Fact(DisplayName = "O definitivo publicado por outra fase que não é a concluinte declarada não basta")]
@@ -121,7 +121,7 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
         FaseCronograma outra = Fase(3, "OUTRA_FASE", [Definitivo()]);
 
         Faltas(Regra(), fase, exame: false, concluinte, outra).Should().ContainSingle()
-            .Which.Error.Code.Should().Be(HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado);
+            .Which.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
     }
 
     [Fact(DisplayName = "Importação de exame com regra vazia é recusada: falta a confirmação do INEP entre as condições")]
@@ -131,7 +131,7 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
 
         faltas.Should().ContainSingle();
         faltas[0].Field.Should().Be("regraDeHomologacao.alternativas");
-        faltas[0].Error.Code.Should().Be(HomologacaoInscricaoErrorCodes.ConfirmacaoDoInepAusente);
+        faltas[0].Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ConfirmacaoDoInepAusente);
     }
 
     [Fact(DisplayName = "Importação de exame com a confirmação do INEP em todas as alternativas não tem falta")]
@@ -151,7 +151,7 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
             Alternativa(ConfirmacaoDoInepSoParaAmpla(2026, "SEM_RESULTADO_INEP")));
 
         Faltas(regra, FaseComListaFechada(), exame: true).Should().ContainSingle()
-            .Which.Error.Code.Should().Be(HomologacaoInscricaoErrorCodes.ConfirmacaoDoInepAusente);
+            .Which.Error.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ConfirmacaoDoInepAusente);
     }
 
     [Fact(DisplayName = "Sem nota importada de exame, a regra vazia é aceita pela conferência (o aviso é à parte)")]
@@ -167,8 +167,8 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
 
         faltas.Select(f => f.Error.Code).Should().Equal(
             MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado,
-            HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado,
-            HomologacaoInscricaoErrorCodes.ConfirmacaoDoInepAusente);
+            HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado,
+            HomologacaoDasInscricoesErrorCodes.ConfirmacaoDoInepAusente);
     }
 
     private static FaseCronograma FaseConcluidaPor(string concluinte, IReadOnlyList<ProdutoDaFase> produtos) =>

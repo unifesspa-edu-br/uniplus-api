@@ -43,7 +43,7 @@ public sealed record RegraDeHomologacaoDasInscricoes
 
         return string.IsNullOrWhiteSpace(resultadoAtoCodigo)
             ? Result<RegraDeHomologacaoDasInscricoes>.Failure(new DomainError(
-                HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado,
+                HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado,
                 "A regra de homologação precisa apontar o resultado da fase que publica a lista."))
             : Result<RegraDeHomologacaoDasInscricoes>.Success(
                 new RegraDeHomologacaoDasInscricoes(resultadoAtoCodigo.Trim(), [.. alternativas]));

@@ -71,7 +71,7 @@ public sealed class LeituraDaRegraDeHomologacaoDaFaseTests
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao(Condicao(null, 2025, Motivo))));
 
         lidos.Cronograma.CronogramaFases.Single().RegraDeHomologacao.Should().BeNull();
-        PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0/condicoes/0", HomologacaoInscricaoErrorCodes.CondicaoNaoDisponivel));
+        PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0/condicoes/0", HomologacaoDasInscricoesErrorCodes.CondicaoNaoDisponivel));
     }
 
     [Fact(DisplayName = "Edição do exame inválida e motivo mal formado na mesma alternativa acumulam as duas causas, cada uma na sua condição")]
@@ -97,7 +97,7 @@ public sealed class LeituraDaRegraDeHomologacaoDaFaseTests
         recusas.Select(static parte => parte.Ponteiro).Should().Equal(
             $"{CaminhoDaRegra}/alternativas/0/condicoes/0",
             $"{CaminhoDaRegra}/alternativas/0/condicoes/0");
-        recusas[0].Item2.Should().Be(HomologacaoInscricaoErrorCodes.EdicaoDoExameInvalida);
+        recusas[0].Item2.Should().Be(HomologacaoDasInscricoesErrorCodes.EdicaoDoExameInvalida);
         recusas[1].Item2.Should().Be(MotivoDeDecisaoErrorCodes.CodigoObrigatorio);
     }
 
@@ -106,7 +106,7 @@ public sealed class LeituraDaRegraDeHomologacaoDaFaseTests
     {
         IdentificacaoECronogramaLidos lidos = Ler(Documento(ComHomologacao()));
 
-        PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0", HomologacaoInscricaoErrorCodes.AlternativaSemCondicao));
+        PartesRecusadas(lidos).Should().Equal(($"{CaminhoDaRegra}/alternativas/0", HomologacaoDasInscricoesErrorCodes.AlternativaSemCondicao));
     }
 
     [Fact(DisplayName = "O resultado ausente recusa a regra no campo do resultado")]
@@ -117,7 +117,7 @@ public sealed class LeituraDaRegraDeHomologacaoDaFaseTests
             Publicacoes = new([], false, null, new RegraDeHomologacaoNoDocumento(null, [])),
         };
 
-        PartesRecusadas(Ler(Documento(fase))).Should().Equal(($"{CaminhoDaRegra}/resultadoAtoCodigo", HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado));
+        PartesRecusadas(Ler(Documento(fase))).Should().Equal(($"{CaminhoDaRegra}/resultadoAtoCodigo", HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado));
     }
 
     [Fact(DisplayName = "A fase sem regra de homologação não tem parte recusada")]

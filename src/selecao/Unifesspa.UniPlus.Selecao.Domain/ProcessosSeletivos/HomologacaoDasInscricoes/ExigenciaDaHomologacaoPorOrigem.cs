@@ -65,7 +65,7 @@ internal static class ExigenciaDaHomologacaoPorOrigem
         if (resultadosFechados.Length == 0)
         {
             return new DomainError(
-                HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado,
+                HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado,
                 $"A fase '{fase.Codigo}' homologa as inscrições e precisa declarar o resultado preliminar e o definitivo do mesmo resultado.");
         }
 

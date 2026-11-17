@@ -110,7 +110,7 @@ public sealed class ExigenciaDaHomologacaoPorOrigemTests
         DomainError? recusa = ExigenciaDaHomologacaoPorOrigem.Pendencia(
             OrigemCandidatos.ImportacaoExterna, usaNotaImportadaDeExame: false, [fase], QualquerFaseHomologa);
 
-        recusa!.Code.Should().Be(HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado);
+        recusa!.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
     }
 
     private static List<ProdutoDaFase> ProdutosDeclarados(bool temPreliminar, bool temDefinitivo)
@@ -149,7 +149,7 @@ public sealed class ExigenciaDaHomologacaoPorOrigemTests
         DomainError? recusa = ExigenciaDaHomologacaoPorOrigem.Pendencia(
             OrigemCandidatos.ImportacaoExterna, usaNotaImportadaDeExame: false, [semJanela, semDefinitivo], QualquerFaseHomologa);
 
-        recusa!.Code.Should().Be(HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado);
+        recusa!.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
     }
 
     [Fact(DisplayName = "O preliminar de um resultado e o definitivo de outro não fecham o ciclo: falta o resultado declarado")]
@@ -161,7 +161,7 @@ public sealed class ExigenciaDaHomologacaoPorOrigemTests
         DomainError? recusa = ExigenciaDaHomologacaoPorOrigem.Pendencia(
             OrigemCandidatos.ImportacaoExterna, usaNotaImportadaDeExame: false, [fase], QualquerFaseHomologa);
 
-        recusa!.Code.Should().Be(HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado);
+        recusa!.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado);
     }
 
     [Fact(DisplayName = "A janela de recurso ancorada no preliminar de um resultado que a fase não conclui não vale como janela entre o preliminar e o definitivo")]

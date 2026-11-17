@@ -31,6 +31,6 @@ public sealed class TipoDeCondicaoDeHomologacaoTests
         Result<TipoDeCondicaoDeHomologacao> resultado = TiposDeCondicaoDeHomologacao.DoCodigo(codigo);
 
         resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(HomologacaoInscricaoErrorCodes.CondicaoNaoDisponivel);
+        resultado.Error!.Code.Should().Be(HomologacaoDasInscricoesErrorCodes.CondicaoNaoDisponivel);
     }
 }

@@ -39,7 +39,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// <summary>Id (Guid v7) da <c>FaseCanonica</c> viva de origem, no momento do congelamento.</summary>
     public Guid FaseCanonicaOrigemId { get; private set; }
 
-    /// <summary>Código canônico congelado (ex.: <c>"HOMOLOGACAO"</c>).</summary>
+    /// <summary>Código canônico congelado (ex.: <c>"HOMOLOGACAO_INSCRICOES"</c>).</summary>
     public string Codigo { get; private set; } = string.Empty;
 
     /// <summary>Id da unidade que responde pela fase, congelado sem FK (ADR-0061); opcional no rascunho, exigido na publicação.</summary>

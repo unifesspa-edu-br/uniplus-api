@@ -31,7 +31,7 @@ public sealed record AlternativaDeCondicoes
 
         return condicoes.Count == 0
             ? Result<AlternativaDeCondicoes>.Failure(new DomainError(
-                HomologacaoInscricaoErrorCodes.AlternativaSemCondicao,
+                HomologacaoDasInscricoesErrorCodes.AlternativaSemCondicao,
                 "A alternativa precisa de ao menos uma condição."))
             : Result<AlternativaDeCondicoes>.Success(new AlternativaDeCondicoes([.. condicoes]));
     }

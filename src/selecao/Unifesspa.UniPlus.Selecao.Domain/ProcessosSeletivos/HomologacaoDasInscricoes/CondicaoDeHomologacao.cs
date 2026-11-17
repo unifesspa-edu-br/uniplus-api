@@ -67,7 +67,7 @@ public sealed record CondicaoDeHomologacao
         _ when !Enum.IsDefined(tipo) => TiposDeCondicaoDeHomologacao.CondicaoNaoDisponivel("O tipo da condição ainda não é apurado pelo sistema."),
         (_, >= PrimeiraEdicaoDoExame and <= UltimaEdicaoAdmitida) => null,
         _ => new DomainError(
-            HomologacaoInscricaoErrorCodes.EdicaoDoExameInvalida,
+            HomologacaoDasInscricoesErrorCodes.EdicaoDoExameInvalida,
             $"A edição do exame deve ser um ano entre {PrimeiraEdicaoDoExame} e {UltimaEdicaoAdmitida}."),
     };
 }

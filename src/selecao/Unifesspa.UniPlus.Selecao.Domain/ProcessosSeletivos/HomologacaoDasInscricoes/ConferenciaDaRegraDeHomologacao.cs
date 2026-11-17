@@ -87,10 +87,10 @@ internal static class ConferenciaDaRegraDeHomologacao
         "A fase declara uma regra de homologação das inscrições, mas não declara esse tipo de decisão."));
 
     private static FieldError ResultadoNaoDeclarado() => new($"{FaseDeclarada.CampoDaRegraDeHomologacao}.resultadoAtoCodigo", new DomainError(
-        HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado,
+        HomologacaoDasInscricoesErrorCodes.ResultadoNaoDeclarado,
         "O resultado indicado pela regra deve ser publicado nesta fase, com resultado definitivo nela ou na fase que a conclui."));
 
     private static FieldError ConfirmacaoDoInepAusente() => new($"{FaseDeclarada.CampoDaRegraDeHomologacao}.alternativas", new DomainError(
-        HomologacaoInscricaoErrorCodes.ConfirmacaoDoInepAusente,
+        HomologacaoDasInscricoesErrorCodes.ConfirmacaoDoInepAusente,
         "O processo importa a nota de um exame, e toda alternativa da regra precisa da condição de resultado no retorno do INEP."));
 }
