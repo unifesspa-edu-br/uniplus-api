@@ -11,7 +11,12 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 /// O destinatário é a identidade da pessoa, nunca o endereço: se o e-mail mudar entre duas gerações do mesmo fato, a
 /// chave é a mesma.
 /// </summary>
-public sealed record ChaveDoAviso(TipoDeAviso Tipo, Guid FatoId, string Marco, Identidade Destinatario);
+public sealed record ChaveDoAviso(TipoDeAviso Tipo, Guid FatoId, string Marco, Identidade Destinatario)
+{
+    /// <summary>Os textos que identificam o aviso, na ordem que compõe o identificador; método, para não entrar no <c>ToString()</c> do record.</summary>
+    internal string[] Componentes() =>
+        [Tipo.ToCodigo(), FatoId.ToString("N"), Marco, Destinatario.Emissor, Destinatario.ContaId];
+}
 
 /// <summary>
 /// O <c>MensagemId</c> determinístico do aviso: um UUID versão 8 com os 16 primeiros bytes do SHA-256 da chave. O mesmo
@@ -42,20 +47,20 @@ public static class IdDoAviso
     private static byte[] Serializar(ChaveDoAviso chave)
     {
         using MemoryStream saida = new();
-        Span<byte> comprimento = stackalloc byte[sizeof(int)];
 
-        string[] componentes =
-        [
-            chave.Tipo.ToCodigo(), chave.FatoId.ToString("N"), chave.Marco, chave.Destinatario.Emissor, chave.Destinatario.ContaId,
-        ];
-
-        foreach (byte[] texto in componentes.Select(Encoding.UTF8.GetBytes))
+        foreach (byte[] texto in chave.Componentes().Select(Encoding.UTF8.GetBytes))
         {
-            BinaryPrimitives.WriteInt32BigEndian(comprimento, texto.Length);
-            saida.Write(comprimento);
-            saida.Write(texto);
+            EscreverComPrefixoDoComprimento(saida, texto);
         }
 
         return saida.ToArray();
+    }
+
+    private static void EscreverComPrefixoDoComprimento(MemoryStream saida, byte[] texto)
+    {
+        Span<byte> comprimento = stackalloc byte[sizeof(int)];
+        BinaryPrimitives.WriteInt32BigEndian(comprimento, texto.Length);
+        saida.Write(comprimento);
+        saida.Write(texto);
     }
 }
