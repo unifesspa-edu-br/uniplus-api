@@ -42,7 +42,7 @@ public sealed class ContencaoPorSuspensao
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        AcessoDaContencao? acesso = await AcessoDaContencao.ConsultarAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
+        AcessoDasEtapas? acesso = await AcessoDaVersao.ConsultarParaContencaoAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
         DomainError? recusa = await RecusaDeSuspenderAsync(acesso, verificador, cancellationToken).ConfigureAwait(false);
         if (recusa is not null || _autoria.Autor is not { } autor)
         {
@@ -63,7 +63,7 @@ public sealed class ContencaoPorSuspensao
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        AcessoDaContencao? acesso = await AcessoDaContencao.ConsultarAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
+        AcessoDasEtapas? acesso = await AcessoDaVersao.ConsultarParaContencaoAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
         EtapaDaVersao? pedida = EtapaDaVersaoCodigo.TentarLer(etapa);
         DomainError? recusa = acesso is null
             ? PerfilHandlerErros.AutorNaoIdentificado()
@@ -80,7 +80,7 @@ public sealed class ContencaoPorSuspensao
     }
 
     private static async Task<DomainError?> RecusaDeSuspenderAsync(
-        AcessoDaContencao? acesso, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
+        AcessoDasEtapas? acesso, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         if (acesso is null)
         {

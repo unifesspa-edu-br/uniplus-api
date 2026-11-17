@@ -7,18 +7,20 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// O que o solicitante pode fazer na contenção do perfil: a gestão de acessos, que mantém perfis, e a proteção de dados.
-/// Cada capacidade é avaliada pelo ponto de decisão único, sem registrar: quem usa o resultado grava a decisão que
-/// governou, para que a trilha traga a real.
+/// As permissões das duas etapas da governança da versão, a da gestão de acessos e a da proteção de dados, avaliadas sem
+/// registrar: quem usa o resultado grava a decisão que governou o desfecho, para que a trilha traga a real e não uma
+/// negativa de uma permissão que a pessoa nem precisava ter. A permissão que habilita a gestão varia com a operação
+/// (aprovar pela gestão ou manter perfis), e <see cref="AcessoDaVersao"/> escolhe qual.
 /// </summary>
-internal sealed record AcessoDaContencao(DecisaoDeAcesso DecisaoDaGestao, DecisaoDeAcesso DecisaoDaProtecaoDeDados)
+internal sealed record AcessoDasEtapas(DecisaoDeAcesso DecisaoDaGestao, DecisaoDeAcesso DecisaoDaProtecaoDeDados)
 {
-    /// <summary>Mantém perfis: decide a etapa da gestão de acessos.</summary>
+    /// <summary>Decide a etapa da gestão de acessos.</summary>
     public bool Gestao => DecisaoDaGestao is DecisaoPermitida;
 
+    /// <summary>Decide a etapa da proteção de dados.</summary>
     public bool ProtecaoDeDados => DecisaoDaProtecaoDeDados is DecisaoPermitida;
 
-    /// <summary>Tem alguma das duas permissões.</summary>
+    /// <summary>Tem a permissão de alguma das duas etapas.</summary>
     public bool Habilitado => Gestao || ProtecaoDeDados;
 
     /// <summary>
@@ -31,19 +33,6 @@ internal sealed record AcessoDaContencao(DecisaoDeAcesso DecisaoDaGestao, Decisa
 
     public DecisaoDeAcesso DecisaoDa(EtapaDaVersao etapa) =>
         etapa == EtapaDaVersao.GestaoDeAcessos ? DecisaoDaGestao : DecisaoDaProtecaoDeDados;
-
-    /// <summary>Consulta as duas permissões, sem registrar. Nulo quando o token não identifica o solicitante por completo.</summary>
-    public static async Task<AcessoDaContencao?> ConsultarAsync(IVerificadorDeAcesso verificador, Guid perfilId, CancellationToken cancellationToken)
-    {
-        ArgumentNullException.ThrowIfNull(verificador);
-
-        DecisaoDeAcesso gestao = await AcessoDaVersao.AvaliarManterAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
-
-        return gestao is SemSujeito
-            ? null
-            : new AcessoDaContencao(
-                gestao, await AcessoDaVersao.AvaliarProtecaoDeDadosAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false));
-    }
 
     /// <summary>
     /// A recusa de quem não pode decidir a etapa pedida, registrando a decisão que governou: sem nenhuma das permissões é
@@ -62,7 +51,10 @@ internal sealed record AcessoDaContencao(DecisaoDeAcesso DecisaoDaGestao, Decisa
         return Decide(etapa.Value) ? null : PerfilErros.EtapaInvalida();
     }
 
-    /// <summary>Registra o desfecho quando nenhuma etapa o governou: as permitidas que habilitaram ou, se nenhuma, as negativas.</summary>
+    /// <summary>
+    /// Registra o desfecho quando nenhuma etapa o governou: as decisões permitidas que habilitaram ou, se nenhuma
+    /// habilitou, as negativas, que são a tentativa real.
+    /// </summary>
     public Task RegistrarDoDesfechoAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(verificador);

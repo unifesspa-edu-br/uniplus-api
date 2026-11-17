@@ -54,38 +54,29 @@ public sealed class AprovacoesDaVersao
         ArgumentNullException.ThrowIfNull(verificador);
 
         Result<AutoriaDaVersao> autorizada = await AutorizarAsync(solicitada, verificador, cancellationToken).ConfigureAwait(false);
-        if (autorizada.IsFailure)
-        {
-            return GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.Failure(autorizada.Error!));
-        }
 
-        return await _operacao
-            .ExecutarComAvisosAsync(
-                solicitada.PerfilId,
-                (perfil, contexto) => DecidirNoPerfilAsync(perfil, Pedido(solicitada, autorizada.Value!, contexto.Agora), cancellationToken),
-                cancellationToken)
-            .ConfigureAwait(false);
+        return autorizada.IsFailure
+            ? GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.Failure(autorizada.Error!))
+            : await _operacao
+                .ExecutarComAvisosAsync(
+                    solicitada.PerfilId,
+                    (perfil, contexto) => DecidirNoPerfilAsync(perfil, Pedido(solicitada, autorizada.Value!, contexto.Agora), cancellationToken),
+                    cancellationToken)
+                .ConfigureAwait(false);
     }
 
     private async Task<Result<AutoriaDaVersao>> AutorizarAsync(
         DecisaoSolicitada solicitada, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
     {
-        AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, solicitada.PerfilId, cancellationToken).ConfigureAwait(false);
-        if (acesso is null)
-        {
-            return Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
-        }
+        AcessoDasEtapas? acesso = await AcessoDaVersao.ConsultarAsync(verificador, solicitada.PerfilId, cancellationToken).ConfigureAwait(false);
+        DomainError? recusa = acesso is null
+            ? PerfilHandlerErros.AutorNaoIdentificado()
+            : await acesso.RecusaDaEtapaAsync(EtapaDaVersaoCodigo.TentarLer(solicitada.Etapa), verificador, cancellationToken)
+                .ConfigureAwait(false);
 
-        DomainError? recusa = await RecusaDoAcessoAsync(acesso, EtapaDaVersaoCodigo.TentarLer(solicitada.Etapa), verificador, cancellationToken)
-            .ConfigureAwait(false);
-        if (recusa is not null)
-        {
-            return Result<AutoriaDaVersao>.Failure(recusa);
-        }
-
-        return await _autoria.DaVersaoAsync(solicitada.PerfilId, cancellationToken).ConfigureAwait(false) is { } autoria
-            ? Result<AutoriaDaVersao>.Success(autoria)
-            : Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
+        return recusa is null
+            ? await _autoria.ExigirDaVersaoAsync(solicitada.PerfilId, cancellationToken).ConfigureAwait(false)
+            : Result<AutoriaDaVersao>.Failure(recusa);
     }
 
     private static PedidoDeDecisaoDaVersao Pedido(DecisaoSolicitada solicitada, AutoriaDaVersao autoria, DateTimeOffset agora) =>
@@ -96,28 +87,6 @@ public sealed class AprovacoesDaVersao
             MotivosDaVersao.Normalizar(solicitada.Motivo),
             autoria,
             agora);
-
-    // Sem nenhuma das permissões é 403; com só a da outra etapa, a etapa pedida não é a da pessoa. A trilha recebe a
-    // decisão que governou: a da etapa pedida quando ela existe, senão o desfecho das duas.
-    private static async Task<DomainError?> RecusaDoAcessoAsync(
-        AcessoDaVersao acesso, EtapaDaVersao? etapa, IVerificadorDeAcesso verificador, CancellationToken cancellationToken)
-    {
-        if (!acesso.Aprova)
-        {
-            await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
-            return PerfilErros.SemPermissaoNaEtapa();
-        }
-
-        if (etapa is not { } pedida)
-        {
-            await acesso.RegistrarDoDesfechoAsync(verificador, cancellationToken).ConfigureAwait(false);
-            return PerfilErros.EtapaInvalida();
-        }
-
-        await AcessoDaVersao.RegistrarAsync(verificador, acesso.DecisaoDa(pedida), cancellationToken).ConfigureAwait(false);
-
-        return acesso.Decide(pedida) ? null : PerfilErros.EtapaInvalida();
-    }
 
     private async Task<DesfechoDaOperacao<PerfilDto>> DecidirNoPerfilAsync(
         Perfil perfil, PedidoDeDecisaoDaVersao pedida, CancellationToken cancellationToken)
