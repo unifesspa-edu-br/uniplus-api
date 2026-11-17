@@ -1,78 +1,25 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Pedidos;
 
 using Unifesspa.UniPlus.Application.Abstractions.Authentication;
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
-using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
-using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>
-/// Handler da criação do anexo. A URL de PUT sai antes de gravar: se o armazenamento falhar, nada é gravado. O pedido
-/// de outra pessoa não se distingue do inexistente.
-/// </summary>
+/// <summary>Handler da criação do anexo; a emissão do envio é de <see cref="EmissaoDoEnvioDoAnexo"/>.</summary>
 public static class CriarAnexoDoPedidoCommandHandler
 {
     public static async Task<Result<AnexoParaEnvioDto>> Handle(
         CriarAnexoDoPedidoCommand command,
-        IPedidoDeConcessaoRepository repository,
-        EnvioDoPdf envio,
-        IUnitOfWork unitOfWork,
+        EmissaoDoEnvioDoAnexo emissao,
         IUserContext userContext,
-        TimeProvider timeProvider,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(repository);
-        ArgumentNullException.ThrowIfNull(envio);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
+        ArgumentNullException.ThrowIfNull(emissao);
         ArgumentNullException.ThrowIfNull(userContext);
-        ArgumentNullException.ThrowIfNull(timeProvider);
 
-        if (IdentidadeDoToken.De(userContext) is not { } solicitante)
-        {
-            return Result<AnexoParaEnvioDto>.Failure(PedidoHandlerErros.AutorNaoIdentificado());
-        }
-
-        PedidoDeConcessao? pedido = await repository.ObterParaAlterarAsync(command.PedidoId, cancellationToken).ConfigureAwait(false);
-        if (pedido is null || !pedido.Solicitante.Eh(solicitante))
-        {
-            return Result<AnexoParaEnvioDto>.Failure(PedidoHandlerErros.NaoEncontrado());
-        }
-
-        Result<AnexoDoPedido> criado = pedido.NovoAnexo(command.TamanhoDoPdf);
-        if (criado.IsFailure)
-        {
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<AnexoParaEnvioDto>.ValidationFailure(criado.Errors);
-        }
-
-        AnexoDoPedido anexo = criado.Value!;
-        UrlDeEnvioDoPdf url = await envio
-            .EmitirAsync(anexo.ChaveDeEnvio, timeProvider.GetUtcNow(), cancellationToken)
-            .ConfigureAwait(false);
-
-        // Marca a linha do pedido: criar o anexo e decidir o pedido não correm juntos.
-        repository.Atualizar(pedido);
-
-        try
-        {
-            await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ViolacoesDeGravacao.EhConflitoDeConcorrencia(ex))
-        {
-            // Com Idempotency-Key o handler captura e descarta o rastreamento (ADR-0119).
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<AnexoParaEnvioDto>.Failure(PedidoHandlerErros.ConflitoDeConcorrencia());
-        }
-
-        return Result<AnexoParaEnvioDto>.Success(new AnexoParaEnvioDto(
-            anexo.Id,
-            SituacaoDoAnexoCodigo.AguardandoEnvio,
-            url.Endereco,
-            EnvioDoPdf.TipoDeMidia,
-            url.ExpiraEm));
+        return IdentidadeDoToken.De(userContext) is { } solicitante
+            ? await emissao.EmitirAsync(command, solicitante, cancellationToken).ConfigureAwait(false)
+            : Result<AnexoParaEnvioDto>.Failure(PedidoHandlerErros.AutorNaoIdentificado());
     }
 }
