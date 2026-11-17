@@ -84,6 +84,19 @@
           "Testcontainers": "4.16.0"
         }
       },
+      "TngTech.ArchUnitNET": {
+        "type": "Direct",
+        "requested": "[0.13.5, )",
+        "resolved": "0.13.5",
+        "contentHash": "ajzTX2DjrXhVJdxa0YxhpTEue8NGxGbpkoZbgQhWBKqUZH8UZGwbR3dJg0a00T6YDBYh0lHl3GBf6jAc5VXhlg==",
+        "dependencies": {
+          "CycleDetection": "2.0.0",
+          "JetBrains.Annotations": "2026.2.0",
+          "Mono.Cecil": "0.11.6",
+          "Newtonsoft.Json": "13.0.4",
+          "System.ValueTuple": "4.6.2"
+        }
+      },
       "WolverineFx": {
         "type": "Direct",
         "requested": "[5.41.0, )",
@@ -143,6 +156,11 @@
           "Confluent.SchemaRegistry": "2.14.0",
           "NJsonSchema.NewtonsoftJson": "11.0.2"
         }
+      },
+      "CycleDetection": {
+        "type": "Transitive",
+        "resolved": "2.0.0",
+        "contentHash": "iQb2Nm9WqPseGCxPcdeU5qMbWkxtSr1bmnliC7slitx7GOG8cKO2pKZUQ2Yl+DQQZQ7c8qIXe3k+zYE0f96dIA=="
       },
       "DistributedLock.Core": {
         "type": "Transitive",
@@ -301,6 +319,11 @@
         "type": "Transitive",
         "resolved": "1.1.0",
         "contentHash": "yIOaiA/OrlXQLGPjxFDubHnOU8MCzPTz465xBGRITMm4fDf7DbWKogb2SZC2jYLWEj27q3smTz1Z7lU4h1KkOQ=="
+      },
+      "JetBrains.Annotations": {
+        "type": "Transitive",
+        "resolved": "2026.2.0",
+        "contentHash": "drvAEaI7Xf4wU6dx4UTB9MoZWXZlraaQ0qoeThPQ411FxNhId7QdUTukIC9I8aUHP0ycAaGwZNKqSvfOZQvUlg=="
       },
       "librdkafka.redist": {
         "type": "Transitive",
@@ -950,6 +973,11 @@
           "System.Security.Cryptography.Pkcs": "10.0.13"
         }
       },
+      "Mono.Cecil": {
+        "type": "Transitive",
+        "resolved": "0.11.6",
+        "contentHash": "f33RkDtZO8VlGXCtmQIviOtxgnUdym9xx/b1p9h91CRGOsJFxCFOFK1FDbVt1OCf1aWwYejUFa2MOQyFWTFjbA=="
+      },
       "Mono.TextTemplating": {
         "type": "Transitive",
         "resolved": "3.0.0",
@@ -1281,6 +1309,11 @@
         "type": "Transitive",
         "resolved": "8.0.0",
         "contentHash": "7mu9v0QDv66ar3DpGSZHg9NuNcxDaaAcnMULuZlaTpP9+hwXhrxNGsF5GmLkSHxFdb5bBc1TzeujsRgTrPWi+Q=="
+      },
+      "System.ValueTuple": {
+        "type": "Transitive",
+        "resolved": "4.6.2",
+        "contentHash": "yQgmjfFximrNm9LIV3mL6T5MzjeC+epeE5rl4hXxAlYmxby7RM1dPSkIKXk9HNkl6G54h2JHOmLD46+Pey+IRg=="
       },
       "Weasel.Core": {
         "type": "Transitive",

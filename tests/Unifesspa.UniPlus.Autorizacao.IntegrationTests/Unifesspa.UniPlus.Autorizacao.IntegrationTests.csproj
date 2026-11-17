@@ -12,6 +12,7 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="TngTech.ArchUnitNET" />
     <PackageReference Include="Testcontainers.PostgreSql" />
     <PackageReference Include="WolverineFx" />
   </ItemGroup>
@@ -20,6 +21,10 @@
     <ProjectReference Include="../../src/autorizacao/Unifesspa.UniPlus.Autorizacao.API/Unifesspa.UniPlus.Autorizacao.API.csproj" />
     <ProjectReference Include="../Unifesspa.UniPlus.IntegrationTests.Fixtures/Unifesspa.UniPlus.IntegrationTests.Fixtures.csproj" />
     <ProjectReference Include="../Unifesspa.UniPlus.Monolito.TestSupport/Unifesspa.UniPlus.Monolito.TestSupport.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Shared/RegraSemMetaforaNosNomes.cs" Link="RegraSemMetaforaNosNomes.cs" />
   </ItemGroup>
 
   <ItemGroup>
