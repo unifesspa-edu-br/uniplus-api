@@ -231,7 +231,7 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
                 c,
                 vivas.TryGetValue(c.Id, out BaseViva? viva)
                     ? new BaseDaConcessao(viva.Classificacao, viva.DeUnidade)
-                    : new BaseDaConcessao(retratos[c.Id].RetratoDaClassificacao!.Value, retratos[c.Id].RetratoDeUnidade)))];
+                    : new BaseDaConcessao(retratos[c.Id].ClassificacaoNaVersao!.Value, retratos[c.Id].DeUnidadeNaVersao)))];
     }
 
     private Task<List<Concessao>> ConcessoesDoPerfilAsync(List<Guid> ids, CancellationToken cancellationToken) =>

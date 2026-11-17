@@ -14,7 +14,7 @@ internal sealed class CodigoDaConcessao
 
     public bool DeVersao { get; init; }
 
-    public ClassificacaoDeProtecao? RetratoDaClassificacao { get; init; }
+    public ClassificacaoDeProtecao? ClassificacaoNaVersao { get; init; }
 
-    public bool RetratoDeUnidade { get; init; }
+    public bool DeUnidadeNaVersao { get; init; }
 }
