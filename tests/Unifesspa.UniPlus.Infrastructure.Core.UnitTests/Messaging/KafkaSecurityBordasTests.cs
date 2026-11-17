@@ -13,7 +13,7 @@ public sealed class KafkaSecurityBordasTests
     [InlineData("saslplaintext", SecurityProtocol.SaslPlaintext)]
     public void TryParseSecurityProtocol_ComEspacosOuSemSublinhado_Aceita(string bruto, SecurityProtocol esperado)
     {
-        bool aceito = KafkaSecurity.TryParseSecurityProtocol(bruto, out SecurityProtocol protocolo);
+        bool aceito = KafkaSecurity.TryParseByName(bruto, out SecurityProtocol protocolo);
 
         aceito.Should().BeTrue();
         protocolo.Should().Be(esperado);
@@ -26,7 +26,7 @@ public sealed class KafkaSecurityBordasTests
     [InlineData("PLAIN", SaslMechanism.Plain)]
     public void TryParseSaslMechanism_NomesDoEnum_Aceita(string bruto, SaslMechanism esperado)
     {
-        bool aceito = KafkaSecurity.TryParseSaslMechanism(bruto, out SaslMechanism mecanismo);
+        bool aceito = KafkaSecurity.TryParseByName(bruto, out SaslMechanism mecanismo);
 
         aceito.Should().BeTrue();
         mecanismo.Should().Be(esperado);
@@ -37,7 +37,7 @@ public sealed class KafkaSecurityBordasTests
     [InlineData("   ")]
     public void TryParseSecurityProtocol_Numero_Rejeita(string bruto)
     {
-        KafkaSecurity.TryParseSecurityProtocol(bruto, out _).Should().BeFalse();
+        KafkaSecurity.TryParseByName<SecurityProtocol>(bruto, out _).Should().BeFalse();
     }
 
     [Fact]
