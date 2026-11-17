@@ -17,8 +17,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 public sealed record DesfechoDaOperacao<T>(Result<T> Resultado, bool GravarMesmoNaFalha = false, IReadOnlyList<EnviarEmail>? Avisos = null);
 
 /// <summary>
-/// O que a operação sabe do momento em que roda sob a trava: o instante lido depois de obtê-la e a versão cujo prazo
-/// venceu e foi materializado antes dela, quando houve.
+/// O que a operação sabe do momento em que roda com o perfil exclusivo: o instante lido depois de reservá-lo e a versão
+/// cujo prazo venceu e foi materializado antes da operação, quando houve.
 /// </summary>
 public sealed record ContextoDaOperacao(DateTimeOffset Agora, Guid? VersaoExpirada);
 
@@ -29,9 +29,9 @@ public sealed record GravacaoDaOperacao<T>(Result<T> Resultado, IReadOnlyList<En
 }
 
 /// <summary>
-/// Executa uma operação sobre o perfil na ordem de travas única: localiza e trava o perfil (<c>FOR UPDATE</c>),
+/// Executa uma operação sobre o perfil na ordem única de acesso exclusivo: localiza o perfil e o reserva (<c>FOR UPDATE</c>),
 /// recarrega-o por inteiro, materializa o prazo vencido da pendente, deixa a operação validar e fazer a transição e só
-/// então grava. O instante da operação é lido depois da trava, e a expiração materializada grava mesmo que a operação
+/// então grava. O instante da operação é lido depois da reserva, e a expiração materializada grava mesmo que a operação
 /// seguinte recuse. Duas operações sobre o mesmo perfil, ou sobre um documento dele, nunca correm juntas: a segunda lê o
 /// que a primeira confirmou. O conflito de concorrência na gravação segue a ADR-0119: as operações de endpoint com chave
 /// de idempotência o capturam e devolvem como recusa, para não corromper o cache da chave; as que não têm chave o deixam
@@ -78,7 +78,7 @@ public sealed class OperacaoSobreOPerfil
     {
         ArgumentNullException.ThrowIfNull(operacao);
 
-        GravacaoDaOperacao<T> gravacao = await ExecutarNaTravaAsync(
+        GravacaoDaOperacao<T> gravacao = await ExecutarComPerfilExclusivoAsync(
             perfilId,
             async (perfil, contexto) => new DesfechoDaOperacao<T>(await operacao(perfil, contexto).ConfigureAwait(false)),
             SalvarAsync,
@@ -110,7 +110,7 @@ public sealed class OperacaoSobreOPerfil
         Guid perfilId,
         Func<Perfil, ContextoDaOperacao, Task<DesfechoDaOperacao<T>>> operacao,
         CancellationToken cancellationToken) =>
-        ExecutarNaTravaAsync(perfilId, operacao, SalvarComChaveAsync, cancellationToken);
+        ExecutarComPerfilExclusivoAsync(perfilId, operacao, SalvarComChaveAsync, cancellationToken);
 
     /// <summary>
     /// A mesma operação com avisos, sem chave de idempotência, como a rotina da janela e a materialização que antecede
@@ -120,9 +120,9 @@ public sealed class OperacaoSobreOPerfil
         Guid perfilId,
         Func<Perfil, ContextoDaOperacao, Task<DesfechoDaOperacao<T>>> operacao,
         CancellationToken cancellationToken) =>
-        ExecutarNaTravaAsync(perfilId, operacao, SalvarAsync, cancellationToken);
+        ExecutarComPerfilExclusivoAsync(perfilId, operacao, SalvarAsync, cancellationToken);
 
-    private async Task<GravacaoDaOperacao<T>> ExecutarNaTravaAsync<T>(
+    private async Task<GravacaoDaOperacao<T>> ExecutarComPerfilExclusivoAsync<T>(
         Guid perfilId,
         Func<Perfil, ContextoDaOperacao, Task<DesfechoDaOperacao<T>>> operacao,
         Func<DesfechoDaOperacao<T>, CancellationToken, Task<GravacaoDaOperacao<T>>> salvar,
@@ -138,9 +138,23 @@ public sealed class OperacaoSobreOPerfil
 
         ContextoDaOperacao contexto = MaterializarOPrazo(perfil);
         DesfechoDaOperacao<T> desfecho = await operacao(perfil, contexto).ConfigureAwait(false);
-        desfecho = desfecho with { GravarMesmoNaFalha = desfecho.GravarMesmoNaFalha || contexto.VersaoExpirada is not null };
 
-        return desfecho.Resultado.IsSuccess || desfecho.GravarMesmoNaFalha
+        return await GravarOuDescartarAsync(desfecho, contexto, salvar, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Grava o desfecho que teve sucesso, o que a operação pede que se grave mesmo recusado e o de toda operação que
+    /// encontrou o prazo vencido e o materializou; descarta o resto.
+    /// </summary>
+    private async Task<GravacaoDaOperacao<T>> GravarOuDescartarAsync<T>(
+        DesfechoDaOperacao<T> desfecho,
+        ContextoDaOperacao contexto,
+        Func<DesfechoDaOperacao<T>, CancellationToken, Task<GravacaoDaOperacao<T>>> salvar,
+        CancellationToken cancellationToken)
+    {
+        bool grava = desfecho.Resultado.IsSuccess || desfecho.GravarMesmoNaFalha || contexto.VersaoExpirada is not null;
+
+        return grava
             ? await salvar(desfecho, cancellationToken).ConfigureAwait(false)
             : Descartar(desfecho.Resultado);
     }
