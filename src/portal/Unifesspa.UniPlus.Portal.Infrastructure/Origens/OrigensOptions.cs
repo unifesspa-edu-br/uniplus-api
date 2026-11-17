@@ -19,7 +19,7 @@ public sealed class OrigensOptions
 {
     public const string SectionName = "Origens";
 
-    /// <summary>Teto que a origem de atos impõe ao tamanho de página.</summary>
+    /// <summary>Limite que a origem de atos impõe ao tamanho de página.</summary>
     public const int MaximoItensPorPaginaDeAtos = 100;
 
     /// <summary>
@@ -36,10 +36,10 @@ public sealed class OrigensOptions
     public int ItensPorPaginaDeAtos { get; init; } = MaximoItensPorPaginaDeAtos;
 
     /// <summary>
-    /// Quantas páginas de atos percorrer no máximo. Atingir o teto degrada a linha do tempo em vez
+    /// Quantas páginas de atos percorrer no máximo. Atingir o limite degrada a linha do tempo em vez
     /// de truncá-la em silêncio.
     /// </summary>
-    public int TetoDePaginasDeAtos { get; init; } = 10;
+    public int LimiteDePaginasDeAtos { get; init; } = 10;
 
     /// <summary>Tempo limite de uma tentativa isolada.</summary>
     public int TimeoutPorTentativaEmSegundos { get; init; } = 3;
@@ -60,22 +60,22 @@ public sealed class OrigensOptions
     public int EsperaBaseEntreTentativasEmMilissegundos { get; init; } = 200;
 
     /// <summary>
-    /// Quantas chamadas precisam ocorrer na janela de amostragem antes de o corte de circuito
-    /// considerar abrir.
+    /// Quantas chamadas precisam ocorrer na janela de amostragem antes de a interrupção por falhas
+    /// ser avaliada.
     /// </summary>
-    public int ChamadasMinimasParaAvaliarCorte { get; init; } = 10;
+    public int ChamadasMinimasParaAvaliarInterrupcao { get; init; } = 10;
 
     /// <summary>
-    /// Janela em que as falhas são contadas para decidir o corte. Precisa comportar ao menos duas
+    /// Janela em que as falhas são contadas para decidir a interrupção. Precisa comportar ao menos duas
     /// tentativas, senão não chega a formar amostra.
     /// </summary>
-    public int JanelaDeAmostragemDoCorteEmSegundos { get; init; } = 30;
+    public int JanelaDeAmostragemDasFalhasEmSegundos { get; init; } = 30;
 
-    /// <summary>Proporção de falhas na janela a partir da qual o circuito abre.</summary>
-    public double ProporcaoDeFalhaParaAbrirCorte { get; init; } = 0.5;
+    /// <summary>Proporção de falhas na janela a partir da qual a origem deixa de ser chamada.</summary>
+    public double ProporcaoDeFalhaParaInterromper { get; init; } = 0.5;
 
-    /// <summary>Quanto tempo o circuito permanece aberto antes de deixar passar uma chamada de prova.</summary>
-    public int DuracaoDoCorteEmSegundos { get; init; } = 15;
+    /// <summary>Quanto tempo a origem fica sem ser chamada antes de deixar passar uma chamada de prova.</summary>
+    public int DuracaoDaInterrupcaoEmSegundos { get; init; } = 15;
 
     /// <summary>
     /// Em quantos segundos a página pública indica que vale tentar de novo quando Seleção está

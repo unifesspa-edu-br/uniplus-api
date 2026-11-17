@@ -5,7 +5,7 @@ namespace Unifesspa.UniPlus.Portal.Application.Certames.Origens;
 /// </summary>
 /// <remarks>
 /// Quem implementa não deixa exceção de transporte escapar: falha de rede, tempo esgotado,
-/// circuito aberto e resposta fora do contrato viram <see cref="ConsultaDoCertame.Indisponivel"/>.
+/// interrupção por falhas e resposta fora do contrato viram <see cref="ConsultaDoCertame.Indisponivel"/>.
 /// Só o cancelamento pedido por quem chama se propaga.
 /// </remarks>
 public interface IContratoPublicoDoCertame

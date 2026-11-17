@@ -12,87 +12,80 @@ internal sealed class OrigensOptionsValidator : IValidateOptions<OrigensOptions>
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        List<string> falhas = [];
-
-        ValidarEndereco(options.SelecaoBaseUrl, nameof(OrigensOptions.SelecaoBaseUrl), falhas);
-        ValidarEndereco(options.PublicacoesBaseUrl, nameof(OrigensOptions.PublicacoesBaseUrl), falhas);
-
-        if (options.ItensPorPaginaDeAtos is < 1 or > OrigensOptions.MaximoItensPorPaginaDeAtos)
-        {
-            falhas.Add(
-                $"Origens:ItensPorPaginaDeAtos precisa estar entre 1 e {OrigensOptions.MaximoItensPorPaginaDeAtos}, "
-                + "que é o teto imposto pela origem.");
-        }
-
-        if (options.TetoDePaginasDeAtos < 1)
-        {
-            falhas.Add("Origens:TetoDePaginasDeAtos precisa ser pelo menos 1.");
-        }
-
-        if (options.TimeoutPorTentativaEmSegundos < 1)
-        {
-            falhas.Add("Origens:TimeoutPorTentativaEmSegundos precisa ser pelo menos 1.");
-        }
-
-        if (options.TimeoutTotalEmSegundos <= options.TimeoutPorTentativaEmSegundos)
-        {
-            falhas.Add(
-                "Origens:TimeoutTotalEmSegundos precisa ser maior que TimeoutPorTentativaEmSegundos; "
-                + "do contrário nenhuma retentativa cabe no limite da consulta.");
-        }
-
-        if (options.MaximoDeRetentativas < 0)
-        {
-            falhas.Add("Origens:MaximoDeRetentativas não pode ser negativo.");
-        }
-
-        // A biblioteca de resiliência também recusa esses valores, mas só ao montar a política —
-        // na primeira consulta, não na subida.
-        if (options.EsperaBaseEntreTentativasEmMilissegundos < 0)
-        {
-            falhas.Add("Origens:EsperaBaseEntreTentativasEmMilissegundos não pode ser negativa.");
-        }
-
-        if (options.ChamadasMinimasParaAvaliarCorte < 2)
-        {
-            falhas.Add("Origens:ChamadasMinimasParaAvaliarCorte precisa ser pelo menos 2.");
-        }
-
-        if (options.JanelaDeAmostragemDoCorteEmSegundos < 2 * options.TimeoutPorTentativaEmSegundos)
-        {
-            falhas.Add(
-                "Origens:JanelaDeAmostragemDoCorteEmSegundos precisa ser pelo menos o dobro de "
-                + "TimeoutPorTentativaEmSegundos.");
-        }
-
-        if (options.ProporcaoDeFalhaParaAbrirCorte is <= 0 or > 1)
-        {
-            falhas.Add("Origens:ProporcaoDeFalhaParaAbrirCorte precisa estar entre 0 (exclusivo) e 1.");
-        }
-
-        if (options.DuracaoDoCorteEmSegundos < 1)
-        {
-            falhas.Add("Origens:DuracaoDoCorteEmSegundos precisa ser pelo menos 1.");
-        }
-
-        if (options.ReencaminharAposEmSegundos < 1)
-        {
-            falhas.Add("Origens:ReencaminharAposEmSegundos precisa ser pelo menos 1.");
-        }
+        List<string> falhas =
+        [
+            .. FalhasDosEnderecos(options),
+            .. FalhasDaPaginacaoDosAtos(options),
+            .. FalhasDosPrazos(options),
+            .. FalhasDaInterrupcao(options),
+            .. FalhasDoReencaminhamento(options),
+        ];
 
         return falhas.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(falhas);
     }
 
-    private static void ValidarEndereco(string valor, string campo, List<string> falhas)
+    private static IEnumerable<string> FalhasDosEnderecos(OrigensOptions options) =>
+        new[]
+        {
+            FalhaDoEndereco(options.SelecaoBaseUrl, nameof(OrigensOptions.SelecaoBaseUrl)),
+            FalhaDoEndereco(options.PublicacoesBaseUrl, nameof(OrigensOptions.PublicacoesBaseUrl)),
+        }.OfType<string>();
+
+    private static IEnumerable<string> FalhasDaPaginacaoDosAtos(OrigensOptions options) =>
+        new[]
+        {
+            options.ItensPorPaginaDeAtos is < 1 or > OrigensOptions.MaximoItensPorPaginaDeAtos
+                ? $"Origens:ItensPorPaginaDeAtos precisa estar entre 1 e {OrigensOptions.MaximoItensPorPaginaDeAtos}, que é o limite imposto pela origem."
+                : null,
+            PeloMenos(options.LimiteDePaginasDeAtos, 1, nameof(OrigensOptions.LimiteDePaginasDeAtos)),
+        }.OfType<string>();
+
+    /// <summary>
+    /// A biblioteca de resiliência também recusa esses valores, mas só ao montar a política —
+    /// na primeira consulta, não na subida.
+    /// </summary>
+    private static IEnumerable<string> FalhasDosPrazos(OrigensOptions options) =>
+        new[]
+        {
+            PeloMenos(options.TimeoutPorTentativaEmSegundos, 1, nameof(OrigensOptions.TimeoutPorTentativaEmSegundos)),
+            options.TimeoutTotalEmSegundos <= options.TimeoutPorTentativaEmSegundos
+                ? "Origens:TimeoutTotalEmSegundos precisa ser maior que TimeoutPorTentativaEmSegundos; do contrário nenhuma retentativa cabe no limite da consulta."
+                : null,
+            options.MaximoDeRetentativas < 0 ? "Origens:MaximoDeRetentativas não pode ser negativo." : null,
+            options.EsperaBaseEntreTentativasEmMilissegundos < 0 ? "Origens:EsperaBaseEntreTentativasEmMilissegundos não pode ser negativa." : null,
+        }.OfType<string>();
+
+    private static IEnumerable<string> FalhasDaInterrupcao(OrigensOptions options) =>
+        new[]
+        {
+            PeloMenos(options.ChamadasMinimasParaAvaliarInterrupcao, 2, nameof(OrigensOptions.ChamadasMinimasParaAvaliarInterrupcao)),
+            options.JanelaDeAmostragemDasFalhasEmSegundos < 2 * options.TimeoutPorTentativaEmSegundos
+                ? "Origens:JanelaDeAmostragemDasFalhasEmSegundos precisa ser pelo menos o dobro de TimeoutPorTentativaEmSegundos."
+                : null,
+            options.ProporcaoDeFalhaParaInterromper is <= 0 or > 1
+                ? "Origens:ProporcaoDeFalhaParaInterromper precisa estar entre 0 (exclusivo) e 1."
+                : null,
+            PeloMenos(options.DuracaoDaInterrupcaoEmSegundos, 1, nameof(OrigensOptions.DuracaoDaInterrupcaoEmSegundos)),
+        }.OfType<string>();
+
+    private static IEnumerable<string> FalhasDoReencaminhamento(OrigensOptions options) =>
+        PeloMenos(options.ReencaminharAposEmSegundos, 1, nameof(OrigensOptions.ReencaminharAposEmSegundos)) is { } falha
+            ? [falha]
+            : [];
+
+    private static string? FalhaDoEndereco(string valor, string campo)
     {
         if (string.IsNullOrWhiteSpace(valor))
         {
-            falhas.Add($"Origens:{campo} é obrigatório.");
+            return $"Origens:{campo} é obrigatório.";
         }
-        else if (!Uri.TryCreate(valor, UriKind.Absolute, out Uri? endereco)
-            || (endereco.Scheme != Uri.UriSchemeHttp && endereco.Scheme != Uri.UriSchemeHttps))
-        {
-            falhas.Add($"Origens:{campo} precisa ser um endereço http ou https absoluto.");
-        }
+
+        return Uri.TryCreate(valor, UriKind.Absolute, out Uri? endereco)
+            && (endereco.Scheme == Uri.UriSchemeHttp || endereco.Scheme == Uri.UriSchemeHttps)
+            ? null
+            : $"Origens:{campo} precisa ser um endereço http ou https absoluto.";
     }
+
+    private static string? PeloMenos(int valor, int minimo, string campo) =>
+        valor < minimo ? $"Origens:{campo} precisa ser pelo menos {minimo}." : null;
 }

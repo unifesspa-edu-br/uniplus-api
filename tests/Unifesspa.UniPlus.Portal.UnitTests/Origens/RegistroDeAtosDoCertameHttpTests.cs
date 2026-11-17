@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Portal.UnitTests.Origens;
 
+using System.Collections.Specialized;
 using System.Net;
 using System.Web;
 
@@ -20,44 +21,27 @@ public sealed class RegistroDeAtosDoCertameHttpTests
     {
         Guid primeiro = Guid.NewGuid();
         Guid segundo = Guid.NewGuid();
-
-        RedeSimulada rede = new((_, numero) => numero == 1
-            ? PaginaCom([Ato(primeiro)], proximoCursor: "c2")
-            : PaginaCom([Ato(segundo)], proximoCursor: null));
+        RedeSimulada rede = RedeDeDuasPaginas(primeiro, segundo);
 
         LeituraDosAtos leitura = await Ler(rede);
 
         leitura.Falha.Should().BeNull();
-        leitura.Atos.Select(a => a.Id).Should().Equal(primeiro, segundo);
+        leitura.Atos.Select(ato => ato.Id).Should().Equal(primeiro, segundo);
 
         HttpRequestMessage[] requisicoes = [.. rede.Requisicoes];
-        requisicoes[0].RequestUri!.GetLeftPart(UriPartial.Path).Should().Be(
-            $"{OrigensMontagem.EnderecoPublicacoes}/api/publicacoes/entidades/PROCESSO_SELETIVO/{ProcessoId}/atos");
-        HttpUtility.ParseQueryString(requisicoes[0].RequestUri!.Query)["limit"].Should().Be("100");
-        HttpUtility.ParseQueryString(requisicoes[0].RequestUri!.Query)["cursor"].Should().BeNull();
-
-        // O link da origem aponta para outro host; a segunda página vai ao endereço configurado.
-        requisicoes[1].RequestUri!.Host.Should().Be(new Uri(OrigensMontagem.EnderecoPublicacoes).Host);
-        HttpUtility.ParseQueryString(requisicoes[1].RequestUri!.Query)["cursor"].Should().Be("c2");
-        HttpUtility.ParseQueryString(requisicoes[1].RequestUri!.Query)["limit"].Should().BeNull(
-            "o cursor já carrega a janela");
-
-        requisicoes.Should().AllSatisfy(r =>
-        {
-            r.Headers.Accept.Select(a => a.MediaType).Should().Equal(MediaType);
-            r.Headers.Authorization.Should().BeNull();
-            r.Headers.Contains("Cookie").Should().BeFalse();
-        });
+        ConferirPedidoDaPrimeiraPagina(requisicoes[0]);
+        ConferirPedidoDaPaginaSeguinte(requisicoes[1]);
+        requisicoes.Should().AllSatisfy(requisicao => ConferirPedidoAnonimoNoMediaTypeDaOrigem(requisicao));
     }
 
     [Fact]
-    public async Task Teto_de_paginas_atingido_interrompe_e_informa()
+    public async Task Limite_de_paginas_atingido_interrompe_e_informa()
     {
         RedeSimulada rede = new((_, numero) => PaginaCom([Ato(Guid.NewGuid())], proximoCursor: $"c{numero + 1}"));
 
-        LeituraDosAtos leitura = await Ler(rede, new Dictionary<string, string?> { ["TetoDePaginasDeAtos"] = "2" });
+        LeituraDosAtos leitura = await Ler(rede, new Dictionary<string, string?> { ["LimiteDePaginasDeAtos"] = "2" });
 
-        leitura.Falha.Should().Be(FalhaNaLeituraDosAtos.TetoDePaginas);
+        leitura.Falha.Should().Be(FalhaNaLeituraDosAtos.LimiteDePaginas);
         leitura.Atos.Should().HaveCount(2);
         rede.Chamadas.Should().Be(2);
     }
@@ -74,7 +58,7 @@ public sealed class RegistroDeAtosDoCertameHttpTests
         LeituraDosAtos leitura = await Ler(rede);
 
         leitura.Falha.Should().Be(FalhaNaLeituraDosAtos.FalhaNaPaginacao);
-        leitura.Atos.Select(a => a.Id).Should().Equal(primeiro);
+        leitura.Atos.Select(ato => ato.Id).Should().Equal(primeiro);
     }
 
     [Fact]
@@ -101,12 +85,7 @@ public sealed class RegistroDeAtosDoCertameHttpTests
     [Fact]
     public async Task Proxima_pagina_anunciada_sem_cursor_legivel_nao_encerra_como_lista_completa()
     {
-        RedeSimulada rede = new((_, _) =>
-        {
-            HttpResponseMessage resposta = RedeSimulada.Json($"[{Ato(Guid.NewGuid())}]", MediaType);
-            resposta.Headers.TryAddWithoutValidation("Link", "<http://outro.test/atos>; rel=\"next\"");
-            return resposta;
-        });
+        RedeSimulada rede = new((_, _) => PaginaComProximaSemCursorLegivel());
 
         LeituraDosAtos leitura = await Ler(rede);
 
@@ -126,24 +105,14 @@ public sealed class RegistroDeAtosDoCertameHttpTests
         LeituraDosAtos leitura = await Ler(rede);
 
         leitura.Falha.Should().Be(FalhaNaLeituraDosAtos.FalhaNaPaginacao);
-        leitura.Atos.Select(a => a.Id).Should().Equal(primeiro);
+        leitura.Atos.Select(ato => ato.Id).Should().Equal(primeiro);
     }
 
     [Fact]
     public async Task Le_os_campos_do_ato_e_ignora_o_assinante()
     {
         Guid id = Guid.NewGuid();
-        string corpo = $$"""
-            [{
-              "id": "{{id}}", "orgao": "UNIFESSPA", "serie": "EDITAL", "ano": 2026, "numero": "012/2026",
-              "tipoCodigo": "EDITAL_ABERTURA", "tipoNome": "Edital de abertura",
-              "congelaConfiguracao": true, "efeitoIrreversivel": false, "unicoPorObjeto": true,
-              "dataDoAto": "2026-12-01", "documentoHash": "ff", "assinante": "Fulano de Tal",
-              "publicadoEm": "2026-12-01T10:00:00Z", "atoRetificadoId": null, "motivoRetificacao": null
-            }]
-            """;
-
-        RedeSimulada rede = new((_, _) => RedeSimulada.Json(corpo, MediaType));
+        RedeSimulada rede = new((_, _) => RedeSimulada.Json(PaginaComUmAtoDeTodosOsCampos(id), MediaType));
 
         LeituraDosAtos leitura = await Ler(rede);
 
@@ -155,17 +124,7 @@ public sealed class RegistroDeAtosDoCertameHttpTests
     public async Task Cancelamento_no_meio_do_percurso_se_propaga_em_vez_de_degradar()
     {
         using CancellationTokenSource cancelamento = new();
-        RedeSimulada rede = new((_, numero) =>
-        {
-            if (numero == 1)
-            {
-                return PaginaCom([Ato(Guid.NewGuid())], proximoCursor: "c2");
-            }
-
-            cancelamento.Cancel();
-            throw new TaskCanceledException();
-        });
-
+        RedeSimulada rede = RedeQueCancelaNaSegundaPagina(cancelamento);
         using ServiceProvider provedor = OrigensMontagem.Montar(rede);
         using IServiceScope escopo = provedor.CreateScope();
 
@@ -173,6 +132,47 @@ public sealed class RegistroDeAtosDoCertameHttpTests
             .LerAtosAsync(ProcessoId, cancelamento.Token);
 
         await chamada.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    [Fact]
+    public async Task Ato_fora_do_contrato_depois_de_ato_valido_na_primeira_pagina_mantem_o_valido_e_nao_le_a_seguinte()
+    {
+        Guid valido = Guid.NewGuid();
+        RedeSimulada rede = new((_, _) => PaginaCom([Ato(valido), Ato(Guid.Empty)], proximoCursor: "c2"));
+
+        LeituraDosAtos leitura = await Ler(rede);
+
+        leitura.Falha.Should().Be(FalhaNaLeituraDosAtos.OrigemIndisponivel);
+        leitura.Atos.Select(ato => ato.Id).Should().Equal(valido);
+        rede.Chamadas.Should().Be(1, "a página com ato fora do contrato encerra a leitura");
+    }
+
+    [Fact]
+    public async Task Ato_fora_do_contrato_depois_de_ato_valido_em_pagina_seguinte_mantem_o_lido_e_nao_le_a_proxima()
+    {
+        Guid primeiro = Guid.NewGuid();
+        Guid segundo = Guid.NewGuid();
+        RedeSimulada rede = new((_, numero) => numero == 1
+            ? PaginaCom([Ato(primeiro)], proximoCursor: "c2")
+            : PaginaCom([Ato(segundo), Ato(Guid.Empty)], proximoCursor: "c3"));
+
+        LeituraDosAtos leitura = await Ler(rede);
+
+        leitura.Falha.Should().Be(FalhaNaLeituraDosAtos.FalhaNaPaginacao);
+        leitura.Atos.Select(ato => ato.Id).Should().Equal(primeiro, segundo);
+        rede.Chamadas.Should().Be(2, "a página com ato fora do contrato encerra a leitura");
+    }
+
+    [Fact]
+    public async Task Cursor_ilegivel_na_pagina_do_limite_e_falha_na_paginacao_e_nao_limite_atingido()
+    {
+        RedeSimulada rede = new((_, _) => PaginaComProximaSemCursorLegivel());
+
+        LeituraDosAtos leitura = await Ler(rede, new Dictionary<string, string?> { ["LimiteDePaginasDeAtos"] = "1" });
+
+        leitura.Falha.Should().Be(FalhaNaLeituraDosAtos.FalhaNaPaginacao, "o cursor ilegível é conferido antes do limite");
+        leitura.Atos.Should().HaveCount(1);
+        rede.Chamadas.Should().Be(1);
     }
 
     private static async Task<LeituraDosAtos> Ler(RedeSimulada rede, IDictionary<string, string?>? ajustes = null)
@@ -196,6 +196,68 @@ public sealed class RegistroDeAtosDoCertameHttpTests
 
         return resposta;
     }
+
+    private static RedeSimulada RedeDeDuasPaginas(Guid primeiro, Guid segundo) =>
+        new((_, numero) => numero == 1
+            ? PaginaCom([Ato(primeiro)], proximoCursor: "c2")
+            : PaginaCom([Ato(segundo)], proximoCursor: null));
+
+    private static void ConferirPedidoDaPrimeiraPagina(HttpRequestMessage requisicao)
+    {
+        NameValueCollection consulta = HttpUtility.ParseQueryString(requisicao.RequestUri!.Query);
+
+        requisicao.RequestUri!.GetLeftPart(UriPartial.Path).Should().Be(
+            $"{OrigensMontagem.EnderecoPublicacoes}/api/publicacoes/entidades/PROCESSO_SELETIVO/{ProcessoId}/atos");
+        consulta["limit"].Should().Be("100");
+        consulta["cursor"].Should().BeNull();
+    }
+
+    /// <summary>O link da origem aponta para outro host; a segunda página vai ao endereço configurado.</summary>
+    private static void ConferirPedidoDaPaginaSeguinte(HttpRequestMessage requisicao)
+    {
+        NameValueCollection consulta = HttpUtility.ParseQueryString(requisicao.RequestUri!.Query);
+
+        requisicao.RequestUri!.Host.Should().Be(new Uri(OrigensMontagem.EnderecoPublicacoes).Host);
+        consulta["cursor"].Should().Be("c2");
+        consulta["limit"].Should().BeNull("o cursor já carrega a janela");
+    }
+
+    private static void ConferirPedidoAnonimoNoMediaTypeDaOrigem(HttpRequestMessage requisicao)
+    {
+        requisicao.Headers.Accept.Select(cabecalho => cabecalho.MediaType).Should().Equal(MediaType);
+        requisicao.Headers.Authorization.Should().BeNull();
+        requisicao.Headers.Contains("Cookie").Should().BeFalse();
+    }
+
+    private static RedeSimulada RedeQueCancelaNaSegundaPagina(CancellationTokenSource cancelamento) =>
+        new((_, numero) =>
+        {
+            if (numero == 1)
+            {
+                return PaginaCom([Ato(Guid.NewGuid())], proximoCursor: "c2");
+            }
+
+            cancelamento.Cancel();
+            throw new TaskCanceledException();
+        });
+
+    private static HttpResponseMessage PaginaComProximaSemCursorLegivel()
+    {
+        HttpResponseMessage resposta = RedeSimulada.Json($"[{Ato(Guid.NewGuid())}]", MediaType);
+        resposta.Headers.TryAddWithoutValidation("Link", "<http://outro.test/atos>; rel=\"next\"");
+
+        return resposta;
+    }
+
+    private static string PaginaComUmAtoDeTodosOsCampos(Guid id) => $$"""
+        [{
+          "id": "{{id}}", "orgao": "UNIFESSPA", "serie": "EDITAL", "ano": 2026, "numero": "012/2026",
+          "tipoCodigo": "EDITAL_ABERTURA", "tipoNome": "Edital de abertura",
+          "congelaConfiguracao": true, "efeitoIrreversivel": false, "unicoPorObjeto": true,
+          "dataDoAto": "2026-12-01", "documentoHash": "ff", "assinante": "Fulano de Tal",
+          "publicadoEm": "2026-12-01T10:00:00Z", "atoRetificadoId": null, "motivoRetificacao": null
+        }]
+        """;
 
     private static string Ato(Guid id) => $$"""
         { "id": "{{id}}", "tipoCodigo": "AVISO", "tipoNome": "Aviso", "ano": 2026, "numero": null,
