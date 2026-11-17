@@ -133,9 +133,8 @@ internal static class PayloadsDoEnvelopeFechado
         regraDeDeliberacao = RegraDeDeliberacaoDaBanca(),
     };
 
-    // A etapa pontuada exige a fase que agrupa etapas no mesmo cronograma
-    // (ProcessoSeletivo.EtapaSemFaseDeAvaliacao). No catálogo fechado, só a avaliação tem esse
-    // sinalizador — e ela não publica ato.
+    // A etapa pontuada exige a fase que agrupa etapas no mesmo cronograma. No catálogo fechado,
+    // só a avaliação tem esse sinalizador — e ela não publica ato.
     internal static object FaseDeAvaliacao(CatalogosSemeados catalogos) => new
     {
         ordem = 3,

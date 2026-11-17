@@ -24,22 +24,25 @@ public sealed class RecopiarAoCongelarTests
         FatoColetado item = processo.FatosColetados.First(static f => f.Formato is not null);
         UnidadeResponsavelSnapshot renomeada = new(UnidadesDeTeste.Ceps.OrigemId, "NOVA", "Unidade renomeada");
 
-        Result recopiado = processo.RecopiarAoCongelar(new CopiasDoCongelamento(
-            new Dictionary<string, CopiaDoItemNoCatalogo>
-            {
-                [item.FatoCodigo] = new(OrigemValoresColeta.Catalogo, null, item.ClassificacaoProtecao, item.HipoteseLegal, item.FinalidadeTratamento, item.Descricao, null),
-            },
-            new HashSet<string>(StringComparer.Ordinal),
-            new Dictionary<Guid, UnidadeResponsavelSnapshot> { [renomeada.OrigemId] = renomeada },
-            new ProtecaoVigenteDasExigencias(
-                new Dictionary<string, ClassificacaoDeProtecao>(),
-                new Dictionary<Guid, ProtecaoDoDocumento> { [exigencia.Id] = ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Pessoal) },
-                new HashSet<string>())));
+        Result recopiado = processo.RecopiarAoCongelar(CopiasComCatalogoIncoerente(item, renomeada, exigencia));
 
         recopiado.IsFailure.Should().BeTrue();
         processo.CronogramaFases.Single().UnidadeResponsavelSigla.Should().Be(UnidadesDeTeste.Ceps.Sigla);
         exigencia.ClassificacaoProtecao.Should().Be(ClassificacaoDeProtecao.Sensivel);
     }
+
+    private static CopiasDoCongelamento CopiasComCatalogoIncoerente(FatoColetado item, UnidadeResponsavelSnapshot renomeada, DocumentoExigido exigencia) => new(
+        new Dictionary<string, CopiaDoItemNoCatalogo>
+        {
+            [item.FatoCodigo] = new(OrigemValoresColeta.Catalogo, null, item.ClassificacaoProtecao, item.HipoteseLegal, item.FinalidadeTratamento, item.Descricao, null),
+        },
+        new HashSet<string>(StringComparer.Ordinal),
+        new Dictionary<Guid, UnidadeResponsavelSnapshot> { [renomeada.OrigemId] = renomeada },
+        new ProtecaoVigenteDasExigencias(
+            new Dictionary<string, ClassificacaoDeProtecao>(),
+            new Dictionary<Guid, ProtecaoDoDocumento> { [exigencia.Id] = ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Pessoal) },
+            new HashSet<string>(),
+            new HashSet<Guid>()));
 
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(

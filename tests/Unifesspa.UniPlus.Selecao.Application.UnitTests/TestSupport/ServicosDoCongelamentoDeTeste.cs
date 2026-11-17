@@ -95,6 +95,8 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     private IResolvedorFusoInstitucional Fuso { get; } = new ResolvedorFusoDeTeste();
 
+    private IResolvedorFusoInstitucional? FusoDaConferencia { get; set; }
+
     /// <summary>Os serviços de um processo que o repositório devolve para mutação, com o documento do edital confirmado.</summary>
     public static ServicosDoCongelamentoDeTeste Para(ProcessoSeletivo processo) =>
         new ServicosDoCongelamentoDeTeste().ComProcesso(processo);
@@ -235,6 +237,14 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return this;
     }
 
+    /// <summary>O fuso que só a conferência da configuração resolve; o instante da publicação segue lido no fuso do ambiente.</summary>
+    public ServicosDoCongelamentoDeTeste ComFusoDaConferencia(IResolvedorFusoInstitucional fuso)
+    {
+        FusoDaConferencia = fuso;
+
+        return this;
+    }
+
     public ServicosDoCongelamentoDeTeste ComRelogio(TimeProvider relogio)
     {
         Relogio = relogio;
@@ -267,27 +277,33 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public LeituraDosCorretoresDasEtapas Corretores() => new(RegrasDeConsolidacao);
 
-    public ConferenciaDaConfiguracaoAoCongelar Conferencia() =>
-        new(Catalogos(), Recopia(), Fuso, TiposDeAtoUnicos(), Anexos(), ConformidadeLegal(), Motivos());
+    public ConferenciaDosDocumentosDaOperacao DocumentosDaOperacao() => new(Anexos(), ConformidadeLegal());
 
-    public MontagemDoCongelamento Montagem() => new(Contextos(), Corretores(), Canonicalizer, Usuario);
+    public ConferenciaDosFatosDaVersao FatosDaVersao() => new(Motivos());
+
+    public ConferenciaDaOperacaoAoCongelar Operacao() => new(DocumentosDaOperacao(), FatosDaVersao(), LeituraDaBase());
+
+    public ConferenciaDaConfiguracaoAoCongelar Conferencia() =>
+        new(Catalogos(), Recopia(), FusoDaConferencia ?? Fuso, TiposDeAtoUnicos(), Contextos(), Corretores(), Operacao());
+
+    public MontagemDoCongelamento Montagem() => new(Canonicalizer, Usuario);
 
     public MontagemDaDivulgacao Divulgacao() => new(Certames, EnderecoNoAcervo());
 
     public GravacaoDaVersaoCongelada Gravacao() => new(Repositorio, Atos, Rascunhos, Registro, Divulgacao(), UnitOfWork);
 
-    public CongelamentoDaVersao Congelamento() => new(Conferencia(), Montagem(), Gravacao(), UnitOfWork);
+    public CongelamentoDaVersao Congelamento() => new(AtoEDocumento(), Conferencia(), Montagem(), Gravacao(), UnitOfWork);
 
     public Task<(Result Resposta, IEnumerable<object> Eventos)> PublicarAsync(PublicarProcessoSeletivoCommand comando) =>
-        PublicarProcessoSeletivoCommandHandler.Handle(comando, Repositorio, AtoEDocumento(), Congelamento(), CancellationToken.None);
+        PublicarProcessoSeletivoCommandHandler.Handle(comando, Repositorio, Congelamento(), CancellationToken.None);
 
     public Task<(Result Resposta, IEnumerable<object> Eventos)> RetificarAsync(RetificarProcessoSeletivoCommand comando) =>
         RetificarProcessoSeletivoCommandHandler.Handle(
-            comando, Repositorio, AtoEDocumento(), Congelamento(), LeituraDaBase(), CancellationToken.None);
+            comando, Repositorio, Congelamento(), LeituraDaBase(), CancellationToken.None);
 
     public Task<(Result Resposta, IEnumerable<object> Eventos)> FecharRetificacaoAsync(FecharRetificacaoCommand comando) =>
         FecharRetificacaoCommandHandler.Handle(
-            comando, Repositorio, AtoEDocumento(), Congelamento(), LeituraDaBase(), CancellationToken.None);
+            comando, Repositorio, Congelamento(), LeituraDaBase(), CancellationToken.None);
 
     public Task<(Result Resposta, IEnumerable<object> Eventos)> PublicarAsync(Guid processoId) =>
         PublicarAsync(new PublicarProcessoSeletivoCommand(

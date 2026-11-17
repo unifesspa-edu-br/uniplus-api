@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -38,11 +39,10 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
         ProcessoSeletivo processo,
         ContextoDeContagemDePrazos contexto,
         TiposDeAtoUnicosPorObjeto? tipos = null) => processo.Publicar(
-        ProcessoConformeFactory.Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste",
-        TimeProvider.System, contexto, FatosDeModalidadeDeTeste.DoCatalogo, tipos ?? TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste", Contagem = contexto, TiposDeAtoUnicos = tipos ?? TiposDeAtoUnicosDeTeste.Nenhum });
 
     private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto, TiposDeAtoUnicosPorObjeto? tipos = null) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), contexto, FatosDeModalidadeDeTeste.DoCatalogo, tipos ?? TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(contexto, tiposDeAtoUnicos: tipos))
             .Where(static i => !i.Ok).Select(static i => i.Codigo);
 
     private static RecursoDaEtapa Janela(Guid produtoAncoraId) => RecursoDaEtapa.Criar(
@@ -54,7 +54,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
     /// <summary>
     /// Dá à única etapa do processo o par preliminar e definitivo do mesmo tipo e uma janela de
     /// recurso em dias úteis ancorada no preliminar. A etapa é mutada direto, como o EF a
-    /// hidrataria: o que se prova aqui são os gates do agregado, não a gravação.
+    /// hidrataria: o que se prova aqui são as conferências do agregado, não a gravação.
     /// </summary>
     private static EtapaProcesso ComRecursoNaEtapa(ProcessoSeletivo processo)
     {

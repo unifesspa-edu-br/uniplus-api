@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -37,9 +38,7 @@ internal static class PublicacaoDeTeste
     public static VersaoConfiguracao Publicar(ProcessoSeletivo processo, byte[]? envelopeCongelado = null)
     {
         Result<VersaoConfiguracao> versao = processo.Publicar(
-            DadosDoEdital(), envelopeCongelado ?? EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1",
-            ProcessoSeletivoConformeBuilder.HashFixo, "user-conta-1", new RelogioFixo(Agora),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = DadosDoEdital(), Documento = new DocumentoCongelado(envelopeCongelado ?? EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", ProcessoSeletivoConformeBuilder.HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora) });
         versao.IsSuccess.Should().BeTrue(versao.Error?.Message);
         processo.DequeueDomainEvents();
 

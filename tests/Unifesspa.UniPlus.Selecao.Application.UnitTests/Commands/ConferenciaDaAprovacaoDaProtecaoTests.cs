@@ -71,6 +71,24 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
         resultado.Errors[0].Field.Should().Be($"documentosExigidos.{tipo.Id}");
     }
 
+    [Fact(DisplayName = "A proteção vigente marca a exigência que a aprovação recusa: tipo pendente, tipo excluído e fato comprovado pendente; a de tipo e fatos aprovados não")]
+    public async Task ProtecaoVigente_MarcaAsExigenciasQueAAprovacaoRecusa()
+    {
+        (ProcessoSeletivo pendente, TipoDocumentoView tipoPendente) = await ProcessoComExigenciaAsync(fatosComprovados: []);
+        (ProcessoSeletivo excluido, _) = await ProcessoComExigenciaAsync(fatosComprovados: []);
+        (ProcessoSeletivo comFatoPendente, TipoDocumentoView tipoComFato) = await ProcessoComExigenciaAsync(fatosComprovados: ["MODALIDADE"]);
+        (ProcessoSeletivo aprovado, TipoDocumentoView tipoAprovado) = await ProcessoComExigenciaAsync(fatosComprovados: ["MODALIDADE"]);
+
+        MarcadasDe(pendente, Vivos(tipoPendente with { ProtecaoAprovada = false }), []).Should().Equal(pendente.DocumentosExigidos.Single().Id);
+        MarcadasDe(excluido, new Dictionary<Guid, TipoDocumentoView>(), []).Should().Equal(excluido.DocumentosExigidos.Single().Id);
+        MarcadasDe(comFatoPendente, Vivos(tipoComFato), [Fato("MODALIDADE", "DERIVADO", aprovada: false)]).Should().Equal(comFatoPendente.DocumentosExigidos.Single().Id);
+        MarcadasDe(aprovado, Vivos(tipoAprovado), [Fato("MODALIDADE", "DERIVADO", aprovada: true)]).Should().BeEmpty();
+    }
+
+    private static IReadOnlySet<Guid> MarcadasDe(
+        ProcessoSeletivo processo, IReadOnlyDictionary<Guid, TipoDocumentoView> tiposVivos, IReadOnlyList<FatoCandidatoView> catalogo) =>
+        ProtecaoVigenteDasExigenciasDoProcesso.Montar(processo, tiposVivos, catalogo, daVersaoVigente: null).Exigencias.ExigenciasRecusadasPelaAprovacao;
+
     private static Dictionary<Guid, TipoDocumentoView> Vivos(TipoDocumentoView tipo) => new() { [tipo.Id] = tipo };
 
     private static FaseCronograma FaseDeInscricao() => FaseCronograma.Criar(

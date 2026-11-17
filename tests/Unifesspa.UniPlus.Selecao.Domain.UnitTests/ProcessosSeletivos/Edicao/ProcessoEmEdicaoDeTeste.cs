@@ -7,6 +7,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -21,20 +22,21 @@ internal static class ProcessoEmEdicaoDeTeste
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         prepararAntesDePublicar?.Invoke(processo);
-        Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            DadosEdital.Criar(
-                "001/2026",
-                new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-                new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-                Guid.CreateVersion7()).Value!,
-            Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString()), "1.1", "canonical-json/sha256@v1",
-            new string('a', 64), "user-conta-123", new RelogioFixo(Agora),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> publicacao = processo.Publicar(new CenarioDeCongelamento { Dados = DadosDoEdital(), Documento = DocumentoDoEdital(), Relogio = new RelogioFixo(Agora) });
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         processo.DequeueDomainEvents();
         versao = publicacao.Value!;
         return processo;
     }
+
+    private static DadosEdital DadosDoEdital() => DadosEdital.Criar(
+        "001/2026",
+        new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+        new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
+        Guid.CreateVersion7()).Value!;
+
+    private static DocumentoCongelado DocumentoDoEdital() =>
+        new(Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString()), "1.1", "canonical-json/sha256@v1", new string('a', 64));
 
     internal static ProcessoSeletivo EmSessao()
     {

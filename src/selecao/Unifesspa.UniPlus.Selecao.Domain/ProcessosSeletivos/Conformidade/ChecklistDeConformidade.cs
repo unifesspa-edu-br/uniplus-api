@@ -1,13 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 
-using Unifesspa.UniPlus.Kernel.Extensions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -15,8 +12,8 @@ public static class ChecklistDeConformidade
 {
     /// <summary>
     /// Os avisos da conformidade: o que o administrador deve confirmar e que nunca impede a
-    /// publicação. Lista própria, separada de <see cref="AvaliarConformidade"/>, porque aquela é bicondicional
-    /// com os gates e um aviso não tem gate: nenhum aviso recusa uma publicação.
+    /// publicação. Lista própria, separada de <see cref="AvaliarConformidade"/>, porque aquela coincide
+    /// com a conferência da configuração e um aviso nunca recusa uma publicação.
     /// </summary>
     public static IReadOnlyList<AvisoConformidade> AvaliarAvisos(EstadoDaConfiguracao estado)
     {
@@ -37,67 +34,54 @@ public static class ChecklistDeConformidade
             : $"{string.Join(", ", lugares.Take(lugares.Count - 1))} e {lugares[^1]}";
 
     /// <summary>
-    /// Checklist de conformidade ESTRUTURAL do agregado, bicondicional com os gates de congelamento
-    /// (<see cref="ProntidaoParaCongelar"/>): todos os itens ficam <see langword="true"/> se e somente se os
-    /// gates não têm pendência, então não existe estado em que o checklist declare tudo <c>Ok</c> e a
-    /// publicação recuse por razão estrutural.
+    /// Os itens do painel de conformidade coincidem com a conferência da configuração
+    /// (<see cref="ConfiguracaoAptaACongelar.Conferir"/>): todos ficam <see langword="true"/> se e somente se a conferência não tem
+    /// causa, então não existe estado em que o painel declare tudo <c>Ok</c> e o congelamento recuse por razão estrutural.
     /// </summary>
     /// <remarks>
-    /// "Estrutural" não é "publicável": com os gates verdes, a publicação ainda pode recusar por
-    /// conformidade legal (<c>GET /conformidade-legal</c>), documento confirmado, tipo de ato e outras
-    /// leituras que só o handler de publicação avalia (ADR-0109).
+    /// "Estrutural" não é "publicável": com a conferência sem causas, o congelamento ainda pode recusar por conformidade
+    /// legal (<c>GET /conformidade-legal</c>), documento confirmado e outras leituras que só ele faz (ADR-0109).
     /// <para>
-    /// Não há segunda lista de predicados: cada item vem do predicado nomeado que o gate correspondente
-    /// também chama. O gate escolhe a primeira falha na precedência fixada pela prontidão; o checklist
-    /// projeta todos os vereditos, na ordem dos gates, e uma razão nova de um predicado compartilhado
-    /// aparece nos dois ao mesmo tempo.
+    /// Não há segunda lista de predicados: cada item vem do predicado nomeado que a conferência também chama. A conferência
+    /// acumula as causas e o painel projeta todos os vereditos, e uma razão nova de um predicado compartilhado aparece nos
+    /// dois ao mesmo tempo.
     /// </para>
     /// </remarks>
-    public static IReadOnlyList<ItemConformidade> AvaliarConformidade(
-        EstadoDaConfiguracao estado,
-        ContextoDeContagemDePrazos contexto, FatosDeModalidade fatosDeModalidade, TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos,
-        CorretoresDasEtapas corretores,
-        ProtecaoVigenteDasExigencias? protecao = null)
+    public static IReadOnlyList<ItemConformidade> AvaliarConformidade(EstadoDaConfiguracao estado, CadastrosDaConfiguracao cadastros)
     {
         ArgumentNullException.ThrowIfNull(estado);
-        ArgumentNullException.ThrowIfNull(contexto);
-        ArgumentNullException.ThrowIfNull(tiposDeAtoUnicos);
-        ArgumentNullException.ThrowIfNull(fatosDeModalidade);
-        ArgumentNullException.ThrowIfNull(corretores);
+        ArgumentNullException.ThrowIfNull(cadastros);
 
         return
         [
-            .. ItensDaContagemDePrazos.Avaliar(estado, contexto),
+            .. ItensDaContagemDePrazos.Avaliar(estado, cadastros.ContagemDePrazos),
             .. ItensEstruturaisDeConformidade.Avaliar(estado),
-            .. ItensDoCronograma.Avaliar(estado, contexto, tiposDeAtoUnicos, corretores),
+            .. ItensDoCronograma.Avaliar(estado, cadastros),
             .. ItensDaCascata.Avaliar(estado),
-            .. ItensDaPreCanonicalizacao.Avaliar(estado, fatosDeModalidade, protecao),
+            .. ItensDasCondicoesDaCanonicalizacao.Avaliar(estado, cadastros),
         ];
     }
 
     /// <summary>
-    /// Pendência de conformidade do processo, ou <see langword="null"/> quando ele está conforme. É a fonte
-    /// única do gate: publicar e retificar recusam com o mesmo <c>DomainError</c>.
+    /// Uma causa por item estrutural pendente, no campo do bloco do documento da dimensão do item, com a mensagem do item. O
+    /// código do item identifica a causa por dentro, para distinguir duas pendências da mesma dimensão.
     /// </summary>
     /// <remarks>
-    /// As duas transições abrem uma <see cref="VersaoConfiguracao"/> append-only e juridicamente
-    /// vinculante: uma versão congelada a partir de configuração incompleta é irreparável, porque o
-    /// passado não se muta.
+    /// As duas transições que congelam abrem uma <c>VersaoConfiguracao</c> append-only e juridicamente vinculante: uma
+    /// versão congelada a partir de configuração incompleta é irreparável, porque o passado não se muta.
     /// </remarks>
-    public static DomainError? PendenciaDeConformidade(EstadoDaConfiguracao estado)
+    internal static IReadOnlyList<FieldError> CausasDeConformidade(EstadoDaConfiguracao estado)
     {
         ArgumentNullException.ThrowIfNull(estado);
 
-        // Só os itens estruturais entram no agregador genérico: a cascata de remanejamento tem erro
-        // nomeado próprio e nunca passa por aqui.
-        IReadOnlyList<ItemConformidade> pendencias = [.. ItensEstruturaisDeConformidade.Avaliar(estado).Where(static item => !item.Ok)];
-        if (pendencias.Count == 0)
-        {
-            return null;
-        }
-
-        return new DomainError(
-            "ProcessoSeletivo.ConformidadeInsuficiente",
-            $"Processo não conforme para publicação — pendente: {string.Join(", ", pendencias.Select(static p => p.Mensagem))}.");
+        return
+        [
+            .. ItensEstruturaisDeConformidade.Avaliar(estado)
+                .Where(static item => !item.Ok)
+                .Select(static item => new FieldError(
+                    DimensaoConformidade.BlocoDoDocumento(item.Dimensao),
+                    new DomainError("ProcessoSeletivo.ConformidadeInsuficiente", $"Item de conformidade pendente: {item.Mensagem}."),
+                    item.Codigo)),
+        ];
     }
 }

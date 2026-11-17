@@ -199,7 +199,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
 
         processo.DefinirRegrasDerivacao(Derivacoes(indireto, Novo), Sessao).IsSuccess.Should().BeTrue("a escrita da derivação não confere as citações");
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FatoAusente);
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FatoAusente);
         ItemDoChecklist(processo).Ok.Should().BeFalse();
     }
 
@@ -256,7 +256,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
 
     /// <summary>
     /// Abre a sessão sobre as versões dadas. A publicação de verdade não é o assunto: o que importa é
-    /// o que as versões coletaram, e o processo passa a publicado sem passar pelos gates dela.
+    /// o que as versões coletaram, e o processo passa a publicado sem passar pelas conferências dela.
     /// </summary>
     private static void AbrirSessao(ProcessoSeletivo processo, IReadOnlyList<GrafoConfiguracao> versoes)
     {
@@ -270,7 +270,7 @@ public sealed class RetificacaoFatosDasVersoesPublicadasTests
     }
 
     private static ItemConformidade ItemDoChecklist(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Single(static i => i.Codigo == "formulario_fato_ausente_de_versao_publicada");
 
     /// <summary><c>RENDA_DECLARADA</c> depende da dependência dada, direto ou por um derivado intermediário.</summary>

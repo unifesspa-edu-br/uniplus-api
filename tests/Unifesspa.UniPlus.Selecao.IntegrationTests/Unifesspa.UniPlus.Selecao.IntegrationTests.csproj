@@ -44,7 +44,7 @@
     Golden fixtures do envelope canônico (ADR-0109), comparadas byte a byte. São
     a forma corrente em três corpus — base, com cascata e rica —, não uma por
     schema_version: o codec é único e reescrito no lugar. A versão que elas
-    congelam é declarada em schema-version.txt, ao lado. É o único gate de
+    congelam é declarada em schema-version.txt, ao lado. É a única conferência de
     regressão do congelamento — a baseline OpenAPI não o enxerga (o DTO expõe a
     configuração como JsonNode).
   -->
@@ -72,6 +72,8 @@
     <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
     <Compile Include="../Shared/RelogioControlado.cs" Link="RelogioControlado.cs" />
     <Compile Include="../Shared/CongelamentoDeTeste.cs" Link="CongelamentoDeTeste.cs" />
+    <Compile Include="../Shared/CenarioDeCongelamento.cs" Link="CenarioDeCongelamento.cs" />
+    <Compile Include="../Shared/CadastrosDeTeste.cs" Link="CadastrosDeTeste.cs" />
     <Compile Include="../Shared/IdentificadoresDeTeste.cs" Link="IdentificadoresDeTeste.cs" />
     <Compile Include="../Shared/UnidadesDeTeste.cs" Link="UnidadesDeTeste.cs" />
     <Compile Include="../Shared/DeclaracoesObrigatoriasDeTeste.cs" Link="DeclaracoesObrigatoriasDeTeste.cs" />

@@ -77,6 +77,9 @@ public sealed record EstadoDaConfiguracao
     /// <summary>Os itens dos formulários: os campos fora de grupo repetível.</summary>
     public IEnumerable<FatoColetado> Itens => Campos.Where(static f => f.GrupoColetadoId is null);
 
+    /// <summary>Alguma oferta declara vagas: o processo tem resultado a produzir.</summary>
+    public bool HaVagasOfertadas => DistribuicaoVagas.Any(static oferta => oferta.VagasOfertadasBase > 0);
+
     public IReadOnlyList<ConfiguracaoDerivacaoFato> DerivacoesEfetivas() =>
         DerivacoesDaOferta.Efetivas(RegrasDerivacao, DistribuicaoVagas);
 

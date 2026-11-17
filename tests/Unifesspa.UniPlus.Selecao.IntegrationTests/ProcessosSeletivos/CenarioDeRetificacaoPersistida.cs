@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -128,8 +129,7 @@ internal sealed class CenarioDeRetificacaoPersistida
         DadosEdital dados = NovosDados(documento.Id);
         SnapshotCanonico canonico = Canonicalizar(processo, dados, documento);
         Result<VersaoConfiguracao> publicar = processo.Publicar(
-            dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            documento.HashSha256!, "integration-test-user", relogio, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Relogio = relogio, Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() });
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         return publicar.Value!;
     }
@@ -150,9 +150,7 @@ internal sealed class CenarioDeRetificacaoPersistida
         SnapshotCanonico canonico = Canonicalizar(carregado, dados, documento);
 
         Result<VersaoConfiguracao> fechar = carregado.FecharRetificacao(
-            dados, versaoAbertura, canonico.Bytes, canonico.SchemaVersion,
-            canonico.AlgoritmoHash, documento.HashSha256!, "integration-test-user",
-            PrecondicaoIfMatch.Curinga, TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() }, versaoAbertura, PrecondicaoIfMatch.Curinga);
         fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
 
         await repository.AdicionarVersaoConfiguracaoAsync(fechar.Value!, CancellationToken.None);
@@ -223,8 +221,7 @@ internal sealed class CenarioDeRetificacaoPersistida
             new RetificacaoDoEdital(versaoAtual.AtoCriadorId, "Correção do prazo de inscrição"), ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(),
             TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(carregado), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
         Result<VersaoConfiguracao> retificar = carregado.Retificar(
-            dados, versaoAtual, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash,
-            documento.HashSha256!, "integration-test-user", "Correção do prazo de inscrição", relogio, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Relogio = relogio, Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() }, versaoAtual, "Correção do prazo de inscrição");
         retificar.IsSuccess.Should().BeTrue(retificar.Error?.Message);
         return retificar.Value!;
     }

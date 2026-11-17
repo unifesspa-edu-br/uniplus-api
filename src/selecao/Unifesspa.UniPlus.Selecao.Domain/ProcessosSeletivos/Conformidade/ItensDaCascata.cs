@@ -11,7 +11,7 @@ internal static class ItensDaCascata
 {
     internal static IReadOnlyList<ItemConformidade> Avaliar(EstadoDaConfiguracao estado) =>
     [
-        new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", CoberturaDaCascata.PendenciaDaCascata(estado) is null),
+        new ItemConformidade("cascata_pendente", DimensaoConformidade.CascataRemanejamento, "Cascata de remanejamento", CoberturaDaCascata.CausasDaCascata(estado).Count == 0),
         new ItemConformidade("cascata_modalidade_fora_do_regime_federal", DimensaoConformidade.CascataRemanejamento, "Cascata: modalidade SegueCascata usa a regra de distribuição federal", !CoberturaDaCascata.ExisteCascataForaDoRegimeFederal(estado)),
         new ItemConformidade("cascata_origem_ausente", DimensaoConformidade.CascataRemanejamento, "Cascata: origem SegueCascata declarada na cascata de remanejamento", !CoberturaDaCascata.ExisteCascataOrigemAusente(estado)),
         new ItemConformidade("cascata_fallback_nao_ofertado", DimensaoConformidade.CascataRemanejamento, "Cascata: fallback e destinos resolvíveis nas modalidades ofertadas", !CoberturaDaCascata.ExisteCascataFallbackNaoSelecionadoNaOferta(estado)),

@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -52,9 +53,7 @@ internal static class ApoioDoEnvelopeCodec
         ProcessoSeletivo processo, EntradaCanonicalizacao entrada, SnapshotCanonico congelado, string contaId)
     {
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            entrada.Dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            entrada.HashDocumento, contaId, TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(),
-            FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = entrada.Dados, Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, entrada.HashDocumento), AtorUsuarioContaId = contaId, Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() });
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         return publicacao.Value!;
     }

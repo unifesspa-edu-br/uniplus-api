@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -134,8 +135,7 @@ public sealed class DefinirTaxaInscricaoCommandHandlerTests
         byte[] bytesCanonicos = System.Text.Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString());
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         processo.Publicar(
-            dados, bytesCanonicos, "1.0", "canonical-json/sha256@v1", ProcessoSeletivoConformeBuilder.HashFixo,
-            "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(bytesCanonicos, "1.0", "canonical-json/sha256@v1", ProcessoSeletivoConformeBuilder.HashFixo) }).IsSuccess.Should().BeTrue();
 
         return processo;
     }

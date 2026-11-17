@@ -15,6 +15,11 @@ public sealed class SequenciaDosItensDoCronogramaTests
 {
     private static readonly string[] SequenciaEsperada =
     [
+        "cronograma_fases_ausente",
+        "cronograma_fases_declaradas",
+        "cronograma_fases_em_conjunto",
+        "etapas_declaradas",
+        "etapas_em_conjunto",
         "cronograma_fase_agrupadora_sem_etapa_pontuada",
         "cronograma_etapa_declara_a_fase",
         "cronograma_inscricao_propria_sem_fase_de_coleta",
@@ -43,8 +48,7 @@ public sealed class SequenciaDosItensDoCronogramaTests
     {
         EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(ApoioDaPublicacaoDoProcessoSeletivo.NovoProcessoConforme());
 
-        string[] codigos = [.. ItensDoCronograma.Avaliar(
-            estado, ContextoDeContagemDePrazos.SemCalendario, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Select(static item => item.Codigo)];
+        string[] codigos = [.. ItensDoCronograma.Avaliar(estado, CadastrosDeTeste.Padrao).Select(static item => item.Codigo)];
 
         codigos.Should().Equal(SequenciaEsperada);
         codigos.Distinct().Should().HaveCount(codigos.Length);

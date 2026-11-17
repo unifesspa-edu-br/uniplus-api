@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Application.Queries.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
@@ -129,8 +130,7 @@ internal sealed class CenarioDeFormularioPublicado
         ProcessoSeletivo processo, DadosEdital dados, SnapshotCanonico congelado, string hashDocumento, string ator)
     {
         Result<VersaoConfiguracao> publicar = processo.Publicar(
-            dados, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            hashDocumento, ator, TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, hashDocumento), AtorUsuarioContaId = ator, Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() });
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         await PersistirDivulgadoAsync(processo, publicar.Value!, dados);
         return publicar.Value!;

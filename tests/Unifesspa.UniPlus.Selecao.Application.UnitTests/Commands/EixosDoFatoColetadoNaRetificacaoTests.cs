@@ -25,6 +25,72 @@ public sealed class EixosDoFatoColetadoNaRetificacaoTests
         eventos.Should().BeEmpty();
     }
 
+    [Fact(DisplayName = "Retificar recusa junto o fato que o catálogo reclassificou e o fato citado cujo domínio foi trocado, nessa ordem")]
+    public async Task Retificar_FatoReclassificadoEFatoComDominioTrocado_RecusaOsDoisNaOrdem()
+    {
+        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(
+            new SituacaoDoFatoCitado { DominioCongelado = "CATEGORICO", ComItemNovo = true, ItemNovoReclassificadoNoCatalogo = true });
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
+
+        resposta.Errors.Select(static e => e.Error.Code).Should().Equal("ProcessoSeletivo.FatoColetadoNaoMaisDeclarado", CodigoDaRecusaDoEixoAlterado);
+        resposta.Errors[0].Error.Message.Should().Contain(FatoNovo);
+        resposta.Errors[1].Error.Message.Should().Contain(Fato).And.Contain("domínio");
+        eventos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Retificar recusa o fato citado que o catálogo não tem e, junto, o fato citado cujo domínio foi trocado, nessa ordem")]
+    public async Task Retificar_FatoCitadoAusenteEFatoComDominioTrocado_RecusaOsDoisNaOrdem()
+    {
+        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(
+            new SituacaoDoFatoCitado { DominioCongelado = "CATEGORICO", ExigenciaCitaFatoAusenteDoCatalogo = true });
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
+
+        string[] codigos = [.. resposta.Errors.Select(static e => e.Error.Code)];
+        codigos.Should().ContainInOrder("ProcessoSeletivo.FatoCongeladoNaoEncontrado", CodigoDaRecusaDoEixoAlterado);
+        resposta.Errors.First(static e => e.Error.Code == "ProcessoSeletivo.FatoCongeladoNaoEncontrado").Error.Message.Should().Contain(FatoAusenteDoCatalogo);
+        eventos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Retificar com o fato citado que o catálogo deixou de aceitar e de domínio trocado recusa só a coletabilidade")]
+    public async Task Retificar_FatoNaoColetavelComDominioTrocado_RecusaSoAColetabilidade()
+    {
+        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(
+            new SituacaoDoFatoCitado { DominioCongelado = "CATEGORICO", FatoCitadoReclassificadoNoCatalogo = true });
+
+        (Result resposta, IEnumerable<object> eventos) = await cenario.RetificarAsync();
+
+        resposta.Errors.Select(static e => e.Error.Code).Should().Equal("ProcessoSeletivo.FatoColetadoNaoMaisDeclarado");
+        eventos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Fechar a retificação com o item de tipo trocado cujo fato o catálogo deixou de aceitar recusa só a coletabilidade")]
+    public async Task Fechar_ItemNaoColetavelComEixoTrocado_RecusaSoAColetabilidade()
+    {
+        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(
+            new SituacaoDoFatoCitado { ItemPublicadoComoData = true, FatoCitadoReclassificadoNoCatalogo = true });
+        cenario.AbrirSessao();
+
+        (Result resposta, IEnumerable<object> _) = await cenario.FecharAsync();
+
+        resposta.Errors.Select(static e => e.Error.Code).Should().Equal("ProcessoSeletivo.FatoColetadoNaoMaisDeclarado");
+    }
+
+    [Fact(DisplayName = "Fechar a retificação recusa junto a troca de metadado e a troca de eixo do item, nessa ordem, uma vez cada")]
+    public async Task Fechar_MetadadoEItemComEixoTrocado_RecusaOsDoisNaOrdem()
+    {
+        CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado(
+            new SituacaoDoFatoCitado { DominioCongelado = "CATEGORICO", ItemPublicadoComoData = true });
+        cenario.AbrirSessao();
+
+        (Result resposta, IEnumerable<object> _) = await cenario.FecharAsync();
+
+        resposta.Errors.Select(static e => e.Error.Code).Should().Equal(CodigoDaRecusaDoEixoAlterado, CodigoDaRecusaDoEixoAlterado);
+        resposta.Errors[0].Error.Message.Should().Contain(Fato).And.Contain("domínio");
+        resposta.Errors[1].Error.Message.Should().Contain(Fato).And.Contain("tipo de renderização");
+    }
+
     [Fact(DisplayName = "Retificar sem versão reidratável recusa, como a abertura da sessão, em vez de pular a versão")]
     public async Task Retificar_VersaoNaoReidratavel_Recusa()
     {

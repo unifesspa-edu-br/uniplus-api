@@ -128,6 +128,9 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<ConferenciaDosAnexosDoEdital>();
         services.AddScoped<ConferenciaDeConformidadeLegal>();
         services.AddScoped<ConferenciaDosMotivosAoCongelar>();
+        services.AddScoped<ConferenciaDosDocumentosDaOperacao>();
+        services.AddScoped<ConferenciaDosFatosDaVersao>();
+        services.AddScoped<ConferenciaDaOperacaoAoCongelar>();
         services.AddScoped<ConferenciaDaConfiguracaoAoCongelar>();
     }
 

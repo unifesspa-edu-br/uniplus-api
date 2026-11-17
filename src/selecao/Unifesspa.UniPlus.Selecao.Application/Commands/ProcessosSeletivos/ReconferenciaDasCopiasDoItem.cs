@@ -46,65 +46,66 @@ internal static class ReconferenciaDasCopiasDoItem
     /// lote (ADR-0125).
     /// </summary>
     public static Result<CopiasConferidas> Conferir(
-        ProcessoSeletivo processo,
-        IReadOnlyList<FatoCandidatoView> catalogoDeFatos,
-        IReadOnlySet<string>? fatosJaColetados)
+        ProcessoSeletivo processo, IReadOnlyList<FatoCandidatoView> catalogoDeFatos, IReadOnlySet<string>? fatosJaColetados)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(catalogoDeFatos);
 
         ContextoDoCatalogo contexto = ContextoDoCatalogo.De(processo, catalogoDeFatos);
-        // O fato que deixou de ser coletável (ou saiu do catálogo) é recusado pela conferência de
-        // coletabilidade, com a causa certa; recopiar ou recusar o campo dele antes só trocaria a causa.
-        if (ConferenciaDeColetabilidadeDeFatos.Conferir(processo, contexto.Fatos).IsFailure)
-        {
-            return Result<CopiasConferidas>.Success(new CopiasConferidas(new Dictionary<string, CopiaDoItemNoCatalogo>(), Nenhum));
-        }
 
-        IReadOnlySet<string> jaColetados = fatosJaColetados ?? Nenhum;
-        Dictionary<string, CopiaDoItemNoCatalogo> copias = catalogoDeFatos.ToDictionary(
+        return FatoNaoColetavel(processo, contexto)
+            ? Result<CopiasConferidas>.Success(new CopiasConferidas(new Dictionary<string, CopiaDoItemNoCatalogo>(), Nenhum))
+            : ConferirAsCopias(processo, catalogoDeFatos, contexto, fatosJaColetados ?? Nenhum);
+    }
+
+    // O fato que deixou de ser coletável (ou saiu do catálogo) é recusado pela conferência de coletabilidade, com a causa
+    // certa; recopiar ou recusar o campo dele antes só trocaria a causa.
+    private static bool FatoNaoColetavel(ProcessoSeletivo processo, ContextoDoCatalogo contexto) =>
+        ConferenciaDeColetabilidadeDeFatos.Conferir(processo, contexto.Fatos).IsFailure;
+
+    private static Result<CopiasConferidas> ConferirAsCopias(
+        ProcessoSeletivo processo, IReadOnlyList<FatoCandidatoView> catalogoDeFatos, ContextoDoCatalogo contexto, IReadOnlySet<string> jaColetados)
+    {
+        Dictionary<string, CopiaDoItemNoCatalogo> copias = CopiasDoCatalogo(catalogoDeFatos);
+        ILookup<FatoColetado, FieldError> daForma = RecusasDaFormaPorItem(processo, copias, jaColetados);
+        List<FieldError> erros = [.. RecusasDoDocumento(processo, contexto, jaColetados, daForma)];
+
+        return erros.Count == 0
+            ? Result<CopiasConferidas>.Success(new CopiasConferidas(copias, jaColetados))
+            : Result<CopiasConferidas>.ValidationFailure(erros);
+    }
+
+    private static Dictionary<string, CopiaDoItemNoCatalogo> CopiasDoCatalogo(IReadOnlyList<FatoCandidatoView> catalogoDeFatos) =>
+        catalogoDeFatos.ToDictionary(
             static f => f.Codigo,
             static f => new CopiaDoItemNoCatalogo(
                 VocabularioDeFatos.OrigemValores(f), f.Formato, f.ClassificacaoProtecao, f.HipoteseLegal, f.FinalidadeTratamento,
                 f.Descricao, f.ComponenteExibicao),
             StringComparer.Ordinal);
-        // A forma das cópias é conferida pelo agregado sem mudá-lo; o caminho e a orientação de cada
-        // recusa são montados aqui, no mesmo percurso das demais.
-        ILookup<FatoColetado, FieldError> daForma = RegrasDaColeta.ConferirCopiasDoCatalogo(EstadoDaConfiguracao.De(processo), copias, jaColetados)
+
+    // A forma das cópias é conferida pelo agregado sem mudá-lo; o caminho e a orientação de cada
+    // recusa são montados aqui, no mesmo percurso das demais.
+    private static ILookup<FatoColetado, FieldError> RecusasDaFormaPorItem(
+        ProcessoSeletivo processo, Dictionary<string, CopiaDoItemNoCatalogo> copias, IReadOnlySet<string> jaColetados) =>
+        RegrasDaColeta.ConferirCopiasDoCatalogo(EstadoDaConfiguracao.De(processo), copias, jaColetados)
             .ToLookup<RecusaDaCopiaDoItem, FatoColetado, FieldError>(static r => r.Item, static r => r.Erro, (IEqualityComparer<FatoColetado>)ReferenceEqualityComparer.Instance);
 
-        List<FieldError> erros = [];
-        foreach (FinalidadeFormulario finalidade in processo.Campos.Select(static c => c.Finalidade).Distinct().Order())
-        {
-            string formulario = $"formularios[{EstruturaFormulario.ParaToken(finalidade)}]";
-            FatoColetado[] itens = [.. processo.FatosColetados.Where(i => i.Finalidade == finalidade).OrderBy(static i => i.Ordem)];
-            for (int indice = 0; indice < itens.Length; indice++)
-            {
-                erros.AddRange(Conferir(itens[indice], $"{formulario}.itens[{indice}]", contexto, jaColetados, daForma));
-            }
+    private static IEnumerable<FieldError> RecusasDoDocumento(
+        ProcessoSeletivo processo, ContextoDoCatalogo contexto, IReadOnlySet<string> jaColetados, ILookup<FatoColetado, FieldError> daForma) =>
+        ItensDoFormularioNoDocumento.De(processo).SelectMany(formulario =>
+            formulario.Itens.SelectMany(i => Conferir(i.Item, i.Caminho, contexto, jaColetados, daForma))
+                .Concat(formulario.Grupos.SelectMany(g => ConferirGrupo(g, contexto, jaColetados, daForma))));
 
-            GrupoColetado[] grupos = [.. processo.GruposColetados.Where(g => g.Finalidade == finalidade).OrderBy(static g => g.Ordem)];
-            for (int g = 0; g < grupos.Length; g++)
-            {
-                string caminhoDoGrupo = $"{formulario}.grupos[{g}]";
-                // O grupo cujos campos já foram todos coletados está congelado como eles.
-                if (!grupos[g].Subitens.All(s => jaColetados.Contains(s.FatoCodigo)))
-                {
-                    erros.AddRange(ConferenciaDoItemNoCatalogo.DoGrupo(grupos[g].Exibicao, grupos[g].Obrigatoriedade, contexto).Select(erro => Decorar(
-                        erro, caminhoDoGrupo, $"Grupo '{grupos[g].Rotulo}' ('{grupos[g].Codigo}')", OrientacaoDoGrupo)));
-                }
+    private static IEnumerable<FieldError> ConferirGrupo(
+        GrupoNoDocumento grupo, ContextoDoCatalogo contexto, IReadOnlySet<string> jaColetados, ILookup<FatoColetado, FieldError> daForma)
+    {
+        // O grupo cujos campos já foram todos coletados está congelado como eles.
+        IEnumerable<FieldError> doGrupo = grupo.Campos.All(c => jaColetados.Contains(c.Item.FatoCodigo))
+            ? []
+            : ConferenciaDoItemNoCatalogo.DoGrupo(grupo.Grupo.Exibicao, grupo.Grupo.Obrigatoriedade, contexto).Select(erro => Decorar(
+                erro, grupo.Caminho, $"Grupo '{grupo.Grupo.Rotulo}' ('{grupo.Grupo.Codigo}')", OrientacaoDoGrupo));
 
-                FatoColetado[] campos = [.. grupos[g].Subitens.OrderBy(static s => s.Ordem)];
-                for (int c = 0; c < campos.Length; c++)
-                {
-                    erros.AddRange(Conferir(campos[c], $"{caminhoDoGrupo}.subitens[{c}]", contexto, jaColetados, daForma));
-                }
-            }
-        }
-
-        return erros.Count == 0
-            ? Result<CopiasConferidas>.Success(new CopiasConferidas(copias, jaColetados))
-            : Result<CopiasConferidas>.ValidationFailure(erros);
+        return [.. doGrupo, .. grupo.Campos.SelectMany(c => Conferir(c.Item, c.Caminho, contexto, jaColetados, daForma))];
     }
 
     private static IEnumerable<FieldError> Conferir(

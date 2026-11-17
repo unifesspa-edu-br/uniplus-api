@@ -26,8 +26,9 @@ public static class ConferenciaDosTiposDeAto
 
     /// <summary>
     /// O tipo único declarado mais de uma vez, contando os produtos das fases e das etapas e a vaga que o ato da operação e os
-    /// atos já registrados já ocupam: o ato da retificação continua a própria linhagem, e por isso conta uma vez só. Uma causa
-    /// por tipo, sem campo, porque a repetição envolve mais de um lugar.
+    /// atos já registrados já ocupam: o ato da retificação continua a própria linhagem, e por isso conta uma vez só. Cada produto
+    /// repetido, da segunda ocorrência em diante, é uma causa no campo dele; quando a segunda ocorrência é só a vaga já
+    /// ocupada, a causa está no ato pedido e não no documento, e fica sem campo.
     /// </summary>
     public static IReadOnlyList<FieldError> ConferirTiposUnicosRepetidos(
         CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, TiposDeAtoUnicosPorObjeto tipos)
@@ -36,10 +37,10 @@ public static class ConferenciaDosTiposDeAto
 
         return
         [
-            .. DeclaracoesDeTipoUnico(cronograma, etapas, tipos)
-                .GroupBy(static declaracao => declaracao.AtoCodigo, StringComparer.Ordinal)
+            .. OcorrenciasDeTipoUnico(cronograma, etapas, tipos)
+                .GroupBy(static ocorrencia => ocorrencia.AtoCodigo, StringComparer.Ordinal)
                 .Where(static grupo => grupo.Count() > 1)
-                .Select(grupo => new FieldError(null, TipoUnicoRepetido(tipos.NomeDe(grupo.Key), grupo.Select(static declaracao => declaracao.Lugar)))),
+                .SelectMany(grupo => CausasDoTipoRepetido(tipos.NomeDe(grupo.Key), [.. grupo])),
         ];
     }
 
@@ -63,14 +64,26 @@ public static class ConferenciaDosTiposDeAto
         ProcessoSeletivoErrorCodes.TipoDeAtoUnicoDeclaradoMaisDeUmaVez,
         $"O tipo de ato '{nomeDoTipo}' só pode ser publicado uma vez por processo e está declarado {OndeEstaDeclarado(lugares)}.");
 
-    private static IEnumerable<DeclaracaoDeAto> DeclaracoesDeTipoUnico(
+    // Os produtos primeiro, na posição de entrada, e depois as vagas já ocupadas, que não têm campo no documento.
+    private static IEnumerable<OcorrenciaDoTipo> OcorrenciasDeTipoUnico(
         CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, TiposDeAtoUnicosPorObjeto tipos) =>
     [
         .. ProdutosDeclarados(cronograma, etapas)
             .Where(produto => tipos.EhUnico(produto.AtoCodigo))
-            .Select(static produto => new DeclaracaoDeAto(produto.AtoCodigo, produto.Lugar, produto.Papel)),
-        .. TiposDeAtoDoCronograma.VagasJaReivindicadas(tipos),
+            .Select(static produto => new OcorrenciaDoTipo(produto.AtoCodigo, produto.Lugar, produto.CampoDoAto)),
+        .. TiposDeAtoDoCronograma.VagasJaReivindicadas(tipos)
+            .Select(static vaga => new OcorrenciaDoTipo(vaga.AtoCodigo, vaga.Lugar, null)),
     ];
+
+    private static IEnumerable<FieldError> CausasDoTipoRepetido(string nomeDoTipo, List<OcorrenciaDoTipo> ocorrencias)
+    {
+        DomainError erro = TipoUnicoRepetido(nomeDoTipo, ocorrencias.Select(static ocorrencia => ocorrencia.Lugar));
+        List<string> camposRepetidos = [.. ocorrencias.Skip(1).Select(static ocorrencia => ocorrencia.Campo).OfType<string>()];
+
+        return camposRepetidos.Count == 0
+            ? [new FieldError(null, erro)]
+            : camposRepetidos.Select(campo => new FieldError(campo, erro));
+    }
 
     private static string OndeEstaDeclarado(IEnumerable<string> lugares) =>
         string.Join(" e ", lugares
@@ -94,7 +107,7 @@ public static class ConferenciaDosTiposDeAto
         ];
     }
 
-    // Os produtos das fases primeiro, depois os das etapas, cada um com o campo do papel que o localiza.
+    // Os produtos das fases primeiro, depois os das etapas, cada um com o lugar dele no documento.
     private static IEnumerable<ProdutoDeclarado> ProdutosDeclarados(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
     {
         ArgumentNullException.ThrowIfNull(cronograma);
@@ -103,14 +116,23 @@ public static class ConferenciaDosTiposDeAto
         return
         [
             .. cronograma.Fases.SelectMany(static (fase, posicao) => fase.Atos.Produtos.Select(produto => new ProdutoDeclarado(
-                produto.AtoCodigo, produto.Papel, LugarDaDeclaracao.DaFase(fase.Codigo), $"fases[{posicao}].produtos[{produto.Posicao}].papel"))),
+                produto.AtoCodigo, produto.Papel, LugarDaDeclaracao.DaFase(fase.Codigo), $"fases[{posicao}].produtos[{produto.Posicao}]"))),
             .. etapas.Etapas.SelectMany(static (etapa, posicao) => etapa.Atos.Produtos.Select(produto => new ProdutoDeclarado(
-                produto.AtoCodigo, produto.Papel, LugarDaDeclaracao.DaEtapa(etapa.Nome, etapa.Ordem), $"etapas[{posicao}].produtos[{produto.Posicao}].papel"))),
+                produto.AtoCodigo, produto.Papel, LugarDaDeclaracao.DaEtapa(etapa.Nome, etapa.Ordem), $"etapas[{posicao}].produtos[{produto.Posicao}]"))),
         ];
     }
 
     private static ItemConformidade Item(string codigo, string mensagem, int causas) =>
         new(codigo, DimensaoConformidade.Cronograma, mensagem, causas == 0);
 
-    private sealed record ProdutoDeclarado(string AtoCodigo, PapelProdutoFase? Papel, string Lugar, string Campo);
+    private sealed record OcorrenciaDoTipo(string AtoCodigo, string Lugar, string? Campo);
+
+    private sealed record ProdutoDeclarado(string AtoCodigo, PapelProdutoFase? Papel, string Lugar, string Produto)
+    {
+        /// <summary>O campo do papel do produto, onde a recusa do papel do ato mora.</summary>
+        internal string Campo => $"{Produto}.papel";
+
+        /// <summary>O campo do tipo de ato do produto, onde a repetição do tipo mora.</summary>
+        internal string CampoDoAto => $"{Produto}.atoCodigo";
+    }
 }

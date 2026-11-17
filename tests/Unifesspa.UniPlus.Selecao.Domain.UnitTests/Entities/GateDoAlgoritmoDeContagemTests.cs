@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -71,13 +72,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
         FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        ProcessoConformeFactory.Dados(),
-        configuracaoCongeladaCanonica: "{}"u8.ToArray(),
-        schemaVersion: "1.1",
-        algoritmoHash: "canonical-json/sha256@v1",
-        hashDocumento: HashFixo,
-        atorUsuarioContaId: "teste",
-        TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste", Contagem = ComCalendario() });
 
     /// <summary>
     /// Leva o processo ao estado publicado sem passar pelo gate — a publicação é assunto de
@@ -120,15 +115,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
         RetirarAlgoritmo(processo);
 
         Result<VersaoConfiguracao> retificar = processo.Retificar(
-            ProcessoConformeFactory.Dados(),
-            versaoAtual,
-            configuracaoCongeladaCanonica: "{}"u8.ToArray(),
-            schemaVersion: "1.1",
-            algoritmoHash: "canonical-json/sha256@v1",
-            hashDocumento: HashFixo,
-            atorUsuarioContaId: "teste",
-            motivo: "Correção do prazo",
-            TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste", Contagem = ComCalendario() }, versaoAtual, "Correção do prazo");
 
         retificar.IsFailure.Should().BeTrue();
         retificar.Error!.Code.Should().Be(CodigoDaRecusa);
@@ -146,15 +133,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
         RetirarAlgoritmo(processo);
 
         Result<VersaoConfiguracao> fechar = processo.FecharRetificacao(
-            ProcessoConformeFactory.Dados(),
-            versaoAtual,
-            configuracaoCongeladaCanonica: "{}"u8.ToArray(),
-            schemaVersion: "1.1",
-            algoritmoHash: "canonical-json/sha256@v1",
-            hashDocumento: HashFixo,
-            atorUsuarioContaId: "teste",
-            PrecondicaoIfMatch.Curinga,
-            TimeProvider.System, ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste", Contagem = ComCalendario() }, versaoAtual, PrecondicaoIfMatch.Curinga);
 
         fechar.IsFailure.Should().BeTrue();
         fechar.Error!.Code.Should().Be(CodigoDaRecusa);

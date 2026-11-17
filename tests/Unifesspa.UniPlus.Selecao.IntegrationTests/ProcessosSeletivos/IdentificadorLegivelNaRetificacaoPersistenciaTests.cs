@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -61,40 +62,53 @@ public sealed class IdentificadorLegivelNaRetificacaoPersistenciaTests(ProcessoS
         IdentificadorLegivel declarado = Declarado(5);
         await DeclararNaSessaoAsync(processoId, versao, declarado);
 
-        VersaoConfiguracao nova;
-        await using (UniPlusDbContext fechamento = fixture.CreateDbContext())
-        {
-            ProcessoSeletivo tracked = await RestaurarConfiguracaoPersistenciaTests.CarregarAsync(fechamento, processoId);
-            SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(
-                tracked, new RetificacaoDoEdital(versao.AtoCriadorId, tracked.Rascunho!.Motivo)));
+        VersaoConfiguracao nova = await FecharAsync(processoId, versao);
 
-            Result<VersaoConfiguracao> fechar = tracked.FecharRetificacao(
-                CorpusEnvelopeDadosDoEdital.DadosRicos(), versao, congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-                CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, PrecondicaoIfMatch.Curinga, TimeProvider.System,
-                CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-            fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
-            nova = fechar.Value!;
-            fechamento.Add(nova);
-            await fechamento.SaveChangesAsync();
-        }
+        IdentificadorLegivel? congelado = ReidratarComSucesso(nova).Grafo.IdentificadorLegivel;
+        congelado.Should().Be(declarado, "o identificador declarado na sessão é congelado pela versão que ela gera");
 
-        Result<EnvelopeReidratado> reidratada = CorpusEnvelope.Registro.Reidratar(nova);
-        reidratada.IsSuccess.Should().BeTrue(reidratada.Error?.Message);
-        reidratada.Value!.Grafo.IdentificadorLegivel.Should().Be(
-            declarado, "o identificador declarado na sessão é congelado pela versão que ela gera");
-
-        await using UniPlusDbContext novaSessao = fixture.CreateDbContext();
-        ProcessoSeletivo processo = await RestaurarConfiguracaoPersistenciaTests.CarregarAsync(novaSessao, processoId);
-        processo.AbrirRetificacao(
-                "Tenta trocar o endereço", nova, reidratada.Value.Grafo.IdentificadorLegivel, VersoesPublicadasDeTeste.SoAVigente(processo), CorpusEnvelope.Ator,
-                DateTimeOffset.UtcNow)
-            .IsSuccess.Should().BeTrue();
-
-        Result troca = processo.DefinirIdentificadorLegivel(
-            IdentificadorLegivel.Criar("medicina-2028-v5").Value, PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]));
+        Result troca = await TentarTrocarNaNovaSessaoAsync(processoId, nova, congelado);
 
         troca.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelImutavel,
             "agora o identificador consta em versão publicada");
+    }
+
+    private static EnvelopeReidratado ReidratarComSucesso(VersaoConfiguracao versao)
+    {
+        Result<EnvelopeReidratado> reidratada = CorpusEnvelope.Registro.Reidratar(versao);
+        reidratada.IsSuccess.Should().BeTrue(reidratada.Error?.Message);
+
+        return reidratada.Value!;
+    }
+
+    private async Task<VersaoConfiguracao> FecharAsync(Guid processoId, VersaoConfiguracao versao)
+    {
+        await using UniPlusDbContext fechamento = fixture.CreateDbContext();
+        ProcessoSeletivo tracked = await RestaurarConfiguracaoPersistenciaTests.CarregarAsync(fechamento, processoId);
+        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(
+            tracked, new RetificacaoDoEdital(versao.AtoCriadorId, tracked.Rascunho!.Motivo)));
+
+        Result<VersaoConfiguracao> fechar = tracked.FecharRetificacao(
+            new CenarioDeCongelamento { Dados = CorpusEnvelopeDadosDoEdital.DadosRicos(), Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, CorpusEnvelope.HashDocumento), AtorUsuarioContaId = CorpusEnvelope.Ator, Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() }, versao, PrecondicaoIfMatch.Curinga);
+        fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
+        VersaoConfiguracao nova = fechar.Value!;
+        fechamento.Add(nova);
+        await fechamento.SaveChangesAsync();
+
+        return nova;
+    }
+
+    private async Task<Result> TentarTrocarNaNovaSessaoAsync(Guid processoId, VersaoConfiguracao nova, IdentificadorLegivel? congelado)
+    {
+        await using UniPlusDbContext novaSessao = fixture.CreateDbContext();
+        ProcessoSeletivo processo = await RestaurarConfiguracaoPersistenciaTests.CarregarAsync(novaSessao, processoId);
+        processo.AbrirRetificacao(
+                "Tenta trocar o endereço", nova, congelado, VersoesPublicadasDeTeste.SoAVigente(processo), CorpusEnvelope.Ator,
+                DateTimeOffset.UtcNow)
+            .IsSuccess.Should().BeTrue();
+
+        return processo.DefinirIdentificadorLegivel(
+            IdentificadorLegivel.Criar("medicina-2028-v5").Value, PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]));
     }
 
     /// <summary>Valor distinto por variante: os testes da classe compartilham o mesmo banco.</summary>

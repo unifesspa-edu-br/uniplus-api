@@ -84,11 +84,11 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     /// Um ciclo de derivação (D1 depende de D2, D2 depende de D1) atravessa a validação isolada
     /// de <see cref="ProcessoSeletivo.DefinirRegrasDerivacao"/> — que só barra código duplicado.
     /// A aciclicidade do grafo conjunto (§7) é condição para congelar a ordem topológica (congelamento dos parâmetros na publicação, UNI-REQ-0019),
-    /// e o gate de pré-canonicalização a exige antes de publicar. O ciclo entre classes/regras
+    /// e a conferência de pré-canonicalização a exige antes de publicar. O ciclo entre classes/regras
     /// que nenhuma factory isolada pega é exatamente o que o grafo conjunto existe para recusar.
     /// </summary>
-    [Fact(DisplayName = "Ciclo de derivação passa pela definição isolada mas é recusado no gate de pré-canonicalização")]
-    public void CicloDeDerivacao_RecusadoNoGateDePublicacao()
+    [Fact(DisplayName = "Ciclo de derivação passa pela definição isolada mas é recusado na conferência de pré-canonicalização")]
+    public void CicloDeDerivacao_RecusadoNaConferenciaDePublicacao()
     {
         ProcessoSeletivo processo = NovoProcesso();
 
@@ -98,8 +98,8 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         processo.DefinirRegrasDerivacao([d1, d2], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
             "a definição isolada só barra código duplicado — o ciclo cruza duas configurações e passa aqui");
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo).Should().NotBeNull();
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().NotBeNull();
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code
             .Should().Be(GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
     }
 
@@ -117,8 +117,8 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.DerivacaoDaOferta);
     }
 
-    [Fact(DisplayName = "Regra de derivação que cita fato inexistente é recusada no gate de pré-canonicalização")]
-    public void DerivacaoCitaFatoInexistente_RecusadaNoGateDePublicacao()
+    [Fact(DisplayName = "Regra de derivação que cita fato inexistente é recusada na conferência de pré-canonicalização")]
+    public void DerivacaoCitaFatoInexistente_RecusadaNaConferenciaDePublicacao()
     {
         ProcessoSeletivo processo = NovoProcesso();
 
@@ -127,8 +127,8 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         processo.DefinirRegrasDerivacao([d1], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
             "a definição isolada só valida forma e unicidade — não conhece o universo de fatos do processo");
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo).Should().NotBeNull();
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().NotBeNull();
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code
             .Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
     }
 

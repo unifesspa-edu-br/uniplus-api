@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -45,14 +46,12 @@ internal static class ApoioDaRetificacaoDoProcessoSeletivo
 
     internal static Result<VersaoConfiguracao> PublicarComDadosPadrao(ProcessoSeletivo processo, TimeProvider relogio) =>
         processo.Publicar(
-            NovosDados(), BytesCanonicos, VersaoDoEsquema, VersaoDoCanonicalizador, HashFixo, Autor, relogio,
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = NovosDados(), Documento = new DocumentoCongelado(BytesCanonicos, VersaoDoEsquema, VersaoDoCanonicalizador, HashFixo), AtorUsuarioContaId = Autor, Relogio = relogio });
 
     internal static Result<VersaoConfiguracao> RetificarComDadosPadrao(
         ProcessoSeletivo processo, VersaoConfiguracao versaoCorrente, string motivo, TimeProvider relogio) =>
         processo.Retificar(
-            NovosDados(), versaoCorrente, BytesCanonicos, VersaoDoEsquema, VersaoDoCanonicalizador, HashFixo, Autor,
-            motivo, relogio, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = NovosDados(), Documento = new DocumentoCongelado(BytesCanonicos, VersaoDoEsquema, VersaoDoCanonicalizador, HashFixo), AtorUsuarioContaId = Autor, Relogio = relogio }, versaoCorrente, motivo);
 
     internal static VersaoConfiguracao RetificarComSucesso(
         ProcessoSeletivo processo, VersaoConfiguracao versaoCorrente, string motivo, TimeProvider relogio)
@@ -65,8 +64,7 @@ internal static class ApoioDaRetificacaoDoProcessoSeletivo
     internal static Result<VersaoConfiguracao> FecharRetificacaoComDadosPadrao(
         ProcessoSeletivo processo, VersaoConfiguracao versaoBase, TimeProvider relogio) =>
         processo.FecharRetificacao(
-            NovosDados(), versaoBase, BytesCanonicos, VersaoDoEsquema, VersaoDoCanonicalizador, HashFixo, Autor,
-            PrecondicaoIfMatch.Curinga, relogio, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = NovosDados(), Documento = new DocumentoCongelado(BytesCanonicos, VersaoDoEsquema, VersaoDoCanonicalizador, HashFixo), AtorUsuarioContaId = Autor, Relogio = relogio }, versaoBase, PrecondicaoIfMatch.Curinga);
 
     internal static void AbrirRetificacaoComSucesso(
         ProcessoSeletivo processo, VersaoConfiguracao versaoBase, string motivo, RelogioManual relogio)

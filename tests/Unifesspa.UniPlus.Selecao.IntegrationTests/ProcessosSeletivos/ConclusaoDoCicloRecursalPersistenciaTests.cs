@@ -12,13 +12,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A bicondicional entre o gate de publicação e o item de conformidade da conclusão do ciclo
+/// A coincidência entre a conferência de publicação e o item de conformidade da conclusão do ciclo
 /// recursal. <c>DefinirCronogramaFases</c> recusa a fase que publica preliminar sem conclusão
 /// alcançável, mas esse estado é <b>materializável</b>: o EF hidrata os produtos direto das
 /// linhas, sem passar pela fábrica, e uma configuração gravada antes da regra volta ao agregado
@@ -39,23 +40,25 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
     public ConclusaoDoCicloRecursalPersistenciaTests(ProcessoSeletivoDbFixture fixture) =>
         _fixture = fixture;
 
+    // O único produto da fase deixa de ser a definitiva e passa a ser preliminar: a fase abre um ciclo recursal que nada conclui,
+    // estado que a fábrica recusa produzir hoje.
     [Fact(DisplayName = "Fase hidratada publicando só preliminar, sem conclusão declarada, marca o item vermelho e recusa a publicação")]
     public async Task PreliminarSemConclusao_ItemVermelhoEPublicacaoRecusada()
     {
         Guid processoId = await SemearProcessoConformeAsync($"PS 1426 {Guid.CreateVersion7()}");
-
-        // O único produto da fase deixa de ser a definitiva e passa a ser preliminar: a fase
-        // abre um ciclo recursal que nada conclui — estado que a fábrica recusa produzir hoje.
         await RebaixarProdutoParaPreliminarAsync(processoId);
-
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
         processo.CronogramaFases.Should().ContainSingle()
             .Which.Produtos.Should().ContainSingle()
             .Which.Papel.Should().Be(PapelProdutoFase.Preliminar);
+        AfirmarConclusaoVermelhaEPublicacaoRecusada(processo);
+    }
 
-        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao);
+    private static void AfirmarConclusaoVermelhaEPublicacaoRecusada(ProcessoSeletivo processo)
+    {
+        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao);
 
         checklist.Should().ContainSingle(i => i.Codigo == "cronograma_conclusao_do_ciclo_recursal")
             .Which.Ok.Should().BeFalse(
@@ -79,7 +82,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Should().ContainSingle(i => i.Codigo == "cronograma_conclusao_do_ciclo_recursal")
             .Which.Ok.Should().BeTrue();
 
@@ -88,19 +91,16 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
     }
 
-    private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        DadosEdital.Criar(
+    private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(new CenarioDeCongelamento
+    {
+        Dados = DadosEdital.Criar(
             "001/2026",
             new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
             new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
             Guid.CreateVersion7()).Value!,
-        "{}"u8.ToArray(),
-        "1.1",
-        "canonical-json/sha256@v1",
-        HashFixo,
-        "teste",
-        TimeProvider.System,
-        ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo),
+        AtorUsuarioContaId = "teste",
+    });
 
     /// <summary>
     /// Processo estruturalmente publicável cuja fase publica a definitiva da matéria — o único

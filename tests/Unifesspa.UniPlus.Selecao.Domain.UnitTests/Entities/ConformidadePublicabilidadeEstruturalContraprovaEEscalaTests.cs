@@ -38,25 +38,25 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
             TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().Contain(
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().Contain(
             i => i.Codigo == "fato_coletavel_sem_valores_ofertados" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
 
-    [Fact(DisplayName = "Contraprova: fato coletável renderizado como Booleano não aciona o gate, mesmo sem oferta correspondente")]
-    public void Contraprova_FatoColetadoBooleano_NaoAcionaGate()
+    [Fact(DisplayName = "Contraprova: fato coletável renderizado como Booleano não aciona a conferência, mesmo sem oferta correspondente")]
+    public void Contraprova_FatoColetadoBooleano_NaoAcionaAConferencia()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        // Mesmo código de fato do gate, mas TipoRenderizacao fora de {SelecaoUnica, SelecaoMultipla}
-        // — o gate só se aplica a campo com opções, que é o que fica vazio sem oferta.
+        // Mesmo código de fato da conferência, mas TipoRenderizacao fora de {SelecaoUnica, SelecaoMultipla}
+        // — a conferência só se aplica a campo com opções, que é o que fica vazio sem oferta.
         FatoColetado fato = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Possui alguma condição de atendimento?",
             TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().Contain(
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().Contain(
             i => i.Codigo == "fato_coletavel_sem_valores_ofertados" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -87,7 +87,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         processo.DefinirDocumentosExigidos([ExigenciaGeralDeIdentidade(processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id)], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao);
+        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao);
         foreach (string item in ItensDeReferenciaTemporal)
         {
             checklist.Should().Contain(i => i.Codigo == item && i.Ok, $"sem gatilho por FAIXA_ETARIA — \"{item}\" não pode ficar vermelho");
@@ -98,11 +98,11 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     }
 
     // ══════════════════════════════════════════════════════════════════════════════════════
-    // Gates que a raiz aplica antes do agregador — localidade e convenção de contagem
+    // Conferências que a raiz aplica antes do agregador — localidade e convenção de contagem
     // ══════════════════════════════════════════════════════════════════════════════════════
 
     /// <summary>
-    /// Calendário vigente mínimo — um feriado nacional basta para o gate passar. Existe para que
+    /// Calendário vigente mínimo — um feriado nacional basta para a conferência passar. Existe para que
     /// um teste sobre a convenção de contagem isole a convenção: sem ele, o processo com recurso
     /// teria duas pendências, e a asserção não distinguiria qual das duas o teste prova.
     /// </summary>
@@ -190,7 +190,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
             Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            1, Inicio: null, Fim: null, FaseConcluinteCodigo: "CONCLUSAO_DO_CICLO", UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            2, Inicio: null, Fim: null, FaseConcluinteCodigo: "CONCLUSAO_DO_CICLO", UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
             Produtos: [ProdutoDaFase.Criar("GABARITO", PapelProdutoFase.Preliminar)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
@@ -207,8 +207,8 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         ProcessoSeletivo processo = ProcessoConforme();
 
         // O estado só existe em processo materializado do banco: a gravação do cronograma já
-        // o recusa. Sem esta metade, o gate de publicação ficaria sem prova.
-        MaterializarFases(processo, FasePreliminarDeGabaritoComConcluinte(), FaseFinal(2, "CONCLUSAO_DO_CICLO"));
+        // o recusa. Sem esta metade, a conferência de publicação ficaria sem prova.
+        MaterializarFases(processo, FasePreliminarDeGabaritoComConcluinte(), FaseFinal(3, "CONCLUSAO_DO_CICLO"));
 
         SoEstesItensVermelhos(processo, "cronograma_conclusao_do_ciclo_recursal");
 
@@ -217,7 +217,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.FaseConcluinteSemResultadoDefinitivo");
     }
 
-    // Duas pendências ao mesmo tempo, de gates que Publicar() avalia em ordem conhecida: a convenção de contagem (2º) e a
+    // Duas pendências ao mesmo tempo, de conferências que Publicar() avalia em ordem conhecida: a convenção de contagem (2º) e a
     // taxa de inscrição, que é item estrutural e cai no agregador genérico (3º). Quem lê o checklist de cima para baixo
     // tem de encontrar a causa que efetivamente bloqueia antes da que só apareceria depois dela.
     private static ProcessoSeletivo ProcessoComContagemETaxaPendentes()
@@ -232,16 +232,16 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     }
 
     [Fact(DisplayName = "Com duas pendências simultâneas, o checklist lista a que bloqueia a publicação antes da outra")]
-    public void ContagemDePrazos_PrecedenciaDoChecklistSegueOsGates()
+    public void ContagemDePrazos_PrecedenciaDoChecklistSegueAsConferencias()
     {
         ProcessoSeletivo processo = ProcessoComContagemETaxaPendentes();
 
-        string[] vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Where(static i => !i.Ok).Select(static i => i.Codigo)];
+        string[] vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(ComCalendario())).Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
         // Equal, não BeEquivalentTo: aqui a ORDEM é o que está sendo provado.
         vermelhos.Should().Equal(
             ["algoritmo_contagem_prazo_nao_declarado", "taxa_inscricao_nao_declarada"],
-            "a convenção de contagem é gate anterior ao agregador de itens estruturais, e o " +
+            "a convenção de contagem é conferência anterior ao agregador de itens estruturais, e o " +
             "checklist reproduz a precedência de Publicar()");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo, ComCalendario());
@@ -270,7 +270,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     {
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica), OfertaAmpla(5, GrupoHumanisticaI)]);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Select(static i => i.Codigo).Should().Contain(
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Select(static i => i.Codigo).Should().Contain(
             ["classificacao_resolucao_peso_area_enem_ausente", "distribuicao_vagas_oferta_sem_grupo_area_enem", "classificacao_grupo_area_enem_da_oferta_fora_do_quadro", "desempate_area_enem_sem_quadro"],
             "a exigência existe, e o item existe com ela; o do desempate sem quadro some só quando a resolução está pendente");
         SoEstesItensVermelhos(processo);
@@ -330,7 +330,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Select(static i => i.Codigo).Should().NotContain("classificacao_escala_nota_final_nao_declarada");
     }
 }

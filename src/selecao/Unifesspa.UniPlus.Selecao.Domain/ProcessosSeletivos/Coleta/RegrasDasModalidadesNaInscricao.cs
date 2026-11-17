@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
@@ -43,7 +44,7 @@ public static class RegrasDasModalidadesNaInscricao
             .Select(fato => new FieldError(
                 $"modalidades[{modalidade.CodigoDaModalidade}].fatos.{fato}",
                 new DomainError(
-                    ModalidadesNaInscricaoErrorCodes.RegraCitaFatoNaoColetado,
+                    ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado,
                     "A regra da modalidade cita fato que não é conhecido ao fim da fase que coleta inscrição.")));
 
     /// <summary>O fato é coletado por formulário obrigatório de fase que coleta inscrição, ou é derivado só de fatos assim.</summary>

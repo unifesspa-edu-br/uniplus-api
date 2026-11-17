@@ -57,7 +57,7 @@ As operações que congelam uma versão de configuração (publicação, retific
 ## Confirmação
 
 - Guarda de service location do host sob `NotAllowed`.
-- Regras de arquitetura: o handler depende do orquestrador; só a conferência do congelamento antecipa os portões; só a gravação apaga o rascunho.
+- Regras de arquitetura: o handler depende do orquestrador; só a conferência do congelamento antecipa as conferências; só a gravação apaga o rascunho.
 - Analisador sem aviso de parâmetros nem de linhas.
 
 ## Mais informações
@@ -73,3 +73,9 @@ O domínio projeta o que entra no preliminar no tipo `EntradaDoPreliminar`, um v
 A classificação do que entra e do que não entra vive no código da entidade, e a salvaguarda é um teste: toda propriedade pública de `FaseCronograma` e de `EtapaProcesso` precisa estar classificada, com o motivo, e a que entra precisa ter variação que prove a mudança da entrada. A propriedade nova não classificada reprova o build, e na dúvida ela entra.
 
 **Consequências.** A mudança de dado de entrada não escapa do novo ciclo por esquecimento de campo. O piso pode ficar abaixo do que o ato realmente usa, e a declaração acima do piso cobre o que o cálculo não vê. Cada código novo tem página no portal de desenvolvedores.
+
+## Emenda 2 (2026-11-16) — recusa do congelamento em lote
+
+O orquestrador acumula as recusas das etapas em ordem fixa: conferência do estado da transição, ato e documento no mesmo instante, conferência da configuração ([ADR-0174](0174-conferencia-unica-da-configuracao-do-processo-com-todas-as-causas.md)), conferência da operação e só então montagem, transição e gravação. A recusa devolve todas as causas independentes como lote (422 com `errors[]`, erro raiz igual à primeira causa), e uma etapa só deixa de rodar quando lê dado que a anterior recusou. A montagem do congelamento deixa de ser assíncrona e deixa de recusar, porque tudo o que ela lê já foi conferido.
+
+**Consequências.** O cliente recebe todas as causas numa só resposta. Cada código de erro continua o mesmo, mas a primeira causa de um processo com mais de uma recusa pode mudar, porque a ordem das famílias é única ([ADR-0174](0174-conferencia-unica-da-configuracao-do-processo-com-todas-as-causas.md)); cada mudança tem teste que a registra. A mensagem de conformidade pendente ganha ponto final.

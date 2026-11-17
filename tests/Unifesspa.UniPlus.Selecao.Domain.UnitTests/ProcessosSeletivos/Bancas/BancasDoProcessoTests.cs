@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
@@ -20,7 +21,7 @@ using Xunit;
 
 /// <summary>
 /// A exigência de banca de recursos e o mínimo de integrantes, sobre o estado do processo: a mesma
-/// pendência alimenta o gate de congelamento e o painel.
+/// pendência alimenta a conferência de congelamento e o painel.
 /// </summary>
 public sealed class BancasDoProcessoTests
 {
@@ -75,7 +76,18 @@ public sealed class BancasDoProcessoTests
         new(porRegra.ToDictionary(static par => par.Regra, static par => CorretoresDaRegra.SemNovoCorretor(par.Numero)));
 
     private static DomainError? Pendencia(ProcessoSeletivo processo, CorretoresDasEtapas? corretores = null) =>
-        PendenciasDasBancas.PendenciaDasBancas(EstadoDaConfiguracao.De(processo), corretores ?? CorretoresDeTeste.SemConsolidacao);
+        ConferenciaDasBancas.ConferirRecursosSemBanca(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas))
+            .Concat(CronogramaDoProcesso.Do(processo.CronogramaFases).RecusasDasDeclaracoes(ExigenciaDeBancaDeRecurso.CodigosDoRecorte))
+            .Concat(ConferenciaDasBancas.ConferirRegrasDeDeliberacao(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas)))
+            .Concat(Minimo(processo, corretores ?? CorretoresDeTeste.SemConsolidacao))
+            .Select(static causa => causa.Error)
+            .FirstOrDefault();
+
+    private static IEnumerable<string> CodigosDaConferencia(ProcessoSeletivo processo, CorretoresDasEtapas corretores) =>
+        ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(corretores: corretores)).Errors
+            .Where(static causa => causa.Error.Code != "ProcessoSeletivo.ConformidadeInsuficiente"
+                && causa.Field?.StartsWith("identificacao", StringComparison.Ordinal) != true)
+            .Select(static causa => causa.Error.Code);
 
     private static IReadOnlyList<ItemConformidade> Itens(ProcessoSeletivo processo, CorretoresDasEtapas corretores) =>
         ConferenciaDasBancas.Itens(CronogramaDoProcesso.Do(processo.CronogramaFases), EtapasDoProcesso.Das(processo.Etapas), corretores);
@@ -262,8 +274,8 @@ public sealed class BancasDoProcessoTests
         Pendencia(processo, Corretores((CorrecaoIndependente, 3))).Should().BeNull();
     }
 
-    [Fact(DisplayName = "O painel projeta a mesma pendência do gate em cada item das bancas")]
-    public void Painel_ProjetaAPendenciaDoGate()
+    [Fact(DisplayName = "O painel projeta a mesma pendência da conferência em cada item das bancas")]
+    public void Painel_ProjetaAPendenciaDaConferencia()
     {
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
@@ -317,8 +329,7 @@ public sealed class BancasDoProcessoTests
 
         violacoes.Should().Equal("Banca.IntegrantesAbaixoDoMinimo", "EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
         Pendencia(processo, corretores)!.Code.Should().Be("Banca.IntegrantesAbaixoDoMinimo");
-        ProntidaoParaCongelar.Portoes.Para(EstadoDaConfiguracao.De(processo), Pedido(corretores)).Estrutura.Bancas()!.Code
-            .Should().Be("Banca.IntegrantesAbaixoDoMinimo");
+        CodigosDaConferencia(processo, corretores).Should().Equal("Banca.IntegrantesAbaixoDoMinimo", "EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
     }
 
     [Fact(DisplayName = "A etapa sem regra de consolidação julgada pela banca não gera recusa de regra não resolvida")]
@@ -344,31 +355,16 @@ public sealed class BancasDoProcessoTests
         vermelhos.Should().Equal("cronograma_banca_com_o_minimo_de_integrantes");
     }
 
-    private static PedidoDeCongelamento Pedido(CorretoresDasEtapas corretores) => new()
-    {
-        Dados = ProcessoConformeFactory.Dados(),
-        Documento = new DocumentoCongelado([], "1.1", "canonical-json/sha256@v1", new string('a', 64)),
-        AtorUsuarioContaId = "teste",
-        Instante = TimeProvider.System.GetUtcNow(),
-        Contexto = new ContextoDeContagemDePrazos(null, FusoInstitucional: TimeZoneInfo.Utc),
-        FatosDeModalidade = FatosDeModalidadeDeTeste.DoCatalogo,
-        TiposDeAtoUnicos = TiposDeAtoUnicosDeTeste.Nenhum,
-        Corretores = corretores,
-    };
-
-    [Fact(DisplayName = "O portão das bancas lê os corretores do pedido de congelamento")]
-    public void PortaoDasBancas_LeOsCorretoresDoPedido()
+    [Fact(DisplayName = "A conferência lê os corretores dos cadastros")]
+    public void Conferencia_LeOsCorretoresDosCadastros()
     {
         EtapaProcesso redacao = ComRecurso(NovaEtapa("Redação", 1, CorrecaoIndependente));
         ProcessoSeletivo processo = ProcessoComEtapas(null, redacao);
         redacao.DefinirBancas([DeRecursosDaEtapa(integrantes: 2, quorum: 2)]).IsSuccess.Should().BeTrue();
-        EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(processo);
 
-        ProntidaoParaCongelar.Portoes.Para(estado, Pedido(Corretores((CorrecaoIndependente, 2)))).Estrutura.Bancas().Should().BeNull();
-        ProntidaoParaCongelar.Portoes.Para(estado, Pedido(Corretores((CorrecaoIndependente, 3)))).Estrutura.Bancas()!.Code
-            .Should().Be("Banca.IntegrantesAbaixoDoMinimo");
-        ProntidaoParaCongelar.Portoes.Para(estado, Pedido(CorretoresDeTeste.SemConsolidacao)).Estrutura.Bancas()!.Code
-            .Should().Be("EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
+        CodigosDaConferencia(processo, Corretores((CorrecaoIndependente, 2))).Should().BeEmpty();
+        CodigosDaConferencia(processo, Corretores((CorrecaoIndependente, 3))).Should().Equal("Banca.IntegrantesAbaixoDoMinimo");
+        CodigosDaConferencia(processo, CorretoresDeTeste.SemConsolidacao).Should().Equal("EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
     }
 
     [Fact(DisplayName = "Redefinir as bancas da etapa leva à linha reaproveitada o nome e a regra declarados")]

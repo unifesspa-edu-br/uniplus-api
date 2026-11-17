@@ -484,7 +484,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
         ProtecaoDasExigencias.Planejar(EstadoDaConfiguracao.De(this), protecao).Aplicar();
 
     /// <summary>
-    /// Publica o processo em rascunho (UNI-REQ-0019): confere a transição e os portões de prontidão, abre
+    /// Publica o processo em rascunho (UNI-REQ-0019): confere a transição, abre
     /// a versão 1 a partir dos bytes canônicos que a Application produziu (o Domain não canonicaliza,
     /// ADR-0042) e transita o status, tudo em memória e atomicamente.
     /// </summary>
@@ -551,9 +551,9 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// <param name="grafo">As dimensões reconstruídas pelo codec do envelope (ADR-0110 D1).</param>
     public Result RestaurarConfiguracaoCongelada(VersaoConfiguracao versao, GrafoConfiguracao grafo)
     {
-        if (SessaoDeRetificacao.RecusaDaRestauracao(EstadoDaConfiguracao.De(this), versao, grafo) is { } recusa)
+        if (SessaoDeRetificacao.RecusasDaRestauracao(EstadoDaConfiguracao.De(this), versao, grafo) is { Count: > 0 } causas)
         {
-            return Result.Failure(recusa);
+            return Result.ValidationFailure(causas);
         }
 
         AplicarGrafo(grafo);
@@ -665,7 +665,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// O que impede encerrar ou alterar a sessão: a sessão inexistente (409) precede a precondição
     /// (428/412), porque responder 412 para um rascunho que não existe mandaria o cliente recarregar um ETag inexistente.
     /// </summary>
-    internal DomainError? PendenciaDaSessao(PrecondicaoIfMatch precondicao)
+    public DomainError? PendenciaDaSessao(PrecondicaoIfMatch precondicao)
     {
         ArgumentNullException.ThrowIfNull(precondicao);
 

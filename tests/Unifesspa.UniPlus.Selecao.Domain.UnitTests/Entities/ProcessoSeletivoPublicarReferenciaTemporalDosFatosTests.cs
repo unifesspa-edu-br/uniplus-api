@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -91,8 +92,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         // Nenhuma ReferenciaTemporalFatos configurada — com a guarda B-01 removida, a
         // checagem B-03 (issue #892) agora é alcançada e recusa nomeadamente.
 
-        Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosAusente");
@@ -107,8 +107,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!, PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -125,8 +124,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseSemExtremoId).Value!, PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosExtremoAusente");
@@ -155,8 +153,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!, PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosFimInscricaoIndisponivel");

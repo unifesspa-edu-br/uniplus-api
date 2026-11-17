@@ -13,16 +13,16 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class ValidacaoDoDesempateRestaurado
 {
-    internal static DomainError? Validar(GrafoConfiguracao grafo) =>
-        QuantidadeAcimaDoTeto(grafo)
-        ?? OrdemRepetida(grafo)
-        ?? EtapaCitadaInexistente(grafo)
-        ?? RegrasDoDesempate.PrimeiraViolacaoDoDesempatePorArea(RegrasDoDesempate.EmOrdem(grafo.CriteriosDesempate), grafo.Classificacao);
+    private const string Campo = "classificacao";
 
-    private static DomainError? QuantidadeAcimaDoTeto(GrafoConfiguracao grafo) =>
-        RegrasDoDesempate.ConferirQuantidadeDeCriteriosDesempate(grafo.CriteriosDesempate.Count) is [var excesso, ..]
-            ? excesso.Error
-            : null;
+    internal static IReadOnlyList<FieldError> Validar(GrafoConfiguracao grafo) =>
+    [
+        .. CausasDaRecusa.NoCampo(RegrasDoDesempate.ConferirQuantidadeDeCriteriosDesempate(grafo.CriteriosDesempate.Count), Campo),
+        .. CausasDaRecusa.Da(OrdemRepetida(grafo), Campo),
+        .. EtapasCitadasInexistentes(grafo).Select(static erro => new FieldError(Campo, erro)),
+        .. CausasDaRecusa.Da(
+            RegrasDoDesempate.PrimeiraViolacaoDoDesempatePorArea(RegrasDoDesempate.EmOrdem(grafo.CriteriosDesempate), grafo.Classificacao), Campo),
+    ];
 
     private static DomainError? OrdemRepetida(GrafoConfiguracao grafo) =>
         grafo.CriteriosDesempate.Select(static c => c.Ordem).Distinct().Count() != grafo.CriteriosDesempate.Count
@@ -33,9 +33,8 @@ internal static class ValidacaoDoDesempateRestaurado
 
     // Contra as etapas do grafo: se o codec regenerasse o Id da etapa em vez de preservá-lo, a restauração pararia
     // aqui, porque a referência congelada deixaria de resolver.
-    private static DomainError? EtapaCitadaInexistente(GrafoConfiguracao grafo) =>
+    private static IEnumerable<DomainError> EtapasCitadasInexistentes(GrafoConfiguracao grafo) =>
         grafo.CriteriosDesempate
             .Where(criterio => criterio.Args is ArgsDesempateMaiorNotaEtapa args && !grafo.Etapas.Any(etapa => etapa.Id == args.EtapaRef))
-            .Select(static criterio => ReferenciaAEtapaInexistente.PeloDesempate(criterio.Ordem, ((ArgsDesempateMaiorNotaEtapa)criterio.Args).EtapaRef))
-            .FirstOrDefault();
+            .Select(static criterio => ReferenciaAEtapaInexistente.PeloDesempate(criterio.Ordem, ((ArgsDesempateMaiorNotaEtapa)criterio.Args).EtapaRef));
 }

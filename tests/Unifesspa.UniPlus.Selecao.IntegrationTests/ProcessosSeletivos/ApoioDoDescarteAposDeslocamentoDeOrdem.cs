@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -96,19 +97,17 @@ internal static class ApoioDoDescarteAposDeslocamentoDeOrdem
 
     internal static Result<VersaoConfiguracao> Publicar(
         ProcessoSeletivo processo,
-        ContextoDeContagemDePrazos? contexto = null) => processo.Publicar(
-        DadosEdital.Criar(
-            "001/2026",
-            new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-            new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
-            Guid.CreateVersion7()).Value!,
-        "{}"u8.ToArray(),
-        "1.1",
-        "canonical-json/sha256@v1",
-        HashFixo,
-        "teste",
-        TimeProvider.System,
-        contexto ?? ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        ContextoDeContagemDePrazos? contexto = null) => processo.Publicar(new CenarioDeCongelamento
+        {
+            Dados = DadosEdital.Criar(
+                "001/2026",
+                new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
+                new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
+                Guid.CreateVersion7()).Value!,
+            Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo),
+            AtorUsuarioContaId = "teste",
+            Contagem = contexto ?? ContextoDeContagemDePrazos.SemCalendario,
+        });
 
     internal static ProdutoDaFase ProdutoDe(ProcessoSeletivo processo, string atoCodigo, PapelProdutoFase papel) =>
         processo.CronogramaFases.SelectMany(f => f.Produtos).Single(p => p.AtoCodigo == atoCodigo && p.Papel == papel);

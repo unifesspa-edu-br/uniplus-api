@@ -69,6 +69,16 @@ public sealed record EtapasDoProcesso
 
     public IReadOnlyList<FieldError> Conferir() => ConjuntoDasEtapas.Recusas(Etapas);
 
+    /// <summary>
+    /// O item de que as etapas, em conjunto, não repetem identificador nem ordem e compõem a nota como o processo exige: a
+    /// mesma recusa que a conferência da configuração chama.
+    /// </summary>
+    public ItemConformidade ItemDasEtapasEmConjunto() => new(
+        "etapas_em_conjunto",
+        DimensaoConformidade.Etapas,
+        "Etapas: as etapas não repetem identificador nem ordem e compõem a nota final",
+        Conferir().Count == 0);
+
     /// <summary>A etapa não tem fase concluinte: o preliminar de um tipo de ato exige o definitivo do mesmo tipo dentro dela.</summary>
     public IReadOnlyList<FieldError> ConferirFechamentoDoCiclo() =>
     [
@@ -90,6 +100,16 @@ public sealed record EtapasDoProcesso
         DimensaoConformidade.Cronograma,
         "Cronograma: cada janela de recurso da etapa ancora num produto preliminar da própria etapa",
         RecusasDasDeclaracoes(JanelasRecursaisDaEtapa.CodigosDaAncora).Count == 0);
+
+    /// <summary>
+    /// O item de que as declarações das etapas não têm recusa fora das que já têm item próprio (âncora do recurso): a conferência da
+    /// configuração recusa toda declaração, e o painel mostra o que sobra aqui.
+    /// </summary>
+    public ItemConformidade ItemDasDeclaracoes() => new(
+        "etapas_declaradas",
+        DimensaoConformidade.Etapas,
+        "Etapas: cada etapa declara janela, avaliação, produtos e bancas coerentes",
+        RecusasDasDeclaracoes().Count == RecusasDasDeclaracoes(JanelasRecursaisDaEtapa.CodigosDaAncora).Count);
 
     public IReadOnlyList<ItemConformidade> ItensDaEscala(CitacoesDeNota citacoes) => ConformidadeDaAvaliacaoDasEtapas.ItensDaEscala(Etapas, citacoes);
 

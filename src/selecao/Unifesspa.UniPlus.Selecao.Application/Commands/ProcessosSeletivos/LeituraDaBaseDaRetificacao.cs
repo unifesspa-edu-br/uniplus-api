@@ -60,18 +60,16 @@ public sealed class LeituraDaBaseDaRetificacao(
     }
 
     /// <summary>
-    /// A recusa da fase que começou depois da edição do cronograma: a unidade trocada ou a etapa removida de uma fase
+    /// As recusas da fase que começou depois da edição do cronograma: a unidade trocada ou a etapa removida de uma fase
     /// iniciada, no <paramref name="instante"/> em que o fechamento publica.
     /// </summary>
-    internal async Task<DomainError?> RecusaPorFaseIniciadaAsync(
+    internal async Task<IReadOnlyList<FieldError>> RecusasPorFaseIniciadaAsync(
         ProcessoSeletivo processo, DateTimeOffset instante, CancellationToken cancellationToken)
     {
         FasesIniciadas iniciadas = await fasesIniciadas
             .ObterAsync(processo.Id, instante, cancellationToken).ConfigureAwait(false);
 
-        return ConferenciaDasFasesIniciadas.Conferir(iniciadas, processo.CronogramaFases, processo.Etapas) is [{ } primeira, ..]
-            ? primeira.Error
-            : null;
+        return ConferenciaDasFasesIniciadas.Conferir(iniciadas, processo.CronogramaFases, processo.Etapas);
     }
 
     // A versão nova é coerente sozinha, mas não pode desfazer o ciclo de recurso que um preliminar já publicado abriu e

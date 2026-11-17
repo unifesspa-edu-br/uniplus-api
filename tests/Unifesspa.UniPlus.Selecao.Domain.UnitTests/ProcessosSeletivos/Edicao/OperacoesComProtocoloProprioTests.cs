@@ -105,7 +105,7 @@ public sealed class OperacoesComProtocoloProprioTests
 
         processo.AplicarProtecaoVigente(
             new ProtecaoVigenteDasExigencias(
-                new Dictionary<string, ClassificacaoDeProtecao>(), new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string>()));
+                new Dictionary<string, ClassificacaoDeProtecao>(), new Dictionary<Guid, ProtecaoDoDocumento>(), new HashSet<string>(), new HashSet<Guid>()));
         Action semProtecao = () => processo.AplicarProtecaoVigente(null!);
 
         semProtecao.Should().Throw<ArgumentNullException>();

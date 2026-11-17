@@ -13,10 +13,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class ValidacaoDaClassificacaoRestaurada
 {
-    internal static DomainError? Validar(GrafoConfiguracao grafo) =>
-        grafo.Classificacao.RegrasEliminacao
+    internal static IReadOnlyList<FieldError> Validar(GrafoConfiguracao grafo) =>
+    [
+        .. grafo.Classificacao.RegrasEliminacao
             .Select(regra => RecusaDaEtapaCitada(regra, grafo))
-            .FirstOrDefault(static recusa => recusa is not null);
+            .OfType<DomainError>()
+            .Select(static recusa => new FieldError("classificacao", recusa)),
+    ];
 
     private static DomainError? RecusaDaEtapaCitada(RegraEliminacao regra, GrafoConfiguracao grafo) =>
         regra.Args.EtapaReferenciada() is { } etapaRef && !grafo.Etapas.Any(etapa => etapa.Id == etapaRef)

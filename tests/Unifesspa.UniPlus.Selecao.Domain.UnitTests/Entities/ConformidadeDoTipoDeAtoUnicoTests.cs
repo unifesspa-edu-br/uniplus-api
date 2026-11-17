@@ -9,17 +9,25 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDaConformidadeDoCronograma;
 
 /// <summary>
-/// Cobertura do gate de publicação para o tipo de ato único por objeto declarado mais de uma vez no
+/// Cobertura da conferência de publicação para o tipo de ato único por objeto declarado mais de uma vez no
 /// cronograma (reprovação, retificação, checklist) e para o aviso do mesmo tipo definitivo em mais de um lugar.
 /// </summary>
 public sealed class ConformidadeDoTipoDeAtoUnicoTests
 {
+    private static DomainError? PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao estado, TiposDeAtoUnicosPorObjeto tipos) =>
+        ConferenciaDosTiposDeAto.ConferirTiposUnicosRepetidos(CronogramaDoProcesso.Do(estado.CronogramaFases), EtapasDoProcesso.Das(estado.Etapas), tipos) is [var primeira, ..]
+            ? primeira.Error
+            : null;
+
     private const string CodigoItemTipoUnico = "cronograma_tipo_de_ato_unico_declarado_uma_vez";
 
     private static TiposDeAtoUnicosPorObjeto Unicos(string codigo, string nome, string? atoDaOperacao = null, bool vagaOcupada = false) =>
@@ -34,8 +42,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
 
     private static Result<VersaoConfiguracao> PublicarComUnicos(ProcessoSeletivo processo, TiposDeAtoUnicosPorObjeto unicos) =>
         processo.Publicar(
-            Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste", TimeProvider.System,
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, unicos);
+            new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste", TiposDeAtoUnicos = unicos });
 
     private static FaseCronograma FaseQuePublica(int ordem, string codigo, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(
@@ -82,7 +89,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
                 ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Preliminar),
                 ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Definitivo)));
 
-        DomainError? pendencia = TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo),
+        DomainError? pendencia = PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo),
             Unicos("HOMOLOGACAO_INSCRICOES", "Homologação das inscrições"));
 
         pendencia.Should().NotBeNull();
@@ -96,7 +103,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             FaseQuePublica(1, "HOMOLOGACAO_INSCRICOES", ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", null)),
             FaseQuePublica(2, "RESULTADO", ProdutoDaFase.Criar("HOMOLOGACAO_INSCRICOES", PapelProdutoFase.Definitivo)));
 
-        DomainError? pendencia = TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo),
+        DomainError? pendencia = PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo),
             Unicos("HOMOLOGACAO_INSCRICOES", "Homologação das inscrições"));
 
         pendencia.Should().NotBeNull();
@@ -111,7 +118,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
                 ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar),
                 ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
 
-        TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo), Unicos("HOMOLOGACAO_INSCRICOES", "Homologação das inscrições")).Should().BeNull();
+        PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo), Unicos("HOMOLOGACAO_INSCRICOES", "Homologação das inscrições")).Should().BeNull();
     }
 
     [Fact(DisplayName = "Tipo único declarado numa fase e numa etapa reprova: o produto da etapa também conta")]
@@ -125,7 +132,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
         etapa.DefinirProdutos([ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)]).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo),
+        DomainError? pendencia = PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo),
             Unicos("RESULTADO_CLASSIFICACAO", "Resultado da classificação"));
 
         pendencia.Should().NotBeNull();
@@ -155,9 +162,9 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
         TiposDeAtoUnicosPorObjeto unicos = Unicos("RESULTADO_CLASSIFICACAO", "Resultado da classificação");
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(duplicado), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, unicos, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(duplicado), CadastrosDeTeste.Com(tiposDeAtoUnicos: unicos))
             .Should().Contain(item => item.Codigo == CodigoItemTipoUnico && !item.Ok);
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(unico), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, unicos, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(unico), CadastrosDeTeste.Com(tiposDeAtoUnicos: unicos))
             .Should().Contain(item => item.Codigo == CodigoItemTipoUnico && item.Ok);
     }
 
@@ -191,7 +198,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             FaseQuePublica(1, "CLASSIFICACAO"));
         processo.DefinirEtapas([EtapaDeProvaComResultadoDefinitivo(1), EtapaDeProvaComResultadoDefinitivo(2)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo), Unicos("RESULTADO_CLASSIFICACAO", "Resultado da classificação"));
+        DomainError? pendencia = PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo), Unicos("RESULTADO_CLASSIFICACAO", "Resultado da classificação"));
 
         pendencia.Should().NotBeNull();
         pendencia!.Message.Should().Contain("na etapa 'Prova' (ordem 1) e na etapa 'Prova' (ordem 2)");
@@ -203,7 +210,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
             FaseQuePublica(1, "ABERTURA", ProdutoDaFase.Criar("EDITAL_ABERTURA", PapelProdutoFase.Definitivo)));
 
-        DomainError? pendencia = TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo),
+        DomainError? pendencia = PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo),
             Unicos("EDITAL_ABERTURA", "Edital de abertura", atoDaOperacao: "RETIFICACAO_EDITAL", vagaOcupada: true));
 
         pendencia.Should().NotBeNull();
@@ -216,7 +223,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
         ProcessoSeletivo processo = ProcessoPublicavelComCronograma(
             FaseQuePublica(1, "CLASSIFICACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
 
-        TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo),
+        PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo),
             Unicos("EDITAL_ABERTURA", "Edital de abertura", atoDaOperacao: "EDITAL_ABERTURA", vagaOcupada: true))
             .Should().BeNull();
     }
@@ -229,7 +236,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
         TiposDeAtoUnicosPorObjeto ocupadoMasNaoUnico = TiposDeAtoUnicosPorObjeto.ParaOperacao(
             new Dictionary<string, string>(), ["EDITAL_ABERTURA"], "RETIFICACAO_EDITAL");
 
-        TiposDeAtoDoCronograma.PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo), ocupadoMasNaoUnico).Should().BeNull();
+        PendenciaDoTipoDeAtoUnico(EstadoDaConfiguracao.De(processo), ocupadoMasNaoUnico).Should().BeNull();
     }
 
     private static FaseCronograma FaseQueConclui(int ordem, string codigo, string? concluinte, params ProdutoDaFase[] produtos) =>
@@ -298,7 +305,7 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             FaseQuePublica(2, "HABILITACAO", ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
 
         ChecklistDeConformidade.AvaliarAvisos(EstadoDaConfiguracao.De(processo)).Should().NotBeEmpty();
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Where(static i => i.Codigo.StartsWith("cronograma_", StringComparison.Ordinal)).Should().OnlyContain(static i => i.Ok);
         PublicarComUnicos(processo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
     }

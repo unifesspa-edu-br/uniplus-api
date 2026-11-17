@@ -244,12 +244,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.CotasDaLeiDiferentesEntreOfertas);
     }
 
-    [Theory(DisplayName = "Pré-canonicalização: reserva de PcD de ampla concorrência com cota da lei exige a cota da lei para PcD")]
-    [InlineData(true, true)]
-    [InlineData(false, false)]
-    public void PreCanon_ReservaPcdSemCotaPcdDaLei(bool comCotaPcd, bool esperadoOk)
-    {
-        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+    private static ConfiguracaoDistribuicaoVagas OfertaComReservaDePcd(bool comCotaPcd) => ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada
             {
                 VagasOfertadasBase = 10,
@@ -263,10 +258,15 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
             ]
             },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-        ProcessoSeletivo processo = ProcessoConforme([oferta]);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
-            .Single(static i => i.Codigo == "modalidade_reserva_pcd_sem_cota_pcd_da_lei").Ok.Should().Be(esperadoOk);
+    [Theory(DisplayName = "Pré-canonicalização: reserva de PcD de ampla concorrência com cota da lei exige a cota da lei para PcD")]
+    [InlineData(true, true)]
+    [InlineData(false, false)]
+    public void PreCanon_ReservaPcdSemCotaPcdDaLei(bool comCotaPcd, bool esperadoOk)
+    {
+        ProcessoSeletivo processo = ProcessoConforme([OfertaComReservaDePcd(comCotaPcd)]);
+
+        Checklist(processo).Single(static i => i.Codigo == "modalidade_reserva_pcd_sem_cota_pcd_da_lei").Ok.Should().Be(esperadoOk);
     }
 
     /// <summary>

@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Restaura
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
@@ -13,14 +14,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A restauração para na primeira recusa, na ordem em que o grafo é conferido. Cada recusa é
-/// provada sozinha e contra a seguinte que pode coexistir com ela no mesmo grafo: quem corrige
-/// o grafo de cima para baixo vê sempre o primeiro problema.
+/// A primeira causa da restauração, na ordem em que o grafo é conferido. Cada recusa é provada sozinha e contra a seguinte
+/// que pode coexistir com ela no mesmo grafo: quem corrige o grafo de cima para baixo vê sempre a primeira causa. A etapa
+/// sem fase e a fase que agrupa etapas sem etapa são completude e não entram: ver <c>RecusasAcumuladasNaRestauracaoTests</c>.
 /// </summary>
 public sealed class OrdemDasRecusasDoGrafoTests
 {
     private static readonly Dictionary<int, string> CodigoDaRecusa = new()
     {
+        [1] = "ProcessoSeletivo.IdEtapaAusente",
         [2] = "ProcessoSeletivo.IdEtapaDuplicado",
         [3] = "ProcessoSeletivo.OrdemEtapaDuplicada",
         [4] = "ProcessoSeletivo.NenhumaEtapaComponeNota",
@@ -33,21 +35,20 @@ public sealed class OrdemDasRecusasDoGrafoTests
         [11] = "ProcessoSeletivo.CronogramaFasesVazio",
         [12] = "ProcessoSeletivo.OrdemFaseDuplicada",
         [13] = "ProcessoSeletivo.FaseCanonicaDuplicada",
-        [14] = "ProcessoSeletivo.AvaliacaoSemEtapa",
-        [15] = "ProcessoSeletivo.EtapaSemFaseDeAvaliacao",
+        [14] = "ProcessoSeletivo.EtapaSemFaseNoCronograma",
     };
 
     public static TheoryData<int[]> Cenarios() => new()
     {
-        { [2] }, { [3] }, { [4] }, { [5] }, { [6] }, { [7] }, { [8] }, { [9] }, { [10] },
-        { [11] }, { [12] }, { [13] }, { [14] }, { [15] },
-        { [2, 3] }, { [3, 4] }, { [4, 5] }, { [4, 6] }, { [5, 7] }, { [6, 7] }, { [7, 8] },
-        { [8, 9] }, { [9, 10] }, { [10, 11] }, { [10, 12] }, { [12, 13] }, { [13, 14] }, { [13, 15] },
+        { [1] }, { [2] }, { [3] }, { [4] }, { [5] }, { [6] }, { [7] }, { [8] }, { [9] }, { [10] },
+        { [11] }, { [12] }, { [13] }, { [14] },
+        { [1, 2] }, { [2, 3] }, { [3, 4] }, { [4, 5] }, { [4, 6] }, { [5, 7] }, { [6, 7] }, { [7, 8] },
+        { [8, 9] }, { [9, 10] }, { [10, 11] }, { [10, 12] }, { [12, 13] }, { [13, 14] },
     };
 
-    [Theory(DisplayName = "A restauração recusa o primeiro problema do grafo, na ordem da conferência")]
+    [Theory(DisplayName = "A restauração recusa com a primeira causa do grafo, na ordem da conferência")]
     [MemberData(nameof(Cenarios))]
-    public void Restaurar_GrafoComProblemas_RecusaOPrimeiro(int[] problemas)
+    public void Restaurar_GrafoComProblemas_RecusaComAPrimeiraCausa(int[] problemas)
     {
         ProcessoSeletivo processo = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out VersaoConfiguracao versao);
 
@@ -59,49 +60,79 @@ public sealed class OrdemDasRecusasDoGrafoTests
 
     internal static GrafoConfiguracao GrafoComProblemas(int[] problemas)
     {
-        List<EtapaProcesso> etapas = [];
-        List<ConfiguracaoDistribuicaoVagas> distribuicao = [Oferta()];
-        List<CriterioDesempate> desempate = [];
-        List<RegraEliminacao> eliminacoes = [];
-        List<FaseCronograma> fases = [Fase(1, agrupaEtapas: false)];
-        int? opcoes = 1;
+        GrafoEmMontagem montagem = new();
 
-        if (problemas.Contains(2)) { Guid repetido = Guid.CreateVersion7(); etapas.AddRange([Etapa(repetido, 2), Etapa(repetido, 3)]); }
-        if (problemas.Contains(3)) { etapas.AddRange([Etapa(Guid.CreateVersion7(), 4), Etapa(Guid.CreateVersion7(), 4)]); }
-        if (problemas.Contains(4)) { etapas.Add(Etapa(Guid.CreateVersion7(), 5)); }
-        if (problemas.Contains(5)) { distribuicao.Clear(); }
-        if (problemas.Contains(6)) { distribuicao.Add(Oferta(distribuicao[0].OfertaCursoOrigemId)); }
-        if (problemas.Contains(7)) { opcoes = 0; }
-        if (problemas.Contains(8)) { desempate.AddRange([Desempate(1), Desempate(1)]); }
-        if (problemas.Contains(9)) { desempate.Add(DesempatePorEtapa(2, Guid.CreateVersion7())); }
-        if (problemas.Contains(10)) { eliminacoes.Add(EliminacaoPorNotaMinima(Guid.CreateVersion7())); }
-        if (problemas.Contains(11)) { fases.Clear(); }
-        if (problemas.Contains(12)) { fases.AddRange([Fase(2, agrupaEtapas: false), Fase(2, agrupaEtapas: false)]); }
-        if (problemas.Contains(13)) { Guid origem = Guid.CreateVersion7(); fases.AddRange([Fase(3, false, origem), Fase(4, false, origem)]); }
-        if (problemas.Contains(14)) { fases.Add(Fase(5, agrupaEtapas: true)); }
-        if (problemas.Contains(15)) { etapas.Add(Etapa(Guid.CreateVersion7(), 6, CaraterEtapa.Classificatoria, peso: 1m)); }
+        foreach (int problema in problemas.Distinct().Order())
+        {
+            Problemas[problema](montagem);
+        }
 
-        return new GrafoConfiguracao(
-            etapas: etapas,
+        return montagem.Grafo();
+    }
+
+    private static readonly Dictionary<int, Action<GrafoEmMontagem>> Problemas = new()
+    {
+        [1] = static g => g.Etapas.Add(SemId(Etapa(Guid.CreateVersion7(), 7, CaraterEtapa.Classificatoria, peso: 1m))),
+        [2] = static g => { Guid repetido = Guid.CreateVersion7(); g.Etapas.AddRange([Etapa(repetido, 2), Etapa(repetido, 3)]); },
+        [3] = static g => g.Etapas.AddRange([Etapa(Guid.CreateVersion7(), 4), Etapa(Guid.CreateVersion7(), 4)]),
+        [4] = static g => g.Etapas.Add(Etapa(Guid.CreateVersion7(), 5)),
+        [5] = static g => g.Distribuicao.Clear(),
+        [6] = static g => g.Distribuicao.Add(Oferta(g.Distribuicao[0].OfertaCursoOrigemId)),
+        [7] = static g => g.Opcoes = 0,
+        [8] = static g => g.Desempate.AddRange([Desempate(1), Desempate(1)]),
+        [9] = static g => g.Desempate.Add(DesempatePorEtapa(2, Guid.CreateVersion7())),
+        [10] = static g => g.Eliminacoes.Add(EliminacaoPorNotaMinima(Guid.CreateVersion7())),
+        [11] = static g => g.Fases.Clear(),
+        [12] = static g => g.Fases.AddRange([Fase(2, agrupaEtapas: false), Fase(2, agrupaEtapas: false)]),
+        [13] = static g => { Guid origem = Guid.CreateVersion7(); g.Fases.AddRange([Fase(3, false, origem), Fase(4, false, origem)]); },
+        [14] = static g => g.Etapas.Add(Etapa(Guid.CreateVersion7(), 8, CaraterEtapa.Classificatoria, peso: 1m, faseCodigo: "FASE_INEXISTENTE")),
+        [15] = static g => g.Fases.Add(Fase(5, agrupaEtapas: true)),
+        [16] = static g => g.Etapas.Add(Etapa(Guid.CreateVersion7(), 6, CaraterEtapa.Classificatoria, peso: 1m)),
+    };
+
+    private sealed class GrafoEmMontagem
+    {
+        internal List<EtapaProcesso> Etapas { get; } = [];
+
+        internal List<ConfiguracaoDistribuicaoVagas> Distribuicao { get; } = [Oferta()];
+
+        internal List<CriterioDesempate> Desempate { get; } = [];
+
+        internal List<RegraEliminacao> Eliminacoes { get; } = [];
+
+        internal List<FaseCronograma> Fases { get; } = [Fase(1, agrupaEtapas: false)];
+
+        internal int? Opcoes { get; set; } = 1;
+
+        internal GrafoConfiguracao Grafo() => new(
+            etapas: Etapas,
             atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
-            distribuicaoVagas: distribuicao,
+            distribuicaoVagas: Distribuicao,
             bonusRegional: null,
-            criteriosDesempate: desempate,
-            classificacao: Classificacao(eliminacoes),
-            cronogramaFases: fases,
+            criteriosDesempate: Desempate,
+            classificacao: Classificacao(Eliminacoes),
+            cronogramaFases: Fases,
             documentosExigidos: [],
             nosExigencia: [],
             referenciaTemporalFatos: null,
-            numeroDeOpcoesDeCurso: opcoes);
+            numeroDeOpcoesDeCurso: Opcoes);
+    }
+
+    // Reidratar recusa o Id vazio: o estado que a restauração confere é o de uma etapa que chegou ao grafo sem identidade.
+    private static EtapaProcesso SemId(EtapaProcesso etapa)
+    {
+        typeof(EntityBase).GetProperty(nameof(EntityBase.Id))!.SetValue(etapa, Guid.Empty);
+
+        return etapa;
     }
 
     private static ReferenciaRegra Regra(string codigo, char semente) =>
         ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
-    private static EtapaProcesso Etapa(Guid id, int ordem, CaraterEtapa carater = CaraterEtapa.Eliminatoria, decimal? peso = null) =>
+    private static EtapaProcesso Etapa(Guid id, int ordem, CaraterEtapa carater = CaraterEtapa.Eliminatoria, decimal? peso = null, string? faseCodigo = null) =>
         EtapaProcesso.Reidratar(
             id,
-            new IdentificacaoDaEtapa(Nome: $"Etapa {ordem}", Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: null),
+            new IdentificacaoDaEtapa(Nome: $"Etapa {ordem}", Carater: carater, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: ordem, FaseCodigo: faseCodigo),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: peso, NotaMinima: 5m, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
             itens: null);
 

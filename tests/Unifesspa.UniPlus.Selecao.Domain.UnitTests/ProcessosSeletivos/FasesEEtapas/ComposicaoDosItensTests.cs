@@ -16,7 +16,7 @@ using Xunit;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma.ModeloDeFase;
 
 /// <summary>
-/// As declarações que a gravação recusaria, carregadas do banco, nunca tiram um item do painel: os vinte e um saem, e fica
+/// As declarações que a gravação recusaria, carregadas do banco, nunca tiram um item do painel: os vinte e quatro saem, e fica
 /// vermelho exatamente o item da regra que a declaração viola, ou o que não se consegue conferir por causa dela.
 /// </summary>
 public sealed class ComposicaoDosItensTests
@@ -24,10 +24,9 @@ public sealed class ComposicaoDosItensTests
     private static readonly DateTimeOffset Inicio = new(2026, 3, 2, 12, 0, 0, TimeSpan.Zero);
 
     private static IReadOnlyList<ItemConformidade> Itens(ProcessoSeletivo processo) =>
-        ItensDoCronograma.Avaliar(
-            EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao);
+        ItensDoCronograma.Avaliar(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao);
 
-    private static string[] Vermelhos(IReadOnlyList<ItemConformidade> itens) => [.. itens.Where(static item => !item.Ok).Select(static item => item.Codigo)];
+    private static string[] Pendentes(IReadOnlyList<ItemConformidade> itens) => [.. itens.Where(static item => !item.Ok).Select(static item => item.Codigo)];
 
     private static FaseCronograma FaseCarregada(string codigo, int ordem, DateTimeOffset inicio, DateTimeOffset fim, bool comRecurso = false)
     {
@@ -44,17 +43,17 @@ public sealed class ComposicaoDosItensTests
     private static EtapaProcesso EtapaCarregada(string nome, int ordem, string faseCodigo, CaraterEtapa carater = CaraterEtapa.Classificatoria, decimal? peso = 1m) =>
         ApoioProcessoSeletivoRestaurarConfiguracao.EtapaCongeladaDeProvaObjetiva(Guid.CreateVersion7(), nome, ordem, faseCodigo, peso ?? 0m, carater: carater);
 
-    [Fact(DisplayName = "O processo conforme tem os vinte e um itens do cronograma, todos verdes")]
+    [Fact(DisplayName = "O processo conforme tem os vinte e seis itens do cronograma, todos conformes")]
     public void Itens_ProcessoConforme_TodosVerdes()
     {
         IReadOnlyList<ItemConformidade> itens = Itens(ApoioDaPublicacaoDoProcessoSeletivo.NovoProcessoConforme());
 
-        itens.Should().HaveCount(21);
-        Vermelhos(itens).Should().BeEmpty();
+        itens.Should().HaveCount(26);
+        Pendentes(itens).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A fase carregada com a âncora do recurso inválida deixa vermelhos o item da âncora e o do recurso sem banca de análise, e nenhum outro")]
-    public void Itens_FaseComAncoraInvalida_AncoraERecursoSemBancaVermelhos()
+    public void Itens_FaseComAncoraInvalida_AncoraERecursoSemBancaPendentes()
     {
         ProcessoSeletivo processo = ApoioDaPublicacaoDoProcessoSeletivo.NovoProcessoConforme();
         FaseCronograma fase = FaseCarregada("RECURSO", 2, Inicio, Inicio.AddDays(9), comRecurso: true);
@@ -63,11 +62,11 @@ public sealed class ComposicaoDosItensTests
 
         IReadOnlyList<ItemConformidade> itens = Itens(processo);
 
-        itens.Should().HaveCount(21);
-        Vermelhos(itens).Should().Equal("cronograma_ancora_do_recurso", "cronograma_recurso_com_banca_de_analise");
+        itens.Should().HaveCount(26);
+        Pendentes(itens).Should().Equal("cronograma_ancora_do_recurso", "cronograma_recurso_com_banca_de_analise");
     }
 
-    [Fact(DisplayName = "A fase carregada com a janela invertida deixa vermelho o item da janela da etapa que a declara")]
+    [Fact(DisplayName = "A fase carregada com a janela invertida deixa pendentes o item das declarações das fases e o da janela da etapa que a declara")]
     public void Itens_FaseComJanelaInvertida_ItemDaJanelaDaEtapaVermelho()
     {
         ProcessoSeletivo processo = ApoioDaPublicacaoDoProcessoSeletivo.NovoProcessoConforme();
@@ -78,19 +77,19 @@ public sealed class ComposicaoDosItensTests
 
         IReadOnlyList<ItemConformidade> itens = Itens(processo);
 
-        itens.Should().HaveCount(21);
-        Vermelhos(itens).Should().Equal("cronograma_etapa_fora_da_janela_da_fase");
+        itens.Should().HaveCount(26);
+        Pendentes(itens).Should().Equal("cronograma_fases_declaradas", "cronograma_etapa_fora_da_janela_da_fase");
     }
 
-    [Fact(DisplayName = "A etapa carregada com a avaliação recusada não tira nem pinta item do cronograma")]
-    public void Itens_EtapaComAvaliacaoRecusada_NenhumItemVermelho()
+    [Fact(DisplayName = "A etapa carregada com a avaliação recusada deixa pendente só o item das declarações das etapas")]
+    public void Itens_EtapaComAvaliacaoRecusada_SoOItemDasDeclaracoesPendente()
     {
         ProcessoSeletivo processo = ApoioDaPublicacaoDoProcessoSeletivo.NovoProcessoConforme();
         ProcessoCarregadoDoBanco.Etapa(processo, EtapaCarregada("Entrevista", 2, "RESULTADO_FINAL", CaraterEtapa.Eliminatoria, peso: 3m));
 
         IReadOnlyList<ItemConformidade> itens = Itens(processo);
 
-        itens.Should().HaveCount(21);
-        Vermelhos(itens).Should().BeEmpty();
+        itens.Should().HaveCount(26);
+        Pendentes(itens).Should().Equal("etapas_declaradas");
     }
 }

@@ -7,15 +7,16 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
 /// <summary>
-/// O gate da forma de avaliação: a etapa com nota declara como a nota é obtida, a que não tem nota
+/// A conferência da forma de avaliação: a etapa com nota declara como a nota é obtida, a que não tem nota
 /// não declara, e a forma humana exige a regra de consolidação, o passo do lançamento e ao menos
-/// uma banca. É gate, e não recusa de gravação, porque depende do que o grafo diz sobre a etapa.
+/// uma banca. É conferência, e não recusa de gravação, porque depende do que o grafo diz sobre a etapa.
 /// </summary>
 public sealed class ConformidadeAvaliacaoDasEtapasTests
 {
@@ -55,12 +56,11 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
     }
 
     private static IEnumerable<ItemConformidade> Vermelhos(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Where(static i => !i.Ok && i.Dimensao == DimensaoConformidade.Etapas);
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        ProcessoConformeFactory.Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste",
-        TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" });
 
     [Fact(DisplayName = "A etapa com nota sem forma de avaliação recusa a publicação; com forma publica")]
     public void EtapaComNotaSemForma_RecusaPublicacao()

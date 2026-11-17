@@ -11,8 +11,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -85,39 +85,51 @@ public sealed class FormularioDeInscricaoNaRetificacaoTests
             $"{nameof(Retificacao_FormularioSemOsDadosDeGenero_RegravacaoReporOsItens)}-{Guid.CreateVersion7()}");
         VersaoConfiguracao versaoAbertura = await _cenario.PublicarEPersistirAsync(processo);
 
-        Guid processoId = processo.Id;
         await using UniPlusDbContext sessao = _cenario.CriarDbContext();
         ProcessoSeletivoRepository processos = ProcessoSeletivoRepositoryDeTeste.Criar(sessao);
-        ProcessoSeletivo tracked = (await processos.ObterParaMutacaoAsync(processoId, CancellationToken.None))!;
-        // A versão publicada é a de antes dos três dados: os fatos vigentes não os incluem.
-        FatosDasVersoesPublicadas publicadas = VersoesPublicadasDeTeste.SemEixosCongelados(
+        ProcessoSeletivo tracked = (await processos.ObterParaMutacaoAsync(processo.Id, CancellationToken.None))!;
+        AbrirRetificacaoDeAntesDosDadosDeGenero(tracked, versaoAbertura);
+        CodigosDaConferencia(tracked).Should().Contain(
+            FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico, "pré-condição: a retificação não fecharia assim");
+
+        await RegravarEAfirmarAsync(processos, sessao, tracked);
+    }
+
+    // A versão publicada é a de antes dos três dados: os fatos vigentes não os incluem.
+    private static FatosDasVersoesPublicadas PublicadasSemOsDadosDeGenero(ProcessoSeletivo tracked) =>
+        VersoesPublicadasDeTeste.SemEixosCongelados(
         [
             VersoesPublicadasDeTeste.Versao(
                 tracked.Formularios,
                 tracked.FatosColetados.Where(static f => f.FatoCodigo is not ("SEXO_CIVIL" or "IDENTIDADE_GENERO" or "ORIENTACAO_SEXUAL")),
                 tracked.GruposColetados),
         ]);
-        tracked.AbrirRetificacao(
-            "Repor os dados de sexo e gênero", versaoAbertura, identificadorDaVersaoBase: null, publicadas,
-            "integration-test-user", TimeProvider.System.GetUtcNow()).IsSuccess.Should().BeTrue();
 
-        // O estado de um processo publicado antes dos três dados: a seção sem eles, na numeração de então.
+    // O estado de um processo publicado antes dos três dados: a seção sem eles, na numeração de então.
+    private static void AbrirRetificacaoDeAntesDosDadosDeGenero(ProcessoSeletivo tracked, VersaoConfiguracao versaoAbertura)
+    {
+        tracked.AbrirRetificacao(
+            "Repor os dados de sexo e gênero", versaoAbertura, identificadorDaVersaoBase: null, PublicadasSemOsDadosDeGenero(tracked),
+            "integration-test-user", TimeProvider.System.GetUtcNow()).IsSuccess.Should().BeTrue();
         Result legado = tracked.DefinirFatosColetados(
             FinalidadeFormulario.Inscricao, FormularioDeTeste.DadosBasicosDeAntesDosDadosDeGenero(), PrecondicaoIfMatch.Curinga);
         legado.IsSuccess.Should().BeTrue(legado.Error?.Message + string.Join(";", legado.Errors.Select(static e => e.Error.Message)));
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(tracked), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(
-            FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico, "pré-condição: a retificação não fecharia assim");
+    }
 
+    private static async Task RegravarEAfirmarAsync(ProcessoSeletivoRepository processos, UniPlusDbContext sessao, ProcessoSeletivo tracked)
+    {
         IFatoCandidatoReader catalogo = Substitute.For<IFatoCandidatoReader>();
         catalogo.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com([]));
         Result<MutacaoAceita> regravacao = await DefinirFatosColetadosCommandHandler.Handle(
-            new DefinirFatosColetadosCommand(processoId, FinalidadeFormulario.Inscricao, [], PrecondicaoIfMatch.Curinga),
+            new DefinirFatosColetadosCommand(tracked.Id, FinalidadeFormulario.Inscricao, [], PrecondicaoIfMatch.Curinga),
             processos, catalogo, sessao, CancellationToken.None);
 
         regravacao.IsSuccess.Should().BeTrue(regravacao.Error?.Message);
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(tracked), FatosDeModalidadeDeTeste.DoCatalogo)?.Code.Should().NotBe(
-            FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
+        CodigosDaConferencia(tracked).Should().NotContain(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
         tracked.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.Ordem)
             .Should().OnlyHaveUniqueItems();
     }
+
+    private static IEnumerable<string> CodigosDaConferencia(ProcessoSeletivo processo) =>
+        ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Errors.Select(static e => e.Error.Code);
 }

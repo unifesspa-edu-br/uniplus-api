@@ -2,94 +2,73 @@ namespace Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// As transições que congelam uma versão com os argumentos soltos, como os testes as escrevem: cada
+/// As transições que congelam uma versão a partir de um <see cref="CenarioDeCongelamento"/>: cada
 /// chamada monta o pedido e delega ao agregado, sem validar nada além do que o agregado valida.
 /// </summary>
 internal static class CongelamentoDeTeste
 {
-    public static Result<VersaoConfiguracao> Publicar(
-        this ProcessoSeletivo processo,
-        DadosEdital dados,
-        byte[] configuracaoCongeladaCanonica,
-        string schemaVersion,
-        string algoritmoHash,
-        string hashDocumento,
-        string atorUsuarioContaId,
-        TimeProvider clock,
-        ContextoDeContagemDePrazos contexto,
-        FatosDeModalidade fatosDeModalidade,
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos) =>
-        processo.Publicar(Pedido(
-            processo, dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioContaId,
-            clock, contexto, fatosDeModalidade, tiposDeAtoUnicos));
+    public static Result<VersaoConfiguracao> Publicar(this ProcessoSeletivo processo, CenarioDeCongelamento cenario) =>
+        Congelar(
+            processo,
+            TransicoesDaVersao.ConferirEstadoParaPublicar(EstadoDaConfiguracao.De(processo)),
+            cenario,
+            configuracao => processo.Publicar(Pedido(cenario, configuracao)));
 
     public static Result<VersaoConfiguracao> Retificar(
-        this ProcessoSeletivo processo,
-        DadosEdital dados,
-        VersaoConfiguracao versaoAtual,
-        byte[] configuracaoCongeladaCanonica,
-        string schemaVersion,
-        string algoritmoHash,
-        string hashDocumento,
-        string atorUsuarioContaId,
-        string motivo,
-        TimeProvider clock,
-        ContextoDeContagemDePrazos contexto,
-        FatosDeModalidade fatosDeModalidade,
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos) =>
-        processo.Retificar(
-            Pedido(
-                processo, dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioContaId,
-                clock, contexto, fatosDeModalidade, tiposDeAtoUnicos),
-            versaoAtual,
-            motivo);
+        this ProcessoSeletivo processo, CenarioDeCongelamento cenario, VersaoConfiguracao versaoAtual, string motivo) =>
+        Congelar(
+            processo,
+            TransicoesDaVersao.ConferirEstadoParaRetificar(EstadoDaConfiguracao.De(processo), versaoAtual, motivo),
+            cenario,
+            configuracao => processo.Retificar(Pedido(cenario, configuracao), versaoAtual, motivo));
 
     public static Result<VersaoConfiguracao> FecharRetificacao(
-        this ProcessoSeletivo processo,
-        DadosEdital dados,
-        VersaoConfiguracao versaoAtual,
-        byte[] configuracaoCongeladaCanonica,
-        string schemaVersion,
-        string algoritmoHash,
-        string hashDocumento,
-        string atorUsuarioContaId,
-        PrecondicaoIfMatch precondicao,
-        TimeProvider clock,
-        ContextoDeContagemDePrazos contexto,
-        FatosDeModalidade fatosDeModalidade,
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos) =>
-        processo.FecharRetificacao(
-            Pedido(
-                processo, dados, configuracaoCongeladaCanonica, schemaVersion, algoritmoHash, hashDocumento, atorUsuarioContaId,
-                clock, contexto, fatosDeModalidade, tiposDeAtoUnicos),
-            versaoAtual,
-            precondicao);
+        this ProcessoSeletivo processo, CenarioDeCongelamento cenario, VersaoConfiguracao versaoAtual, PrecondicaoIfMatch precondicao) =>
+        Congelar(
+            processo,
+            processo.Rascunho is { } sessao
+                ? TransicoesDaVersao.ConferirEstadoParaFechar(EstadoDaConfiguracao.De(processo), versaoAtual, sessao)
+                : Result.Success(),
+            cenario,
+            configuracao => processo.FecharRetificacao(Pedido(cenario, configuracao), versaoAtual, precondicao));
 
-    private static PedidoDeCongelamento Pedido(
+    // A ordem do congelamento: a conferência do estado da transição, depois a da configuração, e só então a transição, que
+    // recebe a configuração apta.
+    private static Result<VersaoConfiguracao> Congelar(
         ProcessoSeletivo processo,
-        DadosEdital dados,
-        byte[] canonico,
-        string schemaVersion,
-        string algoritmoHash,
-        string hashDocumento,
-        string atorUsuarioContaId,
-        TimeProvider clock,
-        ContextoDeContagemDePrazos contexto,
-        FatosDeModalidade fatosDeModalidade,
-        TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos) =>
+        Result doEstado,
+        CenarioDeCongelamento cenario,
+        Func<ConfiguracaoAptaACongelar, Result<VersaoConfiguracao>> transicao)
+    {
+        if (doEstado.IsFailure)
+        {
+            return Result<VersaoConfiguracao>.ValidationFailure(doEstado.Errors);
+        }
+
+        Result<ConfiguracaoAptaACongelar> daConfiguracao = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDe(processo, cenario));
+
+        return daConfiguracao.IsFailure
+            ? Result<VersaoConfiguracao>.ValidationFailure(daConfiguracao.Errors)
+            : transicao(daConfiguracao.Value!);
+    }
+
+    private static CadastrosDaConfiguracao CadastrosDe(ProcessoSeletivo processo, CenarioDeCongelamento cenario) =>
+        CadastrosDeTeste.Com(cenario.Contagem, cenario.FatosDeModalidade, cenario.TiposDeAtoUnicos, cenario.Corretores ?? CorretoresDeTeste.DoProcesso(processo));
+
+    private static PedidoDeCongelamento Pedido(CenarioDeCongelamento cenario, ConfiguracaoAptaACongelar configuracao) =>
         new()
         {
-            Dados = dados,
-            Documento = new DocumentoCongelado(canonico, schemaVersion, algoritmoHash, hashDocumento),
-            AtorUsuarioContaId = atorUsuarioContaId,
-            Instante = clock.GetUtcNow(),
-            Contexto = contexto,
-            FatosDeModalidade = fatosDeModalidade,
-            TiposDeAtoUnicos = tiposDeAtoUnicos,
-            Corretores = CorretoresDeTeste.DoProcesso(processo),
+            Dados = cenario.Dados,
+            Documento = cenario.Documento,
+            AtorUsuarioContaId = cenario.AtorUsuarioContaId,
+            Instante = cenario.Relogio.GetUtcNow(),
+            ConfiguracaoApta = configuracao,
         };
 }

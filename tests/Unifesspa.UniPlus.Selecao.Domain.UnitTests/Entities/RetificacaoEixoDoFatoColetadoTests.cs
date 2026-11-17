@@ -98,6 +98,25 @@ public sealed class RetificacaoEixoDoFatoColetadoTests
             .Should().BeNull("o fato que nenhuma versão coletou não é afetado");
     }
 
+    [Fact(DisplayName = "Todas as trocas de eixo saem juntas: os metadados primeiro, depois as operações dos agregados, cada fato uma vez, na ordem de entrada")]
+    public void EixosCongeladosTrocados_AcumulamMetadadosEDepoisAgregados()
+    {
+        EixosDoMetadadoCongelado booleano = new("BOOLEANO", "ESCALAR", "INSCRICAO");
+        EixosDoMetadadoCongelado categorico = new("CATEGORICO", "ESCALAR", "INSCRICAO");
+        FatosDasVersoesPublicadas publicadas = FatosDasVersoesPublicadas.De(
+            [VersoesPublicadasDeTeste.Versao([], [Fato("TEM_RENDA", 0), Fato("TEM_FILHOS", 1)])],
+            [new EixosDeVersaoPublicada(
+                new Dictionary<string, EixosDoMetadadoCongelado> { ["TEM_RENDA"] = booleano, ["TEM_FILHOS"] = booleano },
+                new Dictionary<string, string> { ["HA_MEMBRO"] = "EXISTE", ["OUTRO_MEMBRO"] = "EXISTE" })]);
+
+        IReadOnlyList<TrocaDeEixo> trocas = publicadas.EixosCongeladosTrocados(
+            new Dictionary<string, EixosDoMetadadoCongelado> { ["TEM_FILHOS"] = categorico, ["TEM_RENDA"] = categorico },
+            new Dictionary<string, string> { ["OUTRO_MEMBRO"] = "VALORES_PRESENTES", ["HA_MEMBRO"] = "VALORES_PRESENTES" });
+
+        trocas.Select(static troca => troca.Fato).Should().Equal("TEM_FILHOS", "TEM_RENDA", "OUTRO_MEMBRO", "HA_MEMBRO");
+        trocas.Select(static troca => troca.DeAgregado).Should().Equal(false, false, true, true);
+    }
+
     private static ProcessoSeletivo Publicado()
     {
         FaseCronograma inscricao = Fase(1, "INSCRICAO", coletaInscricao: true);

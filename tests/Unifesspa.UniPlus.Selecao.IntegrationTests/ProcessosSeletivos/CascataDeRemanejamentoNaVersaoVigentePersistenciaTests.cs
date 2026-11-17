@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
@@ -127,9 +128,7 @@ public sealed class CascataDeRemanejamentoNaVersaoVigentePersistenciaTests
         SnapshotCanonico canonico = Canonicalizar(carregado, dados, documento);
 
         Result<VersaoConfiguracao> fechar = carregado.FecharRetificacao(
-            dados, versaoAtual, canonico.Bytes, canonico.SchemaVersion,
-            canonico.AlgoritmoHash, documento.HashSha256!, "integration-test-user",
-            PrecondicaoIfMatch.Curinga, clock, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Relogio = clock, Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() }, versaoAtual, PrecondicaoIfMatch.Curinga);
         fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
         return fechar.Value!;
     }

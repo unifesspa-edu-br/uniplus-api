@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
 /// Cada fato tem um único campo que o produz no processo, em um único formulário (UNI-REQ-0144). A escolha
@@ -10,8 +11,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public static class ConferenciaDoProdutorUnico
 {
-    public const string FatoDuplicado = "FatoColetado.FatoDuplicado";
-
     public static IReadOnlyList<FieldError> Conferir(IReadOnlyList<ColetaDoFormulario> coletas)
     {
         ArgumentNullException.ThrowIfNull(coletas);
@@ -21,6 +20,6 @@ public static class ConferenciaDoProdutorUnico
             .GroupBy(static fato => fato, StringComparer.Ordinal)
             .Where(static produtores => produtores.Count() > 1)
             .Select(static produtores => new FieldError($"fatos.{produtores.Key}", new DomainError(
-                FatoDuplicado, "O fato é coletado por mais de um campo no processo.")))];
+                FatoColetadoErrorCodes.FatoDuplicado, "O fato é coletado por mais de um campo no processo.")))];
     }
 }

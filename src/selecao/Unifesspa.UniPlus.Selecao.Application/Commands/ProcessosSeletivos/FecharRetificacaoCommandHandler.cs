@@ -2,8 +2,6 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Interfaces;
-using Domain.ProcessosSeletivos.Publicacao;
-using Domain.ValueObjects;
 
 using Kernel.Results;
 
@@ -35,21 +33,19 @@ public static class FecharRetificacaoCommandHandler
     public static async Task<(Result Resposta, IEnumerable<object> Eventos)> Handle(
         FecharRetificacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
-        ConferenciaDoAtoEDoDocumento atoEDocumento,
         CongelamentoDaVersao congelamento,
         LeituraDaBaseDaRetificacao leituraDaBase,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(processoSeletivoRepository);
-        ArgumentNullException.ThrowIfNull(atoEDocumento);
         ArgumentNullException.ThrowIfNull(congelamento);
         ArgumentNullException.ThrowIfNull(leituraDaBase);
 
         Result<ProcessoSeletivo> obtido = await ObterParaFecharAsync(command, processoSeletivoRepository, cancellationToken).ConfigureAwait(false);
         return obtido.IsFailure
             ? (Result.Failure(obtido.Error!), [])
-            : await FecharAsync(obtido.Value!, command, atoEDocumento, congelamento, leituraDaBase, cancellationToken).ConfigureAwait(false);
+            : await FecharAsync(obtido.Value!, command, congelamento, leituraDaBase, cancellationToken).ConfigureAwait(false);
     }
 
     private static async Task<Result<ProcessoSeletivo>> ObterParaFecharAsync(
@@ -71,32 +67,21 @@ public static class FecharRetificacaoCommandHandler
     private static async Task<(Result Resposta, IEnumerable<object> Eventos)> FecharAsync(
         ProcessoSeletivo processo,
         FecharRetificacaoCommand command,
-        ConferenciaDoAtoEDoDocumento atoEDocumento,
         CongelamentoDaVersao congelamento,
         LeituraDaBaseDaRetificacao leituraDaBase,
         CancellationToken cancellationToken)
     {
-        Result<AtoEDocumentoConferidos> ato = await atoEDocumento
-            .ConferirAsync(processo.Id, command.DocumentoEditalId, command.Ato, "no fechamento da retificação", cancellationToken)
-            .ConfigureAwait(false);
-        if (ato.IsFailure)
-        {
-            return (Result.Failure(ato.Error!), []);
-        }
-
         Result<BaseDaRetificacao> baseLida = await leituraDaBase.DaSessaoAbertaAsync(processo, cancellationToken).ConfigureAwait(false);
         return baseLida.IsFailure
             ? (Result.ValidationFailure(baseLida.Errors), [])
-            : await CongelarAsync(processo, command, ato.Value, baseLida.Value!, congelamento, leituraDaBase, cancellationToken).ConfigureAwait(false);
+            : await CongelarAsync(processo, command, baseLida.Value!, congelamento, cancellationToken).ConfigureAwait(false);
     }
 
     private static Task<(Result Resposta, IEnumerable<object> Eventos)> CongelarAsync(
         ProcessoSeletivo processo,
         FecharRetificacaoCommand command,
-        AtoEDocumentoConferidos ato,
         BaseDaRetificacao baseDaRetificacao,
         CongelamentoDaVersao congelamento,
-        LeituraDaBaseDaRetificacao leituraDaBase,
         CancellationToken cancellationToken)
     {
         EditalDeclarado edital = new(
@@ -104,21 +89,8 @@ public static class FecharRetificacaoCommandHandler
         FechamentoDaSessao origem = new(baseDaRetificacao, processo.Rascunho!.FatosDasVersoesPublicadas);
 
         return congelamento.CongelarAsync(
-            processo, edital, ato, origem,
-            pedido => FecharComAUnidadeDaFaseConferidaAsync(processo, pedido, baseDaRetificacao.VersaoVigente, command.Precondicao, leituraDaBase, cancellationToken),
+            processo, edital, command.Ato, origem,
+            pedido => Task.FromResult(processo.FecharRetificacao(pedido, baseDaRetificacao.VersaoVigente, command.Precondicao)),
             cancellationToken);
     }
-
-    // A fase pode ter começado depois da edição do cronograma: a unidade trocada é conferida contra o que a versão
-    // publicada tem no instante do fechamento.
-    private static async Task<Result<VersaoConfiguracao>> FecharComAUnidadeDaFaseConferidaAsync(
-        ProcessoSeletivo processo,
-        PedidoDeCongelamento pedido,
-        VersaoConfiguracao versaoAtual,
-        PrecondicaoIfMatch precondicao,
-        LeituraDaBaseDaRetificacao leituraDaBase,
-        CancellationToken cancellationToken) =>
-        await leituraDaBase.RecusaPorFaseIniciadaAsync(processo, pedido.Instante, cancellationToken).ConfigureAwait(false) is { } recusa
-            ? Result<VersaoConfiguracao>.Failure(recusa)
-            : processo.FecharRetificacao(pedido, versaoAtual, precondicao);
 }

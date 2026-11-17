@@ -6,10 +6,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// A etapa de tipo que exige correção independente só é congelada com a regra de consolidação de ao menos dois
+/// A etapa de tipo que exige correção independente, uma causa por etapa, só é congelada com a regra de consolidação de ao menos dois
 /// corretores distintos. O número vem da versão da regra no rol, lido ao congelar, e não do que a etapa declara: o rol
 /// pode trazer uma versão com um só corretor. A regra cujo número não foi lido é recusada, e nenhum número é presumido.
 /// </summary>
@@ -17,15 +18,15 @@ internal static class PendenciasDaCorrecaoIndependente
 {
     private const int MinimoDeCorretores = 2;
 
-    internal static DomainError? PendenciaDaCorrecaoIndependente(EstadoDaConfiguracao estado, CorretoresDasEtapas corretores)
+    internal static IReadOnlyList<FieldError> CausasDaCorrecaoIndependente(EstadoDaConfiguracao estado, CorretoresDasEtapas corretores)
     {
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(corretores);
 
-        return estado.Etapas
+        return CausasDaRecusa.Da(estado.Etapas
             .Where(static etapa => etapa.TipoEtapa.ExigeCorrecaoIndependente && etapa.RegraConsolidacao is not null)
             .Select(etapa => Pendencia(etapa, corretores))
-            .FirstOrDefault(static pendencia => pendencia is not null);
+            .OfType<DomainError>());
     }
 
     private static DomainError? Pendencia(EtapaProcesso etapa, CorretoresDasEtapas corretores)

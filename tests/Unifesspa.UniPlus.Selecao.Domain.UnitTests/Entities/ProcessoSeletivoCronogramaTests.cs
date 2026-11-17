@@ -70,7 +70,7 @@ public sealed class ProcessoSeletivoCronogramaTests
     /// CA-14 mudou de lugar, não de conteúdo. Com a etapa declarando a fase a que pertence,
     /// ela só pode ser gravada depois que a fase existe no cronograma — cobrar a etapa na
     /// gravação da fase fecharia um ciclo sem ordem possível. A bicondicional continua
-    /// valendo, e é o gate de publicação que a cobra.
+    /// valendo, e é a conferência de publicação que a cobra.
     /// </summary>
     [Fact(DisplayName = "CA-14: fase que agrupa etapas grava sem etapa; quem recusa é a publicação")]
     public void Avaliacao_SemEtapa_GravaEFalhaNaPublicacao()
@@ -81,7 +81,7 @@ public sealed class ProcessoSeletivoCronogramaTests
         Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
 
         resultado.IsSuccess.Should().BeTrue();
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Should().Contain(item =>
                 item.Codigo == "cronograma_fase_agrupadora_sem_etapa_pontuada" && !item.Ok);
     }

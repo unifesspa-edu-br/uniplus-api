@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -181,8 +182,7 @@ public sealed class ProcessoSeletivoSessaoEditorialTests
         AbrirSessao(processo, versao, "Sessão em curso").IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
-            NovosDados(), versao, BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo,
-            "user-conta-2", motivo: "Atalho concorrente", clock: new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = NovosDados(), Documento = new DocumentoCongelado(BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "user-conta-2", Relogio = new RelogioFixo(Agora) }, versao, "Atalho concorrente");
 
         resultado.IsFailure.Should().BeTrue(
             "os dois caminhos retificam o MESMO ato — o atalho publicaria a versão N+1 a partir da configuração que a sessão está no meio de editar, e o rascunho sobreviveria apontando para uma base que deixou de ser o topo da cadeia");

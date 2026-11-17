@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
@@ -23,98 +24,127 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+/// <summary>
+/// As checagens estruturais da árvore de satisfação restaurada, equivalentes ao que <c>NoExigencia.CriarGrupo</c> já garante
+/// na gravação (grupo não vazio, ciclo, fase comum, cardinalidade por tipo), mais o que só a raiz consegue provar
+/// (<c>DocumentoExigidoId</c> de folha existe em <c>grafo.DocumentosExigidos</c>) e o que só o banco garante na gravação
+/// normal (Id único, <c>Ordem</c> única entre raízes e entre irmãos, em <c>ux_nos_da_arvore_de_exigencias_raiz_ordem</c> e
+/// <c>ux_nos_da_arvore_de_exigencias_irmaos_ordem</c>). Sem esta última checagem, um envelope com duas raízes de mesma
+/// <c>Ordem</c> passaria pela decodificação e só falharia no <c>SaveChanges</c>, como violação de unicidade (23505): erro
+/// não tratado no meio de uma restauração, em vez de recusa nomeada.
+/// </summary>
 internal static class ValidacaoDaArvoreRestaurada
 {
+    private const string Campo = "documentosExigidos";
+
     /// <summary>
-    /// As checagens estruturais da árvore de satisfação restaurada,
-    /// equivalentes ao que <c>NoExigencia.CriarGrupo</c> já garante na ESCRITA (grupo não
-    /// vazio, ciclo, fase comum, cardinalidade por tipo) mais o que só a RAIZ consegue
-    /// provar (<c>DocumentoExigidoId</c> de folha existe em
-    /// <c>grafo.DocumentosExigidos</c>) e o que só o BANCO garante na escrita normal (Id
-    /// único, <c>Ordem</c> única entre raízes e entre irmãos — <c>ux_nos_da_arvore_de_exigencias_raiz_ordem</c>/
-    /// <c>ux_nos_da_arvore_de_exigencias_irmaos_ordem</c>, <c>NoExigenciaConfiguration</c>). Sem esta
-    /// última checagem, um envelope com duas raízes de mesma <c>Ordem</c> passaria pela
-    /// decodificação e só falharia no <c>SaveChanges</c>, como <c>23505</c> (unique
-    /// violation) — 500 não tratado no meio de uma restauração, em vez de recusa nomeada.
-    /// </summary>
-    internal static DomainError? Validar(GrafoConfiguracao grafo)
+    /// Cada família confere o que lhe cabe e todas acumulam. O que depende de dado já recusado não se avalia: a reconstrução pula a
+    /// raiz cuja subárvore tem nó de Id repetido, folha com filhos ou folha sem documento, porque o factory que a reconstrói lê
+    /// exatamente isso, e a leitura dos documentos das folhas só conta as folhas que declaram documento.
+    /// </remarks>
+    internal static IReadOnlyList<FieldError> Validar(GrafoConfiguracao grafo)
     {
-        List<Guid> idsNos = [.. grafo.NosExigencia.Select(n => n.Id)];
-        if (idsNos.Distinct().Count() != idsNos.Count)
-        {
-            return new DomainError(
+        IReadOnlySet<NoExigencia> recusados = NosRecusados(grafo);
+
+        return
+        [
+            .. CausasDaRecusa.Da(IdDuplicado(grafo), Campo),
+            .. CausasDaRecusa.Da(OrdemDasRaizesDuplicada(grafo), Campo),
+            .. CausasDaRecusa.Da(OrdemDosIrmaosDuplicada(grafo), Campo),
+            .. CausasDaRecusa.Da(FolhaComFilhos(grafo), Campo),
+            .. ReconstrucaoDasRaizes(grafo, recusados),
+            .. CausasDaRecusa.Da(FolhaSemDocumentoExigido(grafo), Campo),
+            .. CausasDaRecusa.Da(DocumentoExigidoEmMaisDeUmaFolha(grafo), Campo),
+        ];
+    }
+
+    private static HashSet<NoExigencia> NosRecusados(GrafoConfiguracao grafo)
+    {
+        HashSet<Guid> documentos = [.. grafo.DocumentosExigidos.Select(static d => d.Id)];
+        HashSet<Guid> idsRepetidos = [.. grafo.NosExigencia.GroupBy(static n => n.Id).Where(static g => g.Count() > 1).Select(static g => g.Key)];
+
+        return new(
+            grafo.NosExigencia.Where(no => idsRepetidos.Contains(no.Id) || FolhaComFilhos(no) || FolhaSemDocumento(no, documentos)),
+            ReferenceEqualityComparer.Instance);
+    }
+
+    private static bool FolhaComFilhos(NoExigencia no) => no.Tipo == TipoNo.Folha && no.Filhos.Count > 0;
+
+    private static bool FolhaSemDocumento(NoExigencia no, HashSet<Guid> documentos) =>
+        no.Tipo == TipoNo.Folha && (no.DocumentoExigidoId is not { } id || no.DocumentoExigido is null || !documentos.Contains(id));
+
+    private static bool TemNoRecusado(NoExigencia no, IReadOnlySet<NoExigencia> recusados) =>
+        recusados.Contains(no) || no.Filhos.Any(filho => TemNoRecusado(filho, recusados));
+
+    private static DomainError? IdDuplicado(GrafoConfiguracao grafo) =>
+        grafo.NosExigencia.Select(static n => n.Id).Distinct().Count() != grafo.NosExigencia.Count
+            ? new DomainError(
                 "ProcessoSeletivo.IdNoExigenciaDuplicado",
-                "O mesmo Id de nó da árvore de satisfação não pode aparecer mais de uma vez na configuração restaurada.");
-        }
+                "O mesmo Id de nó da árvore de satisfação não pode aparecer mais de uma vez na configuração restaurada.")
+            : null;
 
-        List<int> ordensRaizes = [.. grafo.NosExigencia.Where(static n => n.NoPaiId is null).Select(static n => n.Ordem)];
-        if (ordensRaizes.Distinct().Count() != ordensRaizes.Count)
-        {
-            return new DomainError(
+    private static DomainError? OrdemDasRaizesDuplicada(GrafoConfiguracao grafo)
+    {
+        List<int> ordens = [.. grafo.NosExigencia.Where(static n => n.NoPaiId is null).Select(static n => n.Ordem)];
+
+        return ordens.Distinct().Count() != ordens.Count
+            ? new DomainError(
                 "ProcessoSeletivo.OrdemRaizNoExigenciaDuplicada",
-                "Cada raiz da árvore de satisfação deve ter uma ordem única dentro do processo.");
-        }
+                "Cada raiz da árvore de satisfação deve ter uma ordem única dentro do processo.")
+            : null;
+    }
 
-        bool irmaosComOrdemDuplicada = grafo.NosExigencia
+    private static DomainError? OrdemDosIrmaosDuplicada(GrafoConfiguracao grafo) =>
+        grafo.NosExigencia
             .Where(static n => n.NoPaiId is not null)
             .GroupBy(static n => n.NoPaiId)
-            .Any(static grupo => grupo.Select(static n => n.Ordem).Distinct().Count() != grupo.Count());
-        if (irmaosComOrdemDuplicada)
-        {
-            return new DomainError(
+            .Any(static grupo => grupo.Select(static n => n.Ordem).Distinct().Count() != grupo.Count())
+            ? new DomainError(
                 "ProcessoSeletivo.OrdemIrmaoNoExigenciaDuplicada",
-                "Cada filho de um mesmo nó pai deve ter uma ordem única entre os irmãos.");
-        }
+                "Cada filho de um mesmo nó pai deve ter uma ordem única entre os irmãos.")
+            : null;
 
-        // NoExigencia.Reidratar não revalida nada do que NoExigencia.CriarFolha/CriarGrupo
-        // garantem na ESCRITA (cardinalidade de folha e de grupo, janela de calendário,
-        // consequência, base legal, repetição aninhada). Em vez de duplicar esses
-        // invariantes campo a campo, cada raiz é RECONSTRUÍDA aqui pelos MESMOS factories
-        // que o cadastro usa — o resultado é descartado (só prova que a árvore SERIA aceita
-        // pelo cadastro; a árvore com identidade preservada continua sendo a decodificada
-        // por Reidratar, ADR-0110 D2), mas herda de uma vez só todo invariante de
-        // construção presente e futuro, sem nunca mais divergir deles.
-        if (grafo.NosExigencia.Any(static n => n.Tipo == TipoNo.Folha && n.Filhos.Count > 0))
-        {
-            return new DomainError(
+    private static DomainError? FolhaComFilhos(GrafoConfiguracao grafo) =>
+        grafo.NosExigencia.Any(FolhaComFilhos)
+            ? new DomainError(
                 "ProcessoSeletivo.NoExigenciaFolhaComFilhos",
-                "Uma folha da árvore de satisfação restaurada não pode ter filhos — CriarFolha nunca aceita filhos.");
-        }
+                "Uma folha da árvore de satisfação restaurada não pode ter filhos — CriarFolha nunca aceita filhos.")
+            : null;
 
-        foreach (NoExigencia raiz in grafo.NosExigencia.Where(static n => n.NoPaiId is null))
-        {
-            Result<NoExigencia> reconstrucao = ReconstruirNoParaValidarInvariantes(raiz);
-            if (reconstrucao.IsFailure)
-            {
-                return reconstrucao.Error;
-            }
-        }
+    // NoExigencia.Reidratar não revalida nada do que NoExigencia.CriarFolha e CriarGrupo garantem na gravação (cardinalidade
+    // de folha e de grupo, janela de calendário, consequência, base legal, repetição aninhada). Em vez de duplicar esses
+    // invariantes campo a campo, cada raiz é reconstruída pelos mesmos factories que o cadastro usa: o resultado é descartado
+    // (só prova que a árvore seria aceita pelo cadastro; a árvore com identidade preservada continua sendo a decodificada por
+    // Reidratar, ADR-0110), mas herda de uma vez só todo invariante de construção presente e futuro.
+    private static IEnumerable<FieldError> ReconstrucaoDasRaizes(GrafoConfiguracao grafo, IReadOnlySet<NoExigencia> recusados) =>
+        grafo.NosExigencia
+            .Where(n => n.NoPaiId is null && !TemNoRecusado(n, recusados))
+            .Select(ReconstruirNoParaValidarInvariantes)
+            .Where(static reconstrucao => reconstrucao.IsFailure)
+            .Select(static reconstrucao => new FieldError(Campo, reconstrucao.Error!));
 
-        // Folha ↔ DocumentoExigido: EXATAMENTE 1:1 — nem "a mais" (referenciando um
-        // DocumentoExigido que não existe no grafo) nem "a menos" (duas folhas para o mesmo
-        // DocumentoExigido, que só falharia depois no SaveChanges contra
-        // ux_nos_da_arvore_de_exigencias_documento_exigido_id).
-        HashSet<Guid> idsDocumentosExigidos = [.. grafo.DocumentosExigidos.Select(static d => d.Id)];
-        List<Guid> documentoIdsReferenciados = [.. grafo.NosExigencia
-            .Where(static n => n.Tipo == TipoNo.Folha)
-            .Select(static n => n.DocumentoExigidoId!.Value)];
+    // Folha e DocumentoExigido são 1:1: uma folha que cita documento inexistente no grafo, ou duas folhas para o mesmo
+    // documento, só falhariam depois no SaveChanges, contra ux_nos_da_arvore_de_exigencias_documento_exigido_id.
+    private static DomainError? FolhaSemDocumentoExigido(GrafoConfiguracao grafo)
+    {
+        HashSet<Guid> existentes = [.. grafo.DocumentosExigidos.Select(static d => d.Id)];
 
-        if (documentoIdsReferenciados.Any(id => !idsDocumentosExigidos.Contains(id)))
-        {
-            return new DomainError(
+        return grafo.NosExigencia.Any(no => FolhaSemDocumento(no, existentes))
+            ? new DomainError(
                 "ProcessoSeletivo.NoExigenciaFolhaSemDocumentoExigido",
-                "Uma folha da árvore de satisfação restaurada referencia um DocumentoExigido que não existe na configuração restaurada.");
-        }
-
-        if (documentoIdsReferenciados.Distinct().Count() != documentoIdsReferenciados.Count)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.NoExigenciaDocumentoExigidoDuplicado",
-                "Duas folhas da árvore de satisfação restaurada não podem referenciar o mesmo DocumentoExigido.");
-        }
-
-        return null;
+                "Uma folha da árvore de satisfação restaurada referencia um DocumentoExigido que não existe na configuração restaurada.")
+            : null;
     }
+
+    private static DomainError? DocumentoExigidoEmMaisDeUmaFolha(GrafoConfiguracao grafo) =>
+        DocumentosDasFolhas(grafo).Distinct().Count() != DocumentosDasFolhas(grafo).Count
+            ? new DomainError(
+                "ProcessoSeletivo.NoExigenciaDocumentoExigidoDuplicado",
+                "Duas folhas da árvore de satisfação restaurada não podem referenciar o mesmo DocumentoExigido.")
+            : null;
+
+    private static List<Guid> DocumentosDasFolhas(GrafoConfiguracao grafo) =>
+        [.. grafo.NosExigencia.Where(static n => n.Tipo == TipoNo.Folha).Where(static n => n.DocumentoExigidoId.HasValue).Select(static n => n.DocumentoExigidoId!.Value)];
 
     /// <summary>
     /// Reconstrói recursivamente um nó (e a subárvore dele) via
@@ -123,55 +153,77 @@ internal static class ValidacaoDaArvoreRestaurada
     /// validados) antes do pai, porque <c>CriarGrupo</c> precisa deles para checar grupo
     /// vazio, mesma fase e repetição aninhada.
     /// </summary>
-    internal static Result<NoExigencia> ReconstruirNoParaValidarInvariantes(NoExigencia no)
-    {
-        Result<NoExigencia> resultado;
-
-        if (no.Tipo == TipoNo.Folha)
+    internal static Result<NoExigencia> ReconstruirNoParaValidarInvariantes(NoExigencia no) =>
+        no.Tipo switch
         {
-            resultado = NoExigencia.CriarFolha(
-                no.DocumentoExigido!, no.Ordem, no.QuantidadeMinima, no.ChaveDistincao,
-                no.DataReferencia, no.OcorrenciasEsperadas, no.RepetePorEntidade);
-        }
-        else if (no.Tipo is TipoNo.GrupoE or TipoNo.GrupoOu)
-        {
-            List<NoExigencia> filhosReconstruidos = new(no.Filhos.Count);
-            foreach (NoExigencia filho in no.Filhos)
-            {
-                Result<NoExigencia> filhoResultado = ReconstruirNoParaValidarInvariantes(filho);
-                if (filhoResultado.IsFailure)
-                {
-                    return filhoResultado;
-                }
-
-                filhosReconstruidos.Add(filhoResultado.Value!);
-            }
-
-            List<NoExigenciaBaseLegal> basesLegaisReconstruidas = new(no.BasesLegais.Count);
-            foreach (NoExigenciaBaseLegal baseLegal in no.BasesLegais)
-            {
-                Result<NoExigenciaBaseLegal> baseLegalResultado = NoExigenciaBaseLegal.Criar(
-                    baseLegal.Referencia, baseLegal.Abrangencia, baseLegal.Status, baseLegal.Observacao);
-                if (baseLegalResultado.IsFailure)
-                {
-                    return Result<NoExigencia>.Failure(baseLegalResultado.Error!);
-                }
-
-                basesLegaisReconstruidas.Add(baseLegalResultado.Value!);
-            }
-
-            resultado = NoExigencia.CriarGrupo(
-                no.Tipo, no.Ordem, no.QuantidadeMinima, no.Consequencia, basesLegaisReconstruidas,
-                filhosReconstruidos, no.RepetePorEntidade);
-        }
-        else
-        {
-            return Result<NoExigencia>.Failure(new DomainError(
+            TipoNo.Folha => NaFormaCanonica(no, ReconstruirFolha(no)),
+            TipoNo.GrupoE or TipoNo.GrupoOu => NaFormaCanonica(no, ReconstruirGrupo(no)),
+            _ => Result<NoExigencia>.Failure(new DomainError(
                 "ProcessoSeletivo.NoExigenciaTipoInvalido",
-                $"O nó {no.Id} da árvore de satisfação restaurada tem um tipo desconhecido."));
+                $"O nó {no.Id} da árvore de satisfação restaurada tem um tipo desconhecido.")),
+        };
+
+    private static Result<NoExigencia> NaFormaCanonica(NoExigencia decodificado, Result<NoExigencia> reconstruido) =>
+        reconstruido.IsFailure ? reconstruido : ValidarCanonicidade(decodificado, reconstruido.Value!);
+
+    private static Result<NoExigencia> ReconstruirFolha(NoExigencia no) =>
+        no.DocumentoExigido is null
+            ? Result<NoExigencia>.Failure(new DomainError(
+                "ProcessoSeletivo.NoExigenciaFolhaSemDocumentoExigido",
+                $"A folha {no.Id} da árvore de satisfação restaurada não tem documento exigido."))
+            : NoExigencia.CriarFolha(
+                no.DocumentoExigido, no.Ordem, no.QuantidadeMinima, no.ChaveDistincao,
+                no.DataReferencia, no.OcorrenciasEsperadas, no.RepetePorEntidade);
+
+    private static Result<NoExigencia> ReconstruirGrupo(NoExigencia no)
+    {
+        Result<List<NoExigencia>> filhos = ReconstruirFilhos(no);
+        Result<List<NoExigenciaBaseLegal>> basesLegais = ReconstruirBasesLegais(no);
+
+        if (filhos.IsFailure)
+        {
+            return Result<NoExigencia>.Failure(filhos.Error!);
         }
 
-        return resultado.IsFailure ? resultado : ValidarCanonicidade(no, resultado.Value!);
+        return basesLegais.IsFailure
+            ? Result<NoExigencia>.Failure(basesLegais.Error!)
+            : NoExigencia.CriarGrupo(
+                no.Tipo, no.Ordem, no.QuantidadeMinima, no.Consequencia, basesLegais.Value!, filhos.Value!, no.RepetePorEntidade);
+    }
+
+    private static Result<List<NoExigencia>> ReconstruirFilhos(NoExigencia no)
+    {
+        List<NoExigencia> reconstruidos = new(no.Filhos.Count);
+        foreach (NoExigencia filho in no.Filhos)
+        {
+            Result<NoExigencia> resultado = ReconstruirNoParaValidarInvariantes(filho);
+            if (resultado.IsFailure)
+            {
+                return Result<List<NoExigencia>>.Failure(resultado.Error!);
+            }
+
+            reconstruidos.Add(resultado.Value!);
+        }
+
+        return Result<List<NoExigencia>>.Success(reconstruidos);
+    }
+
+    private static Result<List<NoExigenciaBaseLegal>> ReconstruirBasesLegais(NoExigencia no)
+    {
+        List<NoExigenciaBaseLegal> reconstruidas = new(no.BasesLegais.Count);
+        foreach (NoExigenciaBaseLegal baseLegal in no.BasesLegais)
+        {
+            Result<NoExigenciaBaseLegal> resultado = NoExigenciaBaseLegal.Criar(
+                baseLegal.Referencia, baseLegal.Abrangencia, baseLegal.Status, baseLegal.Observacao);
+            if (resultado.IsFailure)
+            {
+                return Result<List<NoExigenciaBaseLegal>>.Failure(resultado.Error!);
+            }
+
+            reconstruidas.Add(resultado.Value!);
+        }
+
+        return Result<List<NoExigenciaBaseLegal>>.Success(reconstruidas);
     }
 
     /// <summary>

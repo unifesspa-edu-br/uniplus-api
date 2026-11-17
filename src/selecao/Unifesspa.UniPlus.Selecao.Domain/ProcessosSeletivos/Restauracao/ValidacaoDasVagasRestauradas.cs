@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Restauracao;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -13,15 +14,27 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class ValidacaoDasVagasRestauradas
 {
-    internal static DomainError? Validar(GrafoConfiguracao grafo) =>
-        DistribuicaoVazia(grafo)
-        ?? OfertaRepetida(grafo)
-        ?? NumeroDeOpcoesInvalido(grafo)
-        ?? OpcoesAcimaDasOfertas(grafo)
-        ?? AcaoQuandoIndeferidoDivergente(grafo)
-        ?? RegrasDaDistribuicaoDeVagas.RegraDeAplicabilidadeDivergenteEntreOfertas(grafo.DistribuicaoVagas)
-        ?? RegrasDaDistribuicaoDeVagas.RegraIncoerenteComANatureza(grafo.DistribuicaoVagas)
-        ?? RegrasDaDistribuicaoDeVagas.RemanejamentoIncoerenteComANatureza(grafo.DistribuicaoVagas);
+    private const string Distribuicao = "distribuicaoVagas";
+    private const string Opcoes = "opcoesDeCurso";
+
+    internal static IReadOnlyList<FieldError> Validar(GrafoConfiguracao grafo) =>
+    [
+        .. CausasDaRecusa.Da(DistribuicaoVazia(grafo), Distribuicao),
+        .. CausasDaRecusa.Da(OfertaRepetida(grafo), Distribuicao),
+        .. CausasDasOpcoesDeCurso(grafo),
+        .. CausasDaRecusa.Da(AcaoQuandoIndeferidoDivergente(grafo), Distribuicao),
+        .. CausasDaRecusa.Da(RegrasDaDistribuicaoDeVagas.RegraDeAplicabilidadeDivergenteEntreOfertas(grafo.DistribuicaoVagas), Distribuicao),
+        .. CausasDaRecusa.Da(RegrasDaDistribuicaoDeVagas.RegraIncoerenteComANatureza(grafo.DistribuicaoVagas), Distribuicao),
+        .. CausasDaRecusa.Da(RegrasDaDistribuicaoDeVagas.RemanejamentoIncoerenteComANatureza(grafo.DistribuicaoVagas), Distribuicao),
+    ];
+
+    // O número fora da faixa não tem como ser comparado com as ofertas, e sem oferta o excesso já é a distribuição vazia.
+    private static IReadOnlyList<FieldError> CausasDasOpcoesDeCurso(GrafoConfiguracao grafo) =>
+        NumeroDeOpcoesInvalido(grafo) is { } invalido
+            ? CausasDaRecusa.Da(invalido, Opcoes)
+            : grafo.DistribuicaoVagas.Count == 0
+                ? []
+                : CausasDaRecusa.Da(OpcoesAcimaDasOfertas(grafo), Opcoes);
 
     private static DomainError? DistribuicaoVazia(GrafoConfiguracao grafo) =>
         grafo.DistribuicaoVagas.Count == 0

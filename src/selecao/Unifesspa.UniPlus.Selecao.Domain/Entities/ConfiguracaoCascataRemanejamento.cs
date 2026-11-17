@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// legal não muda de curso para curso, e modelá-la por oferta permitiria duas
 /// ofertas do mesmo certame com ordens legais diferentes — estado que a lei não
 /// admite. A cobertura (cascata de remanejamento de cotas, UNI-REQ-0056), essa sim, é validada por oferta, em
-/// <see cref="ProcessoSeletivo.PendenciaDaCascata"/>.
+/// <c>CoberturaDaCascata.CausasDaCascata</c>.
 /// </para>
 /// <para>
 /// A forma da cascata de remanejamento de cotas (UNI-REQ-0056) é validada aqui, na borda — ordens únicas/contíguas

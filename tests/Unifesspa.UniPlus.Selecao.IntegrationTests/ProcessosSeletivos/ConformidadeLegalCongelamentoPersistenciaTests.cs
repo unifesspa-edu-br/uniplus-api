@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -132,13 +133,8 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
             new DateOnly(2020, 1, 1),
             null).Value!;
 
-    private async Task<(Guid ProcessoId, Guid SnapshotId)> PublicarComConformidadeLegalAsync(string nome)
+    private static DadosEdital DadosDoEdital(DocumentoAPublicar documento)
     {
-        ProcessoSeletivo processo = NovoProcessoConforme(nome);
-
-        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-        documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
-
         Result<DadosEdital> dadosResult = DadosEdital.Criar(
             numero: "001/2026",
             periodoInscricaoInicio: InicioDaInscricao,
@@ -146,6 +142,11 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
             documentoEditalId: documento.Id);
         dadosResult.IsSuccess.Should().BeTrue();
 
+        return dadosResult.Value!;
+    }
+
+    private async Task<ResultadoConformidade> ConformidadeDoProcessoAsync(ProcessoSeletivo processo)
+    {
         // Mesma dupla de chamadas do gate real (ConferenciaDeConformidadeLegal): repositório
         // real + AvaliadorConformidadeLegal.Avaliar — a Application injeta isto no handler;
         // aqui, como as demais integrações desta suíte, a orquestração é feita inline.
@@ -156,27 +157,49 @@ public sealed class ConformidadeLegalCongelamentoPersistenciaTests : IClassFixtu
         ResultadoConformidade conformidade = AvaliadorConformidadeLegal.Avaliar(processo, processo.TipoProcesso.ToString(), vigentes, IdentidadesDe(processo), FatosDeModalidadeDeTeste.DoCatalogo);
         conformidade.Regras.Should().OnlyContain(static r => r.Aprovada, "pré-condição do teste — o processo satisfaz a regra semeada");
 
-        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
-            new EntradaCanonicalizacao(processo, dadosResult.Value!, documento.HashSha256!, FusoInstitucional.ZoneId, Conformidade: conformidade, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+        return conformidade;
+    }
 
-        Result<VersaoConfiguracao> publicarResult = processo.Publicar(
-            dadosResult.Value!,
-            canonico.Bytes,
-            canonico.SchemaVersion,
-            canonico.AlgoritmoHash,
-            documento.HashSha256!,
-            atorUsuarioContaId: "integration-test-user",
-            TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
-        publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
-
+    private async Task GravarAsync(ProcessoSeletivo processo, DocumentoAPublicar documento, VersaoConfiguracao versao)
+    {
         await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
         await repository.AdicionarAsync(processo, CancellationToken.None);
         await writeContext.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
-        await repository.AdicionarVersaoConfiguracaoAsync(publicarResult.Value!, CancellationToken.None);
+        await repository.AdicionarVersaoConfiguracaoAsync(versao, CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
+    }
 
-        return (processo.Id, publicarResult.Value!.Id);
+    private async Task<(Guid ProcessoId, Guid SnapshotId)> PublicarComConformidadeLegalAsync(string nome)
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme(nome);
+        DocumentoAPublicar documento = DocumentoConfirmado(processo);
+        DadosEdital dados = DadosDoEdital(documento);
+        ResultadoConformidade conformidade = await ConformidadeDoProcessoAsync(processo);
+        VersaoConfiguracao versao = Publicar(processo, documento, dados, conformidade);
+        await GravarAsync(processo, documento, versao);
+
+        return (processo.Id, versao.Id);
+    }
+
+    private static DocumentoAPublicar DocumentoConfirmado(ProcessoSeletivo processo)
+    {
+        DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(processo.Id, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
+        documento.Confirmar(1024, HashFixo, TimeProvider.System).IsSuccess.Should().BeTrue();
+
+        return documento;
+    }
+
+    private static VersaoConfiguracao Publicar(ProcessoSeletivo processo, DocumentoAPublicar documento, DadosEdital dados, ResultadoConformidade conformidade)
+    {
+        SnapshotCanonico canonico = Canonicalizer.Canonicalizar(
+            new EntradaCanonicalizacao(processo, dados, documento.HashSha256!, FusoInstitucional.ZoneId, Conformidade: conformidade, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
+
+        Result<VersaoConfiguracao> publicarResult = processo.Publicar(
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() });
+        publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
+
+        return publicarResult.Value!;
     }
 
     [Fact(DisplayName = "CA-13/CA-18 — obrigatoriedades[] congela TODAS as regras vigentes e bate, conjunto a conjunto, com o recômputo do cadastro vivo na mesma data de corte")]

@@ -12,6 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -62,13 +63,7 @@ internal static class ApoioProcessoSeletivoRestaurarConfiguracao
         ProcessoSeletivo processo = ProcessoConforme(tipo);
 
         processo.Publicar(
-            Dados(),
-            configuracaoCongeladaCanonica: [1, 2, 3],
-            schemaVersion: "1.1",
-            algoritmoHash: "canonical-json/sha256@v1",
-            hashDocumento: new string('a', 64),
-            atorUsuarioContaId: "testes",
-            clock: TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
+            new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado([1, 2, 3], "1.1", "canonical-json/sha256@v1", new string('a', 64)), AtorUsuarioContaId = "testes" }).IsSuccess.Should().BeTrue();
 
         processo.ClearDomainEvents();
         return processo;

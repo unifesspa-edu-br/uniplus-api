@@ -7122,11 +7122,6 @@
       "titulo": "A etapa a remover é onde um documento exigido é coletado"
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.etapa_sem_fase_de_avaliacao",
-      "status": 422,
-      "titulo": "Há etapa pontuada, mas nenhuma fase do cronograma agrupa etapas"
-    },
-    {
       "codigo": "uniplus.selecao.processo_seletivo.etapa_sem_fase_declarada",
       "status": 422,
       "titulo": "A etapa não declara a fase em que acontece"

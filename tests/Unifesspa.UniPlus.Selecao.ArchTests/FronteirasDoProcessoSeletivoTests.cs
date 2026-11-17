@@ -50,7 +50,7 @@ public sealed class FronteirasDoProcessoSeletivoTests
             .Where(static t => t.IsClass && !(t.IsAbstract && t.IsSealed) && !EhRegistro(t))
             .Select(static t => t.FullName!)];
 
-        naoEstaticas.Should().BeEmpty("a política é função pura da vista; estado vive na raiz");
+        naoEstaticas.Should().BeEmpty("a política é função pura da vista; estado vive na raiz, e o dado que a Application lê dos cadastros vive em ValueObjects");
     }
 
     [Fact(DisplayName = "A5: o Domain não depende de Application, Infrastructure, Wolverine nem EF Core")]

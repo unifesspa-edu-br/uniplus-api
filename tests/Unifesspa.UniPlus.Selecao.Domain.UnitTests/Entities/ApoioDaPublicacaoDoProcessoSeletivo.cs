@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -30,6 +31,13 @@ internal static class ApoioDaPublicacaoDoProcessoSeletivo
         periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
         periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
         documentoEditalId: Guid.CreateVersion7()).Value!;
+
+    /// <summary>O congelamento do edital de teste, com o documento canônico de teste, trocando só o que o cenário declara.</summary>
+    internal static CenarioDeCongelamento CenarioDoEdital(DadosEdital? dados = null) => new()
+    {
+        Dados = dados ?? NovosDados(),
+        Documento = new DocumentoCongelado(BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo),
+    };
 
     /// <summary>Etapa de prova objetiva com nota de 0 a 10, a mínima peça de um processo que compõe a nota.</summary>
     internal static EtapaProcesso EtapaDaProvaObjetiva(

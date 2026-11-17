@@ -15,7 +15,8 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.Publicacao
 
 /// <summary>
 /// O processo que não existe é recusado com a mesma mensagem pelos três handlers que congelam, antes de qualquer
-/// leitura; no fechamento, a precondição e a sessão aberta são conferidas antes do documento e do ato.
+/// leitura; no fechamento, a precondição, a sessão aberta e a precondição válida são conferidas antes da base da
+/// retificação, do documento e do ato.
 /// </summary>
 public sealed class RecusaDeProcessoEPrecondicaoNosHandlersTests
 {
@@ -48,7 +49,19 @@ public sealed class RecusaDeProcessoEPrecondicaoNosHandlersTests
         resposta.Error!.Code.Should().Be("Precondicao.Requerida");
         resposta.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
         eventos.Should().BeEmpty();
-        await cenario.Servicos.Documentos.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        await AfirmarQueNadaFoiLidoAsync(cenario);
+    }
+
+    [Fact(DisplayName = "Fechar com If-Match que não casa com a sessão recusa a precondição antes de ler a base e o documento do ato")]
+    public async Task Fechar_IfMatchDefasado_RecusaAntesDaBase()
+    {
+        CenarioDeRecusaNoCongelamento cenario = Para(OperacaoQueCongela.FecharRetificacao).Com(DefeitoDoCongelamento.Documento);
+
+        (Result resposta, IEnumerable<object> eventos) = await FecharComAsync(cenario, PrecondicaoIfMatch.DeTags(["\"etag-que-nao-casa\""]));
+
+        resposta.Error!.Code.Should().Be("Precondicao.Falhou");
+        eventos.Should().BeEmpty();
+        await AfirmarQueNadaFoiLidoAsync(cenario);
     }
 
     [Fact(DisplayName = "Fechar sem sessão aberta recusa antes de conferir o documento do ato")]
@@ -60,7 +73,13 @@ public sealed class RecusaDeProcessoEPrecondicaoNosHandlersTests
 
         resposta.Error!.Code.Should().Be("RascunhoRetificacao.NaoAberta");
         eventos.Should().BeEmpty();
+        await AfirmarQueNadaFoiLidoAsync(cenario);
+    }
+
+    private static async Task AfirmarQueNadaFoiLidoAsync(CenarioDeRecusaNoCongelamento cenario)
+    {
         await cenario.Servicos.Documentos.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        await cenario.Servicos.Repositorio.DidNotReceiveWithAnyArgs().ObterVersaoAtualAsync(default, default);
     }
 
     private static Task<(Result Resposta, IEnumerable<object> Eventos)> ExecutarAsync(

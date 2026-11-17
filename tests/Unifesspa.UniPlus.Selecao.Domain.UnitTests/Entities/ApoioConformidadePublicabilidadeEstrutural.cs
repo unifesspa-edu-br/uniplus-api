@@ -49,7 +49,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
 
     internal static void SoEstesItensVermelhos(
         ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto, params string[] itensVermelhos) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Where(static i => !i.Ok).Select(static i => i.Codigo)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(contexto)).Where(static i => !i.Ok).Select(static i => i.Codigo)
             .Should().BeEquivalentTo(itensVermelhos);
 
     internal static CondicaoGatilho GatilhoFaixaEtaria() =>
@@ -93,7 +93,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
             .GetField("_quadroPesoAreaEnem", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(classificacao)!).Clear();
 
     internal static ItemConformidade Item(ProcessoSeletivo processo, string codigo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Single(i => i.Codigo == codigo);
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Single(i => i.Codigo == codigo);
 
     /// <summary>
     /// Processo conforme com uma etapa que compõe nota e a fase que a agrupa: sem elas o
@@ -168,7 +168,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     }
 
     internal static bool ItemDaExclusividadeOk(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Single(i => i.Codigo == "derivacao_cota_e_acao_afirmativa_juntas").Ok;
 
     internal static ProcessoSeletivo CotaEAcaoAfirmativaPor(string fato, object valorDaCota, object valorDaAcaoAfirmativa) =>
@@ -191,7 +191,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
 
     internal static Result<VersaoConfiguracao> Publicar(
         ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto) => processo.Publicar(
-        Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste", TimeProvider.System, contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste", Contagem = contexto });
 
     internal static ConfiguracaoClassificacao ClassificacaoImportada() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
     {
@@ -229,7 +229,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     /// isola.
     /// </summary>
     internal static IEnumerable<ItemConformidade> VermelhosForaDoFormulario(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Where(static i => !i.Ok && !i.Codigo.StartsWith("formulario_", StringComparison.Ordinal));
 
     /// <summary>Fase mínima e coerente: não agrupa etapas (dispensável sem prova), produz resultado, não coleta inscrição.</summary>
@@ -243,42 +243,78 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
         bancasRequeridas: []).Value!;
 
     /// <summary>
-    /// Processo estruturalmente conforme aos QUATRO gates: sem etapa (ImportacaoExterna +
+    /// Processo estruturalmente conforme às QUATRO conferências estruturais: sem etapa (ImportacaoExterna +
     /// ClassificacaoImportada dispensam prova), atendimento, distribuição, classificação e
     /// cronograma coerente com uma única fase que produz resultado. Sem cascata (nenhuma
-    /// modalidade SegueCascata) e sem exigências/regras de derivação/fatos coletados — os quatro
-    /// gates ficam vazios/Ok até que o teste acrescente a única razão que quer isolar.
+    /// modalidade SegueCascata) e sem exigências/regras de derivação/fatos coletados — as quatro
+    /// conferências ficam vazias/Ok até que o teste acrescente a única razão que quer isolar.
     /// </summary>
     internal static ProcessoSeletivo ProcessoConforme(IReadOnlyList<ConfiguracaoDistribuicaoVagas>? distribuicao = null)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Matriz Estrutural", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
-            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
-                "CEPS",
-                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoVazioDaMatrizEstrutural();
 
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas(distribuicao ?? [DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirCronogramaFases([FaseBase()], [], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01) — declarada
-        // aqui para manter os QUATRO gates estruturais vazios/Ok até o teste acrescentar a
-        // única razão que quer isolar.
+        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseBase()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        // Publicar sem declarar cobrança de taxa é recusado: declarada aqui para manter as quatro conferências estruturais
+        // vazias até o teste acrescentar a única razão que quer isolar.
         DeclararTaxaSemCobranca(processo);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 
+    private static ProcessoSeletivo ProcessoVazioDaMatrizEstrutural() => ProcessoSeletivo.Criar(
+        "PS Matriz Estrutural", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+
     internal static DocumentoExigidoBaseLegal BaseLegalResolvida() => DocumentoExigidoBaseLegal.Criar(
         "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
 
     internal static NoExigenciaBaseLegal BaseLegalDoGrupo(StatusBaseLegal status) =>
         NoExigenciaBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
+
+    internal static IReadOnlyList<ItemConformidade> Checklist(ProcessoSeletivo processo) =>
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao);
+
+    internal static Guid FaseDoResultado(ProcessoSeletivo processo) => processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
+
+    /// <summary>O documento geral de teste, exigido na fase, com a obrigatoriedade, a consequência e as bases legais que o cenário pede.</summary>
+    internal static DocumentoExigido DocumentoGeral(
+        Guid faseId, bool obrigatorio, string? consequencia, IReadOnlyList<DocumentoExigidoBaseLegal>? basesLegais = null, FinalidadeFormulario? finalidade = null) =>
+        DocumentoExigido.Criar(
+            faseId, Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
+            Aplicabilidade.Geral, obrigatorio, consequenciaIndeferimento: consequencia,
+            condicoes: [], basesLegais: basesLegais ?? [], idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: finalidade).Value!;
+
+    /// <summary>O documento obrigatório que só vale quando os gatilhos dados acontecem, exigido na fase, com base legal resolvida.</summary>
+    internal static DocumentoExigido DocumentoCondicional(Guid faseId, string codigo, string nome, string categoria, params CondicaoGatilho[] gatilhos) =>
+        DocumentoExigido.Criar(
+            faseId, Guid.CreateVersion7(), codigo, nome, categoria, ProtecaoDoDocumentoDeTeste.Pessoal,
+            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
+            condicoes: gatilhos, basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
+            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
+
+    /// <summary>Uma única pendência vermelha no checklist, a dada, e a publicação recusada com o código dado.</summary>
+    internal static void AfirmarPendenciaUnicaERecusa(ProcessoSeletivo processo, string itemVermelho, string codigoDaRecusa)
+    {
+        Checklist(processo).Should().ContainSingle(i => !i.Ok).Which.Codigo.Should().Be(itemVermelho);
+        ExigirPublicacaoRecusada(processo, codigoDaRecusa);
+    }
+
+    /// <summary>Grupo OU de um documento geral só, com a consequência dada e base legal resolvida, como única exigência do processo.</summary>
+    internal static void ExigirGrupoOuDeUmDocumento(ProcessoSeletivo processo, string consequencia)
+    {
+        NoExigencia folha = NoExigencia.CriarFolha(DocumentoGeral(FaseDoResultado(processo), obrigatorio: false, consequencia: null), 0).Value!;
+        NoExigencia grupo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, consequencia, [BaseLegalDoGrupo(StatusBaseLegal.Resolvido)], [folha]).Value!;
+
+        processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    }
 
     internal static void ExigirPublicacaoRecusada(ProcessoSeletivo processo, string codigoDaRecusa)
     {

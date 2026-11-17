@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -265,9 +266,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
 
         Result<VersaoConfiguracao> publicarResult = processo.Publicar(
-            dados, canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!,
-            atorUsuarioContaId: "integration-test-user",
-            TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() });
         publicarResult.IsSuccess.Should().BeTrue(publicarResult.Error?.Message);
 
         return publicarResult.Value!;

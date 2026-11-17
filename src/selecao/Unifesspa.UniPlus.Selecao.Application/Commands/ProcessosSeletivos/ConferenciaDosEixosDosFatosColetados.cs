@@ -27,7 +27,8 @@ internal static class ConferenciaDosEixosDosFatosColetados
         return Congelado(versao.MetadadosFatosCongelados, versao.AgregadosDosGrupos);
     }
 
-    public static DomainError? Conferir(
+    /// <summary>Uma causa por fato cujo metadado trocou e por agregado cuja operação trocou, os metadados primeiro.</summary>
+    public static IReadOnlyList<DomainError> Conferir(
         FatosDasVersoesPublicadas publicadas,
         IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadados,
         IReadOnlyList<DefinicaoAgregado> agregados)
@@ -36,7 +37,7 @@ internal static class ConferenciaDosEixosDosFatosColetados
         ArgumentNullException.ThrowIfNull(agregados);
 
         EixosDeVersaoPublicada novo = Congelado(metadados, agregados);
-        return publicadas.PrimeiroEixoCongeladoTrocado(novo.Metadados, novo.OperacaoDosAgregados)?.ParaErro();
+        return [.. publicadas.EixosCongeladosTrocados(novo.Metadados, novo.OperacaoDosAgregados).Select(static troca => troca.ParaErro())];
     }
 
     private static EixosDeVersaoPublicada Congelado(

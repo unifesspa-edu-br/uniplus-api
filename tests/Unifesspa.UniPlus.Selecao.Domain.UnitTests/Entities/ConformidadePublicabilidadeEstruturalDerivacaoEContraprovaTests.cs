@@ -27,6 +27,15 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformida
 
 public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTests
 {
+    private static readonly string[] ItensDeCascata =
+    [
+        "cascata_modalidade_fora_do_regime_federal",
+        "cascata_origem_ausente",
+        "cascata_fallback_nao_ofertado",
+        "cascata_origem_nao_segue_cascata",
+        "cascata_destino_desconhecido",
+    ];
+
     [Fact(DisplayName = "Pré-canonicalização: o derivado booleano é escalar, e IGUAL a verdadeiro e a falso separa cota de ação afirmativa")]
     public void PreCanon_DerivadoBooleano_ProvaExclusao()
     {
@@ -56,21 +65,10 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     public void PreCanon_GrafoConjuntoComCiclo()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        CondicaoRegraDerivacao citaD2 = CondicaoRegraDerivacao.Criar(1, "D2", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
-        CondicaoRegraDerivacao citaD1 = CondicaoRegraDerivacao.Criar(1, "D1", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
-        ConfiguracaoDerivacaoFato d1 = ConfiguracaoDerivacaoFato.Criar(
-            "D1", [RegraDerivacaoConfigurada.Criar(0, "X", [citaD2]).Value!]).Value!;
-        ConfiguracaoDerivacaoFato d2 = ConfiguracaoDerivacaoFato.Criar(
-            "D2", [RegraDerivacaoConfigurada.Criar(0, "Y", [citaD1]).Value!]).Value!;
-        processo.DefinirRegrasDerivacao([d1, d2], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
+        processo.DefinirRegrasDerivacao(DuasDerivacoesQueSeCitam(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
             "a definição isolada só barra código duplicado — o ciclo cruza duas configurações e passa aqui");
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("grafo_dependencia_com_ciclo");
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
+        AfirmarPendenciaUnicaERecusa(processo, "grafo_dependencia_com_ciclo", GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
     }
 
     [Fact(DisplayName = "Pré-canonicalização: desempate por área do ENEM sob classificação sem quadro de pesos — item vermelho e Publicar recusa nomeando o critério")]
@@ -102,7 +100,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     public void PreCanon_CriteriosDesempateAcimaDoTeto()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        // Direto na lista: a gravação e a restauração recusam acima do teto, e o gate cobre o
+        // Direto na lista: a gravação e a restauração recusam acima do teto, e a conferência cobre o
         // rascunho que chega por outro caminho.
         CriteriosDesempateDe(processo).AddRange(Enumerable.Range(1, RegrasDoDesempate.CriteriosDesempateMaximo + 1).Select(static ordem =>
             CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!));
@@ -153,7 +151,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     public void PreCanon_ItensAcimaDoTeto()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        // Direto na lista: a gravação e a restauração recusam acima do teto, e o gate cobre o
+        // Direto na lista: a gravação e a restauração recusam acima do teto, e a conferência cobre o
         // rascunho que chega por outro caminho.
         ((List<FatoColetado>)typeof(ProcessoSeletivo).GetField("_campos", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!)
             .AddRange(Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1).Select(static i => FatoColetado.Criar(
@@ -170,57 +168,81 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         (List<CriterioDesempate>)typeof(ProcessoSeletivo)
             .GetField("_criteriosDesempate", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!;
 
-    [Fact(DisplayName = "Pré-canonicalização: área repetida entre critérios e classificação sem quadro — o checklist segue a precedência do gate")]
-    public void PreCanon_DesempatePorArea_PrecedenciaDoChecklistSegueOGate()
+    private static ConfiguracaoDerivacaoFato[] DuasDerivacoesQueSeCitam()
     {
-        ProcessoSeletivo processo = ProcessoConforme(); // classificação importada: sem quadro de pesos por área
-        List<CriterioDesempate> criterios = (List<CriterioDesempate>)typeof(ProcessoSeletivo)
-            .GetField("_criteriosDesempate", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!;
-        criterios.AddRange(
+        CondicaoRegraDerivacao citaD2 = CondicaoRegraDerivacao.Criar(1, "D2", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
+        CondicaoRegraDerivacao citaD1 = CondicaoRegraDerivacao.Criar(1, "D1", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
+
+        return
+        [
+            ConfiguracaoDerivacaoFato.Criar("D1", [RegraDerivacaoConfigurada.Criar(0, "X", [citaD2]).Value!]).Value!,
+            ConfiguracaoDerivacaoFato.Criar("D2", [RegraDerivacaoConfigurada.Criar(0, "Y", [citaD1]).Value!]).Value!,
+        ];
+    }
+
+    private static void AdicionarCriteriosComAreaRepetida(ProcessoSeletivo processo) =>
+        CriteriosDesempateDe(processo).AddRange(
             CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!,
             CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["MATEMATICA", "REDACAO"])).Value!);
 
-        string[] vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Where(static i => !i.Ok).Select(static i => i.Codigo)];
+    private static ConfiguracaoClassificacao ClassificacaoEnemPelaMediaPonderada() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+    {
+        RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
+        RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+        CasasArredondamento = 2,
+        RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        BaseadoEmEnem = true,
+        ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
+        QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
+        EscalaNotaFinal = 100m,
+    }).Value!;
+
+    private static void DeclararEdicaoDoEnem(ProcessoSeletivo processo) =>
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
+            .IsSuccess.Should().BeTrue();
+
+    // Sem AtendimentoEspecializado, a conferência dos itens estruturais fica pendente; a fase sem coleta de inscrição, com
+    // inscrição própria, deixa pendente a do cronograma.
+    private static ProcessoSeletivo ProcessoComAtendimentoECronogramaPendentes()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS Precedência", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        processo.DefinirDistribuicaoVagas([DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseBase(coletaInscricao: false)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        return processo;
+    }
+
+    [Fact(DisplayName = "Pré-canonicalização: área repetida entre critérios e classificação sem quadro — o checklist segue a precedência da conferência")]
+    public void PreCanon_DesempatePorArea_PrecedenciaDoChecklistSegueAConferencia()
+    {
+        ProcessoSeletivo processo = ProcessoConforme(); // classificação importada: sem quadro de pesos por área
+        AdicionarCriteriosComAreaRepetida(processo);
+
+        string[] vermelhos = [.. Checklist(processo).Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
         // Equal, não BeEquivalentTo: aqui a ORDEM é o que está sendo provado.
         vermelhos.Should().Equal(
             ["desempate_area_enem_citada_por_dois_criterios", "desempate_area_enem_sem_quadro"],
-            "o gate recusa primeiro a área repetida, e o checklist reproduz a precedência de Publicar()");
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.AreaEnemCitadaPorOutroCriterio");
+            "a conferência recusa primeiro a área repetida, e o checklist reproduz a precedência de Publicar()");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.AreaEnemCitadaPorOutroCriterio");
     }
 
     [Fact(DisplayName = "Pré-canonicalização: área citada por dois critérios de desempate — só o item da área repetida fica vermelho, e Publicar recusa")]
     public void PreCanon_DesempatePorAreaCitadaPorDoisCriterios()
     {
         ProcessoSeletivo processo = ProcessoConformeComEtapaQueCompoeNota();
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Classificacao))!.SetValue(processo, ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
-            CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            BaseadoEmEnem = true,
-            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
-            EscalaNotaFinal = 100m,
-        }).Value!);
-        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
-        // Direto na lista: a gravação recusa a área repetida, e o gate cobre o estado que
-        // chega por outro caminho.
-        List<CriterioDesempate> criterios = (List<CriterioDesempate>)typeof(ProcessoSeletivo)
-            .GetField("_criteriosDesempate", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(processo)!;
-        criterios.AddRange(
-            CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!,
-            CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["MATEMATICA", "REDACAO"])).Value!);
+        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Classificacao))!.SetValue(processo, ClassificacaoEnemPelaMediaPonderada());
+        DeclararEdicaoDoEnem(processo);
+        // Direto na lista: a gravação recusa a área repetida, e a conferência cobre o estado que chega por outro caminho.
+        AdicionarCriteriosComAreaRepetida(processo);
 
         SoEstesItensVermelhos(processo, "desempate_area_enem_citada_por_dois_criterios");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.AreaEnemCitadaPorOutroCriterio");
         resultado.Error.Message.Should().Contain("REDACAO").And.Contain("ordem 1").And.NotContain("Áreas aceitas:");
     }
@@ -234,24 +256,12 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         processo.DefinirCriteriosDesempate(
             [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["FISICA"])).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        propriedadeClassificacao.SetValue(processo, ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
-            CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            BaseadoEmEnem = true,
-            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
-            EscalaNotaFinal = 100m,
-        }).Value!);
-        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
+        propriedadeClassificacao.SetValue(processo, ClassificacaoEnemPelaMediaPonderada());
+        DeclararEdicaoDoEnem(processo);
 
         SoEstesItensVermelhos(processo, "desempate_area_enem_fora_do_quadro");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.DesempateAreaEnemForaDoQuadro");
         resultado.Error.Message.Should().Contain("FISICA").And.Contain("Áreas aceitas:");
     }
@@ -260,27 +270,17 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     // Precedência: coletar todos os vereditos não pode mudar qual DomainError vem primeiro
     // ══════════════════════════════════════════════════════════════════════════════════════
 
-    [Fact(DisplayName = "Precedência preservada: com Gate 1 (itens estruturais) e Gate 2 (cronograma) pendentes ao mesmo tempo, Publicar devolve ConformidadeInsuficiente primeiro — mas o checklist mostra os DOIS itens vermelhos")]
-    public void Precedencia_GatesSimultaneos_PublicarDevolveOPrimeiroNaOrdem()
+    [Fact(DisplayName = "Precedência preservada: com a conferência dos itens estruturais e a do cronograma pendentes ao mesmo tempo, a conferência devolve a conformidade primeiro — mas o checklist mostra os DOIS itens pendentes")]
+    public void Precedencia_ConferenciasSimultaneas_PublicarDevolveOPrimeiroNaOrdem()
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS Precedência", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
-                "CEPS",
-                "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        // AtendimentoEspecializado NUNCA definida — Gate 1 (PendenciaDeConformidade) fica pendente.
-        processo.DefinirDistribuicaoVagas([DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        // Fase sem coleta de inscrição, com InscricaoPropria — Gate 2 (cronograma) TAMBÉM pendente.
-        processo.DefinirCronogramaFases([FaseBase(coletaInscricao: false)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = ProcessoComAtendimentoECronogramaPendentes();
 
-        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao);
+        IReadOnlyList<ItemConformidade> checklist = Checklist(processo);
         checklist.Should().Contain(i => i.Codigo == "atendimento_especializado_ausente" && !i.Ok,
-            "Gate 1 também está pendente — o checklist projeta TODOS os vereditos, não só o primeiro");
+            "a conferência dos itens estruturais também está pendente — o checklist projeta TODOS os vereditos, não só o primeiro");
         checklist.Should().Contain(i => i.Codigo == "cronograma_inscricao_propria_sem_fase_de_coleta" && !i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(
             "ProcessoSeletivo.ConformidadeInsuficiente",
             "PendenciaDeConformidade é checado ANTES de PendenciaDoCronograma em Publicar (e na sucessão de Retificar/Fechar) — " +
@@ -296,7 +296,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     {
         ProcessoSeletivo processo = ProcessoConforme();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().OnlyContain(i => i.Ok);
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().OnlyContain(i => i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -310,9 +310,9 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         // publica sem prova local. Esta contraprova torna essa premissa EXPLÍCITA.
         processo.Etapas.Should().BeEmpty("pré-condição da contraprova: sem etapa, sob CLASSIFICACAO-IMPORTADA");
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().Contain(
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().Contain(
             i => i.Codigo == "cronograma_fase_agrupadora_sem_etapa_pontuada" && i.Ok);
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().Contain(
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().Contain(
             i => i.Codigo == "cronograma_etapa_declara_a_fase" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -324,16 +324,8 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     {
         ProcessoSeletivo processo = ProcessoConforme(); // modalidade única AC, RegraRemanejamentoModalidade.Nenhuma
 
-        string[] itensDeCascata =
-        [
-            "cascata_modalidade_fora_do_regime_federal",
-            "cascata_origem_ausente",
-            "cascata_fallback_nao_ofertado",
-            "cascata_origem_nao_segue_cascata",
-            "cascata_destino_desconhecido",
-        ];
-        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao);
-        foreach (string item in itensDeCascata)
+        IReadOnlyList<ItemConformidade> checklist = Checklist(processo);
+        foreach (string item in ItensDeCascata)
         {
             checklist.Should().Contain(i => i.Codigo == item && i.Ok, $"cascata não se aplica — \"{item}\" não pode ficar vermelho");
         }

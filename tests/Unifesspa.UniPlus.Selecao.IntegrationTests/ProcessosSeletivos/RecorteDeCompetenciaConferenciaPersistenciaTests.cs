@@ -13,13 +13,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A bicondicional entre o gate de publicação e o item de conformidade do recorte de
+/// A coincidência entre a conferência de publicação e o item de conformidade do recorte de
 /// competência das bancas requeridas. <c>FaseCronograma.Criar</c> recusa duas bancas do
 /// mesmo tipo que não se distinguem, mas esse estado é <b>materializável</b>: o EF hidrata
 /// <c>bancas_requeridas</c> e <c>categorias_julgadas</c> direto das linhas, sem passar pela
@@ -37,7 +38,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// que se está defendendo.
 /// </para>
 /// </remarks>
-public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
+public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFixture<ProcessoSeletivoDbFixture>
 {
     private static readonly string HashFixo = string.Concat(Enumerable.Repeat("a712345678", 7))[..64];
 
@@ -49,27 +50,18 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
 
     private readonly ProcessoSeletivoDbFixture _fixture;
 
-    public RecorteDeCompetenciaGatePersistenciaTests(ProcessoSeletivoDbFixture fixture) =>
+    public RecorteDeCompetenciaConferenciaPersistenciaTests(ProcessoSeletivoDbFixture fixture) =>
         _fixture = fixture;
 
-    [Fact(DisplayName = "Banca hidratada sem recorte, ao lado de outra do mesmo tipo, marca o item vermelho e recusa a publicação")]
-    public async Task BancaSemRecorte_ItemVermelhoEPublicacaoRecusada()
+    [Fact(DisplayName = "Banca hidratada sem recorte, ao lado de outra do mesmo tipo, marca o item pendente e recusa a publicação")]
+    public async Task BancaSemRecorte_ItemPendenteEPublicacaoRecusada()
     {
         Guid processoId = await SemearProcessoConformeAsync($"PS 1428 sem recorte {Guid.CreateVersion7()}");
-
         await ApagarRecorteDeAsync(processoId, "ETNICO_RACIAL");
-
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-
-        processo.CronogramaFases.Single().BancasRequeridas
-            .Should().Contain(b => b.RecorteDeCompetencia.Count == 0,
-                "pré-condição: o EF hidratou a banca sem recorte sem passar por fábrica nenhuma");
-
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
-            .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas")
-            .Which.Ok.Should().BeFalse(
-                "quem monta o edital precisa ver a pendência; invariante que só existe no domínio não aparece no checklist");
+        AfirmarQueABancaHidratouSemRecorte(processo);
+        AfirmarOItemPendenteDoRecorte(processo);
 
         Result<VersaoConfiguracao> publicacao = Publicar(processo);
 
@@ -78,8 +70,19 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
         publicacao.Error!.Code.Should().Be("BancaRequerida.RecorteDeCompetenciaObrigatorio");
     }
 
-    [Fact(DisplayName = "Duas bancas do mesmo tipo hidratadas com o MESMO recorte marcam o item vermelho e recusam a publicação")]
-    public async Task RecortesIguais_ItemVermelhoEPublicacaoRecusada()
+    private static void AfirmarQueABancaHidratouSemRecorte(ProcessoSeletivo processo) =>
+        processo.CronogramaFases.Single().BancasRequeridas
+            .Should().Contain(b => b.RecorteDeCompetencia.Count == 0,
+                "pré-condição: o EF hidratou a banca sem recorte sem passar por fábrica nenhuma");
+
+    private static void AfirmarOItemPendenteDoRecorte(ProcessoSeletivo processo) =>
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(ComCalendario()))
+            .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas")
+            .Which.Ok.Should().BeFalse(
+                "quem monta o edital precisa ver a pendência; invariante que só existe no domínio não aparece no checklist");
+
+    [Fact(DisplayName = "Duas bancas do mesmo tipo hidratadas com o MESMO recorte marcam o item pendente e recusam a publicação")]
+    public async Task RecortesIguais_ItemPendenteEPublicacaoRecusada()
     {
         Guid processoId = await SemearProcessoConformeAsync($"PS 1428 recorte igual {Guid.CreateVersion7()}");
         await UniformizarRecortesAsync(processoId);
@@ -92,8 +95,8 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
         publicacao.Error!.Code.Should().Be("BancaRequerida.RecorteDeCompetenciaDuplicado");
     }
 
-    [Fact(DisplayName = "Contraprova: a mesma configuração com recortes distintos tem o item verde e publica")]
-    public async Task RecortesDistintos_ItemVerdeEPublica()
+    [Fact(DisplayName = "Contraprova: a mesma configuração com recortes distintos tem o item conforme e publica")]
+    public async Task RecortesDistintos_ItemConformeEPublica()
     {
         Guid processoId = await SemearProcessoConformeAsync($"PS 1428 recorte ok {Guid.CreateVersion7()}");
 
@@ -142,7 +145,7 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
         linhasEsperadas: 1);
 
     private static ItemConformidade ItemDoRecorteDasBancas(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(ComCalendario()))
             .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas").Which;
 
     private static void ConferirQueAsBancasDocumentaisSeguemComRecorte(ProcessoSeletivo processo) =>
@@ -161,19 +164,17 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
             [DiaNaoUtilCongelado.Criar(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null).Value!]).Value,
         FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
 
-    private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        DadosEdital.Criar(
+    private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(new CenarioDeCongelamento
+    {
+        Dados = DadosEdital.Criar(
             "001/2026",
             new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
             new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
             Guid.CreateVersion7()).Value!,
-        "{}"u8.ToArray(),
-        "1.1",
-        "canonical-json/sha256@v1",
-        HashFixo,
-        "teste",
-        TimeProvider.System,
-        ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo),
+        AtorUsuarioContaId = "teste",
+        Contagem = ComCalendario(),
+    });
 
     /// <summary>
     /// Processo estruturalmente publicável cuja única fase publica o preliminar e o definitivo
@@ -183,11 +184,25 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
     private async Task<Guid> SemearProcessoConformeAsync(string nome)
     {
         await using UniPlusDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = ProcessoComCronogramaEEtapa(nome);
+        DefinirAsVagas(processo);
+        DefinirAClassificacao(processo);
+        DefinirAsDeclaracoesObrigatorias(processo);
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
+        await db.ProcessosSeletivos.AddAsync(processo);
+        await db.SaveChangesAsync();
 
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        return processo.Id;
+    }
+
+    private static ProcessoSeletivo ProcessoSiSuSemConfiguracao(string nome) => ProcessoSeletivo.Criar(
+        nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+        UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+        LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+
+    private static ProcessoSeletivo ProcessoComCronogramaEEtapa(string nome)
+    {
+        ProcessoSeletivo processo = ProcessoSiSuSemConfiguracao(nome);
 
         processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
@@ -197,10 +212,11 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
+        return processo;
+    }
 
+    private static void DefinirAsVagas(ProcessoSeletivo processo)
+    {
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
@@ -210,7 +226,10 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
                 new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [modalidade] },
                 new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    }
 
+    private static void DefinirAClassificacao(ProcessoSeletivo processo)
+    {
         processo.DefinirClassificacao(
             ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
             {
@@ -218,7 +237,11 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
                 RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
             }).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+    }
 
+    private static void DefinirAsDeclaracoesObrigatorias(ProcessoSeletivo processo)
+    {
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         processo.DefinirAlgoritmoContagemPrazo(
             Regra(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, 'd'), PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
@@ -227,12 +250,6 @@ public sealed class RecorteDeCompetenciaGatePersistenciaTests : IClassFixture<Pr
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        await db.ProcessosSeletivos.AddAsync(processo);
-        await db.SaveChangesAsync();
-
-        return processo.Id;
     }
 
     private async Task ExecutarAsync(string sql, Action<NpgsqlCommand> parametrizar, int linhasEsperadas)

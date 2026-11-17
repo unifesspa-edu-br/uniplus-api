@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -18,8 +19,7 @@ internal static class ApoioDaSessaoEditorialDoProcessoSeletivo
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo, "user-conta-123",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = NovosDados(), Documento = new DocumentoCongelado(BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo), Relogio = new RelogioFixo(Agora) });
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         versao = publicacao.Value!;
         processo.DequeueDomainEvents();

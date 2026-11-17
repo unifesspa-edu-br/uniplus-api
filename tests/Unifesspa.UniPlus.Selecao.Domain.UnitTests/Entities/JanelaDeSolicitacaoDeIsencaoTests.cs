@@ -20,6 +20,9 @@ using Xunit;
 /// </summary>
 public sealed class JanelaDeSolicitacaoDeIsencaoTests
 {
+    private static DomainError? PendenciaDoCronograma(EstadoDaConfiguracao estado, TimeZoneInfo? fuso) =>
+        CronogramaDoProcesso.Do(estado.CronogramaFases).ConferirCompletude(fuso) is [var primeira, ..] ? primeira.Error : null;
+
     private static readonly TimeZoneInfo Belem = TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId);
     private static readonly DateTimeOffset AberturaDasInscricoes = InstanteEmBelem.Em(2026, 3, 2);
     private static readonly DateTimeOffset FimDasInscricoes = InstanteEmBelem.Em(2026, 3, 31, 23, 59, 59);
@@ -108,10 +111,10 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         pendencia!.Code.Should().Be("ProcessoSeletivo.JanelaDeIsencaoSemPrazo");
     }
 
-    [Fact(DisplayName = "A janela irregular fica vermelha no checklist, e não só na publicação")]
-    public void JanelaIrregular_ItemVermelhoNoChecklist()
+    [Fact(DisplayName = "A janela irregular fica pendente no painel de conformidade, e não só na publicação")]
+    public void JanelaIrregular_ItemPendenteNoPainel()
     {
-        // O checklist é bicondicional com os gates: sem o item, o preflight diria que está tudo
+        // O painel de conformidade coincide com as conferências: sem o item, o preflight diria que está tudo
         // pronto instantes antes de a publicação recusar o mesmo processo.
         ProcessoSeletivo processo = ProcessoComCronograma([
             FaseDeInscricao(AberturaDasInscricoes, FimDasInscricoes),
@@ -121,11 +124,11 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         var contexto = new ContextoDeContagemDePrazos(
             CalendarioVigente: null, FusoInstitucional: Belem);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), contexto, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(contexto))
             .Should().Contain(i => i.Codigo == "cronograma_janela_de_isencao" && !i.Ok);
     }
 
-    [Fact(DisplayName = "Sem zona resolvida o gate lança, em vez de aceitar janela de um dia")]
+    [Fact(DisplayName = "Sem zona resolvida a conferência lança, em vez de aceitar janela de um dia")]
     public void SemFusoResolvido_NaoAceitaJanelaCurta()
     {
         // Tratar a ausência do fuso como permissão transformaria um defeito de instalação em
@@ -135,7 +138,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             FaseDeIsencao(AberturaDasInscricoes, InstanteEmBelem.Em(2026, 3, 3, 23, 59, 59)),
         ]);
 
-        Action semZona = () => PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), null);
+        Action semZona = () => PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), null);
 
         semZona.Should().Throw<InvalidOperationException>();
     }
@@ -154,7 +157,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             [FaseDeIsencao(AberturaDasInscricoes, InstanteEmBelem.Em(2026, 3, 3, 23, 59, 59))],
             [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem)!.Code
+        PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem)!.Code
             .Should().Be("ProcessoSeletivo.JanelaDeIsencaoMenorQueCincoDias");
     }
 
@@ -164,7 +167,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         ProcessoSeletivo processo = ProcessoComCronograma(
             [FaseDeInscricao(AberturaDasInscricoes, FimDasInscricoes)]);
 
-        PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem).Should().BeNull();
+        PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem).Should().BeNull();
     }
 
     private static DomainError? Avaliar(
@@ -179,7 +182,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             FaseDeIsencao(aberturaIsencao, fimIsencao, recurso),
         ]);
 
-        return PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem);
+        return PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem);
     }
 
     private static FaseCronograma FaseDeInscricao(DateTimeOffset inicio, DateTimeOffset fim) =>

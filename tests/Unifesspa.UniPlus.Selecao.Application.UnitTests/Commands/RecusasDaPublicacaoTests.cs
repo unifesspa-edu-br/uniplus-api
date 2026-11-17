@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
@@ -28,7 +29,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using Xunit;
 
 /// <summary>
-/// <b>Contraprova do CA-10 (ADR-0109 D5):</b> o gate precede a canonicalização.
+/// <b>Contraprova do CA-10 (ADR-0109 D5):</b> a conferência da configuração precede a canonicalização.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -36,12 +37,12 @@ using Xunit;
 /// substituto registra a invocação — se ele for chamado, o teste falha.
 /// </para>
 /// <para>
-/// Por que importa: sem o gate antecipado, a projeção de uma dimensão obrigatória
+/// Por que importa: sem a conferência antecipada, a projeção de uma dimensão obrigatória
 /// ausente <b>lançaria</b> (ADR-0109 D8) em vez de devolver o <c>DomainError</c> que
 /// o contrato HTTP promete. O 422 viraria 500.
 /// </para>
 /// </remarks>
-public sealed class PublicarProcessoSeletivoGateTests
+public sealed class RecusasDaPublicacaoTests
 {
     /// <summary>Canonicalizador espião — registra se foi invocado.</summary>
     private sealed class CanonicalizerEspiao : ISnapshotPublicacaoCanonicalizer
@@ -55,21 +56,22 @@ public sealed class PublicarProcessoSeletivoGateTests
         }
     }
 
-    [Fact(DisplayName = "Publicar_ProcessoNaoConforme_NaoCanonicaliza — o gate precede a projeção (CA-10)")]
+    [Fact(DisplayName = "Publicar_ProcessoNaoConforme_NaoCanonicaliza — a conferência precede a projeção (CA-10)")]
     public async Task Publicar_ProcessoNaoConforme_NaoCanonicaliza()
     {
         CanonicalizerEspiao canonicalizer = new();
-        PublicacaoSobGate gate = new(ProcessoNaoConformeQueCobraTaxaSemMotivo(), canonicalizer, TipoDeAberturaDoEdital());
-        (Result resposta, IEnumerable<object> eventos) = await gate.PublicarAsync("EDITAL_ABERTURA", PeriodoDoAtoInicio, PeriodoDoAtoFim);
+        PublicacaoSobConferencia conferencia = new(ProcessoNaoConformeQueCobraTaxaSemMotivo(), canonicalizer, TipoDeAberturaDoEdital());
+        (Result resposta, IEnumerable<object> eventos) = await conferencia.PublicarAsync("EDITAL_ABERTURA", PeriodoDoAtoInicio, PeriodoDoAtoFim);
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Code.Should().Be(
             "ProcessoSeletivo.ConformidadeInsuficiente",
             "o contrato HTTP não muda — continua sendo o mesmo 422 de sempre");
-        await gate.Servicos.Repositorio.DidNotReceive().ListarMotivosEscolhidosAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
+        resposta.Errors.Select(static e => e.Error.Code).Should().ContainInOrder(
+            "ProcessoSeletivo.ConformidadeInsuficiente", MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
         canonicalizer.FoiInvocado.Should().BeFalse(
-            "um processo não conforme NÃO chega a ser canonicalizado (ADR-0109 D5). Sem o gate antecipado, a " +
-            "projeção de uma dimensão obrigatória ausente lançaria (D8) e o 422 viraria 500.");
+            "um processo não conforme NÃO chega a ser canonicalizado (ADR-0109 D5). Sem a conferência antecipada, a " +
+            "projeção de uma dimensão obrigatória ausente lançaria e o 422 viraria 500.");
         eventos.Should().BeEmpty();
     }
 
@@ -94,16 +96,7 @@ public sealed class PublicarProcessoSeletivoGateTests
         }
     }
 
-    /// <summary>Processo conforme (etapas, oferta, distribuição, classificação, cronograma) — o mínimo para passar pelos dois primeiros gates do handler.</summary>
-    private static ProcessoSeletivo NovoProcessoConformeComGatilhoPorFaixaEtariaSemReferencia(out Guid faseId)
-    {
-        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Gate D5", out faseId);
-
-        CondicaoGatilho condicao = CondicaoGatilho.Criar(
-            0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
-        DocumentoExigidoBaseLegal baseLegal = DocumentoExigidoBaseLegal.Criar(
-            "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
+    private static DocumentoExigido ExigenciaPorFaixaEtaria(Guid faseId) => DocumentoExigido.Criar(
             faseId,
             tipoDocumentoOrigemId: CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"),
             tipoDocumentoCodigo: "DECLARACAO_MAIORIDADE",
@@ -112,7 +105,20 @@ public sealed class PublicarProcessoSeletivoGateTests
             aplicabilidade: Aplicabilidade.Condicional,
             obrigatorio: true,
             consequenciaIndeferimento: null,
-            condicoes: [condicao], basesLegais: [baseLegal], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+            condicoes: [CondicaoDeMaioridade()], basesLegais: [BaseLegalDaLeiDeCotas()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+
+    private static CondicaoGatilho CondicaoDeMaioridade() => CondicaoGatilho.Criar(
+        0, "FAIXA_ETARIA", Operador.MaiorIgual, JsonSerializer.SerializeToElement(18)).Value!;
+
+    private static DocumentoExigidoBaseLegal BaseLegalDaLeiDeCotas() => DocumentoExigidoBaseLegal.Criar(
+        "Lei 12.711/2012, art. 3º", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
+
+    /// <summary>Processo conforme (etapas, oferta, distribuição, classificação, cronograma) — o mínimo para passar pela conferência do estado e pelo ato.</summary>
+    private static ProcessoSeletivo NovoProcessoConformeComGatilhoPorFaixaEtariaSemReferencia(out Guid faseId)
+    {
+        ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS referência temporal", out faseId);
+
+        DocumentoExigido exigencia = ExigenciaPorFaixaEtaria(faseId);
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
         // Nenhuma ReferenciaTemporalFatos configurada — o gatilho FAIXA_ETARIA a exige.
@@ -126,9 +132,9 @@ public sealed class PublicarProcessoSeletivoGateTests
         // O cronograma do builder declara RESULTADO_CLASSIFICACAO como produto; o ato desta publicação é do
         // mesmo tipo, que o catálogo declara único: duas declarações para uma única vaga.
         CanonicalizerEspiao canonicalizer = new();
-        PublicacaoSobGate gate = new(ProcessoSeletivoConformeBuilder.Criar("PS Tipo único"), canonicalizer, TipoUnicoDeResultadoDaClassificacao());
+        PublicacaoSobConferencia conferencia = new(ProcessoSeletivoConformeBuilder.Criar("PS Tipo único"), canonicalizer, TipoUnicoDeResultadoDaClassificacao());
 
-        (Result resposta, IEnumerable<object> eventos) = await gate.PublicarAsync("RESULTADO_CLASSIFICACAO");
+        (Result resposta, IEnumerable<object> eventos) = await conferencia.PublicarAsync("RESULTADO_CLASSIFICACAO");
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Code.Should().Be("ProcessoSeletivo.TipoDeAtoUnicoDeclaradoMaisDeUmaVez");
@@ -136,18 +142,18 @@ public sealed class PublicarProcessoSeletivoGateTests
         eventos.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Publicar_ExigenciaComGatilhoPorFaixaEtariaSemReferenciaTemporal_NaoCanonicalizaAntesDoGuard — o gate B-03 também precede a canonicalização (ADR-0109 D5)")]
+    [Fact(DisplayName = "Publicar_ExigenciaComGatilhoPorFaixaEtariaSemReferenciaTemporal_NaoCanonicalizaAntesDoGuard — a conferência da referência temporal também precede a canonicalização (ADR-0109 D5)")]
     public async Task Publicar_ExigenciaComGatilhoPorFaixaEtariaSemReferenciaTemporal_NaoCanonicalizaAntesDoGuard()
     {
         CanonicalizerQueResolveReferenciaTemporalFatos canonicalizer = new();
-        PublicacaoSobGate gate = new(NovoProcessoConformeComGatilhoPorFaixaEtariaSemReferencia(out _), canonicalizer, TipoDeAberturaDoEdital());
+        PublicacaoSobConferencia conferencia = new(NovoProcessoConformeComGatilhoPorFaixaEtariaSemReferencia(out _), canonicalizer, TipoDeAberturaDoEdital());
 
-        (Result resposta, IEnumerable<object> eventos) = await gate.PublicarAsync("EDITAL_ABERTURA");
+        (Result resposta, IEnumerable<object> eventos) = await conferencia.PublicarAsync("EDITAL_ABERTURA");
 
         resposta.IsFailure.Should().BeTrue();
         resposta.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosAusente");
         canonicalizer.FoiInvocado.Should().BeFalse(
-            "o guard B-03 (PendenciaPreCanonicalizacao) precede a canonicalização — sem ele, " +
+            "a conferência da referência temporal precede a canonicalização — sem ele, " +
             "ResolverDataReferenciaFatos(TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)) lançaria dentro do canonicalizador e a publicação " +
             "devolveria 500 em vez do 422 nomeado.");
         eventos.Should().BeEmpty();
@@ -156,8 +162,8 @@ public sealed class PublicarProcessoSeletivoGateTests
     private static readonly DateTimeOffset PeriodoDoAtoInicio = new(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3));
     private static readonly DateTimeOffset PeriodoDoAtoFim = new(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3));
 
-    // Cobra a taxa com um fundamento e não escolheu motivo: a recusa estrutural tem de vir antes da
-    // cobertura dos motivos, que é o último portão. Sem cronograma, não há fase que colete inscrição:
+    // Cobra a taxa com um fundamento e não escolheu motivo: a recusa estrutural da conferência da configuração vem antes da
+    // cobertura dos motivos, na mesma resposta. Sem cronograma, não há fase que colete inscrição:
     // o período continua vindo do ato.
     private static ProcessoSeletivo ProcessoNaoConformeQueCobraTaxaSemMotivo()
     {
@@ -169,7 +175,7 @@ public sealed class PublicarProcessoSeletivoGateTests
         return processo;
     }
 
-    // As conferências que precedem o gate no handler (tipo de ato, vaga de linhagem) têm de PASSAR — senão o teste
+    // O ato e o documento, que precedem a conferência da configuração, têm de PASSAR — senão o teste
     // provaria a recusa errada e o canonicalizador ficaria sem ser chamado por outro motivo.
     private static ITipoAtoPublicadoReader TipoDeAberturaDoEdital()
     {
@@ -198,12 +204,12 @@ public sealed class PublicarProcessoSeletivoGateTests
     }
 
     /// <summary>O processo, o documento do edital confirmado e as portas que a publicação lê, para o ato de abertura.</summary>
-    private sealed class PublicacaoSobGate
+    private sealed class PublicacaoSobConferencia
     {
         private readonly ProcessoSeletivo _processo;
         private readonly DocumentoAPublicar _documento;
 
-        public PublicacaoSobGate(ProcessoSeletivo processo, ISnapshotPublicacaoCanonicalizer canonicalizer, ITipoAtoPublicadoReader tipoDeAtoReader)
+        public PublicacaoSobConferencia(ProcessoSeletivo processo, ISnapshotPublicacaoCanonicalizer canonicalizer, ITipoAtoPublicadoReader tipoDeAtoReader)
         {
             _processo = processo;
             _documento = DocumentoAPublicar.IniciarPendente(

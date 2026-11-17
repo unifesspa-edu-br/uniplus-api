@@ -11,17 +11,22 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class ValidacaoDasEtapasRestauradas
 {
-    internal static DomainError? Validar(GrafoConfiguracao grafo) =>
-        IdAusente(grafo)
-        ?? CausasDaRecusa.Primeira(EtapasDoProcesso.Das(grafo.Etapas).Conferir())
-        ?? RegrasDasEtapas.EtapaNotaEnemSemClassificacaoEnem(grafo.Etapas, grafo.Classificacao);
+    private const string Campo = "etapas";
 
-    // O Id vem congelado do envelope e nada além do handler de gravação garantia a unicidade: sem Id, a declaração
-    // da etapa nem se monta, e dois ids iguais colidiriam na chave primária.
-    private static DomainError? IdAusente(GrafoConfiguracao grafo) =>
-        grafo.Etapas.Any(static etapa => etapa.Id == Guid.Empty)
-            ? new DomainError(
-                "ProcessoSeletivo.IdEtapaAusente",
-                "Toda etapa restaurada deve declarar o Id congelado no envelope.")
-            : null;
+    internal static IReadOnlyList<FieldError> Validar(GrafoConfiguracao grafo) =>
+        HaEtapaSemId(grafo)
+            ? CausasDaRecusa.Da(IdAusente(), Campo)
+            :
+            [
+                .. EtapasDoProcesso.Das(grafo.Etapas).Conferir(),
+                .. CausasDaRecusa.Da(RegrasDasEtapas.EtapaNotaEnemSemClassificacaoEnem(grafo.Etapas, grafo.Classificacao), Campo),
+            ];
+
+    // O Id vem congelado do envelope e nada além do handler de gravação garantia a unicidade: sem Id, a declaração da etapa
+    // nem se monta, e dois ids iguais colidiriam na chave primária. Sem Id, as demais regras das etapas não têm o que julgar.
+    internal static bool HaEtapaSemId(GrafoConfiguracao grafo) => grafo.Etapas.Any(static etapa => etapa.Id == Guid.Empty);
+
+    private static DomainError IdAusente() => new(
+        "ProcessoSeletivo.IdEtapaAusente",
+        "Toda etapa restaurada deve declarar o Id congelado no envelope.");
 }

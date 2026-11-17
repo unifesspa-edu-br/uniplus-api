@@ -14,13 +14,14 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// A bicondicional entre o gate de publicação e o item de conformidade da âncora do prazo de
+/// A coincidência entre a conferência de publicação e o item de conformidade da âncora do prazo de
 /// recurso. <c>FaseCronograma.Criar</c> recusa a regra que ancora fora dos produtos
 /// preliminares da própria fase, mas esse estado é <b>materializável</b>: o EF hidrata
 /// <c>regras_recurso_fase</c> e <c>produtos_da_fase</c> direto das linhas, sem passar pela
@@ -48,25 +49,32 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
     public AncoraDoRecursoPersistenciaTests(ProcessoSeletivoDbFixture fixture) =>
         _fixture = fixture;
 
+    // A âncora passa a apontar para o produto DEFINITIVO da mesma fase: continua sendo um produto dela, então nenhuma checagem de
+    // pertinência sozinha veria o defeito; o que some é a decisão contestável de que o prazo contaria.
     [Fact(DisplayName = "Âncora hidratada sobre produto DEFINITIVO marca o item vermelho e recusa a publicação")]
     public async Task AncoraEmProdutoDefinitivo_ItemVermelhoEPublicacaoRecusada()
     {
         Guid processoId = await SemearProcessoConformeAsync($"PS 1427 ancora {Guid.CreateVersion7()}");
-
-        // A âncora passa a apontar para o produto DEFINITIVO da mesma fase: continua sendo um
-        // produto dela, então nenhuma checagem de pertinência sozinha veria o defeito — o que
-        // some é a decisão contestável de que o prazo contaria.
         await ApontarAncoraParaAsync(processoId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo);
-
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
+        AfirmarQueAAncoraHidratouNoDefinitivo(processo);
+        AfirmarAncoraVermelhaEPublicacaoRecusada(processo);
+    }
+
+    private static void AfirmarQueAAncoraHidratouNoDefinitivo(ProcessoSeletivo processo)
+    {
         FaseCronograma fase = processo.CronogramaFases.Single();
+
         fase.RegraRecurso!.ProdutoAncoraId.Should().Be(
             fase.Produtos.Single(p => p.AtoCodigo == "RESULTADO_CLASSIFICACAO" && p.Papel == PapelProdutoFase.Definitivo).Id,
             "pré-condição: o EF hidratou a âncora incoerente sem passar por fábrica nenhuma");
+    }
 
-        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao);
+    private static void AfirmarAncoraVermelhaEPublicacaoRecusada(ProcessoSeletivo processo)
+    {
+        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(ComCalendario()));
 
         checklist.Should().ContainSingle(i => i.Codigo == "cronograma_ancora_do_recurso")
             .Which.Ok.Should().BeFalse(
@@ -92,12 +100,12 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(ComCalendario()))
             .Should().ContainSingle(i => i.Codigo == "cronograma_ancora_do_recurso")
             .Which.Ok.Should().BeFalse();
 
         Publicar(processo).IsFailure.Should().BeTrue(
-            "sem chave estrangeira, nada no banco impede a linha de apontar para fora da fase — o gate é a defesa");
+            "sem chave estrangeira, nada no banco impede a linha de apontar para fora da fase — a conferência é a defesa");
     }
 
     [Fact(DisplayName = "Os procedimentos de recurso da janela da fase voltam do banco como foram gravados, na ordem canônica")]
@@ -119,7 +127,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(ComCalendario()))
             .Should().ContainSingle(i => i.Codigo == "cronograma_ancora_do_recurso")
             .Which.Ok.Should().BeTrue();
 
@@ -139,19 +147,17 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
             [DiaNaoUtilCongelado.Criar(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null).Value!]).Value,
         FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
 
-    private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        DadosEdital.Criar(
+    private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(new CenarioDeCongelamento
+    {
+        Dados = DadosEdital.Criar(
             "001/2026",
             new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
             new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
             Guid.CreateVersion7()).Value!,
-        "{}"u8.ToArray(),
-        "1.1",
-        "canonical-json/sha256@v1",
-        HashFixo,
-        "teste",
-        TimeProvider.System,
-        ComCalendario(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo),
+        AtorUsuarioContaId = "teste",
+        Contagem = ComCalendario(),
+    });
 
     /// <summary>
     /// Processo estruturalmente publicável cuja única fase publica o preliminar e o definitivo

@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Application.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -242,9 +243,7 @@ public sealed class RestauradorDeConfiguracaoParametrosCongeladosTests
     private static void PublicarComOsBytesJaCodificados(ProcessoSeletivo processo, SnapshotCanonico congelado)
     {
         processo.Publicar(
-            CorpusEnvelopeDadosDoEdital.DadosRicos(), congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            CorpusEnvelope.HashDocumento, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(),
-            FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).IsSuccess.Should().BeTrue();
+            new CenarioDeCongelamento { Dados = CorpusEnvelopeDadosDoEdital.DadosRicos(), Documento = new DocumentoCongelado(congelado.Bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, CorpusEnvelope.HashDocumento), AtorUsuarioContaId = CorpusEnvelope.Ator, Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() }).IsSuccess.Should().BeTrue();
         processo.ClearDomainEvents();
     }
 

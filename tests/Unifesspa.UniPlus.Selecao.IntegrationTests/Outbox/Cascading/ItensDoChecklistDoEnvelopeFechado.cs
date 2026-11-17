@@ -82,7 +82,7 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "distribuicao_vagas_oferta_sem_grupo_area_enem",
         "classificacao_grupo_area_enem_da_oferta_fora_do_quadro",
 
-        // ── Gates que a raiz aplica antes do agregador genérico ──
+        // ── Conferências que a raiz aplica antes do agregador genérico ──
         "identificador_legivel_nao_declarado",
         "localidade_nao_declarada",
         "algoritmo_contagem_prazo_nao_declarado",
@@ -90,6 +90,8 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "fuso_institucional_nao_reconhecido",
         "cascata_pendente",
         // ── PendenciaDoCronograma ──
+        "cronograma_fases_declaradas",
+        "cronograma_fases_em_conjunto",
         "cronograma_fase_agrupadora_sem_etapa_pontuada",
         "cronograma_etapa_declara_a_fase",
         "cronograma_inscricao_propria_sem_fase_de_coleta",
@@ -111,6 +113,8 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "cronograma_banca_com_regra_de_deliberacao",
         "cronograma_banca_com_o_minimo_de_integrantes",
         "etapa_correcao_independente_com_dois_corretores",
+        "etapas_declaradas",
+        "etapas_em_conjunto",
         // ── PendenciaDaCascata, detalhamento por razão ──
         "cascata_modalidade_fora_do_regime_federal",
         "cascata_origem_ausente",

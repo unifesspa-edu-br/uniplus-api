@@ -7,6 +7,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -31,14 +32,11 @@ public sealed class TransicoesDaVersaoSequenciaTests
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) =>
         processo.Publicar(
-            Dados(), Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-conta-123", new RelogioFixo(Agora),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", Hash), Relogio = new RelogioFixo(Agora) });
 
     private static Result<VersaoConfiguracao> Retificar(ProcessoSeletivo processo, VersaoConfiguracao versao) =>
         processo.Retificar(
-            Dados(), versao, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-conta-123", "Correção do prazo",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo,
-            TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", Hash), Relogio = new RelogioFixo(Agora) }, versao, "Correção do prazo");
 
     [Fact(DisplayName = "Publicar um processo já publicado recusa pelo status, sem exigir precondição")]
     public void Publicar_JaPublicado_RecusaPeloStatus()
@@ -78,9 +76,7 @@ public sealed class TransicoesDaVersaoSequenciaTests
         ProcessoSeletivo rascunho = ProcessoConformeFactory.Criar();
 
         Action chamada = () => rascunho.Retificar(
-            Dados(), null!, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-conta-123", "Correção do prazo",
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo,
-            TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", Hash), Relogio = new RelogioFixo(Agora) }, null!, "Correção do prazo");
 
         chamada.Should().Throw<ArgumentNullException>().WithParameterName("versaoAtual");
     }
@@ -115,8 +111,8 @@ public sealed class TransicoesDaVersaoSequenciaTests
         chamada.Should().Throw<ArgumentNullException>().WithParameterName("precondicao");
     }
 
-    [Fact(DisplayName = "Fechar recusado por portão deixa a sessão aberta na mesma revisão")]
-    public void Fechar_RecusadoPorPortao_MantemASessaoNaMesmaRevisao()
+    [Fact(DisplayName = "Fechar recusado deixa a sessão aberta na mesma revisão")]
+    public void Fechar_Recusado_MantemASessaoNaMesmaRevisao()
     {
         ProcessoSeletivo emSessao = ProcessoEmEdicaoDeTeste.EmSessao();
         VersaoConfiguracao deOutroProcesso = VersaoDe(ProcessoConformeFactory.Criar());
@@ -130,8 +126,7 @@ public sealed class TransicoesDaVersaoSequenciaTests
 
     private static Result<VersaoConfiguracao> Fechar(ProcessoSeletivo p, VersaoConfiguracao versao, PrecondicaoIfMatch precondicao) =>
         p.FecharRetificacao(
-            Dados(), versao, Bytes, "1.1", "canonical-json/sha256@v1", Hash, "user-conta-123", precondicao,
-            new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", Hash), Relogio = new RelogioFixo(Agora) }, versao, precondicao);
 
     private static VersaoConfiguracao VersaoDe(ProcessoSeletivo processo) =>
         VersaoConfiguracao.Abrir(processo.Id, Bytes, "1.1", "canonical-json/sha256@v1", Guid.CreateVersion7(), Hash, "user-conta-123", Agora);

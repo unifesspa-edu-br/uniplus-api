@@ -46,7 +46,6 @@ internal static class ErrosDoCronograma
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> EtapasNoCronograma() =>
     [
         new("ProcessoSeletivo.AvaliacaoSemEtapa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.avaliacao_sem_etapa", "Fase que agrupa etapas sem nenhuma etapa que aconteça nela")),
-        new("ProcessoSeletivo.EtapaSemFaseDeAvaliacao", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_sem_fase_de_avaliacao", "Há etapa pontuada, mas nenhuma fase do cronograma agrupa etapas")),
         new("ProcessoSeletivo.EtapaSemFaseNoCronograma", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_sem_fase_no_cronograma", "A etapa declara uma fase que não está no cronograma do processo")),
         new("ProcessoSeletivo.EtapaComecaAntesDaFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_comeca_antes_da_fase", "A etapa começa antes da fase que a abriga")),
         new("ProcessoSeletivo.EtapaTerminaDepoisDaFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_termina_depois_da_fase", "A etapa termina depois da fase que a abriga")),

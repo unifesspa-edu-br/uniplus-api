@@ -54,7 +54,7 @@ internal sealed class CenarioDeRetificacaoPublicada
     public static CenarioDeRetificacaoPublicada Publicado(SituacaoDoFatoCitado? situacao = null)
     {
         SituacaoDoFatoCitado fato = situacao ?? new SituacaoDoFatoCitado();
-        ProcessoSeletivo processo = ProcessoQueColetaOFato(fato.ComItemNovo);
+        ProcessoSeletivo processo = ProcessoQueColetaOFato(fato.ComItemNovo, fato.ExigenciaCitaFatoAusenteDoCatalogo);
         VersaoConfiguracao versao = Publicar(processo);
         CenarioDeRetificacaoPublicada cenario = new(processo, versao, GrafoPublicado(processo, fato), EixosCongelados(fato.DominioCongelado));
         cenario.Configurar(fato);
@@ -177,7 +177,9 @@ internal sealed class CenarioDeRetificacaoPublicada
     private void ConfigurarCatalogoDeFatos(SituacaoDoFatoCitado fato)
     {
         FatoCandidatoView vivo = FatoDoCatalogo(fato.DominioNoCatalogo, fato.ClassificacaoNoCatalogo);
+        FatoCandidatoView citado = fato.FatoCitadoReclassificadoNoCatalogo ? vivo with { Origem = "DERIVADO" } : vivo;
+        FatoCandidatoView novo = FatoNovoDoCatalogo(vivo);
         _handlers.CatalogoDeFatos.ListarAsync(Arg.Any<CancellationToken>())
-            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[vivo, FatoNovoDoCatalogo(vivo)]));
+            .Returns(CatalogoDoConjuntoBasico.Com((IReadOnlyList<FatoCandidatoView>)[citado, fato.ItemNovoReclassificadoNoCatalogo ? novo with { Origem = "DERIVADO" } : novo]));
     }
 }

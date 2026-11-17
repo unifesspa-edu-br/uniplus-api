@@ -6,14 +6,9 @@ using Domain.MotivosDeDecisao;
 
 using Kernel.Results;
 
-using Services;
-
-using Unifesspa.UniPlus.Configuracao.Contracts;
-
 /// <summary>
-/// Os últimos portões da publicação, da retificação de uma vez e do fechamento da sessão, depois de
-/// todos os outros: a definição avaliável do processo e, por fim, os motivos escolhidos. Os motivos
-/// ainda não congelados recopiam a descrição vigente e recusam o que veio de motivo desativado
+/// Os motivos escolhidos, que a publicação, a retificação de uma vez e o fechamento da sessão conferem por último. Os
+/// motivos ainda não congelados recopiam a descrição vigente e recusam o que veio de motivo desativado
 /// (UNI-REQ-0122); a cobertura que as decisões do processo exigem é conferida
 /// (<see cref="CoberturaDosMotivos"/>, UNI-REQ-0123); só então a escolha congela.
 /// </summary>
@@ -23,20 +18,6 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </remarks>
 public sealed class ConferenciaDosMotivosAoCongelar(IProcessoSeletivoRepository repository)
 {
-    /// <summary>A definição avaliável do processo, ou a primeira recusa: a da definição precede a dos motivos.</summary>
-    internal async Task<Result<DefinicaoAvaliavel>> UltimosPortoesAsync(
-        ProcessoSeletivo processo, IReadOnlyCollection<FatoCandidatoView> catalogoDeFatos, CancellationToken cancellationToken)
-    {
-        Result<DefinicaoAvaliavel> avaliavel = DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, catalogoDeFatos);
-        if (avaliavel.IsFailure)
-        {
-            return avaliavel;
-        }
-
-        Result motivos = await ConferirAsync(processo, cancellationToken).ConfigureAwait(false);
-        return motivos.IsSuccess ? avaliavel : Result<DefinicaoAvaliavel>.ValidationFailure(motivos.Errors);
-    }
-
     internal async Task<Result> ConferirAsync(ProcessoSeletivo processo, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(processo);

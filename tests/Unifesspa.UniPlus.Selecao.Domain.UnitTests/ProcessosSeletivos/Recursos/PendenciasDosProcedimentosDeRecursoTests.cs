@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
@@ -31,7 +32,7 @@ public sealed class PendenciasDosProcedimentosDeRecursoTests
             Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva,
             RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
-    private static EtapaProcesso EtapaComJanela(ProcedimentosDeRecurso procedimentos, params string[] tiposDeDecisao)
+    internal static EtapaProcesso EtapaComJanela(ProcedimentosDeRecurso procedimentos, params string[] tiposDeDecisao)
     {
         EtapaProcesso etapa = EtapaObjetiva();
         etapa.DefinirProdutos(
@@ -47,12 +48,14 @@ public sealed class PendenciasDosProcedimentosDeRecursoTests
         return etapa;
     }
 
-    private static DomainError? Pendencia(EtapaProcesso etapa)
+    private static IReadOnlyList<FieldError> Causas(EtapaProcesso etapa)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        return PendenciasDosProcedimentosDeRecurso.PendenciaDosProcedimentosDeRecurso(EstadoDaConfiguracao.De(processo));
+        return PendenciasDosProcedimentosDeRecurso.CausasDosProcedimentosDeRecurso(EstadoDaConfiguracao.De(processo));
     }
+
+    private static DomainError? Pendencia(EtapaProcesso etapa) => Causas(etapa) is { Count: > 0 } causas ? causas[0].Error : null;
 
     [Fact(DisplayName = "Janela da etapa que declara o tipo de decisão e não declara procedimento é recusada, citando a etapa e o tipo")]
     public void TipoSemProcedimento_Recusa()
@@ -63,6 +66,18 @@ public sealed class PendenciasDosProcedimentosDeRecursoTests
         pendencia.Message.Should().Contain("Prova objetiva").And.Contain("CLASSIFICACAO");
     }
 
+    [Fact(DisplayName = "Dois tipos de decisão sem procedimento na mesma janela dão duas causas, na ordem dos tipos")]
+    public void DoisTiposSemProcedimento_DuasCausas()
+    {
+        IReadOnlyList<FieldError> causas = Causas(EtapaComJanela(
+            ProcedimentosDeRecurso.Nenhum, TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.AnaliseDocumental));
+
+        causas.Select(static causa => causa.Error.Code).Should().Equal(
+            CodigosDoProcedimentoDeRecurso.DaEtapa.Ausente, CodigosDoProcedimentoDeRecurso.DaEtapa.Ausente);
+        causas[0].Error.Message.Should().Contain("ANALISE_DOCUMENTAL");
+        causas[1].Error.Message.Should().Contain("CLASSIFICACAO");
+    }
+
     [Fact(DisplayName = "Janela da etapa com procedimento para o tipo declarado é aceita")]
     public void TipoComProcedimento_Aceita() =>
         Pendencia(EtapaComJanela(ProcedimentosDeRecurso.De([Procedimento()]), TipoMotivoDeDecisaoCodigo.Classificacao)).Should().BeNull();
@@ -71,19 +86,31 @@ public sealed class PendenciasDosProcedimentosDeRecursoTests
     public void SemTipoDeclarado_Aceita() =>
         Pendencia(EtapaComJanela(ProcedimentosDeRecurso.Nenhum)).Should().BeNull();
 
-    [Theory(DisplayName = "O painel de conformidade espelha o portão: o item do procedimento de recurso é ok só com a janela coberta")]
+    [Fact(DisplayName = "A conferência localiza a recusa do procedimento de recurso no recurso da etapa")]
+    public void Conferencia_RecusaDoProcedimento_ApontaORecursoDaEtapa()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        processo.DefinirEtapas([EtapaComJanela(ProcedimentosDeRecurso.Nenhum, TipoMotivoDeDecisaoCodigo.Classificacao)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+
+        FieldError causa = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Errors
+            .Single(static causa => causa.Error.Code == CodigosDoProcedimentoDeRecurso.DaEtapa.Ausente);
+
+        causa.Field.Should().Be("etapas[0].recursos");
+    }
+
+    [Theory(DisplayName = "O painel de conformidade espelha a conferência: o item do procedimento de recurso é ok só com a janela coberta, e a conferência recusa só sem ela")]
     [InlineData(false, false)]
     [InlineData(true, true)]
-    public void PainelDeConformidade_EspelhaOPortao(bool declaraProcedimento, bool esperadoOk)
+    public void PainelDeConformidade_EspelhaAConferencia(bool declaraProcedimento, bool esperadoOk)
     {
         ProcedimentosDeRecurso procedimentos = declaraProcedimento ? ProcedimentosDeRecurso.De([Procedimento()]) : ProcedimentosDeRecurso.Nenhum;
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirEtapas([EtapaComJanela(procedimentos, TipoMotivoDeDecisaoCodigo.Classificacao)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        IReadOnlyList<ItemConformidade> itens = ChecklistDeConformidade.AvaliarConformidade(
-            EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo,
-            TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao);
+        IReadOnlyList<ItemConformidade> itens = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao);
 
         itens.Single(i => i.Codigo == "cronograma_procedimento_de_recurso").Ok.Should().Be(esperadoOk);
+        ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Errors
+            .Any(static causa => causa.Error.Code == CodigosDoProcedimentoDeRecurso.DaEtapa.Ausente).Should().Be(!esperadoOk);
     }
 }

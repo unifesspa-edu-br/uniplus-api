@@ -9,9 +9,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class EstruturaDoCronograma
 {
+    internal const string CronogramaVazio = "ProcessoSeletivo.CronogramaFasesVazio";
+
     internal static IReadOnlyList<FieldError> Recusas(IReadOnlyList<FaseDeclarada> fases) =>
     [
-        .. CronogramaVazio(fases),
+        .. FasesAusentes(fases),
         .. OrdensRepetidas(fases),
         .. FasesCanonicasRepetidas(fases),
     ];
@@ -23,9 +25,9 @@ internal static class EstruturaDoCronograma
     internal static IReadOnlyList<FieldError> Precedencia(CronogramaDoProcesso cronograma, IReadOnlyList<ArestaPrecedencia> arestas) =>
         [.. arestas.Select(aresta => ViolacaoDaAresta(cronograma, aresta)).OfType<FieldError>()];
 
-    private static IEnumerable<FieldError> CronogramaVazio(IReadOnlyList<FaseDeclarada> fases) =>
+    private static IEnumerable<FieldError> FasesAusentes(IReadOnlyList<FaseDeclarada> fases) =>
         fases.Count == 0
-            ? [new FieldError("fases", new DomainError("ProcessoSeletivo.CronogramaFasesVazio", "O processo deve ter ao menos uma fase no cronograma."))]
+            ? [new FieldError("fases", new DomainError(CronogramaVazio, "O processo deve ter ao menos uma fase no cronograma."))]
             : [];
 
     private static IEnumerable<FieldError> OrdensRepetidas(IReadOnlyList<FaseDeclarada> fases)

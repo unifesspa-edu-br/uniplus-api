@@ -19,7 +19,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.Publicacao
 
 /// <summary>
 /// A forma de cada recusa, por etapa: a que traz um erro único e sem campo, a que acumula o lote inteiro na ordem em
-/// que o portão o produziu, e a que acontece depois de o agregado transitar.
+/// que a conferência o produziu, a da conferência do estado e a que acontece depois de o agregado transitar.
 /// </summary>
 public sealed class FormaDasRecusasAoCongelarTests
 {
@@ -27,15 +27,14 @@ public sealed class FormaDasRecusasAoCongelarTests
     [
         DefeitoDoCongelamento.Documento,
         DefeitoDoCongelamento.TipoDeAto,
-        DefeitoDoCongelamento.Cronograma,
         DefeitoDoCongelamento.TiposDeAtoCongelados,
         DefeitoDoCongelamento.Anexos,
         DefeitoDoCongelamento.ConformidadeLegal,
     ];
 
-    [Theory(DisplayName = "A recusa de um portão de erro único chega sem campo e sem eventos")]
+    [Theory(DisplayName = "A recusa de uma conferência de erro único chega sem campo e sem eventos")]
     [MemberData(nameof(RecusasDeErroUnico))]
-    public async Task PortaoDeErroUnico_ChegaSemCampo(DefeitoDoCongelamento defeito)
+    public async Task ConferenciaDeErroUnico_ChegaSemCampo(DefeitoDoCongelamento defeito)
     {
         (Result resposta, IEnumerable<object> eventos) = await Para(OperacaoQueCongela.Publicar).Com(defeito).ExecutarAsync();
 
@@ -96,8 +95,16 @@ public sealed class FormaDasRecusasAoCongelarTests
             "ProcessoSeletivo.TipoDocumentoComProtecaoPendente", "ProcessoSeletivo.FatoComProtecaoPendente");
     }
 
-    [Fact(DisplayName = "A transição recusada devolve erro único e sem eventos, descarta o rastreamento e não grava")]
-    public async Task TransicaoRecusada_DevolveErroUnicoEDescarta()
+    [Fact(DisplayName = "A recusa da conferência da configuração chega com o campo do documento em que se corrige")]
+    public async Task RecusaDaConferencia_ChegaComOCampoDoDocumento()
+    {
+        (Result resposta, _) = await Para(OperacaoQueCongela.Publicar).Com(DefeitoDoCongelamento.Cronograma).ExecutarAsync();
+
+        resposta.Errors.Should().NotBeEmpty().And.OnlyContain(static e => e.Field != null);
+    }
+
+    [Fact(DisplayName = "O estado recusado devolve erro único e sem eventos, antes de ler o ato, o documento e os cadastros, e descarta o rastreamento")]
+    public async Task EstadoRecusado_NaoLeOAtoNemOsCadastros()
     {
         CenarioDeRetificacaoPublicada cenario = CenarioDeRetificacaoPublicada.Publicado();
         cenario.AbrirSessao();
@@ -107,7 +114,9 @@ public sealed class FormaDasRecusasAoCongelarTests
         resposta.Errors.Should().ContainSingle().Which.Field.Should().BeNull();
         resposta.Error!.Code.Should().Be("RascunhoRetificacao.JaAberta");
         eventos.Should().BeEmpty();
-        _ = cenario.Servicos.Canonicalizer.Received(1).Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
+        await cenario.Servicos.Documentos.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
+        await cenario.Servicos.TiposDeAto.DidNotReceiveWithAnyArgs().ObterVigenteAsync(default!, default, default);
+        _ = cenario.Servicos.Canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
         cenario.Servicos.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
         await cenario.Servicos.Repositorio.DidNotReceive().AdicionarVersaoConfiguracaoAsync(Arg.Any<VersaoConfiguracao>(), Arg.Any<CancellationToken>());
     }

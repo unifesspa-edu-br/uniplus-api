@@ -22,7 +22,13 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// sendo fatos derivados do catálogo, mas sem classificação a congelar. O que o processo usa deles é recusado
 /// pela conferência da aprovação, e não por esta avaliação.
 /// </param>
+/// <param name="ExigenciasRecusadasPelaAprovacao">
+/// Os ids das exigências que a conferência da aprovação recusa: a de tipo de documento com proteção pendente ou excluído do
+/// cadastro, e a que comprova fato de proteção pendente. A proteção delas não está decidida, então as pendências que a
+/// leem as pulam, e a recusa fica só na conferência da aprovação.
+/// </param>
 public sealed record ProtecaoVigenteDasExigencias(
     IReadOnlyDictionary<string, ClassificacaoDeProtecao> ClassificacaoDosFatosDerivados,
     IReadOnlyDictionary<Guid, ProtecaoDoDocumento> PorExigencia,
-    IReadOnlySet<string> DerivadosSemProtecaoAprovada);
+    IReadOnlySet<string> DerivadosSemProtecaoAprovada,
+    IReadOnlySet<Guid> ExigenciasRecusadasPelaAprovacao);

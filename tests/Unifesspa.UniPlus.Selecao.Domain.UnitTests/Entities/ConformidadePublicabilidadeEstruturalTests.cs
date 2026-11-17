@@ -27,7 +27,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
 
 /// <summary>
-/// A matriz da issue #1092: pareia cada um dos códigos de recusa alcançáveis nos quatro gates
+/// A matriz da issue #1092: pareia cada um dos códigos de recusa alcançáveis nos quatra conferências
 /// estruturais (<c>PendenciaDeConformidade</c>, <c>PendenciaDoCronograma</c>,
 /// <c>PendenciaDaCascata</c>, <c>PendenciaPreCanonicalizacao</c>) com o item vermelho
 /// correspondente em <see cref="ProcessoSeletivo.AvaliarConformidade"/>, e confirma que
@@ -70,7 +70,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // DefinirCronogramaFases bloqueia EAGERLY uma fase que agrupa etapas sem etapa nenhuma —
         // por isso a etapa é definida ANTES (torna a fase agrupa-etapas válida na hora), e só
         // DEPOIS removida via DefinirEtapas([]): a fase de avaliação fica órfã, e essa direção só
-        // o gate de publicação (LAZY) pega — é exatamente o defeito que o docblock de
+        // a conferência de publicação (LAZY) pega — é exatamente o defeito que o docblock de
         // PendenciaDoCronograma descreve como "defesa em profundidade".
         processo.DefinirCronogramaFases(
             [FaseDeResultadoFinal()],
@@ -182,7 +182,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             [FaseDeMatricula()],
             [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().ContainSingle(i => !i.Ok)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("cronograma_vagas_sem_fase_que_produz_resultado");
 
         ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.VagasSemFaseQueProduzResultado");

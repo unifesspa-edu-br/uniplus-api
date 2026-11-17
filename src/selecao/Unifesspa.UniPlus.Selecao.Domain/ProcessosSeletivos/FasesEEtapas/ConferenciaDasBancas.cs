@@ -15,8 +15,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public static class ConferenciaDasBancas
 {
-    internal static readonly IReadOnlySet<string> CodigosDoRecorte = new HashSet<string>([BancaErrorCodes.RecorteEmBancaDeRecursos], StringComparer.Ordinal);
-
     private static readonly ItemDaBanca[] ItensDaBanca =
     [
         new("cronograma_recurso_com_banca_de_analise",
@@ -24,7 +22,7 @@ public static class ConferenciaDasBancas
             static (cronograma, etapas, _) => ConferirRecursosSemBanca(cronograma, etapas)),
         new("cronograma_banca_de_recursos_sem_recorte",
             "Cronograma: a banca de análise de recursos não declara recorte de competência",
-            static (cronograma, _, _) => cronograma.RecusasDasDeclaracoes(CodigosDoRecorte)),
+            static (cronograma, _, _) => cronograma.RecusasDasDeclaracoes(ExigenciaDeBancaDeRecurso.CodigosDoRecorte)),
         new("cronograma_banca_com_regra_de_deliberacao",
             "Cronograma: toda banca declarada tem a regra de deliberação",
             static (cronograma, etapas, _) => ConferirRegrasDeDeliberacao(cronograma, etapas)),

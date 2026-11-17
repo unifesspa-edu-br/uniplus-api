@@ -7,37 +7,40 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O que falta nos procedimentos de recurso para o processo ser congelado: toda janela de recurso, de etapa ou de fase,
+/// Tudo o que falta nos procedimentos de recurso para o processo ser congelado, uma causa por tipo de decisão sem procedimento, nas etapas (<c>etapas[i].recursos</c>) e depois nas fases (<c>fases[i].regraRecurso</c>), em posição de entrada: toda janela de recurso, de etapa ou de fase,
 /// declara procedimento para cada tipo de decisão que o lugar produz, e o que a decisão recorrida cobre fica inteiro
 /// com procedimento. Sem procedimento, o recurso chegaria sem dizer como será revisado.
 /// </summary>
 internal static class PendenciasDosProcedimentosDeRecurso
 {
-    internal static DomainError? PendenciaDosProcedimentosDeRecurso(EstadoDaConfiguracao estado)
+    internal static IReadOnlyList<FieldError> CausasDosProcedimentosDeRecurso(EstadoDaConfiguracao estado)
     {
         ArgumentNullException.ThrowIfNull(estado);
 
         bool processoTemNotaDoEnem = estado.Etapas.Any(static etapa => etapa.DeclaraNotaDoEnem);
 
-        return DasEtapas(estado, processoTemNotaDoEnem).Concat(DasFases(estado, processoTemNotaDoEnem)).FirstOrDefault();
+        return [.. DasEtapas(estado, processoTemNotaDoEnem), .. DasFases(estado, processoTemNotaDoEnem)];
     }
 
-    private static IEnumerable<DomainError> DasEtapas(EstadoDaConfiguracao estado, bool processoTemNotaDoEnem) =>
-        estado.Etapas.SelectMany(etapa => etapa.Recursos.SelectMany(recurso => Ausentes(
-            recurso.Procedimentos,
-            new ContextoDosProcedimentosDeRecurso(
-                TiposDoLugar(etapa.TiposDeDecisao), etapa.ItensDeAvaliacao.Select(static item => item.Id).ToHashSet(), processoTemNotaDoEnem),
-            CodigosDoProcedimentoDeRecurso.DaEtapa,
-            $"A etapa '{etapa.Nome}'")));
+    private static IEnumerable<FieldError> DasEtapas(EstadoDaConfiguracao estado, bool processoTemNotaDoEnem) =>
+        estado.Etapas.SelectMany((etapa, posicao) => etapa.Recursos
+            .SelectMany(recurso => Ausentes(
+                recurso.Procedimentos,
+                new ContextoDosProcedimentosDeRecurso(
+                    TiposDoLugar(etapa.TiposDeDecisao), etapa.ItensDeAvaliacao.Select(static item => item.Id).ToHashSet(), processoTemNotaDoEnem),
+                CodigosDoProcedimentoDeRecurso.DaEtapa,
+                $"A etapa '{etapa.Nome}'"))
+            .Select(erro => new FieldError($"etapas[{posicao}].recursos", erro)));
 
-    private static IEnumerable<DomainError> DasFases(EstadoDaConfiguracao estado, bool processoTemNotaDoEnem) =>
-        estado.CronogramaFases
-            .Where(static fase => fase.RegraRecurso is not null)
-            .SelectMany(fase => Ausentes(
-                fase.RegraRecurso!.Procedimentos,
+    private static IEnumerable<FieldError> DasFases(EstadoDaConfiguracao estado, bool processoTemNotaDoEnem) =>
+        estado.CronogramaFases.SelectMany((fase, posicao) => fase.RegraRecurso is null
+            ? []
+            : Ausentes(
+                fase.RegraRecurso.Procedimentos,
                 new ContextoDosProcedimentosDeRecurso(TiposDoLugar(fase.TiposDeDecisao), new HashSet<Guid>(), processoTemNotaDoEnem),
                 CodigosDoProcedimentoDeRecurso.DaFase,
-                $"A fase '{fase.Codigo}'"));
+                $"A fase '{fase.Codigo}'")
+                .Select(erro => new FieldError($"fases[{posicao}].regraRecurso", erro)));
 
     private static HashSet<TipoMotivoDeDecisao> TiposDoLugar(IEnumerable<string> codigos) =>
         [.. codigos.Select(TipoMotivoDeDecisaoCodigo.FromCodigo)];

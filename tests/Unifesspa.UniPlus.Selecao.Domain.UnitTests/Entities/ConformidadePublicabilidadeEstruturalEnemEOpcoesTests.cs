@@ -28,6 +28,48 @@ using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformida
 
 public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
 {
+    private static void RetirarDaResolucao(ProcessoSeletivo processo, FaltaNaResolucao falta)
+    {
+        PropertyInfo resolucao = typeof(ConfiguracaoClassificacao).GetProperty(nameof(ConfiguracaoClassificacao.ResolucaoPesoAreaEnem))!;
+        if (falta == FaltaNaResolucao.QuadroVazio)
+        {
+            EsvaziarQuadro(processo.Classificacao!);
+            return;
+        }
+
+        resolucao.SetValue(processo.Classificacao, falta == FaltaNaResolucao.ResolucaoAusente ? null : "   ");
+    }
+
+    private static Result DefinirODesempatePorAreaEnem(ProcessoSeletivo processo) => processo.DefinirCriteriosDesempate(
+        [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!],
+        PrecondicaoIfMatch.Curinga);
+
+    private static ConfiguracaoClassificacao ClassificacaoLocalSemEnem() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+    {
+        RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
+        RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
+        CasasArredondamento = 2,
+        RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        EscalaNotaFinal = 100m,
+    }).Value!;
+
+    private static ConfiguracaoClassificacao ClassificacaoImportadaBaseadaEmEnem() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+    {
+        RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
+        RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
+        BaseadoEmEnem = true,
+    }).Value!;
+
+    private static void AfirmarSemItensDaMediaPorAreaEPublicacaoAceita(ProcessoSeletivo processo)
+    {
+        Checklist(processo).Select(static i => i.Codigo).Should().NotContain(
+            ["classificacao_resolucao_peso_area_enem_ausente", "distribuicao_vagas_oferta_sem_grupo_area_enem", "classificacao_grupo_area_enem_da_oferta_fora_do_quadro"]);
+        SoEstesItensVermelhos(processo);
+
+        Result<VersaoConfiguracao> resultado = Publicar(processo);
+        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+    }
+
     [Theory(DisplayName = "ENEM com cálculo local: resolução ausente ou em branco, ou quadro vazio, estado que só chega sem passar pela fábrica — só o item da resolução fica vermelho, e Publicar recusa")]
     [InlineData(FaltaNaResolucao.ResolucaoAusente)]
     [InlineData(FaltaNaResolucao.ResolucaoEmBranco)]
@@ -35,28 +77,14 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     public void Enem_ResolucaoOuQuadroAusente(FaltaNaResolucao falta)
     {
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica)]);
-        PropertyInfo resolucao = typeof(ConfiguracaoClassificacao).GetProperty(nameof(ConfiguracaoClassificacao.ResolucaoPesoAreaEnem))!;
-
-        switch (falta)
-        {
-            case FaltaNaResolucao.ResolucaoAusente:
-                resolucao.SetValue(processo.Classificacao, null);
-                break;
-            case FaltaNaResolucao.ResolucaoEmBranco:
-                resolucao.SetValue(processo.Classificacao, "   ");
-                break;
-            default:
-                EsvaziarQuadro(processo.Classificacao!);
-                break;
-        }
+        RetirarDaResolucao(processo, falta);
 
         SoEstesItensVermelhos(processo, "classificacao_resolucao_peso_area_enem_ausente");
         Item(processo, "classificacao_resolucao_peso_area_enem_ausente").Dimensao.Should().Be(DimensaoConformidade.Classificacao);
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Any(static i => i.Codigo == "desempate_area_enem_sem_quadro")
+        Checklist(processo).Any(static i => i.Codigo == "desempate_area_enem_sem_quadro")
             .Should().Be(falta != FaltaNaResolucao.QuadroVazio, "o item do desempate sem quadro só sai do checklist quando é o quadro que falta");
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
         resultado.Error.Message.Should().Contain("Resolução de Pesos por Área");
     }
@@ -100,49 +128,55 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
         resultado.Error.Message.Should().Contain(outraSemGrupo.OfertaCursoOrigemId.ToString());
     }
 
-    [Fact(DisplayName = "ENEM com cálculo local: com a retificação aberta, a distribuição regravada com oferta sem grupo faz o fechamento recusar pelo mesmo item")]
-    public void Enem_FecharRetificacaoComOfertaSemGrupo_Recusa()
+    // A retificação aberta libera a gravação da distribuição; regravá-la depois de o curso
+    // perder o grupo no cadastro congela a oferta sem grupo.
+    private static (ProcessoSeletivo Processo, VersaoConfiguracao Publicada, ConfiguracaoDistribuicaoVagas SemGrupo) ProcessoComAOfertaRegravadaSemGrupo()
     {
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica)]);
-        Result<VersaoConfiguracao> publicada = Publicar(processo);
-        publicada.IsSuccess.Should().BeTrue(publicada.Error?.Message);
-
-        // A retificação aberta libera a gravação da distribuição; regravá-la depois de o curso
-        // perder o grupo no cadastro congela a oferta sem grupo.
-        processo.AbrirRetificacao("Ajustar as vagas", publicada.Value!, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "teste", DateTimeOffset.UnixEpoch)
+        Result<VersaoConfiguracao> publicacao = Publicar(processo);
+        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
+        VersaoConfiguracao publicada = publicacao.Value!;
+        processo.AbrirRetificacao("Ajustar as vagas", publicada, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "teste", DateTimeOffset.UnixEpoch)
             .IsSuccess.Should().BeTrue();
         ConfiguracaoDistribuicaoVagas semGrupo = OfertaAmpla(12, grupoAreaEnem: null);
         processo.DefinirDistribuicaoVagas([semGrupo], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
+        return (processo, publicada, semGrupo);
+    }
+
+    [Fact(DisplayName = "ENEM com cálculo local: com a retificação aberta, a distribuição regravada com oferta sem grupo faz o fechamento recusar pelo mesmo item")]
+    public void Enem_FecharRetificacaoComOfertaSemGrupo_Recusa()
+    {
+        (ProcessoSeletivo processo, VersaoConfiguracao publicada, ConfiguracaoDistribuicaoVagas semGrupo) = ProcessoComAOfertaRegravadaSemGrupo();
+
         Result<VersaoConfiguracao> fechar = processo.FecharRetificacao(
-            Dados(), publicada.Value!, "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste",
-            PrecondicaoIfMatch.Curinga, TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" }, publicada, PrecondicaoIfMatch.Curinga);
 
         fechar.IsFailure.Should().BeTrue();
         fechar.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
         fechar.Error.Message.Should().Contain(semGrupo.OfertaCursoOrigemId.ToString());
     }
 
-    [Fact(DisplayName = "ENEM com cálculo local: a recusa de Publicar fica bem pontuada com um item e com vários")]
-    public void Enem_MensagemAgregadaBemPontuada()
+    [Fact(DisplayName = "ENEM com cálculo local: a recusa de Publicar traz uma causa por item, com a pontuação da mensagem do painel")]
+    public void Enem_CausaPorItemBemPontuada()
     {
         ConfiguracaoDistribuicaoVagas[] semGrupo = [.. new[] { OfertaAmpla(5, grupoAreaEnem: null), OfertaAmpla(4, grupoAreaEnem: null) }
             .OrderBy(static o => o.OfertaCursoOrigemId)];
-        string umItem = Publicar(ProcessoEnemLocal(semGrupo)).Error!.Message;
+        string umItem = Publicar(ProcessoEnemLocal(semGrupo)).Errors.Should().ContainSingle().Subject.Error.Message;
         DeveEstarBemPontuada(umItem);
         umItem.Should().Contain($"(ofertas: {semGrupo[0].OfertaCursoOrigemId}; {semGrupo[1].OfertaCursoOrigemId})",
-            "os Ids se separam por ponto e vírgula, e o agregador separa os itens por vírgula");
+            "os Ids de um mesmo item se separam por ponto e vírgula");
 
         ConfiguracaoDistribuicaoVagas outraSemGrupo = OfertaAmpla(5, grupoAreaEnem: null);
         ConfiguracaoDistribuicaoVagas foraDoQuadro = OfertaAmpla(10, GrupoTecnologica);
-        string doisItens = Publicar(ProcessoEnemLocal(
-            [outraSemGrupo, foraDoQuadro], [QuadroPesoAreaEnemDeTeste.Grupo("HUMANISTICA_I", "Humanística I")])).Error!.Message;
-        DeveEstarBemPontuada(doisItens);
-        doisItens.Should().Contain(outraSemGrupo.OfertaCursoOrigemId.ToString())
-            .And.Contain($"{foraDoQuadro.OfertaCursoOrigemId} (grupo TECNOLOGICA — Tecnológica))");
+        string[] doisItens = [.. Publicar(ProcessoEnemLocal(
+            [outraSemGrupo, foraDoQuadro], [QuadroPesoAreaEnemDeTeste.Grupo("HUMANISTICA_I", "Humanística I")])).Errors.Select(static causa => causa.Error.Message)];
+        doisItens.Should().HaveCount(2).And.AllSatisfy(DeveEstarBemPontuada);
+        doisItens.Should().Contain(mensagem => mensagem.Contains(outraSemGrupo.OfertaCursoOrigemId.ToString(), StringComparison.Ordinal))
+            .And.Contain(mensagem => mensagem.Contains($"{foraDoQuadro.OfertaCursoOrigemId} (grupo TECNOLOGICA — Tecnológica)", StringComparison.Ordinal));
     }
 
-    /// <summary>A redação pode mudar; a pontuação da mensagem agregada, não.</summary>
+    /// <summary>A redação pode mudar; a pontuação da mensagem de cada item, não.</summary>
     private static void DeveEstarBemPontuada(string mensagem)
     {
         mensagem.Should().NotContain("..").And.NotContain("., ").And.NotContain(";)").And.EndWith(").");
@@ -215,27 +249,19 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     public void Enem_SemQuadroNaoDuplicaPendencia()
     {
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(5, GrupoHumanisticaI)]);
-        processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!],
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        DefinirODesempatePorAreaEnem(processo).IsSuccess.Should().BeTrue();
         EsvaziarQuadro(processo.Classificacao!);
 
         SoEstesItensVermelhos(processo, "classificacao_resolucao_peso_area_enem_ausente");
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Select(static i => i.Codigo).Should().NotContain(
+        Checklist(processo).Select(static i => i.Codigo).Should().NotContain(
             "desempate_area_enem_sem_quadro", "sairia verde com a descrição de que há quadro, justamente quando ele falta");
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull(
-            "o gate diz o mesmo que o checklist: a falta do quadro é só pendência da resolução");
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull(
+            "a conferência diz o mesmo que o checklist: a falta do quadro é só pendência da resolução");
 
         // A deduplicação é da conformidade: a gravação do desempate continua recusando.
-        Result gravar = processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!],
-            PrecondicaoIfMatch.Curinga);
-        gravar.IsFailure.Should().BeTrue();
+        Result gravar = DefinirODesempatePorAreaEnem(processo);
         gravar.Error!.Code.Should().Be("ProcessoSeletivo.DesempateAreaEnemSemQuadro");
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.ConformidadeInsuficiente");
     }
 
     [Fact(DisplayName = "Contraprova: cálculo local que não é baseado em ENEM não traz os itens da média pelos pesos por área, dispensa grupo de área na oferta, e Publicar conclui")]
@@ -243,46 +269,20 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     {
         ProcessoSeletivo processo = ProcessoConformeComEtapaQueCompoeNota();
         processo.DefinirDistribuicaoVagas([OfertaAmpla(10, grupoAreaEnem: null)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-            {
-                RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
-                RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
-                CasasArredondamento = 2,
-                RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-                EscalaNotaFinal = 100m,
-            }).Value!,
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoLocalSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Select(static i => i.Codigo).Should().NotContain(
-            ["classificacao_resolucao_peso_area_enem_ausente", "distribuicao_vagas_oferta_sem_grupo_area_enem", "classificacao_grupo_area_enem_da_oferta_fora_do_quadro"]);
-        SoEstesItensVermelhos(processo);
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        AfirmarSemItensDaMediaPorAreaEPublicacaoAceita(processo);
     }
 
     [Fact(DisplayName = "Contraprova: classificação baseada em ENEM importada não traz os itens da média local, dispensa grupo de área na oferta, e Publicar conclui")]
     public void Enem_ClassificacaoImportadaDispensaGrupo()
     {
         ProcessoSeletivo processo = ProcessoConforme([OfertaAmpla(10, grupoAreaEnem: null)]);
-        processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-            {
-                RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-                RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-                BaseadoEmEnem = true,
-            }).Value!,
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportadaBaseadaEmEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Select(static i => i.Codigo).Should().NotContain(
-            ["classificacao_resolucao_peso_area_enem_ausente", "distribuicao_vagas_oferta_sem_grupo_area_enem", "classificacao_grupo_area_enem_da_oferta_fora_do_quadro"]);
-        SoEstesItensVermelhos(processo);
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
+        AfirmarSemItensDaMediaPorAreaEPublicacaoAceita(processo);
     }
 
     // ══════════════════════════════════════════════════════════════════════════════════════
@@ -301,7 +301,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
         processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo).Should().BeNull();
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
         processo.OpcoesDoProcesso("FATO_OPCAO_DE_TESTE").Should().ContainSingle().Which.Codigo.Should().Be("2025");
     }
 

@@ -14,13 +14,14 @@ using Services;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
 /// <summary>
 /// Avalia o checklist de conformidade de um processo seletivo: lê o que o agregado não tem e projeta o
 /// resultado de <see cref="ChecklistDeConformidade"/> para o DTO público. O checklist em si vive no Domain,
-/// bicondicional com os gates estruturais que <c>Publicar</c> e <c>Retificar</c> aplicam (issue #1092): a fonte
+/// coincide com a conferência da configuração que <c>Publicar</c> e <c>Retificar</c> aplicam (issue #1092): a fonte
 /// única evita que a leitura pública e a publicação divirjam.
 /// </summary>
 /// <remarks>
@@ -28,7 +29,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 /// <b>O contexto que o agregado não tem.</b> O calendário vigente é do módulo Configuração, e o reconhecimento do
 /// fuso institucional depende da base de fusos do runtime. As duas leituras são resolvidas aqui e passadas
 /// prontas, porque o Domain não lê reader nem serviço (ADR-0042). Sem elas, o checklist teria de inferir o que
-/// não sabe, e devolveria verde para processo que a publicação recusa.
+/// não sabe, e devolveria conforme para processo que a publicação recusa.
 /// </para>
 /// <para>
 /// <b>Corretores.</b> O mínimo de integrantes das bancas depende do número de corretores que a regra de consolidação de
@@ -37,7 +38,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 /// </para>
 /// <para>
 /// <b>Avisos.</b> Os avisos vêm de <c>ChecklistDeConformidade.AvaliarAvisos</c> e viajam em lista própria: só a
-/// consulta de conformidade os calcula, nunca os gates de publicação e retificação.
+/// consulta de conformidade os calcula, nunca a conferência que congela a versão.
 /// </para>
 /// </remarks>
 public sealed class AvaliacaoDaConformidade(
@@ -124,8 +125,10 @@ public sealed class AvaliacaoDaConformidade(
         ProtecaoVigenteDasExigencias protecao = ProtecaoVigenteDasExigenciasDoProcesso
             .Montar(processo, catalogo.TiposVivos, catalogo.Fatos, publicada.CongeladoNaVersao).Exigencias;
 
+        CadastrosDaConfiguracao cadastros = new(contexto, catalogo.FatosDeModalidade, tiposDeAtoUnicos, corretores, protecao);
+
         return ChecklistDeConformidade
-            .AvaliarConformidade(EstadoDaConfiguracao.De(processo), contexto, catalogo.FatosDeModalidade, tiposDeAtoUnicos, corretores, protecao)
+            .AvaliarConformidade(EstadoDaConfiguracao.De(processo), cadastros)
             .Select(static item => new ItemConformidadeDto(item.Codigo, item.Dimensao, item.Mensagem, item.Ok));
     }
 

@@ -22,6 +22,7 @@ internal static class FatoCitadoDeTeste
 {
     public const string Fato = "TEM_RENDA";
     public const string FatoNovo = "TEM_ENDERECO_PROPRIO";
+    public const string FatoAusenteDoCatalogo = "TEM_FILHOS";
     public const string CodigoDaRecusaDoEixoAlterado = "RascunhoRetificacao.EixoDoFatoJaColetadoAlterado";
 
     public static FatoColetado Item(TipoRenderizacao tipo) =>
@@ -31,22 +32,22 @@ internal static class FatoCitadoDeTeste
     public static FatoColetado ItemNovo() =>
         ItemColetado(FatoNovo, 100, "Tem endereço próprio?", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca);
 
-    public static DocumentoExigido ExigenciaComGatilho(Guid faseId) =>
+    public static DocumentoExigido ExigenciaComGatilho(Guid faseId, bool citaFatoAusenteDoCatalogo = false) =>
         DocumentoExigido.Criar(
             faseId, CadastrosVivos.IdentidadeDe("LAUDO_MEDICO"), "DECLARACAO", "Declaração", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [CondicaoGatilho.Criar(0, Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!],
+            condicoes: CondicoesDoGatilho(citaFatoAusenteDoCatalogo),
             basesLegais: [DocumentoExigidoBaseLegal.Criar("Res. Unifesspa 532/2021, art. 12", TipoAbrangencia.InternaNorma, StatusBaseLegal.Resolvido, null).Value!],
             idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!,
             tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
     /// <summary>O processo conforme que coleta o fato e exige um documento sob o gatilho dele.</summary>
-    public static ProcessoSeletivo ProcessoQueColetaOFato(bool comItemNovo)
+    public static ProcessoSeletivo ProcessoQueColetaOFato(bool comItemNovo, bool citaFatoAusenteDoCatalogo = false)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Eixos nos handlers", out Guid faseId);
         processo.DefinirItens(comItemNovo ? [Item(TipoRenderizacao.Booleano), ItemNovo()] : [Item(TipoRenderizacao.Booleano)], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilho(faseId), 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilho(faseId, citaFatoAusenteDoCatalogo), 0).Value!], PrecondicaoIfMatch.Curinga)
             .IsSuccess.Should().BeTrue();
 
         return processo;
@@ -75,6 +76,12 @@ internal static class FatoCitadoDeTeste
 
     public static FatoCandidatoView FatoNovoDoCatalogo(FatoCandidatoView fato) =>
         fato with { Id = Guid.CreateVersion7(), Codigo = FatoNovo, Nome = "Tem endereço próprio?", Dominio = "BOOLEANO", Binding = $"CAMPO_FORMULARIO:{FatoNovo}" };
+
+    private static CondicaoGatilho[] CondicoesDoGatilho(bool citaFatoAusenteDoCatalogo) =>
+    [
+        CondicaoGatilho.Criar(0, Fato, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!,
+        .. citaFatoAusenteDoCatalogo ? [CondicaoGatilho.Criar(1, FatoAusenteDoCatalogo, Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!] : Array.Empty<CondicaoGatilho>(),
+    ];
 
     private static FatoColetado ItemColetado(string fato, int ordem, string rotulo, TipoRenderizacao tipo, Obrigatoriedade obrigatoriedade) =>
         FatoColetado.Criar(

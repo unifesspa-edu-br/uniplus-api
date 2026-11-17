@@ -12,6 +12,11 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public static class ConferenciaDasFasesIniciadas
 {
+    // A recusa aponta a coleção do documento que traz a fase ou a etapa: o item retirado não tem posição nela, e a posição
+    // do que ficou não é conhecida aqui.
+    private const string FasesNoDocumento = "cronograma.fases";
+    private const string EtapasNoDocumento = "etapas";
+
     public static IReadOnlyList<FieldError> Conferir(
         FasesIniciadas iniciadas,
         IReadOnlyCollection<FaseCronograma> fases,
@@ -34,7 +39,7 @@ public static class ConferenciaDasFasesIniciadas
     // versão publicada, e não com o rascunho anterior, para que retirar e reinserir a fase não contorne a regra.
     private static IEnumerable<FieldError> RecusasDaTroca(FasesIniciadas iniciadas, IReadOnlyCollection<FaseCronograma> fases) =>
         iniciadas.FasesComUnidadeTrocada(fases).Select(static fase => Recusa(
-            CaminhoDaFase(fase.Codigo),
+            FasesNoDocumento,
             "FaseCronograma.UnidadeDeFaseIniciadaNaoMuda",
             $"A fase '{fase.Codigo}' (ordem {fase.Ordem}) já começou, e a unidade responsável por ela não muda."));
 
@@ -42,17 +47,15 @@ public static class ConferenciaDasFasesIniciadas
     // a fase que a versão publicada vigente ainda traz: a que já saiu de uma versão anterior não é removida agora.
     private static IEnumerable<FieldError> RecusasDaRemocaoDaFase(FasesIniciadas iniciadas, IReadOnlyCollection<FaseCronograma> fases) =>
         iniciadas.CodigosDasFasesRemovidas(fases).Select(static codigo => Recusa(
-            CaminhoDaFase(codigo),
+            FasesNoDocumento,
             "FaseCronograma.FaseIniciadaNaoSaiDoCronograma",
             $"A fase '{codigo}' já começou, e ela não sai do cronograma."));
 
     private static IEnumerable<FieldError> RecusasDaRemocaoDaEtapa(FasesIniciadas iniciadas, IReadOnlyCollection<EtapaProcesso> etapas) =>
         iniciadas.EtapasRemovidas(etapas).Select(static etapa => Recusa(
-            $"cronograma.etapas[{etapa.Nome}]",
+            EtapasNoDocumento,
             "FaseCronograma.EtapaIniciadaNaoSaiDoCronograma",
             $"A etapa '{etapa.Nome}' já começou, e ela não sai do cronograma."));
-
-    private static string CaminhoDaFase(string codigo) => $"cronograma.fases[{codigo}]";
 
     private static FieldError Recusa(string campo, string codigo, string mensagem) => new(campo, new DomainError(codigo, mensagem));
 }

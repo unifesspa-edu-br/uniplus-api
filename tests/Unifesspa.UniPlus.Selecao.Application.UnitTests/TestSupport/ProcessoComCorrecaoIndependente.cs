@@ -4,11 +4,14 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -70,7 +73,7 @@ internal static class ProcessoComCorrecaoIndependente
     public static (ProcessoSeletivo Processo, VersaoConfiguracao Versao) PublicadoComBancaRedeclarada(int integrantes)
     {
         ProcessoSeletivo processo = ComBancaDaEtapa(integrantes: 3);
-        VersaoConfiguracao versao = processo.Publicar(Pedido(ComOsNumerosDoSeed())).Value!;
+        VersaoConfiguracao versao = processo.Publicar(Pedido(processo, ComOsNumerosDoSeed())).Value!;
         processo.DequeueDomainEvents();
         DeclararBancaDaEtapa(processo.Etapas.Single(), integrantes, quorum: 2);
 
@@ -90,21 +93,28 @@ internal static class ProcessoComCorrecaoIndependente
         return servicos;
     }
 
-    /// <summary>O pedido que o agregado congela quando o catálogo dá a cada regra o número dado.</summary>
-    public static PedidoDeCongelamento Pedido(CorretoresDasEtapas corretores) => new()
+    /// <summary>O pedido que o agregado congela quando o catálogo dá a cada regra o número dado, com a configuração apta.</summary>
+    public static PedidoDeCongelamento Pedido(ProcessoSeletivo processo, CorretoresDasEtapas corretores) => new()
     {
         Dados = PublicacaoDeTeste.DadosDoEdital(),
         Documento = new DocumentoCongelado(EnvelopeCongeladoDeTeste.SemAnexos(), "1.1", "canonical-json/sha256@v1", ProcessoSeletivoConformeBuilder.HashFixo),
         AtorUsuarioContaId = "user-conta-1",
         Instante = PublicacaoDeTeste.Agora,
-        Contexto = new ContextoDeContagemDePrazos(
+        ConfiguracaoApta = Apta(processo, corretores),
+    };
+
+    private static ConfiguracaoAptaACongelar Apta(ProcessoSeletivo processo, CorretoresDasEtapas corretores)
+    {
+        ContextoDeContagemDePrazos contexto = new(
             CalendarioDiasUteisCongelado.Criar(
                 Guid.CreateVersion7(), "2026", [DiaNaoUtilCongelado.Criar(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null).Value!]).Value,
-            FusoInstitucional: TimeZoneInfo.Utc),
-        FatosDeModalidade = FatosDeModalidadeDeTeste.DoCatalogo,
-        TiposDeAtoUnicos = TiposDeAtoUnicosDeTeste.Nenhum,
-        Corretores = corretores,
-    };
+            FusoInstitucional: TimeZoneInfo.Utc);
+        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(
+            EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(contexto, corretores: corretores));
+        conferida.IsSuccess.Should().BeTrue(conferida.Error?.Message);
+
+        return conferida.Value!;
+    }
 
     /// <summary>Os números que o seed declara para as duas regras.</summary>
     public static CorretoresDasEtapas ComOsNumerosDoSeed() =>

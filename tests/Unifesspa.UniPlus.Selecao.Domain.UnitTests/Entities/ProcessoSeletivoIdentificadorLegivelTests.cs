@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -73,7 +74,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         IdentificadoresDeTeste.Retirar(processo);
 
-        IReadOnlyList<ItemConformidade> itens = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao);
+        IReadOnlyList<ItemConformidade> itens = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao);
 
         itens.Where(static i => !i.Ok).Select(static i => i.Codigo)
             .Should().Equal("identificador_legivel_nao_declarado");
@@ -132,9 +133,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         processo.AbrirRetificacao("Correção do prazo", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.FecharRetificacao(
-            ProcessoConformeFactory.Dados(), versao, BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo,
-            "user-conta-1", PrecondicaoIfMatch.Curinga, new RelogioFixo(Agora.AddMinutes(1)),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado(BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora.AddMinutes(1)) }, versao, PrecondicaoIfMatch.Curinga);
 
         resultado.IsFailure.Should().BeTrue("nenhuma versão nova é aberta");
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente);
@@ -149,9 +148,7 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         IdentificadoresDeTeste.Retirar(processo);
 
         Result<VersaoConfiguracao> resultado = processo.Retificar(
-            ProcessoConformeFactory.Dados(), versao, BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo,
-            "user-conta-1", motivo: "Correção", clock: new RelogioFixo(Agora.AddMinutes(1)),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado(BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora.AddMinutes(1)) }, versao, "Correção");
 
         resultado.IsFailure.Should().BeTrue("nenhuma versão nova é aberta");
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente);
@@ -200,32 +197,44 @@ public sealed class ProcessoSeletivoIdentificadorLegivelTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         VersaoConfiguracao versao = Publicar(processo).Value!;
         IdentificadoresDeTeste.Retirar(processo);
-        processo.AbrirRetificacao("Declara o endereço público", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora).IsSuccess.Should().BeTrue();
-        processo.DefinirIdentificadorLegivel(
-                Identificador("medicina-2027"), PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]))
-            .IsSuccess.Should().BeTrue();
+        DeclararOIdentificadorNaSessao(processo, versao);
 
-        Result<VersaoConfiguracao> fechamento = processo.FecharRetificacao(
-            ProcessoConformeFactory.Dados(), versao, BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo,
-            "user-conta-1", PrecondicaoIfMatch.Curinga, new RelogioFixo(Agora.AddMinutes(1)),
-            ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> fechamento = FecharUmMinutoDepois(processo, versao);
         fechamento.IsSuccess.Should().BeTrue(fechamento.Error?.Message);
 
-        processo.AbrirRetificacao("Nova correção", fechamento.Value!, identificadorDaVersaoBase: Identificador("medicina-2027"), VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora.AddMinutes(2))
-            .IsSuccess.Should().BeTrue();
-        Result troca = processo.DefinirIdentificadorLegivel(
-            Identificador("medicina-2028"), PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]));
+        Result troca = TrocarNaNovaSessao(processo, fechamento.Value!);
 
         troca.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelImutavel,
             "agora o identificador consta na versão publicada que a sessão anterior gerou");
         processo.IdentificadorLegivel!.Value.Valor.Should().Be("medicina-2027");
     }
 
+    private static void DeclararOIdentificadorNaSessao(ProcessoSeletivo processo, VersaoConfiguracao versao)
+    {
+        processo.AbrirRetificacao("Declara o endereço público", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora).IsSuccess.Should().BeTrue();
+        processo.DefinirIdentificadorLegivel(
+                Identificador("medicina-2027"), PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]))
+            .IsSuccess.Should().BeTrue();
+    }
+
+    private static Result<VersaoConfiguracao> FecharUmMinutoDepois(ProcessoSeletivo processo, VersaoConfiguracao versao) => processo.FecharRetificacao(
+        new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado(BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora.AddMinutes(1)) },
+        versao,
+        PrecondicaoIfMatch.Curinga);
+
+    private static Result TrocarNaNovaSessao(ProcessoSeletivo processo, VersaoConfiguracao versao)
+    {
+        processo.AbrirRetificacao("Nova correção", versao, identificadorDaVersaoBase: Identificador("medicina-2027"), VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora.AddMinutes(2))
+            .IsSuccess.Should().BeTrue();
+
+        return processo.DefinirIdentificadorLegivel(
+            Identificador("medicina-2028"), PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!]));
+    }
+
     private static IdentificadorLegivel Identificador(string valor) => IdentificadorLegivel.Criar(valor).Value;
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        ProcessoConformeFactory.Dados(), BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo, "user-conta-1",
-        new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado(BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora) });
 
     private sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider
     {

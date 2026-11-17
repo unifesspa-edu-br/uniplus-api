@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Application.DTOs;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -185,13 +186,31 @@ public sealed class AbrirRetificacaoCommandHandlerTests
         {
             ProcessoSeletivo processo = NovoProcessoConforme();
             VersaoConfiguracao versao = processo.Publicar(
-                NovosDados(), Bytes, schemaVersion, "canonical-json/sha256@v1", HashFixo, "user-conta-1",
-                new RelogioFixo(Agora), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum).Value!;
+                new CenarioDeCongelamento { Dados = NovosDados(), Documento = new DocumentoCongelado(Bytes, schemaVersion, "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora) }).Value!;
             processo.DequeueDomainEvents();
 
             IProcessoSeletivoRepository repositorio = Substitute.For<IProcessoSeletivoRepository>();
             repositorio.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
-            VersaoConfiguracao[] versoes = schemaDaVersaoAnterior is null
+            repositorio.ObterVersoesAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(VersoesDaCadeia(processo, versao, schemaDaVersaoAnterior));
+
+            IRegistroCodecsEnvelope registro = RegistroDaBase(processo, versao, capacidades, identificadorCongelado);
+
+            return new Cenario { Processo = processo, Repositorio = repositorio, Registro = registro };
+        }
+
+        private static IRegistroCodecsEnvelope RegistroDaBase(
+            ProcessoSeletivo processo, VersaoConfiguracao versao, IReadOnlyList<CapacidadeCodec> capacidades, IdentificadorLegivel? identificadorCongelado)
+        {
+            IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
+            registro.Capacidades.Returns(capacidades);
+            registro.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(
+                EnvelopeDaBase(processo, identificadorCongelado ?? processo.IdentificadorLegivel)));
+
+            return registro;
+        }
+
+        private static VersaoConfiguracao[] VersoesDaCadeia(ProcessoSeletivo processo, VersaoConfiguracao versao, string? schemaDaVersaoAnterior) =>
+            schemaDaVersaoAnterior is null
                 ? [versao]
                 :
                 [
@@ -199,15 +218,6 @@ public sealed class AbrirRetificacaoCommandHandlerTests
                         processo.Id, Bytes, schemaDaVersaoAnterior, "canonical-json/sha256@v1", Guid.CreateVersion7(), HashFixo, "user-conta-1", Agora),
                     versao,
                 ];
-            repositorio.ObterVersoesAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(versoes);
-
-            IRegistroCodecsEnvelope registro = Substitute.For<IRegistroCodecsEnvelope>();
-            registro.Capacidades.Returns(capacidades);
-            registro.Reidratar(versao).Returns(Result<EnvelopeReidratado>.Success(
-                EnvelopeDaBase(processo, identificadorCongelado ?? processo.IdentificadorLegivel)));
-
-            return new Cenario { Processo = processo, Repositorio = repositorio, Registro = registro };
-        }
 
         /// <summary>
         /// O envelope reidratado da base, montado da configuração do próprio processo. O identificador

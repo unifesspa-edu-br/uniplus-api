@@ -84,9 +84,4 @@ public sealed class OrdemDasFamiliasDoGrafoTests
     public void Restaurar_EliminacaoCitaEtapaInexistente_UsaOTextoUnico() =>
         Recusa(OrdemDasRecusasDoGrafoTests.GrafoComProblemas([10]))!.Message
             .Should().StartWith("A regra de eliminação referencia a etapa ").And.EndWith(", que não existe neste processo.");
-
-    [Fact(DisplayName = "A fase que agrupa etapas sem nenhuma etapa nela é recusada com o texto que cita a fase")]
-    public void Restaurar_FaseAgrupadoraSemEtapa_CitaAFase() =>
-        Recusa(OrdemDasRecusasDoGrafoTests.GrafoComProblemas([14]))!.Message
-            .Should().Be("A fase 'FASE_5' agrupa etapas no cronograma, e nenhuma etapa declara acontecer nela.");
 }

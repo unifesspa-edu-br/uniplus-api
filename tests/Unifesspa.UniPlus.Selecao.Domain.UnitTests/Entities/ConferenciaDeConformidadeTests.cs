@@ -5,15 +5,17 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
 /// <summary>
-/// Contraprovas do gate de conformidade (ADR-0109 D5).
+/// Contraprovas da conferência de conformidade (ADR-0109 D5).
 /// </summary>
 /// <remarks>
 /// O checklist vale para as <b>duas</b> transições que congelam. A retificação
@@ -21,7 +23,7 @@ using Xunit;
 /// configuração incompleta ali produz um documento irreparável, exatamente como
 /// na publicação. Antes desta story, só <c>Publicar</c> avaliava.
 /// </remarks>
-public sealed class GateDeConformidadeTests
+public sealed class ConferenciaDeConformidadeTests
 {
     private static readonly string HashFixo = new('a', 64);
 
@@ -33,76 +35,60 @@ public sealed class GateDeConformidadeTests
 
     private static DadosEdital Dados() => ProcessoConformeFactory.Dados();
 
+    private static Result<VersaoConfiguracao> TentarPublicar(ProcessoSeletivo processo) => processo.Publicar(
+        new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" });
+
+    private static Result<VersaoConfiguracao> TentarRetificar(ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) => processo.Retificar(
+        new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" }, versaoAtual, "Correção do prazo");
+
     private static VersaoConfiguracao Publicar(ProcessoSeletivo processo)
     {
-        Result<VersaoConfiguracao> publicar = processo.Publicar(
-            Dados(),
-            configuracaoCongeladaCanonica: "{}"u8.ToArray(),
-            schemaVersion: "1.1",
-            algoritmoHash: "canonical-json/sha256@v1",
-            hashDocumento: HashFixo,
-            atorUsuarioContaId: "teste",
-            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> publicar = TentarPublicar(processo);
 
         publicar.IsSuccess.Should().BeTrue(publicar.Error?.Message);
         return publicar.Value!;
     }
 
-    [Fact(DisplayName = "PendenciaDeConformidade_ProcessoIncompleto — nomeia as dimensões faltantes")]
-    public void PendenciaDeConformidade_ProcessoIncompleto()
-    {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-        DomainError? pendencia = ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo));
-
-        pendencia.Should().NotBeNull();
-        pendencia!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
-        // Story #851 §3.5: "Etapas" deixou de ser item incondicional do checklist — um
-        // processo sem prova (SiSU, CLASSIFICACAO-IMPORTADA) publica sem etapa. O que
-        // permanece obrigatório incondicionalmente inclui "Cronograma de fases" (1..*).
-        pendencia.Message.Should().Contain("Cronograma de fases").And.Contain("Classificação");
-    }
-
-    [Fact(DisplayName = "PendenciaDeConformidade_ProcessoConforme — não há pendência")]
-    public void PendenciaDeConformidade_ProcessoConforme() =>
-        ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(ProcessoConforme())).Should().BeNull();
-
-    /// <summary>
-    /// <b>Contraprova do CA-09.</b> É o furo que esta story fecha: antes,
-    /// <c>Retificar</c> não avaliava conformidade nenhuma.
-    /// </summary>
-    [Fact(DisplayName = "Retificar_ProcessoNaoConforme_Recusa — a retificação avalia o MESMO gate da publicação")]
-    public void Retificar_ProcessoNaoConforme_Recusa()
-    {
-        ProcessoSeletivo processo = ProcessoConforme();
-        VersaoConfiguracao versaoAtual = Publicar(processo);
-
-        // A configuração fica incompleta com o processo já publicado. Hoje não há
-        // caminho de API para chegar aqui (todo Definir* é barrado pós-publicação),
-        // mas o estado é alcançável por correção de dados no banco — e passará a ser
-        // alcançável pela API quando a retificação puder alterar a configuração. O
-        // gate tem de pegá-lo independentemente de como ele surgiu, e é o gate que
-        // este teste exercita, não o caminho.
-        //
-        // A contraprova pelo caminho real — apagar a classificação no Postgres,
-        // recarregar o agregado e retificar — está em RetificacaoConformidadeTests
-        // (integração).
+    // A configuração fica incompleta com o processo já publicado. Hoje não há caminho de API para chegar aqui (todo Definir* é
+    // barrado pós-publicação), mas o estado é alcançável por correção de dados no banco, e a conferência tem de pegá-lo
+    // independentemente de como ele surgiu. A contraprova pelo caminho real (apagar a classificação no Postgres, recarregar o
+    // agregado e retificar) está em RetificacaoConformidadeTests, de integração.
+    private static void ApagarAClassificacaoDoProcessoPublicado(ProcessoSeletivo processo) =>
         typeof(ProcessoSeletivo)
             .GetProperty(nameof(ProcessoSeletivo.Classificacao))!
             .SetValue(processo, null);
 
+    [Fact(DisplayName = "Processo incompleto: cada item estrutural pendente é uma causa no bloco do documento, e o cronograma vazio é recusado pela estrutura")]
+    public void ProcessoIncompleto_NomeiaCadaItemPendente()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+
+        IReadOnlyList<FieldError> causas = CausasDeConformidadeDeTeste.De(processo);
+
+        // Um processo sem prova (SiSU, classificação importada) publica sem etapa: "Etapas" não é item incondicional.
+        causas.Should().OnlyContain(static causa => causa.Error.Code == "ProcessoSeletivo.ConformidadeInsuficiente");
+        causas.Should().Contain(static causa => causa.Field == "classificacao" && causa.Error.Message.Contains("Classificação", StringComparison.Ordinal));
+        ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Errors
+            .Select(static causa => causa.Error.Code).Should().Contain("ProcessoSeletivo.CronogramaFasesVazio");
+    }
+
+    [Fact(DisplayName = "PendenciaDeConformidade_ProcessoConforme — não há pendência")]
+    public void PendenciaDeConformidade_ProcessoConforme() =>
+        CausasDeConformidadeDeTeste.De(ProcessoConforme()).Should().BeEmpty();
+
+    /// <summary>
+    /// <b>Contraprova do CA-09.</b> É a lacuna que esta story fecha: antes,
+    /// <c>Retificar</c> não avaliava conformidade nenhuma.
+    /// </summary>
+    [Fact(DisplayName = "Retificar_ProcessoNaoConforme_Recusa — a retificação avalia a MESMA conferência da publicação")]
+    public void Retificar_ProcessoNaoConforme_Recusa()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        VersaoConfiguracao versaoAtual = Publicar(processo);
+        ApagarAClassificacaoDoProcessoPublicado(processo);
         processo.Classificacao.Should().BeNull("pré-condição do teste");
 
-        Result<VersaoConfiguracao> retificar = processo.Retificar(
-            Dados(),
-            versaoAtual,
-            configuracaoCongeladaCanonica: "{}"u8.ToArray(),
-            schemaVersion: "1.1",
-            algoritmoHash: "canonical-json/sha256@v1",
-            hashDocumento: HashFixo,
-            atorUsuarioContaId: "teste",
-            motivo: "Correção do prazo",
-            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> retificar = TentarRetificar(processo, versaoAtual);
 
         retificar.IsFailure.Should().BeTrue(
             "retificar também congela uma versão append-only e vinculante — congelar configuração incompleta " +
@@ -119,14 +105,7 @@ public sealed class GateDeConformidadeTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(
             fase: ProcessoConformeFactory.FaseConforme(semUnidadeResponsavel: true));
 
-        Result<VersaoConfiguracao> publicar = processo.Publicar(
-            Dados(),
-            configuracaoCongeladaCanonica: "{}"u8.ToArray(),
-            schemaVersion: "1.1",
-            algoritmoHash: "canonical-json/sha256@v1",
-            hashDocumento: HashFixo,
-            atorUsuarioContaId: "teste",
-            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> publicar = TentarPublicar(processo);
 
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
@@ -141,39 +120,23 @@ public sealed class GateDeConformidadeTests
         VersaoConfiguracao versaoAtual = Publicar(processo);
 
         // A unidade é retirada direto da fase gravada: depois de publicado, nenhum Definir* a
-        // retira, e o gate da retificação tem de pegar o estado qualquer que seja o caminho.
+        // retira, e a conferência da retificação tem de pegar o estado qualquer que seja o caminho.
         typeof(FaseCronograma)
             .GetProperty(nameof(FaseCronograma.UnidadeResponsavelOrigemId))!
             .SetValue(processo.CronogramaFases.Single(), null);
 
-        Result<VersaoConfiguracao> retificar = processo.Retificar(
-            Dados(),
-            versaoAtual,
-            configuracaoCongeladaCanonica: "{}"u8.ToArray(),
-            schemaVersion: "1.1",
-            algoritmoHash: "canonical-json/sha256@v1",
-            hashDocumento: HashFixo,
-            atorUsuarioContaId: "teste",
-            motivo: "Correção do prazo",
-            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> retificar = TentarRetificar(processo, versaoAtual);
 
         retificar.IsFailure.Should().BeTrue();
         retificar.Error!.Code.Should().Be("ProcessoSeletivo.FaseSemUnidadeResponsavel");
     }
 
-    [Fact(DisplayName = "Publicar_ProcessoNaoConforme_Recusa — o gate da publicação continua valendo")]
+    [Fact(DisplayName = "Publicar_ProcessoNaoConforme_Recusa — a conferência da publicação continua valendo")]
     public void Publicar_ProcessoNaoConforme_Recusa()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        Result<VersaoConfiguracao> publicar = processo.Publicar(
-            Dados(),
-            configuracaoCongeladaCanonica: "{}"u8.ToArray(),
-            schemaVersion: "1.1",
-            algoritmoHash: "canonical-json/sha256@v1",
-            hashDocumento: HashFixo,
-            atorUsuarioContaId: "teste",
-            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> publicar = TentarPublicar(processo);
 
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
@@ -185,11 +148,12 @@ public sealed class GateDeConformidadeTests
     {
         ProcessoSeletivo processo = ProcessoConforme(declararTaxa: false);
 
-        DomainError? pendencia = ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo));
+        IReadOnlyList<FieldError> causas = CausasDeConformidadeDeTeste.De(processo);
 
-        pendencia.Should().NotBeNull();
-        pendencia!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
-        pendencia.Message.Should().Contain("Taxa de inscrição e isenção");
+        FieldError causa = causas.Should().ContainSingle().Subject;
+        causa.Error.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
+        causa.Error.Message.Should().Contain("Taxa de inscrição e isenção");
+        causa.Field.Should().Be("taxaDeInscricao");
     }
 
     [Fact(DisplayName =
@@ -198,14 +162,7 @@ public sealed class GateDeConformidadeTests
     {
         ProcessoSeletivo processo = ProcessoConforme(declararTaxa: false);
 
-        Result<VersaoConfiguracao> publicar = processo.Publicar(
-            Dados(),
-            configuracaoCongeladaCanonica: "{}"u8.ToArray(),
-            schemaVersion: "1.1",
-            algoritmoHash: "canonical-json/sha256@v1",
-            hashDocumento: HashFixo,
-            atorUsuarioContaId: "teste",
-            TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> publicar = TentarPublicar(processo);
 
         publicar.IsFailure.Should().BeTrue(
             "as outras cinco dimensões estão conformes — só a ausência de declaração de taxa pode estar bloqueando");

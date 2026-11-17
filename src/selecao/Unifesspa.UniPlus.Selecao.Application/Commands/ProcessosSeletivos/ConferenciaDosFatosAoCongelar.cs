@@ -17,30 +17,17 @@ internal static class ConferenciaDosFatosAoCongelar
     /// continuam no processo e conhecidos até a fase de cada exigência, porque itens, formulários e
     /// derivações mudam depois que a exigência os citou.
     /// </summary>
+    /// <remarks>Pressupõe os fatos coletados coletáveis: quem chama confere a coletabilidade antes.</remarks>
     /// <returns>O metadado congelado dos fatos citados em condição.</returns>
     internal static Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> Conferir(
         ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo)
     {
-        Result coletabilidade = ConferenciaDeColetabilidadeDeFatos.Conferir(processo, catalogoPorCodigo);
-        if (coletabilidade.IsFailure)
-        {
-            return Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?>.Failure(coletabilidade.Error!);
-        }
-
         Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> metadados =
             ResolvedorMetadadosFatosCongelados.Resolver(processo, catalogoPorCodigo);
-        if (metadados.IsFailure)
-        {
-            return metadados;
-        }
+        DomainError? incoerente = metadados.IsFailure
+            ? null
+            : ConferenciaDosFatosDosGatilhos.Conferir(processo, catalogoPorCodigo) ?? ConferenciaDoFatoDeElegibilidade.Conferir(processo, catalogoPorCodigo);
 
-        if (ConferenciaDosFatosDosGatilhos.Conferir(processo, catalogoPorCodigo) is { } gatilhoIncoerente)
-        {
-            return Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?>.Failure(gatilhoIncoerente);
-        }
-
-        return ConferenciaDoFatoDeElegibilidade.Conferir(processo, catalogoPorCodigo) is { } elegibilidadeIncoerente
-            ? Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?>.Failure(elegibilidadeIncoerente)
-            : metadados;
+        return incoerente is null ? metadados : Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?>.Failure(incoerente);
     }
 }

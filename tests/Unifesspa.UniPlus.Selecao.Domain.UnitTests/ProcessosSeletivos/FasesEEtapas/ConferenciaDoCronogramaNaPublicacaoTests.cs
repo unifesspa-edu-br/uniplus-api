@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
@@ -17,10 +18,10 @@ using Xunit;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDaPublicacaoDoProcessoSeletivo;
 
 /// <summary>
-/// O que o portão de publicação do cronograma e das etapas devolve quando as declarações têm mais de uma causa:
+/// O que a conferência da configuração devolve para o cronograma e as etapas quando as declarações têm mais de uma causa:
 /// a primeira, na ordem de posição, e a etapa que declara uma fase que o cronograma não tem.
 /// </summary>
-public sealed class PortaoDePublicacaoDoCronogramaTests
+public sealed class ConferenciaDoCronogramaNaPublicacaoTests
 {
     // Sem formulário: com ele, a fase que o formulário cita não pode sair do cronograma.
     private static ProcessoSeletivo ProcessoComCronograma(params FaseCronograma[] fases)
@@ -46,7 +47,12 @@ public sealed class PortaoDePublicacaoDoCronogramaTests
         resultado.IsSuccess.Should().BeTrue(string.Join(", ", resultado.Errors.Select(static e => e.Error.Code)));
 
     private static DomainError? Pendencia(ProcessoSeletivo processo) =>
-        PendenciasDoCronograma.PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), fusoInstitucional: null);
+        ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Errors
+            .Where(static causa => causa.Error.Code != "ProcessoSeletivo.ConformidadeInsuficiente"
+                && causa.Field is not null
+                && (causa.Field.StartsWith("cronograma", StringComparison.Ordinal) || causa.Field.StartsWith("etapas", StringComparison.Ordinal)))
+            .Select(static causa => causa.Error)
+            .FirstOrDefault();
 
     [Fact(DisplayName = "A etapa carregada com uma fase fora do cronograma é recusada na publicação, citando a etapa e a fase")]
     public void Publicacao_EtapaComFaseForaDoCronograma_Recusa()

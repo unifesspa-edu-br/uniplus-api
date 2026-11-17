@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Contratos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -23,7 +24,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
         IReadOnlyList<FieldError> recusas = Conferencia(Iniciadas(habilitacao), [ComUnidade(habilitacao, UnidadesDeTeste.Cga)]);
 
         FieldError recusa = recusas.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be("cronograma.fases[HABILITACAO]");
+        recusa.Field.Should().Be("cronograma.fases");
         recusa.Error.Code.Should().Be(CodigoDaTroca);
         recusa.Error.Message.Should().Contain("HABILITACAO").And.Contain("ordem 1");
     }
@@ -54,7 +55,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
             Iniciadas(habilitacao, classificacao),
             [ComUnidade(habilitacao, UnidadesDeTeste.Cga), ComUnidade(classificacao, UnidadesDeTeste.Cga)]);
 
-        recusas.Select(static r => r.Field).Should().Equal("cronograma.fases[HABILITACAO]", "cronograma.fases[CLASSIFICACAO]");
+        recusas.Select(static r => r.Field).Should().Equal("cronograma.fases", "cronograma.fases");
         recusas.Select(static r => r.Error.Code).Should().AllBe(CodigoDaTroca);
     }
 
@@ -66,7 +67,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
         IReadOnlyList<FieldError> recusas = Conferencia(Iniciadas(habilitacao), [classificacao]);
 
         FieldError recusa = recusas.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be("cronograma.fases[HABILITACAO]");
+        recusa.Field.Should().Be("cronograma.fases");
         recusa.Error.Code.Should().Be(CodigoDaRemocaoDaFase);
         recusa.Error.Message.Should().Contain("HABILITACAO");
     }
@@ -110,7 +111,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
         IReadOnlyList<FieldError> recusas = Conferencia(IniciadasComEtapa(heteroidentificacao), etapas: [prova, analise]);
 
         FieldError recusa = recusas.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be("cronograma.etapas[Heteroidentificação]");
+        recusa.Field.Should().Be("etapas");
         recusa.Error.Code.Should().Be(CodigoDaRemocaoDaEtapa);
         recusa.Error.Message.Should().Contain("Heteroidentificação");
     }
@@ -165,8 +166,9 @@ public sealed class ConferenciaDasFasesIniciadasTests
         IReadOnlyList<FieldError> recusas = Conferencia(iniciadas, [ComUnidade(classificacao, UnidadesDeTeste.Cga)], [prova]);
 
         recusas.Select(static r => r.Error.Code).Should().Equal(CodigoDaTroca, CodigoDaRemocaoDaFase, CodigoDaRemocaoDaEtapa);
-        recusas.Select(static r => r.Field).Should().Equal(
-            "cronograma.fases[CLASSIFICACAO]", "cronograma.fases[HABILITACAO]", "cronograma.etapas[Heteroidentificação]");
+        recusas.Select(static r => r.Field).Should().Equal("cronograma.fases", "cronograma.fases", "etapas");
+        recusas.Select(static r => r.Field!).Where(campo => CaminhosDoDocumentoNoEsquema.Publicado.PrimeiroSegmentoAusente(campo) is not null)
+            .Should().BeEmpty("o campo de cada recusa do fechamento existe no esquema publicado");
     }
 
     [Fact(DisplayName = "Sem fase nem etapa iniciada, nada é recusado")]

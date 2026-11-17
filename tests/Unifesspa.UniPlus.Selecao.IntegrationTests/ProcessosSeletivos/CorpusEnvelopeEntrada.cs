@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -107,13 +108,7 @@ internal static class CorpusEnvelopeEntrada
     {
         SnapshotCanonico snapshot = Codec.Codificar(entrada ?? Entrada(processo));
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            DadosRicos(),
-            snapshot.Bytes,
-            snapshot.SchemaVersion,
-            snapshot.AlgoritmoHash,
-            HashDocumento,
-            Ator,
-            TimeProvider.System, ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = DadosRicos(), Documento = new DocumentoCongelado(snapshot.Bytes, snapshot.SchemaVersion, snapshot.AlgoritmoHash, HashDocumento), AtorUsuarioContaId = Ator, Contagem = ContextoRico() });
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         processo.ClearDomainEvents();
     }

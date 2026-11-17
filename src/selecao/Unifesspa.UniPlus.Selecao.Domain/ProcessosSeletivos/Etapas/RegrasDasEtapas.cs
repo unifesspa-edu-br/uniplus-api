@@ -41,31 +41,36 @@ internal static class RegrasDasEtapas
         "A eliminação por ausência não se aplica à etapa de nota do ENEM, cuja falta é tratada pela eliminação por falta em dia de prova do ENEM.");
 
     /// <summary>
-    /// As recusas de trocar o conjunto de etapas, na ordem em que orientam quem edita: o conjunto, a coerência com o ENEM,
-    /// o que a configuração já cita, a fase e a janela no cronograma e, por fim, o fechamento do ciclo recursal. Uma lista
-    /// vazia é válida: o processo sem prova (classificação importada) não tem etapa.
+    /// As causas de trocar o conjunto de etapas, todas juntas e na ordem em que orientam quem edita: o conjunto, a coerência com
+    /// o ENEM, o que a configuração já cita, a fase e a janela no cronograma e, por fim, o fechamento do ciclo recursal. Uma
+    /// lista vazia é válida: o processo sem prova (classificação importada) não tem etapa.
     /// </summary>
     internal static Result ConferirSubstituicao(EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> etapas)
     {
         ArgumentNullException.ThrowIfNull(estado);
 
         EtapasDoProcesso declaradas = EtapasDoProcesso.Das(etapas);
+        IReadOnlyList<FieldError> causas = CausasDaSubstituicao(estado, etapas, declaradas);
 
-        // A coerência com o ENEM vem depois das causas do conjunto: a classificação é gravada depois das etapas, e num
-        // processo novo ela ainda é nula aqui.
-        DomainError? recusa = CausasDaRecusa.Primeira(declaradas.Conferir())
-            ?? EtapaNotaEnemSemClassificacaoEnem(etapas, estado.Classificacao)
-            ?? RecusaDasReferenciasDaConfiguracao(estado, etapas)
-            ?? RecusaDaEtapaNoCronograma(estado, declaradas);
-
-        return recusa is not null ? Result.Failure(recusa) : FechamentoDoCiclo(declaradas);
+        return causas.Count == 0 ? Result.Success() : Result.ValidationFailure(causas);
     }
 
-    private static Result FechamentoDoCiclo(EtapasDoProcesso etapas)
+    // A coerência com o ENEM vem depois das causas do conjunto: a classificação é gravada depois das etapas, e num processo
+    // novo ela ainda é nula aqui. A etapa que declara fase fora do cronograma não tem janela a conferir contra ela.
+    private static IReadOnlyList<FieldError> CausasDaSubstituicao(
+        EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> etapas, EtapasDoProcesso declaradas)
     {
-        IReadOnlyList<FieldError> violacoes = etapas.ConferirFechamentoDoCiclo();
+        CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do(estado.CronogramaFases);
 
-        return violacoes.Count > 0 ? Result.ValidationFailure(violacoes) : Result.Success();
+        return
+        [
+            .. declaradas.Conferir(),
+            .. CausasDaRecusa.Da(EtapaNotaEnemSemClassificacaoEnem(etapas, estado.Classificacao)),
+            .. CausasDaRecusa.Da(RecusaDasReferenciasDaConfiguracao(estado, etapas)),
+            .. EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, declaradas),
+            .. EtapasNoCronograma.ConferirJanelaDasEtapas(cronograma, declaradas),
+            .. declaradas.ConferirFechamentoDoCiclo(),
+        ];
     }
 
     // O que a configuração já cita da etapa não pode ficar sem ela nem mudar de lugar.
@@ -77,15 +82,6 @@ internal static class RegrasDasEtapas
             ?? EtapaCitadaPelaClassificacao(estado, etapas, novosIds)
             ?? EtapaCitadaPelaExigenciaDocumental(estado, novosIds)
             ?? EtapaQueMudouDeFaseDaExigencia(estado, etapas);
-    }
-
-    // A etapa declara a fase pelo código canônico, e não pelo id, que não sobrevive à reconciliação da restauração.
-    private static DomainError? RecusaDaEtapaNoCronograma(EstadoDaConfiguracao estado, EtapasDoProcesso etapas)
-    {
-        CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do(estado.CronogramaFases);
-
-        return CausasDaRecusa.Primeira(EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, etapas))
-            ?? CausasDaRecusa.Primeira(EtapasNoCronograma.ConferirJanelaDasEtapas(cronograma, etapas));
     }
 
     // Trocar as etapas deixaria o critério apontando para uma etapa removida: desempate inexecutável.

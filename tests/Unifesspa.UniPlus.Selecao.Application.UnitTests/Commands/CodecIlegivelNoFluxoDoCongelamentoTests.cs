@@ -22,7 +22,7 @@ public sealed class CodecIlegivelNoFluxoDoCongelamentoTests
     private const string CodigoDoCodec = "EnvelopeCodec.VersaoDesconhecida";
 
     public static TheoryData<DefeitoDoCongelamento> DefeitosAnterioresAosTiposDeAto() =>
-        [DefeitoDoCongelamento.Cronograma, DefeitoDoCongelamento.UnidadeExcluida];
+        [DefeitoDoCongelamento.ProtecaoPendente, DefeitoDoCongelamento.UnidadeExcluida];
 
     [Fact(DisplayName = "No fechamento, a recópia ignora a versão ilegível: sem proteção da versão vigente, não recusa")]
     public async Task Fechamento_ARecopiaIgnoraAVersaoIlegivel()
@@ -39,20 +39,30 @@ public sealed class CodecIlegivelNoFluxoDoCongelamentoTests
         recopiado.IsSuccess.Should().BeTrue(recopiado.Error?.Message);
     }
 
-    [Theory(DisplayName = "No fechamento, a recusa anterior aos tipos de ato tem prioridade sobre o erro do codec")]
+    [Theory(DisplayName = "No fechamento, a recusa da leitura do catálogo e da recópia sai junto com o erro do codec, nessa ordem")]
     [MemberData(nameof(DefeitosAnterioresAosTiposDeAto))]
-    public async Task Fechamento_RecusaAnteriorVenceOErroDoCodec(DefeitoDoCongelamento defeito)
+    public async Task Fechamento_RecusaDoCatalogoAcumulaComOErroDoCodec(DefeitoDoCongelamento defeito)
     {
         CenarioDeRecusaNoCongelamento cenario = Ilegivel(OperacaoQueCongela.FecharRetificacao).Com(defeito);
 
         (Result resposta, IEnumerable<object> eventos) = await cenario.ExecutarAsync();
 
-        resposta.Error!.Code.Should().Be(CodigoDa(defeito));
+        resposta.Errors.Select(static e => e.Error.Code).Should().Equal([.. CausasDo(defeito), CodigoDoCodec]);
         eventos.Should().BeEmpty();
         await cenario.Servicos.NadaFoiGravadoAsync();
     }
 
-    [Fact(DisplayName = "No fechamento, satisfeitos os portões anteriores, a recusa é o erro do codec, único e sem campo")]
+    [Fact(DisplayName = "No fechamento, o erro do codec impede a conferência da configuração: a recusa do cronograma não sai")]
+    public async Task Fechamento_ErroDoCodecImpedeAConferencia()
+    {
+        CenarioDeRecusaNoCongelamento cenario = Ilegivel(OperacaoQueCongela.FecharRetificacao).Com(DefeitoDoCongelamento.Cronograma);
+
+        (Result resposta, _) = await cenario.ExecutarAsync();
+
+        resposta.Errors.Select(static e => e.Error.Code).Should().Equal(CodigoDoCodec);
+    }
+
+    [Fact(DisplayName = "No fechamento, satisfeitos o estado e as leituras anteriores, a recusa é o erro do codec, único e sem campo")]
     public async Task Fechamento_ChegaAoErroDoCodec()
     {
         CenarioDeRecusaNoCongelamento cenario = Ilegivel(OperacaoQueCongela.FecharRetificacao);
@@ -83,14 +93,14 @@ public sealed class CodecIlegivelNoFluxoDoCongelamentoTests
         await cenario.Servicos.NadaFoiGravadoAsync();
     }
 
-    [Fact(DisplayName = "Na retificação de ato único, a recusa que precede a recópia tem prioridade sobre o erro do codec")]
-    public async Task Retificacao_RecusaAnteriorVenceOErroDoCodec()
+    [Fact(DisplayName = "Na retificação de ato único, a recusa do catálogo sai junto com o erro do codec, nessa ordem")]
+    public async Task Retificacao_RecusaDoCatalogoAcumulaComOErroDoCodec()
     {
         CenarioDeRecusaNoCongelamento cenario = Ilegivel(OperacaoQueCongela.Retificar).Com(DefeitoDoCongelamento.ProtecaoPendente);
 
         (Result resposta, _) = await cenario.ExecutarAsync();
 
-        resposta.Error!.Code.Should().Be(CodigoDa(DefeitoDoCongelamento.ProtecaoPendente));
+        resposta.Errors.Select(static e => e.Error.Code).Should().Equal([.. CausasDo(DefeitoDoCongelamento.ProtecaoPendente), CodigoDoCodec]);
         await cenario.Servicos.NadaFoiGravadoAsync();
     }
 

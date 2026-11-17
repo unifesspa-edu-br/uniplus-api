@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Restauracao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -71,27 +72,30 @@ internal static class SessaoDeRetificacao
     }
 
     /// <summary>
-    /// O que impede repor a configuração congelada, ou nulo. A reposição exige o processo publicado, a
-    /// versão como credencial e o grafo válido inteiro, como ele ficará: uma sequência de edições
-    /// validaria referências cruzadas contra o estado corrente e recusaria um grafo meio-construído.
+    /// O que impede repor a configuração congelada, ou nenhuma causa. A reposição exige o processo publicado, a versão como
+    /// credencial e o grafo válido inteiro, como ele ficará: uma sequência de edições validaria referências cruzadas contra o
+    /// estado corrente e recusaria um grafo meio-construído. A recusa do estado (status e versão) impede conferir o grafo; o grafo
+    /// acumula todas as causas.
     /// </summary>
-    internal static DomainError? RecusaDaRestauracao(EstadoDaConfiguracao estado, VersaoConfiguracao versao, GrafoConfiguracao grafo)
+    internal static IReadOnlyList<FieldError> RecusasDaRestauracao(EstadoDaConfiguracao estado, VersaoConfiguracao versao, GrafoConfiguracao grafo)
     {
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(versao);
         ArgumentNullException.ThrowIfNull(grafo);
 
-        if (estado.Status != StatusProcesso.Publicado)
-        {
-            return new DomainError(
-                "ProcessoSeletivo.RestauracaoForaDePublicado",
-                $"Só é possível restaurar a configuração congelada de um processo publicado — status atual: {estado.Status}.");
-        }
-
         // A cadeia de versões não atravessa certames: repor a configuração de outro processo
         // sobrescreveria este com uma que nunca foi dele, e o envelope seguinte congelaria a troca.
-        return RecusaDaVersaoDeOutroProcesso(estado, versao) ?? ValidacaoDoGrafo.Validar(grafo);
+        return CausasDaRecusa.Da(RecusaDoStatus(estado) ?? RecusaDaVersaoDeOutroProcesso(estado, versao)) is { Count: > 0 } doEstado
+            ? doEstado
+            : ValidacaoDoGrafo.Validar(grafo);
     }
+
+    private static DomainError? RecusaDoStatus(EstadoDaConfiguracao estado) =>
+        estado.Status != StatusProcesso.Publicado
+            ? new DomainError(
+                "ProcessoSeletivo.RestauracaoForaDePublicado",
+                $"Só é possível restaurar a configuração congelada de um processo publicado — status atual: {estado.Status}.")
+            : null;
 
     private static DomainError? RecusaDaVersaoDeOutroProcesso(EstadoDaConfiguracao estado, VersaoConfiguracao versao) =>
         versao.ProcessoSeletivoId != estado.ProcessoId

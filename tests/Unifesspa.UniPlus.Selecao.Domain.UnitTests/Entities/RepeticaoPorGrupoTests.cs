@@ -113,7 +113,7 @@ public sealed class RepeticaoPorGrupoTests
 
         processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [], PrecondicaoIfMatch.Ausente, []).IsSuccess.Should().BeTrue();
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
     }
 
     [Fact(DisplayName = "A folha dentro da subárvore repetida cita os campos do grupo; a de fora, não")]

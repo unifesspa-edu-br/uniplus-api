@@ -9,14 +9,15 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
 /// <summary>
-/// O gate da escala das etapas: a etapa com nota declara a nota máxima, e a que não tem nota e a
-/// do ENEM não declaram escala nenhuma. É gate, e não recusa de gravação, porque depende do que
+/// A conferência da escala das etapas: a etapa com nota declara a nota máxima, e a que não tem nota e a
+/// do ENEM não declaram escala nenhuma. É conferência, e não recusa de gravação, porque depende do que
 /// o grafo diz sobre a etapa (média, nota mínima, eliminação, desempate).
 /// </summary>
 public sealed class ConformidadeEscalaDasEtapasTests
@@ -95,11 +96,10 @@ public sealed class ConformidadeEscalaDasEtapasTests
     }
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
-        ProcessoConformeFactory.Dados(), "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo, "teste",
-        TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" });
 
     private static IEnumerable<ItemConformidade> Vermelhos(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Where(static i => !i.Ok && i.Dimensao == DimensaoConformidade.Etapas);
 
     /// <summary>
@@ -237,8 +237,10 @@ public sealed class ConformidadeEscalaDasEtapasTests
         Vermelhos(processo).Should().ContainSingle().Which.Codigo.Should().Be("etapa_com_nota_sem_nota_maxima");
     }
 
-    [Fact(DisplayName = "As recusas acumulam: uma só pendência lista as três etapas, e o checklist reprova os três itens")]
-    public void RecusasDeEtapasDiferentes_AcumulamNaMesmaPendencia()
+    private static readonly string[] ItensDasTresEtapasRecusadas =
+        ["etapa_com_nota_sem_nota_maxima", "etapa_sem_nota_com_escala", "nota_minima_da_regra_acima_da_nota_maxima"];
+
+    private static ProcessoSeletivo ProcessoComTresEtapasRecusadas()
     {
         EtapaProcesso semNotaMaxima = Etapa("Redação", 2, peso: 1m);
         EtapaProcesso semNotaComEscala = Etapa("Análise", 3, CaraterEtapa.Eliminatoria, notaMaxima: 10m, semForma: true);
@@ -246,15 +248,25 @@ public sealed class ConformidadeEscalaDasEtapasTests
         ProcessoSeletivo processo = ProcessoCom(EtapaDaMedia(), semNotaMaxima, semNotaComEscala, acimaDaMaxima);
         CitarPorEliminacao(processo, acimaDaMaxima.Id, 12m);
 
-        Vermelhos(processo).Select(static i => i.Codigo).Should().BeEquivalentTo(
-            "etapa_com_nota_sem_nota_maxima", "etapa_sem_nota_com_escala", "nota_minima_da_regra_acima_da_nota_maxima");
-
-        DomainError? pendencia = ChecklistDeConformidade.PendenciaDeConformidade(EstadoDaConfiguracao.De(processo));
-        pendencia.Should().NotBeNull();
-        pendencia!.Message.Should().Contain("\"Redação\"").And.Contain("\"Análise\"").And.Contain("\"Entrevista\"");
+        return processo;
     }
 
-    [Fact(DisplayName = "A retificação recusa a etapa com nota sem nota máxima, pelo mesmo gate da publicação")]
+    [Fact(DisplayName = "As recusas acumulam: cada item reprovado é uma causa, e o checklist reprova os três itens")]
+    public void RecusasDeEtapasDiferentes_AcumulamUmaCausaPorItem()
+    {
+        ProcessoSeletivo processo = ProcessoComTresEtapasRecusadas();
+
+        Vermelhos(processo).Select(static i => i.Codigo).Should().BeEquivalentTo(ItensDasTresEtapasRecusadas);
+
+        IReadOnlyList<FieldError> causas = CausasDeConformidadeDeTeste.De(processo);
+        causas.Select(static causa => causa.Origem).Should().BeEquivalentTo(ItensDasTresEtapasRecusadas);
+        causas.Should().OnlyContain(static causa => causa.Field == "etapas");
+        causas.Select(static causa => causa.Error.Message).Should().Contain(m => m.Contains("\"Redação\"", StringComparison.Ordinal))
+            .And.Contain(m => m.Contains("\"Análise\"", StringComparison.Ordinal))
+            .And.Contain(m => m.Contains("\"Entrevista\"", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "A retificação recusa a etapa com nota sem nota máxima, pela mesma conferência da publicação")]
     public void Retificar_EtapaComNotaSemNotaMaxima_Recusa()
     {
         EtapaProcesso etapa = EtapaDaMedia();
@@ -264,9 +276,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
         typeof(EtapaProcesso).GetProperty(nameof(EtapaProcesso.NotaMaxima))!.SetValue(etapa, null);
 
         Result<VersaoConfiguracao> retificar = processo.Retificar(
-            ProcessoConformeFactory.Dados(), versaoAtual, "{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo,
-            "teste", "Correção do prazo", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario,
-            FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" }, versaoAtual, "Correção do prazo");
 
         retificar.IsFailure.Should().BeTrue();
         retificar.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");

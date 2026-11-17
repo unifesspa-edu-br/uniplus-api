@@ -11,25 +11,22 @@ using Kernel.Results;
 /// </summary>
 internal static class PrecondicoesDoFechamento
 {
-    /// <summary>A recusa da primeira condição que falha, ou nula quando o fechamento pode seguir.</summary>
+    /// <summary>
+    /// A recusa da primeira condição que falha, ou nula quando o fechamento pode seguir. A precondição precede as regras
+    /// de negócio, e a antecipação é a mesma dos Definir*: um cliente com ETag defasado tem de saber disso antes de o
+    /// servidor ir conferir documento, catálogo de atos e vaga de linhagem. O FecharRetificacao do agregado reconfere.
+    /// </summary>
     internal static DomainError? Recusa(PrecondicaoIfMatch precondicao, ProcessoSeletivo processo)
     {
         ArgumentNullException.ThrowIfNull(precondicao);
         ArgumentNullException.ThrowIfNull(processo);
 
-        // Incondicional nesta rota ("3 antes de 10"): ela existe para a sessão.
-        if (!precondicao.Presente)
-        {
-            return new DomainError(
-                "Precondicao.Requerida",
-                "O fechamento encerra a sessão editorial em curso — informe o If-Match com o ETag dela.");
-        }
-
-        // A precondição precede as regras de negócio, e a antecipação é a mesma dos Definir*: um
-        // cliente com ETag defasado tem de saber disso antes de o servidor ir conferir documento,
-        // catálogo de atos e vaga de linhagem. O FecharRetificacao do agregado reconfere.
-        return processo.Rascunho is null
-            ? new DomainError("RascunhoRetificacao.NaoAberta", "Não há retificação em curso neste processo.")
-            : processo.MutacaoBloqueada(precondicao);
+        return precondicao.Presente ? processo.PendenciaDaSessao(precondicao) : PrecondicaoRequerida();
     }
+
+    // Incondicional nesta rota ("3 antes de 10"): ela existe para a sessão.
+    private static DomainError PrecondicaoRequerida() =>
+        new(
+            "Precondicao.Requerida",
+            "O fechamento encerra a sessão editorial em curso — informe o If-Match com o ETag dela.");
 }

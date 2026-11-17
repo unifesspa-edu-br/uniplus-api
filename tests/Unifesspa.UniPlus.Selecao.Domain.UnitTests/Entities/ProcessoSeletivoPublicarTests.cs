@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -29,8 +30,7 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         DadosEdital dados = NovosDados();
 
-        Result<VersaoConfiguracao> resultado = processo.Publicar(
-            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital(dados));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.Status.Should().Be(StatusProcesso.Publicado);
@@ -49,12 +49,16 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         DateTimeOffset instante = new(2026, 3, 13, 19, 0, 0, TimeSpan.Zero);
 
-        Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", new RelogioFixo(instante), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital() with { Relogio = new RelogioFixo(instante) });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         VersaoConfiguracao versao = resultado.Value!;
 
+        AfirmarQueOIdDoAtoNasceDoInstanteDaVersao(versao, instante);
+    }
+
+    private static void AfirmarQueOIdDoAtoNasceDoInstanteDaVersao(VersaoConfiguracao versao, DateTimeOffset instante)
+    {
         versao.VigenteAPartirDe.Should().Be(instante);
         versao.AtoCriadorId.Version.Should().Be(7, "Guid v7 — o id carrega o instante, e é ordenável por ele (ADR-0032)");
 
@@ -73,22 +77,26 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         DadosEdital dados = NovosDados();
 
-        Result<VersaoConfiguracao> resultado = processo.Publicar(
-            dados, BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital(dados));
 
         resultado.IsSuccess.Should().BeTrue();
         Domain.Events.ProcessoPublicadoEvent evento = processo.DomainEvents
             .OfType<Domain.Events.ProcessoPublicadoEvent>().Should().ContainSingle().Subject;
 
+        AfirmarEventoComOsIdentificadoresDaVersao(evento, processo, resultado.Value!);
+    }
+
+    private static void AfirmarEventoComOsIdentificadoresDaVersao(Domain.Events.ProcessoPublicadoEvent evento, ProcessoSeletivo processo, VersaoConfiguracao versao)
+    {
         evento.ProcessoSeletivoId.Should().Be(processo.Id);
         // EditalId é o nome histórico do membro — contrato do envelope durável e do schema
         // Avro (ver ProcessoPublicadoEvent). O VALOR sempre foi o do ato criador, e continua.
-        evento.EditalId.Should().Be(resultado.Value!.AtoCriadorId);
-        evento.SnapshotPublicacaoId.Should().Be(resultado.Value!.Id);
-        evento.HashConfiguracao.Should().Be(resultado.Value!.HashConfiguracao);
+        evento.EditalId.Should().Be(versao.AtoCriadorId);
+        evento.SnapshotPublicacaoId.Should().Be(versao.Id);
+        evento.HashConfiguracao.Should().Be(versao.HashConfiguracao);
         evento.HashEdital.Should().Be(HashFixo);
         evento.OccurredOn.Should().Be(
-            resultado.Value!.VigenteAPartirDe,
+            versao.VigenteAPartirDe,
             "o fato ocorreu no instante do SISTEMA — o mesmo que ordena as versões (ADR-0104)");
     }
 
@@ -98,8 +106,7 @@ public sealed class ProcessoSeletivoPublicarTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS incompleto", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         // Nenhuma dimensão obrigatória definida — Etapas/Atendimento/Distribuição/Classificação ausentes.
 
-        Result<VersaoConfiguracao> resultado = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
@@ -111,12 +118,11 @@ public sealed class ProcessoSeletivoPublicarTests
     public void Publicar_ProcessoJaPublicado_RecusaTransicaoInvalida()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        processo.Publicar(CenarioDoEdital())
             .IsSuccess.Should().BeTrue();
         processo.DequeueDomainEvents();
 
-        Result<VersaoConfiguracao> segundaTentativa = processo.Publicar(
-            NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+        Result<VersaoConfiguracao> segundaTentativa = processo.Publicar(CenarioDoEdital());
 
         segundaTentativa.IsFailure.Should().BeTrue();
         segundaTentativa.Error!.Code.Should().Be("ProcessoSeletivo.TransicaoInvalida");
@@ -135,29 +141,34 @@ public sealed class ProcessoSeletivoPublicarTests
     public void DefinirX_ProcessoPublicado_RecusaMutacao(string dimensao)
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
-        processo.Publicar(NovosDados(), BytesCanonicos, "1.0", "canonical-json/sha256@v1", HashFixo, "user-conta-123", TimeProvider.System, ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum)
+        processo.Publicar(CenarioDoEdital())
             .IsSuccess.Should().BeTrue();
 
-        Result resultado = dimensao switch
+        Result resultado = MutacaoDaDimensao(processo, dimensao);
+
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
+    }
+
+    private static ConfiguracaoClassificacao ClassificacaoImportada() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+    {
+        RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
+        RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+    }).Value!;
+
+    private static Result MutacaoDaDimensao(ProcessoSeletivo processo, string dimensao) =>
+        dimensao switch
         {
             "etapas" => processo.DefinirEtapas([EtapaDaProvaObjetiva("Nova Etapa", CaraterEtapa.Classificatoria, 1m)], PrecondicaoIfMatch.Ausente),
             "atendimentoEspecializado" => processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente),
             "distribuicaoVagas" => processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente),
             "bonusRegional" => processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente),
             "criteriosDesempate" => processo.DefinirCriteriosDesempate([], PrecondicaoIfMatch.Ausente),
-            "classificacao" => processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-            {
-                RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
-                RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
-            }).Value!, PrecondicaoIfMatch.Ausente),
+            "classificacao" => processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente),
             "cronogramaFases" => processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente),
             "documentosExigidos" => processo.DefinirDocumentosExigidos([], PrecondicaoIfMatch.Ausente),
             _ => throw new InvalidOperationException("Dimensão desconhecida."),
         };
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
-    }
 
     /// <summary>
     /// Lê o timestamp Unix em milissegundos dos 48 bits mais significativos de um Guid v7

@@ -36,10 +36,10 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
                 FinalidadeFormulario.Inscricao, FormularioDeTeste.DadosBasicos(semODado is null ? [] : [semODado]), PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo);
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
         (pendencia?.Code).Should().Be(semODado is null ? null : FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Single(static i => i.Codigo == "formulario_inscricao_sem_conjunto_basico").Ok.Should().Be(semODado is null);
     }
 
@@ -55,7 +55,7 @@ public sealed class ConjuntoBasicoNoFormularioDeInscricaoTests
                 FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicos([nome.FatoCodigo]), nomeEmDados], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
+        CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
     }
 
     [Theory(DisplayName = "O formulário de inscrição nasce com os dados básicos, e uma seção já pode citá-los")]

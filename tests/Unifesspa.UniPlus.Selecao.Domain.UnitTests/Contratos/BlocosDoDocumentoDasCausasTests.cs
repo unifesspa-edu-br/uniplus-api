@@ -1,0 +1,140 @@
+namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Contratos;
+
+using System.Reflection;
+using System.Text.Json.Nodes;
+
+using AwesomeAssertions;
+
+using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Publicacao;
+using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Recursos;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
+
+/// <summary>
+/// O campo de cada causa aponta um bloco do documento de configuração: o cliente leva quem corrige até o bloco pelo nome
+/// que o esquema publicado dá a ele, então o nome de uma dimensão sem bloco, ou de um bloco que o esquema não tem, deixaria
+/// a causa sem lugar para ser corrigida. O mesmo vale para o caminho inteiro do campo: cada segmento tem de existir no esquema.
+/// </summary>
+public sealed class BlocosDoDocumentoDasCausasTests
+{
+    private static readonly HashSet<string> BlocosDoEsquema = LerBlocosDoEsquema();
+    private static readonly CaminhosDoDocumentoNoEsquema Esquema = CaminhosDoDocumentoNoEsquema.Publicado;
+
+    public static TheoryData<string> Dimensoes => [.. DimensoesConhecidas()];
+
+    [Theory(DisplayName = "Toda dimensão de conformidade tem o bloco do documento, e o esquema publicado tem esse bloco")]
+    [MemberData(nameof(Dimensoes))]
+    public void Dimensao_TemOBlocoQueOEsquemaPublica(string dimensao)
+    {
+        string bloco = DimensaoConformidade.BlocoDoDocumento(dimensao);
+
+        BlocosDoEsquema.Should().Contain(bloco);
+    }
+
+    [Fact(DisplayName = "Dimensão desconhecida não tem bloco do documento")]
+    public void DimensaoDesconhecida_Lanca()
+    {
+        Action buscar = () => DimensaoConformidade.BlocoDoDocumento("dimensao_inexistente");
+
+        buscar.Should().Throw<ArgumentOutOfRangeException>();
+    }
+
+    [Fact(DisplayName = "O campo de toda causa do processo sem nada declarado existe no esquema publicado, o caminho inteiro")]
+    public void CampoDeTodaCausa_DoProcessoSemNada_ExisteNoEsquema()
+    {
+        ProcessoSeletivo semNada = ProcessoSeletivo.Criar(
+            "Processo incompleto", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.CreateVersion7(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
+            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+
+        IReadOnlyList<FieldError> causas = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(semNada), CadastrosDeTeste.Padrao).Errors;
+
+        causas.Should().NotBeEmpty();
+        CaminhosAusentes(causas).Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "O campo de toda causa de um processo com defeito em todas as famílias existe no esquema publicado, o caminho inteiro")]
+    [MemberData(nameof(Transicoes))]
+    public void CampoDeTodaCausa_DeTodasAsFamilias_ExisteNoEsquema(string transicao)
+    {
+        CenarioDeCongelamentoPorFamilia cenario = CenarioDeCongelamentoPorFamilia.Para(transicao);
+
+        IReadOnlyList<FieldError> causas = cenario.CausasDaConferencia(CenarioDeCongelamentoPorFamilia.FamiliasQueSabeQuebrar.ToHashSet(StringComparer.Ordinal));
+
+        causas.Should().NotBeEmpty();
+        CaminhosAusentes(causas).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O campo de toda causa do cronograma e das etapas declarados com defeito em cada campo existe no esquema publicado, o caminho inteiro")]
+    public void CampoDeTodaCausa_DasFasesEDasEtapas_ExisteNoEsquema()
+    {
+        IReadOnlyList<FieldError> causas = CausasQueImpedemCongelar.De(DeclaracoesComDefeitoParaOEsquema.ContextoComTodosOsDefeitos());
+
+        string?[] traduzidos =
+        [
+            "cronograma.fases[1].faseCanonicaCodigo", "cronograma.fases[0].faseConcluinteChave", "cronograma.fases[0].unidadeResponsavelCodigo",
+            "cronograma.fases[0].bancasRequeridas[0].categoriasDocumentoCodigos", "etapas[1].faseChave", "etapas[1].chave",
+        ];
+        causas.Select(static causa => causa.Field).Should().Contain(traduzidos);
+        CaminhosAusentes(causas).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O campo da causa do procedimento de recurso da etapa existe no esquema publicado, o caminho inteiro")]
+    public void CampoDaCausaDoRecursoDaEtapa_ExisteNoEsquema()
+    {
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
+        processo.DefinirEtapas([PendenciasDosProcedimentosDeRecursoTests.EtapaComJanela(ProcedimentosDeRecurso.Nenhum, TipoMotivoDeDecisaoCodigo.Classificacao)], PrecondicaoIfMatch.Ausente)
+            .IsSuccess.Should().BeTrue();
+
+        IReadOnlyList<FieldError> causas = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Errors;
+
+        causas.Select(static causa => causa.Field).Should().Contain("etapas[0].recursos");
+        CaminhosAusentes(causas).Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "O caminho da regra de recurso da fase e o do conceito da etapa existem no esquema publicado")]
+    [InlineData("cronograma.fases[0].regraRecurso")]
+    [InlineData("cronograma.fases[0].produtos[1].atoCodigo")]
+    [InlineData("etapas[0].produtos[2].atoCodigo")]
+    [InlineData("formularios[INSCRICAO].itens[0].fatoCodigo")]
+    [InlineData("formularios[HABILITACAO].itens[1].restricoes")]
+    [InlineData("formularios[HABILITACAO].grupos[1].subitens[0].fatoCodigo")]
+    public void CaminhoQueUmEmissorSemCenarioConstruivelProduz_ExisteNoEsquema(string campo) =>
+        Esquema.PrimeiroSegmentoAusente(campo).Should().BeNull();
+
+    [Fact(DisplayName = "O caminho que o esquema não tem é apontado no primeiro segmento ausente, e o campo da causa de nome do pedido não resolve")]
+    public void CaminhoInexistente_ApontaOPrimeiroSegmentoAusente()
+    {
+        Esquema.PrimeiroSegmentoAusente("cronograma.fases[2].faseCanonicaId").Should().Be("cronograma.fases[2].faseCanonicaId");
+        Esquema.PrimeiroSegmentoAusente("etapas[0].conceito.tipo").Should().Be("etapas[0].conceito");
+        Esquema.PrimeiroSegmentoAusente("cronograma.fases[2].faseCanonicaCodigo").Should().BeNull();
+    }
+
+    public static TheoryData<string> Transicoes => ["Publicar", "Retificar", "FecharRetificacao"];
+
+    private static string[] CaminhosAusentes(IEnumerable<FieldError> causas) =>
+    [
+        .. causas.Select(static causa => causa.Field!).Distinct(StringComparer.Ordinal)
+            .Where(campo => Esquema.PrimeiroSegmentoAusente(campo) is not null)
+            .Select(static campo => campo),
+    ];
+
+    private static IEnumerable<string> DimensoesConhecidas() =>
+        typeof(DimensaoConformidade).GetFields(BindingFlags.Public | BindingFlags.Static)
+            .Where(static campo => campo.IsLiteral && campo.FieldType == typeof(string))
+            .Select(static campo => (string)campo.GetRawConstantValue()!);
+
+    private static HashSet<string> LerBlocosDoEsquema()
+    {
+        string texto = File.ReadAllText(Path.Join(CaminhosDoDocumentoNoEsquema.DiretorioPublicado, "documento.schema.json"));
+
+        return [.. JsonNode.Parse(texto)!["properties"]!.AsObject().Select(static propriedade => propriedade.Key)];
+    }
+}

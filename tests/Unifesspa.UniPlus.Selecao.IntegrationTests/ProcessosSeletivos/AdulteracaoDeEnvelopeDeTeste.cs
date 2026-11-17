@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -92,8 +93,7 @@ internal static class AdulteracaoDeEnvelopeDeTeste
         ProcessoSeletivo processo, DadosEdital dados, SnapshotCanonico congelado, byte[] bytes)
     {
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
-            dados, bytes, congelado.SchemaVersion, congelado.AlgoritmoHash,
-            EnvelopeDeReferencia.HashFixo, CorpusEnvelope.Ator, TimeProvider.System, CorpusEnvelopeDadosDoEdital.ContextoRico(), FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum);
+            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(bytes, congelado.SchemaVersion, congelado.AlgoritmoHash, EnvelopeDeReferencia.HashFixo), AtorUsuarioContaId = CorpusEnvelope.Ator, Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() });
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         processo.ClearDomainEvents();
 

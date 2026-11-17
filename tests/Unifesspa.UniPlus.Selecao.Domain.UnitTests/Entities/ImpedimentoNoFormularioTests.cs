@@ -50,7 +50,7 @@ public sealed class ImpedimentoNoFormularioTests
                 PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
 
-        (ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo)?.Code)
+        (CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)?.Code)
             .Should().Be(obrigatorio ? null : ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
     }
 

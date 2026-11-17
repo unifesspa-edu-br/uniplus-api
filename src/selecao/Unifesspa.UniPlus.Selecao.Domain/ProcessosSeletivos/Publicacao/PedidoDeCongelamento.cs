@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -24,14 +23,8 @@ public sealed record PedidoDeCongelamento
     /// </summary>
     public required DateTimeOffset Instante { get; init; }
 
-    public required ContextoDeContagemDePrazos Contexto { get; init; }
-
-    public required FatosDeModalidade FatosDeModalidade { get; init; }
-
-    public required TiposDeAtoUnicosPorObjeto TiposDeAtoUnicos { get; init; }
-
-    /// <summary>Os corretores que a regra de consolidação de cada etapa exige, para o mínimo de integrantes das bancas.</summary>
-    public required CorretoresDasEtapas Corretores { get; init; }
+    /// <summary>A configuração do processo que a conferência julgou sem impedimento, nesta mesma unidade de trabalho.</summary>
+    public required ConfiguracaoAptaACongelar ConfiguracaoApta { get; init; }
 }
 
 /// <summary>

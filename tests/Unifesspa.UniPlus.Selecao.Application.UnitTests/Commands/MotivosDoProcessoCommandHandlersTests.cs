@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Inclusão e retirada de motivo no processo, a leitura dos escolhidos e o portão dos motivos nas
+/// Inclusão e retirada de motivo no processo, a leitura dos escolhidos e a conferência dos motivos nas
 /// transições que congelam versão (UNI-REQ-0122, UNI-REQ-0123, UNI-REQ-0285).
 /// </summary>
 public sealed class MotivosDoProcessoCommandHandlersTests
@@ -202,16 +202,16 @@ public sealed class MotivosDoProcessoCommandHandlersTests
         escolhido.Congelado.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "Nos últimos portões, sem recusa anterior, a falta de cobertura recusa")]
-    public async Task UltimosPortoes_SemRecusaAnterior_RecusaPorCobertura()
+    [Fact(DisplayName = "Ao congelar sem nenhum motivo escolhido, a falta de cobertura recusa uma vez por decisão")]
+    public async Task AoCongelar_SemNenhumMotivo_RecusaPorCobertura()
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!, PrecondicaoIfMatch.Ausente);
 
-        Result<DefinicaoAvaliavel> resultado = await new ConferenciaDosMotivosAoCongelar(
+        Result resultado = await new ConferenciaDosMotivosAoCongelar(
             MotivosDoProcessoDeTeste.Com([]))
-            .UltimosPortoesAsync(processo, [], CancellationToken.None);
+            .ConferirAsync(processo, CancellationToken.None);
 
         resultado.Errors.Should().HaveCount(2).And.OnlyContain(e => e.Error.Code == MotivoDeDecisaoErrorCodes.CoberturaInsuficiente);
     }

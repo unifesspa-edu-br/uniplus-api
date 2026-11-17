@@ -30,57 +30,83 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// </remarks>
 internal static class ResolvedorMetadadosFatosCongelados
 {
+    private static readonly IReadOnlySet<string> NenhumFatoExcluido = new HashSet<string>(StringComparer.Ordinal);
+
     /// <summary>
     /// <see langword="null"/> quando o processo não tem nenhuma condição de gatilho. Quando
     /// existe ao menos uma, todo código referenciado tem de resolver contra
     /// <paramref name="catalogo"/>: o vocabulário de fatos é fechado e append-only (ADR-0111),
     /// então um código que não resolve é defesa em profundidade — nunca deveria acontecer, mas
-    /// aborta o congelamento com um erro nomeado em vez de deixar o canonicalizador congelar um
-    /// metadado incompleto em silêncio.
+    /// aborta o congelamento com um erro nomeado por fato ausente, na ordem das condições, em vez
+    /// de deixar o canonicalizador congelar um metadado incompleto em silêncio.
     /// </summary>
     public static Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> Resolver(
         ProcessoSeletivo processo,
-        IReadOnlyDictionary<string, FatoCandidatoView> catalogo)
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogo) =>
+        Resolver(processo, catalogo, NenhumFatoExcluido);
+
+    /// <summary>
+    /// Resolve o metadado dos fatos citados, menos os dos fatos excluídos (os que o catálogo deixou de aceitar, recusados
+    /// pela conferência de coletabilidade): o fato excluído que o catálogo não tem não repete a causa nem interrompe a
+    /// resolução dos demais.
+    /// </summary>
+    internal static Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> Resolver(
+        ProcessoSeletivo processo,
+        IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
+        IReadOnlySet<string> fatosExcluidos)
     {
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(catalogo);
+        ArgumentNullException.ThrowIfNull(fatosExcluidos);
 
         IReadOnlyList<string> codigos = [.. processo.DocumentosExigidos
             .SelectMany(static d => d.Condicoes)
             .Select(static c => c.Fato)
+            .Where(c => !fatosExcluidos.Contains(c))
             .Distinct(StringComparer.Ordinal)];
 
-        if (codigos.Count == 0)
-        {
-            return Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?>.Success(null);
-        }
-
-        Dictionary<string, MetadadoFatoCongelado> metadados = new(StringComparer.Ordinal);
-        IReadOnlySet<(string Fato, string Valor)> valoresCitados = ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)).Valores;
-        foreach (string codigo in codigos)
-        {
-            if (!catalogo.TryGetValue(codigo, out FatoCandidatoView? fato))
-            {
-                return Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?>.Failure(new DomainError(
-                    "ProcessoSeletivo.FatoCongeladoNaoEncontrado",
-                    $"O fato '{codigo}', citado numa condição de gatilho de documento exigido, não foi encontrado " +
-                    "no catálogo de fatos do candidato — o congelamento não persiste um metadado incompleto."));
-            }
-
-            IReadOnlyList<FatoValorDominioViewItem> vigentes = VocabularioDeFatos.ValoresVigentes(fato, valoresCitados);
-            metadados[codigo] = new MetadadoFatoCongelado(
-                fato.Codigo,
-                fato.Dominio,
-                fato.Origem,
-                fato.Cardinalidade,
-                fato.PontoResolucao,
-                fato.Binding,
-                vigentes.Count > 0 ? [.. vigentes.Select(static v => v.Codigo)] : fato.ValoresDominio,
-                vigentes.Count > 0
-                    ? [.. vigentes.Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao, v.Ordem))]
-                    : null);
-        }
-
-        return Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?>.Success(metadados);
+        return codigos.Count == 0
+            ? Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?>.Success(null)
+            : ResolverOsCitados(processo, catalogo, codigos);
     }
+
+    private static Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> ResolverOsCitados(
+        ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> catalogo, IReadOnlyList<string> codigos)
+    {
+        IReadOnlyList<FieldError> ausentes = [.. codigos.Where(codigo => !catalogo.ContainsKey(codigo)).Select(static codigo => new FieldError(null, FatoNaoEncontrado(codigo)))];
+
+        return ausentes.Count > 0
+            ? Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?>.ValidationFailure(ausentes)
+            : Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?>.Success(MetadadosDosFatos(processo, catalogo, codigos));
+    }
+
+    private static Dictionary<string, MetadadoFatoCongelado> MetadadosDosFatos(
+        ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> catalogo, IReadOnlyList<string> codigos)
+    {
+        IReadOnlySet<(string Fato, string Valor)> valoresCitados = ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)).Valores;
+
+        return codigos.ToDictionary(
+            static codigo => codigo,
+            codigo => Metadado(catalogo[codigo], VocabularioDeFatos.ValoresVigentes(catalogo[codigo], valoresCitados)),
+            StringComparer.Ordinal);
+    }
+
+    private static DomainError FatoNaoEncontrado(string codigo) =>
+        new(
+            "ProcessoSeletivo.FatoCongeladoNaoEncontrado",
+            $"O fato '{codigo}', citado numa condição de gatilho de documento exigido, não foi encontrado " +
+            "no catálogo de fatos do candidato — o congelamento não persiste um metadado incompleto.");
+
+    private static MetadadoFatoCongelado Metadado(FatoCandidatoView fato, IReadOnlyList<FatoValorDominioViewItem> vigentes) =>
+        new(
+            fato.Codigo,
+            fato.Dominio,
+            fato.Origem,
+            fato.Cardinalidade,
+            fato.PontoResolucao,
+            fato.Binding,
+            vigentes.Count > 0 ? [.. vigentes.Select(static v => v.Codigo)] : fato.ValoresDominio,
+            vigentes.Count > 0
+                ? [.. vigentes.Select(static v => new ValorDominioDeclaradoCongelado(v.Codigo, v.Descricao, v.Ordem))]
+                : null);
 }

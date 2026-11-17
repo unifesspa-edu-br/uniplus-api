@@ -14,19 +14,19 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Cobertura dos gates de publicação/escrita ESTENDIDOS ao nó de grupo <c>OU</c>/<c>N-de</c>
+/// Cobertura das conferências de publicação/escrita ESTENDIDAS ao nó de grupo <c>OU</c>/<c>N-de</c>
 /// com consequência própria (Story #920, tasks §1.5a): base legal ≥1 <c>RESOLVIDO</c>,
 /// <c>REMOVE_VANTAGEM</c> exige vantagem viva, e <c>PENDENCIA_REENVIO</c>×<c>PermiteComplementacao</c>
 /// forward (na escrita da árvore) e reverso (ao redefinir o cronograma) — os mesmos quatro
-/// gates que já existiam para <see cref="DocumentoExigido"/> (folha), agora também para
+/// conferências que já existiam para <see cref="DocumentoExigido"/> (folha), agora também para
 /// <see cref="NoExigencia"/> do tipo <see cref="TipoNo.GrupoOu"/>.
 /// </summary>
-public sealed class ProcessoSeletivoNoExigenciaGatesTests
+public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
 {
     private static readonly FormatosPermitidos Qualquer = FormatosPermitidos.Criar(true, null).Value!;
 
     private static ProcessoSeletivo NovoProcesso() =>
-        ProcessoSeletivo.Criar("PS Gates de Grupo", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo.Criar("PS Conferências de Grupo", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
     private static FaseCronograma NovaFase(Guid faseCanonicaOrigemId, bool permiteComplementacao) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
@@ -55,7 +55,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
 
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo);
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be("NoExigencia.RemoveVantagemSemVantagemViva");
@@ -74,7 +74,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
 
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && !item.Ok);
     }
 
@@ -91,7 +91,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
 
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && item.Ok);
     }
 
@@ -146,7 +146,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0, quantidadeMinima: 2).Value!;
         processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo);
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
         pendencia.Should().BeNull(pendencia?.Message);
     }
@@ -163,7 +163,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
             chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
         processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo);
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
         pendencia.Should().BeNull(pendencia?.Message);
     }
@@ -178,7 +178,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
         processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo);
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
         pendencia.Should().BeNull();
     }
@@ -192,24 +192,28 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []).Value!;
 
-    [Fact(DisplayName = "Folha solteira repetePorEntidade não bloqueia PendenciaPreCanonicalizacao")]
-    public void FolhaSolteira_RepetePorEntidade_NaoBloqueia()
+    private static void DefinirComposicaoFamiliarNaInscricao(ProcessoSeletivo processo, FaseCronograma fase)
     {
-        ProcessoSeletivo processo = NovoProcesso();
-        FaseCronograma fase = FaseDeInscricao();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
         GrupoColetado composicao = GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
             [FatoColetado.Criar("MAIOR_IDADE", 0, "Maior de idade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).Value!;
         Result formulario = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase.Id, null, FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente);
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
         processo.DefinirItens([], grupos: [composicao]).IsSuccess.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "Folha solteira repetePorEntidade não bloqueia PendenciaPreCanonicalizacao")]
+    public void FolhaSolteira_RepetePorEntidade_NaoBloqueia()
+    {
+        ProcessoSeletivo processo = NovoProcesso();
+        FaseCronograma fase = FaseDeInscricao();
+        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        DefinirComposicaoFamiliarNaInscricao(processo, fase);
         NoExigencia folha = NoExigencia.CriarFolha(
             DocumentoQualquer(fase.Id, FinalidadeFormulario.Inscricao), 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
         processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo);
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
         pendencia.Should().BeNull(pendencia?.Message);
     }
@@ -226,7 +230,7 @@ public sealed class ProcessoSeletivoNoExigenciaGatesTests
             TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
         processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(processo), FatosDeModalidadeDeTeste.DoCatalogo);
+        DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
         pendencia.Should().BeNull(pendencia?.Message);
     }

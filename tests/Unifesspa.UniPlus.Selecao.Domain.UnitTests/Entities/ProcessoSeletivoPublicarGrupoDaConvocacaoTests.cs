@@ -37,19 +37,12 @@ public sealed class ProcessoSeletivoPublicarGrupoDaConvocacaoTests
                 ModalidadesFederaisLei12711.Ac, "ELIMINA", fatoDeModalidade: "MODALIDADE_CONVOCACAO"), 0).Value!],
             PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Single(static i => i.Codigo == "exigencia_consequencia_incoerente_com_acao_da_vaga").Ok
             .Should().BeTrue("o convocado em AC não é o da cota, cuja ação de indeferimento é reclassificar");
     }
 
-    [Fact(DisplayName = "Cláusula que cita a modalidade de concorrência e o grupo da convocação alcança as duas")]
-    public void AvaliarConformidade_ClausulaComOsDoisFatosDeModalidade_AlcancaCadaUm()
-    {
-        ModalidadeSelecionada ppi = NovaModalidadeComAcao(
-            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
-        ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
-        Guid faseId = processo.CronogramaFases.Single().Id;
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
+    private static DocumentoExigido ExigenciaDeHeteroidentificacaoPorModalidadeEConvocacao(Guid faseId) => DocumentoExigido.Criar(
             faseId, Guid.CreateVersion7(), "HETEROIDENTIFICACAO", "Parecer de heteroidentificação", "ETNICO_RACIAL", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Condicional, obrigatorio: false, consequenciaIndeferimento: "ELIMINA",
             condicoes:
@@ -58,9 +51,17 @@ public sealed class ProcessoSeletivoPublicarGrupoDaConvocacaoTests
                 CondicaoGatilho.Criar(0, "MODALIDADE_CONVOCACAO", Operador.Igual, JsonSerializer.SerializeToElement(ModalidadesFederaisLei12711.Ac)).Value!,
             ],
             basesLegais: [BaseLegalResolvidaQualquer()], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
+
+    [Fact(DisplayName = "Cláusula que cita a modalidade de concorrência e o grupo da convocação alcança as duas")]
+    public void AvaliarConformidade_ClausulaComOsDoisFatosDeModalidade_AlcancaCadaUm()
+    {
+        ModalidadeSelecionada ppi = NovaModalidadeComAcao(
+            "LB_PPI", NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, "RECLASSIFICA_AC");
+        ProcessoSeletivo processo = NovoProcessoComModalidade(ppi);
+        DocumentoExigido exigencia = ExigenciaDeHeteroidentificacaoPorModalidadeEConvocacao(processo.CronogramaFases.Single().Id);
         processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao)
+        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
             .Single(static i => i.Codigo == "exigencia_consequencia_incoerente_com_acao_da_vaga").Ok
             .Should().BeFalse("quem concorre na cota e foi convocado em AC recebe a exigência, e ELIMINA contraria a ação da cota");
     }

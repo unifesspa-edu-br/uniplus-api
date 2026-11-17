@@ -27,14 +27,33 @@ internal static class RegrasDoCronograma
         ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(iniciadas);
 
-        CronogramaDoProcesso candidato = CronogramaDoProcesso.Do(fases);
-        DomainError? recusa = CausasDaRecusa.Primeira(candidato.ConferirEstrutura())
-            ?? RecusaDaMudanca(estado, fases, iniciadas)
-            ?? CausasDaRecusa.Primeira(candidato.ConferirPrecedencia(precedencias));
+        IReadOnlyList<FieldError> causas = CausasDaSubstituicao(estado, fases, precedencias, iniciadas);
 
-        return recusa is not null
-            ? Result<PlanoDoCronograma>.Failure(recusa)
-            : RecusaDoCicloEDaJanelaDaEtapa(estado, candidato) ?? Result<PlanoDoCronograma>.Success(MontarPlano(estado, fases));
+        return causas.Count == 0
+            ? Result<PlanoDoCronograma>.Success(MontarPlano(estado, fases))
+            : Result<PlanoDoCronograma>.ValidationFailure(causas);
+    }
+
+    // O ciclo recursal e a janela da etapa são conferidos contra o conjunto candidato, não contra o agregado corrente: a etapa
+    // cuja fase está saindo sai junto na poda e não entra na conta. A mudança casa as fases por origem, e o casamento lança com
+    // origem repetida, que a estrutura já recusou: só ela deixa de ser avaliada. A precedência casa por código e não lê a origem
+    // (a aresta de código ambíguo já fica suspensa na estrutura), e a ordem repetida é recusa do conjunto: as duas seguem avaliadas.
+    private static IReadOnlyList<FieldError> CausasDaSubstituicao(
+        EstadoDaConfiguracao estado,
+        IReadOnlyList<FaseCronograma> fases,
+        IReadOnlyList<ArestaPrecedencia> precedencias,
+        FasesIniciadas iniciadas)
+    {
+        CronogramaDoProcesso candidato = CronogramaDoProcesso.Do(fases);
+
+        return
+        [
+            .. candidato.ConferirEstrutura(),
+            .. candidato.OrigensUnicas ? CausasDaRecusa.Da(RecusaDaMudanca(estado, fases, iniciadas)) : [],
+            .. candidato.ConferirPrecedencia(precedencias),
+            .. candidato.ConferirConclusaoDoCiclo(),
+            .. EtapasNoCronograma.ConferirJanelaDasEtapas(candidato, EtapasDoProcesso.Das(estado.Etapas)),
+        ];
     }
 
     private static Dictionary<Guid, FaseCronograma> PorOrigem(IEnumerable<FaseCronograma> fases) =>
@@ -84,21 +103,6 @@ internal static class RegrasDoCronograma
         List<EtapaProcesso> etapasQueFicam = [.. estado.Etapas.Where(e => e.FaseCodigo is not { } codigo || !codigosRemovidos.Contains(codigo))];
 
         return ConferenciaDasFasesIniciadas.Conferir(iniciadas, fases, etapasQueFicam) is [{ } primeira, ..] ? primeira.Error : null;
-    }
-
-    // O ciclo recursal e a janela da etapa são conferidos contra o conjunto candidato, não contra o agregado corrente:
-    // duas fases mal declaradas saem na mesma resposta, e a etapa cuja fase está saindo sai junto na poda e não entra na conta.
-    private static Result<PlanoDoCronograma>? RecusaDoCicloEDaJanelaDaEtapa(EstadoDaConfiguracao estado, CronogramaDoProcesso candidato)
-    {
-        IReadOnlyList<FieldError> violacoesDaConclusao = candidato.ConferirConclusaoDoCiclo();
-        if (violacoesDaConclusao.Count > 0)
-        {
-            return Result<PlanoDoCronograma>.ValidationFailure(violacoesDaConclusao);
-        }
-
-        return CausasDaRecusa.Primeira(EtapasNoCronograma.ConferirJanelaDasEtapas(candidato, EtapasDoProcesso.Das(estado.Etapas))) is { } etapaForaDaFase
-            ? Result<PlanoDoCronograma>.Failure(etapaForaDaFase)
-            : null;
     }
 
     internal static void AplicarUnidadesVivas(IEnumerable<FaseCronograma> fases, IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> vivas)

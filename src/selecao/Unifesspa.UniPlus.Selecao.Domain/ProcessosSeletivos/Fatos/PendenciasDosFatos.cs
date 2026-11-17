@@ -185,38 +185,36 @@ public static class PendenciasDosFatos
     /// (<c>CONDICAO_ATENDIMENTO</c>, <c>RECURSO_ACESSIBILIDADE</c> e o <c>TIPO_DEFICIENCIA</c> cujo campo
     /// congelou a origem do processo antes de as opções virem do cadastro) não pode ser publicado sem pelo
     /// menos um valor ofertado — obrigatório ou opcional, a pessoa candidata precisa de alguma
-    /// opção para responder. Sem este gate, <c>DefinirFatosColetadosCommandHandler</c> aceita o
+    /// opção para responder. Sem esta conferência, <c>DefinirFatosColetadosCommandHandler</c> aceita o
     /// vínculo (rascunho aceita configuração incompleta, de propósito) e
     /// <c>ResolvedorValoresSelecionaveisCongelados</c> congela a lista vazia — o formulário de
     /// inscrição publicado recebe um seletor sem nenhuma opção.
     /// </summary>
-    internal static DomainError? PendenciaDeFatoColetadoSemValoresOfertados(EstadoDaConfiguracao estado)
-    {
-        foreach (FatoColetado fato in estado.Campos)
+    internal static DomainError? PendenciaDeFatoColetadoSemValoresOfertados(EstadoDaConfiguracao estado) =>
+        estado.Campos
+            .Where(static fato => fato.TipoRenderizacao.EhSelecao())
+            .Where(fato => !EdicaoDoEnemForaDaClassificacaoEnem(estado, fato))
+            .Select(fato => SemValoresOfertados(estado, fato))
+            .FirstOrDefault(static pendencia => pendencia is not null);
+
+    // Fora da classificação baseada em ENEM a edição não tem opções a declarar: o que se corrige é o campo ou a classificação.
+    private static bool EdicaoDoEnemForaDaClassificacaoEnem(EstadoDaConfiguracao estado, FatoColetado fato) =>
+        string.Equals(fato.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal)
+        && PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(estado.Campos, estado.Classificacao) is not null;
+
+    private static DomainError? SemValoresOfertados(EstadoDaConfiguracao estado, FatoColetado fato) =>
+        RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(fato) switch
         {
-            if (!fato.TipoRenderizacao.EhSelecao())
-            {
-                continue;
-            }
-
-            OrigemValoresColeta origem = RegrasDasOpcoesDeclaradas.OrigemDasOpcoes(fato);
-            if (origem == OrigemValoresColeta.OpcoesDoProcesso && RegrasDasOpcoesDeclaradas.OpcoesDoProcesso(estado, fato.FatoCodigo).Count == 0)
-            {
-                return new DomainError(
+            OrigemValoresColeta.OpcoesDoProcesso when RegrasDasOpcoesDeclaradas.OpcoesDoProcesso(estado, fato.FatoCodigo).Count == 0 =>
+                new DomainError(
                     "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
-                    $"O fato '{fato.FatoCodigo}' é coletável, mas o processo não declara nenhuma opção para ele.");
-            }
-
-            if (origem == OrigemValoresColeta.MunicipiosDoBonus && estado.BonusRegional is null)
-            {
-                return new DomainError(
+                    $"O fato '{fato.FatoCodigo}' é coletável, mas o processo não declara nenhuma opção para ele."),
+            OrigemValoresColeta.MunicipiosDoBonus when estado.BonusRegional is null =>
+                new DomainError(
                     "ProcessoSeletivo.FatoColetadoSemValoresOfertados",
-                    $"O fato '{fato.FatoCodigo}' oferece os municípios do bônus regional, mas o processo não tem bônus regional.");
-            }
-        }
-
-        return null;
-    }
+                    $"O fato '{fato.FatoCodigo}' oferece os municípios do bônus regional, mas o processo não tem bônus regional."),
+            _ => null,
+        };
 
     /// <summary>
     /// Toda condição viva que cita um campo com os municípios do bônus regional cita município da
@@ -247,11 +245,11 @@ public static class PendenciasDosFatos
     /// as quatro arestas, §6) tem
     /// de ser um DAG para ser congelável: a ordem topológica total que o snapshot congela (congelamento dos parâmetros na publicação, UNI-REQ-0019)
     /// não existe se houver ciclo. A construção do grafo (<see cref="CitacoesDosFormularios.ConstruirGrafoDependencia"/>)
-    /// já detecta o ciclo — aqui ela vira gate de publicação, antes de canonicalizar.
+    /// já detecta o ciclo — aqui ela vira conferência de publicação, antes de canonicalizar.
     /// </summary>
     /// <remarks>
     /// O grafo ignora deliberadamente uma referência a fato ausente (ele projeta o que existe),
-    /// então este gate <b>não</b> prova sozinho que todo fato citado existe — essa é uma recusa
+    /// então esta conferência <b>não</b> prova sozinho que todo fato citado existe — essa é uma recusa
     /// à parte (§7.3). Aqui só se garante a aciclicidade.
     /// </remarks>
     internal static DomainError? PendenciaDoGrafoConjunto(EstadoDaConfiguracao estado)

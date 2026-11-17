@@ -53,7 +53,7 @@ public sealed class OrigemDoCongelamentoTests
 
         fatos.IsSuccess.Should().BeTrue();
         fatos.Value.Should().BeNull();
-        origem.ItemComEixoTrocado(processo).Should().BeNull();
+        origem.ItensComEixoTrocado([.. processo.FatosColetados]).Should().BeEmpty();
         await servicos.Repositorio.DidNotReceive().ObterVersoesAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
@@ -129,7 +129,7 @@ public sealed class OrigemDoCongelamentoTests
         Result<FatosDasVersoesPublicadas?> fatos = await origem.FatosJaPublicadosAsync(servicos.VersoesPublicadas(), processo, CancellationToken.None);
 
         fatos.Error!.Code.Should().Be(erroDoCodec.Code);
-        origem.ItemComEixoTrocado(processo).Should().BeNull();
+        origem.ItensComEixoTrocado([.. processo.FatosColetados]).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "O fechamento da sessão usa os fatos guardados no rascunho e não lê as versões publicadas")]
@@ -153,9 +153,9 @@ public sealed class OrigemDoCongelamentoTests
         ProcessoSeletivo comOutroTipo = ProcessoSoComOItemPublicado(TipoRenderizacao.Numero);
         var origem = new FechamentoDaSessao(Base(vigente, CodecsDeTeste.QueReidrataSemTiposDeAto()), FatosPublicados());
 
-        DomainError? erro = origem.ItemComEixoTrocado(comOutroTipo);
+        IReadOnlyList<DomainError> erros = origem.ItensComEixoTrocado([.. comOutroTipo.FatosColetados]);
 
-        erro!.Code.Should().Be(CodigoDaRecusaDoEixoAlterado);
+        erros.Should().ContainSingle().Which.Code.Should().Be(CodigoDaRecusaDoEixoAlterado);
     }
 
     [Fact(DisplayName = "O fechamento da sessão não aponta item quando o eixo é o mesmo que as versões congelaram")]
@@ -164,7 +164,7 @@ public sealed class OrigemDoCongelamentoTests
         (_, VersaoConfiguracao vigente) = ProcessoPublicado();
         var origem = new FechamentoDaSessao(Base(vigente, CodecsDeTeste.QueReidrataSemTiposDeAto()), FatosPublicados());
 
-        origem.ItemComEixoTrocado(ProcessoSoComOItemPublicado(TipoRenderizacao.Booleano)).Should().BeNull();
+        origem.ItensComEixoTrocado([.. ProcessoSoComOItemPublicado(TipoRenderizacao.Booleano).FatosColetados]).Should().BeEmpty();
     }
 
     private static BaseDaRetificacao Base(VersaoConfiguracao vigente, IRegistroCodecsEnvelope codecs) =>

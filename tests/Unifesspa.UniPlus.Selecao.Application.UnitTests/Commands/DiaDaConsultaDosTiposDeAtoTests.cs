@@ -31,7 +31,7 @@ public sealed class DiaDaConsultaDosTiposDeAtoTests
     {
         Cenario cenario = new();
 
-        await new ResolucaoDosTiposDeAtoUnicos(cenario.Catalogo, cenario.Atos, cenario.Relogio).ConferirAsync(
+        await new ResolucaoDosTiposDeAtoUnicos(cenario.Catalogo, cenario.Atos, cenario.Relogio).ParaOperacaoAsync(
             cenario.Processo, TipoDaOperacao(), [cenario.AtoDaLinhagem], DiaDeInicio, SemCongelados(), CancellationToken.None);
 
         await cenario.Catalogo.Received(1).ListarVigentesAsync(Arg.Any<IReadOnlyCollection<string>>(), DiaDeInicio, Arg.Any<CancellationToken>());

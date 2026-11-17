@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioConformidadePublicabilidadeEstrutural;
+using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioDosDocumentosExigidosDoProcessoSeletivo;
 
 public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTemporalTests
 {
@@ -144,21 +145,9 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
     public void PreCanon_CondicionalVaziaDeterminaResultado()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
+        ExigirFolhas(processo, DocumentoCondicional(FaseDoResultado(processo), "CERTIDAO_RESERVISTA", "Certidão de reservista", "MILITAR"));
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("exigencia_condicional_vazia_determina_resultado");
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoExigido.CondicionalVaziaDeterminaResultado");
+        AfirmarPendenciaUnicaERecusa(processo, "exigencia_condicional_vazia_determina_resultado", "DocumentoExigido.CondicionalVaziaDeterminaResultado");
     }
 
     [Fact(DisplayName = "Pré-canonicalização: a fase deixou de responder o formulário que a exigência declara — item vermelho e Publicar recusa com FaseIncoerenteComFinalidade")]
@@ -168,133 +157,57 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
         Guid origem = processo.CronogramaFases.Single().FaseCanonicaOrigemId;
         processo.DefinirCronogramaFases([FaseBase(coletaSolicitacaoIsencao: true, faseCanonicaOrigemId: origem)], [], PrecondicaoIfMatch.Ausente)
             .IsSuccess.Should().BeTrue();
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            processo.CronogramaFases.Single().Id, Guid.CreateVersion7(), "COMPROVANTE_RENDA", "Comprovante de renda", "RENDA", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null,
-            finalidade: FinalidadeFormulario.IsencaoTaxa).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-
-        processo.DefinirCronogramaFases([FaseBase(faseCanonicaOrigemId: origem)], [], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
+        ExigirFolhas(processo, DocumentoGeral(processo.CronogramaFases.Single().Id, obrigatorio: false, consequencia: null, finalidade: FinalidadeFormulario.IsencaoTaxa));
+        processo.DefinirCronogramaFases([FaseBase(faseCanonicaOrigemId: origem)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(processo, "exigencia_finalidade_incoerente_com_a_fase");
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.Error!.Code.Should().Be(DocumentoExigidoErrorCodes.FaseIncoerenteComFinalidade);
+        ExigirPublicacaoRecusada(processo, DocumentoExigidoErrorCodes.FaseIncoerenteComFinalidade);
     }
 
     [Fact(DisplayName = "Pré-canonicalização: exigência (folha) REMOVE_VANTAGEM sem vantagem viva — item vermelho e Publicar recusa com DocumentoExigido.RemoveVantagemSemVantagemViva")]
     public void PreCanon_ExigenciaRemoveVantagemSemVantagemViva()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: "REMOVE_VANTAGEM",
-            condicoes: [], basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
+        ExigirFolhas(processo, DocumentoGeral(FaseDoResultado(processo), obrigatorio: true, "REMOVE_VANTAGEM", [BaseLegalResolvida()]));
         // Sem DefinirBonusRegional — nenhuma vantagem viva para remover.
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("exigencia_remove_vantagem_sem_vantagem_viva");
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoExigido.RemoveVantagemSemVantagemViva");
+        AfirmarPendenciaUnicaERecusa(processo, "exigencia_remove_vantagem_sem_vantagem_viva", "DocumentoExigido.RemoveVantagemSemVantagemViva");
     }
 
     [Fact(DisplayName = "Pré-canonicalização: exigência (folha) com consequência incoerente com a ação da vaga — item vermelho e Publicar recusa com DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga")]
     public void PreCanon_ExigenciaConsequenciaIncoerenteComAcaoDaVaga()
     {
-        ConfiguracaoDistribuicaoVagas oferta = DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICAR_AC");
-        ProcessoSeletivo processo = ProcessoConforme([oferta]);
-        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: "ELIMINA",
-            condicoes: [], basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = ProcessoConforme([DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICAR_AC")]);
+        ExigirFolhas(processo, DocumentoGeral(FaseDoResultado(processo), obrigatorio: true, "ELIMINA", [BaseLegalResolvida()]));
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("exigencia_consequencia_incoerente_com_acao_da_vaga");
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
+        AfirmarPendenciaUnicaERecusa(processo, "exigencia_consequencia_incoerente_com_acao_da_vaga", "DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga");
     }
 
     [Fact(DisplayName = "Pré-canonicalização: grupo OU/N-de REMOVE_VANTAGEM sem vantagem viva — item vermelho e Publicar recusa com NoExigencia.RemoveVantagemSemVantagemViva")]
     public void PreCanon_GrupoRemoveVantagemSemVantagemViva()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
-        DocumentoExigido documento = DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        NoExigencia folha = NoExigencia.CriarFolha(documento, 0).Value!;
-        NoExigencia grupo = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 1, "REMOVE_VANTAGEM", [BaseLegalDoGrupo(StatusBaseLegal.Resolvido)], [folha]).Value!;
-        processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ExigirGrupoOuDeUmDocumento(processo, "REMOVE_VANTAGEM");
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("grupo_remove_vantagem_sem_vantagem_viva");
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.RemoveVantagemSemVantagemViva");
+        AfirmarPendenciaUnicaERecusa(processo, "grupo_remove_vantagem_sem_vantagem_viva", "NoExigencia.RemoveVantagemSemVantagemViva");
     }
 
     [Fact(DisplayName = "Pré-canonicalização: grupo OU/N-de com consequência incoerente com a ação da vaga — item vermelho e Publicar recusa com NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga")]
     public void PreCanon_GrupoConsequenciaIncoerenteComAcaoDaVaga()
     {
-        ConfiguracaoDistribuicaoVagas oferta = DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICAR_AC");
-        ProcessoSeletivo processo = ProcessoConforme([oferta]);
-        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
-        DocumentoExigido documento = DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), "DOC_GERAL", "Documento geral", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Geral, obrigatorio: false, consequenciaIndeferimento: null,
-            condicoes: [], basesLegais: [], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        NoExigencia folha = NoExigencia.CriarFolha(documento, 0).Value!;
-        NoExigencia grupo = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegalDoGrupo(StatusBaseLegal.Resolvido)], [folha]).Value!;
-        processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = ProcessoConforme([DistribuicaoAmpla(10, acaoQuandoIndeferido: "RECLASSIFICAR_AC")]);
+        ExigirGrupoOuDeUmDocumento(processo, "ELIMINA");
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("grupo_consequencia_incoerente_com_acao_da_vaga");
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga");
+        AfirmarPendenciaUnicaERecusa(processo, "grupo_consequencia_incoerente_com_acao_da_vaga", "NoExigencia.ConsequenciaIncoerenteComAcaoDaVaga");
     }
 
     [Fact(DisplayName = "Pré-canonicalização: gatilho por FAIXA_ETARIA sem referência temporal configurada — item vermelho e Publicar recusa com ReferenciaTemporalFatosAusente")]
     public void PreCanon_ReferenciaTemporalFatosAusente()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [GatilhoFaixaEtaria()], basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
+        ExigirFolhas(processo, DocumentoCondicional(FaseDoResultado(processo), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", GatilhoFaixaEtaria()));
         // Nenhuma ReferenciaTemporalFatos configurada.
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), ContextoDeContagemDePrazos.SemCalendario, FatosDeModalidadeDeTeste.DoCatalogo, TiposDeAtoUnicosDeTeste.Nenhum, CorretoresDeTeste.SemConsolidacao).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("referencia_temporal_ausente_com_gatilho_etario");
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosAusente");
+        AfirmarPendenciaUnicaERecusa(processo, "referencia_temporal_ausente_com_gatilho_etario", "ProcessoSeletivo.ReferenciaTemporalFatosAusente");
     }
 }

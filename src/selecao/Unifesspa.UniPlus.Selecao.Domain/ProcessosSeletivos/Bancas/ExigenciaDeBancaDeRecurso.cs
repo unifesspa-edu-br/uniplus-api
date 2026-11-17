@@ -11,6 +11,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public static class ExigenciaDeBancaDeRecurso
 {
+    /// <summary>O código da recusa do recorte de competência na banca de recursos, para quem a projeta num item só.</summary>
+    internal static readonly IReadOnlySet<string> CodigosDoRecorte = new HashSet<string>([BancaErrorCodes.RecorteEmBancaDeRecursos], StringComparer.Ordinal);
+
     /// <summary>A recusa do recorte de competência na banca de recursos declarada pela fase.</summary>
     public static DomainError? RecorteNaDeclaracao(string codigoDaFase, string tipoBancaCodigo, int categoriasNoRecorte) =>
         JulgamentoDasBancas.EhDeRecursos(tipoBancaCodigo) && categoriasNoRecorte > 0

@@ -4,6 +4,7 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
@@ -65,7 +66,7 @@ public sealed class RegrasDasModalidadesNaInscricaoTests
         FieldError recusa = RegrasDasModalidadesNaInscricao.Conferir(PeloSistema, Conhecimento(inscricao), Modalidade("origem_escolar", "grupo_da_convocacao")).Single();
 
         recusa.Field.Should().Be("modalidades[AC_PPI].fatos.grupo_da_convocacao");
-        recusa.Error.Code.Should().Be(ModalidadesNaInscricaoErrorCodes.RegraCitaFatoNaoColetado);
+        recusa.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado);
         recusa.Error.Message.Should().NotContain("grupo_da_convocacao").And.NotContain("AC_PPI");
     }
 
@@ -76,7 +77,7 @@ public sealed class RegrasDasModalidadesNaInscricaoTests
         ColetaDoFormulario pedido = ColetaDeTeste.Coleta(ColetaDeTeste.Facultativo("PEDIDO", _isencao), "fundamento_da_isencao");
 
         RegrasDasModalidadesNaInscricao.Conferir(PeloSistema, Conhecimento(inscricao, pedido), Modalidade("fundamento_da_isencao"))
-            .Should().ContainSingle().Which.Error.Code.Should().Be(ModalidadesNaInscricaoErrorCodes.RegraCitaFatoNaoColetado);
+            .Should().ContainSingle().Which.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado);
     }
 
     [Fact(DisplayName = "O fato de formulário obrigatório de fase anterior à inscrição, que não a coleta, é recusado")]
@@ -92,7 +93,7 @@ public sealed class RegrasDasModalidadesNaInscricaoTests
             [anterior, inscricaoPosterior]);
 
         RegrasDasModalidadesNaInscricao.Conferir(PeloSistema, conhecimento, Modalidade("fato_previo"))
-            .Should().ContainSingle().Which.Error.Code.Should().Be(ModalidadesNaInscricaoErrorCodes.RegraCitaFatoNaoColetado);
+            .Should().ContainSingle().Which.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado);
     }
 
     [Fact(DisplayName = "O derivado cujos ramos compartilham outro derivado da inscrição é aceito")]
@@ -114,7 +115,7 @@ public sealed class RegrasDasModalidadesNaInscricaoTests
             [_inscricao]);
 
         RegrasDasModalidadesNaInscricao.Conferir(PeloSistema, conhecimento, Modalidade("atributo_do_sistema"))
-            .Should().ContainSingle().Which.Error.Code.Should().Be(ModalidadesNaInscricaoErrorCodes.RegraCitaFatoNaoColetado);
+            .Should().ContainSingle().Which.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado);
     }
 
     [Fact(DisplayName = "O fato declarado que nenhum formulário coleta é recusado")]
@@ -123,7 +124,7 @@ public sealed class RegrasDasModalidadesNaInscricaoTests
         ColetaDoFormulario inscricao = ColetaDeTeste.Coleta(ColetaDeTeste.Obrigatorio("INSCRICAO", _inscricao), "origem_escolar");
 
         RegrasDasModalidadesNaInscricao.Conferir(PeloSistema, Conhecimento(inscricao), Modalidade("renda_per_capita"))
-            .Should().ContainSingle().Which.Error.Code.Should().Be(ModalidadesNaInscricaoErrorCodes.RegraCitaFatoNaoColetado);
+            .Should().ContainSingle().Which.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.RegraDeModalidadeCitaFatoNaoColetado);
     }
 
     [Fact(DisplayName = "O processo de resultado importado não é conferido")]

@@ -24,24 +24,24 @@ internal static class ItensEstruturaisDeConformidade
         estado.AplicaBonusRegional is { } aplica && aplica == (estado.BonusRegional is not null);
 
     /// <summary>
-    /// As dimensões estruturalmente obrigatórias do agregado, que <see cref="ChecklistDeConformidade.PendenciaDeConformidade"/>
-    /// agrega no <c>DomainError</c> genérico: atendimento especializado, distribuição de vagas, classificação,
-    /// cronograma, taxa, base legal das exigências e as declarações do bônus regional e dos critérios de
-    /// desempate (obrigatórios só com inscrição própria; com resultado importado a lista já vem classificada).
+    /// As dimensões estruturalmente obrigatórias do agregado, que <see cref="ChecklistDeConformidade.CausasDeConformidade"/>
+    /// projeta numa causa por item pendente: atendimento especializado, distribuição de vagas, classificação, taxa, base
+    /// legal das exigências e as declarações do bônus regional e dos critérios de desempate (obrigatórios só com
+    /// inscrição própria; com resultado importado a lista já vem classificada).
     /// </summary>
     /// <remarks>
     /// Etapa não é item incondicional: o processo sem prova (SiSU, classificação importada) publica sem
-    /// etapa, e a bicondicional entre a fase que agrupa etapas e a etapa pontuada é gate à parte
-    /// (<see cref="PendenciasDoCronograma.PendenciaDoCronograma"/>). Sob a média ponderada, o divisor
+    /// etapa, e a coincidência entre a fase que agrupa etapas e a etapa pontuada é regra de completude do cronograma
+    /// (<see cref="CronogramaDoProcesso"/>). Sob a média ponderada, o divisor
     /// (<see cref="EstadoDaConfiguracao.CalcularDivisorMedia"/>) tem de ser maior que zero; sob a classificação
     /// importada, etapa, fórmula e precisão locais são dispensadas. A cascata de remanejamento tem erro
-    /// nomeado próprio (<see cref="CoberturaDaCascata.PendenciaDaCascata"/>) e fica fora desta lista: o
-    /// agregador genérico interceptaria o erro específico.
+    /// nomeado próprio (<see cref="CoberturaDaCascata.CausasDaCascata"/>) e fica fora desta lista: a conformidade
+    /// insuficiente interceptaria o erro específico.
     /// </remarks>
     internal static List<ItemConformidade> Avaliar(EstadoDaConfiguracao estado) =>
     [
         .. ItensDoAtendimentoEDasVagas(estado),
-        .. ItensDaClassificacaoEDoCronograma(estado),
+        .. ItensDaClassificacao(estado),
         .. ItensDaTaxaDeInscricao(estado),
         .. ItensDasExigenciasDocumentais(estado),
         .. ItensDoBonusRegional(estado),
@@ -68,10 +68,9 @@ internal static class ItensEstruturaisDeConformidade
         new ItemConformidade("opcoes_de_curso_acima_das_ofertas", DimensaoConformidade.DistribuicaoVagas, "Opções de curso: a distribuição de vagas tem ao menos tantos cursos quanto o número de opções", !RegrasDaDistribuicaoDeVagas.OpcoesDeCursoAcimaDasOfertas(estado.NumeroDeOpcoesDeCurso, estado.DistribuicaoVagas.Count)),
     ];
 
-    private static List<ItemConformidade> ItensDaClassificacaoEDoCronograma(EstadoDaConfiguracao estado) =>
+    private static List<ItemConformidade> ItensDaClassificacao(EstadoDaConfiguracao estado) =>
     [
         new ItemConformidade("classificacao_ausente", DimensaoConformidade.Classificacao, "Classificação", estado.Classificacao is not null),
-        new ItemConformidade("cronograma_fases_ausente", DimensaoConformidade.Cronograma, "Cronograma de fases", estado.CronogramaFases.Count > 0),
     ];
 
     // Publicar sem declarar a cobrança de taxa é recusado: a ausência nunca vale "não cobra". Diferente da divulgação, aqui
@@ -114,7 +113,7 @@ internal static class ItensEstruturaisDeConformidade
 
     /// <summary>
     /// A escala em que a nota de cada etapa é lançada e como a nota é obtida: itens que dependem do grafo (o que compõe a
-    /// média, o que a classificação e o desempate citam), por isso são gate de publicação e não recusa de gravação.
+    /// média, o que a classificação e o desempate citam), por isso sãa conferência de publicação e não recusa de gravação.
     /// </summary>
     private static List<ItemConformidade> ItensDasEtapas(EstadoDaConfiguracao estado)
     {
@@ -188,9 +187,7 @@ internal static class ItensEstruturaisDeConformidade
     /// sabe qual corrigir. O código do item continua sendo a identidade; a lista é só redação.
     /// </summary>
     /// <remarks>
-    /// As ofertas ficam entre parênteses, separadas por ponto e vírgula e sem ponto final: o
-    /// agregador de <see cref="ChecklistDeConformidade.PendenciaDeConformidade"/> separa os itens por vírgula e pontua o
-    /// fim.
+    /// As ofertas ficam entre parênteses, separadas por ponto e vírgula e sem ponto final, como a mensagem de todo item.
     /// </remarks>
     internal static ItemConformidade ItemDasOfertas(
         string codigo,

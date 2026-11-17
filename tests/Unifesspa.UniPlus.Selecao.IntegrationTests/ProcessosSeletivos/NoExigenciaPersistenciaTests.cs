@@ -10,8 +10,8 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Selecao.IntegrationTests.TestSupport;
@@ -24,8 +24,8 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// produção (<see cref="ProcessoSeletivoRepository.ObterParaMutacaoAsync"/>) — não uma query
 /// de teste hand-rolled. Sem o
 /// <c>Include(p =&gt; p.NosExigencia)</c> no repositório, a coleção tracked nascia vazia em
-/// todo carregamento novo do agregado — furo real de "perda silenciosa" já no caminho
-/// ordinário (toda requisição recarrega o agregado do zero). Story #923: o antigo gate
+/// todo carregamento novo do agregado — falha real de "perda silenciosa" já no caminho
+/// ordinário (toda requisição recarrega o agregado do zero). Story #923: a antiga conferência
 /// fail-closed de publicação (<c>PendenciaDaArvoreDeSatisfacaoAindaNaoPublicavel</c>, que
 /// este teste originalmente usava como prova indireta de que a árvore recarregada era a
 /// mesma) foi removido — o envelope canônico agora congela a topologia inteira
@@ -56,40 +56,54 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
     [Fact(DisplayName = "Persiste e recarrega uma árvore OU[E[RG,CPF],CIN] em sessão NOVA do DbContext, pelo caminho de produção (ObterParaMutacaoAsync)")]
     public async Task PersisteERecarrega_ArvoreComGrupos_EmSessaoNova()
     {
+        ProcessoSeletivo processo = ProcessoComArvoreDeGrupos();
+        await PersistirAsync(processo);
+
+        // Sessão NOVA — simula uma requisição HTTP diferente da que definiu a árvore, pelo caminho
+        // REAL de produção, não uma query de teste (é o Include deste método que o repositório precisa ter).
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivo? recarregado = await ProcessoSeletivoRepositoryDeTeste.Criar(readContext)
+            .ObterParaMutacaoAsync(processo.Id, CancellationToken.None);
+
+        recarregado.Should().NotBeNull();
+        AfirmarArvoreRecarregada(recarregado!);
+        AfirmarSemCausasDaArvore(recarregado!);
+    }
+
+    private static ProcessoSeletivo ProcessoComArvoreDeGrupos()
+    {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Árvore", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseDeInscricao();
         processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
 
-        DocumentoExigido rg = Documento(fase.Id);
-        DocumentoExigido cpf = Documento(fase.Id);
-        DocumentoExigido cin = Documento(fase.Id);
-        NoExigencia grupoE = NoExigencia.CriarGrupo(
-            TipoNo.GrupoE, 0, null, null, [],
-            [NoExigencia.CriarFolha(rg, 0).Value!, NoExigencia.CriarFolha(cpf, 1).Value!]).Value!;
-        NoExigenciaBaseLegal baseLegalDoGrupo = NoExigenciaBaseLegal.Criar(
-            "Res. Unifesspa 532/2021", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
-        NoExigencia raiz = NoExigencia.CriarGrupo(
-            TipoNo.GrupoOu, 0, 1, "ELIMINA", [baseLegalDoGrupo], [grupoE, NoExigencia.CriarFolha(cin, 1).Value!]).Value!;
-
-        Result definirResult = processo.DefinirDocumentosExigidos([raiz], PrecondicaoIfMatch.Ausente);
+        Result definirResult = processo.DefinirDocumentosExigidos([RaizOuComGrupoE(fase.Id)], PrecondicaoIfMatch.Ausente);
         definirResult.IsSuccess.Should().BeTrue(definirResult.Error?.Message);
 
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        return processo;
+    }
 
-        // Sessão NOVA — simula uma requisição HTTP diferente da que definiu a árvore. Pelo
-        // caminho REAL de produção, não uma query de teste (é justamente o Include deste
-        // método que o achado de revisão apontou faltando).
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository readRepository = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
-        ProcessoSeletivo? recarregado = await readRepository.ObterParaMutacaoAsync(processo.Id, CancellationToken.None);
+    private static NoExigencia RaizOuComGrupoE(Guid faseId)
+    {
+        NoExigencia grupoE = NoExigencia.CriarGrupo(
+            TipoNo.GrupoE, 0, null, null, [],
+            [NoExigencia.CriarFolha(Documento(faseId), 0).Value!, NoExigencia.CriarFolha(Documento(faseId), 1).Value!]).Value!;
+        NoExigenciaBaseLegal baseLegalDoGrupo = NoExigenciaBaseLegal.Criar(
+            "Res. Unifesspa 532/2021", TipoAbrangencia.InternaEdital, StatusBaseLegal.Resolvido, null).Value!;
 
-        recarregado.Should().NotBeNull();
-        recarregado!.NosExigencia.Should().HaveCount(5, "raiz OU + grupo E + 3 folhas (RG, CPF, CIN)");
+        return NoExigencia.CriarGrupo(
+            TipoNo.GrupoOu, 0, 1, "ELIMINA", [baseLegalDoGrupo], [grupoE, NoExigencia.CriarFolha(Documento(faseId), 1).Value!]).Value!;
+    }
+
+    private async Task PersistirAsync(ProcessoSeletivo processo)
+    {
+        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
+        await ProcessoSeletivoRepositoryDeTeste.Criar(writeContext).AdicionarAsync(processo, CancellationToken.None);
+        await writeContext.SaveChangesAsync(CancellationToken.None);
+    }
+
+    private static void AfirmarArvoreRecarregada(ProcessoSeletivo recarregado)
+    {
+        recarregado.NosExigencia.Should().HaveCount(5, "raiz OU + grupo E + 3 folhas (RG, CPF, CIN)");
 
         NoExigencia raizRecarregada = recarregado.RaizesDeExigencia.Should().ContainSingle().Which;
         raizRecarregada.Tipo.Should().Be(TipoNo.GrupoOu);
@@ -101,12 +115,14 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
         grupoERecarregado.Filhos.Should().HaveCount(2);
         grupoERecarregado.Filhos.Should().OnlyContain(f => f.Tipo == TipoNo.Folha && f.DocumentoExigido != null,
             "NoExigencia.DocumentoExigido é fixed-up automaticamente a partir da MESMA instância trazida por DocumentosExigidos");
+    }
 
-        // Story #923: a árvore com grupos E/OU já é publicável — sem pendência estrutural
-        // remanescente para esta configuração mínima (sem REMOVE_VANTAGEM/modalidade
-        // incoerente, sem exigência CONDICIONAL vazia, sem gatilho por FAIXA_ETARIA).
-        DomainError? pendencia = ProntidaoParaCongelar.PendenciaPreCanonicalizacao(EstadoDaConfiguracao.De(recarregado), FatosDeModalidadeDeTeste.DoCatalogo);
-        pendencia.Should().BeNull(pendencia?.Message);
+    // O processo cru deixa pendente o resto da configuração; aqui só importam as causas do bloco das exigências documentais.
+    private static void AfirmarSemCausasDaArvore(ProcessoSeletivo processo)
+    {
+        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao);
+        FieldError[] daArvore = [.. conferida.Errors.Where(static e => e.Field == "documentosExigidos" && e.Origem is null)];
+        daArvore.Should().BeEmpty(string.Join(";", daArvore.Select(static e => e.Error.Message)));
     }
 
     /// <summary>
