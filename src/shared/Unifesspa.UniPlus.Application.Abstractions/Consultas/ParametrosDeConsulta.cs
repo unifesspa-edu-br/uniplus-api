@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Application.Abstractions.Consultas;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -20,35 +21,20 @@ public static class ConsultaErrorCodes
     public const string OrdenacaoMalFormada = "Consulta.OrdenacaoMalFormada";
 
     /// <summary>O texto pesquisado excede o comprimento aceito.</summary>
-    public const string BuscaMuitoLonga = "Consulta.BuscaMuitoLonga";
+    public const string BuscaMuitoLonga = TermoDeBusca.CodigoDeBuscaMuitoLonga;
 }
 
-/// <summary>Limites do texto pesquisado nas listagens.</summary>
-/// <remarks>
-/// O termo não fica só na requisição: ele entra na assinatura que viaja dentro do
-/// cursor e é reanexado aos links de navegação. Sem teto, uma busca de alguns
-/// quilobytes é aceita na primeira página e produz um link de continuação que
-/// estoura o limite de linha de requisição do servidor ou de um proxy no caminho —
-/// a listagem responde, mas paginar deixa de ser possível. O teto acompanha o
-/// maior campo pesquisável das listagens que o usam, que é um nome.
-/// </remarks>
+/// <summary>Limites do texto pesquisado nas listagens, os de <see cref="TermoDeBusca"/>.</summary>
 public static class BuscaPedida
 {
     /// <summary>Comprimento máximo do texto pesquisado.</summary>
-    public const int ComprimentoMaximo = 200;
+    public const int ComprimentoMaximo = TermoDeBusca.ComprimentoMaximo;
 
-    /// <summary>Recusa o termo que passa do teto; devolve-o inalterado caso caiba.</summary>
-    public static Result<string?> Validar(string? termo)
-    {
-        if (termo is null || termo.Length <= ComprimentoMaximo)
-        {
-            return Result<string?>.Success(termo);
-        }
-
-        return Result<string?>.Failure(new DomainError(
-            ConsultaErrorCodes.BuscaMuitoLonga,
-            $"O texto pesquisado excede {ComprimentoMaximo} caracteres."));
-    }
+    /// <summary>Recusa o termo longo demais; devolve-o inalterado caso caiba.</summary>
+    public static Result<string?> Validar(string? termo) =>
+        TermoDeBusca.ConferirComprimento(termo) is { } recusa
+            ? Result<string?>.Failure(recusa)
+            : Result<string?>.Success(termo);
 }
 
 /// <summary>
@@ -83,9 +69,10 @@ public static class OrdenacaoPedida
 
         return recusado is null
             ? Result<IReadOnlyList<SortField>>.Success(pedidos)
-            : Result<IReadOnlyList<SortField>>.Failure(new DomainError(
-                ConsultaErrorCodes.CampoDeOrdenacaoInvalido,
-                $"Não é possível ordenar por '{recusado.Campo}'. "
-                + $"Campos aceitos: {string.Join(", ", aceitos)}."));
+            : Result<IReadOnlyList<SortField>>.Failure(CampoNaoAceito(recusado, aceitos));
     }
+
+    private static DomainError CampoNaoAceito(SortField recusado, IReadOnlyList<string> aceitos) => new(
+        ConsultaErrorCodes.CampoDeOrdenacaoInvalido,
+        $"Não é possível ordenar por '{recusado.Campo}'. Campos aceitos: {string.Join(", ", aceitos)}.");
 }
