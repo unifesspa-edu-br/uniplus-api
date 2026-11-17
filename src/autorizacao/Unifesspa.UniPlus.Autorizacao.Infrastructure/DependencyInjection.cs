@@ -27,7 +27,7 @@ public static class AutorizacaoInfrastructureRegistration
 
         // A AutorizacaoContribuicao acrescenta o interceptador às opções do contexto.
         services.AddScoped<OrdemDaTrilhaDeContencaoInterceptor>();
-        services.AddScoped<ITravaDaRotina, TravaDaRotinaNoBanco>();
+        services.AddScoped<IExecucaoUnicaDaRotina, ExecucaoUnicaDaRotinaNoBanco>();
         AddRepositorios(services);
         AddCatalogo(services);
         AddInstalacao(services);

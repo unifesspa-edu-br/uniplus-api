@@ -14,23 +14,23 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 /// </summary>
 public sealed partial class ProcessamentoDasJanelas
 {
-    private const string NomeDaTrava = "autorizacao.janelas_de_migracao";
+    private const string NomeDaRotina = "autorizacao.janelas_de_migracao";
 
     private readonly IJanelaDeMigracaoRepository _janelas;
     private readonly ICommandBus _bus;
-    private readonly ITravaDaRotina _trava;
+    private readonly IExecucaoUnicaDaRotina _execucaoUnica;
     private readonly ILogger<ProcessamentoDasJanelas> _logger;
 
-    public ProcessamentoDasJanelas(IJanelaDeMigracaoRepository janelas, ICommandBus bus, ITravaDaRotina trava, ILogger<ProcessamentoDasJanelas> logger)
+    public ProcessamentoDasJanelas(IJanelaDeMigracaoRepository janelas, ICommandBus bus, IExecucaoUnicaDaRotina execucaoUnica, ILogger<ProcessamentoDasJanelas> logger)
     {
         ArgumentNullException.ThrowIfNull(janelas);
         ArgumentNullException.ThrowIfNull(bus);
-        ArgumentNullException.ThrowIfNull(trava);
+        ArgumentNullException.ThrowIfNull(execucaoUnica);
         ArgumentNullException.ThrowIfNull(logger);
 
         _janelas = janelas;
         _bus = bus;
-        _trava = trava;
+        _execucaoUnica = execucaoUnica;
         _logger = logger;
     }
 
@@ -40,15 +40,15 @@ public sealed partial class ProcessamentoDasJanelas
     /// </summary>
     public async Task<int> ExecutarAsync(CancellationToken cancellationToken)
     {
-        IAsyncDisposable? trava = await _trava.TentarObterAsync(NomeDaTrava, cancellationToken).ConfigureAwait(false);
-        if (trava is null)
+        IAsyncDisposable? execucao = await _execucaoUnica.TentarIniciarAsync(NomeDaRotina, cancellationToken).ConfigureAwait(false);
+        if (execucao is null)
         {
             LogOutraInstanciaNaRotina(_logger);
 
             return 0;
         }
 
-        await using (trava.ConfigureAwait(false))
+        await using (execucao.ConfigureAwait(false))
         {
             return await ProcessarTodasAsync(cancellationToken).ConfigureAwait(false);
         }

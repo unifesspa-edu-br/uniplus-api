@@ -117,13 +117,13 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         await papel.ConfirmarAsync();
     }
 
-    [Fact(DisplayName = "A segunda instância da rotina pula enquanto a primeira mantém a trava, e a execução seguinte assume")]
-    public async Task Rotina_DuasInstancias_APrimeiraMantemATrava()
+    [Fact(DisplayName = "A segunda instância da rotina pula enquanto a primeira executa, e a execução seguinte assume")]
+    public async Task Rotina_DuasInstancias_APrimeiraExecutaSozinha()
     {
         JanelaAberta cenario = await AbrirJanelaAsync(Leandro);
         Relogio.Avancar(DepoisDoPrazo);
 
-        int pulada = await ProcessarComATravaDaRotinaRetidaAsync();
+        int pulada = await ProcessarComAExecucaoUnicaDaRotinaRetidaAsync();
         int seguinte = await ProcessarJanelasAsync();
 
         pulada.Should().Be(0);
@@ -231,9 +231,9 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         }
     }
 
-    private async Task<int> ProcessarComATravaDaRotinaRetidaAsync()
+    private async Task<int> ProcessarComAExecucaoUnicaDaRotinaRetidaAsync()
     {
-        IAsyncDisposable? primeira = await ObterATravaDaRotinaAsync();
+        IAsyncDisposable? primeira = await IniciarAExecucaoUnicaDaRotinaAsync();
         primeira.Should().NotBeNull();
         try
         {
@@ -245,13 +245,13 @@ public sealed class ConcorrenciaDaJanelaNoHostTests : JanelaDeMigracaoNoHostTest
         }
     }
 
-    private async Task<IAsyncDisposable?> ObterATravaDaRotinaAsync()
+    private async Task<IAsyncDisposable?> IniciarAExecucaoUnicaDaRotinaAsync()
     {
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
         return await escopo.ServiceProvider
-            .GetRequiredService<Unifesspa.UniPlus.Autorizacao.Application.Abstractions.ITravaDaRotina>()
-            .TentarObterAsync("autorizacao.janelas_de_migracao", CancellationToken.None);
+            .GetRequiredService<Unifesspa.UniPlus.Autorizacao.Application.Abstractions.IExecucaoUnicaDaRotina>()
+            .TentarIniciarAsync("autorizacao.janelas_de_migracao", CancellationToken.None);
     }
 
     private async Task<long> DeadlocksAsync()
