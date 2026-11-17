@@ -57,21 +57,21 @@ public sealed class InstituicaoController : ControllerBase
     [AllowAnonymous]
     [VendorMediaType(Resource = "instituicao", Versions = [1])]
     [ProducesResponseType(typeof(InstituicaoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, Description = "Nenhuma Instituição foi cadastrada (uniplus.organizacao.instituicao.nao_encontrada).")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> Obter(CancellationToken cancellationToken)
     {
-        InstituicaoDto? instituicao = await _queryBus
+        Result<InstituicaoDto> consulta = await _queryBus
             .Send(new ObterInstituicaoQuery(), cancellationToken)
             .ConfigureAwait(false);
 
-        if (instituicao is null)
+        if (consulta.IsFailure)
         {
-            return NotFound();
+            return consulta.ToActionResult(_mapper);
         }
 
-        InstituicaoDto comLinks = instituicao with { Links = _linksBuilder.Build(instituicao) };
-        return Ok(comLinks);
+        InstituicaoDto instituicao = consulta.Value!;
+        return Ok(instituicao with { Links = _linksBuilder.Build(instituicao) });
     }
 
     /// <summary>
@@ -125,14 +125,9 @@ public sealed class InstituicaoController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (id != command.Id)
+        if (this.ConferirIdDaRota(id, command.Id, _mapper) is { } divergente)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Id divergente",
-                Detail = "O Id na URL não corresponde ao Id no corpo da requisição.",
-                Status = StatusCodes.Status400BadRequest,
-            });
+            return divergente;
         }
 
         Result resultado = await _commandBus

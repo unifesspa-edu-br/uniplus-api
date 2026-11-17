@@ -2,23 +2,24 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Queries.Unidade
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 using Unifesspa.UniPlus.Kernel.Pagination;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Lista unidades ativas paginadas por cursor bidirecional (ADR-0026 +
-/// ADR-0089), com filtros opcionais (issue #640). Os parâmetros já chegam
-/// decodificados — o controller decifra o cursor opaco, valida o <c>limit</c> e
-/// a <c>direction</c> antes de despachar a query, mantendo <c>Application</c>
-/// independente de <c>Infrastructure.Core</c>.
+/// ADR-0089), com filtros opcionais (issue #640). O cursor, o <c>limit</c> e a
+/// <c>direction</c> já chegam decodificados — o controller decifra o cursor opaco
+/// antes de despachar a query, mantendo <c>Application</c> independente de
+/// <c>Infrastructure.Core</c>. A busca e o tipo chegam como o cliente os enviou:
+/// quem os confere é o handler, nessa ordem.
 /// </summary>
 /// <param name="AfterId">Âncora da página anterior; <c>null</c> retorna a primeira janela.</param>
 /// <param name="Limit">Tamanho máximo da página a retornar.</param>
 /// <param name="Direction">Direção de navegação (<c>Next</c>/<c>Prev</c>, ADR-0089).</param>
-/// <param name="Busca">Termo de busca livre (acento/caixa-insensível) sobre sigla, nome, código, slug e alias; <c>null</c>/vazio = sem filtro textual. O handler normaliza.</param>
-/// <param name="Tipos">Tipos de unidade a incluir (OR entre si); lista vazia = sem filtro por tipo.</param>
+/// <param name="Busca">Termo de busca livre (acento/caixa-insensível) sobre sigla, nome, código, slug e alias; <c>null</c>/em branco = sem filtro textual; acima de 200 caracteres a consulta é recusada.</param>
+/// <param name="Tipos">Valores numéricos de tipo de unidade a incluir (OR entre si), como chegaram; <c>null</c> ou vazio = sem filtro por tipo; valor que não é tipo filtrável recusa a consulta.</param>
 public sealed record ListarUnidadesAtivasQuery(
     Guid? AfterId,
     int Limit,
     PaginationDirection Direction,
     string? Busca,
-    IReadOnlyList<TipoUnidade> Tipos) : IQuery<ListarUnidadesAtivasResult>;
+    IReadOnlyList<int>? Tipos) : IQuery<Result<ListarUnidadesAtivasResult>>;
