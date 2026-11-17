@@ -25,6 +25,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 using static Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis.CenarioDaReclassificacao;
 
@@ -47,7 +48,7 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
     [Fact(DisplayName = "O catálogo da aplicação fica gravado na subida e a conciliação repetida não grava de novo")]
     public async Task Conciliacao_EhIdempotente()
     {
-        string impressao = Fixture.Factory.Services.GetRequiredService<CatalogoDaAplicacao>().Impressao;
+        ResumoSha256 impressao = Fixture.Factory.Services.GetRequiredService<CatalogoDaAplicacao>().Impressao;
         long antes = await ContarCatalogosAsync();
 
         await _cenario.ConciliarAsync();
@@ -180,11 +181,11 @@ public sealed class ReclassificacaoDoCatalogoTests : PerfilEndpointTestBase, IAs
             """,
             perfil);
 
-    private async Task<string> ImpressaoAtualAsync()
+    private async Task<ResumoSha256> ImpressaoAtualAsync()
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
 
-        return (await db.ImplantacoesDasPermissoes.AsNoTracking().OrderByDescending(c => c.Sequencia).Select(c => c.Impressao).FirstAsync()).Trim();
+        return await db.ImplantacoesDasPermissoes.AsNoTracking().OrderByDescending(c => c.Sequencia).Select(c => c.Impressao).FirstAsync();
     }
 }

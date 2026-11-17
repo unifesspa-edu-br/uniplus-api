@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// O repositório de reclassificações em memória: o catálogo gravado é o da instância, sem linhas, e o que se acrescenta
@@ -11,7 +12,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 /// </summary>
 internal sealed class ReclassificacoesNaMemoria : IReclassificacaoRepository
 {
-    public string? Impressao { get; init; } = new Unifesspa.UniPlus.Authorization.Catalogo.CatalogoDaAplicacao([]).Impressao;
+    public ResumoSha256? Impressao { get; init; } = new Unifesspa.UniPlus.Authorization.Catalogo.CatalogoDaAplicacao([]).Impressao;
 
     public List<ReclassificacaoDaPermissao> Reclassificacoes { get; } = [];
 
@@ -32,7 +33,7 @@ internal sealed class ReclassificacoesNaMemoria : IReclassificacaoRepository
 
     public HashSet<Guid> VersoesComDocumentoLido { get; } = [];
 
-    public Task<string?> ObterImpressaoAtualAsync(CancellationToken cancellationToken = default) => Task.FromResult(Impressao);
+    public Task<ResumoSha256?> ObterImpressaoAtualAsync(CancellationToken cancellationToken = default) => Task.FromResult(Impressao);
 
     public ImplantacaoNoBanco? ImplantacaoAtual { get; set; }
 

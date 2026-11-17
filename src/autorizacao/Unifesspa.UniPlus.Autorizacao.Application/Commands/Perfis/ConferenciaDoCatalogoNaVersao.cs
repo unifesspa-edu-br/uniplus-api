@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// A conferência da versão com o catálogo gravado no banco, sob a trava do perfil. A instância cujo catálogo não é o do banco
@@ -33,8 +34,8 @@ public sealed class ConferenciaDoCatalogoNaVersao
     /// <exception cref="CatalogoDesatualizadoException">A impressão do banco difere da da instância, ou não há catálogo gravado.</exception>
     public async Task ExigirCatalogoAtualAsync(CancellationToken cancellationToken)
     {
-        string? impressao = await _reclassificacoes.ObterImpressaoAtualAsync(cancellationToken).ConfigureAwait(false);
-        if (!string.Equals(impressao, _catalogo.Impressao, StringComparison.Ordinal))
+        ResumoSha256? impressao = await _reclassificacoes.ObterImpressaoAtualAsync(cancellationToken).ConfigureAwait(false);
+        if (impressao != _catalogo.Impressao)
         {
             throw new CatalogoDesatualizadoException();
         }

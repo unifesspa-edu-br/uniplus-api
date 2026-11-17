@@ -1,10 +1,10 @@
 namespace Unifesspa.UniPlus.Authorization.Catalogo;
 
 using System.Globalization;
-using System.Security.Cryptography;
 using System.Text;
 
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// O que o catálogo registra de cada permissão para decidir se o acesso dela mudou: a classificação, o escopo e a reserva
@@ -24,7 +24,7 @@ public sealed record LinhaDoCatalogo(string Codigo, string Modulo, Classificacao
     /// A impressão do catálogo: SHA-256 em hexadecimal das linhas <c>codigo|modulo|classificacao|de_unidade|reservada</c>,
     /// em ordem ordinal de código, uma por linha. Não depende da ordem em que as linhas chegam.
     /// </summary>
-    public static string ImpressaoDe(IEnumerable<LinhaDoCatalogo> linhas)
+    public static ResumoSha256 ImpressaoDe(IEnumerable<LinhaDoCatalogo> linhas)
     {
         ArgumentNullException.ThrowIfNull(linhas);
 
@@ -34,7 +34,7 @@ public sealed record LinhaDoCatalogo(string Codigo, string Modulo, Classificacao
             texto.Append(CultureInfo.InvariantCulture, $"{linha.Codigo}|{linha.Modulo}|{linha.ClassificacaoEmTexto}|{Booleano(linha.DeUnidade)}|{Booleano(linha.Reservada)}\n");
         }
 
-        return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(texto.ToString())));
+        return ResumoSha256.DoConteudo(Encoding.UTF8.GetBytes(texto.ToString()));
     }
 
     /// <summary>O booleano como texto estável, o mesmo gravado no banco.</summary>

@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>Configuração EF Core das implantações do catálogo de permissões e das permissões de cada uma, só acrescentadas.</summary>
 [SuppressMessage(
@@ -22,7 +23,11 @@ internal sealed class ImplantacaoDasPermissoesConfiguration : IEntityTypeConfigu
     private const int CodigoMaxLength = 120;
     private const int ModuloMaxLength = 60;
     private const int ClassificacaoMaxLength = 20;
-    private const int ImpressaoLength = 64;
+    private const int ImpressaoLength = ResumoSha256.Comprimento;
+
+    private static readonly ValueConverter<ResumoSha256, string> ImpressaoConverter = new(
+        impressao => impressao.Valor,
+        texto => ResumoSha256.De(texto));
 
     public void Configure(EntityTypeBuilder<ImplantacaoDasPermissoes> builder)
     {
@@ -37,7 +42,7 @@ internal sealed class ImplantacaoDasPermissoesConfiguration : IEntityTypeConfigu
         // A ordem das implantações é do banco; a impressão não é única, porque o mesmo conteúdo volta
         // numa reversão da implantação.
         builder.Property(c => c.Sequencia).UseIdentityAlwaysColumn().ValueGeneratedOnAdd();
-        builder.Property(c => c.Impressao).HasColumnType("char(" + ImpressaoLength + ")").IsRequired();
+        builder.Property(c => c.Impressao).HasColumnType("char(" + ImpressaoLength + ")").HasConversion(ImpressaoConverter).IsRequired();
         builder.Property(c => c.ImplantadaEm).IsRequired();
 
         builder.HasIndex(c => c.Sequencia).IsUnique().HasDatabaseName("ux_implantacoes_das_permissoes_sequencia");

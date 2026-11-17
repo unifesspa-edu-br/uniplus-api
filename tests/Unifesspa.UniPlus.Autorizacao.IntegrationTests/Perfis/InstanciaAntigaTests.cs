@@ -18,6 +18,7 @@ using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// A instância cujo catálogo não é o do banco, ou o banco sem catálogo, contra o PostgreSQL real: a leitura do acesso
@@ -82,12 +83,12 @@ public sealed class InstanciaAntigaTests : PerfilEndpointTestBase, IAsyncLifetim
     {
         string pessoa = $"diogo.souza.{Guid.NewGuid():N}";
         await ConcessoesDeTeste.ConcederPermissoesAsync(Fixture.Factory.Services, pessoa, ConsultarCatalogo);
-        string impressao = Fixture.Factory.Services.GetRequiredService<CatalogoDaAplicacao>().Impressao;
+        ResumoSha256 impressao = Fixture.Factory.Services.GetRequiredService<CatalogoDaAplicacao>().Impressao;
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
         await using Microsoft.EntityFrameworkCore.Storage.IDbContextTransaction aberta = await escopo.ServiceProvider
             .GetRequiredService<UniPlusDbContext>().Database.BeginTransactionAsync();
         await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Database.ExecuteSqlRawAsync(
-            "INSERT INTO autorizacao.implantacoes_das_permissoes (id, impressao, implantada_em) VALUES ({0}, {1}, now())", Guid.CreateVersion7(), impressao);
+            "INSERT INTO autorizacao.implantacoes_das_permissoes (id, impressao, implantada_em) VALUES ({0}, {1}, now())", Guid.CreateVersion7(), impressao.Valor);
 
         await FluentActions.Awaiting(() => PermissoesAsync(pessoa)).Should().ThrowAsync<CatalogoDesatualizadoException>();
         await aberta.CommitAsync();
