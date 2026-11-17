@@ -25,9 +25,8 @@ public sealed record EstadoDaJanelaAntesDaOperacao(
 public sealed record MudancaNaLinha(Concessao Concessao, Guid LinhaId, IReadOnlyList<string> Acrescimo);
 
 /// <summary>
-/// O que uma operação mudou na janela: as concessões que migraram, foram recusadas, passaram a aguardar a proteção de
-/// dados ou foram revogadas pelo fim da janela, o lote que ela criou e a forma do encerramento, se ela encerrou. A
-/// revogação pelo fim só conta a que o fim produziu: a feita à mão antes do corte não entra.
+/// O que uma operação mudou na janela: as mudanças nas linhas, o lote que ela criou, a forma do encerramento, se ela
+/// encerrou, e os totais.
 /// </summary>
 public sealed class MudancasDaJanela
 {
@@ -35,13 +34,7 @@ public sealed class MudancasDaJanela
     {
     }
 
-    public IReadOnlyList<MudancaNaLinha> Migradas { get; private init; } = [];
-
-    public IReadOnlyList<MudancaNaLinha> Recusadas { get; private init; } = [];
-
-    public IReadOnlyList<MudancaNaLinha> Aguardando { get; private init; } = [];
-
-    public IReadOnlyList<MudancaNaLinha> RevogadasPeloFim { get; private init; } = [];
+    public MudancasNasLinhas Linhas { get; private init; } = new([], [], [], []);
 
     public Guid? NovoLoteId { get; private init; }
 
@@ -57,30 +50,13 @@ public sealed class MudancasDaJanela
         ArgumentNullException.ThrowIfNull(janela);
         ArgumentNullException.ThrowIfNull(contexto);
 
-        List<MigracaoDaConcessao> alteradas = [.. janela.Migracoes.Where(m => !antes.Linhas.TryGetValue(m.ConcessaoId, out SituacaoDaMigracao s) || s != m.Situacao)];
-
         return new MudancasDaJanela
         {
-            Migradas = Linhas(alteradas, SituacaoDaMigracao.Migrada, contexto, static _ => true),
-            Recusadas = Linhas(alteradas, SituacaoDaMigracao.Recusada, contexto, static _ => true),
-            Aguardando = Linhas(alteradas, SituacaoDaMigracao.AguardandoProtecaoDeDados, contexto, static _ => true),
-            RevogadasPeloFim = ApanharRevogadasPeloFim(alteradas, antes, janela, contexto),
+            Linhas = MudancasNasLinhas.Entre(antes, janela, contexto),
             NovoLoteId = janela.Lotes.FirstOrDefault(l => !antes.Lotes.Contains(l.Id))?.Id,
             Encerramento = !antes.Encerrada && janela.Encerrada ? janela.Forma : null,
             TotalMigradas = janela.Migracoes.Count(static m => m.Situacao == SituacaoDaMigracao.Migrada),
             TotalRevogadas = contexto.Concessoes.Count(c => c.RevogadaPelaJanelaId == janela.Id),
         };
     }
-
-    private static List<MudancaNaLinha> ApanharRevogadasPeloFim(
-        List<MigracaoDaConcessao> alteradas, EstadoDaJanelaAntesDaOperacao antes, JanelaDeMigracao janela, ContextoDaMigracao contexto) =>
-        Linhas(alteradas, SituacaoDaMigracao.NaoMigrada, contexto, c => c.RevogadaPelaJanelaId == janela.Id && !antes.Revogadas.Contains(c.Id));
-
-    private static List<MudancaNaLinha> Linhas(
-        List<MigracaoDaConcessao> alteradas, SituacaoDaMigracao situacao, ContextoDaMigracao contexto, Func<Concessao, bool> concessaoValida) =>
-        [.. alteradas
-            .Where(m => m.Situacao == situacao)
-            .Select(m => (Linha: m, Concessao: contexto.Concessao(m.ConcessaoId)))
-            .Where(x => x.Concessao is not null && concessaoValida(x.Concessao))
-            .Select(x => new MudancaNaLinha(x.Concessao!, x.Linha.Id, contexto.ComposicaoDe(x.Concessao!).Acrescimo))];
 }
