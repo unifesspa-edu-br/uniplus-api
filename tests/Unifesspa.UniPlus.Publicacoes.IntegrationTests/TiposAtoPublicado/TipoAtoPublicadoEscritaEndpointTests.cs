@@ -20,9 +20,6 @@ using static TipoAtoPublicadoApoio;
 [Collection(PublicacoesEndpointCollection.Name)]
 public sealed class TipoAtoPublicadoEscritaEndpointTests
 {
-    private const string DetalheDoIdDivergente =
-        "O Id informado na rota é diferente do Id do corpo da requisição; os dois precisam identificar o mesmo recurso.";
-
     private readonly PublicacoesEndpointFixture _fixture;
     private readonly TipoAtoPublicadoApoio _apoio;
 
@@ -265,8 +262,7 @@ public sealed class TipoAtoPublicadoEscritaEndpointTests
         HttpResponseMessage response = await AtualizarAsync(
             client, Guid.NewGuid(), new CorpoDoTipoDeAto(codigo) { Id = id });
 
-        await ProblemaRegistrado.ConferirAsync(
-            response, HttpStatusCode.BadRequest, "uniplus.contract.id_path_body_divergente", "Id da rota diferente do Id do corpo", DetalheDoIdDivergente);
+        await RecusaDoIdDivergente.ConferirAsync(response);
     }
 
     [Fact(DisplayName = "PUT de tipo inexistente retorna 404")]
