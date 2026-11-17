@@ -159,14 +159,14 @@ public sealed class ProcessoSeletivoPublicarTests
     private static Result MutacaoDaDimensao(ProcessoSeletivo processo, string dimensao) =>
         dimensao switch
         {
-            "etapas" => processo.DefinirEtapas([EtapaDaProvaObjetiva("Nova Etapa", CaraterEtapa.Classificatoria, 1m)], PrecondicaoIfMatch.Ausente),
-            "atendimentoEspecializado" => processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente),
-            "distribuicaoVagas" => processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente),
-            "bonusRegional" => processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente),
-            "criteriosDesempate" => processo.DefinirCriteriosDesempate([], PrecondicaoIfMatch.Ausente),
-            "classificacao" => processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente),
-            "cronogramaFases" => processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente),
-            "documentosExigidos" => processo.DefinirDocumentosExigidos([], PrecondicaoIfMatch.Ausente),
+            "etapas" => processo.DefinirEtapas([EtapaDaProvaObjetiva("Nova Etapa", CaraterEtapa.Classificatoria, 1m)]),
+            "atendimentoEspecializado" => processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!),
+            "distribuicaoVagas" => processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo),
+            "bonusRegional" => processo.DefinirBonusRegional(aplica: false, bonus: null),
+            "criteriosDesempate" => processo.DefinirCriteriosDesempate([]),
+            "classificacao" => processo.DefinirClassificacao(ClassificacaoImportada()),
+            "cronogramaFases" => processo.DefinirCronogramaFases([FaseConforme()], []),
+            "documentosExigidos" => processo.DefinirDocumentosExigidos([]),
             _ => throw new InvalidOperationException("Dimensão desconhecida."),
         };
 

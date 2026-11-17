@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// As janelas recursais que a etapa abre: onde cada uma se ancora, quando duas disputam o mesmo fato
-/// recorrível e como a restauração da versão congelada as reconcilia com as linhas vivas.
+/// recorrível e como a reidratação da versão congelada as reconcilia com as linhas vivas.
 /// </summary>
 internal static class JanelasRecursaisDaEtapa
 {
@@ -68,24 +68,6 @@ internal static class JanelasRecursaisDaEtapa
                 "Cada fato recorrível abre uma janela só: dois prazos para a mesma publicação, ou dois para a ciência, seriam ambíguos.");
     }
 
-    /// <summary>
-    /// Repõe as janelas pelo Id da âncora traduzido para o que o produto tem depois da reconciliação:
-    /// sem isso a âncora apontaria para uma linha que a mesma transação remove como órfã, e o sintoma só
-    /// apareceria muito depois, ao resolver o recurso de um ato publicado. Aqui não há índice único além
-    /// da própria chave primária, e é ELA que colidiria se a mesma janela saísse e voltasse na mesma
-    /// transação. Cada janela viva é consumida no máximo uma vez.
-    /// </summary>
-    /// <returns>As janelas que ficam, na ordem das congeladas: a viva reaproveitada ou a própria congelada.</returns>
-    internal static List<RecursoDaEtapa> Repor(
-        IEnumerable<RecursoDaEtapa> vivos,
-        IEnumerable<RecursoDaEtapa> congelados,
-        IReadOnlyDictionary<Guid, Guid> produtoVivoPorCongelado)
-    {
-        List<RecursoDaEtapa> disponiveis = [.. vivos];
-
-        return [.. congelados.Select(congelado => ReporPelaAncora(disponiveis, congelado, produtoVivoPorCongelado))];
-    }
-
     // Na etapa de nota do ENEM o recurso em ato não cabe de modo algum, e a regra do processo diz isso
     // nomeando o caminho certo (a regra de recurso da fase). Pedir aqui um preliminar que ela depois
     // recusa mandaria o operador na direção errada.
@@ -108,23 +90,4 @@ internal static class JanelasRecursaisDaEtapa
 
     private static string FatoRecorrivel(RecursoDaEtapa recurso) =>
         recurso.Ancora == AncoraDoRecurso.AtoPublicado ? $"ato:{recurso.ProdutoAncoraId}" : "ciencia";
-
-    // Casa pela ÂNCORA, que é o que identifica a janela no negócio: o envelope não congela o id do
-    // recurso, e casar por ele nunca acertaria, com a linha viva saindo e voltando a cada restauração,
-    // trocando de identidade sem que nada tivesse mudado.
-    private static RecursoDaEtapa ReporPelaAncora(
-        List<RecursoDaEtapa> disponiveis, RecursoDaEtapa congelado, IReadOnlyDictionary<Guid, Guid> produtoVivoPorCongelado)
-    {
-        Guid ancora = produtoVivoPorCongelado.GetValueOrDefault(congelado.ProdutoAncoraId, congelado.ProdutoAncoraId);
-        RecursoDaEtapa? viva = disponiveis.Find(r => r.Ancora == congelado.Ancora && r.ProdutoAncoraId == ancora);
-        if (viva is not null)
-        {
-            disponiveis.Remove(viva);
-        }
-
-        RecursoDaEtapa destino = viva ?? congelado;
-        destino.ReporDadosCongelados(congelado.Ancora, congelado.Regra, congelado.Args, ancora, congelado.Procedimentos);
-
-        return destino;
-    }
 }

@@ -31,32 +31,6 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 
 public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
 {
-    /// <summary>
-    /// Os campos que <b>são chave de ordenação</b> do encoder — mutá-los reposiciona o item
-    /// no array recodificado (ADR-0109 D9). Aqui só cabe a asserção primária: comparar com
-    /// o “JSON mutado no lugar” reprovaria a implementação correta.
-    /// </summary>
-    /// <remarks>
-    /// <c>modalidades.1.regraDeAplicabilidade.0.0.valor</c> entrou aqui pela mesma razão de
-    /// <c>regrasEliminacao</c> (issue #1067): as cláusulas da regra são ordenadas pela chave de
-    /// conteúdo, e mutar o valor de uma condição pode mudar a posição da cláusula entre as duas —
-    /// a modalidade <c>LB_EP</c> (índice 1 do array) tem exatamente duas cláusulas
-    /// (<see cref="CorpusEnvelopeProcessoRico.ProcessoRico"/>), o mínimo para a reordenação ser observável.
-    /// </remarks>
-    [Theory(DisplayName = "O decoder lê também os campos que são chave de ordenação")]
-    [InlineData("etapas.0.ordem", "9")]
-    [InlineData("criteriosDesempate.0.ordem", "9")]
-    [InlineData("classificacao.regrasEliminacao.1.args.notaMinima", "88.7500")]
-    [InlineData("classificacao.regrasEliminacao.0.args.minimo", "555.0000")]
-    [InlineData("classificacao.regrasEliminacao.0.args.areaCodigo", "MATEMATICA")]
-    [InlineData("modalidades.1.regraDeAplicabilidade.0.0.valor|modalidades.10.regraDeAplicabilidade.0.0.valor", "ATE_MEIO_SM")]
-    public void Decoder_NaoPerdeCampoDeOrdenacao(string caminho, string valorNovo)
-    {
-        (byte[] originais, byte[] _, byte[] recodificados) = MutarEReidratar(caminho, valorNovo);
-
-        recodificados.Should().NotEqual(originais,
-            $"o decoder tem de LER '{caminho}' — se o ignorasse, a recodificação traria o valor original de volta");
-    }
 
     /// <summary>
     /// <c>vagasOfertadasBase</c>, <c>percentualDaReservaLegal</c> e a referência demográfica
@@ -88,21 +62,6 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     }
 
     // ── Cultura: os decimais do envelope são InvariantCulture, sempre ──
-
-    [Fact(DisplayName = "O round-trip é imune à cultura do host — pt-BR usa vírgula decimal")]
-    public void RoundTrip_ImuneACultura()
-    {
-        CultureInfo original = CultureInfo.CurrentCulture;
-        try
-        {
-            CultureInfo.CurrentCulture = new CultureInfo("pt-BR");
-            ConferirRoundTripDaVersaoDeAbertura();
-        }
-        finally
-        {
-            CultureInfo.CurrentCulture = original;
-        }
-    }
 
     /// <summary>
     /// Mesma razão da banca, um bloco ao lado: o recurso da etapa é declarado pela ÂNCORA, e o
@@ -169,7 +128,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     // quem normaliza — e quem não normalizar recria a linha, girando o id.
     private static void RedeclararComOAcentoNaFormaComposta(EtapaProcesso etapa) =>
         etapa.DefinirBancas([.. etapa.Bancas.Select(b =>
-            BancaDaEtapa.Criar(b.TipoBancaOrigemId, b.Codigo.Normalize(NormalizationForm.FormC), b.Nome))])
+            BancaDaEtapa.Criar(b.TipoBancaOrigemId, b.Codigo.Normalize(NormalizationForm.FormC), b.Nome, b.RegraDeDeliberacao))])
             .IsSuccess.Should().BeTrue();
 
     // O que fica guardado é o código da linha PRESERVADA — a forma decomposta original —, e
@@ -193,43 +152,6 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
     }
 
     // ── Golden fixture RICA: o decoder é ancorado num artefato congelado ──
-
-    [Fact(DisplayName = "Golden rica — a fixture congelada no repositório reidrata e recanonicaliza byte-a-byte")]
-    public void GoldenRica_ReidrataEBate()
-    {
-        // Um corpus gerado pelo encoder do dia e consumido pelo decoder do dia não prova
-        // compatibilidade: os dois derivariam juntos e o teste continuaria verde. A fixture
-        // é o artefato CONGELADO — se o encoder mudar sem bump de versão, é aqui que se vê.
-        byte[] fixture = LerFixtureRica();
-
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        CorpusEnvelopeEntrada.Publicar(processo);
-
-        VersaoConfiguracao v1 = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, fixture);
-
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(v1);
-        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
-
-        processo.RestaurarConfiguracaoCongelada(v1, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
-
-        byte[] recodificado = CorpusEnvelope.Registro.Recodificar(
-            v1.SchemaVersion,
-            new EntradaCanonicalizacao(
-                processo,
-                reidratado.Value.Dados,
-                reidratado.Value.HashDocumento, FusoInstitucional.ZoneId,
-                reidratado.Value.Retificacao,
-                reidratado.Value.Conformidade,
-                reidratado.Value.MetadadosFatosCongelados,
-                reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados, FatosDerivadosCongelados: reidratado.Value.FatosDerivadosCongelados)).Value!.Bytes;
-
-        recodificado.Should().Equal(fixture,
-            "a fixture rica é o oráculo do decoder — bytes reais, GUIDs reais, agregado completo. Se ela deixar de " +
-            "reidratar, o envelope mudou de forma sem bump de versão, e o descarte de tudo o que já foi publicado " +
-            "deixou de ser verificável.");
-    }
 
     [Fact(DisplayName = "Golden rica — a fixture é o envelope do corpus (regeneração explícita via UPDATE_ENVELOPE_FIXTURE=1)")]
     public void GoldenRica_EOEnvelopeDoCorpus()

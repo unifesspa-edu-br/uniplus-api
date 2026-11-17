@@ -39,7 +39,6 @@ public static class MotivoDeDecisaoErrorCodes
     public const string MotivoDesativado = "MotivoDeDecisao.MotivoDesativado";
     public const string CoberturaInsuficiente = "MotivoDeDecisao.CoberturaInsuficiente";
     public const string FaseOuEtapaNaoEncontrada = "MotivoDeDecisao.FaseOuEtapaNaoEncontrada";
-    public const string FaseOuEtapaComMotivoPublicado = "MotivoDeDecisao.FaseOuEtapaComMotivoPublicado";
     public const string VersaoNaoPublicada = "MotivoDeDecisao.VersaoNaoPublicada";
 
     /// <summary>A fase ou a etapa usa uma capacidade que gera decisão de um tipo que ela não declara produzir.</summary>

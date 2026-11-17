@@ -28,7 +28,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
             RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", new string('a', 64)),
             RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
             BaseadoEmEnem = true,
-        }).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }).Value!).IsSuccess.Should().BeTrue();
         return processo;
     }
 
@@ -38,7 +38,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, " REDACAO ", "MATEMATICA")));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, " REDACAO ", "MATEMATICA")));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         ((ArgsDesempateMaiorNotaAreaEnem)processo.CriteriosDesempate.Single().Args).Areas.Should().Equal("REDACAO", "MATEMATICA");
@@ -51,7 +51,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, CriterioDesempateCodigo.MaiorNotaAreaEnem)));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioSimples(1, CriterioDesempateCodigo.MaiorNotaAreaEnem)));
 
         result.IsFailure.Should().BeTrue();
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
@@ -66,7 +66,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso("PS ENEM 2027", TiposDeProcessoDeTeste.PSIQ);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, "REDACAO", null!)));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, "REDACAO", null!)));
 
         result.IsFailure.Should().BeTrue();
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
@@ -80,7 +80,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(
+        Result result = await cenario.DefinirAsync(
             Comando(processo.Id, CriterioDeAreas(1, "FISICA", "REDACAO"), CriterioDeAreas(2, "MATEMATICA", "QUIMICA")));
 
         result.IsFailure.Should().BeTrue();
@@ -96,7 +96,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(
+        Result result = await cenario.DefinirAsync(
             Comando(processo.Id, CriterioDeAreas(1, "REDACAO", "REDACAO"), CriterioDeAreas(2, "FISICA")));
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
@@ -116,7 +116,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, area)));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, area)));
 
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
         (erro.Field, erro.Error.Code).Should().Be(("criterios[0].areas[0]", "CriterioDesempate.AreaInvalida"));
@@ -131,7 +131,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         ProcessoSeletivo processo = ProcessoComClassificacaoImportadaSemQuadro();
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, "Redação")));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, "Redação")));
 
         FieldError forma = result.Errors.Single(static e => e.Error.Code == "CriterioDesempate.AreaInvalida");
         forma.Error.Message.Should().NotContain("Áreas aceitas");
@@ -143,7 +143,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(
+        Result result = await cenario.DefinirAsync(
             Comando(processo.Id, CriterioDeAreas(1, "Redação", "FISICA"), CriterioDeAreas(2, "QUIMICA")));
 
         result.Errors.Should().HaveCount(3);
@@ -157,7 +157,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.MaiorNotaAreaEnem);
         string[] areasDemais = [.. Enumerable.Range(0, CriterioDesempate.AreasMaximo + 1).Select(static i => $"AREA_{i}")];
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(
+        Result result = await cenario.DefinirAsync(
             Comando(processo.Id, CriterioDeAreas(1, "FISICA", "FISICA"), CriterioDeAreas(2, areasDemais)));
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(

@@ -29,7 +29,7 @@ public sealed class PreparacaoDoDocumentoDoRascunhoTests
         Result<DocumentoPreparado> resultado = _cenario.Preparacao.Preparar(CenarioDoRascunho.DocumentoValido(nome: nome));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            (string.Empty, DocumentoDaConfiguracaoErrorCodes.FormaInvalida),
+            (null, DocumentoDaConfiguracaoErrorCodes.FormaInvalida),
             ("/identificacao/nome", RascunhoDeProcessoSeletivoErrorCodes.NomeAcimaDoLimite));
     }
 
@@ -55,13 +55,13 @@ public sealed class PreparacaoDoDocumentoDoRascunhoTests
     [Fact(DisplayName = "O caractere nulo no valor é recusado no ponteiro do valor, com o grupo da forma na frente")]
     public void CaractereNuloNoValor_RecusaNoPonteiroDoValor() =>
         Recusas(CenarioDoRascunho.DocumentoValido(nome: "Processo\\u0000")).Should().Equal(
-            (string.Empty, DocumentoDaConfiguracaoErrorCodes.FormaInvalida),
+            (null, DocumentoDaConfiguracaoErrorCodes.FormaInvalida),
             ("/identificacao/nome", DocumentoDaConfiguracaoErrorCodes.ValorInvalido));
 
     [Fact(DisplayName = "O caractere nulo no nome de propriedade é recusado e acumula com a propriedade repetida")]
     public void CaractereNuloNoNome_AcumulaComAsOutrasCausas() =>
         Recusas("""{ "a\u0000": 1, "b": 1, "b": 2 }""").Should().Equal(
-            (string.Empty, DocumentoDaConfiguracaoErrorCodes.FormaInvalida),
+            (null, DocumentoDaConfiguracaoErrorCodes.FormaInvalida),
             (string.Empty, DocumentoDaConfiguracaoErrorCodes.ValorInvalido),
             (string.Empty, DocumentoDaConfiguracaoErrorCodes.PropriedadeRepetida));
 

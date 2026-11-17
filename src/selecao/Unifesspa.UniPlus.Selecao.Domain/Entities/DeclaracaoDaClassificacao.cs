@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O que o operador (ou o envelope restaurado) declara para a classificação de um processo
+/// O que o operador (ou o envelope reidratado) declara para a classificação de um processo
 /// seletivo, antes de as conferências de <see cref="ConfiguracaoClassificacao.Criar"/> a
 /// aceitarem. A fórmula da nota e a ordem de alocação são obrigatórias; o resto tem o valor de
 /// quem não declarou nada (nulo, vazio ou falso).

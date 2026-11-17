@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// Um processo conforme, em qualquer das três transições que congelam, ao qual se aplica o defeito característico de cada
+/// Um processo conforme, em qualquer das duas transições que congelam, ao qual se aplica o defeito característico de cada
 /// família da conferência, pelo nome da família. O defeito de uma família não toca o das outras.
 /// </summary>
 internal sealed class CenarioDeCongelamentoPorFamilia
@@ -67,8 +67,7 @@ internal sealed class CenarioDeCongelamentoPorFamilia
         return transicao switch
         {
             "Publicar" => new(processo, (contagem, tipos, corretores) => PublicarProcesso(processo, contagem, tipos, corretores)),
-            "Retificar" => Retificando(processo),
-            _ => Fechando(processo),
+            _ => Retificando(processo),
         };
     }
 
@@ -91,22 +90,22 @@ internal sealed class CenarioDeCongelamentoPorFamilia
 
     /// <summary>Os itens do painel de conformidade sobre o processo como ele está.</summary>
     internal IReadOnlyList<ItemConformidade> Painel() =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(_processo), Cadastros());
+        ChecklistDeConformidade.AvaliarConformidade(_processo.Declaracao(), Cadastros());
 
-    /// <summary>As causas de cada família, na ordem da conferência e com o campo do documento, sobre o processo como ele está.</summary>
+    /// <summary>As causas de cada família, na ordem da conferência e com o campo como a regra o emite, sobre o processo como ele está.</summary>
     internal IReadOnlyList<(string Familia, IReadOnlyList<FieldError> Causas)> CausasPorFamilia()
     {
-        ContextoDaConferencia contexto = ContextoDaConferencia.De(EstadoDaConfiguracao.De(_processo), Cadastros());
+        ContextoDaConferencia contexto = ContextoDaConferencia.De(_processo.Declaracao(), Cadastros());
 
-        return [.. CausasQueImpedemCongelar.Familias.Select(familia => (familia.Nome, CamposDoDocumento.Traduzir(familia.Causas(contexto))))];
+        return [.. CausasQueImpedemCongelar.Familias.Select(familia => (familia.Nome, (IReadOnlyList<FieldError>)[.. familia.Causas(contexto)]))];
     }
 
-    /// <summary>As causas que a conferência devolve ao cliente sobre o processo como ele está, depois de aplicar os defeitos das famílias.</summary>
+    /// <summary>As causas que a conferência devolve ao cliente, com o campo no ponteiro do documento, sobre o processo como ele está, depois de aplicar os defeitos das famílias.</summary>
     internal IReadOnlyList<FieldError> CausasDaConferencia(IReadOnlySet<string> familiasComDefeito)
     {
         Quebrar(familiasComDefeito);
 
-        return ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(_processo), Cadastros()).Errors;
+        return PonteiroNoDocumento.Converter(ConfiguracaoAptaACongelar.Conferir(_processo.Id, _processo.Declaracao(), Cadastros()).Errors, OrigemNoDocumento.Identidade);
     }
 
     private CadastrosDaConfiguracao Cadastros() =>
@@ -186,7 +185,7 @@ internal sealed class CenarioDeCongelamentoPorFamilia
         ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     private static EtapaProcesso EtapaDeProva(string nome, int ordem, string? faseCodigo) =>
-        ApoioProcessoSeletivoRestaurarConfiguracao.EtapaCongeladaDeProvaObjetiva(Guid.CreateVersion7(), nome, ordem, faseCodigo, 1m);
+        ApoioDeEtapaReidratada.DeProvaObjetiva(Guid.CreateVersion7(), nome, ordem, faseCodigo, 1m);
 
     // Humana, com a banca que a conformidade por item exige: só a quantidade de corretores, lida do cadastro, impede congelar.
     private static EtapaProcesso EtapaQueExigeCorrecaoIndependente()
@@ -265,11 +264,11 @@ internal sealed class CenarioDeCongelamentoPorFamilia
     private static ProcessoSeletivo ProcessoBase()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        FormularioDeTeste.TrocarCronograma(processo, Cronograma(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        processo.DefinirAlgoritmoContagemPrazo(Regra(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, 'e'), PrecondicaoIfMatch.Curinga)
+        FormularioDeTeste.TrocarCronograma(processo, Cronograma()).IsSuccess.Should().BeTrue();
+        processo.DefinirAlgoritmoContagemPrazo(Regra(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, 'e'))
             .IsSuccess.Should().BeTrue();
         Guid faseDoFormulario = processo.CronogramaFases.First().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaGeral(faseDoFormulario), 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaGeral(faseDoFormulario), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         return processo;
@@ -281,17 +280,6 @@ internal sealed class CenarioDeCongelamentoPorFamilia
 
         return new(processo, (contagem, tipos, corretores) => processo.Retificar(
             new CenarioDeCongelamento { Dados = DadosDoEdital, Documento = new DocumentoCongelado(Bytes, "1.1", Algoritmo, Hash), Relogio = new RelogioFixo(Agora), Contagem = contagem, TiposDeAtoUnicos = tipos, Corretores = corretores }, versao, "Correção do prazo"));
-    }
-
-    private static CenarioDeCongelamentoPorFamilia Fechando(ProcessoSeletivo processo)
-    {
-        VersaoConfiguracao versao = Publicada(processo);
-        processo.AbrirRetificacao(
-            "Correção do prazo", versao, identificadorDaVersaoBase: null,
-            VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora).IsSuccess.Should().BeTrue();
-
-        return new(processo, (contagem, tipos, corretores) => processo.FecharRetificacao(
-            new CenarioDeCongelamento { Dados = DadosDoEdital, Documento = new DocumentoCongelado(Bytes, "1.1", Algoritmo, Hash), Relogio = new RelogioFixo(Agora), Contagem = contagem, TiposDeAtoUnicos = tipos, Corretores = corretores }, versao, PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!])));
     }
 
     private static VersaoConfiguracao Publicada(ProcessoSeletivo processo)

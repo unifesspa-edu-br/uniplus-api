@@ -5,30 +5,23 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class RegrasDosFormularios
 {
-    /// <summary>
-    /// A aplicação do modelo substitui o formulário inteiro, e a retificação não retira o que o edital
-    /// publicou: só em rascunho.
-    /// </summary>
-    public static DomainError AplicacaoDeModeloSoEmRascunho() => new(
-        FormularioProcessoErrorCodes.AplicacaoDeModeloSoEmRascunho,
-        "O modelo se aplica só em rascunho: a aplicação substitui o formulário inteiro, e a retificação não retira o que o edital publicou.");
-
     internal static Result<PlanoDoFormulario> PlanejarDefinicao(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         FinalidadeFormulario finalidade,
         Guid? faseId,
         string? titulo,
         IReadOnlyList<EtapaFormulario> etapas,
         IReadOnlyList<FatoColetado>? itensDaCriacao)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        FormularioProcesso? existente = estado.FormularioDe(finalidade);
+        FormularioProcesso? existente = configuracao.Coleta.FormularioDe(finalidade);
         IReadOnlyList<FatoColetado>? itensIniciais = existente is null && itensDaCriacao is { Count: > 0 } ? itensDaCriacao : null;
-        IReadOnlyList<FieldError> recusas = ConferirFormulario(estado, finalidade, faseId, titulo, etapas, itensDaCriacao: itensIniciais);
+        IReadOnlyList<FieldError> recusas = ConferirFormulario(configuracao, finalidade, faseId, titulo, etapas, itensDaCriacao: itensIniciais);
         if (recusas.Count > 0)
         {
             return Result<PlanoDoFormulario>.ValidationFailure(recusas);
@@ -38,14 +31,14 @@ public static class RegrasDosFormularios
         FormularioProcesso novo = FormularioProcesso.Criar(finalidade, faseId, titulo, etapas).Value!;
         Result itens = itensIniciais is null
             ? Result.Success()
-            : RegrasDaColeta.ConferirFatosColetados(estado, novo, finalidade, itensIniciais, []);
+            : RegrasDaColeta.ConferirFatosColetados(configuracao, novo, finalidade, itensIniciais, []);
         return itens.IsFailure
             ? Result<PlanoDoFormulario>.ValidationFailure(itens.Errors)
-            : Result<PlanoDoFormulario>.Success(new PlanoDoFormulario(novo, existente, MudancaDaDefinicao(estado, finalidade, novo, existente, itensIniciais)));
+            : Result<PlanoDoFormulario>.Success(new PlanoDoFormulario(novo, existente, MudancaDaDefinicao(configuracao, finalidade, novo, existente, itensIniciais)));
     }
 
     private static MudancaDaConfiguracao MudancaDaDefinicao(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         FinalidadeFormulario finalidade,
         FormularioProcesso novo,
         FormularioProcesso? existente,
@@ -56,7 +49,7 @@ public static class RegrasDosFormularios
             return new MudancaDaConfiguracao();
         }
 
-        MudancaDaConfiguracao itens = itensIniciais is null ? new MudancaDaConfiguracao() : RegrasDaColeta.PlanejarTroca(estado, finalidade, itensIniciais, []);
+        MudancaDaConfiguracao itens = itensIniciais is null ? new MudancaDaConfiguracao() : RegrasDaColeta.PlanejarTroca(configuracao, finalidade, itensIniciais, []);
         return itens with { Formularios = Troca.Acrescentando([novo]) };
     }
 
@@ -65,7 +58,7 @@ public static class RegrasDosFormularios
     /// têm estrutura válida, acomodam os itens e só citam fatos que o formulário conhece antes delas.
     /// </summary>
     public static IReadOnlyList<FieldError> ConferirFormulario(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         FinalidadeFormulario finalidade,
         Guid? faseId,
         string? titulo,
@@ -73,25 +66,25 @@ public static class RegrasDosFormularios
         bool etapasCompletas = true,
         IReadOnlyList<FatoColetado>? itensDaCriacao = null)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(etapas);
 
         List<FieldError> recusas = FormaDoCabecalho.Validar(finalidade, titulo);
-        if (faseId is { } fase && fase != Guid.Empty && RecusaDaFaseDoFormulario(estado, finalidade, fase) is { } recusaDaFase)
+        if (faseId is { } fase && fase != Guid.Empty && RecusaDaFaseDoFormulario(configuracao, finalidade, fase) is { } recusaDaFase)
         {
             recusas.Add(new("faseId", recusaDaFase));
         }
 
         if (etapasCompletas && finalidade != FinalidadeFormulario.Nenhuma)
         {
-            recusas.AddRange(RecusasDasEtapas(estado, finalidade, etapas, itensDaCriacao));
+            recusas.AddRange(RecusasDasEtapas(configuracao, finalidade, etapas, itensDaCriacao));
         }
 
         return recusas;
     }
 
     private static List<FieldError> RecusasDasEtapas(
-        EstadoDaConfiguracao estado, FinalidadeFormulario finalidade, IReadOnlyList<EtapaFormulario> etapas, IReadOnlyList<FatoColetado>? itensDaCriacao)
+        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<EtapaFormulario> etapas, IReadOnlyList<FatoColetado>? itensDaCriacao)
     {
         IReadOnlyList<EtapaEstrutura> estrutura = [.. etapas.Select(static e => e.Estrutura)];
         List<FieldError> recusas = [.. EstruturaFormulario.ValidarEtapas(finalidade, estrutura)];
@@ -102,36 +95,31 @@ public static class RegrasDosFormularios
             recusas.AddRange(EstruturaFormulario
                 .ValidarItens(
                     estrutura,
-                    itensDaCriacao is null ? ItensDaFinalidade(estado, finalidade) : CitacoesDosFormularios.ParaEstrutura(itensDaCriacao, []),
+                    itensDaCriacao is null ? ItensDaFinalidade(configuracao, finalidade) : CitacoesDosFormularios.ParaEstrutura(itensDaCriacao, []),
                     secaoObrigatoria: false)
                 .Select(static recusa => recusa with { Field = "etapas" }));
         }
 
-        recusas.AddRange(RecusasDeExibicao(estado, finalidade, etapas, itensDaCriacao));
+        recusas.AddRange(RecusasDeExibicao(configuracao, finalidade, etapas, itensDaCriacao));
         return recusas;
     }
 
     // A exibição de cada seção cita só o que o formulário conhece antes dela, com os itens atuais ou,
     // na criação, com os que o formulário recebe ao nascer.
     private static IEnumerable<FieldError> RecusasDeExibicao(
-        EstadoDaConfiguracao estado, FinalidadeFormulario finalidade, IReadOnlyList<EtapaFormulario> etapas, IReadOnlyList<FatoColetado>? itensDaCriacao)
+        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<EtapaFormulario> etapas, IReadOnlyList<FatoColetado>? itensDaCriacao)
     {
-        FatoColetado[] itens = [.. itensDaCriacao ?? [.. estado.Itens.Where(f => f.Finalidade == finalidade)]];
-        DependenciasDoFormulario dependencias = CitacoesDosFormularios.DependenciasDe(estado, finalidade, itens, CitacoesDosFormularios.FatosDaInscricao(estado.Itens));
+        FatoColetado[] itens = [.. itensDaCriacao ?? [.. configuracao.Coleta.Itens.Where(f => f.Finalidade == finalidade)]];
+        DependenciasDoFormulario dependencias = CitacoesDosFormularios.DependenciasDe(configuracao, finalidade, itens, CitacoesDosFormularios.FatosDaInscricao(configuracao.Coleta.Itens));
         EtapaDoGrafo[] etapasDoGrafo = [.. etapas.Select(static e => e.ParaGrafo())];
         ItemDoGrafo[] itensDoGrafo = [.. itens.Select(static i => i.ParaGrafo())];
-        GrupoDoGrafo[] gruposDoGrafo = [.. CitacoesDosFormularios.GruposDaFinalidade(estado, finalidade).Select(static g => g.ParaGrafo())];
+        GrupoDoGrafo[] gruposDoGrafo = [.. CitacoesDosFormularios.GruposDaFinalidade(configuracao, finalidade).Select(static g => g.ParaGrafo())];
         for (int indice = 0; indice < etapas.Count; indice++)
         {
             DomainError? recusa = GrafoDoFormulario.CitacaoInvalidaDaEtapa(
-                    etapasDoGrafo[indice],
-                    GrafoDoFormulario.PosicaoDaEtapa(etapasDoGrafo[indice], etapasDoGrafo, itensDoGrafo, gruposDoGrafo),
-                    dependencias)
-                ?? CitacoesDosFormularios.CitacaoNaoGarantida(
-                    estado,
-                    CitacoesDosFormularios.DoFormulario(finalidade, CitacoesDosFormularios.CitacoesDaSecao(etapas[indice])),
-                    finalidade,
-                    CitacoesDosFormularios.SemCatalogo);
+                etapasDoGrafo[indice],
+                GrafoDoFormulario.PosicaoDaEtapa(etapasDoGrafo[indice], etapasDoGrafo, itensDoGrafo, gruposDoGrafo),
+                dependencias);
             if (recusa is not null)
             {
                 yield return new FieldError($"etapas[{indice}].exibicao", recusa);
@@ -139,9 +127,9 @@ public static class RegrasDosFormularios
         }
     }
 
-    internal static DomainError? RecusaDaFaseDoFormulario(EstadoDaConfiguracao estado, FinalidadeFormulario finalidade, Guid faseId)
+    internal static DomainError? RecusaDaFaseDoFormulario(ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, Guid faseId)
     {
-        if (estado.CronogramaFases.FirstOrDefault(f => f.Id == faseId) is not { } fase)
+        if (configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == faseId) is not { } fase)
         {
             return new DomainError(FormularioProcessoErrorCodes.FaseForaDoCronograma, "A fase do formulário não está no cronograma do processo.");
         }
@@ -153,60 +141,56 @@ public static class RegrasDosFormularios
                 $"A fase '{fase.Codigo}' não é a fase em que se responde o formulário de {EstruturaFormulario.ParaToken(finalidade)}.");
     }
 
-    internal static IReadOnlyList<ItemEstrutura> ItensDaFinalidade(EstadoDaConfiguracao estado, FinalidadeFormulario finalidade) =>
-        CitacoesDosFormularios.ParaEstrutura(estado.Itens.Where(f => f.Finalidade == finalidade), CitacoesDosFormularios.GruposDaFinalidade(estado, finalidade));
+    internal static IReadOnlyList<ItemEstrutura> ItensDaFinalidade(ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade) =>
+        CitacoesDosFormularios.ParaEstrutura(configuracao.Coleta.Itens.Where(f => f.Finalidade == finalidade), CitacoesDosFormularios.GruposDaFinalidade(configuracao, finalidade));
 
-    internal static DomainError RemocaoSoEmRascunho() => new(
-        FormularioProcessoErrorCodes.RemocaoSoEmRascunho,
-        "A retificação acrescenta formulário, mas não remove o que o edital publicou.");
-
-    internal static Result<MudancaDaConfiguracao> PlanejarRemocao(EstadoDaConfiguracao estado, FinalidadeFormulario finalidade)
+    internal static Result<MudancaDaConfiguracao> PlanejarRemocao(ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        if (estado.FormularioDe(finalidade) is not { } formulario)
+        if (configuracao.Coleta.FormularioDe(finalidade) is not { } formulario)
         {
             return Result<MudancaDaConfiguracao>.Failure(FormularioInexistente(finalidade));
         }
 
-        return finalidade == FinalidadeFormulario.Inscricao && CitacoesDosFormularios.CitacaoQueFicariaOrfa(estado, []) is { } orfa
+        return finalidade == FinalidadeFormulario.Inscricao && CitacoesDosFormularios.CitacaoQueFicariaOrfa(configuracao, []) is { } orfa
             ? Result<MudancaDaConfiguracao>.Failure(orfa)
-            : Result<MudancaDaConfiguracao>.Success(MudancaDaRemocao(estado, formulario));
+            : Result<MudancaDaConfiguracao>.Success(MudancaDaRemocao(configuracao, formulario));
     }
 
-    private static MudancaDaConfiguracao MudancaDaRemocao(EstadoDaConfiguracao estado, FormularioProcesso formulario) => new()
+    private static MudancaDaConfiguracao MudancaDaRemocao(ConfiguracaoDeclarada configuracao, FormularioProcesso formulario) => new()
     {
         Formularios = Troca.Retirando([formulario]),
-        Campos = Troca.Retirando(estado.Campos.Where(f => f.Finalidade == formulario.Finalidade)),
-        GruposColetados = Troca.Retirando(estado.GruposColetados.Where(g => g.Finalidade == formulario.Finalidade)),
-        TermosExigidos = Troca.Retirando(estado.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade)),
+        Campos = Troca.Retirando(configuracao.Coleta.Campos.Where(f => f.Finalidade == formulario.Finalidade)),
+        GruposColetados = Troca.Retirando(configuracao.Coleta.GruposColetados.Where(g => g.Finalidade == formulario.Finalidade)),
+        TermosExigidos = Troca.Retirando(configuracao.Coleta.TermosExigidos.Where(t => t.Finalidade == formulario.Finalidade)),
     };
 
     internal static Result<MudancaDaConfiguracao> PlanejarTermos(
-        EstadoDaConfiguracao estado, FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos)
+        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        if (estado.FormularioDe(finalidade) is null)
+        if (configuracao.Coleta.FormularioDe(finalidade) is null)
         {
             return Result<MudancaDaConfiguracao>.Failure(FormularioInexistente(finalidade));
         }
 
-        List<FieldError> erros = RecusasDosTermos(estado, finalidade, termos);
+        List<FieldError> erros = RecusasDosTermos(configuracao, finalidade, termos);
         return erros.Count > 0
             ? Result<MudancaDaConfiguracao>.ValidationFailure(erros)
-            : Result<MudancaDaConfiguracao>.Success(MudancaDosTermos(estado, finalidade, termos));
+            : Result<MudancaDaConfiguracao>.Success(MudancaDosTermos(configuracao, finalidade, termos));
     }
 
     private static List<FieldError> RecusasDosTermos(
-        EstadoDaConfiguracao estado, FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos)
+        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos)
     {
         List<FieldError> erros = FormaDoTermo.ConferirUnicidade([.. termos.Select(static t => ((string?, int)?)(t.Codigo, t.Ordem))]);
         DependenciasDoFormulario dependencias = CitacoesDosFormularios.DependenciasDe(
-            estado, finalidade, estado.Itens.Where(f => f.Finalidade == finalidade), CitacoesDosFormularios.FatosDaInscricao(estado.Itens));
+            configuracao, finalidade, configuracao.Coleta.Itens.Where(f => f.Finalidade == finalidade), CitacoesDosFormularios.FatosDaInscricao(configuracao.Coleta.Itens));
         for (int indice = 0; indice < termos.Count; indice++)
         {
-            if (RecusaDaCitacaoDoTermo(estado, finalidade, dependencias, termos[indice]) is { } recusa)
+            if (GrafoDoFormulario.CitacaoInvalidaDoTermo(termos[indice].ParaGrafo(), dependencias) is { } recusa)
             {
                 erros.Add(new($"termos[{indice}]", recusa));
             }
@@ -215,19 +199,10 @@ public static class RegrasDosFormularios
         return erros;
     }
 
-    private static DomainError? RecusaDaCitacaoDoTermo(
-        EstadoDaConfiguracao estado, FinalidadeFormulario finalidade, DependenciasDoFormulario dependencias, TermoExigidoFormulario termo) =>
-        GrafoDoFormulario.CitacaoInvalidaDoTermo(termo.ParaGrafo(), dependencias)
-        ?? CitacoesDosFormularios.CitacaoNaoGarantida(
-            estado,
-            CitacoesDosFormularios.DoFormulario(finalidade, CitacoesDosFormularios.CitacoesDoTermo(termo)),
-            finalidade,
-            CitacoesDosFormularios.SemCatalogo);
-
     private static MudancaDaConfiguracao MudancaDosTermos(
-        EstadoDaConfiguracao estado, FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos)
+        ConfiguracaoDeclarada configuracao, FinalidadeFormulario finalidade, IReadOnlyList<TermoExigidoFormulario> termos)
     {
-        MudancaDaConfiguracao mudanca = new() { TermosExigidos = Troca.Substituindo(estado.TermosExigidos.Where(t => t.Finalidade == finalidade), termos) };
+        MudancaDaConfiguracao mudanca = new() { TermosExigidos = Troca.Substituindo(configuracao.Coleta.TermosExigidos.Where(t => t.Finalidade == finalidade), termos) };
         foreach (TermoExigidoFormulario termo in termos)
         {
             termo.VincularFinalidade(finalidade);

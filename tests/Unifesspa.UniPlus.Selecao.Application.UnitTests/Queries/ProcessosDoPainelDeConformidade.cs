@@ -40,8 +40,7 @@ internal static class ProcessosDoPainelDeConformidade
                 new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
                 new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("ATO_UNICO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
                 bancasRequeridas: []).Value!],
-            [],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            []).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -51,7 +50,7 @@ internal static class ProcessosDoPainelDeConformidade
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS 2026 — SiSU", OrigemCandidatos.InscricaoPropria);
         processo.DefinirEtapas([EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente);
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 3m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]);
 
         return processo;
     }
@@ -63,13 +62,13 @@ internal static class ProcessosDoPainelDeConformidade
     public static ProcessoSeletivo DeInscricaoPropriaSemFaseDeColeta()
     {
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS 2026 — Falso Verde", OrigemCandidatos.InscricaoPropria);
-        processo.DefinirEtapas([], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
+        processo.DefinirEtapas([]).IsSuccess.Should().BeTrue(
             "Story #851 §3.5: lista vazia é estado válido sob CLASSIFICACAO-IMPORTADA — sem etapa, não precisamos de fase que agrupe etapas");
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas([DistribuicaoComAmpla()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirCronogramaFases([FaseQueProduzResultadoSemColetarInscricao()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTaxaInscricao(TaxaSemCobranca(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoComAmpla()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportada()).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseQueProduzResultadoSemColetarInscricao()], []).IsSuccess.Should().BeTrue();
+        processo.DefinirTaxaInscricao(TaxaSemCobranca()).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         return processo;
@@ -79,12 +78,12 @@ internal static class ProcessosDoPainelDeConformidade
     public static ProcessoSeletivo ComTodosOsItensObrigatorios()
     {
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS 2026 — SiSU", OrigemCandidatos.InscricaoPropria);
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-        processo.DefinirDistribuicaoVagas([DistribuicaoComAmpla()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-        processo.DefinirClassificacao(ClassificacaoPorMediaPonderada(), PrecondicaoIfMatch.Ausente);
-        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente);
-        processo.DefinirEtapas([EtapaDaProvaObjetivaNoResultadoFinal()], PrecondicaoIfMatch.Ausente);
-        processo.DefinirTaxaInscricao(TaxaSemCobranca(), PrecondicaoIfMatch.Ausente);
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!);
+        processo.DefinirDistribuicaoVagas([DistribuicaoComAmpla()], FatosDeModalidadeDeTeste.DoCatalogo);
+        processo.DefinirClassificacao(ClassificacaoPorMediaPonderada());
+        processo.DefinirCronogramaFases([FaseConforme()], []);
+        processo.DefinirEtapas([EtapaDaProvaObjetivaNoResultadoFinal()]);
+        processo.DefinirTaxaInscricao(TaxaSemCobranca());
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 
@@ -97,8 +96,7 @@ internal static class ProcessosDoPainelDeConformidade
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS 2026 — Aviso", OrigemCandidatos.ImportacaoExterna);
         processo.DefinirCronogramaFases(
             [FaseDoResultadoDaClassificacao(1, "CLASSIFICACAO"), FaseDoResultadoDaClassificacao(2, "HABILITACAO")],
-            [],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            []).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -112,7 +110,7 @@ internal static class ProcessosDoPainelDeConformidade
             Aplicabilidade.Geral, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [], basesLegais: [], idadeMaximaEmissao: null, formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null,
             finalidade: FinalidadeFormulario.Inscricao, fatosComprovados: fatosComprovados).Value!;
-        Result definida = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente);
+        Result definida = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]);
         definida.IsSuccess.Should().BeTrue(definida.Error?.Message);
 
         return processo;

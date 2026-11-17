@@ -84,13 +84,12 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     {
         ProcessoSeletivo processo = NovoProcessoDeOrdenacaoDePredicados();
         DefinirAtendimentoEDistribuicaoDeVagas(processo);
-        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportada()).IsSuccess.Should().BeTrue();
         FaseCronograma fase = DefinirCronogramaEEtapas(processo);
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         DefinirExigenciaCondicional(processo, fase, condicoes);
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         return processo;
@@ -104,7 +103,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     private static void DefinirAtendimentoEDistribuicaoDeVagas(ProcessoSeletivo processo)
     {
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
         DefinirDistribuicaoDeVagas(processo);
     }
 
@@ -114,7 +113,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
     private static ModalidadeSelecionada ModalidadeAmpla() =>
@@ -144,12 +143,12 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     private static FaseCronograma DefinirCronogramaEEtapas(ProcessoSeletivo processo)
     {
         FaseCronograma fase = FaseDeInscricao();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "INSCRICAO"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
 
         return fase;
     }
@@ -168,7 +167,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
             condicoes, [], null, qualquer, null, finalidade: FinalidadeFormulario.Inscricao).Value!;
 
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(documento, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [NoExigencia.CriarFolha(documento, 0).Value!]).IsSuccess.Should().BeTrue();
     }
 
     private static JsonNode CondicaoGatilhoDoEnvelope(SnapshotCanonico snapshot) =>
@@ -329,8 +328,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
             ProcessoSeletivo processo = MontarProcessoComGatilho([]);
             ArgsDesempatePredicadoFato args = new(CondicaoDnf.Criar("COR_RACA", operador, valor).Value!);
             processo.DefinirCriteriosDesempate(
-                [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), args).Value!],
-                PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+                [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), args).Value!]).IsSuccess.Should().BeTrue();
             return processo;
         }
 

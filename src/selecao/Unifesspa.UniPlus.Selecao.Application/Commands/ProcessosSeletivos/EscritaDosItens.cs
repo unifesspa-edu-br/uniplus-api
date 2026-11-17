@@ -159,7 +159,7 @@ internal static class EscritaDosItens
 
             int recusasAntes = erros.Count;
             erros.AddRange(ConferenciaDoItemNoCatalogo.DoGrupo(configuracao.Exibicao, configuracao.Obrigatoriedade, contexto)
-                .Select(erro => erro with { Field = string.IsNullOrEmpty(erro.Field) ? caminho : $"{caminho}.{erro.Field}" }));
+                .Select(erro => erro.NoCaminhoDe(caminho)));
 
             if (erros.Count > recusasAntes || !lidos.FormaValida[indice] || dosCampos.Count > 0 || lidos.Campos[indice].Erros.Count > 0)
             {
@@ -203,7 +203,7 @@ internal static class EscritaDosItens
             }
             else
             {
-                erros.AddRange(fato.Errors.Select(erro => erro with { Field = string.IsNullOrEmpty(erro.Field) ? campo : $"{campo}.{erro.Field}" }));
+                erros.AddRange(fato.Errors.Select(erro => erro.NoCaminhoDe(campo)));
             }
         }
 
@@ -291,14 +291,13 @@ internal static class EscritaDosItens
 
         // As recusas do próprio item (coerência das restrições com o campo, autorreferência, ajuda)
         // saem junto das semânticas, no mesmo lote.
-        TextosDoItem textos = contexto.TextosDoItem(view);
         Result<FatoColetado> fato = FatoColetado.Criar(
             input.FatoCodigo, input.Ordem, input.Rotulo, tipoRenderizacao, configuracao.Obrigatoriedade,
             precondicaoRecusada ? null : precondicao.Value?.Condicoes,
             origemValores: VocabularioDeFatos.OrigemValores(view), etapaCodigo: input.EtapaCodigo, formato: view.Formato,
             ajuda: input.Ajuda, pedirConfirmacao: input.PedirConfirmacao, restricoes: configuracao.Restricoes, impedimento: configuracao.Impedimento,
-            classificacaoProtecao: view.ClassificacaoProtecao, hipoteseLegal: textos.HipoteseLegal, finalidadeTratamento: textos.FinalidadeTratamento,
-            descricao: textos.Descricao, componenteExibicao: textos.ComponenteExibicao);
+            classificacaoProtecao: view.ClassificacaoProtecao, hipoteseLegal: view.HipoteseLegal, finalidadeTratamento: view.FinalidadeTratamento,
+            descricao: view.Descricao, componenteExibicao: view.ComponenteExibicao);
         return erros.Count == 0
             ? fato
             : Result<FatoColetado>.ValidationFailure([.. erros, .. fato.IsFailure ? fato.Errors : []]);

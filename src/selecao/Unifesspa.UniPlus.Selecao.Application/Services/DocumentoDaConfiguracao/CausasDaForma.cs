@@ -15,14 +15,14 @@ public static class CausasDaForma
     private const string SemSubstitutoIsolado = "o texto contém metade de um par substituto UTF-16, que o texto guardado não aceita";
 
     public static FieldError Malformado() =>
-        Causa(string.Empty, DocumentoDaConfiguracaoErrorCodes.FormaInvalida, "O documento não é um JSON válido.");
+        Causa(null, DocumentoDaConfiguracaoErrorCodes.FormaInvalida, "O documento não é um JSON válido.");
 
     public static FieldError RaizNaoEhObjeto() =>
         Causa(string.Empty, DocumentoDaConfiguracaoErrorCodes.TipoInvalido, "O documento deve ser um objeto JSON.");
 
     public static FieldError TamanhoAcimaDoLimite() =>
         Causa(
-            string.Empty,
+            null,
             DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite,
             $"O documento excede o tamanho máximo de {LimitesDoDocumento.TamanhoMaximoEmBytes / BytesPorMebibyte} MiB.");
 
@@ -42,7 +42,7 @@ public static class CausasDaForma
         Causa(ponteiro, DocumentoDaConfiguracaoErrorCodes.PropriedadeRepetida, "O objeto repete uma propriedade; cada propriedade só pode aparecer uma vez.");
 
     public static FieldError ChaveRepetida(string ponteiro) =>
-        Causa(ponteiro, DocumentoDaConfiguracaoErrorCodes.ChaveRepetida, "A chave se repete em outra parte do mesmo tipo; cada parte precisa de uma chave própria.");
+        Causa(ponteiro, DocumentoDaConfiguracaoErrorCodes.ChaveRepetida, "A chave já é de uma parte anterior do mesmo tipo; cada parte precisa de uma chave própria.");
 
     public static FieldError CampoDesconhecido(string ponteiro) =>
         Causa(ponteiro, DocumentoDaConfiguracaoErrorCodes.CampoDesconhecido, "O campo não existe neste formato de documento.");
@@ -74,6 +74,6 @@ public static class CausasDaForma
             DocumentoDaConfiguracaoErrorCodes.VersaoDoFormatoNaoSuportada,
             "O documento declara um formato ou uma versão de formato que esta versão do sistema não suporta.");
 
-    private static FieldError Causa(string ponteiro, string codigo, string mensagem) =>
+    private static FieldError Causa(string? ponteiro, string codigo, string mensagem) =>
         new(ponteiro, new DomainError(codigo, mensagem));
 }

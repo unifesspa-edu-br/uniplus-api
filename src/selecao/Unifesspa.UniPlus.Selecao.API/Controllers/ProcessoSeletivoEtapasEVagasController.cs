@@ -52,33 +52,31 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
 
     /// <summary>
     /// Substitui integralmente as etapas pontuadas do processo. Devolva o <c>id</c> de cada etapa que continua: a etapa
-    /// omitida, ou devolvida sem <c>id</c>, sai do processo e leva junto os motivos de decisão escolhidos nela que ainda
-    /// não constam de edital publicado. Se algum já consta, a substituição é recusada (422
-    /// <c>fase_ou_etapa_com_motivo_publicado</c>) e nada muda.
+    /// omitida, ou devolvida sem <c>id</c>, sai do processo e leva junto os motivos de decisão escolhidos nela.
     /// </summary>
+    /// <remarks>
+    /// A operação substitui as etapas e as bancas de cada etapa inteiras: o que o corpo não traz deixa de existir no processo.
+    /// A regra de deliberação de uma banca é opcional neste pedido, e a banca que a omite apaga a regra que já estava gravada.
+    /// A obrigatoriedade da regra de deliberação é conferida na publicação.
+    /// </remarks>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/etapas")]
+    [EndpointSummary("Substitui as etapas e as bancas do processo")]
+    [EndpointDescription("Substitui as etapas e as bancas de cada etapa inteiras: o que o corpo não traz deixa de existir no processo. A regra de deliberação de uma banca é opcional neste pedido, e a banca que a omite apaga a regra que já estava gravada. A obrigatoriedade da regra de deliberação é conferida na publicação.")]
     [EmiteEsperaEsgotadaPelaTrava]
     [RequiresIdempotencyKey]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirEtapas(
         Guid id,
         [FromBody] IReadOnlyList<EtapaProcessoInput> etapas,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirEtapasCommand(id, etapas, precondicao), cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        Result resultado = await _commandBus.Send(
+            new DefinirEtapasCommand(id, etapas), cancellationToken);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -94,22 +92,15 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirOpcoesDeclaradas(
         Guid id,
         string fatoCodigo,
         [FromBody] DefinirOpcoesDeclaradasRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
+        Result resultado = await _commandBus.Send(
             new DefinirOpcoesDeclaradasCommand(
                 id,
                 fatoCodigo,
@@ -117,10 +108,9 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
                 // desreferenciar aqui responderia 500 antes de o comando existir.
                 request.Opcoes is null
                     ? null!
-                    : [.. request.Opcoes.Select(static o => o is null ? null! : new OpcaoDeclaradaInput(o.Codigo, o.Rotulo))],
-                precondicao),
+                    : [.. request.Opcoes.Select(static o => o is null ? null! : new OpcaoDeclaradaInput(o.Codigo, o.Rotulo))]),
             cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -136,24 +126,17 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirAtendimentoEspecializado(
         Guid id,
         [FromBody] DefinirAtendimentoEspecializadoRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirAtendimentoEspecializadoCommand(id, request.CondicaoIds, request.RecursoIds, request.TipoDeficienciaIds, precondicao),
+        Result resultado = await _commandBus.Send(
+            new DefinirAtendimentoEspecializadoCommand(id, request.CondicaoIds, request.RecursoIds, request.TipoDeficienciaIds),
             cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -171,46 +154,14 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirDistribuicaoVagas(
         Guid id,
         [FromBody] IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> distribuicaoVagas,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoComDistribuicaoVagasDto> resultado = await _commandBus.Send(
-            new DefinirDistribuicaoVagasCommand(id, distribuicaoVagas, precondicao), cancellationToken);
-        return ResponderDefinicaoDistribuicaoVagas(resultado);
-    }
-
-    /// <summary>
-    /// 200 com o quadro de vagas recém-persistido e o <c>ETag</c> <b>novo</b>
-    /// quando a mutação correu sob sessão editorial; 200 com o quadro mas
-    /// sem header <c>ETag</c> quando o processo está em rascunho (não há
-    /// sessão, não há tag).
-    /// </summary>
-    /// <remarks>
-    /// Diferente de <see cref="ProtocoloDeMutacao.ResponderMutacao"/> (204 sempre, corpo vazio):
-    /// aqui o corpo nunca é vazio em caso de sucesso. Deliberadamente não
-    /// reaproveita <see cref="ProtocoloDeMutacao.ResponderMutacao"/> nem estende
-    /// <see cref="MutacaoAceita"/> — esse tipo e esse helper são
-    /// compartilhados pelas demais rotas de configuração, que
-    /// continuam em 204; mudar o shape deles quebraria os demais.
-    /// </remarks>
-    private IActionResult ResponderDefinicaoDistribuicaoVagas(Result<MutacaoComDistribuicaoVagasDto> resultado)
-    {
-        if (resultado.IsFailure)
-        {
-            return resultado.ToActionResult(_mapper);
-        }
-
-        ProtocoloDeMutacao.EmitirETag(Response, resultado.Value!.ETag);
-        return Ok(resultado.Value!.DistribuicaoVagas);
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await _commandBus.Send(
+            new DefinirDistribuicaoVagasCommand(id, distribuicaoVagas), cancellationToken);
+        return resultado.IsSuccess ? Ok(resultado.Value) : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -226,8 +177,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// payload (Guids em lista, quadro declarado) é grande demais para
     /// querystring de um GET idiomático. Por isso não leva
     /// <c>[RequiresIdempotencyKey]</c> (reservado a mutação com efeito
-    /// cumulativo, ADR-0027) nem <c>[EmiteETag]</c> (não há concorrência
-    /// otimista sobre nada persistido).
+    /// cumulativo, ADR-0027).
     /// </para>
     /// <para>
     /// <b>Ids do corpo da resposta são efêmeros</b> — gerados em memória para
@@ -269,8 +219,7 @@ public sealed class ProcessoSeletivoEtapasEVagasController : ControllerBase
     /// <summary>
     /// Pré-visualiza o processo diante de um perfil simulado de candidato (UNI-REQ-0144,
     /// UNI-REQ-0145, UNI-REQ-0064): o que cada formulário mostra e exige e os documentos que a
-    /// árvore de exigências pediria. Avalia a configuração viva — rascunho ou sessão de
-    /// retificação —, não o envelope publicado, e não grava nada: o perfil, que carrega fatos
+    /// árvore de exigências pediria. Avalia a configuração viva — o rascunho —, não o envelope publicado, e não grava nada: o perfil, que carrega fatos
     /// sensíveis simulados, não é persistido nem registrado.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]

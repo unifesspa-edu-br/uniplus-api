@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 /// <summary>
-/// Os dublês das dependências dos handlers que congelam (Publicar, Retificar e FecharRetificacao) que quase
+/// Os dublês das dependências dos handlers que congelam (Publicar e Retificar) que quase
 /// nenhum teste quer descrever: o processo no repositório, o documento do edital confirmado, o catálogo de tipos
 /// de ato, o usuário autenticado e o canonicalizador que devolve um snapshot vazio.
 /// </summary>

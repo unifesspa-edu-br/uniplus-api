@@ -10,7 +10,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 /// <summary>
-/// A conferência dos anexos do edital na publicação, na retificação e no fechamento da retificação:
+/// A conferência dos anexos do edital na publicação e na retificação:
 /// cada documento existe, é do processo e está confirmado — antes de qualquer escrita, porque a
 /// recusa tardia desfaria o que a transação já rastreou.
 /// </summary>

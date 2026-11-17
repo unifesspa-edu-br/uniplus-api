@@ -44,7 +44,7 @@ public sealed class RecusasAcumuladasNaGravacaoDoCronogramaTests
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma[] fases = [AbreOCiclo("A", 1).Criar(), new ModeloDeFase("B", 1).Criar()];
 
-        Result resultado = processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases(fases, []);
 
         resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(
             ("fases[1].ordem", OrdemRepetida),
@@ -56,12 +56,12 @@ public sealed class RecusasAcumuladasNaGravacaoDoCronogramaTests
     public void Definir_OrigemRepetidaSobreCronogramaGravado_RecusaSemLancar()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCronogramaFases([new ModeloDeFase("A", 1).Criar()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([new ModeloDeFase("A", 1).Criar()], []).IsSuccess.Should().BeTrue();
         Guid origem = Guid.CreateVersion7();
         FaseCronograma[] fases = [new ModeloDeFase("B", 1) { OrigemId = origem }.Criar(), new ModeloDeFase("C", 2) { OrigemId = origem }.Criar()];
 
         Result? resultado = null;
-        Action definir = () => resultado = processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Curinga);
+        Action definir = () => resultado = processo.DefinirCronogramaFases(fases, []);
 
         definir.Should().NotThrow();
         Codigos(resultado!).Should().Equal(OrigemRepetidaCodigo);
@@ -73,7 +73,7 @@ public sealed class RecusasAcumuladasNaGravacaoDoCronogramaTests
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma[] fases = [.. FasesDaOrdemRepetida(), .. DuasArestasViolaveis()];
 
-        Result resultado = processo.DefinirCronogramaFases(fases, ArestasDasDuasViolacoes, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases(fases, ArestasDasDuasViolacoes);
 
         Codigos(resultado).Should().Equal(OrdemRepetida, PrecedenciaViolada, PrecedenciaViolada);
     }
@@ -89,7 +89,7 @@ public sealed class RecusasAcumuladasNaGravacaoDoCronogramaTests
         ];
 
         Result? resultado = null;
-        Action definir = () => resultado = processo.DefinirCronogramaFases(fases, ArestasDasDuasViolacoes, PrecondicaoIfMatch.Curinga);
+        Action definir = () => resultado = processo.DefinirCronogramaFases(fases, ArestasDasDuasViolacoes);
 
         definir.Should().NotThrow();
         Codigos(resultado!).Should().Equal(OrigemRepetidaCodigo, PrecedenciaViolada, PrecedenciaViolada);
@@ -102,7 +102,7 @@ public sealed class RecusasAcumuladasNaGravacaoDoCronogramaTests
         FaseCronograma[] fases = [new ModeloDeFase("A", 1).Criar(), new ModeloDeFase("A", 2).Criar(), .. DuasArestasViolaveis()];
         ArestaPrecedencia[] arestas = [new("C", "D", false), new("D", "A", false)];
 
-        Result resultado = processo.DefinirCronogramaFases(fases, arestas, PrecondicaoIfMatch.Curinga);
+        Result resultado = processo.DefinirCronogramaFases(fases, arestas);
 
         Codigos(resultado).Should().Equal(OrigemRepetidaCodigo, FaseDoFormulario, PrecedenciaViolada);
         resultado.Errors[^1].Field.Should().Be("fases[3].ordem");
@@ -114,7 +114,7 @@ public sealed class RecusasAcumuladasNaGravacaoDoCronogramaTests
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma[] fases = [AbreOCiclo("HOMOLOGACAO", 1).Criar(), new ModeloDeFase("INSCRICAO", 2).Criar()];
 
-        Result resultado = processo.DefinirCronogramaFases(fases, [new ArestaPrecedencia("INSCRICAO", "HOMOLOGACAO", false)], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases(fases, [new ArestaPrecedencia("INSCRICAO", "HOMOLOGACAO", false)]);
 
         Codigos(resultado).Should().Equal(PrecedenciaViolada, ConclusaoNaoDeclarada);
     }
@@ -124,7 +124,7 @@ public sealed class RecusasAcumuladasNaGravacaoDoCronogramaTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result resultado = processo.DefinirCronogramaFases([new ModeloDeFase("A", 1).Criar(), new ModeloDeFase("B", 2).Criar()], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([new ModeloDeFase("A", 1).Criar(), new ModeloDeFase("B", 2).Criar()], []);
 
         resultado.IsSuccess.Should().BeTrue();
         processo.CronogramaFases.Should().HaveCount(2);

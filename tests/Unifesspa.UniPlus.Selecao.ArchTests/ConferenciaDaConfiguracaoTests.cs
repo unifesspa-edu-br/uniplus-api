@@ -7,42 +7,34 @@ using ArchUnitNET.xUnit;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 /// <summary>
-/// A conferência da configuração do processo e a restauração da configuração congelada julgam coisas diferentes: a primeira
-/// avalia o que o autor declarou contra os cadastros vivos, a segunda só confere a estrutura do documento já congelado. Nenhuma
-/// conhece a outra, e a configuração apta a congelar só nasce de <c>Conferir</c>.
+/// A conferência da configuração do processo avalia o que o autor declarou contra os cadastros vivos, e a configuração
+/// apta a congelar só nasce de <c>Conferir</c>.
 /// </summary>
 public sealed class ConferenciaDaConfiguracaoTests
 {
-    private const string NamespaceDaConferencia = @"^Unifesspa\.UniPlus\.Selecao\.Domain\.ProcessosSeletivos\.ConferenciaDaConfiguracao(\.|$)";
-    private const string NamespaceDaRestauracao = @"^Unifesspa\.UniPlus\.Selecao\.Domain\.ProcessosSeletivos\.Restauracao(\.|$)";
-
     private static readonly Architecture Arquitetura = new ArchLoader().LoadAssemblies(typeof(ProcessoSeletivo).Assembly).Build();
 
-    [Fact(DisplayName = "A conferência da configuração não depende da restauração")]
-    public void Conferencia_NaoDependeDaRestauracao()
-    {
-        IArchRule regra = Types()
-            .That().ResideInNamespaceMatching(NamespaceDaConferencia)
-            .Should().NotDependOnAnyTypesThat().ResideInNamespaceMatching(NamespaceDaRestauracao)
-            .Because("a conferência julga o que foi declarado; a restauração não reinterpreta o passado congelado");
-
-        regra.Check(Arquitetura);
-    }
-
-    [Fact(DisplayName = "A restauração da configuração não depende da conferência")]
-    public void Restauracao_NaoDependeDaConferencia()
-    {
-        IArchRule regra = Types()
-            .That().ResideInNamespaceMatching(NamespaceDaRestauracao)
-            .Should().NotDependOnAnyTypesThat().ResideInNamespaceMatching(NamespaceDaConferencia)
-            .Because("a restauração confere só a estrutura do documento congelado, sem os cadastros da conferência");
-
-        regra.Check(Arquitetura);
-    }
+    private static readonly System.Type[] TiposDaConfiguracaoDeclarada =
+    [
+        typeof(ConfiguracaoDeclarada),
+        typeof(IdentidadeDoProcessoDeclarada),
+        typeof(CronogramaDeclarado),
+        typeof(AvaliacaoDeclarada),
+        typeof(VagasDeclaradas),
+        typeof(ExigenciasDeclaradas),
+        typeof(ColetaDeclarada),
+        typeof(DivulgacaoETaxaDeclaradas),
+        typeof(OrigemNoDocumento),
+        typeof(ParteRecusada),
+    ];
 
     [Fact(DisplayName = "A configuração apta a congelar não tem construtor público")]
     public void ConfiguracaoAptaACongelar_NaoTemConstrutorPublico()
@@ -51,6 +43,39 @@ public sealed class ConferenciaDaConfiguracaoTests
             .That().AreConstructors().And().AreDeclaredIn(typeof(ConfiguracaoAptaACongelar))
             .Should().NotBePublic()
             .Because("a configuração apta só nasce de Conferir, que julga todas as famílias de regra");
+
+        regra.Check(Arquitetura);
+    }
+
+    [Fact(DisplayName = "A configuração declarada e os blocos dela não têm construtor público")]
+    public void ConfiguracaoDeclarada_ENosBlocos_NaoTemConstrutorPublico()
+    {
+        IArchRule regra = MethodMembers()
+            .That().AreConstructors().And().AreDeclaredIn(TiposDaConfiguracaoDeclarada)
+            .Should().NotBePublic()
+            .Because("a configuração declarada só nasce da raiz, com cópias das coleções do agregado, ou da leitura do documento");
+
+        regra.Check(Arquitetura);
+    }
+
+    [Fact(DisplayName = "A adoção da fase e da etapa lidas do documento, sem conferência, não é pública")]
+    public void AdocaoSemConferencia_NaoEPublica()
+    {
+        IArchRule regra = MethodMembers()
+            .That().AreDeclaredIn(typeof(FaseCronograma), typeof(EtapaProcesso)).And().HaveNameStartingWith("Adotar(")
+            .Should().NotBePublic()
+            .Because("a conferência da declaração adotada é do congelamento, e só a leitura do documento, dentro do domínio, adota sem conferir");
+
+        regra.Check(Arquitetura);
+    }
+
+    [Fact(DisplayName = "A origem no documento e a parte recusada não dependem da fase nem da etapa")]
+    public void OrigemNoDocumento_NaoDependeDaFaseNemDaEtapa()
+    {
+        IArchRule regra = Types()
+            .That().Are(typeof(OrigemNoDocumento), typeof(ParteRecusada))
+            .Should().NotDependOnAnyTypesThat().Are(typeof(FaseCronograma), typeof(EtapaProcesso), typeof(FaseDeclarada), typeof(EtapaDeclarada))
+            .Because("a origem liga listas nomeadas e posições, e quem lê a fase e a etapa recebe dela só os nomes das listas com parte recusada");
 
         regra.Check(Arquitetura);
     }

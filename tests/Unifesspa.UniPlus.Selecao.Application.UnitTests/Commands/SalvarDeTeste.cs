@@ -39,7 +39,7 @@ internal static class SalvarDeTeste
         FatoColetado item, IReadOnlyList<GrupoColetado>? grupos = null)
     {
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Salvar rascunho");
-        processoBase.DefinirItens([item], PrecondicaoIfMatch.Ausente, grupos: grupos).IsSuccess.Should().BeTrue();
+        processoBase.DefinirItens([item], grupos: grupos).IsSuccess.Should().BeTrue();
 
         // A definição avaliável só reconhece um item que esteja numa etapa de um FORMULÁRIO
         // (RecorteDaFinalidade filtra por etapa de FormularioProcesso, não por EtapaProcesso do

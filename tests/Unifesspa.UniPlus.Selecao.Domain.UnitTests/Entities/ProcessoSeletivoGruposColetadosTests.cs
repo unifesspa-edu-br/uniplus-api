@@ -122,7 +122,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
             EtapaFormulario.Criar("REVISAO", 1, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão", null, null).Value!,
         ];
 
-        Result resultado = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, null, null, semADeDados, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, null, null, semADeDados);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(EstruturaFormularioErrorCodes.ItemForaDeSecao);
     }
@@ -147,7 +147,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirItens([], grupos: [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))]).IsSuccess.Should().BeTrue();
 
-        processo.RemoverFormulario(FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.RemoverFormulario(FinalidadeFormulario.Inscricao).IsSuccess.Should().BeTrue();
 
         processo.GruposColetados.Should().BeEmpty();
     }
@@ -160,7 +160,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         CopiaDeModeloDeFormulario copia = new(
             FinalidadeFormulario.Inscricao, "Formulário", FormularioDeTeste.Etapas(), [Item("RENDA", 0)], [], [], [], Guid.CreateVersion7(), "MODELO");
 
-        processo.AplicarModeloDeFormulario(copia, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.AplicarModeloDeFormulario(copia).IsSuccess.Should().BeTrue();
 
         processo.GruposColetados.Should().BeEmpty();
     }
@@ -173,7 +173,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
             FinalidadeFormulario.Inscricao, "Formulário", FormularioDeTeste.Etapas(), [Item("RENDA", 0)],
             [Grupo("COMPOSICAO", 1, Campo("PARENTESCO", 0), Campo("MAIOR_IDADE", 1))], [], [], Guid.CreateVersion7(), "MODELO");
 
-        processo.AplicarModeloDeFormulario(copia, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.AplicarModeloDeFormulario(copia).IsSuccess.Should().BeTrue();
 
         processo.GruposColetados.Single().Subitens.Select(static s => s.FatoCodigo).Should().Equal("PARENTESCO", "MAIOR_IDADE");
         processo.FatosColetados.ForaDoConjuntoBasico().Select(static f => f.FatoCodigo).Should().Equal("RENDA");
@@ -187,7 +187,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
             FinalidadeFormulario.Inscricao, "Formulário", FormularioDeTeste.Etapas(), [Item("RENDA", 2, citado: "PARENTESCO")],
             [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))], [], [], Guid.CreateVersion7(), "MODELO");
 
-        processo.AplicarModeloDeFormulario(copia, PrecondicaoIfMatch.Ausente)
+        processo.AplicarModeloDeFormulario(copia)
             .Errors.Should().ContainSingle().Which.Error.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoDeMembroForaDoGrupo);
     }
 
@@ -200,7 +200,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
             FinalidadeFormulario.Habilitacao, "Formulário", FormularioDeTeste.Etapas(), [],
             [Grupo("COMPOSICAO", 0, Campo("PARENTESCO", 0))], [], [], Guid.CreateVersion7(), "MODELO");
 
-        processo.AplicarModeloDeFormulario(copia, PrecondicaoIfMatch.Ausente)
+        processo.AplicarModeloDeFormulario(copia)
             .Errors.Should().ContainSingle().Which.Should().Match<FieldError>(static e => e.Field == "grupos[0]" && e.Error.Code == FatoColetadoErrorCodes.FatoDuplicado);
     }
 
@@ -215,7 +215,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
         CopiaDeModeloDeFormulario copia = new(
             FinalidadeFormulario.Inscricao, "Formulário", FormularioDeTeste.Etapas(), [Item(codigo, 0)], [], [], [], Guid.CreateVersion7(), "MODELO");
 
-        Result resultado = processo.AplicarModeloDeFormulario(copia, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.AplicarModeloDeFormulario(copia);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(FatoColetadoErrorCodes.FatoDuplicado);
         processo.GruposColetados.Single().Subitens.Should().ContainSingle("a recusa deixa o grupo como estava");
@@ -233,7 +233,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
             [RegraDerivacaoConfigurada.Criar(0, "SIM", [CondicaoRegraDerivacao.Criar(0, "RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!])
             .Value!;
 
-        Result resultado = processo.DefinirRegrasDerivacao([derivacao], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirRegrasDerivacao([derivacao]);
 
         resultado.Error!.Code.Should().Be(ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado);
     }
@@ -246,7 +246,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
             [Item("COR_RACA", 0)],
             grupos: [Grupo("COMPOSICAO", 1, exibicao: Predicado("COR_RACA", "PRETA"), campos: Campo("PARENTESCO", 0))]).IsSuccess.Should().BeTrue();
 
-        VinculosDeFatos vinculos = ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo));
+        VinculosDeFatos vinculos = ReferenciasVivas.Vinculos(processo.Declaracao());
 
         vinculos.Fatos.Should().Contain("PARENTESCO");
         vinculos.Valores.Should().Contain(("COR_RACA", "PRETA"));
@@ -260,7 +260,7 @@ public sealed class ProcessoSeletivoGruposColetadosTests
             [Item("CONCORRER_RENDA", 0)],
             grupos: [Grupo("COMPOSICAO", 1, exibicao: Predicado("CONCORRER_RENDA", true), campos: Campo("PARENTESCO", 0))]).IsSuccess.Should().BeTrue();
 
-        GrafoDependenciaConjunta grafo = CitacoesDosFormularios.ConstruirGrafoDependencia(EstadoDaConfiguracao.De(processo)).Value!;
+        GrafoDependenciaConjunta grafo = CitacoesDosFormularios.ConstruirGrafoDependencia(processo.Declaracao()).Value!;
 
         grafo.Arestas.Should().Contain(new ArestaGrafoDependencia(
             TipoArestaGrafo.Precondicao, new NoGrafoDependencia(ClasseNoGrafo.Fato, "CONCORRER_RENDA"), new NoGrafoDependencia(ClasseNoGrafo.Campo, "PARENTESCO")));

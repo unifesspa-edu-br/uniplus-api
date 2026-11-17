@@ -22,19 +22,19 @@ internal static class DeclaracoesObrigatoriasDeTeste
 
         if (opcoesDeCurso && processo.NumeroDeOpcoesDeCurso is null)
         {
-            ExigirSucesso(processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente));
+            ExigirSucesso(processo.DefinirOpcoesDeCurso(1));
         }
 
         if (bonus && processo.AplicaBonusRegional is null)
         {
-            ExigirSucesso(processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente));
+            ExigirSucesso(processo.DefinirBonusRegional(aplica: false, bonus: null));
         }
 
         if (desempate && processo.OrigemCandidatos == OrigemCandidatos.InscricaoPropria && processo.CriteriosDesempate.Count == 0)
         {
             ReferenciaRegra regra = ReferenciaRegra.De(CriterioDesempateCodigo.MaiorIdade, "v1", new string('f', 64));
             CriterioDesempate criterio = CriterioDesempate.Criar(1, regra, new ArgsDesempateMaiorIdade()).Value!;
-            ExigirSucesso(processo.DefinirCriteriosDesempate([criterio], PrecondicaoIfMatch.Ausente));
+            ExigirSucesso(processo.DefinirCriteriosDesempate([criterio]));
         }
     }
 

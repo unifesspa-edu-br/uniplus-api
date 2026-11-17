@@ -31,7 +31,7 @@ using ValoresDoCampo = System.Collections.Generic.IReadOnlyList<Unifesspa.UniPlu
 /// <c>SerializarFatosColetados</c>); para <c>SELECAO_UNICA</c>/<c>SELECAO_MULTIPLA</c> é a lista
 /// — possivelmente vazia, nunca ausente. É este dicionário completo, e não um parcial só com os
 /// fatos de seleção, que o decoder reproduz ao reidratar, então o encoder trata os dois
-/// caminhos (publicação nova e recanonicalização pós-restauração) pela MESMA forma.
+/// caminhos (publicação nova e retificação) pela MESMA forma.
 /// </para>
 /// <para>
 /// Três origens para o valor de um fato categórico coletado (UNI-REQ-0072, ADR-0136). O
@@ -115,7 +115,7 @@ internal static class ResolvedorValoresSelecionaveisCongelados
     private sealed class ResolucaoDosCampos(
         ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> catalogo, IReadOnlyDictionary<string, string> caminhos)
     {
-        private readonly IReadOnlySet<(string Fato, string Valor)> _valoresCitados = ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)).Valores;
+        private readonly IReadOnlySet<(string Fato, string Valor)> _valoresCitados = ReferenciasVivas.Vinculos(processo.Declaracao()).Valores;
 
         public CamposResolvidos ResolverTodos(IReadOnlySet<string> fatosExcluidos)
         {

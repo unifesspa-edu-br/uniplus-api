@@ -79,26 +79,25 @@ internal static class ProcessoConformeFactory
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         FaseCronograma faseDoProcesso = fase ?? FaseConforme();
-        processo.DefinirCronogramaFases([faseDoProcesso], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([EtapaDaProvaObjetiva(faseDoProcesso.Codigo)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([faseDoProcesso], []).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaDaProvaObjetiva(faseDoProcesso.Codigo)]).IsSuccess.Should().BeTrue();
 
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas([Oferta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([Oferta()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
             RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-        }).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }).Value!).IsSuccess.Should().BeTrue();
 
 
         if (declararTaxa)
         {
             processo.DefinirTaxaInscricao(
-                ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         }
 
         DeclaracoesObrigatoriasDeTeste.Declarar(processo, bonus: declararBonus, desempate: comDesempate, opcoesDeCurso: declararOpcoesDeCurso);

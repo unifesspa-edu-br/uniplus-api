@@ -42,21 +42,9 @@ public sealed record QuantidadeVagaInput(Guid ModalidadeId, int Quantidade);
 /// Substitui integralmente a distribuição de vagas do processo (Story #773,
 /// issue #848/ADR-0115): uma <c>ConfiguracaoDistribuicaoVagas</c>
 /// por oferta de curso, com o quadro de vagas (calculado no ramo federal,
-/// fixado no institucional) materializado na mesma operação.
+/// fixado no institucional) materializado na mesma operação. Devolve a distribuição recém-persistida,
+/// inclusive o quadro de vagas calculado, no mesmo formato que a simulação e o <c>GET</c> do processo.
 /// </summary>
 public sealed record DefinirDistribuicaoVagasCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> DistribuicaoVagas,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoComDistribuicaoVagasDto>>;
-
-/// <summary>
-/// O que <see cref="DefinirDistribuicaoVagasCommand"/> devolve ao persistir
-/// (issue #1283): o mesmo <c>ETag</c> de <see cref="MutacaoAceita"/>, mais a
-/// distribuição recém-persistida — inclusive o quadro de vagas calculado —
-/// no mesmo shape que a simulação (issue #1282) e o <c>GET</c> do processo
-/// devolvem, para o cliente confirmar o que foi gravado sem uma segunda
-/// chamada.
-/// </summary>
-public sealed record MutacaoComDistribuicaoVagasDto(
-    string? ETag,
-    IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> DistribuicaoVagas);
+    IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> DistribuicaoVagas) : ICommand<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>>;

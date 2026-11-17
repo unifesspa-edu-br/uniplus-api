@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 /// </summary>
 public static class RetirarMotivoDoProcessoCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         RetirarMotivoDoProcessoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IMotivoDoProcessoRepository motivoDoProcessoRepository,
@@ -27,11 +27,11 @@ public static class RetirarMotivoDoProcessoCommandHandler
 
         ProcessoSeletivo? processo = await processoSeletivoRepository.ObterParaMutacaoAsync(command.ProcessoSeletivoId, cancellationToken).ConfigureAwait(false);
         return processo is null
-            ? Result<MutacaoAceita>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId))
+            ? Result.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId))
             : await RetirarAsync(processo, command, motivoDoProcessoRepository, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result<MutacaoAceita>> RetirarAsync(
+    private static async Task<Result> RetirarAsync(
         ProcessoSeletivo processo,
         RetirarMotivoDoProcessoCommand command,
         IMotivoDoProcessoRepository repository,
@@ -39,11 +39,11 @@ public static class RetirarMotivoDoProcessoCommandHandler
         CancellationToken cancellationToken)
     {
         IReadOnlyList<MotivoDoProcesso> escolhaAtual = await repository.ListarEscolhaAtualAsync(processo.Id, cancellationToken).ConfigureAwait(false);
-        Result<MotivoDoProcesso> retirada = EscolhaDosMotivos.Retirar(processo, escolhaAtual, command.Lugar, command.MotivoDeDecisaoId, command.Precondicao);
+        Result<MotivoDoProcesso> retirada = EscolhaDosMotivos.Retirar(processo, escolhaAtual, command.Lugar, command.MotivoDeDecisaoId);
         if (retirada.IsFailure)
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<MutacaoAceita>.Failure(retirada.Error!);
+            return Result.Failure(retirada.Error!);
         }
 
         repository.Remover(retirada.Value!);

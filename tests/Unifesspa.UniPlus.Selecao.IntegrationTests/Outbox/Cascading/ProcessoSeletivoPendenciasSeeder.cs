@@ -127,7 +127,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             condicoes: [], basesLegais: [baseLegal], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null, finalidade: FinalidadeFormulario.Inscricao).Value!;
         Result exigenciaResult = processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga);
+            [NoExigencia.CriarFolha(exigencia, 0).Value!]);
         exigenciaResult.IsSuccess.Should().BeTrue(exigenciaResult.Error?.Message);
 
         return await PersistirComDocumentoConfirmadoAsync(db, processo);
@@ -218,17 +218,17 @@ internal static class ProcessoSeletivoPendenciasSeeder
             EscalaNotaFinal = 100m,
         });
         classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
-        Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!, PrecondicaoIfMatch.Curinga);
+        Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!);
         classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);
 
         // Classificação baseada em ENEM exige ao menos uma edição admitida (issue #1620).
         Result opcoesResult = processo.DefinirOpcoesDeclaradas(
-            "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga);
+            "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!]);
         opcoesResult.IsSuccess.Should().BeTrue(opcoesResult.Error?.Message);
 
         DefinirCronogramaEEtapaDaFase(processo, [faseBuilder(coletaInscricao: true)]);
 
-        Result itensResult = processo.DefinirItens([FormularioDeTeste.CampoDaEdicaoDoEnem(0)], PrecondicaoIfMatch.Curinga);
+        Result itensResult = processo.DefinirItens([FormularioDeTeste.CampoDaEdicaoDoEnem(0)]);
         itensResult.IsSuccess.Should().BeTrue(itensResult.Error?.Message);
 
         return await PersistirComDocumentoConfirmadoAsync(db, processo);
@@ -250,7 +250,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
 
     private static void DefinirCronogramaEEtapaDaFase(ProcessoSeletivo processo, IReadOnlyList<FaseCronograma> fases)
     {
-        Result cronogramaResult = processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente);
+        Result cronogramaResult = processo.DefinirCronogramaFases(fases, []);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
         DefinirEtapaDaFase(processo);
     }
@@ -261,7 +261,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
         etapasResult.IsSuccess.Should().BeTrue(etapasResult.Error?.Message);
     }
 
@@ -288,12 +288,12 @@ internal static class ProcessoSeletivoPendenciasSeeder
         if (definirAtendimentoEspecializado)
         {
             Result atendimentoResult = processo.DefinirAtendimentoEspecializado(
-                AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+                AtendimentoEspecializado.Criar([], [], []).Value!);
             atendimentoResult.IsSuccess.Should().BeTrue(atendimentoResult.Error?.Message);
         }
 
         IReadOnlyList<ConfiguracaoDistribuicaoVagas> distribuicaoEfetiva = distribuicao ?? [DistribuicaoAmplaPadrao()];
-        Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas(distribuicaoEfetiva, FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas(distribuicaoEfetiva, FatosDeModalidadeDeTeste.DoCatalogo);
         distribuicaoDefinirResult.IsSuccess.Should().BeTrue(distribuicaoDefinirResult.Error?.Message);
 
         ReferenciaRegra regraCalculo = ReferenciaRegra.De(
@@ -306,7 +306,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
             RegraOrdemAlocacao = regraOrdemAlocacao,
         });
         classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
-        Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!, PrecondicaoIfMatch.Ausente);
+        Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!);
         classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);
 
         faseBuilder = FaseDeResultadoFinal;
@@ -315,8 +315,7 @@ internal static class ProcessoSeletivoPendenciasSeeder
         // aqui para que cada método desta classe continue isolando SÓ o defeito que se propõe
         // a isolar (issue #1096).
         Result taxaResult = processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente);
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!);
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 

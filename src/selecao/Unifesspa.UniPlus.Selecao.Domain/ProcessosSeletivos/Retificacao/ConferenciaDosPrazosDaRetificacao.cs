@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 
 /// <summary>
 /// O que a retificação não muda nos prazos do cronograma publicado (UNI-REQ-0211, UNI-REQ-0106). A fase concluída
@@ -11,7 +12,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// começou, o início e o término mudam livremente, e o que a janela de isenção precisa cumprir é conferido pelas
 /// regras de publicação sobre o cronograma novo. A fase retirada é recusa de <see cref="ConferenciaDasFasesIniciadas"/>.
 /// A fase se identifica pela fase canônica de origem e a etapa pelo <c>Id</c>. As recusas se acumulam, cada uma no
-/// campo do prazo (ADR-0125); no término vale a primeira, do mais específico ao mais geral.
+/// campo do prazo (ADR-0125), e o campo aponta a fase ou a etapa pela posição dela na ordem canônica do documento novo, e não
+/// na lista como veio; no término vale a primeira, do mais específico ao mais geral.
 /// </summary>
 public static class ConferenciaDosPrazosDaRetificacao
 {
@@ -22,7 +24,7 @@ public static class ConferenciaDosPrazosDaRetificacao
         ArgumentNullException.ThrowIfNull(etapasNovas);
         ArgumentNullException.ThrowIfNull(andamento);
 
-        Dictionary<Guid, FaseCronograma> novasPorOrigem = fasesNovas.ToDictionary(static f => f.FaseCanonicaOrigemId);
+        Dictionary<Guid, (FaseCronograma Fase, int Posicao)> novasPorOrigem = FasesNoDocumentoPorOrigem(fasesNovas);
 
         return
         [
@@ -33,9 +35,15 @@ public static class ConferenciaDosPrazosDaRetificacao
         ];
     }
 
-    private static IEnumerable<FieldError> RecusasDaFase(FaseCronograma basePublicada, FaseCronograma nova, AndamentoDasFases andamento)
+    private static Dictionary<Guid, (FaseCronograma Fase, int Posicao)> FasesNoDocumentoPorOrigem(IEnumerable<FaseCronograma> fasesNovas) =>
+        OrdemCanonicaDaConfiguracao.Fases(fasesNovas)
+            .Select(static (fase, posicao) => (Fase: fase, Posicao: posicao))
+            .ToDictionary(static par => par.Fase.FaseCanonicaOrigemId);
+
+    private static IEnumerable<FieldError> RecusasDaFase(FaseCronograma basePublicada, (FaseCronograma Fase, int Posicao) noDocumento, AndamentoDasFases andamento)
     {
-        string caminho = $"cronograma.fases[{basePublicada.Codigo}]";
+        FaseCronograma nova = noDocumento.Fase;
+        string caminho = $"fases[{noDocumento.Posicao}]";
 
         return andamento.Da(basePublicada) switch
         {
@@ -107,13 +115,15 @@ public static class ConferenciaDosPrazosDaRetificacao
 
     private static IEnumerable<FieldError> RecusasDasEtapasIniciadas(IReadOnlyCollection<EtapaProcesso> etapasNovas, AndamentoDasFases andamento)
     {
-        Dictionary<Guid, EtapaProcesso> novasPorId = etapasNovas.ToDictionary(static e => e.Id);
+        Dictionary<Guid, (EtapaProcesso Etapa, int Posicao)> novasPorId = OrdemCanonicaDaConfiguracao.Etapas(etapasNovas)
+            .Select(static (etapa, posicao) => (Etapa: etapa, Posicao: posicao))
+            .ToDictionary(static par => par.Etapa.Id);
 
         return andamento.EtapasDaBase
             .Where(etapa => andamento.Fatos.FasesIniciadas.ContemEtapa(etapa.Id)
-                && novasPorId.TryGetValue(etapa.Id, out EtapaProcesso? nova) && nova.Inicio != etapa.Inicio)
+                && novasPorId.TryGetValue(etapa.Id, out (EtapaProcesso Etapa, int Posicao) nova) && nova.Etapa.Inicio != etapa.Inicio)
             .Select(etapa => Recusa(
-                $"cronograma.etapas[{etapa.Nome}].inicio",
+                $"etapas[{novasPorId[etapa.Id].Posicao}].inicio",
                 RetificacaoErrorCodes.InicioDeEtapaIniciadaAlterado,
                 $"A etapa '{etapa.Nome}' já começou, e o início dela não muda."));
     }

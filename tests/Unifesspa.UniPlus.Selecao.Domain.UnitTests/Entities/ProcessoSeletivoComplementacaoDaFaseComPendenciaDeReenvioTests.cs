@@ -36,7 +36,7 @@ public sealed class ProcessoSeletivoComplementacaoDaFaseComPendenciaDeReenvioTes
     private static Result RedefinirComplementacao(ProcessoSeletivo processo, FaseCronograma fase, bool permiteComplementacao) =>
         processo.DefinirCronogramaFases(
             [FaseComComplementacao(1, "ENVIO_DOCUMENTOS", permiteComplementacao, fase.FaseCanonicaOrigemId)],
-            [], PrecondicaoIfMatch.Curinga);
+            []);
 
     private static DocumentoExigido ExigenciaComPendenciaDeReenvio(Guid faseId) =>
         Exigencia(faseId, Aplicabilidade.Geral, consequenciaIndeferimento: "PENDENCIA_REENVIO");

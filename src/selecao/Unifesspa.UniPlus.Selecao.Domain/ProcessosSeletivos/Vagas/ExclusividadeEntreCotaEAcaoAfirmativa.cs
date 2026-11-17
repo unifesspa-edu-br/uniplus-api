@@ -5,7 +5,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 internal static class ExclusividadeEntreCotaEAcaoAfirmativa
 {
@@ -25,12 +25,12 @@ internal static class ExclusividadeEntreCotaEAcaoAfirmativa
     /// dois valores. O derivado booleano é escalar.
     /// A âncora, sem cláusula, vale sempre.
     /// </remarks>
-    internal static DomainError? PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa(EstadoDaConfiguracao estado)
+    internal static DomainError? PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa(ConfiguracaoDeclarada configuracao)
     {
-        List<ModalidadeSelecionada> ofertadas = RegrasDaDistribuicaoDeVagas.ModalidadesOfertadas(estado);
-        IReadOnlyList<ConfiguracaoDerivacaoFato> derivacoes = estado.DerivacoesEfetivas();
+        List<ModalidadeSelecionada> ofertadas = RegrasDaDistribuicaoDeVagas.ModalidadesOfertadas(configuracao);
+        IReadOnlyList<ConfiguracaoDerivacaoFato> derivacoes = configuracao.DerivacoesEfetivas();
         HashSet<string> fatosMultivalorados = [
-            .. estado.Itens
+            .. configuracao.Coleta.Itens
                 .Where(static f => f.TipoRenderizacao == TipoRenderizacao.SelecaoMultipla)
                 .Select(static f => f.FatoCodigo),
             .. derivacoes.Where(static c => !c.Booleano).Select(static c => c.CodigoFato),

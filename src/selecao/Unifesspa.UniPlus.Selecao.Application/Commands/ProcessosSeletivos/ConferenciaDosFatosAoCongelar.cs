@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.ValueObjects;
 
 using Kernel.Results;
 
@@ -20,13 +21,13 @@ internal static class ConferenciaDosFatosAoCongelar
     /// <remarks>Pressupõe os fatos coletados coletáveis: quem chama confere a coletabilidade antes.</remarks>
     /// <returns>O metadado congelado dos fatos citados em condição.</returns>
     internal static Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> Conferir(
-        ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo)
+        ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> catalogoPorCodigo, FatosDasVersoesPublicadas? publicadas)
     {
         Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?> metadados =
             ResolvedorMetadadosFatosCongelados.Resolver(processo, catalogoPorCodigo);
         DomainError? incoerente = metadados.IsFailure
             ? null
-            : ConferenciaDosFatosDosGatilhos.Conferir(processo, catalogoPorCodigo) ?? ConferenciaDoFatoDeElegibilidade.Conferir(processo, catalogoPorCodigo);
+            : ConferenciaDosFatosDosGatilhos.Conferir(processo, catalogoPorCodigo, publicadas) ?? ConferenciaDoFatoDeElegibilidade.Conferir(processo, catalogoPorCodigo);
 
         return incoerente is null ? metadados : Result<IReadOnlyDictionary<string, MetadadoFatoCongelado>?>.Failure(incoerente);
     }

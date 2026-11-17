@@ -41,11 +41,11 @@ public sealed class ConformidadeCronogramaTests
     public void InscricaoPropria_SemFaseDeColeta_Reprova()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente);
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!);
+        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo);
+        processo.DefinirClassificacao(ClassificacaoImportada());
         processo.DefinirCronogramaFases(
-            [Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
+            [Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], []);
         DeclararNaoCobra(processo);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -65,11 +65,11 @@ public sealed class ConformidadeCronogramaTests
     public void ImportacaoExterna_MesmaConfiguracao_TiposDiferentes_MesmoVeredicto(TipoProcessoSnapshot tipo)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", tipo, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente);
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!);
+        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo);
+        processo.DefinirClassificacao(ClassificacaoImportada());
         processo.DefinirCronogramaFases(
-            [Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
+            [Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], []);
         DeclararNaoCobra(processo);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -81,11 +81,11 @@ public sealed class ConformidadeCronogramaTests
     public void ComVagas_SemFaseQueProduzResultado_Reprova()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente);
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!);
+        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo);
+        processo.DefinirClassificacao(ClassificacaoImportada());
         // Só a fase de matrícula — nenhuma produz resultado.
-        processo.DefinirCronogramaFases([Fase(1, "MATRICULA").Value!], [], PrecondicaoIfMatch.Ausente);
+        processo.DefinirCronogramaFases([Fase(1, "MATRICULA").Value!], []);
         DeclararNaoCobra(processo);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -107,12 +107,12 @@ public sealed class ConformidadeCronogramaTests
     private static ProcessoSeletivo ProcessoComEtapaPontuadaSemFaseDeclarada()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirCronogramaFases([Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
+        processo.DefinirCronogramaFases([Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], []);
         processo.DefinirEtapas(
-            [ApoioDaPublicacaoDoProcessoSeletivo.EtapaDaProvaObjetiva("Prova", CaraterEtapa.Classificatoria, 1m)], PrecondicaoIfMatch.Ausente);
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-        processo.DefinirClassificacao(ClassificacaoMediaPonderada(), PrecondicaoIfMatch.Ausente);
+            [ApoioDaPublicacaoDoProcessoSeletivo.EtapaDaProvaObjetiva("Prova", CaraterEtapa.Classificatoria, 1m)]);
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!);
+        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo);
+        processo.DefinirClassificacao(ClassificacaoMediaPonderada());
         DeclararNaoCobra(processo);
 
         return processo;
@@ -122,12 +122,12 @@ public sealed class ConformidadeCronogramaTests
     public void SemEtapa_ClassificacaoImportada_Publica()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirEtapas([], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
+        processo.DefinirEtapas([]).IsSuccess.Should().BeTrue(
             "Story #851 §3.5: lista vazia é estado válido — um processo sem prova (SiSU) não tem etapa");
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
-        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
-        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente);
-        processo.DefinirCronogramaFases([Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], [], PrecondicaoIfMatch.Ausente);
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!);
+        processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo);
+        processo.DefinirClassificacao(ClassificacaoImportada());
+        processo.DefinirCronogramaFases([Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], []);
         DeclararNaoCobra(processo);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -142,8 +142,7 @@ public sealed class ConformidadeCronogramaTests
         // Etapa eliminatória pura não compõe a nota (compor exige classificatória ou ambas, com peso):
         // o domínio recusa a lista já em DefinirEtapas, antes de a publicação chegar ao divisor zero.
         Result definirEtapas = processo.DefinirEtapas(
-            [ApoioDaPublicacaoDoProcessoSeletivo.EtapaDaProvaObjetiva("Entrevista", CaraterEtapa.Eliminatoria, null, notaMinima: 5m)],
-            PrecondicaoIfMatch.Ausente);
+            [ApoioDaPublicacaoDoProcessoSeletivo.EtapaDaProvaObjetiva("Entrevista", CaraterEtapa.Eliminatoria, null, notaMinima: 5m)]);
         definirEtapas.IsFailure.Should().BeTrue(
             "pré-condição: DefinirEtapas já recusa uma lista sem NENHUMA etapa que componha a nota — " +
             "prova que o guard estrutural do domínio intercepta o divisor zero antes mesmo do gate de publicação");

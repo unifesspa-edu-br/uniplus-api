@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// declara concluinte; a que publica o definitivo de cada preliminar conclui a si mesma; a que deixa algum preliminar
 /// sem o definitivo do mesmo tipo declara qual fase a conclui. A matéria é o tipo de ato, e a declaração vence a
 /// inferência. Dentro de uma fase as conferências se encadeiam, porque não faz sentido conferir a ordem de uma concluinte
-/// que não está no cronograma; entre fases todas são percorridas.
+/// que não está no cronograma; entre fases todas são percorridas. A fase cuja lista de produtos tem parte recusada pela leitura
+/// do documento não se julga (não se sabe o que ela publica), e a concluinte nessa situação só se julga pelo que não lê os produtos.
 /// </summary>
 internal static class ConclusaoDoCicloRecursal
 {
@@ -16,6 +17,7 @@ internal static class ConclusaoDoCicloRecursal
     [
         .. cronograma.Fases
             .Select((fase, posicao) => (fase, posicao))
+            .Where(static par => !par.fase.ParteRecusadaEm(FaseDeclarada.ListaDosProdutos))
             .Select(par => Recusa(cronograma, par.fase) is { } erro
                 ? CronogramaDoProcesso.NaFase(par.posicao, "faseConcluinteCodigo", erro)
                 : null)
@@ -86,12 +88,16 @@ internal static class ConclusaoDoCicloRecursal
                 $"A fase '{fase.Codigo}' declara '{codigo}' como concluinte, e nenhuma fase do cronograma tem esse código.");
     }
 
+    // Sem a lista de produtos inteira da concluinte não se sabe se ela publica o definitivo, e só a ordem e a janela se julgam.
     private static DomainError? RecusaDaConcluinte(FaseDeclarada fase, FaseDeclarada concluinte) =>
-        SemResultadoDefinitivo(fase, concluinte)
-        ?? SemDefinitivoDoTipo(fase, concluinte)
-        ?? DoisDefinitivos(fase, concluinte)
+        (concluinte.ParteRecusadaEm(FaseDeclarada.ListaDosProdutos) ? null : RecusaDosProdutosDaConcluinte(fase, concluinte))
         ?? ConcluinteAntecede(fase, concluinte)
         ?? ConcluinteComecaAntes(fase, concluinte);
+
+    private static DomainError? RecusaDosProdutosDaConcluinte(FaseDeclarada fase, FaseDeclarada concluinte) =>
+        SemResultadoDefinitivo(fase, concluinte)
+        ?? SemDefinitivoDoTipo(fase, concluinte)
+        ?? DoisDefinitivos(fase, concluinte);
 
     private static DomainError? SemResultadoDefinitivo(FaseDeclarada fase, FaseDeclarada concluinte) =>
         concluinte.Atos.PublicaResultadoDefinitivo

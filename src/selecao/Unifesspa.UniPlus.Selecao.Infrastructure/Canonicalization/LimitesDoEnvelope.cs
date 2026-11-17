@@ -252,7 +252,7 @@ public static class LimitesDoEnvelope
     public const int HashDaVersaoDoTermo = 64;
 
     // Divulgação pública.
-    /// <summary><c>ConfiguracaoDivulgacao.Justificativa</c> — mesma grandeza de <c>RascunhoRetificacao.MotivoMaxLength</c>: texto de negócio livre, não um rótulo curto.</summary>
+    /// <summary><c>ConfiguracaoDivulgacao.Justificativa</c> — texto de negócio livre, não um rótulo curto.</summary>
     public const int Justificativa = 1000;
 
     // Bônus regional: referencia a base legal tipada.

@@ -31,7 +31,7 @@ internal static class ResolucaoDoPeriodoDeInscricao
         IReadOnlyList<AnexoDoEdital> anexos)
     {
         ArgumentNullException.ThrowIfNull(processo);
-        FaseCronograma? ancora = ReferenciaTemporalDosFatos.FaseQueAncoraOPeriodoDeInscricao(EstadoDaConfiguracao.De(processo));
+        FaseCronograma? ancora = ReferenciaTemporalDosFatos.FaseQueAncoraOPeriodoDeInscricao(processo.Declaracao());
         (DateTimeOffset? Inicio, DateTimeOffset? Fim) informado = (periodoInscricaoInicioInformado, periodoInscricaoFimInformado);
 
         return ancora is null

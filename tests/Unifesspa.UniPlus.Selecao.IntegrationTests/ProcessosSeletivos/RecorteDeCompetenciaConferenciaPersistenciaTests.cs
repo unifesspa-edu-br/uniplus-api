@@ -76,7 +76,7 @@ public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFix
                 "pré-condição: o EF hidratou a banca sem recorte sem passar por fábrica nenhuma");
 
     private static void AfirmarOItemPendenteDoRecorte(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(ComCalendario()))
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(ComCalendario()))
             .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas")
             .Which.Ok.Should().BeFalse(
                 "quem monta o edital precisa ver a pendência; invariante que só existe no domínio não aparece no checklist");
@@ -145,7 +145,7 @@ public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFix
         linhasEsperadas: 1);
 
     private static ItemConformidade ItemDoRecorteDasBancas(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(ComCalendario()))
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(ComCalendario()))
             .Should().ContainSingle(i => i.Codigo == "cronograma_recorte_de_competencia_das_bancas").Which;
 
     private static void ConferirQueAsBancasDocumentaisSeguemComRecorte(ProcessoSeletivo processo) =>
@@ -204,13 +204,13 @@ public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFix
     {
         ProcessoSeletivo processo = ProcessoSiSuSemConfiguracao(nome);
 
-        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([FaseConforme()], [])
             .IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -224,8 +224,7 @@ public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFix
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
                 new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [modalidade] },
-                new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
     private static void DefinirAClassificacao(ProcessoSeletivo processo)
@@ -235,20 +234,18 @@ public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFix
             {
                 RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
                 RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            }).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            }).Value!).IsSuccess.Should().BeTrue();
     }
 
     private static void DefinirAsDeclaracoesObrigatorias(ProcessoSeletivo processo)
     {
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
         processo.DefinirAlgoritmoContagemPrazo(
-            Regra(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, 'd'), PrecondicaoIfMatch.Ausente)
+            Regra(AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, 'd'))
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }
 

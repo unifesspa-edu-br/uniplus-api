@@ -23,10 +23,12 @@ internal static class CadastrosDeTeste
         FatosDeModalidade? fatosDeModalidade = null,
         TiposDeAtoUnicosPorObjeto? tiposDeAtoUnicos = null,
         CorretoresDasEtapas? corretores = null,
-        ProtecaoVigenteDasExigencias? protecao = null) => new(
+        ProtecaoVigenteDasExigencias? protecao = null,
+        FatosDasVersoesPublicadas? fatosDasVersoesPublicadas = null) => new(
             contagemDePrazos ?? ContextoDeContagemDePrazos.SemCalendario,
             fatosDeModalidade ?? FatosDeModalidadeDeTeste.DoCatalogo,
             tiposDeAtoUnicos ?? TiposDeAtoUnicosDeTeste.Nenhum,
             corretores ?? CorretoresDeTeste.SemConsolidacao,
-            protecao ?? SemProtecaoVigente);
+            protecao ?? SemProtecaoVigente,
+            fatosDasVersoesPublicadas);
 }

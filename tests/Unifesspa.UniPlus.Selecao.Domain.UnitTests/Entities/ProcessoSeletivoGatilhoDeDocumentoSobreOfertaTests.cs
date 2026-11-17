@@ -66,7 +66,7 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
     {
         FaseCronograma fase = Fase(1, "INSCRICAO");
         ProcessoSeletivo processo = ProcessoComFases(fase);
-        processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC")], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC")], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         ExigirFolhas(processo, ExigenciaCondicionada(fase.Id, tipoDocumento, CondicaoDe(fato, "LB_PPI")));
         return processo;
     }
@@ -76,7 +76,7 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
     {
         FaseCronograma fase = Fase(1, "INSCRICAO");
         ProcessoSeletivo processo = ProcessoComFases(fase);
-        processo.DefinirAtendimentoEspecializado(atendimento, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(atendimento).IsSuccess.Should().BeTrue();
         ExigirFolhas(processo, ExigenciaCondicionada(fase.Id, tipoDocumento, condicao));
         return processo;
     }
@@ -95,7 +95,7 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
     {
         ProcessoSeletivo processo = ProcessoComModalidadeCitadaPelaExigencia(Identidade, "MODALIDADE");
 
-        Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("AC")], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("AC")], FatosDeModalidadeDeTeste.DoCatalogo);
 
         resultado.IsFailure.Should().BeTrue("LB_PPI é referenciada por uma condição de gatilho viva e deixaria de ser ofertada");
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ModalidadeReferenciadaPorExigenciaViva");
@@ -107,7 +107,7 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
         ProcessoSeletivo processo = ProcessoComModalidadeCitadaPelaExigencia(
             new TipoDeDocumento("AUTODECLARACAO_PPI", "Autodeclaração étnico-racial", "PESSOAL"), "MODALIDADE_CONVOCACAO");
 
-        Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("AC")], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("AC")], FatosDeModalidadeDeTeste.DoCatalogo);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.ModalidadeReferenciadaPorExigenciaViva");
     }
@@ -117,7 +117,7 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
     {
         ProcessoSeletivo processo = ProcessoComModalidadeCitadaPelaExigencia(Identidade, "MODALIDADE");
 
-        Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC", "LI_PPI")], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDistribuicaoVagas([DistribuicaoCom("LB_PPI", "AC", "LI_PPI")], FatosDeModalidadeDeTeste.DoCatalogo);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -128,7 +128,7 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
         ProcessoSeletivo processo = ProcessoComCondicaoPcdCitadaPelaExigencia();
 
         Result resultado = processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+            AtendimentoEspecializado.Criar([], [], []).Value!);
 
         resultado.IsFailure.Should().BeTrue("PCD é referenciada por uma condição de gatilho viva e deixaria de ser ofertada");
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.CondicaoAtendimentoReferenciadaPorExigenciaViva");
@@ -144,7 +144,7 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
             CondicaoDe("RECURSO_ACESSIBILIDADE", "SALA_AMAMENTACAO"));
 
         Result resultado = processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+            AtendimentoEspecializado.Criar([], [], []).Value!);
 
         resultado.IsFailure.Should().BeTrue("a sala para amamentação é citada por uma condição viva e deixaria de ser ofertada");
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RecursoAcessibilidadeReferenciadoPorCondicaoViva);
@@ -158,8 +158,7 @@ public sealed class ProcessoSeletivoGatilhoDeDocumentoSobreOfertaTests
         Result resultado = processo.DefinirAtendimentoEspecializado(
             AtendimentoEspecializado.Criar(
                 [CondicaoOfertada.Criar(Guid.CreateVersion7(), "PCD", "Pessoa com deficiência"), CondicaoOfertada.Criar(Guid.CreateVersion7(), "LACTANTE", "Lactante")],
-                [], []).Value!,
-            PrecondicaoIfMatch.Ausente);
+                [], []).Value!);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }

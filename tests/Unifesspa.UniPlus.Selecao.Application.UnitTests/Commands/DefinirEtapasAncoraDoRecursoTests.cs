@@ -55,8 +55,8 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
         ITipoAtoPublicadoReader catalogoComOAto = Substitute.For<ITipoAtoPublicadoReader>();
         catalogoComOAto.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
-        Result<MutacaoAceita> declaracao = await Executar(
-            new DefinirEtapasCommand(processo.Id, [Etapa(null, ancoraJaNoAgregado)], PrecondicaoIfMatch.Ausente),
+        Result declaracao = await Executar(
+            new DefinirEtapasCommand(processo.Id, [Etapa(null, ancoraJaNoAgregado)]),
             repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoComOAto, registroCodecs: codecs);
         declaracao.IsSuccess.Should().BeTrue(declaracao.Error?.Message);
         Guid etapaId = processo.Etapas.Single().Id;
@@ -68,8 +68,8 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
         ITipoAtoPublicadoReader catalogoSemOAto = Substitute.For<ITipoAtoPublicadoReader>();
         catalogoSemOAto.ObterVigenteAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns((TipoAtoPublicadoView?)null);
-        Result<MutacaoAceita> resultado = await Executar(
-            new DefinirEtapasCommand(processo.Id, [Etapa(etapaId, true)], PrecondicaoIfMatch.Curinga),
+        Result resultado = await Executar(
+            new DefinirEtapasCommand(processo.Id, [Etapa(etapaId, true)]),
             repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoSemOAto, registroCodecs: codecs);
 
         if (codigoEsperado is null)
@@ -117,7 +117,7 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
         // A versão publicada tem a âncora. O grafo vem de uma instância à parte, com a identidade da etapa
         // viva, porque a gravação seguinte edita a etapa no lugar.
         (await Executar(
-                new DefinirEtapasCommand(processo.Id, [Etapa(null, true)], PrecondicaoIfMatch.Ausente),
+                new DefinirEtapasCommand(processo.Id, [Etapa(null, true)]),
                 repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoComOAto, registroCodecs: codecs))
             .IsSuccess.Should().BeTrue();
         Guid etapaId = processo.Etapas.Single().Id;
@@ -126,7 +126,7 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
         IProcessoSeletivoRepository repositorioDoPublicado = Substitute.For<IProcessoSeletivoRepository>();
         repositorioDoPublicado.ObterParaMutacaoAsync(publicado.Id, Arg.Any<CancellationToken>()).Returns(publicado);
         (await Executar(
-                new DefinirEtapasCommand(publicado.Id, [Etapa(null, true)], PrecondicaoIfMatch.Ausente),
+                new DefinirEtapasCommand(publicado.Id, [Etapa(null, true)]),
                 repositorioDoPublicado, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoComOAto))
             .IsSuccess.Should().BeTrue();
         typeof(Unifesspa.UniPlus.Kernel.Domain.Entities.EntityBase).GetProperty("Id")!.SetValue(publicado.Etapas.Single(), etapaId);
@@ -138,7 +138,7 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
 
         // A sessão grava o agregado sem a âncora, o catálogo perde o tipo e o operador a reenvia.
         (await Executar(
-                new DefinirEtapasCommand(processo.Id, [Etapa(etapaId, false)], PrecondicaoIfMatch.Curinga),
+                new DefinirEtapasCommand(processo.Id, [Etapa(etapaId, false)]),
                 repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoComOAto, registroCodecs: codecs))
             .IsSuccess.Should().BeTrue();
         processo.Etapas.Single().Recursos.Should().BeEmpty();
@@ -146,8 +146,8 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
         ITipoAtoPublicadoReader catalogoSemOAto = Substitute.For<ITipoAtoPublicadoReader>();
         catalogoSemOAto.ObterVigenteAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns((TipoAtoPublicadoView?)null);
-        Result<MutacaoAceita> resultado = await Executar(
-            new DefinirEtapasCommand(processo.Id, [Etapa(etapaId, true)], PrecondicaoIfMatch.Curinga),
+        Result resultado = await Executar(
+            new DefinirEtapasCommand(processo.Id, [Etapa(etapaId, true)]),
             repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoSemOAto, registroCodecs: codecs);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -184,8 +184,8 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
         ITipoAtoPublicadoReader catalogoComOAto = Substitute.For<ITipoAtoPublicadoReader>();
         catalogoComOAto.ObterVigenteAsync("RESULTADO_CLASSIFICACAO", Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns(AtoDeResultado("RESULTADO_CLASSIFICACAO"));
-        Result<MutacaoAceita> declaracao = await Executar(
-            new DefinirEtapasCommand(processo.Id, [Etapa(null, "Prova Objetiva")], PrecondicaoIfMatch.Ausente),
+        Result declaracao = await Executar(
+            new DefinirEtapasCommand(processo.Id, [Etapa(null, "Prova Objetiva")]),
             repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoComOAto);
         declaracao.IsSuccess.Should().BeTrue(declaracao.Error?.Message);
         Guid etapaId = processo.Etapas.Single().Id;
@@ -193,8 +193,8 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
         ITipoAtoPublicadoReader catalogoSemOAto = Substitute.For<ITipoAtoPublicadoReader>();
         catalogoSemOAto.ObterVigenteAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns((TipoAtoPublicadoView?)null);
-        Result<MutacaoAceita> resultado = await Executar(
-            new DefinirEtapasCommand(processo.Id, [Etapa(etapaId, "Prova Objetiva — 1ª fase")], PrecondicaoIfMatch.Curinga),
+        Result resultado = await Executar(
+            new DefinirEtapasCommand(processo.Id, [Etapa(etapaId, "Prova Objetiva — 1ª fase")]),
             repository, unitOfWork, regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: catalogoSemOAto);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -241,10 +241,9 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
                             AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
                             2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, false, null, null),
                     ], Bancas: []),
-            ],
-            PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(
+        Result result = await Executar(
             command, repository, unitOfWork,
             regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
 
@@ -289,10 +288,9 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
                             AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
                             2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, true, null, null),
                     ], Bancas: []),
-            ],
-            PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(
+        Result result = await Executar(
             command, repository, unitOfWork,
             regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
 
@@ -346,10 +344,9 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
                             AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
                             2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, false, null, null),
                     ], Bancas: []),
-            ],
-            PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(
+        Result result = await Executar(
             command, repository, unitOfWork,
             regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
 

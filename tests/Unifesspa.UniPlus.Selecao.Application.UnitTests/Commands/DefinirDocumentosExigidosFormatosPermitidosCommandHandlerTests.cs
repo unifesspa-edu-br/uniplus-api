@@ -32,7 +32,7 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -42,7 +42,7 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
         JsonElement listaPdf = JsonSerializer.SerializeToElement(new[] { "PDF" });
         ItemDocumentoExigidoInput primeiro = new(
             fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, listaPdf, 5_000_000);
-        (await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(processo.Id, [new NoExigenciaInput("FOLHA", primeiro, null, null, null, null)], PrecondicaoIfMatch.Ausente)))
+        (await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(processo.Id, [new NoExigenciaInput("FOLHA", primeiro, null, null, null, null)])))
             .IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Single().FormatosPermitidos.Qualquer.Should().BeFalse();
         processo.DocumentosExigidos.Single().FormatosPermitidos.Lista!.Single().Formato.Should().Be(FormatoPermitido.Pdf);
@@ -51,8 +51,8 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
         JsonElement listaJpeg = JsonSerializer.SerializeToElement(new[] { "JPEG" });
         ItemDocumentoExigidoInput segundo = new(
             fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, listaJpeg, 2_000_000);
-        Result<MutacaoAceita> resultado = await HandleAsync(
-            mocks, new DefinirDocumentosExigidosCommand(processo.Id, [new NoExigenciaInput("FOLHA", segundo, null, null, null, null)], PrecondicaoIfMatch.Curinga));
+        Result resultado = await HandleAsync(
+            mocks, new DefinirDocumentosExigidosCommand(processo.Id, [new NoExigenciaInput("FOLHA", segundo, null, null, null, null)]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         DocumentoExigido exigencia = processo.DocumentosExigidos.Should().ContainSingle().Which;
@@ -66,7 +66,7 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -74,9 +74,9 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
 
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, null, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FormatosPermitidos.Obrigatorio");
@@ -91,7 +91,7 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -100,9 +100,9 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
 
         JsonElement valor = JsonDocument.Parse(valorJson).RootElement;
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, valor, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FormatosPermitidos.FormaInvalida");
@@ -113,7 +113,7 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -121,9 +121,9 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
             .Returns(TipoDocumentoResultado(tipoDocumentoId));
 
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Single().FormatosPermitidos.Qualquer.Should().BeTrue();
@@ -134,7 +134,7 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -143,9 +143,9 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
 
         JsonElement lista = JsonSerializer.SerializeToElement(new[] { "PDF", "JPEG", "PNG" });
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, lista, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         FormatosPermitidos formatosPermitidos = processo.DocumentosExigidos.Single().FormatosPermitidos;
@@ -160,7 +160,7 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -172,9 +172,9 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
             new { formato = "PDF", tamanhoMaximoBytesMax = 5_000_000 },
         });
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, lista, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         FormatoPermitidoEntry entrada = processo.DocumentosExigidos.Single().FormatosPermitidos.Lista!.Single();
@@ -191,7 +191,7 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -200,9 +200,9 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
 
         JsonElement lista = JsonDocument.Parse($$"""[{"formato": "PDF", "tamanhoMaximoBytesMax": {{tamanhoJson}}}]""").RootElement;
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, lista, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FormatosPermitidos.FormaInvalida");
@@ -213,7 +213,7 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -228,9 +228,9 @@ public sealed class DefinirDocumentosExigidosFormatosPermitidosCommandHandlerTes
         // mesmo tempo a partir de um único JsonElement.
         JsonElement lista = JsonSerializer.SerializeToElement(new[] { "QUALQUER" });
         ItemDocumentoExigidoInput item = new(fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], null, lista, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FormatosPermitidos.FormatoInvalido");

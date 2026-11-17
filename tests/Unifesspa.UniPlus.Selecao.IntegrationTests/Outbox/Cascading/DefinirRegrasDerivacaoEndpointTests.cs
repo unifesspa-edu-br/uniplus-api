@@ -62,7 +62,6 @@ public sealed class DefinirRegrasDerivacaoEndpointTests
         HttpResponseMessage resposta = await ctx.PutRegrasAsync(corpo);
 
         resposta.StatusCode.Should().Be(HttpStatusCode.NoContent);
-        resposta.Headers.ETag.Should().BeNull("em rascunho não há sessão editorial nem ETag");
 
         await using AsyncServiceScope scope = ctx.Api.Services.CreateAsyncScope();
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();

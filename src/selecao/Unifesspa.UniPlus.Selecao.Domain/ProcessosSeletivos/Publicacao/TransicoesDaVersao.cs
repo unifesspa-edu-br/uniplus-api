@@ -4,126 +4,78 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 
-/// <summary>A versão congelada, o evento que a anuncia e se a transição encerra a sessão editorial.</summary>
-internal sealed record VersaoEmitida(VersaoConfiguracao Versao, ProcessoPublicadoEvent Evento, bool EncerraSessao);
+/// <summary>A versão congelada e o evento que a anuncia.</summary>
+internal sealed record VersaoEmitida(VersaoConfiguracao Versao, ProcessoPublicadoEvent Evento);
 
 /// <summary>
-/// A conferência do estado das transições que congelam uma versão da configuração, e as próprias transições: publicar,
-/// retificar de uma vez e fechar a sessão editorial. O estado (status, motivo, versão anterior, rascunho aberto) é conflito e
-/// precede toda leitura e toda conferência da configuração; a transição a reaplica como guarda e emite a versão que a raiz
-/// registra. Nenhuma incrementa a revisão da sessão.
+/// A conferência do estado do processo nas transições que congelam uma versão da configuração, e as próprias transições: publicar e
+/// retificar. O estado (status, motivo, versão anterior) é conflito e precede toda leitura e toda conferência da
+/// configuração; a transição a reaplica como guarda e emite a versão que a raiz registra.
 /// </summary>
 public static class TransicoesDaVersao
 {
     private const string CodigoDoMotivoObrigatorio = "ProcessoSeletivo.MotivoRetificacaoObrigatorio";
 
-    /// <summary>O que impede publicar: só se publica o processo em rascunho (UNI-REQ-0019), que não tem sessão.</summary>
-    public static Result ConferirEstadoParaPublicar(EstadoDaConfiguracao estado)
-    {
-        ArgumentNullException.ThrowIfNull(estado);
+    /// <summary>O que impede publicar: só se publica o processo em rascunho (UNI-REQ-0019).</summary>
+    public static Result ConferirEstadoParaPublicar(StatusProcesso status) =>
+        ComoResultado(RecusaDaPublicacao(status));
 
-        return ComoResultado(RecusaDaPublicacao(estado));
-    }
-
-    /// <summary>O que impede retificar de uma vez (ADR-0101/0103): o status, a sessão aberta, o motivo e a versão corrente.</summary>
-    public static Result ConferirEstadoParaRetificar(EstadoDaConfiguracao estado, VersaoConfiguracao versaoAtual, string motivo)
+    /// <summary>O que impede retificar (ADR-0101/0103): o status, o motivo e a versão corrente.</summary>
+    public static Result ConferirEstadoParaRetificar(Guid processoId, StatusProcesso status, VersaoConfiguracao versaoAtual, string motivo)
     {
-        ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(versaoAtual);
 
-        return ComoResultado(RecusaDaRetificacao(estado, versaoAtual, motivo));
+        return ComoResultado(RecusaDaRetificacao(processoId, status, versaoAtual, motivo));
     }
 
-    /// <summary>O que impede fechar a sessão: o status, o motivo da sessão e a versão corrente.</summary>
-    public static Result ConferirEstadoParaFechar(EstadoDaConfiguracao estado, VersaoConfiguracao versaoAtual, RascunhoRetificacao sessao)
+    internal static Result<VersaoEmitida> Publicar(Guid processoId, StatusProcesso status, PedidoDeCongelamento pedido)
     {
-        ArgumentNullException.ThrowIfNull(estado);
-        ArgumentNullException.ThrowIfNull(versaoAtual);
-        ArgumentNullException.ThrowIfNull(sessao);
-
-        return ComoResultado(RecusaDaVersaoSeguinte(estado, versaoAtual, sessao.Motivo));
-    }
-
-    internal static Result<VersaoEmitida> Publicar(EstadoDaConfiguracao estado, PedidoDeCongelamento pedido)
-    {
-        ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(pedido);
-        ExigirConfiguracaoDoMesmoProcesso(estado, pedido);
+        ExigirConfiguracaoDoMesmoProcesso(processoId, pedido);
 
-        if (RecusaDaPublicacao(estado) is { } recusa)
+        if (RecusaDaPublicacao(status) is { } recusa)
         {
             return Result<VersaoEmitida>.Failure(recusa);
         }
 
-        (VersaoConfiguracao versao, ProcessoPublicadoEvent evento) = EmissaoDeVersao.Abrir(estado.ProcessoId, pedido);
-        return Result<VersaoEmitida>.Success(new VersaoEmitida(versao, evento, EncerraSessao: false));
+        (VersaoConfiguracao versao, ProcessoPublicadoEvent evento) = EmissaoDeVersao.Abrir(processoId, pedido);
+        return Result<VersaoEmitida>.Success(new VersaoEmitida(versao, evento));
     }
 
     /// <summary>
-    /// Retifica de uma vez um processo publicado, sem sessão editorial (ADR-0101/0103). Os argumentos são conferidos antes
+    /// Retifica um processo publicado (ADR-0101/0103). Os argumentos são conferidos antes
     /// da conferência do estado: antepor a recusa de estado faria um pedido nulo deixar de lançar.
     /// </summary>
     internal static Result<VersaoEmitida> Retificar(
-        EstadoDaConfiguracao estado, PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, string motivo)
+        Guid processoId, StatusProcesso status, PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, string motivo)
     {
-        ArgumentNullException.ThrowIfNull(estado);
         ArgumentNullException.ThrowIfNull(pedido);
         ArgumentNullException.ThrowIfNull(versaoAtual);
-        ExigirConfiguracaoDoMesmoProcesso(estado, pedido);
+        ExigirConfiguracaoDoMesmoProcesso(processoId, pedido);
 
-        return RecusaDaRetificacao(estado, versaoAtual, motivo) is { } recusa
+        return RecusaDaRetificacao(processoId, status, versaoAtual, motivo) is { } recusa
             ? Result<VersaoEmitida>.Failure(recusa)
-            : Suceder(estado, pedido, versaoAtual, encerraSessao: false);
+            : Suceder(processoId, pedido, versaoAtual);
     }
 
-    /// <summary>
-    /// Fecha a sessão editorial: congela a versão seguinte com a configuração editada e o motivo do rascunho, onde foi
-    /// normalizado uma única vez. A sessão só encerra depois de a versão estar decidida; se o congelamento for recusado, ela
-    /// segue aberta para o administrador corrigir.
-    /// </summary>
-    internal static Result<VersaoEmitida> Fechar(
-        EstadoDaConfiguracao estado, PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, RascunhoRetificacao sessao)
+    private static Result<VersaoEmitida> Suceder(Guid processoId, PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual)
     {
-        ArgumentNullException.ThrowIfNull(estado);
-        ArgumentNullException.ThrowIfNull(pedido);
-        ArgumentNullException.ThrowIfNull(versaoAtual);
-        ArgumentNullException.ThrowIfNull(sessao);
-        ExigirConfiguracaoDoMesmoProcesso(estado, pedido);
+        (VersaoConfiguracao versao, ProcessoPublicadoEvent evento) = EmissaoDeVersao.Suceder(processoId, versaoAtual, pedido);
 
-        return RecusaDaVersaoSeguinte(estado, versaoAtual, sessao.Motivo) is { } recusa
-            ? Result<VersaoEmitida>.Failure(recusa)
-            : Suceder(estado, pedido, versaoAtual, encerraSessao: true);
+        return Result<VersaoEmitida>.Success(new VersaoEmitida(versao, evento));
     }
 
-    private static Result<VersaoEmitida> Suceder(
-        EstadoDaConfiguracao estado, PedidoDeCongelamento pedido, VersaoConfiguracao versaoAtual, bool encerraSessao)
-    {
-        (VersaoConfiguracao versao, ProcessoPublicadoEvent evento) = EmissaoDeVersao.Suceder(estado.ProcessoId, versaoAtual, pedido);
-
-        return Result<VersaoEmitida>.Success(new VersaoEmitida(versao, evento, encerraSessao));
-    }
-
-    private static DomainError? RecusaDaPublicacao(EstadoDaConfiguracao estado) =>
-        estado.Status != StatusProcesso.Rascunho
-            ? TransicaoInvalida($"Só é possível publicar um processo em rascunho — status atual: {estado.Status}.")
+    private static DomainError? RecusaDaPublicacao(StatusProcesso status) =>
+        status != StatusProcesso.Rascunho
+            ? TransicaoInvalida($"Só é possível publicar um processo em rascunho — status atual: {status}.")
             : null;
 
-    // O atalho e a sessão retificam o mesmo ato; correndo juntos, a versão seguinte sairia da configuração viva que a sessão
-    // está editando (ADR-0110 D7).
-    private static DomainError? RecusaDaRetificacao(EstadoDaConfiguracao estado, VersaoConfiguracao versaoAtual, string motivo) =>
-        estado.Status != StatusProcesso.Publicado
-            ? TransicaoDeRetificacaoInvalida(estado)
-            : estado.Rascunho is not null
-                ? RascunhoRetificacao.JaAberta()
-                : RecusaDaVersaoSeguinte(estado, versaoAtual, motivo);
-
-    private static DomainError? RecusaDaVersaoSeguinte(EstadoDaConfiguracao estado, VersaoConfiguracao versaoAtual, string motivo)
+    private static DomainError? RecusaDaRetificacao(Guid processoId, StatusProcesso status, VersaoConfiguracao versaoAtual, string motivo)
     {
-        if (estado.Status != StatusProcesso.Publicado)
+        if (status != StatusProcesso.Publicado)
         {
-            return TransicaoDeRetificacaoInvalida(estado);
+            return TransicaoDeRetificacaoInvalida(status);
         }
 
         if (string.IsNullOrWhiteSpace(motivo))
@@ -132,22 +84,22 @@ public static class TransicoesDaVersao
         }
 
         // A cadeia de versões não atravessa certames: a numeração deriva dela.
-        return versaoAtual.ProcessoSeletivoId != estado.ProcessoId
+        return versaoAtual.ProcessoSeletivoId != processoId
             ? new DomainError("VersaoConfiguracao.VersaoAnteriorDeOutroProcesso", "A versão corrente informada pertence a outro Processo Seletivo.")
             : null;
     }
 
     // A configuração apta nasce da conferência deste processo; a de outro é erro de programação, não recusa de negócio.
-    private static void ExigirConfiguracaoDoMesmoProcesso(EstadoDaConfiguracao estado, PedidoDeCongelamento pedido)
+    private static void ExigirConfiguracaoDoMesmoProcesso(Guid processoId, PedidoDeCongelamento pedido)
     {
-        if (pedido.ConfiguracaoApta.ProcessoId != estado.ProcessoId)
+        if (pedido.ConfiguracaoApta.ProcessoId != processoId)
         {
             throw new InvalidOperationException("A configuração conferida pertence a outro processo.");
         }
     }
 
-    private static DomainError TransicaoDeRetificacaoInvalida(EstadoDaConfiguracao estado) =>
-        TransicaoInvalida($"Só é possível retificar um processo publicado — status atual: {estado.Status}.");
+    private static DomainError TransicaoDeRetificacaoInvalida(StatusProcesso status) =>
+        TransicaoInvalida($"Só é possível retificar um processo publicado — status atual: {status}.");
 
     private static DomainError TransicaoInvalida(string mensagem) => new("ProcessoSeletivo.TransicaoInvalida", mensagem);
 

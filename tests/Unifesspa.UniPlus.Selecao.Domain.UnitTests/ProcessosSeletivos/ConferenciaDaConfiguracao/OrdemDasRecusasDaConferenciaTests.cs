@@ -43,7 +43,7 @@ public sealed class OrdemDasRecusasDaConferenciaTests
             .SetValue(processo, null);
 
     private static string[] Codigos(ProcessoSeletivo processo) =>
-        [.. ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Errors.Select(static causa => causa.Error.Code)];
+        [.. ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Errors.Select(static causa => causa.Error.Code)];
 
     [Fact(DisplayName = "A identificação do processo vem antes da conformidade por item")]
     public void Identificacao_VemAntesDaConformidadePorItem()
@@ -66,7 +66,7 @@ public sealed class OrdemDasRecusasDaConferenciaTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         EtapaProcesso existente = processo.Etapas.First();
-        EtapaProcesso repetida = ApoioProcessoSeletivoRestaurarConfiguracao.EtapaCongeladaDeProvaObjetiva(
+        EtapaProcesso repetida = ApoioDeEtapaReidratada.DeProvaObjetiva(
             Guid.CreateVersion7(), "Outra prova", existente.Ordem ?? 1, existente.FaseCodigo!, 1m);
         ProcessoCarregadoDoBanco.Etapa(processo, repetida);
         ProcessoCarregadoDoBanco.Fase(processo, FaseComJanelaInvertida());
@@ -80,39 +80,13 @@ public sealed class OrdemDasRecusasDaConferenciaTests
     [Fact(DisplayName = "Publicar um processo já publicado devolve a recusa do status, mesmo com a configuração inválida")]
     public void Publicar_JaPublicadoComConfiguracaoInvalida_RecusaPeloStatus()
     {
-        ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out _);
+        ProcessoSeletivo publicado = ProcessoEmEdicaoDeTeste.Publicado(out _);
         LimparIdentificador(publicado);
 
         Result<VersaoConfiguracao> resultado = publicado.Publicar(
             new CenarioDeCongelamento { Dados = DadosDoEdital(), Documento = new DocumentoCongelado(Bytes(), "1.1", "canonical-json/sha256@v1", new string('a', 64)), Relogio = new RelogioFixo(Agora) });
 
         resultado.Errors.Select(static causa => causa.Error.Code).Should().Equal("ProcessoSeletivo.TransicaoInvalida");
-    }
-
-    [Fact(DisplayName = "Retificar com a sessão aberta devolve a recusa da sessão, mesmo com a configuração inválida")]
-    public void Retificar_ComSessaoAbertaEConfiguracaoInvalida_RecusaPelaSessao()
-    {
-        ProcessoSeletivo emSessao = ProcessoEmEdicaoDeTeste.EmSessao();
-        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            emSessao.Id, new DocumentoCongelado(Bytes(), "1.1", "canonical-json/sha256@v1", new string('a', 64)), Guid.CreateVersion7(), "user-conta-123", Agora);
-        LimparIdentificador(emSessao);
-
-        Result<VersaoConfiguracao> resultado = emSessao.Retificar(
-            new CenarioDeCongelamento { Dados = DadosDoEdital(), Documento = new DocumentoCongelado(Bytes(), "1.1", "canonical-json/sha256@v1", new string('a', 64)), Relogio = new RelogioFixo(Agora) }, versao, "Correção do prazo");
-
-        resultado.Errors.Select(static causa => causa.Error.Code).Should().Equal("RascunhoRetificacao.JaAberta");
-    }
-
-    [Fact(DisplayName = "A conferência do estado do fechamento recusa a versão corrente de outro processo antes de qualquer conferência da configuração")]
-    public void Fechar_VersaoDeOutroProcesso_RecusaNaConferenciaDoEstado()
-    {
-        ProcessoSeletivo emSessao = ProcessoEmEdicaoDeTeste.EmSessao();
-        VersaoConfiguracao deOutro = VersaoConfiguracao.Abrir(
-            Guid.CreateVersion7(), new DocumentoCongelado(Bytes(), "1.1", "canonical-json/sha256@v1", new string('a', 64)), Guid.CreateVersion7(), "user-conta-123", Agora);
-
-        Result doEstado = TransicoesDaVersao.ConferirEstadoParaFechar(EstadoDaConfiguracao.De(emSessao), deOutro, emSessao.Rascunho!);
-
-        doEstado.Error!.Code.Should().Be("VersaoConfiguracao.VersaoAnteriorDeOutroProcesso");
     }
 
     private static byte[] Bytes() => Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString());

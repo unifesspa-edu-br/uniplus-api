@@ -108,12 +108,12 @@ public sealed class ProcessoSeletivoCascataTests
             ]).Value!;
 
     private static DomainError? PrimeiraCausa(ProcessoSeletivo processo) =>
-        CoberturaDaCascata.CausasDaCascata(EstadoDaConfiguracao.De(processo)) is { Count: > 0 } causas ? causas[0].Error : null;
+        CoberturaDaCascata.CausasDaCascata(processo.Declaracao()) is { Count: > 0 } causas ? causas[0].Error : null;
 
     private static ProcessoSeletivo NovoProcessoComOferta(ConfiguracaoDistribuicaoVagas oferta)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        processo.DefinirDistribuicaoVagas([oferta], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([oferta], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         return processo;
     }
 
@@ -121,9 +121,9 @@ public sealed class ProcessoSeletivoCascataTests
     public void CausasDaCascata_OfertaFederalComCascataCompleta_Ok()
     {
         ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
-        processo.DefinirCascataRemanejamento(CascataCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(CascataCompleta()).IsSuccess.Should().BeTrue();
 
-        CoberturaDaCascata.CausasDaCascata(EstadoDaConfiguracao.De(processo)).Should().BeEmpty();
+        CoberturaDaCascata.CausasDaCascata(processo.Declaracao()).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "CausasDaCascata com oferta sob a variação -COM-AC-PCD e cascata legal completa é null (Ok)")]
@@ -137,9 +137,9 @@ public sealed class ProcessoSeletivoCascataTests
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 50, PercentualDaReservaLegal = 0.5m, RegraDeDistribuicao = RegraLei12711ComAcPcd(), RegraDeAjuste = RegraAjuste(), ReferenciaDemografica = Demografica(), Modalidades = [.. AsOitoFederaisMaisAc(), acPcd] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
         ProcessoSeletivo processo = NovoProcessoComOferta(oferta);
-        processo.DefinirCascataRemanejamento(CascataCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(CascataCompleta()).IsSuccess.Should().BeTrue();
 
-        CoberturaDaCascata.CausasDaCascata(EstadoDaConfiguracao.De(processo)).Should().BeEmpty(
+        CoberturaDaCascata.CausasDaCascata(processo.Declaracao()).Should().BeEmpty(
             "sem EhRamoFederal cobrindo a variação, OfertaForaDoRegimeFederal recusaria com CascataForaDoRegimeFederal");
     }
 
@@ -180,7 +180,7 @@ public sealed class ProcessoSeletivoCascataTests
         ConfiguracaoCascataRemanejamento cascataComFallbackInexistente = ConfiguracaoCascataRemanejamento.Criar(
             RegraCascata(), "FALLBACK_INEXISTENTE",
             [Destino(ModalidadesFederaisLei12711.LbPpi, 1, ModalidadesFederaisLei12711.LbQ)]).Value!;
-        processo.DefinirCascataRemanejamento(cascataComFallbackInexistente, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(cascataComFallbackInexistente).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = PrimeiraCausa(processo);
 
@@ -192,9 +192,9 @@ public sealed class ProcessoSeletivoCascataTests
     public void CausasDaCascata_DefeitosIndependentes_AcumulamNaOrdem()
     {
         ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
-        processo.DefinirCascataRemanejamento(CascataComFallbackEDestinoForaDaOferta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(CascataComFallbackEDestinoForaDaOferta()).IsSuccess.Should().BeTrue();
 
-        string[] codigos = [.. CoberturaDaCascata.CausasDaCascata(EstadoDaConfiguracao.De(processo)).Select(static causa => causa.Error.Code)];
+        string[] codigos = [.. CoberturaDaCascata.CausasDaCascata(processo.Declaracao()).Select(static causa => causa.Error.Code)];
 
         codigos.Should().Equal(
             [
@@ -213,7 +213,7 @@ public sealed class ProcessoSeletivoCascataTests
         // isolando a asserção a essa única origem.
         ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
         ConfiguracaoCascataRemanejamento cascataComDestinoForaDaOferta = CascataComOrigemSemDestinoResolvivel(ModalidadesFederaisLei12711.LbPpi);
-        processo.DefinirCascataRemanejamento(cascataComDestinoForaDaOferta, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(cascataComDestinoForaDaOferta).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = PrimeiraCausa(processo);
 
@@ -260,7 +260,7 @@ public sealed class ProcessoSeletivoCascataTests
         ConfiguracaoCascataRemanejamento cascataComOrigemMorta = ConfiguracaoCascataRemanejamento.Criar(
             RegraCascata(), ModalidadesFederaisLei12711.Ac,
             [Destino(ModalidadesFederaisLei12711.LbPpi, 1, ModalidadesFederaisLei12711.Ac)]).Value!;
-        processo.DefinirCascataRemanejamento(cascataComOrigemMorta, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(cascataComOrigemMorta).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = PrimeiraCausa(processo);
 
@@ -279,7 +279,7 @@ public sealed class ProcessoSeletivoCascataTests
         // sob o teto de 56 destinos (7×6 + 6 + 8 = 56) sem comprometer a resolubilidade
         // de LB_Q nesta oferta (os 6 restantes continuam todos selecionados).
         ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
-        processo.DefinirCascataRemanejamento(CascataComUmDestinoQueNenhumaOfertaTem(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(CascataComUmDestinoQueNenhumaOfertaTem()).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = PrimeiraCausa(processo);
 
@@ -296,8 +296,8 @@ public sealed class ProcessoSeletivoCascataTests
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
         ProcessoSeletivo processo = NovoProcessoComOferta(oferta);
 
-        CoberturaDaCascata.CausasDaCascata(EstadoDaConfiguracao.De(processo)).Should().BeEmpty();
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().Contain(item => item.Codigo == "cascata_pendente" && item.Ok);
+        CoberturaDaCascata.CausasDaCascata(processo.Declaracao()).Should().BeEmpty();
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().Contain(item => item.Codigo == "cascata_pendente" && item.Ok);
     }
 
     [Fact(DisplayName = "AvaliarConformidade com oferta federal sem cascata tem o item Cascata de remanejamento não-Ok")]
@@ -305,7 +305,7 @@ public sealed class ProcessoSeletivoCascataTests
     {
         ProcessoSeletivo processo = NovoProcessoComOferta(OfertaFederalCompleta());
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
     }
 
     private static FaseCronograma FaseDeResultadoFinal() => FaseCronograma.Criar(
@@ -323,11 +323,10 @@ public sealed class ProcessoSeletivoCascataTests
         processo.DefinirEtapas(
             [EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]).IsSuccess.Should().BeTrue();
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas([OfertaFederalCompleta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([OfertaFederalCompleta()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
     private static void DefinirClassificacaoETaxaDeclaradas(ProcessoSeletivo processo)
@@ -337,13 +336,11 @@ public sealed class ProcessoSeletivoCascataTests
             {
                 RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
                 RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
-            }).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            }).Value!).IsSuccess.Should().BeTrue();
         // Issue #1112: item estrutural novo — declarado para manter os demais itens Ok, já que
         // este teste isola a ausência de cascata como a ÚNICA pendência.
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }
 
@@ -359,12 +356,12 @@ public sealed class ProcessoSeletivoCascataTests
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirCronogramaFases(
             [FaseDeResultadoFinal()],
-            [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            []).IsSuccess.Should().BeTrue();
         DefinirEtapaAtendimentoEDistribuicaoFederal(processo);
         DefinirClassificacaoETaxaDeclaradas(processo);
 
         CausasDeConformidadeDeTeste.De(processo).Should().BeEmpty("os itens estruturais estão todos completos — a cascata não é um deles");
-        CoberturaDaCascata.CausasDaCascata(EstadoDaConfiguracao.De(processo)).Should().NotBeEmpty("a oferta federal tem SegueCascata sem cascata configurada");
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
+        CoberturaDaCascata.CausasDaCascata(processo.Declaracao()).Should().NotBeEmpty("a oferta federal tem SegueCascata sem cascata configurada");
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().Contain(item => item.Codigo == "cascata_pendente" && !item.Ok);
     }
 }

@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 
+using System.Collections.Frozen;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
@@ -31,8 +33,18 @@ public sealed record EtapaDeclarada
         [DadoDaEtapa.Conceito] = "conceito",
     };
 
+    /// <summary>A lista dos produtos da etapa, pelo nome que <see cref="ParteRecusadaEm"/> reconhece.</summary>
+    public const string ListaDosProdutos = "produtos";
+
+    /// <summary>A lista das bancas da etapa, pelo nome que <see cref="ParteRecusadaEm"/> reconhece.</summary>
+    public const string ListaDasBancas = "bancas";
+
+    /// <summary>A lista das janelas recursais da etapa, pelo nome que <see cref="ParteRecusadaEm"/> reconhece.</summary>
+    public const string ListaDosRecursos = "recursos";
+
     private readonly IdentificacaoDaEtapa _identificacao;
     private readonly AvaliacaoDeclaradaDaEtapa _avaliacao;
+    private readonly IReadOnlySet<string> _colecoesComParteRecusada;
 
     private EtapaDeclarada(
         Guid id,
@@ -40,7 +52,8 @@ public sealed record EtapaDeclarada
         AvaliacaoDeclaradaDaEtapa avaliacao,
         JanelaDeTempo janela,
         (AtosDaEtapa Atos, BancasDaEtapa Bancas) filhas,
-        IReadOnlyList<FieldError> recusas)
+        IReadOnlyList<FieldError> recusas,
+        IReadOnlySet<string> colecoesComParteRecusada)
     {
         Id = id;
         _identificacao = identificacao;
@@ -49,6 +62,7 @@ public sealed record EtapaDeclarada
         Atos = filhas.Atos;
         Bancas = filhas.Bancas;
         Recusas = recusas;
+        _colecoesComParteRecusada = colecoesComParteRecusada;
     }
 
     public Guid Id { get; }
@@ -106,7 +120,8 @@ public sealed record EtapaDeclarada
         AvaliacaoDeclaradaDaEtapa avaliacao,
         JanelaDeTempo janela,
         PublicacoesDaEtapa publicacoes,
-        IReadOnlyList<BancaDaEtapa> bancas)
+        IReadOnlyList<BancaDaEtapa> bancas,
+        IReadOnlySet<string>? colecoesComParteRecusada = null)
     {
         ConferenciaDaDeclaracaoDaEtapa.ExigirIdCongelado(id);
         ArgumentNullException.ThrowIfNull(identificacao);
@@ -114,6 +129,7 @@ public sealed record EtapaDeclarada
         ArgumentNullException.ThrowIfNull(janela);
         ArgumentNullException.ThrowIfNull(publicacoes);
         ArgumentNullException.ThrowIfNull(bancas);
+        IReadOnlySet<string> suspensas = colecoesComParteRecusada ?? FrozenSet<string>.Empty;
 
         return new EtapaDeclarada(
             id,
@@ -121,8 +137,15 @@ public sealed record EtapaDeclarada
             avaliacao,
             janela,
             (new AtosDaEtapa(publicacoes), new BancasDaEtapa(bancas)),
-            [.. RecusasDaAvaliacao(identificacao, avaliacao), .. RecusasDasPublicacoes(identificacao, janela, publicacoes, bancas)]);
+            [.. RecusasDaAvaliacao(identificacao, avaliacao), .. RecusasDasPublicacoes(identificacao, janela, publicacoes, bancas, suspensas)],
+            suspensas);
     }
+
+    /// <summary>
+    /// Se a leitura do documento recusou alguma parte da lista da etapa (<see cref="ListaDosProdutos"/>, <see cref="ListaDasBancas"/>,
+    /// <see cref="ListaDosRecursos"/>): a lista declarada não é a que o autor escreveu, e a regra que a quantifica não a julga.
+    /// </summary>
+    public bool ParteRecusadaEm(string colecao) => _colecoesComParteRecusada.Contains(colecao);
 
     /// <summary>Se a declaração recusou o dado: há recusa cujo campo raiz é o dele.</summary>
     public bool Recusado(DadoDaEtapa dado) =>
@@ -154,17 +177,28 @@ public sealed record EtapaDeclarada
     ];
 
     private static IEnumerable<FieldError> RecusasDasPublicacoes(
-        IdentificacaoDaEtapa identificacao, JanelaDeTempo janela, PublicacoesDaEtapa publicacoes, IReadOnlyList<BancaDaEtapa> bancas) =>
+        IdentificacaoDaEtapa identificacao,
+        JanelaDeTempo janela,
+        PublicacoesDaEtapa publicacoes,
+        IReadOnlyList<BancaDaEtapa> bancas,
+        IReadOnlySet<string> suspensas) =>
     [
         .. Recusa("produtos", ConferenciaDaDeclaracaoDaEtapa.AtoRepetido(publicacoes.Produtos)),
         .. Recusa("fim", ConferenciaDaDeclaracaoDaEtapa.JanelaInvertida(janela)),
         .. TiposDeDecisaoDeclarados.Validar(publicacoes.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo),
         .. Recusa("bancas", AlinhamentoDasBancasDaEtapa.BancaRepetida(bancas)),
-        .. Recusa(
-            "recursos",
-            JanelasRecursaisDaEtapa.Recusa(
-                publicacoes.Produtos, identificacao.TipoEtapa.NotaDeOrigemNoEnem, publicacoes.EmiteParecerIndividual, publicacoes.Recursos)),
+        .. RecusaDosRecursos(identificacao, publicacoes, suspensas),
     ];
+
+    // A âncora de um recurso num produto preliminar lê a lista dos produtos e a dos recursos inteiras.
+    private static IEnumerable<FieldError> RecusaDosRecursos(
+        IdentificacaoDaEtapa identificacao, PublicacoesDaEtapa publicacoes, IReadOnlySet<string> suspensas) =>
+        suspensas.Contains(ListaDosProdutos) || suspensas.Contains(ListaDosRecursos)
+            ? []
+            : Recusa(
+                ListaDosRecursos,
+                JanelasRecursaisDaEtapa.Recusa(
+                    publicacoes.Produtos, identificacao.TipoEtapa.NotaDeOrigemNoEnem, publicacoes.EmiteParecerIndividual, publicacoes.Recursos));
 
     private static IEnumerable<FieldError> Recusa(string campo, DomainError? erro) =>
         erro is null ? [] : [new FieldError(campo, erro)];

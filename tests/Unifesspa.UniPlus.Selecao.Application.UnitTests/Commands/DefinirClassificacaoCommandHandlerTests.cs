@@ -20,9 +20,9 @@ public sealed class DefinirClassificacaoCommandHandlerTests
     {
         CenarioDaClassificacao cenario = SemProcesso();
         DefinirClassificacaoCommand command = new(
-            Guid.CreateVersion7(), "X", "v1", null, null, null, "Y", "v1", [], false, null, null, PrecondicaoIfMatch.Ausente);
+            Guid.CreateVersion7(), "X", "v1", null, null, null, "Y", "v1", [], false, null, null);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(command);
+        Result result = await cenario.DefinirAsync(command);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -34,7 +34,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
         CenarioDaClassificacao cenario = Com(processo).ComRegrasBasicas();
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoDeMediaPonderada(processo.Id));
+        Result result = await cenario.DefinirAsync(ComandoDeMediaPonderada(processo.Id));
 
         result.IsSuccess.Should().BeTrue();
         processo.Classificacao.Should().NotBeNull();
@@ -48,7 +48,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
         CenarioDaClassificacao cenario = Com(processo).ComRegrasBasicas();
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoDeMediaPonderada(processo.Id) with { EscalaNotaFinal = 1000m });
+        Result result = await cenario.DefinirAsync(ComandoDeMediaPonderada(processo.Id) with { EscalaNotaFinal = 1000m });
 
         result.IsSuccess.Should().BeTrue();
         processo.Classificacao!.EscalaNotaFinal.Should().Be(1000m);
@@ -66,7 +66,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         string? resolucao = baseadoEmEnem ? ResolucaoDePesos : null;
         DefinirClassificacaoCommand command = ComandoDeMediaPonderada(processo.Id) with { BaseadoEmEnem = baseadoEmEnem, ResolucaoPesoAreaEnem = resolucao };
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(command);
+        Result result = await cenario.DefinirAsync(command);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.Classificacao!.BaseadoEmEnem.Should().Be(baseadoEmEnem,
@@ -81,7 +81,7 @@ public sealed class DefinirClassificacaoCommandHandlerTests
             .ComRegra(RegraCalculoCodigo.ClassificacaoImportada, TipoRegra.RegraCalculo)
             .ComRegra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, TipoRegra.RegraOrdemAlocacao);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(
+        Result result = await cenario.DefinirAsync(
             ComandoEnemLocal(processo.Id, null, baseadoEmEnem: false, RegraCalculoCodigo.ClassificacaoImportada));
 
         result.IsSuccess.Should().BeTrue();
@@ -94,9 +94,9 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
         CenarioDaClassificacao cenario = Com(processo).SemNenhumaRegraNoCatalogo();
         DefinirClassificacaoCommand command = new(
-            processo.Id, "INEXISTENTE", "v1", null, null, null, RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], false, null, null, PrecondicaoIfMatch.Ausente);
+            processo.Id, "INEXISTENTE", "v1", null, null, null, RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], false, null, null);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(command);
+        Result result = await cenario.DefinirAsync(command);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoClassificacao.RegraNaoEncontrada");
@@ -109,9 +109,9 @@ public sealed class DefinirClassificacaoCommandHandlerTests
         CenarioDaClassificacao cenario = Com(processo).ComRegra(RegraCalculoCodigo.FormulaMediaPonderada, TipoRegra.RegraArredondamento);
         DefinirClassificacaoCommand command = new(
             processo.Id, RegraCalculoCodigo.FormulaMediaPonderada, "v1", null, null, null,
-            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], false, null, null, PrecondicaoIfMatch.Ausente);
+            RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], false, null, null);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(command);
+        Result result = await cenario.DefinirAsync(command);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ConfiguracaoClassificacao.RegraTipoInvalido");

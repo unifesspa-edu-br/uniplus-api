@@ -54,7 +54,7 @@ internal static class ApoioEtapaVinculadaAFase
         ProcessoSeletivo processo = Processo();
         processo.DefinirCronogramaFases(
             [Fase(1, "AVALIACAO", Instante("2027-03-01T00:00:00Z"), Instante("2027-03-10T00:00:00Z"))],
-            [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            []).IsSuccess.Should().BeTrue();
         return processo;
     }
 

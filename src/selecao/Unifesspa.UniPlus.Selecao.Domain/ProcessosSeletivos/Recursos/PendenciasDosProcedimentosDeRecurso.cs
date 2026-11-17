@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -13,17 +12,17 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class PendenciasDosProcedimentosDeRecurso
 {
-    internal static IReadOnlyList<FieldError> CausasDosProcedimentosDeRecurso(EstadoDaConfiguracao estado)
+    internal static IReadOnlyList<FieldError> CausasDosProcedimentosDeRecurso(ConfiguracaoDeclarada configuracao)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        bool processoTemNotaDoEnem = estado.Etapas.Any(static etapa => etapa.DeclaraNotaDoEnem);
+        bool processoTemNotaDoEnem = configuracao.Avaliacao.Etapas.Any(static etapa => etapa.DeclaraNotaDoEnem);
 
-        return [.. DasEtapas(estado, processoTemNotaDoEnem), .. DasFases(estado, processoTemNotaDoEnem)];
+        return [.. DasEtapas(configuracao, processoTemNotaDoEnem), .. DasFases(configuracao, processoTemNotaDoEnem)];
     }
 
-    private static IEnumerable<FieldError> DasEtapas(EstadoDaConfiguracao estado, bool processoTemNotaDoEnem) =>
-        estado.Etapas.SelectMany((etapa, posicao) => etapa.Recursos
+    private static IEnumerable<FieldError> DasEtapas(ConfiguracaoDeclarada configuracao, bool processoTemNotaDoEnem) =>
+        configuracao.Avaliacao.Etapas.SelectMany((etapa, posicao) => etapa.Recursos
             .SelectMany(recurso => Ausentes(
                 recurso.Procedimentos,
                 new ContextoDosProcedimentosDeRecurso(
@@ -32,8 +31,8 @@ internal static class PendenciasDosProcedimentosDeRecurso
                 $"A etapa '{etapa.Nome}'"))
             .Select(erro => new FieldError($"etapas[{posicao}].recursos", erro)));
 
-    private static IEnumerable<FieldError> DasFases(EstadoDaConfiguracao estado, bool processoTemNotaDoEnem) =>
-        estado.CronogramaFases.SelectMany((fase, posicao) => fase.RegraRecurso is null
+    private static IEnumerable<FieldError> DasFases(ConfiguracaoDeclarada configuracao, bool processoTemNotaDoEnem) =>
+        configuracao.Cronograma.CronogramaFases.SelectMany((fase, posicao) => fase.RegraRecurso is null
             ? []
             : Ausentes(
                 fase.RegraRecurso.Procedimentos,

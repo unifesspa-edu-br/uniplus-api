@@ -108,17 +108,17 @@ public sealed class ConferenciaDoCalendarioVigenteTests
     private static ProcessoSeletivo ProcessoSemConvencaoComRecurso(UnidadePrazo unidade)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        FormularioDeTeste.TrocarCronograma(processo, CronogramaComRecurso(unidade), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, CronogramaComRecurso(unidade)).IsSuccess.Should().BeTrue();
 
         return processo;
     }
 
     private static void DeclararAConvencao(ProcessoSeletivo processo) =>
-        processo.DefinirAlgoritmoContagemPrazo(Regra(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, 'e'), PrecondicaoIfMatch.Curinga)
+        processo.DefinirAlgoritmoContagemPrazo(Regra(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, 'e'))
             .IsSuccess.Should().BeTrue();
 
     private static IReadOnlyList<ItemConformidade> Checklist(ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(contexto));
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(contexto));
 
     private static ItemConformidade ItemDoCalendario(ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto, string codigo = "calendario_vigente_ausente") =>
         Checklist(processo, contexto).Single(i => i.Codigo == codigo);

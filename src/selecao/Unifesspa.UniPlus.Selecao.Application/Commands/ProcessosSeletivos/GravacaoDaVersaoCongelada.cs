@@ -17,7 +17,6 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 public sealed class GravacaoDaVersaoCongelada(
     IProcessoSeletivoRepository processos,
     IAtoDoProcessoRepository atos,
-    IRascunhoDePublicacaoRepository rascunhos,
     IRegistroDeAtoNormativo registroCentralDeAtos,
     MontagemDaDivulgacao divulgacao,
     IUnitOfWork unitOfWork)
@@ -25,8 +24,8 @@ public sealed class GravacaoDaVersaoCongelada(
     private const string IndiceDoIdentificadorLegivelDivulgado = "ux_certames_divulgados_identificador_legivel";
 
     /// <summary>
-    /// Grava a versão, o registro do ato, o ato no registro central, a divulgação do certame e a remoção do rascunho
-    /// de publicação na mesma transação e devolve os eventos do agregado e a cópia dos documentos ao acervo como cascading
+    /// Grava a versão, o registro do ato, o ato no registro central, e a divulgação do certame
+    /// na mesma transação e devolve os eventos do agregado e a cópia dos documentos ao acervo como cascading
     /// messages. O Wolverine os instala no outbox dentro da transação que gravou a versão, e ou tudo existe, ou nada.
     /// A porta de escrita do registro central só rastreia o ato: a recusa dela, ou o conflito que só a gravação
     /// enxerga, devolve a recusa nomeada sem evento, e o orquestrador descarta o rastreamento (ADR-0170).
@@ -48,20 +47,17 @@ public sealed class GravacaoDaVersaoCongelada(
 
         AtoNormativoPublicado publicado = AtoPublicadoPeloProcesso.DaVersao(
             processo, versao, ato.Ato, ato.TipoDoAto, dados.Numero, ato.Documento.HashSha256!, retificacao);
-        Result gravada = await GravarVersaoAtoDivulgacaoERascunhoAsync(processo, versao, registroDoAto.Value!, publicado, cancellationToken).ConfigureAwait(false);
+        Result gravada = await GravarVersaoAtoEDivulgacaoAsync(processo, versao, registroDoAto.Value!, publicado, cancellationToken).ConfigureAwait(false);
 
         return gravada.IsFailure
             ? (gravada, [])
             : (Result.Success(), [.. processo.DequeueDomainEvents().Cast<object>(), new CopiarDocumentosDoAtoAoAcervo(processo.Id, versao.AtoCriadorId)]);
     }
 
-    // A versão, o registro do ato, o ato no registro central, a divulgação e a remoção do rascunho vão na mesma
-    // gravação, nesta ordem: a consulta dos atos do processo lê só o registro, e o certame passa a existir para o
-    // público no mesmo commit em que o ato. A porta vem antes da divulgação para que a recusa dela não deixe certame
-    // montado no rastreador, e a remoção do rascunho só entra no rastreador depois das duas, para que toda recusa deixe
-    // a transcrição do operador intacta. A raiz é soft-deletable e o cascade da chave estrangeira jamais dispara,
-    // então todo caminho que registra ato remove o rascunho de modo explícito.
-    private async Task<Result> GravarVersaoAtoDivulgacaoERascunhoAsync(
+    // A versão, o registro do ato, o ato no registro central e a divulgação vão na mesma gravação, nesta ordem: a
+    // consulta dos atos do processo lê só o registro, e o certame passa a existir para o público no mesmo commit em que
+    // o ato. A porta vem antes da divulgação para que a recusa dela não deixe certame montado no rastreador.
+    private async Task<Result> GravarVersaoAtoEDivulgacaoAsync(
         ProcessoSeletivo processo,
         VersaoConfiguracao versao,
         AtoDoProcesso registroDoAto,
@@ -79,8 +75,6 @@ public sealed class GravacaoDaVersaoCongelada(
         {
             return montada;
         }
-
-        await rascunhos.RemoverDoProcessoAsync(processo.Id, cancellationToken).ConfigureAwait(false);
 
         return await SalvarAsync(processo, registroDoAto, cancellationToken).ConfigureAwait(false);
     }

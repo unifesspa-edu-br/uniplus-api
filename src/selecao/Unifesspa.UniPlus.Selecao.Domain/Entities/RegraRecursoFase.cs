@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <remarks>
 /// Essas invariantes vivem aqui, e não só no validator da porta HTTP, porque existe
 /// caminho de construção que não passa por ela: a reidratação do envelope chama
-/// <see cref="Reidratar"/> ao restaurar configuração congelada. O validator continua
+/// <see cref="Reidratar"/> ao reidratar configuração congelada. O validator continua
 /// existindo e recusa antes, campo a campo, com mensagem por campo — quem chega pelo HTTP
 /// recebe o 400 detalhado dele; quem chega por outro caminho encontra estas recusas, cada
 /// uma com erro nomeado próprio.
@@ -153,7 +153,7 @@ public sealed class RegraRecursoFase : EntityBase
     /// <remarks>
     /// As invariantes puras continuam valendo na reidratação, pelo mesmo motivo de
     /// <see cref="Criar"/>: o envelope é o caminho de construção que não passa pela porta
-    /// HTTP, e uma regra restaurada com prazo não positivo seria tão inutilizável quanto
+    /// HTTP, e uma regra reidratada com prazo não positivo seria tão inutilizável quanto
     /// uma escrita assim pela primeira vez.
     /// </remarks>
     public static Result<RegraRecursoFase> Reidratar(

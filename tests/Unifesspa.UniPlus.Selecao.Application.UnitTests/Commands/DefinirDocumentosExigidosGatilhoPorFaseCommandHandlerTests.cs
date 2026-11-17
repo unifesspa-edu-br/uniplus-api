@@ -39,7 +39,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
             ? new("E", null, null, null, null, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], RepetePorEntidade: "COMPOSICAO_FAMILIAR")
             : new("FOLHA", item, null, null, null, null, RepetePorEntidade: "COMPOSICAO_FAMILIAR");
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(processo.Id, [raiz], PrecondicaoIfMatch.Ausente));
+        Result resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(processo.Id, [raiz]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().ContainSingle(d => d.Condicoes.Any(c => c.Fato == "MAIOR_IDADE"));
@@ -52,8 +52,8 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
         ItemDocumentoExigidoInput item = new(
             fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [new CondicaoGatilhoInput(0, "MAIOR_IDADE", "IGUAL", "true")], [], null, Qualquer, null);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(
-            processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente));
+        Result resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(
+            processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]));
 
         resultado.Error!.Code.Should().Be("PredicadoDnf.FatoNaoColetadoPeloProcesso");
     }
@@ -65,8 +65,8 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
         ItemDocumentoExigidoInput item = new(
             fase.Id, tipoDocumentoId, "CONDICIONAL", false, "ELIMINA", [new CondicaoGatilhoInput(0, "MAIOR_IDADE", "IGUAL", "true")], [], null, Qualquer, null);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(
-            processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null, RepetePorEntidade: "PESSOAS_JURIDICAS")], PrecondicaoIfMatch.Ausente));
+        Result resultado = await HandleAsync(mocks, new DefinirDocumentosExigidosCommand(
+            processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null, RepetePorEntidade: "PESSOAS_JURIDICAS")]));
 
         resultado.Error!.Code.Should().Be("NoExigencia.TipoEntidadeInvalido");
     }
@@ -80,7 +80,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
         // SEXO só é conhecido na fase HOMOLOGACAO_INSCRICOES (ordem 2), mas o documento é exigido na
         // fase INSCRICAO (ordem 1) — anterior. O gatilho nunca teria como já ter sido
         // resolvido para o candidato.
-        Result<MutacaoAceita> resultado = await DefinirExigenciaPeloSexoAsync(processo, inscricao.Id, "HOMOLOGACAO_INSCRICOES");
+        Result resultado = await DefinirExigenciaPeloSexoAsync(processo, inscricao.Id, "HOMOLOGACAO_INSCRICOES");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.FatoResolvidoEmFasePosterior");
@@ -96,7 +96,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
 
         // O documento é exigido na fase HOMOLOGACAO_INSCRICOES (ordem 2) — SEXO conhecido na própria
         // fase ou numa fase anterior (INSCRICAO, ordem 1) satisfaz o gate.
-        Result<MutacaoAceita> resultado = await DefinirExigenciaPeloSexoAsync(processo, homologacao.Id, pontoResolucao);
+        Result resultado = await DefinirExigenciaPeloSexoAsync(processo, homologacao.Id, pontoResolucao);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -108,7 +108,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
         ProcessoSeletivo processo = ProcessoComCronograma(inscricao);
 
         // SEXO resolve numa fase ("HOMOLOGACAO_INSCRICOES") que não existe no cronograma deste processo.
-        Result<MutacaoAceita> resultado = await DefinirExigenciaPeloSexoAsync(processo, inscricao.Id, "HOMOLOGACAO_INSCRICOES");
+        Result resultado = await DefinirExigenciaPeloSexoAsync(processo, inscricao.Id, "HOMOLOGACAO_INSCRICOES");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.PontoResolucaoForaDoCronograma");
@@ -117,11 +117,11 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
     private static ProcessoSeletivo ProcessoComCronograma(params FaseCronograma[] fases)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases(fases, []).IsSuccess.Should().BeTrue();
         return processo;
     }
 
-    private static async Task<Result<MutacaoAceita>> DefinirExigenciaPeloSexoAsync(
+    private static async Task<Result> DefinirExigenciaPeloSexoAsync(
         ProcessoSeletivo processo, Guid faseDaExigenciaId, string pontoResolucaoDoSexo)
     {
         Mocks mocks = NovosMocks(processo, processo.Id);
@@ -134,7 +134,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
         CondicaoGatilhoInput condicao = new(0, "SEXO", "IGUAL", "\"MASCULINO\"");
         ItemDocumentoExigidoInput item = new(faseDaExigenciaId, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null);
 
-        return await HandleAsync(mocks, new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente));
+        return await HandleAsync(mocks, new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]));
     }
 
     [Fact(DisplayName = "Exigência da habilitação cita o grupo em que o candidato foi convocado")]
@@ -144,7 +144,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
             FaseComOrdemECodigo(1, "RESULTADO_FINAL"), FaseComOrdemECodigo(2, "HABILITACAO"));
         Guid habilitacao = processo.CronogramaFases.Single(f => f.Codigo == "HABILITACAO").Id;
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ExigenciaPeloGrupoDaConvocacao(processo, habilitacao, tipoDocumentoId));
+        Result resultado = await HandleAsync(mocks, ExigenciaPeloGrupoDaConvocacao(processo, habilitacao, tipoDocumentoId));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -154,7 +154,7 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
     {
         (ProcessoSeletivo processo, Mocks mocks, Guid tipoDocumentoId) = ProcessoComAmplaConcorrencia(FaseComOrdemECodigo(1, "HABILITACAO"));
 
-        Result<MutacaoAceita> resultado = await HandleAsync(
+        Result resultado = await HandleAsync(
             mocks, ExigenciaPeloGrupoDaConvocacao(processo, processo.CronogramaFases.Single().Id, tipoDocumentoId));
 
         resultado.Error!.Code.Should().Be("DocumentoExigido.PontoResolucaoForaDoCronograma");
@@ -176,6 +176,6 @@ public sealed class DefinirDocumentosExigidosGatilhoPorFaseCommandHandlerTests
     {
         CondicaoGatilhoInput condicao = new(0, "MODALIDADE_CONVOCACAO", "IGUAL", "\"AC\"");
         ItemDocumentoExigidoInput item = new(faseId, tipoDocumentoId, "CONDICIONAL", true, null, [condicao], [], null, Qualquer, null, Finalidade: "HABILITACAO");
-        return new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+        return new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
     }
 }

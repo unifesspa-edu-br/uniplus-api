@@ -4,7 +4,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -36,20 +35,6 @@ public static class ContagemDePrazos
             || etapas.Any(static etapa => etapa.Recursos.Count > 0);
     }
 
-    /// <summary>
-    /// Depois da primeira publicação o que vale é a versão congelada: se a versão sobre a qual a
-    /// sessão foi aberta já traz o identificador, ele não muda mais — o endereço da página e a
-    /// chave do documento no acervo derivam dele, e o público já o conhece. Antes dela, ou quando
-    /// a versão-base não o traz, o identificador é livre.
-    /// </summary>
-    /// <remarks>A unicidade entre processos depende de consulta e fica com o handler.</remarks>
-    internal static DomainError? RecusaDeTrocaDoIdentificador(RascunhoRetificacao? sessao) =>
-        sessao is { VersaoBaseComIdentificadorLegivel: true }
-            ? new DomainError(
-                ProcessoSeletivoErrorCodes.IdentificadorLegivelImutavel,
-                "O identificador legível já consta em versão publicada e não pode ser alterado.")
-            : null;
-
     internal static DomainError? RecusaDaLocalidadeAusente(LocalidadeRegente? localidade) =>
         localidade is null
             ? new DomainError(
@@ -64,11 +49,11 @@ public static class ContagemDePrazos
                 "A convenção de contagem dos prazos é obrigatória.")
             : null;
 
-    internal static DomainError? PendenciaDoIdentificadorLegivel(EstadoDaConfiguracao estado)
+    internal static DomainError? PendenciaDoIdentificadorLegivel(ConfiguracaoDeclarada configuracao)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        return estado.IdentificadorLegivel is null
+        return configuracao.Identidade.IdentificadorLegivel is null
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente,
                 "O identificador legível é obrigatório para gerar versão publicada.")
@@ -81,27 +66,27 @@ public static class ContagemDePrazos
     /// fonte única do item que o checklist de conformidade projeta, para que checklist e
     /// publicação não divirjam.
     /// </summary>
-    internal static DomainError? PendenciaDaLocalidade(EstadoDaConfiguracao estado)
+    internal static DomainError? PendenciaDaLocalidade(ConfiguracaoDeclarada configuracao)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        return estado.Localidade is null
+        return configuracao.Cronograma.Localidade is null
             ? new DomainError(
                 "ProcessoSeletivo.LocalidadeAusente",
                 "A localidade que rege a contagem dos prazos é obrigatória para gerar versão publicada.")
             : null;
     }
 
-    internal static DomainError? PendenciaDoAlgoritmoDeContagem(EstadoDaConfiguracao estado)
+    internal static DomainError? PendenciaDoAlgoritmoDeContagem(ConfiguracaoDeclarada configuracao)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        if (estado.AlgoritmoContagemPrazo is not null)
+        if (configuracao.Cronograma.AlgoritmoContagemPrazo is not null)
         {
             return null;
         }
 
-        return AlgumaContagemDistingueDiaUtil(estado)
+        return AlgumaContagemDistingueDiaUtil(configuracao)
             ? new DomainError(
                 "ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado",
                 "O processo tem prazo de recurso cuja contagem distingue dia útil, e não declarou a convenção de contagem que usa.")
@@ -114,11 +99,11 @@ public static class ContagemDePrazos
     /// distintas e cada uma tem erro próprio, porque reportar uma pela outra mandaria quem
     /// publica corrigir o lugar errado.
     /// </summary>
-    internal static DomainError? PendenciaDoCalendarioVigente(EstadoDaConfiguracao estado, ContextoDeContagemDePrazos contexto)
+    internal static DomainError? PendenciaDoCalendarioVigente(ConfiguracaoDeclarada configuracao, ContextoDeContagemDePrazos contexto)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        if (contexto.CalendarioVigente is not null || !AlgumaContagemDistingueDiaUtil(estado))
+        if (contexto.CalendarioVigente is not null || !AlgumaContagemDistingueDiaUtil(configuracao))
         {
             return null;
         }
@@ -131,6 +116,6 @@ public static class ContagemDePrazos
                 "O processo tem prazo de recurso cuja contagem distingue dia útil, e não há calendário de dias úteis vigente cadastrado.");
     }
 
-    private static bool AlgumaContagemDistingueDiaUtil(EstadoDaConfiguracao estado) =>
-        ContagemDistingueDiaUtil(estado.CronogramaFases, estado.Etapas);
+    private static bool AlgumaContagemDistingueDiaUtil(ConfiguracaoDeclarada configuracao) =>
+        ContagemDistingueDiaUtil(configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas);
 }

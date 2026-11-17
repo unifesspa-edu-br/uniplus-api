@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -30,9 +31,7 @@ internal static class SerializacaoDoCronograma
     };
 
     private static JsonArray SerializarFasesCronograma(ProcessoSeletivo processo) =>
-        new([.. processo.CronogramaFases
-            .OrderBy(static f => f.Ordem)
-            .ThenBy(static f => f.Id)
+        new([.. OrdemCanonicaDaConfiguracao.Fases(processo.CronogramaFases)
             .Select(static fase => (JsonNode)SerializarFase(fase))]);
 
     private static JsonObject SerializarFase(FaseCronograma fase)
@@ -82,9 +81,7 @@ internal static class SerializacaoDoCronograma
 
     private static JsonArray SerializarProdutosDaFase(FaseCronograma fase)
     {
-        IOrderedEnumerable<ProdutoDaFase> ordenados = fase.Produtos
-            .OrderBy(static p => p.AtoCodigo, StringComparer.Ordinal)
-            .ThenBy(static p => p.Papel?.ToString() ?? string.Empty, StringComparer.Ordinal);
+        IOrderedEnumerable<ProdutoDaFase> ordenados = OrdemCanonicaDaConfiguracao.ProdutosDaFase(fase.Produtos);
 
         return new JsonArray([.. ordenados.Select(static p => (JsonNode)new JsonObject
         {
@@ -96,10 +93,8 @@ internal static class SerializacaoDoCronograma
 
     private static JsonArray SerializarBancasRequeridas(FaseCronograma fase)
     {
-        IOrderedEnumerable<(BancaRequerida Banca, JsonObject Item)> ordenadas = fase.BancasRequeridas
-            .Select(static b => (Banca: b, Item: SerializarBancaRequerida(b)))
-            .OrderBy(static par => par.Banca.TipoBancaOrigemId)
-            .ThenBy(static par => par.Banca.Codigo, StringComparer.Ordinal)
+        IOrderedEnumerable<(BancaRequerida Banca, JsonObject Item)> ordenadas = OrdemCanonicaDaConfiguracao
+            .BancasDaFase(fase.BancasRequeridas.Select(static b => (Banca: b, Item: SerializarBancaRequerida(b))), static par => par.Banca)
             .ThenBy(
                 static par => EscritaCanonica.PerfilAtual.Serializar(par.Item),
                 ComparadorLexicograficoDeBytes.Instancia);
@@ -118,8 +113,7 @@ internal static class SerializacaoDoCronograma
 
     private static JsonArray SerializarRecorteDeCompetencia(BancaRequerida banca)
     {
-        IOrderedEnumerable<CategoriaJulgada> ordenadas = banca.RecorteDeCompetencia
-            .OrderBy(static c => c.Codigo, StringComparer.Ordinal);
+        IOrderedEnumerable<CategoriaJulgada> ordenadas = OrdemCanonicaDaConfiguracao.RecorteDeCompetencia(banca.RecorteDeCompetencia);
 
         return new JsonArray([.. ordenadas.Select(static c => (JsonNode)new JsonObject
         {

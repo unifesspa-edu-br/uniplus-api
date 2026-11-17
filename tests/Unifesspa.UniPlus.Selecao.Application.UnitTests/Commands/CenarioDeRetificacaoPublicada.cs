@@ -21,9 +21,8 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.FatoCitado
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.PublicacaoDeTeste;
 
 /// <summary>
-/// Um processo publicado e as dependências dos dois caminhos que congelam uma retificação: o atalho sem sessão
-/// e o fechamento da sessão. O registro de codecs reidrata a versão publicada real, porque um registro sem
-/// versão faria os testes passarem com a conferência retirada.
+/// Um processo publicado e as dependências do caminho que congela uma retificação. O registro de codecs reidrata a
+/// versão publicada real, porque um registro sem versão faria os testes passarem com a conferência retirada.
 /// </summary>
 internal sealed class CenarioDeRetificacaoPublicada
 {
@@ -62,15 +61,7 @@ internal sealed class CenarioDeRetificacaoPublicada
         return cenario;
     }
 
-    public void AbrirSessao() =>
-        Processo.AbrirRetificacao(
-            "Correção do prazo", _versao, identificadorDaVersaoBase: null,
-            FatosDasVersoesPublicadas.De([_grafoPublicado], [_congelado]), "user-conta-1", Agora)
-            .IsSuccess.Should().BeTrue();
-
     public Task<(Result Resposta, IEnumerable<object> Eventos)> RetificarAsync() => _handlers.RetificarAsync();
-
-    public Task<(Result Resposta, IEnumerable<object> Eventos)> FecharAsync() => _handlers.FecharRetificacaoAsync();
 
     public string ClassificacaoDoItem(string fato) => Processo.FatosColetados.Single(f => f.FatoCodigo == fato).ClassificacaoProtecao;
 

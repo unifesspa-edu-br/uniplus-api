@@ -92,7 +92,7 @@ public sealed class FaseOrdemPermutacaoPersistenciaTests(ProcessoSeletivoDbFixtu
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
         processo.DefinirCronogramaFases(
-            [Fase(1, "INSCRICAO"), Fase(2, "AVALIACAO")], [], PrecondicaoIfMatch.Ausente)
+            [Fase(1, "INSCRICAO"), Fase(2, "AVALIACAO")], [])
             .IsSuccess.Should().BeTrue();
 
         escrita.ProcessosSeletivos.Add(processo);

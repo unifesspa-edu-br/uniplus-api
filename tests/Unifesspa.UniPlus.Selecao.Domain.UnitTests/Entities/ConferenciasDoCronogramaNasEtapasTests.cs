@@ -42,7 +42,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste", Contagem = contexto, TiposDeAtoUnicos = tipos ?? TiposDeAtoUnicosDeTeste.Nenhum });
 
     private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto, TiposDeAtoUnicosPorObjeto? tipos = null) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(contexto, tiposDeAtoUnicos: tipos))
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(contexto, tiposDeAtoUnicos: tipos))
             .Where(static i => !i.Ok).Select(static i => i.Codigo);
 
     private static RecursoDaEtapa Janela(Guid produtoAncoraId) => RecursoDaEtapa.Criar(
@@ -89,7 +89,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         ComRecursoNaEtapa(processo);
-        processo.DefinirAlgoritmoContagemPrazo(Algoritmo(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirAlgoritmoContagemPrazo(Algoritmo()).IsSuccess.Should().BeTrue();
 
         Vermelhos(processo, ContextoDeContagemDePrazos.SemCalendario).Should().Contain("calendario_vigente_ausente");
 
@@ -104,7 +104,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         EtapaProcesso etapa = ComRecursoNaEtapa(processo);
-        processo.DefinirAlgoritmoContagemPrazo(Algoritmo(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirAlgoritmoContagemPrazo(Algoritmo()).IsSuccess.Should().BeTrue();
 
         // O estado só existe em processo carregado do banco: DefinirRecursos o recusa na gravação.
         Guid definitivo = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Definitivo).Id;
@@ -131,7 +131,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo),
         ]).IsSuccess.Should().BeTrue();
 
-        Result gravar = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Curinga);
+        Result gravar = processo.DefinirEtapas([etapa]);
 
         gravar.IsFailure.Should().BeTrue();
         gravar.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("ProcessoSeletivo.EtapaComPreliminarSemDefinitivo");
@@ -165,7 +165,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
         FaseCronograma abre = FaseQueAbreEFechaOMesmoTipoApontandoConcluinte();
         FaseCronograma conclui = FaseConcluinteQuePublicaODefinitivo();
 
-        Result gravar = processo.DefinirCronogramaFases([abre, conclui], [], PrecondicaoIfMatch.Curinga);
+        Result gravar = processo.DefinirCronogramaFases([abre, conclui], []);
 
         gravar.IsFailure.Should().BeTrue();
         gravar.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("ProcessoSeletivo.ConclusaoDuplicada");

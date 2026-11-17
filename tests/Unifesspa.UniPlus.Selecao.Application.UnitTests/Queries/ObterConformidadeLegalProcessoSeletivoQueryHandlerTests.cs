@@ -45,8 +45,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         processo.DefinirEtapas(
             [EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe("PROVA_OBJETIVA"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]).IsSuccess.Should().BeTrue();
 
         ObrigatoriedadeLegal regraAprovada = NovaRegra("CONSULTA-APROVA", new EtapaObrigatoria("PROVA_OBJETIVA"));
         ObrigatoriedadeLegal regraReprovada = NovaRegra("CONSULTA-REPROVA", new EtapaObrigatoria("ENTREVISTA"));
@@ -342,7 +341,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // janela é estado válido de cadastro, e a divergência apareceria exatamente aí.
         ProcessoSeletivo processo = ProcessoBase();
         FaseCronograma meiaJanela = FaseDeInscricaoComJanelaParcial(temInicio, temFim);
-        processo.DefinirCronogramaFases([meiaJanela], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([meiaJanela], [])
             .IsSuccess.Should().BeTrue();
 
         Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await ConsultarAsync(processo);
@@ -367,7 +366,7 @@ public sealed class ObterConformidadeLegalProcessoSeletivoQueryHandlerTests
         // para a tela apontar o cronograma em vez de mandar tentar de novo.
         ProcessoSeletivo processo = ProcessoBase();
         FaseCronograma faseSemJanela = FaseDeInscricaoNaOrdem1();
-        processo.DefinirCronogramaFases([faseSemJanela], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([faseSemJanela], [])
             .IsSuccess.Should().BeTrue();
 
         Result<ConformidadeLegalProcessoSeletivoDto> resultadoDaConsulta = await ConsultarAsync(processo);

@@ -6,6 +6,7 @@ using Domain.Entities;
 using Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
 using Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Domain.ProcessosSeletivos.Edicao;
+using Domain.ProcessosSeletivos.FasesEEtapas;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -30,7 +31,7 @@ internal sealed record LeiturasDoCongelamento(
     IReadOnlyList<FieldError> CausasDaAprovacao);
 
 /// <summary>
-/// Confere a configuração que a publicação, a retificação de ato único e o fechamento da sessão congelam, numa ordem só
+/// Confere a configuração que a publicação e a retificação de ato único congelam, numa ordem só
 /// de recusa (ADR-0109 D5, ADR-0125): lê os cadastros, confere a aprovação da proteção, confere a configuração
 /// (<see cref="ConfiguracaoAptaACongelar"/>) e confere o que só a operação sabe. Uma leitura que falha impede todo o resto,
 /// porque sem ela não há configuração a julgar; a aprovação da proteção é regra sobre uma leitura que nunca falha, então
@@ -46,7 +47,26 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
     LeituraDosCorretoresDasEtapas corretores,
     ConferenciaDaOperacaoAoCongelar operacao)
 {
+    /// <summary>
+    /// As causas que saem daqui apontam o documento da configuração pelo ponteiro JSON (<see cref="PonteiroNoDocumento"/>), convertido
+    /// numa saída só: toda causa que a conferência acumula, de qualquer leitura, aprovação, configuração ou operação, passa por ela.
+    /// A causa que não aponta o documento (o ato, o edital, o cadastro) chega sem campo.
+    /// </summary>
     internal async Task<Result<ConfiguracaoConferida>> ConferirAsync(
+        ProcessoSeletivo processo,
+        EditalDeclarado edital,
+        AtoEDocumentoConferidos ato,
+        OrigemDoCongelamento origem,
+        CancellationToken cancellationToken)
+    {
+        Result<ConfiguracaoConferida> conferida = await JulgarAConfiguracaoAsync(processo, edital, ato, origem, cancellationToken).ConfigureAwait(false);
+
+        return conferida.IsFailure
+            ? Result<ConfiguracaoConferida>.ValidationFailure(PonteiroNoDocumento.Converter(conferida.Errors, processo.Declaracao().Origem))
+            : conferida;
+    }
+
+    private async Task<Result<ConfiguracaoConferida>> JulgarAConfiguracaoAsync(
         ProcessoSeletivo processo,
         EditalDeclarado edital,
         AtoEDocumentoConferidos ato,
@@ -59,7 +79,7 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
             return Result<ConfiguracaoConferida>.ValidationFailure(lidos.Errors);
         }
 
-        Result<ConfiguracaoAptaACongelar> daConfiguracao = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), lidos.Value!.Cadastros);
+        Result<ConfiguracaoAptaACongelar> daConfiguracao = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), lidos.Value!.Cadastros);
         OperacaoConferida daOperacao = await operacao
             .ConferirAsync(processo, edital, ato, origem, lidos.Value, cancellationToken)
             .ConfigureAwait(false);
@@ -104,7 +124,7 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
         ProcessoSeletivo processo, OrigemDoCongelamento origem, CancellationToken cancellationToken)
     {
         CatalogoVivo catalogo = await catalogos.LerAsync(processo, cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<FieldError> daAprovacao = ConferenciaDaAprovacaoDaProtecao.Conferir(processo, catalogo.TiposVivos, catalogo.Fatos).Errors;
+        IReadOnlyList<FieldError> daAprovacao = ConferenciaDaAprovacaoDaProtecao.CausasAoCongelar(processo, catalogo.TiposVivos, catalogo.Fatos);
         Result<RecopiadoAoCongelar> recopiado = await recopia.RecopiarAsync(processo, catalogo, origem, cancellationToken).ConfigureAwait(false);
 
         return recopiado.IsFailure
@@ -127,7 +147,8 @@ public sealed class ConferenciaDaConfiguracaoAoCongelar(
         ContextoDeContagemDePrazos contexto = await contextos.LerAsync(cancellationToken).ConfigureAwait(false);
         CorretoresDasEtapas corretoresDasEtapas = await corretores.LerAsync(processo, cancellationToken).ConfigureAwait(false);
 
-        return new CadastrosDaConfiguracao(contexto, vivo.Catalogo.FatosDeModalidade, tipos, corretoresDasEtapas, vivo.Recopiado.Protecao.Exigencias);
+        return new CadastrosDaConfiguracao(
+            contexto, vivo.Catalogo.FatosDeModalidade, tipos, corretoresDasEtapas, vivo.Recopiado.Protecao.Exigencias, vivo.Recopiado.Publicadas);
     }
 
     private static Result<ConfiguracaoConferida> Resultado(

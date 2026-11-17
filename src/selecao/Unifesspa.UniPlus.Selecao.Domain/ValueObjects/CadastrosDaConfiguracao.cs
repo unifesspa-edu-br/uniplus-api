@@ -14,7 +14,8 @@ public sealed class CadastrosDaConfiguracao
         FatosDeModalidade fatosDeModalidade,
         TiposDeAtoUnicosPorObjeto tiposDeAtoUnicos,
         CorretoresDasEtapas corretores,
-        ProtecaoVigenteDasExigencias protecao)
+        ProtecaoVigenteDasExigencias protecao,
+        FatosDasVersoesPublicadas? fatosDasVersoesPublicadas = null)
     {
         ArgumentNullException.ThrowIfNull(contagemDePrazos);
         ArgumentNullException.ThrowIfNull(fatosDeModalidade);
@@ -27,6 +28,7 @@ public sealed class CadastrosDaConfiguracao
         TiposDeAtoUnicos = tiposDeAtoUnicos;
         Corretores = corretores;
         Protecao = protecao;
+        FatosDasVersoesPublicadas = fatosDasVersoesPublicadas;
     }
 
     /// <summary>O calendário vigente e o fuso institucional.</summary>
@@ -40,4 +42,7 @@ public sealed class CadastrosDaConfiguracao
 
     /// <summary>A proteção efetiva das exigências, a mesma em todo caminho que julga a configuração.</summary>
     public ProtecaoVigenteDasExigencias Protecao { get; }
+
+    /// <summary>O que os formulários coletaram nas versões publicadas; nulo antes da primeira publicação.</summary>
+    public FatosDasVersoesPublicadas? FatosDasVersoesPublicadas { get; }
 }

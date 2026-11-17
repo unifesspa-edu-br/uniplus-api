@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// Tem o mesmo formato do bloco de topo <c>tipoProcesso</c>, mas, diferente daquele (só forma, nunca
-/// reidratado: o tipo do processo não muda ao restaurar uma versão), o valor lido aqui é efetivamente usado
+/// reidratado: o tipo do processo não muda ao reidratar uma versão), o valor lido aqui é efetivamente usado
 /// para reconstruir a identidade de tipo da etapa. Um envelope adulterado com <c>origemId</c>, <c>codigo</c>
 /// ou <c>nome</c> vazio ou acima do limite é recusado como malformado pela própria factory do VO, nunca
 /// reidratado.

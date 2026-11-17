@@ -1,13 +1,10 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.MotivosDeDecisao;
 
-using System.Text;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -26,12 +23,12 @@ internal static class ProcessoParaMotivos
         ProcessoSeletivo processo = SemFasesNemEtapas();
         processo.DefinirCronogramaFases(
             [Fase(1, "INSCRICAO", InicioDaInscricao, coletaIsencao: true), Fase(2, "HOMOLOGACAO_INSCRICOES", InicioDaHomologacao, coletaIsencao: false)],
-            [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(
-            [Etapa("Prova objetiva", ordem: 1), Etapa("Prova discursiva", ordem: 2)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [Etapa("Prova objetiva", ordem: 1), Etapa("Prova discursiva", ordem: 2)]).IsSuccess.Should().BeTrue();
         if (fundamentos.Length > 0)
         {
-            processo.DefinirTaxaInscricao(ConfiguracaoTaxaInscricao.Criar(true, 100m, fundamentos).Value!, PrecondicaoIfMatch.Ausente)
+            processo.DefinirTaxaInscricao(ConfiguracaoTaxaInscricao.Criar(true, 100m, fundamentos).Value!)
                 .IsSuccess.Should().BeTrue();
         }
 
@@ -45,25 +42,11 @@ internal static class ProcessoParaMotivos
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-    /// <summary>O processo publicado, sem sessão de retificação aberta.</summary>
+    /// <summary>O processo publicado.</summary>
     internal static ProcessoSeletivo Publicado()
     {
         ProcessoSeletivo processo = Rascunho();
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
-        return processo;
-    }
-
-    /// <summary>O processo publicado com a sessão de retificação aberta.</summary>
-    internal static ProcessoSeletivo EmRetificacao()
-    {
-        ProcessoSeletivo processo = Rascunho();
-        GrafoConfiguracao publicada = VersoesPublicadasDeTeste.DoProcesso(processo);
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
-        VersaoConfiguracao versaoBase = VersaoConfiguracao.Abrir(
-            processo.Id, new DocumentoCongelado(Encoding.UTF8.GetBytes("{}"), "1.1", "canonical-json/sha256@v1", new string('a', 64)),
-            Guid.CreateVersion7(), "user-conta-1", InicioDaInscricao.AddDays(-30));
-        processo.AbrirRetificacao("Inclusão de motivo", versaoBase, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SemEixosCongelados([publicada]), "user-conta-1", InicioDaInscricao.AddDays(-30))
-            .IsSuccess.Should().BeTrue();
         return processo;
     }
 

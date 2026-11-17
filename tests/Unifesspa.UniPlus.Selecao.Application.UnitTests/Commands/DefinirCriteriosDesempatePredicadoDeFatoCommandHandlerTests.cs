@@ -26,7 +26,7 @@ public sealed class DefinirCriteriosDesempatePredicadoDeFatoCommandHandlerTests
         ProcessoSeletivo processo = ProcessoComClassificacaoEnem();
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.PredicadoFato);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato(null, "IGUAL", null)));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato(null, "IGUAL", null)));
 
         result.Errors.Select(static e => e.Field).Should().Equal("criterios[0].fato", "criterios[0].valor");
     }
@@ -37,7 +37,7 @@ public sealed class DefinirCriteriosDesempatePredicadoDeFatoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.PredicadoFato);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato("PROFESSOR_RURAL", "IGUAL", "true")));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato("PROFESSOR_RURAL", "IGUAL", "true")));
 
         result.IsSuccess.Should().BeTrue();
         ArgsDesempatePredicadoFato args = (ArgsDesempatePredicadoFato)processo.CriteriosDesempate.Single().Args;
@@ -51,7 +51,7 @@ public sealed class DefinirCriteriosDesempatePredicadoDeFatoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.PredicadoFato);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato("FATO_INEXISTENTE", "IGUAL", "S")));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato("FATO_INEXISTENTE", "IGUAL", "S")));
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("PredicadoDnf.FatoDesconhecido");
@@ -63,7 +63,7 @@ public sealed class DefinirCriteriosDesempatePredicadoDeFatoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
         CenarioDosCriteriosDeDesempate cenario = Com(processo).ComRegra(CriterioDesempateCodigo.PredicadoFato);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato("PROFESSOR_RURAL", null, null)));
+        Result result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato("PROFESSOR_RURAL", null, null)));
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("CriterioDesempate.PredicadoFatoIncompleto");

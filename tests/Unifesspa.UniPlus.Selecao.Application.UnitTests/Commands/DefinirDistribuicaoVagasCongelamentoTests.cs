@@ -37,12 +37,12 @@ public sealed class DefinirDistribuicaoVagasCongelamentoTests
             .Returns(RegraDistribuicao(RegraDistribuicaoVagasCodigo.Institucional));
         mocks.ModalidadeReader.ObterPorIdAsync(modalidadeId, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidadeId));
 
-        Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
             new DefinirDistribuicaoVagasCommand(
                 processo.Id,
                 [new ConfiguracaoDistribuicaoVagasInput(
                     ofertaCursoId, 60, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
-                    [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])], PrecondicaoIfMatch.Ausente),
+                    [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])]),
             mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
@@ -72,14 +72,14 @@ public sealed class DefinirDistribuicaoVagasCongelamentoTests
             processo.Id,
             [new ConfiguracaoDistribuicaoVagasInput(
                 ofertaCursoId, 60, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
-                [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])], PrecondicaoIfMatch.Ausente);
+                [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])]);
 
-        Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
             command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         GrupoAreaEnemSnapshot? congelado = processo.DistribuicaoVagas.Single().GrupoAreaEnem;
-        GrupoAreaEnemSnapshotDto? devolvido = result.Value!.DistribuicaoVagas.Single().GrupoAreaEnem;
+        GrupoAreaEnemSnapshotDto? devolvido = result.Value!.Single().GrupoAreaEnem;
         if (codigo is null)
         {
             congelado.Should().BeNull();
@@ -110,9 +110,9 @@ public sealed class DefinirDistribuicaoVagasCongelamentoTests
             processo.Id,
             [new ConfiguracaoDistribuicaoVagasInput(
                 ofertaCursoId, 101, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
-                [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 101)])], PrecondicaoIfMatch.Ausente);
+                [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 101)])]);
 
-        Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
             command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -140,9 +140,9 @@ public sealed class DefinirDistribuicaoVagasCongelamentoTests
             processo.Id,
             [new ConfiguracaoDistribuicaoVagasInput(
                 ofertaCursoId, 60, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
-                [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])], PrecondicaoIfMatch.Ausente);
+                [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])]);
 
-        Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
             command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
 

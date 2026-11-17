@@ -73,8 +73,7 @@ public sealed class DefinicaoDoProcessoTests
                 EtapaFormulario.Criar("DADOS", 0, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
                 EtapaFormulario.Criar("FAMILIA", 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Família", null, null).Value!,
                 EtapaFormulario.Criar("REVISAO", 2, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
-            ],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ]).IsSuccess.Should().BeTrue();
         return processo;
     }
 

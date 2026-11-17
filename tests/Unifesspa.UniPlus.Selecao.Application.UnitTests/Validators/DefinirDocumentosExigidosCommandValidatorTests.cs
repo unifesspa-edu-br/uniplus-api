@@ -36,7 +36,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
     {
         NoExigenciaInput no = new("FOLHA", item, null, null, null, null);
         return new DefinirDocumentosExigidosCommandValidator().Validate(
-            new DefinirDocumentosExigidosCommand(Guid.CreateVersion7(), [no], PrecondicaoIfMatch.Ausente));
+            new DefinirDocumentosExigidosCommand(Guid.CreateVersion7(), [no]));
     }
 
     [Fact(DisplayName = "Item sem base legal (lista vazia) é aceito — a coerência com o gate é da publicação")]
@@ -195,7 +195,7 @@ public sealed class DefinirDocumentosExigidosCommandValidatorTests
 
     private static ValidationResult ValidarRaiz(NoExigenciaInput raiz) =>
         new DefinirDocumentosExigidosCommandValidator().Validate(
-            new DefinirDocumentosExigidosCommand(Guid.CreateVersion7(), [raiz], PrecondicaoIfMatch.Ausente));
+            new DefinirDocumentosExigidosCommand(Guid.CreateVersion7(), [raiz]));
 
     [Theory(DisplayName = "chaveDistincao vazia ou em branco é rejeitada — nunca coagida silenciosamente pelo handler")]
     [InlineData("")]

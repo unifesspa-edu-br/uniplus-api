@@ -60,7 +60,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
 
 
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             modalidadeOrigemId: Guid.CreateVersion7(),
@@ -80,22 +80,22 @@ public sealed class ParidadeExigenciasDocumentaisTests
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
             RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
-        }).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
 
         FaseCronograma fase = FaseDeResultadoFinal();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -126,7 +126,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
         DocumentoExigido exigenciaA = ExigenciaGeral(faseId, "IDENTIDADE");
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigenciaA, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigenciaA, 0).Value!]).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congelado = Canonicalizar(processo);
         JsonObject envelope = Envelope(congelado);
@@ -136,7 +136,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
         // produziria) — o que acontece DEPOIS na configuração viva nunca o altera.
         DocumentoExigido exigenciaB = ExigenciaGeral(faseId, "COMPROVANTE_RESIDENCIA");
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(exigenciaA, 0).Value!, NoExigencia.CriarFolha(exigenciaB, 1).Value!], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            [NoExigencia.CriarFolha(exigenciaA, 0).Value!, NoExigencia.CriarFolha(exigenciaB, 1).Value!]).IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Select(static d => d.Id).Should().Contain(exigenciaB.Id,
             "pré-condição: a exigência B está viva no agregado");
 
@@ -152,7 +152,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
         DocumentoExigido exigenciaA = ExigenciaGeral(faseId, "IDENTIDADE");
         DocumentoExigido exigenciaB = ExigenciaGeral(faseId, "COMPROVANTE_RESIDENCIA");
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(exigenciaA, 0).Value!, NoExigencia.CriarFolha(exigenciaB, 1).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [NoExigencia.CriarFolha(exigenciaA, 0).Value!, NoExigencia.CriarFolha(exigenciaB, 1).Value!]).IsSuccess.Should().BeTrue();
 
         SnapshotCanonico congeladoV1 = Canonicalizar(processo);
         JsonObject envelopeV1 = Envelope(congeladoV1);
@@ -160,7 +160,7 @@ public sealed class ParidadeExigenciasDocumentaisTests
 
         // Retificação que remove B (ex.: exigência cadastrada por engano) — só na
         // configuração VIVA; o envelope V1, já congelado, é outro objeto, imutável.
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigenciaA, 0).Value!], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigenciaA, 0).Value!]).IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Select(static d => d.Id).Should().NotContain(exigenciaB.Id,
             "pré-condição: B não está mais viva no agregado");
 

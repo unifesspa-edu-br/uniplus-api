@@ -71,14 +71,6 @@ public sealed record FasesIniciadas
             && publicada != fase.UnidadeResponsavelOrigemId;
     }
 
-    /// <summary>As fases, entre as informadas, que já começaram e cuja unidade não é a publicada.</summary>
-    public IEnumerable<FaseCronograma> FasesComUnidadeTrocada(IEnumerable<FaseCronograma> fases)
-    {
-        ArgumentNullException.ThrowIfNull(fases);
-
-        return fases.Where(UnidadeTrocada);
-    }
-
     /// <summary>
     /// O código das fases iniciadas que a versão publicada vigente ainda traz e que não estão entre as informadas. A
     /// fase que já saiu de uma versão anterior não conta como removida agora.

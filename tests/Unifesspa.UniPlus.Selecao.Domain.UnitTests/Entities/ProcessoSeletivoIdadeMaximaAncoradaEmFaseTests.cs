@@ -57,7 +57,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaEmFaseTests
         ExigirFolhas(processo, ExigenciaAncoradaNoFimDaFase(habilitacao.Id, inscricao.Id, FinalidadeFormulario.Habilitacao));
 
         Result resultado = processo.DefinirCronogramaFases(
-            [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+            [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.ReferenciadaPorExigenciaViva");
@@ -68,7 +68,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaEmFaseTests
     {
         ProcessoSeletivo processo = ProcessoComFases(Fase(1, "INSCRICAO"));
 
-        Result resultado = processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [], PrecondicaoIfMatch.Curinga);
+        Result resultado = processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -84,7 +84,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaEmFaseTests
         // Só a Ordem 1 (faseExigencia, referenciada por ExigidoNaFaseId) é mantida, com a identidade de origem
         // explícita: recriá-la com origem nova faria a fase da exigência contar como removida também.
         Result resultado = processo.DefinirCronogramaFases(
-            [Fase(1, "INSCRICAO", faseExigencia.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+            [Fase(1, "INSCRICAO", faseExigencia.FaseCanonicaOrigemId)], []);
 
         resultado.IsFailure.Should().BeTrue(
             "faseAncora não é a fase de ExigidoNaFaseId, mas é a âncora de IdadeMaximaEmissao.ReferenciaFaseId");
@@ -109,7 +109,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaEmFaseTests
 
         // As duas primeiras saem juntas; só a terceira permanece, com a identidade preservada.
         Result resultado = processo.DefinirCronogramaFases(
-            [Fase(1, "RESULTADO", faseQueFica.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+            [Fase(1, "RESULTADO", faseQueFica.FaseCanonicaOrigemId)], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().BeEmpty("o documento saiu junto com a fase em que era exigido");
@@ -124,7 +124,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaEmFaseTests
 
         // Mesma Ordem E mesma FaseCanonicaOrigemId — a fase sobrevive via reconciliação, mas perde o Fim.
         Result resultado = processo.DefinirCronogramaFases(
-            [FaseNaExecucaoComFim(1, "ANALISE", fim: null, fase.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+            [FaseNaExecucaoComFim(1, "ANALISE", fim: null, fase.FaseCanonicaOrigemId)], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseExtremoAusente");
@@ -139,7 +139,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaEmFaseTests
 
         DateTimeOffset novoFim = new(2026, 2, 15, 0, 0, 0, TimeSpan.Zero);
         Result resultado = processo.DefinirCronogramaFases(
-            [FaseNaExecucaoComFim(1, "ANALISE", novoFim, fase.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+            [FaseNaExecucaoComFim(1, "ANALISE", novoFim, fase.FaseCanonicaOrigemId)], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message, "o Fim continua definido — só o valor mudou, o que é uma edição legítima");
     }

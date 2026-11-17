@@ -20,7 +20,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// <summary>
 /// Handler do <see cref="DefinirCriteriosDesempateCommand"/>. Lê o catálogo de
 /// critérios do <c>regras_do_catalogo</c> (<see cref="IRegraCatalogoReader"/>) e, quando
-/// preciso, o vocabulário de fatos antes de travar o processo; depois do 404, do If-Match e do
+/// preciso, o vocabulário de fatos antes de bloquear o processo; depois do 404 e do
 /// teto, resolve cada critério no catálogo já lido, monta os args tipados conforme o código da
 /// regra e congela a referência — a
 /// existência do <c>etapa_ref</c> no processo é garantida pela raiz
@@ -33,7 +33,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// </summary>
 public static class DefinirCriteriosDesempateCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirCriteriosDesempateCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
@@ -72,32 +72,20 @@ public static class DefinirCriteriosDesempateCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // A precondição é conferida AQUI, logo depois do 404 e antes das regras de negócio
-        // que este handler avalia (existência de cadastros, coerência de referências): ela
-        // as precede na ordem da ADR-0110 D9. Um cliente com If-Match defasado tem de saber
-        // disso antes de sair caçando um cadastro que ele não errou.
-        //
-        // O que ela NÃO precede é a validação de SCHEMA do payload: o FluentValidation roda
-        // como middleware do Wolverine, antes deste handler, e um command malformado morre
-        // ali com 422 sem que o guard chegue a rodar. É desvio consciente da D9 — corrigi-lo
-        // exigiria carregar o agregado no middleware, o que é pior. O custo é uma rodada
-        // extra para quem erra as DUAS coisas ao mesmo tempo; nenhum estado é corrompido.
-        //
-        // O mesmo guard continua dentro do Definir* do domínio: esta antecipação dá a ordem,
-        // não a garantia.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa vem antes de consultar cadastros.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         if (quantidadeErros.Count > 0)
         {
-            return Result<MutacaoAceita>.ValidationFailure(quantidadeErros);
+            return Result.ValidationFailure(quantidadeErros);
         }
 
         Dictionary<(string Codigo, string Versao), RegraCatalogo> catalogo = regrasDesempate
@@ -129,36 +117,36 @@ public static class DefinirCriteriosDesempateCommandHandler
 
         if (erros.Count > 0)
         {
-            erros.AddRange(RegrasDoDesempate.ConferirCriteriosDesempate(EstadoDaConfiguracao.De(processo), informados));
-            return Result<MutacaoAceita>.ValidationFailure(RegrasDoDesempate.AnexarAreasAceitasDoDesempate(EstadoDaConfiguracao.De(processo), erros));
+            erros.AddRange(RegrasDoDesempate.ConferirCriteriosDesempate(processo.Declaracao(), informados));
+            return Result.ValidationFailure(RegrasDoDesempate.AnexarAreasAceitasDoDesempate(processo.Declaracao(), erros));
         }
 
         if (fatos is { } catalogoFatos)
         {
             Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
                 catalogoFatos.Catalogo,
-                ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)),
+                ReferenciasVivas.Vinculos(processo.Declaracao()),
                 VinculosDeFatos.De(
                     [],
                     criterios.Select(static c => c.Args).OfType<ArgsDesempatePredicadoFato>()
                         .Select(static a => (a.Condicao.Fato, a.Condicao.Valor))));
             if (vinculoNovo.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
+                return Result.Failure(vinculoNovo.Error!);
             }
         }
 
-        Result result = processo.DefinirCriteriosDesempate(criterios, command.Precondicao);
+        Result result = processo.DefinirCriteriosDesempate(criterios);
         if (result.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(result.Errors);
+            return Result.ValidationFailure(result.Errors);
         }
 
         // Agregado tracked: persistência por change detection (ValueGeneratedNever
         // nos filhos) — não chamar DbSet.Update.
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 
     /// <summary>

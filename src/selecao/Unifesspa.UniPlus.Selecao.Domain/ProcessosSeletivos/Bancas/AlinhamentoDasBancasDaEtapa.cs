@@ -5,36 +5,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// A etapa reaproveita a linha viva de mesmo código ao redefinir ou repor as bancas, para não
-/// remover e inserir o mesmo código na mesma transação. O que a linha viva guarda além da origem
-/// do tipo, o nome e a regra de deliberação, precisa acompanhar a banca declarada ou congelada.
+/// A etapa reaproveita a linha viva de mesmo código ao redefinir ou reidratar as bancas, para não
+/// remover e inserir o mesmo código na mesma transação; a linha reaproveitada assume a origem, o nome
+/// e a regra de deliberação da banca declarada ou congelada.
 /// </summary>
 public static class AlinhamentoDasBancasDaEtapa
 {
-    /// <summary>Define as bancas da etapa e alinha às declaradas as linhas que ela reaproveitou.</summary>
-    public static Result Definir(EtapaProcesso etapa, IReadOnlyList<BancaDaEtapa> declaradas)
-    {
-        ArgumentNullException.ThrowIfNull(etapa);
-        ArgumentNullException.ThrowIfNull(declaradas);
-
-        Result definidas = etapa.DefinirBancas(declaradas);
-        if (definidas.IsSuccess)
-        {
-            Alinhar(etapa.Bancas, declaradas);
-        }
-
-        return definidas;
-    }
-
-    internal static void Alinhar(IEnumerable<BancaDaEtapa> vivas, IEnumerable<BancaDaEtapa> declaradas)
-    {
-        List<BancaDaEtapa> disponiveis = [.. vivas];
-        foreach (BancaDaEtapa declarada in declaradas)
-        {
-            disponiveis.Find(viva => MesmoCodigo(viva, declarada))?.Redeclarar(declarada);
-        }
-    }
-
     /// <summary>
     /// Se duas das bancas têm o mesmo código. O código é comparado em NFC, como o documento canônico o
     /// emite: duas grafias do mesmo código passariam a guarda para depois sair do envelope como duas
@@ -53,8 +29,8 @@ public static class AlinhamentoDasBancasDaEtapa
             : null;
 
     /// <summary>
-    /// As bancas que a etapa passa a ter: a linha viva de mesmo código é reaproveitada, com o tipo de
-    /// origem reposto nela, e a banca sem linha viva entra como chegou. O código identifica a banca, e a
+    /// As bancas que a etapa passa a ter: a linha viva de mesmo código é reaproveitada, assumindo a
+    /// declaração, e a banca sem linha viva entra como chegou. O código identifica a banca, e a
     /// linha que continua declarada continua sendo a mesma linha, senão a mesma transação removeria e
     /// inseriria o mesmo código no índice único da etapa. Cada linha viva é consumida no máximo uma vez.
     /// </summary>
@@ -75,7 +51,7 @@ public static class AlinhamentoDasBancasDaEtapa
         }
 
         disponiveis.Remove(viva);
-        viva.ReporOrigem(declarada.TipoBancaOrigemId);
+        viva.AssumirDeclaracao(declarada);
 
         return viva;
     }

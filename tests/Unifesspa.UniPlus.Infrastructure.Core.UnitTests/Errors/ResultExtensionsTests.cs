@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Infrastructure.Core.UnitTests.Errors;
 
+using System.Text.Json;
 using System.Text.RegularExpressions;
 
 using AwesomeAssertions;
@@ -21,6 +22,12 @@ public sealed class ResultExtensionsTests
 
     private static readonly DomainErrorMapping MappingValidacao =
         new(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.edital.ja_publicado", "Edital já publicado");
+
+    private static readonly DomainErrorMapping MappingPrimeiraCausa =
+        new(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo.primeira_causa", "Primeira causa");
+
+    private static readonly DomainErrorMapping MappingSegundaCausa =
+        new(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo.segunda_causa", "Segunda causa");
 
     // ─── Status HTTP correto ───────────────────────────────────────────────
 
@@ -137,10 +144,8 @@ public sealed class ResultExtensionsTests
 
     // ─── ValidationFailure multi-erro — errors[] (ADR-0023, ADR-0125) ────
 
-    // ADR-0023: errors[] é condicional a ter Field associado (ValidationFailure),
-    // não a ter mais de uma violação — uma única Sigla vazia ainda é erro de
-    // validação e o cliente precisa achar o field sem tratar "erro único" como
-    // caso especial.
+    // ADR-0023: uma única causa com campo ainda vai em errors[], para o cliente achar o
+    // field sem tratar "erro único" como caso especial.
     [Fact]
     public void ToActionResult_ComValidationFailureDeUmErro_DeveConterExtensionErrorsComUmElemento()
     {
@@ -166,6 +171,53 @@ public sealed class ResultExtensionsTests
         ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
 
         problem.Extensions.Should().NotContainKey("errors");
+    }
+
+    [Fact]
+    public void ToActionResult_ComCausaSemCampoEOutraComCampo_DeveSerializarACausaSemAChaveField()
+    {
+        IDomainErrorMapper mapper = CriarMapper(("Processo.CausaDoDocumento", MappingValidacao), ("Processo.CausaSemCampo", MappingValidacao));
+        Result resultado = Result.ValidationFailure(
+        [
+            new FieldError("/cronograma/fases/2/unidadeResponsavelCodigo", new DomainError("Processo.CausaDoDocumento", "A fase precisa de unidade.")),
+            new FieldError(null, new DomainError("Processo.CausaSemCampo", "A causa não aponta o documento.")),
+        ]);
+
+        using JsonDocument serializado = JsonDocument.Parse(JsonSerializer.Serialize(ExtrairProblemDetails(resultado.ToActionResult(mapper)).Extensions["errors"]));
+        JsonElement[] causas = [.. serializado.RootElement.EnumerateArray()];
+
+        causas[0].GetProperty("field").GetString().Should().Be("/cronograma/fases/2/unidadeResponsavelCodigo");
+        causas[1].TryGetProperty("field", out _).Should().BeFalse("a causa que não aponta o documento sai sem a chave field, e não com field nulo");
+    }
+
+    [Fact]
+    public void ToActionResult_ComDuasCausasSemCampo_DeveSerializarOsDoisItensSemAChaveFieldERaizIgualAPrimeira()
+    {
+        IDomainErrorMapper mapper = CriarMapper(("Processo.PrimeiraCausa", MappingPrimeiraCausa), ("Processo.SegundaCausa", MappingSegundaCausa));
+        Result resultado = Result.ValidationFailure(
+        [
+            new FieldError(null, new DomainError("Processo.PrimeiraCausa", "A primeira causa não aponta campo.")),
+            new FieldError(null, new DomainError("Processo.SegundaCausa", "A segunda causa não aponta campo.")),
+        ]);
+
+        ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
+
+        JsonElement[] causas = ItensSerializados(problem);
+        causas.Should().HaveCount(2);
+        causas.Any(static causa => causa.TryGetProperty("field", out _)).Should().BeFalse("a causa sem campo sai sem a chave field");
+        problem.Extensions["code"].Should().Be(causas[0].GetProperty("code").GetString()).And.Be(MappingPrimeiraCausa.Code);
+    }
+
+    [Fact]
+    public void ToActionResult_ComUmaCausaComCampoRaizRelativo_DeveManterOItemComCampoVazio()
+    {
+        IDomainErrorMapper mapper = CriarMapper(("Processo.CausaDoDocumento", MappingValidacao));
+        Result resultado = Result.ValidationFailure(
+            [new FieldError(string.Empty, new DomainError("Processo.CausaDoDocumento", "A raiz do documento é inválida."))]);
+
+        ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
+
+        ErrosDoCorpo(problem).Select(static erro => erro.Field).Should().Equal(string.Empty);
     }
 
     // ─── Conflito retentável (ADR-0134) ────────────────────────────────────
@@ -297,6 +349,12 @@ public sealed class ResultExtensionsTests
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────
+
+    private static JsonElement[] ItensSerializados(ProblemDetails problem)
+    {
+        using JsonDocument serializado = JsonDocument.Parse(JsonSerializer.Serialize(problem.Extensions["errors"]));
+        return [.. serializado.RootElement.EnumerateArray().Select(static item => item.Clone())];
+    }
 
     private static ItemDeErroDeCampo[] ErrosDoCorpo(ProblemDetails problem) =>
         [.. ((System.Collections.IEnumerable)problem.Extensions["errors"]!).Cast<ItemDeErroDeCampo>()];

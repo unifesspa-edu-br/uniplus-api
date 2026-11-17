@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>A recusa de uma configuração que cita uma etapa que o processo não tem, com o mesmo texto na gravação e na restauração.</summary>
+/// <summary>A recusa de uma configuração que cita uma etapa que o processo não tem, com o mesmo texto na gravação e na reidratação.</summary>
 internal static class ReferenciaAEtapaInexistente
 {
     internal static DomainError PeloDesempate(int ordemDoCriterio, Guid etapaRef) => new(

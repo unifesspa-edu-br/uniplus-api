@@ -32,7 +32,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         // TipoDocumentoReader/FatoCandidatoReader propositalmente NÃO configurados — se a
@@ -46,9 +46,9 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         // O grupo (nó raiz) é visitado ANTES da folha (pré-ordem) — mas não tem bases
         // legais próprias, então a travessia recursa até achar a violação na folha.
         NoExigenciaInput grupo = new("OU", null, 1, "ELIMINA", [], [noFolha]);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [grupo], PrecondicaoIfMatch.Ausente);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [grupo]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["DocumentoExigidoBaseLegal.ReferenciaObrigatoria"]);
@@ -61,7 +61,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         // TipoDocumentoReader/FatoCandidatoReader propositalmente NÃO configurados.
@@ -70,9 +70,9 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         ItemDocumentoExigidoInput folha = new(fase.Id, tipoDocumentoId, "INVALIDA", true, null, [], [], null, Qualquer, null);
         NoExigenciaInput noFolha = new("FOLHA", folha, null, null, null, null);
         NoExigenciaInput grupo = new("OU", null, 1, "ELIMINA", [], [noFolha]);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [grupo], PrecondicaoIfMatch.Ausente);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [grupo]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Error.Code).Should().BeEquivalentTo(["DocumentoExigido.AplicabilidadeObrigatoria"]);
@@ -85,13 +85,13 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
         ItemDocumentoExigidoInput folha = new(fase.Id, Guid.CreateVersion7(), "GERAL", true, null, [], [], null, Qualquer, null, Finalidade: "MATRICULA");
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", folha, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", folha, null, null, null, null)]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo([("finalidade", EstruturaFormularioErrorCodes.FinalidadeInvalida)]);
         await mocks.TipoDocumentoReader.DidNotReceiveWithAnyArgs().ObterPorIdAsync(default, default);
@@ -102,7 +102,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -114,9 +114,9 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         ItemDocumentoExigidoInput exigencia = new(
             fase.Id, tipoDocumentoId, "GERAL", true, null, [], [baseSemReferencia, baseSemAbrangencia], null, Qualquer, null);
         DefinirDocumentosExigidosCommand command = new(
-            processo.Id, [new NoExigenciaInput("FOLHA", exigencia, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+            processo.Id, [new NoExigenciaInput("FOLHA", exigencia, null, null, null, null)]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
@@ -128,7 +128,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -138,9 +138,9 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         IdadeMaximaEmissaoInput idade = new(90, "DIAS", "FIM_FASE", null, Guid.CreateVersion7());
         ItemDocumentoExigidoInput item = new(
             fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], idade, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseNaoPertenceAoProcesso");
@@ -151,7 +151,7 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Handler", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseQualquer();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
         Guid tipoDocumentoId = Guid.CreateVersion7();
@@ -162,9 +162,9 @@ public sealed class DefinirDocumentosExigidosValidacaoDaFolhaCommandHandlerTests
         IdadeMaximaEmissaoInput idade = new(90, "DIAS", "FIM_FASE", null, fase.Id);
         ItemDocumentoExigidoInput item = new(
             fase.Id, tipoDocumentoId, "GERAL", true, null, [], [], idade, Qualquer, null);
-        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], PrecondicaoIfMatch.Ausente);
+        DefinirDocumentosExigidosCommand command = new(processo.Id, [new NoExigenciaInput("FOLHA", item, null, null, null, null)]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseExtremoAusente");

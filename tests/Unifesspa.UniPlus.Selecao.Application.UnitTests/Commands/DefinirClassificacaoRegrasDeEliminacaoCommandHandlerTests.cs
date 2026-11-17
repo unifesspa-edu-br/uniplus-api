@@ -25,10 +25,10 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso("PS Convênios 2026", TiposDeProcessoDeTeste.PSIQ);
         EtapaProcesso etapa = EtapaObjetiva();
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([etapa]);
         CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraEliminacaoCodigo.ElimNotaMinimaEtapa);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoComEliminacao(
+        Result result = await cenario.DefinirAsync(ComandoComEliminacao(
             processo.Id, new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", etapa.Id, 4m, null, null)));
 
         result.IsSuccess.Should().BeTrue();
@@ -42,7 +42,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
         CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraEliminacaoCodigo.ElimNotaMinimaEtapa);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoComEliminacao(
+        Result result = await cenario.DefinirAsync(ComandoComEliminacao(
             processo.Id, new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", null, null, null, null)));
 
         result.IsFailure.Should().BeTrue();
@@ -54,10 +54,10 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso("PS Convênios 2026", TiposDeProcessoDeTeste.PSIQ);
         EtapaProcesso etapa = EtapaObjetiva();
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([etapa]);
         CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraEliminacaoCodigo.ElimAusenciaNaEtapa);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoComEliminacao(
+        Result result = await cenario.DefinirAsync(ComandoComEliminacao(
             processo.Id, new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", etapa.Id, null, null, null)));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
@@ -74,7 +74,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
         RegraEliminacaoInput eliminacao = new(
             RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", comEtapaRef ? Guid.CreateVersion7() : null, comNotaMinima ? 4m : null, null, null);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoComEliminacao(processo.Id, eliminacao));
+        Result result = await cenario.DefinirAsync(ComandoComEliminacao(processo.Id, eliminacao));
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("RegraEliminacao.EtapaRefObrigatorio");
@@ -86,7 +86,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso("SiSU 2026", TiposDeProcessoDeTeste.SiSU);
         CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraEliminacaoCodigo.ElimZeroEmArea);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoComEliminacao(
+        Result result = await cenario.DefinirAsync(ComandoComEliminacao(
             processo.Id, new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimZeroEmArea, "v1", null, null, 400m, null)));
 
         result.IsFailure.Should().BeTrue();
@@ -109,7 +109,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
             comMinimo ? 400m : null,
             comArea ? "REDACAO" : null);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoEnemLocalComEliminacao(processo.Id, eliminacao));
+        Result result = await cenario.DefinirAsync(ComandoEnemLocalComEliminacao(processo.Id, eliminacao));
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("RegraEliminacao.ArgsIncompativeisComRegra");
@@ -121,7 +121,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoEnem();
         CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem).ComResolucaoDosPesos();
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoEnemLocalComEliminacao(
+        Result result = await cenario.DefinirAsync(ComandoEnemLocalComEliminacao(
             processo.Id, new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1", null, null, null, null)));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
@@ -135,7 +135,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoEnem();
         CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraEliminacaoCodigo.ElimCorteEmArea).ComResolucaoDosPesos();
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoEnemLocalComEliminacao(
+        Result result = await cenario.DefinirAsync(ComandoEnemLocalComEliminacao(
             processo.Id, new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", null, null, 450m, "MATEMATICA")));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
@@ -154,7 +154,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
         RegraEliminacaoInput eliminacao = new(
             RegraEliminacaoCodigo.ElimCorteEmArea, "v1", comEtapaRef ? Guid.CreateVersion7() : null, null, (decimal?)minimo, area);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoEnemLocalComEliminacao(processo.Id, eliminacao));
+        Result result = await cenario.DefinirAsync(ComandoEnemLocalComEliminacao(processo.Id, eliminacao));
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("RegraEliminacao.AreaEMinimoObrigatorios");
@@ -166,7 +166,7 @@ public sealed class DefinirClassificacaoRegrasDeEliminacaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoEnem();
         CenarioDaClassificacao cenario = CenarioComEliminacao(processo, RegraEliminacaoCodigo.ElimCorteEmArea).ComResolucaoDosPesos();
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoEnemLocalComEliminacao(
+        Result result = await cenario.DefinirAsync(ComandoEnemLocalComEliminacao(
             processo.Id, new RegraEliminacaoInput(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", null, null, 400m, "FISICA")));
 
         result.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(

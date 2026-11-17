@@ -62,11 +62,9 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
 
     public async Task<ProcessoSeletivo?> ObterComConfiguracaoAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        // Carregamento de LEITURA: sem lock e sem a sessão editorial. O FOR UPDATE que
-        // vivia aqui existia para serializar os handlers de mutação — e eles agora têm
-        // carregamento próprio (ObterParaMutacaoAsync, ADR-0110 D4). Mantê-lo aqui faria
-        // duas consultas GET concorrentes ao mesmo processo se serializarem uma na outra,
-        // sem que nenhuma delas escreva coisa alguma.
+        // Carregamento de LEITURA, sem lock: o FOR UPDATE é de ObterParaMutacaoAsync. Mantê-lo aqui
+        // faria duas consultas GET concorrentes ao mesmo processo se serializarem uma na outra, sem que
+        // nenhuma delas escreva coisa alguma.
         return await ComConfiguracao(_context.ProcessosSeletivos)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
             .ConfigureAwait(false);
@@ -74,9 +72,8 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
 
     public async Task<ProcessoSeletivo?> ObterParaMutacaoAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        // Lock pessimista da linha raiz do agregado (revisão do PR #791, Story #759 T4):
-        // serializa handlers concorrentes (os seis Definir*, a abertura/fechamento da
-        // sessão editorial, Publicar e Retificar) que carregam o MESMO processo — sem
+        // Lock pessimista da linha raiz do agregado: serializa handlers concorrentes
+        // (os Definir*, Publicar e Retificar) que carregam o MESMO processo — sem
         // isso, um Definir* que leu Status=Rascunho antes de uma publicação concorrente
         // pode persistir mutação DEPOIS de a versão já ter sido congelada, furando o congelamento dos parâmetros na publicação (UNI-REQ-0019)
         // sem que o guard em memória tenha visibilidade da publicação alheia. O
@@ -85,11 +82,7 @@ public sealed class ProcessoSeletivoRepository : IProcessoSeletivoRepository
         // até a primeira committar ou reverter.
         await TravarAsync(id, cancellationToken).ConfigureAwait(false);
 
-        // O Rascunho é o que distingue este carregamento do de leitura: é dele que a
-        // allowlist da D4 depende, e um null "por não ter sido carregado" recusaria uma
-        // edição legítima.
         return await ComConfiguracao(_context.ProcessosSeletivos)
-            .Include(p => p.Rascunho)
             .FirstOrDefaultAsync(p => p.Id == id, cancellationToken)
             .ConfigureAwait(false);
     }

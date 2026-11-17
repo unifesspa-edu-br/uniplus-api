@@ -60,17 +60,16 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
             localidadeNome = "Marabá",
             localidadeUf = "PA",
             identificadorLegivel = IdentificadoresDeTeste.NovoValor(),
-        },
-        ifMatch: null);
+        });
 
-    public Task<HttpResponseMessage> PutEtapasAsync(object[] etapas, string? ifMatch) =>
-        EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/etapas", etapas, ifMatch);
+    public Task<HttpResponseMessage> PutEtapasAsync(object[] etapas) =>
+        EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/etapas", etapas);
 
     public Task<HttpResponseMessage> PutAtendimentoEspecializadoAsync(
         IReadOnlyList<Guid> condicaoIds, IReadOnlyList<Guid> recursoIds, IReadOnlyList<Guid> tipoDeficienciaIds) =>
         EnviarAsync(
             HttpMethod.Put, $"{Rota}/{ProcessoId}/atendimento-especializado",
-            new { condicaoIds, recursoIds, tipoDeficienciaIds }, ifMatch: null);
+            new { condicaoIds, recursoIds, tipoDeficienciaIds });
 
     public Task<HttpResponseMessage> PutDistribuicaoVagasAsync()
     {
@@ -91,11 +90,11 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
             },
         ];
 
-        return EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/distribuicao-vagas", distribuicao, ifMatch: null);
+        return EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/distribuicao-vagas", distribuicao);
     }
 
     public Task<HttpResponseMessage> PutOpcoesDeCursoAsync() => EnviarAsync(
-        HttpMethod.Put, $"{Rota}/{ProcessoId}/opcoes-de-curso", new { numero = 1 }, ifMatch: null);
+        HttpMethod.Put, $"{Rota}/{ProcessoId}/opcoes-de-curso", new { numero = 1 });
 
     public Task<HttpResponseMessage> PutBonusRegionalAsync(Guid baseLegalBonusRegionalId) => EnviarAsync(
         HttpMethod.Put, $"{Rota}/{ProcessoId}/bonus-regional",
@@ -108,8 +107,7 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
             teto = 95.5000m,
             fatoElegibilidadeCodigo = FormularioDeTeste.FatoBooleanoDaInscricao,
             baseLegalBonusRegionalId,
-        },
-        ifMatch: null);
+        });
 
     public Task<HttpResponseMessage> PutTaxaInscricaoAsync() => EnviarAsync(
         HttpMethod.Put, $"{Rota}/{ProcessoId}/taxa-inscricao",
@@ -118,8 +116,7 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
             cobra = false,
             valor = (decimal?)null,
             fundamentos = (string[]?)null,
-        },
-        ifMatch: null);
+        });
 
     public Task<HttpResponseMessage> PutCriteriosDesempateAsync(Guid objetivaId)
     {
@@ -130,11 +127,11 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
             new { ordem = 3, regraCodigo = CriterioDesempateCodigo.MaiorIdade, regraVersao = "v1", etapaRef = (Guid?)null, idadeMinima = (int?)null, fato = (string?)null, @operador = (string?)null, valor = (string?)null },
         ];
 
-        return EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/criterios-desempate", criterios, ifMatch: null);
+        return EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/criterios-desempate", criterios);
     }
 
     public Task<HttpResponseMessage> PutOpcoesDeclaradasAsync(string fatoCodigo, object[] opcoes) =>
-        EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/fatos/{fatoCodigo}/opcoes", new { opcoes }, ifMatch: null);
+        EnviarAsync(HttpMethod.Put, $"{Rota}/{ProcessoId}/fatos/{fatoCodigo}/opcoes", new { opcoes });
 
     public Task<HttpResponseMessage> PutClassificacaoAsync(Guid objetivaId, string resolucaoPesoAreaEnem)
     {
@@ -160,12 +157,11 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
                 baseadoEmEnem = true,
                 resolucaoPesoAreaEnem,
                 escalaNotaFinal = 1000m,
-            },
-            ifMatch: null);
+            });
     }
 
     internal async Task<HttpResponseMessage> EnviarAsync(
-        HttpMethod metodo, string rota, object? corpo, string? ifMatch, bool idempotente = true, string? accept = null)
+        HttpMethod metodo, string rota, object? corpo, bool idempotente = true, string? accept = null)
     {
         using HttpRequestMessage request = new(metodo, new Uri(rota, UriKind.Relative));
         if (corpo is not null)
@@ -190,11 +186,6 @@ internal sealed record ContextoDoEnvelopeFechado(CascadingApiFactory Api, HttpCl
         if (idempotente)
         {
             request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-        }
-
-        if (ifMatch is not null)
-        {
-            request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
         }
 
         return await Client.SendAsync(request).ConfigureAwait(false);

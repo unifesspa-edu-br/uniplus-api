@@ -5,9 +5,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 
 /// <summary>
 /// As dimensões da configuração de um <see cref="ProcessoSeletivo"/>,
-/// reconstruídas a partir de uma <see cref="VersaoConfiguracao"/> congelada
-/// (ADR-0110 D1/D2) e repostas no agregado por
-/// <see cref="ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>.
+/// reconstruídas a partir de uma <see cref="VersaoConfiguracao"/> congelada.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -19,7 +17,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 /// se faz sobre os <b>bytes canônicos</b>, nunca sobre este objeto).
 /// </para>
 /// <para>
-/// Vive no <b>Domain</b> porque a raiz o recebe. O envelope completo — este grafo
+/// Vive no <b>Domain</b> porque as conferências da retificação o recebem. O envelope completo — este grafo
 /// mais os <c>DadosEdital</c>, o hash do documento e a <c>RetificacaoDoEdital</c> — é da
 /// Application, que é quem conhece o codec (ADR-0042).
 /// </para>
@@ -55,25 +53,21 @@ public sealed class GrafoConfiguracao
         // publicação, diferente do bônus regional (onde ausência é estado válido). O grafo só
         // carrega o valor tal como veio congelado; a recusa acontece na publicação, não aqui.
         ConfiguracaoTaxaInscricao? configuracaoTaxaInscricao = null,
-        // Localidade regente (UNI-REQ-0111): a raiz só a repõe quando presente. Diferente do fuso,
-        // que acompanha o envelope reidratado, é estado vivo da raiz e volta para ela no descarte
-        // da retificação.
+        // Localidade regente (UNI-REQ-0111): ausente quando a versão não a traz. Diferente do fuso,
+        // que acompanha o envelope reidratado, é estado vivo da raiz.
         LocalidadeRegente? localidade = null,
         // Convenção de contagem (UNI-REQ-0112): a versão publicada pode não ter declarado, porque
-        // nenhuma contagem sua distingue dia útil. A raiz repõe o que veio, inclusive a ausência,
-        // para que o descarte devolva a configuração que a versão de fato tinha.
+        // nenhuma contagem sua distingue dia útil. A ausência é valor legítimo.
         ReferenciaRegra? algoritmoContagemPrazo = null,
-        // Identificador legível: o endereço público do certame, congelado com a versão. A raiz
-        // repõe o que veio, inclusive a ausência: descartar uma retificação devolve o identificador
-        // que a versão vigente de fato tinha.
+        // Identificador legível: o endereço público do certame, congelado com a versão; ausente
+        // quando a versão foi congelada sem ele.
         IdentificadorLegivel? identificadorLegivel = null,
         // Opções declaradas pelo processo: reconstruídas pelo decoder a partir dos valores
         // selecionáveis congelados dos fatos coletados de fonte do processo.
         IReadOnlyList<OpcaoDeclaradaFato>? opcoesDeclaradas = null,
         // Grupos repetíveis dos formulários (UNI-REQ-0146), com os seus campos; ausência = nenhum.
         IReadOnlyList<GrupoColetado>? gruposColetados = null,
-        // Número de opções de curso (1 ou 2): dimensão da raiz, congelada em bloco próprio. A raiz
-        // repõe o que veio.
+        // Número de opções de curso (1 ou 2): dimensão da raiz, congelada em bloco próprio.
         int? numeroDeOpcoesDeCurso = null)
     {
         ArgumentNullException.ThrowIfNull(etapas);
@@ -87,7 +81,7 @@ public sealed class GrafoConfiguracao
 
         // Cópias defensivas: o grafo é a fronteira entre os bytes congelados e o
         // agregado vivo. Guardar a referência do caller deixaria uma janela em que
-        // mutá-la, depois da validação e antes da reposição, reporia configuração
+        // mutá-la, depois da validação, faria o grafo carregar configuração
         // que nunca foi validada.
         Localidade = localidade;
         NumeroDeOpcoesDeCurso = numeroDeOpcoesDeCurso;
@@ -148,7 +142,7 @@ public sealed class GrafoConfiguracao
     public ReferenciaTemporalFatos? ReferenciaTemporalFatos { get; }
 
     /// <summary>
-    /// Os fatos que o processo coleta do candidato, congelados no envelope e repostos na restauração.
+    /// Os fatos que o processo coleta do candidato, congelados no envelope.
     /// </summary>
     public IReadOnlyList<FatoColetado> FatosColetados { get; }
 
@@ -157,7 +151,7 @@ public sealed class GrafoConfiguracao
     public IReadOnlyList<OpcaoDeclaradaFato> OpcoesDeclaradas { get; }
 
     /// <summary>
-    /// As regras de derivação dos fatos derivados do processo, congeladas no envelope e repostas na restauração.
+    /// As regras de derivação dos fatos derivados do processo, congeladas no envelope.
     /// </summary>
     public IReadOnlyList<ConfiguracaoDerivacaoFato> RegrasDerivacao { get; }
 
@@ -171,8 +165,7 @@ public sealed class GrafoConfiguracao
         DerivacoesDaOferta.Efetivas(RegrasDerivacao, DerivacoesDaOferta.DistribuicaoDasOfertas(DistribuicaoVagas, ofertasDeCurso ?? []));
 
     /// <summary>
-    /// A cascata de remanejamento das cotas reservadas, congelada no envelope e reposta na
-    /// restauração. Ausência = nenhuma cascata configurada (toggle por presença, como
+    /// A cascata de remanejamento das cotas reservadas, congelada no envelope. Ausência = nenhuma cascata configurada (toggle por presença, como
     /// <see cref="BonusRegional"/>).
     /// </summary>
     public ConfiguracaoCascataRemanejamento? CascataRemanejamento { get; }
@@ -184,14 +177,13 @@ public sealed class GrafoConfiguracao
     public IReadOnlyList<TermoExigidoFormulario> TermosExigidos { get; }
 
     /// <summary>
-    /// Divulgação pública do certame (UNI-REQ-0050), congelada no envelope e reposta na
-    /// restauração. Ausência = default minimizado (só o número de inscrição), toggle por
+    /// Divulgação pública do certame (UNI-REQ-0050), congelada no envelope. Ausência = default minimizado (só o número de inscrição), toggle por
     /// presença como <see cref="BonusRegional"/>.
     /// </summary>
     public ConfiguracaoDivulgacao? ConfiguracaoDivulgacao { get; }
 
     /// <summary>
-    /// Taxa de inscrição e isenção, congelada no envelope e reposta na restauração. Ausência =
+    /// Taxa de inscrição e isenção, congelada no envelope. Ausência =
     /// "ainda não declarado", que não é estado válido de publicação, diferente de
     /// <see cref="BonusRegional"/>.
     /// </summary>

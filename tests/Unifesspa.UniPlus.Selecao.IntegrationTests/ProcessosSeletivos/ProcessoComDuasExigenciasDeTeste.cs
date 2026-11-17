@@ -72,8 +72,8 @@ internal static class ProcessoComDuasExigenciasDeTeste
     private static void DefinirOfertaEDistribuicao(ProcessoSeletivo processo)
     {
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas([DistribuicaoDeUmaModalidadeAmpla()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoDeUmaModalidadeAmpla()], FatosDeModalidadeDeTeste.DoCatalogo)
             .IsSuccess.Should().BeTrue();
     }
 
@@ -96,7 +96,7 @@ internal static class ProcessoComDuasExigenciasDeTeste
             RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
         }).Value!;
 
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
     }
 
     private static FaseCronograma DefinirCronograma(ProcessoSeletivo processo)
@@ -107,20 +107,19 @@ internal static class ProcessoComDuasExigenciasDeTeste
             new DecisoesDeCronogramaDaFase(1, Inicio: InicioDaFase, Fim: FimDaFase, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         return fase;
     }
 
     private static void DefinirEtapasFormularioETaxa(ProcessoSeletivo processo)
     {
-        processo.DefinirEtapas([ProvaObjetiva()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([ProvaObjetiva()]).IsSuccess.Should().BeTrue();
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
 
         // Publicar sem declarar cobrança de taxa é recusado.
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }
 
@@ -135,7 +134,7 @@ internal static class ProcessoComDuasExigenciasDeTeste
         DocumentoExigido cpf = ExigenciaDeInscricao(fase, "CPF", "CPF");
 
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(rg, 0).Value!, NoExigencia.CriarFolha(cpf, 1).Value!], PrecondicaoIfMatch.Ausente)
+            [NoExigencia.CriarFolha(rg, 0).Value!, NoExigencia.CriarFolha(cpf, 1).Value!])
             .IsSuccess.Should().BeTrue();
     }
 

@@ -12,7 +12,7 @@ using Kernel.Results;
 internal sealed record RecopiadoAoCongelar(ProtecaoVigenteDoProcesso Protecao, FatosDasVersoesPublicadas? Publicadas);
 
 /// <summary>
-/// O que a publicação, a retificação e o fechamento da sessão fazem antes de canonicalizar: o catálogo é
+/// O que a publicação e a retificação fazem antes de canonicalizar: o catálogo é
 /// editável depois que o item copiou dele a origem dos valores, o formato e a proteção, a unidade
 /// responsável das fases pode ter mudado no cadastro e o tipo de documento pode ter sido reclassificado, e
 /// os gates avaliam a cópia. Tudo é conferido antes e a recusa sai num só lote (ADR-0125); só então o

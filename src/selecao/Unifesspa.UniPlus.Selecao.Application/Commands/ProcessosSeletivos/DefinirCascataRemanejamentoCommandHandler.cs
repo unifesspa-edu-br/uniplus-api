@@ -23,7 +23,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// </summary>
 public static class DefinirCascataRemanejamentoCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirCascataRemanejamentoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
@@ -40,14 +40,14 @@ public static class DefinirCascataRemanejamentoCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         bool tudoNulo = command.RegraCodigo is null && command.RegraVersao is null
@@ -57,19 +57,19 @@ public static class DefinirCascataRemanejamentoCommandHandler
 
         if (tudoNulo)
         {
-            Result removerResult = processo.DefinirCascataRemanejamento(null, command.Precondicao);
+            Result removerResult = processo.DefinirCascataRemanejamento(null);
             if (removerResult.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(removerResult.Error!);
+                return Result.Failure(removerResult.Error!);
             }
 
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-            return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+            return Result.Success();
         }
 
         if (!tudoPresente)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ConfiguracaoCascataRemanejamento.CamposObrigatorios",
                 "RegraCodigo, RegraVersao, FallbackCodigo e Destinos precisam estar todos presentes " +
                 "(definição) ou todos ausentes (remoção)."));
@@ -118,13 +118,13 @@ public static class DefinirCascataRemanejamentoCommandHandler
             // item também falhou.
             List<FieldError> checagensIndependentes = ConfiguracaoCascataRemanejamento.ValidarFallbackELimitesIndependentesDeItens(
                 command.FallbackCodigo, command.Destinos.Count, command.Destinos.Select(d => d?.ModalidadeOrigemCodigo));
-            return Result<MutacaoAceita>.ValidationFailure([.. checagensIndependentes, .. itemErros]);
+            return Result.ValidationFailure([.. checagensIndependentes, .. itemErros]);
         }
 
         List<FieldError> formaErros = ConfiguracaoCascataRemanejamento.ValidarForma(command.FallbackCodigo!, destinos);
         if (formaErros.Count > 0)
         {
-            return Result<MutacaoAceita>.ValidationFailure(formaErros);
+            return Result.ValidationFailure(formaErros);
         }
 
         RegraCatalogo? regra = await regraCatalogoReader
@@ -132,14 +132,14 @@ public static class DefinirCascataRemanejamentoCommandHandler
             .ConfigureAwait(false);
         if (regra is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ConfiguracaoCascataRemanejamento.RegraNaoEncontrada",
                 $"Regra de remanejamento {command.RegraCodigo}/{command.RegraVersao} não encontrada no catálogo de regras."));
         }
 
         if (regra.Tipo != TipoRegra.CriterioRemanejamento)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ConfiguracaoCascataRemanejamento.RegraTipoInvalido",
                 $"A regra {command.RegraCodigo}/{command.RegraVersao} não é do tipo criterio_remanejamento."));
         }
@@ -151,26 +151,26 @@ public static class DefinirCascataRemanejamentoCommandHandler
             regra.Referencia(), command.FallbackCodigo!, destinos);
         if (cascataResult.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(cascataResult.Errors);
+            return Result.ValidationFailure(cascataResult.Errors);
         }
 
         ConfiguracaoCascataRemanejamento cascata = cascataResult.Value!;
         if (!BateComEsquemaArgs(cascata, regra.EsquemaArgs))
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ConfiguracaoCascataRemanejamento.MatrizDivergenteDaRegra",
                 $"O fallback e/ou os destinos informados divergem do esquema_args congelado da regra {command.RegraCodigo}/{command.RegraVersao}."));
         }
 
-        Result definirResult = processo.DefinirCascataRemanejamento(cascata, command.Precondicao);
+        Result definirResult = processo.DefinirCascataRemanejamento(cascata);
         if (definirResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(definirResult.Error!);
+            return Result.Failure(definirResult.Error!);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 
     /// <summary>

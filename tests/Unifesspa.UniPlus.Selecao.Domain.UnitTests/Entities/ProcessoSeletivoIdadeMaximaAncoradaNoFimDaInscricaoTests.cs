@@ -99,7 +99,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaNoFimDaInscricaoTests
 
         // Mesma Ordem e mesma FaseCanonicaOrigemId — a fase sobrevive via reconciliação, mas perde o Fim.
         Result resultado = processo.DefinirCronogramaFases(
-            [FaseColetaInscricao(1, "INSCRICAO", fim: null, fase.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+            [FaseColetaInscricao(1, "INSCRICAO", fim: null, fase.FaseCanonicaOrigemId)], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("IdadeMaximaEmissao.FaseExtremoAusente");
@@ -113,7 +113,7 @@ public sealed class ProcessoSeletivoIdadeMaximaAncoradaNoFimDaInscricaoTests
 
         DateTimeOffset novoFim = new(2026, 2, 15, 0, 0, 0, TimeSpan.Zero);
         Result resultado = processo.DefinirCronogramaFases(
-            [FaseColetaInscricao(1, "INSCRICAO", novoFim, fase.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+            [FaseColetaInscricao(1, "INSCRICAO", novoFim, fase.FaseCanonicaOrigemId)], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }

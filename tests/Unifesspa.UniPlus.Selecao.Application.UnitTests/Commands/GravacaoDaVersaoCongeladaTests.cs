@@ -17,14 +17,14 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.Publicacao
 
 /// <summary>
 /// O que a gravação da versão congelada escreve, em que ordem, e o que faz quando a escrita é recusada: a versão e o
-/// ato nascem juntos, a remoção do rascunho entra no rastreador antes do único flush, e a recusa não deixa a transcrição do operador para trás.
+/// ato nascem juntos, a divulgação entra no rastreador antes do único flush, e a recusa não escreve nada.
 /// </summary>
 public sealed class GravacaoDaVersaoCongeladaTests
 {
     private const string IndiceDoNumeroDaVersao = "ux_versoes_configuracao_processo_numero";
 
-    [Fact(DisplayName = "No sucesso grava a versão e o ato, remove o rascunho no rastreador, salva uma vez e devolve os eventos")]
-    public async Task Sucesso_GravaRemoveORascunhoESalvaNessaOrdem()
+    [Fact(DisplayName = "No sucesso grava a versão, o ato e a divulgação no rastreador, salva uma vez e devolve os eventos")]
+    public async Task Sucesso_GravaEDivulgaESalvaNessaOrdem()
     {
         Preparo preparo = await Preparo.NovoAsync();
 
@@ -37,7 +37,6 @@ public sealed class GravacaoDaVersaoCongeladaTests
             _ = preparo.Servicos.Repositorio.AdicionarVersaoConfiguracaoAsync(preparo.Versao, Arg.Any<CancellationToken>());
             _ = preparo.Servicos.Atos.AdicionarAsync(Arg.Any<AtoDoProcesso>(), Arg.Any<CancellationToken>());
             _ = preparo.Servicos.Certames.AdicionarAsync(Arg.Any<CertameDivulgado>(), Arg.Any<CancellationToken>());
-            _ = preparo.Servicos.Rascunhos.RemoverDoProcessoAsync(preparo.Processo.Id, Arg.Any<CancellationToken>());
             _ = preparo.Servicos.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
         });
     }
@@ -154,10 +153,9 @@ public sealed class GravacaoDaVersaoCongeladaTests
 
         resposta.IsSuccess.Should().BeTrue();
         publicacao.Servicos.UnitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
-        await publicacao.Servicos.Rascunhos.Received(1).RemoverDoProcessoAsync(publicacao.Processo.Id, Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "A recusa de um portão descarta o rastreamento e não escreve nem apaga nada")]
+    [Fact(DisplayName = "A recusa de uma conferência descarta o rastreamento e não escreve nada")]
     public async Task Publicacao_RecusadaPeloPortao_Descarta()
     {
         CenarioDeRecusaNoCongelamento cenario = Para(OperacaoQueCongela.Publicar).Com(DefeitoDoCongelamento.Cronograma);
@@ -166,7 +164,6 @@ public sealed class GravacaoDaVersaoCongeladaTests
 
         resposta.IsFailure.Should().BeTrue();
         cenario.Servicos.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
-        await cenario.Servicos.Rascunhos.DidNotReceive().RemoverDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "A falha de gravação depois da transição descarta o rastreamento")]

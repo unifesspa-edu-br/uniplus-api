@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Contratos;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
@@ -21,9 +20,9 @@ internal static class DeclaracoesComDefeitoParaOEsquema
 
     internal static ContextoDaConferencia ContextoComTodosOsDefeitos()
     {
-        EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(ProcessoConformeFactory.Criar());
+        ConfiguracaoDeclarada configuracao = ProcessoConformeFactory.Criar().Declaracao();
 
-        return new ContextoDaConferencia(estado, CadastrosDeTeste.Padrao, new CronogramaDoProcesso(Fases()), new EtapasDoProcesso(Etapas()));
+        return new ContextoDaConferencia(configuracao, CadastrosDeTeste.Padrao, new CronogramaDoProcesso(Fases()), new EtapasDoProcesso(Etapas()));
     }
 
     private static FaseDeclarada[] Fases()

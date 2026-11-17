@@ -69,7 +69,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, tipo ?? TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         Result atendimentoResult = processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente);
+            AtendimentoEspecializado.Criar([], [], []).Value!);
         atendimentoResult.IsSuccess.Should().BeTrue(atendimentoResult.Error?.Message);
 
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(
@@ -93,7 +93,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraDistribuicao, Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina });
         distribuicaoResult.IsSuccess.Should().BeTrue(distribuicaoResult.Error?.Message);
-        Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas([distribuicaoResult.Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        Result distribuicaoDefinirResult = processo.DefinirDistribuicaoVagas([distribuicaoResult.Value!], FatosDeModalidadeDeTeste.DoCatalogo);
         distribuicaoDefinirResult.IsSuccess.Should().BeTrue(distribuicaoDefinirResult.Error?.Message);
 
         ReferenciaRegra regraCalculo = ReferenciaRegra.De(
@@ -106,16 +106,16 @@ internal static class ProcessoSeletivoPublicavelSeeder
             RegraOrdemAlocacao = regraOrdemAlocacao,
         });
         classificacaoResult.IsSuccess.Should().BeTrue(classificacaoResult.Error?.Message);
-        Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!, PrecondicaoIfMatch.Ausente);
+        Result classificacaoDefinirResult = processo.DefinirClassificacao(classificacaoResult.Value!);
         classificacaoDefinirResult.IsSuccess.Should().BeTrue(classificacaoDefinirResult.Error?.Message);
 
         FaseCronograma faseConforme = FaseDeResultadoFinal(coletaSolicitacaoIsencao, fimDasInscricoes, unidadeResponsavel, produtosDaFase);
-        Result cronogramaResult = processo.DefinirCronogramaFases([faseConforme], [], PrecondicaoIfMatch.Ausente);
+        Result cronogramaResult = processo.DefinirCronogramaFases([faseConforme], []);
         Result etapasResult = processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
         etapasResult.IsSuccess.Should().BeTrue(etapasResult.Error?.Message);
         cronogramaResult.IsSuccess.Should().BeTrue(cronogramaResult.Error?.Message);
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
@@ -125,7 +125,7 @@ internal static class ProcessoSeletivoPublicavelSeeder
         Result<ConfiguracaoTaxaInscricao> taxaResult = ConfiguracaoTaxaInscricao.Criar(
             cobra: false, valor: null, fundamentosCodigos: null);
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
-        Result taxaDefinirResult = processo.DefinirTaxaInscricao(taxaResult.Value!, PrecondicaoIfMatch.Ausente);
+        Result taxaDefinirResult = processo.DefinirTaxaInscricao(taxaResult.Value!);
         taxaDefinirResult.IsSuccess.Should().BeTrue(taxaDefinirResult.Error?.Message);
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 

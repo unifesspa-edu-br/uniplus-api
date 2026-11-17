@@ -85,20 +85,20 @@ internal static class CorpusEnvelopeProcessoRico
     // útil — logo a convenção de contagem é exigida para publicar.
     internal static void DefinirAlgoritmoDeContagem(ProcessoSeletivo processo) =>
         processo.DefinirAlgoritmoContagemPrazo(
-            AlgoritmoDeContagemDoCorpus(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            AlgoritmoDeContagemDoCorpus()).IsSuccess.Should().BeTrue();
 
     internal static void DefinirCronogramaEEtapas(
         ProcessoSeletivo processo, int variante, bool permutar, IReadOnlyList<string?>? tiposDeDecisaoDaFaseFinal)
     {
         processo.DefinirCronogramaFases(
-            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar), FaseResultadoFinal(variante, tiposDeDecisaoDaFaseFinal)], permutar), [], PrecondicaoIfMatch.Ausente)
+            Ordem([FaseInscricao(variante), FaseResultadoPreliminarComRecurso(variante, permutar), FaseResultadoFinal(variante, tiposDeDecisaoDaFaseFinal)], permutar), [])
             .IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(Ordem([
             EtapaObjetiva(variante, permutar),
             EtapaRedacao(variante),
             EtapaEntrevista(variante, permutar),
             EtapaDefesa(variante, permutar),
-        ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ], permutar)).IsSuccess.Should().BeTrue();
     }
 
     internal static void DefinirOfertaEClassificacao(ProcessoSeletivo processo, int variante, bool permutar, int vagasOfertadasBase)
@@ -106,13 +106,13 @@ internal static class CorpusEnvelopeProcessoRico
         DefinirAtendimentoEspecializadoDoCorpus(processo, permutar);
         processo.DefinirDistribuicaoVagas(
             Ordem([DistribuicaoLei12711(vagasOfertadasBase: vagasOfertadasBase), DistribuicaoLei12711(OfertaDireito, ("HUMANISTICA_I", "Humanística I"), vagasOfertadasBase)], permutar),
-            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         DefinirBonusRegional(processo);
         DefinirCriteriosDeDesempate(processo, variante, permutar);
         DefinirClassificacao(processo, variante, permutar);
         // Classificação baseada em ENEM exige ao menos uma edição admitida (issue #1620).
         processo.DefinirOpcoesDeclaradas(
-            "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
+            "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!])
             .IsSuccess.Should().BeTrue();
     }
 
@@ -129,7 +129,7 @@ internal static class CorpusEnvelopeProcessoRico
             tiposDeficiencia: Ordem<DeficienciaAtendida>([
                 DeficienciaAtendida.Criar(new Guid("1111aaaa-0000-4000-8000-000000000001"), "DEFICIENCIA_VISUAL", "Deficiência visual"),
                 DeficienciaAtendida.Criar(new Guid("1111aaaa-0000-4000-8000-000000000002"), "DEFICIENCIA_AUDITIVA", "Deficiência auditiva"),
-            ], permutar)).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ], permutar)).Value!).IsSuccess.Should().BeTrue();
 
     internal static void DefinirBonusRegional(ProcessoSeletivo processo) =>
         processo.DefinirBonusRegional(aplica: true, bonus: ConfiguracaoBonusRegional.Criar(
@@ -146,7 +146,7 @@ internal static class CorpusEnvelopeProcessoRico
                 [
                     ("1504208", "Marabá", "PA"),
                     ("1501402", "Belém", "PA"),
-                ])).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                ])).Value!).IsSuccess.Should().BeTrue();
 
     // As CINCO variantes de args — e DUAS do mesmo código (MAIOR-NOTA-ETAPA em
     // ordens distintas), que um decoder indexado por código colapsaria em uma. A ordem
@@ -161,7 +161,7 @@ internal static class CorpusEnvelopeProcessoRico
                 CondicaoDnf.Criar("escola_publica", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)).Value!,
             CriterioDesempate.Criar(5, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!,
             CriterioDesempate.Criar(6, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, '8'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!,
-        ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ], permutar)).IsSuccess.Should().BeTrue();
 
     internal static void DefinirClassificacao(ProcessoSeletivo processo, int variante, bool permutar) =>
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
@@ -175,7 +175,7 @@ internal static class CorpusEnvelopeProcessoRico
             ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
             QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(inverterOrdem: permutar),
             EscalaNotaFinal = 100m,
-        }).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }).Value!).IsSuccess.Should().BeTrue();
 
     internal static List<RegraEliminacao> RegrasDeEliminacao(int variante) =>
     [
@@ -213,7 +213,7 @@ internal static class CorpusEnvelopeProcessoRico
             // A classificação é baseada em ENEM: a inscrição pede a edição, entre as admitidas.
             FormularioDeTeste.CampoDaEdicaoDoEnem(3),
             FatoDeOpcaoPelaEscolaPublica(),
-        ], permutar), PrecondicaoIfMatch.Ausente, grupos: [ComposicaoFamiliar(permutar)]).IsSuccess.Should().BeTrue();
+        ], permutar), grupos: [ComposicaoFamiliar(permutar)]).IsSuccess.Should().BeTrue();
 
     internal static FatoColetado FatoDeRenda() =>
         FatoColetado.Criar("RENDA", 1, "Faixa de renda familiar", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, [
@@ -241,10 +241,9 @@ internal static class CorpusEnvelopeProcessoRico
     // obrigatoriedade condicionais — o decoder tem de remontar o termo inteiro.
     internal static void DefinirTituloETermos(ProcessoSeletivo processo, PredicadoDnf corPreta)
     {
-        processo.DefinirTitulo("Formulário de Inscrição — PS Rico 2026", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTitulo("Formulário de Inscrição — PS Rico 2026").IsSuccess.Should().BeTrue();
         processo.DefinirTermos(
-            [Termo("DECLARACAO_PERTENCIMENTO", 0, exibicao: corPreta, obrigatoriedade: Obrigatoriedade.Quando(corPreta))],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [Termo("DECLARACAO_PERTENCIMENTO", 0, exibicao: corPreta, obrigatoriedade: Obrigatoriedade.Quando(corPreta))]).IsSuccess.Should().BeTrue();
     }
 
     // Seção com exibição condicional: aparece só para quem se declarou preto — o decoder remonta
@@ -259,8 +258,7 @@ internal static class CorpusEnvelopeProcessoRico
                 EtapaFormulario.Criar(FormularioDeTeste.Secao, 1, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Dados", null, null).Value!,
                 EtapaFormulario.Criar("PERTENCIMENTO", 2, TipoEtapaFormulario.Secao, BlocoSistema.Nenhum, "Pertencimento", null, null, corPreta).Value!,
                 EtapaFormulario.Criar("REVISAO", 3, TipoEtapaFormulario.Bloco, BlocoSistema.RevisaoEAceite, "Revisão e aceite", null, null).Value!,
-            ],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ]).IsSuccess.Should().BeTrue();
     }
 
     // A lista EXTERNA de configurações de derivação é ordenada por codigoFato na projeção, e a
@@ -271,7 +269,7 @@ internal static class CorpusEnvelopeProcessoRico
             DerivacaoDoRegimeDeIngresso(permutar),
             DerivacaoDoEgressoDeEscolaPublica(),
             DerivacaoDoPretoDeclarado(),
-        ], permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ], permutar)).IsSuccess.Should().BeTrue();
 
     internal static ConfiguracaoDerivacaoFato DerivacaoDoRegimeDeIngresso(bool permutar) =>
         ConfiguracaoDerivacaoFato.Criar("REGIME_INGRESSO", Ordem([
@@ -304,14 +302,14 @@ internal static class CorpusEnvelopeProcessoRico
     // A matriz legal completa (8×7, fallback AC) é o que mantém este corpus PUBLICÁVEL.
     internal static void DefinirCascataEDocumentos(ProcessoSeletivo processo, int variante, bool permutar, bool comArvoreSatisfacao)
     {
-        processo.DefinirCascataRemanejamento(CascataLegalCompleta(permutar), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(CascataLegalCompleta(permutar)).IsSuccess.Should().BeTrue();
 
         // Árvore de satisfação de documentos exigidos (Story #920) — opt-in (ver o parâmetro
         // comArvoreSatisfacao acima): incluí-la incondicionalmente mudaria o envelope de
         // referência que as golden fixtures e os testes de round-trip congelam.
         if (comArvoreSatisfacao)
         {
-            processo.DefinirDocumentosExigidos(ArvoreSatisfacaoRica(variante, permutar), PrecondicaoIfMatch.Ausente)
+            processo.DefinirDocumentosExigidos(ArvoreSatisfacaoRica(variante, permutar))
                 .IsSuccess.Should().BeTrue();
         }
     }
@@ -325,10 +323,9 @@ internal static class CorpusEnvelopeProcessoRico
             ConfiguracaoTaxaInscricao.Criar(
                 cobra: true,
                 valor: 150.00m,
-                fundamentosCodigos: Ordem([FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea], permutar)).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                fundamentosCodigos: Ordem([FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea], permutar)).Value!).IsSuccess.Should().BeTrue();
         // O corpus rico oferta dois cursos e admite a segunda opção.
-        processo.DefinirOpcoesDeCurso(2, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(2).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }
 }

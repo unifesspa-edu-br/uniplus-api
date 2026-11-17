@@ -66,8 +66,8 @@ internal static class LeituraDosFatos
     /// envelope, diferente de <c>etapa.Id</c>). A pré-condição é a mesma forma DNF do gatilho.
     /// <c>ValoresSelecionaveis</c> (UNI-REQ-0072) é o dicionário reidratado —
     /// completo, uma entrada por fato coletado (array para os de seleção, <see langword="null"/>
-    /// para os demais) — que <see cref="Application.Services.RestauradorDeConfiguracao"/> repassa
-    /// intacto para recanonicalizar, sem reconsultar o catálogo vivo.
+    /// para os demais) — que acompanha o envelope para recanonicalizar, sem reconsultar o
+    /// catálogo vivo.
     /// </summary>
     internal static (
         IReadOnlyList<FatoColetado> Fatos,

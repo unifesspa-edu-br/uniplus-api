@@ -120,7 +120,7 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<ConferenciaDaObrigatoriedadeLegal>();
     }
 
-    // Os serviços que congelam uma versão (publicação, retificação de ato único e fechamento da sessão) guardam só as
+    // Os serviços que congelam uma versão (publicação e retificação de ato único) guardam só as
     // portas por construtor, e cada handler os recebe prontos, sem service location.
     private static void AddCongelamentoDaVersao(IServiceCollection services)
     {
@@ -137,7 +137,6 @@ public static class SelecaoApplicationServiceRegistration
     {
         services.AddScoped<ConferenciaDoAtoEDoDocumento>();
         services.AddScoped<LeituraDaBaseDaRetificacao>();
-        services.AddScoped<DescarteDaRetificacao>();
         services.AddScoped<LeituraDasVersoesPublicadas>();
         services.AddScoped<ConferenciaDoCatalogoEDaProtecao>();
         services.AddScoped<RecopiaAoCongelar>();

@@ -37,7 +37,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// <para>
 /// Antes de projetar, confere a <c>SchemaVersion</c> contra as capacidades de leitura que
 /// <see cref="IRegistroCodecsEnvelope"/> declara: sob o regime de codec único reescrito no lugar
-/// (ADR-0110 Emenda 2, ADR-0109 Emenda 2), uma versão que deixou de ser a corrente não ganha
+/// (ADR-0175, ADR-0109 Emenda 2), uma versão que deixou de ser a corrente não ganha
 /// decodificador próprio, e bytes que coincidentemente têm a forma atual não a tornam reconhecida.
 /// </para>
 /// </remarks>

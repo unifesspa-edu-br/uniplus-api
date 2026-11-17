@@ -17,7 +17,7 @@ public sealed class DefinirReferenciaTemporalFatosCommandValidatorTests
 {
     private static ValidationResult Validar(string? tipo, DateOnly? data, Guid? faseId) =>
         new DefinirReferenciaTemporalFatosCommandValidator().Validate(
-            new DefinirReferenciaTemporalFatosCommand(Guid.CreateVersion7(), tipo, data, faseId, PrecondicaoIfMatch.Ausente));
+            new DefinirReferenciaTemporalFatosCommand(Guid.CreateVersion7(), tipo, data, faseId));
 
     [Fact(DisplayName = "Tipo nulo sem Data nem FaseId é aceito — remoção da referência")]
     public void Aceita_RemocaoSemCamposSoltos() =>

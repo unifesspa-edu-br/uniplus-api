@@ -43,13 +43,13 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
     {
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([Termo("DECLARACAO", 0, "A_DEFINIR")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([Termo("DECLARACAO", 0, "A_DEFINIR")]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.TermoExigidoSemFormaDeAceite");
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("termo_exigido_sem_forma_de_aceite");
 
-        processo.DefinirTermos([Termo("DECLARACAO", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([Termo("DECLARACAO", 0)]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
     }
@@ -59,7 +59,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
     {
         ProcessoSeletivo processo = ProcessoConforme();
 
-        processo.DefinirTermos([Termo("DECLARACAO", 0), Termo("DECLARACAO", 0)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTermos([Termo("DECLARACAO", 0), Termo("DECLARACAO", 0)])
             .Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
             [
                 ("termos[1].codigo", TermoFormularioErrorCodes.CodigoDuplicado),
@@ -73,7 +73,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
     {
         ProcessoSeletivo processo = ProcessoConforme();
 
-        processo.DefinirTermos([Termo("DECLARAÇÃO", 0), Termo("DECLARAC\u0327A\u0303O", 1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTermos([Termo("DECLARAÇÃO", 0), Termo("DECLARAC\u0327A\u0303O", 1)])
             .Error!.Code.Should().Be(TermoFormularioErrorCodes.CodigoDuplicado);
     }
 
@@ -82,8 +82,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
     {
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirItensComFaseDeInscricao([FatoDeOpcaoDeTeste()]).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([Termo("DECLARACAO", 0, exibicao: CondicaoDeOpcaoDeTeste("2025"))], PrecondicaoIfMatch.Ausente)
+        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")]).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([Termo("DECLARACAO", 0, exibicao: CondicaoDeOpcaoDeTeste("2025"))])
             .IsSuccess.Should().BeTrue();
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
 
@@ -97,12 +97,12 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
     {
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirItensComFaseDeInscricao([FatoDeOpcaoDeTeste()]).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2024"), Opcao("2025", 1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2024"), Opcao("2025", 1)])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([Termo("DECLARACAO", 0, exibicao: CondicaoDeOpcaoDeTeste("2024"))], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTermos([Termo("DECLARACAO", 0, exibicao: CondicaoDeOpcaoDeTeste("2024"))])
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")])
             .Error!.Code.Should().Be("OpcaoDeclaradaFato.ReferenciadaPorExigenciaViva");
     }
 
@@ -121,12 +121,12 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
     public void FatoDosMunicipiosDoBonusSemBonus_RecusaAteHaverBonus()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: false, bonus: null).IsSuccess.Should().BeTrue();
         processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.FatoColetadoSemValoresOfertados");
 
-        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA")), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA"))).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
     }
@@ -142,14 +142,14 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
     public void DefinirBonusRegional_MunicipioCitadoPorExigencia_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")), PrecondicaoIfMatch.Ausente)
+        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")))
             .IsSuccess.Should().BeTrue();
         processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
         ExigirFolhas(processo, ExigenciaPorMunicipioDeParauapebas(FaseDoResultado(processo)));
 
-        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA")), PrecondicaoIfMatch.Ausente)
+        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA")))
             .Error!.Code.Should().Be("ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva");
-        processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente)
+        processo.DefinirBonusRegional(aplica: false, bonus: null)
             .Error!.Code.Should().Be("ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva");
     }
 
@@ -157,13 +157,13 @@ public sealed class ConformidadePublicabilidadeEstruturalTermosEBonusRegionalTes
     public void MunicipioCitadoForaDaArea_ContornandoPelaColeta_PendenciaDePublicacao()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")), PrecondicaoIfMatch.Ausente)
+        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA"), ("1505536", "Parauapebas", "PA")))
             .IsSuccess.Should().BeTrue();
         processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
         ExigirFolhas(processo, ExigenciaPorMunicipioDeParauapebas(FaseDoResultado(processo)));
 
         processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
-        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA")), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: true, bonus: Bonus(("1504208", "Marabá", "PA"))).IsSuccess.Should().BeTrue();
         processo.DefinirItensComFaseDeInscricao([FatoMunicipioDoBonus()]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva");

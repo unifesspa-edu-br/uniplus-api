@@ -45,7 +45,7 @@ public sealed class ResolucaoDoPeriodoDeInscricaoTests
             "PS Inscrição sem janela", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirCronogramaFases([FaseDeInscricaoSemJanela()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseDeInscricaoSemJanela()], []).IsSuccess.Should().BeTrue();
 
         return processo;
     }

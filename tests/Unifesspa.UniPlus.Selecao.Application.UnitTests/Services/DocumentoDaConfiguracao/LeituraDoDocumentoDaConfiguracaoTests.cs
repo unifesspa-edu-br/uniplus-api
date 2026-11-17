@@ -75,26 +75,40 @@ public sealed class LeituraDoDocumentoDaConfiguracaoTests
         lido.UnidadeAdministradoraCodigo.Should().BeNull();
     }
 
-    [Fact(DisplayName = "As causas do _esquema e as chaves repetidas saem juntas, na ordem do documento")]
+    [Fact(DisplayName = "As causas do esquema e a chave repetida saem juntas, na ordem do documento")]
     public void CausasDasEtapasIndependentes_SaemJuntasNaOrdemDoDocumento()
     {
         _esquema.Avaliar(Arg.Any<JsonObject>()).Returns([Causa("/etapas/1/nome", DocumentoDaConfiguracaoErrorCodes.TipoInvalido), Causa("/nome", DocumentoDaConfiguracaoErrorCodes.TipoInvalido)]);
 
         Result<DocumentoLido> resultado = Leitura.Ler("""{ "nome": 1, "etapas": [ { "chave": "a" }, { "chave": "a", "nome": 2 } ] }""");
 
-        resultado.Errors.Select(static causa => causa.Field).Should().Equal("/nome", "/etapas/0/chave", "/etapas/1/chave", "/etapas/1/nome");
+        resultado.Errors.Select(static causa => causa.Field).Should().Equal("/nome", "/etapas/1/chave", "/etapas/1/nome");
     }
 
-    [Fact(DisplayName = "No mesmo ponteiro a causa do _esquema vence a da chave repetida")]
+    [Fact(DisplayName = "No mesmo ponteiro a causa do esquema vence a da chave repetida")]
     public void MesmoPonteiro_VenceACausaDoEsquema()
     {
-        _esquema.Avaliar(Arg.Any<JsonObject>()).Returns([Causa("/etapas/0/chave", DocumentoDaConfiguracaoErrorCodes.ValorInvalido)]);
+        _esquema.Avaliar(Arg.Any<JsonObject>()).Returns([Causa("/etapas/1/chave", DocumentoDaConfiguracaoErrorCodes.ValorInvalido)]);
 
         Result<DocumentoLido> resultado = Leitura.Ler("""{ "etapas": [ { "chave": "" }, { "chave": "" } ] }""");
 
         resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(
-            ("/etapas/0/chave", DocumentoDaConfiguracaoErrorCodes.ValorInvalido),
-            ("/etapas/1/chave", DocumentoDaConfiguracaoErrorCodes.ChaveRepetida));
+            ("/etapas/1/chave", DocumentoDaConfiguracaoErrorCodes.ValorInvalido));
+    }
+
+    [Fact(DisplayName = "A causa de nome de propriedade com barra e til sai com ~1 e ~0 e na posição do documento")]
+    public void NomeDePropriedadeComBarraETil_SaiEscapadoNaPosicaoDoDocumento()
+    {
+        _esquema.Forma.Returns(FormaDeTeste.Objeto(new()
+        {
+            ["nome"] = FormaDeTeste.Valor(),
+            ["a/b~c"] = FormaDeTeste.Lista(FormaDeTeste.Objeto(new() { ["chave"] = FormaDeTeste.Valor() }, new ParteComChave("parte", EscopoDaChave.Documento))),
+        }));
+        _esquema.Avaliar(Arg.Any<JsonObject>()).Returns([Causa("/nome", DocumentoDaConfiguracaoErrorCodes.TipoInvalido)]);
+
+        Result<DocumentoLido> resultado = Leitura.Ler("""{ "a/b~c": [ { "chave": "x" }, { "chave": "x" } ], "nome": 1 }""");
+
+        resultado.Errors.Select(static causa => causa.Field).Should().Equal("/a~1b~0c/1/chave", "/nome");
     }
 
     [Fact(DisplayName = "O texto é obrigatório")]

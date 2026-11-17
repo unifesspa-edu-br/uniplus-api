@@ -62,21 +62,14 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirCronogramaFases(
         Guid id,
         [FromBody] IReadOnlyList<FaseCronogramaInput> fases,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirCronogramaFasesCommand(id, fases, precondicao), cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        Result resultado = await _commandBus.Send(
+            new DefinirCronogramaFasesCommand(id, fases), cancellationToken);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -98,27 +91,19 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirDocumentosExigidos(
         Guid id,
         [FromBody] IReadOnlyList<NoExigenciaInput> raizes,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirDocumentosExigidosCommand(id, raizes, precondicao), cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        Result resultado = await _commandBus.Send(
+            new DefinirDocumentosExigidosCommand(id, raizes), cancellationToken);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
     /// Declara ou troca o identificador legível do certame, de onde derivam o endereço
-    /// público e a chave no acervo. Aceito enquanto ele não consta em versão publicada: em
-    /// rascunho, ou na sessão de retificação aberta sobre versão congelada sem ele.
+    /// público e a chave no acervo. Só em rascunho.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/identificador-legivel")]
@@ -128,25 +113,18 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict,
         Description = "O identificador legível informado já é usado por outro processo seletivo (uniplus.selecao.processo_seletivo.identificador_legivel_em_uso). Também responde 409 quando outra requisição com a mesma Idempotency-Key ainda está em processamento.")]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirIdentificadorLegivel(
         Guid id,
         [FromBody] DefinirIdentificadorLegivelRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirIdentificadorLegivelCommand(id, request.IdentificadorLegivel, precondicao),
+        Result resultado = await _commandBus.Send(
+            new DefinirIdentificadorLegivelCommand(id, request.IdentificadorLegivel),
             cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -159,24 +137,17 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirLocalidade(
         Guid id,
         [FromBody] DefinirLocalidadeRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirLocalidadeCommand(id, request.CodigoIbge, request.Nome, request.Uf, precondicao),
+        Result resultado = await _commandBus.Send(
+            new DefinirLocalidadeCommand(id, request.CodigoIbge, request.Nome, request.Uf),
             cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -190,24 +161,17 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirAlgoritmoContagemPrazo(
         Guid id,
         [FromBody] DefinirAlgoritmoContagemPrazoRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirAlgoritmoContagemPrazoCommand(id, request.Codigo, request.Versao, precondicao),
+        Result resultado = await _commandBus.Send(
+            new DefinirAlgoritmoContagemPrazoCommand(id, request.Codigo, request.Versao),
             cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -220,24 +184,17 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirReferenciaTemporalFatos(
         Guid id,
         [FromBody] DefinirReferenciaTemporalFatosRequest request,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirReferenciaTemporalFatosCommand(id, request.Tipo, request.Data, request.FaseId, precondicao),
+        Result resultado = await _commandBus.Send(
+            new DefinirReferenciaTemporalFatosCommand(id, request.Tipo, request.Data, request.FaseId),
             cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>
@@ -246,9 +203,7 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     /// regras <c>{ ordem, contribui, quando? }</c>; a regra incondicional (âncora) tem <c>quando</c>
     /// nulo. Só um fato derivado com binding de regra de derivação é alvo válido — para a
     /// modalidade, cada código contribuído tem de ser uma das modalidades ofertadas pelo processo.
-    /// Editável em rascunho e sob sessão de retificação: em rascunho <c>204</c> sem
-    /// ETag e <c>If-Match</c> ignorado; sob sessão, <c>If-Match</c> obrigatório (<c>428</c>/<c>412</c>)
-    /// e <c>204</c> com o ETag novo. Processo publicado sem sessão é recusado com <c>422</c>.
+    /// Editável só em rascunho; o processo publicado é recusado com <c>422</c>.
     /// </summary>
     [ExigePermissaoNoProcesso(PermissaoSelecao.ProcessosConfigurar)]
     [HttpPut("{id:guid}/regras-derivacao")]
@@ -257,20 +212,13 @@ public sealed class ProcessoSeletivoPrazosEExigenciasController : ControllerBase
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status412PreconditionFailed)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status428PreconditionRequired)]
-    [EmiteETag]
     public async Task<IActionResult> DefinirRegrasDerivacao(
         Guid id,
         [FromBody] IReadOnlyList<ConfiguracaoDerivacaoInput> configuracoes,
-        [FromHeader(Name = "If-Match")] string? ifMatch,
         CancellationToken cancellationToken)
     {
-        if (!ProtocoloDeMutacao.TentarLerPrecondicao(_mapper, ifMatch, out PrecondicaoIfMatch precondicao, out IActionResult? malformada))
-            return malformada!;
-
-        Result<MutacaoAceita> resultado = await _commandBus.Send(
-            new DefinirRegrasDerivacaoCommand(id, configuracoes, precondicao), cancellationToken);
-        return ProtocoloDeMutacao.ResponderMutacao(_mapper, Response, resultado);
+        Result resultado = await _commandBus.Send(
+            new DefinirRegrasDerivacaoCommand(id, configuracoes), cancellationToken);
+        return resultado.IsSuccess ? NoContent() : resultado.ToActionResult(_mapper);
     }
 }

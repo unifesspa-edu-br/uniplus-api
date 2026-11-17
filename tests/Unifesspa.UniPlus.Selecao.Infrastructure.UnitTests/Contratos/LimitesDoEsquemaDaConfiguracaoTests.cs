@@ -7,6 +7,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Canonicalization;
 
@@ -46,7 +47,7 @@ public sealed class LimitesDoEsquemaDaConfiguracaoTests
         (nameof(LimitesDoEnvelope.HipoteseLegal), LimitesDoEnvelope.HipoteseLegal, Exigencia, "/hipoteseLegal", true),
         (nameof(LimitesDoEnvelope.NomeArquivoDoModelo), LimitesDoEnvelope.NomeArquivoDoModelo, Exigencia, "/modelo/properties/nomeArquivo", true),
         (nameof(ValidacaoDoMotivo.DescricaoMaxLength), ValidacaoDoMotivo.DescricaoMaxLength, "motivo.schema.json", "/properties/descricao", true),
-        (nameof(EscolhaDosMotivos.JustificativaMaxLength), EscolhaDosMotivos.JustificativaMaxLength, "motivo.schema.json", "/properties/justificativaDaInclusao", true),
+        (nameof(ConferenciaDosMotivosDaRetificacao.JustificativaMaxLength), ConferenciaDosMotivosDaRetificacao.JustificativaMaxLength, "motivo.schema.json", "/properties/justificativaDaInclusao", true),
         (nameof(LimitesDoEnvelope.Justificativa), LimitesDoEnvelope.Justificativa, "divulgacao.schema.json", "/properties/justificativa", true),
         (nameof(LimitesDoEnvelope.TipoInstrumentoNormativo), LimitesDoEnvelope.TipoInstrumentoNormativo, Bonus, "/properties/tipoInstrumento", true),
         (nameof(LimitesDoEnvelope.FatoElegibilidadeBonusRegional), LimitesDoEnvelope.FatoElegibilidadeBonusRegional, Bonus, "/properties/fatoElegibilidadeCodigo", true),

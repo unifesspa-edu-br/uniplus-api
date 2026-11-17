@@ -26,8 +26,6 @@ internal static class ErrosDosFormulariosDoProcesso
         new("FormularioProcesso.FaseIncoerenteComFinalidade", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.fase_incoerente_com_finalidade", "A fase do formulário não é a que a finalidade pede")),
         new("FormularioProcesso.IsencaoSemTaxa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.isencao_sem_taxa", "Formulário de isenção de taxa em processo que não cobra taxa")),
         new("FormularioProcesso.FormularioInexistente", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.formulario_inexistente", "O processo não tem formulário dessa finalidade")),
-        new("FormularioProcesso.RemocaoSoEmRascunho", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.remocao_so_em_rascunho", "A retificação acrescenta formulário, mas não remove")),
-        new("FormularioProcesso.AplicacaoDeModeloSoEmRascunho", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formulario_processo.aplicacao_de_modelo_so_em_rascunho", "O modelo se aplica só em rascunho")),
     ];
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> AplicacaoDeModelo() =>

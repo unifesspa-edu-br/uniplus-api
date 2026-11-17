@@ -8,15 +8,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// O envelope de uma <see cref="VersaoConfiguracao"/> reconstruído de volta em
 /// entidades: o grafo das <b>seis dimensões</b> mais tudo o que a recanonicalização
-/// dele exige (ADR-0110 D1).
+/// dele exige.
 /// </summary>
 /// <remarks>
-/// Os três acompanhantes do grafo não são luxo — são o que torna o round-trip
+/// Os três acompanhantes do grafo não são luxo — são o que torna a recanonicalização
 /// <b>provável</b>. O envelope não é função só da configuração: o bloco
 /// <c>periodo</c> e o <c>hashesEdital</c> vêm dos <see cref="DadosEdital"/> e do hash
 /// do documento, e a versão <c>N &gt; 1</c> carrega o 18º bloco <c>retificacao</c>.
-/// Reidratar só o grafo deixaria a prova de fidelidade impossível de escrever — e uma
-/// reidratação que não se prova é exatamente a que destrói configuração em silêncio.
+/// Reidratar só o grafo deixaria a prova de fidelidade impossível de escrever.
 /// </remarks>
 public sealed class EnvelopeReidratado
 {
@@ -104,7 +103,7 @@ public sealed class EnvelopeReidratado
 
     /// <summary>
     /// Fuso institucional <b>congelado nesta versão</b>, e não o vigente hoje. Acompanha o grafo em
-    /// vez de entrar nele porque não é estado do agregado — não há propriedade de fuso para repor na
+    /// vez de entrar nele porque não é estado do agregado — não há propriedade de fuso na
     /// raiz. Ele volta à recanonicalização porque <c>dataReferenciaFatos</c> é recalculada ao provar
     /// a fidelidade: convertida sob o fuso de hoje, a mesma versão produziria bytes diferentes
     /// depois que o padrão institucional mudasse, e a prova byte a byte deixaria de valer.
@@ -116,20 +115,17 @@ public sealed class EnvelopeReidratado
 
     /// <summary>
     /// Evidência forense da conformidade legal congelada (Story #853, §3.4/CA-18) — fora
-    /// de <see cref="GrafoConfiguracao"/> porque não é reposta no agregado vivo (o
-    /// processo não tem propriedade "Conformidade" para restaurar); serve à paridade
-    /// contra o cadastro vivo, não a
-    /// <see cref="Entities.ProcessoSeletivo.RestaurarConfiguracaoCongelada"/>.
+    /// de <see cref="GrafoConfiguracao"/> porque o processo não tem propriedade "Conformidade";
+    /// serve à paridade contra o cadastro vivo.
     /// </summary>
     public ResultadoConformidade? Conformidade { get; }
 
     /// <summary>
     /// Metadado de fato do candidato congelado (Story #919, congelamento dos parâmetros na publicação, UNI-REQ-0019), por <c>Codigo</c> —
     /// fora de <see cref="GrafoConfiguracao"/> pela MESMA razão que <see cref="Conformidade"/>:
-    /// não é reposto no agregado vivo (<see cref="Domain.Entities.CondicaoGatilho"/>
-    /// continua só com o trio bruto <c>{fato, operador, valor}</c>), sobrevive só para
-    /// alimentar a recanonicalização em <see cref="Application.Services.RestauradorDeConfiguracao"/> —
-    /// a prova estrutural de que a restauração nunca reconsulta o catálogo vivo.
+    /// não está no agregado vivo (<see cref="Domain.Entities.CondicaoGatilho"/>
+    /// continua só com o trio bruto <c>{fato, operador, valor}</c>); acompanha o envelope para
+    /// alimentar a recanonicalização.
     /// </summary>
     public IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosFatosCongelados { get; }
 
@@ -138,27 +134,24 @@ public sealed class EnvelopeReidratado
     /// <see cref="GrafoConfiguracao"/> pela MESMA razão que <see cref="MetadadosFatosCongelados"/>:
     /// os valores são dado de CATÁLOGO (ou da oferta do processo), não configuração persistida no
     /// agregado vivo — <see cref="Domain.Entities.FatoColetado"/> não ganha propriedade por isso,
-    /// e este dicionário sobrevive só para alimentar a recanonicalização em
-    /// <see cref="Application.Services.RestauradorDeConfiguracao"/>, a prova estrutural de que a
-    /// restauração nunca reconsulta o catálogo vivo.
+    /// e este dicionário acompanha o envelope para alimentar a recanonicalização.
     /// </summary>
     public IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? ValoresSelecionaveisCongelados { get; }
 }
 
 /// <summary>
-/// O que o sistema sabe fazer com uma versão do envelope (ADR-0110 D1) —
+/// O que o sistema sabe fazer com uma versão do envelope —
 /// <b>capacidades</b>, não um estado exclusivo.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <b>Reidratável ⟺ tem encoder E decoder.</b> Encoder sem decoder não reidrata;
-/// decoder sem encoder não <b>prova</b> o round-trip — e uma reidratação sem prova é
-/// o que a Feature inteira existe para evitar.
+/// decoder sem encoder não <b>prova</b> a fidelidade da reidratação.
 /// </para>
 /// <para>
 /// A versão que <b>emite</b> hoje é uma só, e é outra coisa: quando a <c>1.2</c>
 /// chegar, a <c>1.1</c> perde a emissão corrente mas <b>mantém</b> encoder e decoder —
-/// senão o descarte de um certame retificado antes daquele bump deixaria de ser
+/// senão a leitura de um certame retificado antes daquele bump deixaria de ser
 /// verificável.
 /// </para>
 /// </remarks>
@@ -177,7 +170,7 @@ public sealed record CapacidadeCodec(
 }
 
 /// <summary>
-/// Registro de <b>codecs</b> do envelope de congelamento, por versão (ADR-0110 D1).
+/// Registro de <b>codecs</b> do envelope de congelamento, por versão.
 /// </summary>
 /// <remarks>
 /// <para>

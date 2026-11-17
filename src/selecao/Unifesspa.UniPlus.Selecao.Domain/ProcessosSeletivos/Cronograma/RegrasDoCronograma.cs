@@ -19,18 +19,16 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class RegrasDoCronograma
 {
     internal static Result<PlanoDoCronograma> Planejar(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         IReadOnlyList<FaseCronograma> fases,
-        IReadOnlyList<ArestaPrecedencia> precedencias,
-        FasesIniciadas iniciadas)
+        IReadOnlyList<ArestaPrecedencia> precedencias)
     {
-        ArgumentNullException.ThrowIfNull(estado);
-        ArgumentNullException.ThrowIfNull(iniciadas);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        IReadOnlyList<FieldError> causas = CausasDaSubstituicao(estado, fases, precedencias, iniciadas);
+        IReadOnlyList<FieldError> causas = CausasDaSubstituicao(configuracao, fases, precedencias);
 
         return causas.Count == 0
-            ? Result<PlanoDoCronograma>.Success(MontarPlano(estado, fases))
+            ? Result<PlanoDoCronograma>.Success(MontarPlano(configuracao, fases))
             : Result<PlanoDoCronograma>.ValidationFailure(causas);
     }
 
@@ -39,20 +37,19 @@ internal static class RegrasDoCronograma
     // origem repetida, que a estrutura já recusou: só ela deixa de ser avaliada. A precedência casa por código e não lê a origem
     // (a aresta de código ambíguo já fica suspensa na estrutura), e a ordem repetida é recusa do conjunto: as duas seguem avaliadas.
     private static IReadOnlyList<FieldError> CausasDaSubstituicao(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         IReadOnlyList<FaseCronograma> fases,
-        IReadOnlyList<ArestaPrecedencia> precedencias,
-        FasesIniciadas iniciadas)
+        IReadOnlyList<ArestaPrecedencia> precedencias)
     {
         CronogramaDoProcesso candidato = CronogramaDoProcesso.Do(fases);
 
         return
         [
             .. candidato.ConferirEstrutura(),
-            .. candidato.OrigensUnicas ? CausasDaRecusa.Da(RecusaDaMudanca(estado, fases, iniciadas)) : [],
+            .. candidato.OrigensUnicas ? CausasDaRecusa.Da(RecusaDaMudanca(configuracao, fases)) : [],
             .. candidato.ConferirPrecedencia(precedencias),
             .. candidato.ConferirConclusaoDoCiclo(),
-            .. EtapasNoCronograma.ConferirJanelaDasEtapas(candidato, EtapasDoProcesso.Das(estado.Etapas)),
+            .. EtapasNoCronograma.ConferirJanelaDasEtapas(candidato, EtapasDoProcesso.Das(configuracao.Avaliacao.Etapas)),
         ];
     }
 
@@ -60,17 +57,13 @@ internal static class RegrasDoCronograma
         fases.ToDictionary(static f => f.FaseCanonicaOrigemId);
 
     // As recusas do que muda em relação ao cronograma que o processo já tem, na ordem em que orientam; a precedência do cadastro vem depois.
-    private static DomainError? RecusaDaMudanca(
-        EstadoDaConfiguracao estado,
-        IReadOnlyList<FaseCronograma> fases,
-        FasesIniciadas iniciadas)
+    private static DomainError? RecusaDaMudanca(ConfiguracaoDeclarada configuracao, IReadOnlyList<FaseCronograma> fases)
     {
-        Dictionary<Guid, FaseCronograma> antigasPorOrigem = PorOrigem(estado.CronogramaFases);
+        Dictionary<Guid, FaseCronograma> antigasPorOrigem = PorOrigem(configuracao.Cronograma.CronogramaFases);
         Dictionary<Guid, FaseCronograma> novasPorOrigem = PorOrigem(fases);
-        List<DocumentoExigido> documentosQueFicam = DocumentosQueFicam(estado, antigasPorOrigem, novasPorOrigem);
+        List<DocumentoExigido> documentosQueFicam = DocumentosQueFicam(configuracao, antigasPorOrigem, novasPorOrigem);
 
-        return RecusaDaFaseOuEtapaIniciada(iniciadas, estado, fases, antigasPorOrigem, novasPorOrigem)
-            ?? RecusaDasFasesQueSaemOuMudam(estado, antigasPorOrigem, novasPorOrigem, documentosQueFicam)
+        return RecusaDasFasesQueSaemOuMudam(configuracao, antigasPorOrigem, novasPorOrigem, documentosQueFicam)
             ?? RecusaDaAncoraNoFimDaInscricao(fases, documentosQueFicam)
             ?? PermutacaoCiclicaDeOrdem.Recusa(antigasPorOrigem, novasPorOrigem);
     }
@@ -78,7 +71,7 @@ internal static class RegrasDoCronograma
     // O documento exigido numa fase que também sai vai junto com ela, na poda; contá-lo como
     // referência viva recusaria uma remoção que o próprio comando resolve. Só quem fica reclama.
     private static List<DocumentoExigido> DocumentosQueFicam(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         Dictionary<Guid, FaseCronograma> antigasPorOrigem,
         Dictionary<Guid, FaseCronograma> novasPorOrigem)
     {
@@ -86,23 +79,7 @@ internal static class RegrasDoCronograma
             .Where(f => novasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId))
             .Select(f => f.Id)];
 
-        return [.. estado.DocumentosExigidos.Where(d => fasesQueFicam.Contains(d.ExigidoNaFaseId))];
-    }
-
-    // A etapa da fase que sai vai junto na poda: se ela já começou, a remoção da fase a levaria sem que ninguém a conferisse.
-    private static DomainError? RecusaDaFaseOuEtapaIniciada(
-        FasesIniciadas iniciadas,
-        EstadoDaConfiguracao estado,
-        IReadOnlyList<FaseCronograma> fases,
-        Dictionary<Guid, FaseCronograma> antigasPorOrigem,
-        Dictionary<Guid, FaseCronograma> novasPorOrigem)
-    {
-        HashSet<string> codigosRemovidos = [.. antigasPorOrigem.Values
-            .Where(f => !novasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId))
-            .Select(static f => f.Codigo)];
-        List<EtapaProcesso> etapasQueFicam = [.. estado.Etapas.Where(e => e.FaseCodigo is not { } codigo || !codigosRemovidos.Contains(codigo))];
-
-        return ConferenciaDasFasesIniciadas.Conferir(iniciadas, fases, etapasQueFicam) is [{ } primeira, ..] ? primeira.Error : null;
+        return [.. configuracao.Exigencias.DocumentosExigidos.Where(d => fasesQueFicam.Contains(d.ExigidoNaFaseId))];
     }
 
     internal static void AplicarUnidadesVivas(IEnumerable<FaseCronograma> fases, IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot> vivas)
@@ -118,20 +95,20 @@ internal static class RegrasDoCronograma
         }
     }
 
-    private static PlanoDoCronograma MontarPlano(EstadoDaConfiguracao estado, IReadOnlyList<FaseCronograma> fases)
+    private static PlanoDoCronograma MontarPlano(ConfiguracaoDeclarada configuracao, IReadOnlyList<FaseCronograma> fases)
     {
-        Dictionary<Guid, FaseCronograma> antigasPorOrigem = PorOrigem(estado.CronogramaFases);
+        Dictionary<Guid, FaseCronograma> antigasPorOrigem = PorOrigem(configuracao.Cronograma.CronogramaFases);
         Dictionary<Guid, FaseCronograma> novasPorOrigem = PorOrigem(fases);
         List<(FaseCronograma Existente, FaseCronograma Nova)> retidas =
             [.. fases.Where(f => antigasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId)).Select(f => (antigasPorOrigem[f.FaseCanonicaOrigemId], f))];
         List<FaseCronograma> resultantes = [.. fases.Select(f => antigasPorOrigem.GetValueOrDefault(f.FaseCanonicaOrigemId) ?? f)];
         List<FaseCronograma> removidas = [.. antigasPorOrigem.Values.Where(f => !novasPorOrigem.ContainsKey(f.FaseCanonicaOrigemId))];
-        MudancaDaConfiguracao poda = PodaDoCronograma.Planejar(estado, removidas);
-        return new PlanoDoCronograma(retidas, poda with { CronogramaFases = Troca.Substituindo(estado.CronogramaFases, resultantes) });
+        MudancaDaConfiguracao poda = PodaDoCronograma.Planejar(configuracao, removidas);
+        return new PlanoDoCronograma(retidas, poda with { CronogramaFases = Troca.Substituindo(configuracao.Cronograma.CronogramaFases, resultantes) });
     }
 
     private static DomainError? RecusaDasFasesQueSaemOuMudam(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         Dictionary<Guid, FaseCronograma> antigasPorOrigem,
         Dictionary<Guid, FaseCronograma> novasPorOrigem,
         List<DocumentoExigido> documentosQueFicam)
@@ -139,8 +116,8 @@ internal static class RegrasDoCronograma
         foreach (FaseCronograma antiga in antigasPorOrigem.Values)
         {
             DomainError? recusa = novasPorOrigem.TryGetValue(antiga.FaseCanonicaOrigemId, out FaseCronograma? nova)
-                ? RecusaDaFaseRetida(estado, antiga, nova, documentosQueFicam)
-                : RecusaDaFaseRemovida(estado, antiga, documentosQueFicam);
+                ? RecusaDaFaseRetida(configuracao, antiga, nova, documentosQueFicam)
+                : RecusaDaFaseRemovida(configuracao, antiga, documentosQueFicam);
             if (recusa is not null)
             {
                 return recusa;
@@ -154,10 +131,10 @@ internal static class RegrasDoCronograma
     // coisa: quem a declara é uma exigência de outra fase, que só usa esta como marco temporal, e
     // apagá-la por tabela seria remover configuração alheia. A etapa e o formulário da fase também só
     // saem se ninguém de fora depende deles.
-    private static DomainError? RecusaDaFaseRemovida(EstadoDaConfiguracao estado, FaseCronograma antiga, List<DocumentoExigido> documentosQueFicam) =>
+    private static DomainError? RecusaDaFaseRemovida(ConfiguracaoDeclarada configuracao, FaseCronograma antiga, List<DocumentoExigido> documentosQueFicam) =>
         JanelaDaFaseUsadaPorOutraExigencia(antiga, documentosQueFicam)
-        ?? EtapaDaFaseReferenciadaPelaClassificacao(estado, antiga)
-        ?? FormularioRespondidoNaFase(estado, antiga);
+        ?? EtapaDaFaseReferenciadaPelaClassificacao(configuracao, antiga)
+        ?? FormularioRespondidoNaFase(configuracao, antiga);
 
     private static DomainError? JanelaDaFaseUsadaPorOutraExigencia(FaseCronograma antiga, List<DocumentoExigido> documentosQueFicam) =>
         documentosQueFicam.Find(d => d.IdadeMaximaEmissao?.ReferenciaFaseId == antiga.Id) is { } ancoraDeOutraFase
@@ -166,17 +143,17 @@ internal static class RegrasDoCronograma
                 $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida do cronograma, mas o documento '{ancoraDeOutraFase.TipoDocumentoNome}', exigido em outra fase, usa a janela dela como âncora de idade máxima de emissão.")
             : null;
 
-    private static DomainError? EtapaDaFaseReferenciadaPelaClassificacao(EstadoDaConfiguracao estado, FaseCronograma antiga) =>
-        estado.Etapas.FirstOrDefault(e =>
+    private static DomainError? EtapaDaFaseReferenciadaPelaClassificacao(ConfiguracaoDeclarada configuracao, FaseCronograma antiga) =>
+        configuracao.Avaliacao.Etapas.FirstOrDefault(e =>
             string.Equals(e.FaseCodigo, antiga.Codigo, StringComparison.Ordinal)
-            && RegrasDasEtapas.EtapaReferenciadaPorClassificacaoOuDesempate(estado, e.Id)) is { } etapaReferenciada
+            && RegrasDasEtapas.EtapaReferenciadaPorClassificacaoOuDesempate(configuracao, e.Id)) is { } etapaReferenciada
             ? new DomainError(
                 "FaseCronograma.EtapaDaFaseReferenciada",
                 $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas a etapa '{etapaReferenciada.Nome}' que acontece nela é referenciada por um critério de desempate ou por uma regra de eliminação — reconfigure a classificação antes.")
             : null;
 
-    private static DomainError? FormularioRespondidoNaFase(EstadoDaConfiguracao estado, FaseCronograma antiga) =>
-        estado.Formularios.FirstOrDefault(f => f.FaseId == antiga.Id) is { } formularioDaFase
+    private static DomainError? FormularioRespondidoNaFase(ConfiguracaoDeclarada configuracao, FaseCronograma antiga) =>
+        configuracao.Coleta.Formularios.FirstOrDefault(f => f.FaseId == antiga.Id) is { } formularioDaFase
             ? new DomainError(
                 FormularioProcessoErrorCodes.FaseReferenciadaPorFormulario,
                 $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) está sendo removida, mas o formulário de {EstruturaFormulario.ParaToken(formularioDaFase.Finalidade)} é respondido nela — troque a fase do formulário antes.")
@@ -186,12 +163,12 @@ internal static class RegrasDoCronograma
     // prova a coerência no instante da escrita dela, e sem esta recusa uma redefinição posterior do
     // cronograma deixaria a idade máxima apontando para uma âncora irresolvível.
     private static DomainError? RecusaDaFaseRetida(
-        EstadoDaConfiguracao estado, FaseCronograma antiga, FaseCronograma nova, List<DocumentoExigido> documentosQueFicam) =>
-        ComplementacaoQueAPendenciaDeReenvioExige(estado, antiga, nova) ?? ExtremoQueAAncoraDeIdadeUsa(antiga, nova, documentosQueFicam);
+        ConfiguracaoDeclarada configuracao, FaseCronograma antiga, FaseCronograma nova, List<DocumentoExigido> documentosQueFicam) =>
+        ComplementacaoQueAPendenciaDeReenvioExige(configuracao, antiga, nova) ?? ExtremoQueAAncoraDeIdadeUsa(antiga, nova, documentosQueFicam);
 
-    private static DomainError? ComplementacaoQueAPendenciaDeReenvioExige(EstadoDaConfiguracao estado, FaseCronograma antiga, FaseCronograma nova) =>
+    private static DomainError? ComplementacaoQueAPendenciaDeReenvioExige(ConfiguracaoDeclarada configuracao, FaseCronograma antiga, FaseCronograma nova) =>
         antiga.PermiteComplementacao && !nova.PermiteComplementacao
-        && RegrasDasExigencias.ExisteConsequenciaPendenciaReenvioNaFase(estado, antiga.Id)
+        && RegrasDasExigencias.ExisteConsequenciaPendenciaReenvioNaFase(configuracao, antiga.Id)
             ? new DomainError(
                 "FaseCronograma.PendenciaReenvioExigeComplementacao",
                 $"A fase '{antiga.Codigo}' (ordem {antiga.Ordem}) não pode perder PermiteComplementacao — é referenciada por uma exigência (folha ou grupo) com consequência PENDENCIA_REENVIO.")

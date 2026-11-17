@@ -87,9 +87,8 @@ internal static class CorpusEnvelopeEntrada
             atoCriadorId: AtoRetificador, atorUsuarioContaId: Ator, instante: new DateTimeOffset(2026, 3, 20, 12, 0, 0, TimeSpan.Zero));
 
     /// <summary>
-    /// Publica o processo para que ele fique em <see cref="StatusProcesso.Publicado"/> —
-    /// o estado que <see cref="ProcessoSeletivo.RestaurarConfiguracaoCongelada"/> exige,
-    /// porque só um processo publicado tem versão congelada a restaurar.
+    /// Publica o processo para que ele fique em <see cref="StatusProcesso.Publicado"/>, com
+    /// a versão congelada.
     /// </summary>
     internal static void Publicar(ProcessoSeletivo processo, EntradaCanonicalizacao? entrada = null)
     {
@@ -99,66 +98,6 @@ internal static class CorpusEnvelopeEntrada
         publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
         processo.ClearDomainEvents();
     }
-
-    /// <summary>
-    /// A sessão editorial que <b>altera os dados</b> da primeira etapa <b>preservando o
-    /// Id</b> — o cenário em que a reconciliação de fato acontece (a mesma linha, dados
-    /// novos). Sem ele, o teste de <c>CreatedAt</c> passaria até com uma reposição que não
-    /// fizesse nada.
-    /// </summary>
-    internal static GrafoConfiguracao GrafoComEtapaAlterada(int variante)
-    {
-        ProcessoSeletivo rico = ProcessoRico(variante);
-        EtapaProcesso primeira = rico.Etapas.First();
-
-        return new GrafoConfiguracao(
-            etapas: [EtapaProcesso.Reidratar(
-                primeira.Id,
-                new IdentificacaoDaEtapa(Nome: "Etapa Descaracterizada", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 7, FaseCodigo: null),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 9.9999m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
-                itens: null)],
-            atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
-            distribuicaoVagas: [DistribuicaoInstitucional()],
-            bonusRegional: null,
-            criteriosDesempate: [],
-            classificacao: ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-            {
-                RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
-                RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
-            }).Value!,
-            cronogramaFases: [FaseCronogramaConforme(variante)],
-            documentosExigidos: [],
-            nosExigencia: [],
-            referenciaTemporalFatos: null,
-            fatosColetados: [],
-            regrasDerivacao: [],
-            numeroDeOpcoesDeCurso: 1);
-    }
-
-    /// <summary>Um grafo mínimo e conforme — a "sessão editorial" que o descarte terá de desfazer.</summary>
-    internal static GrafoConfiguracao GrafoPobre(int variante = 0) => new(
-        etapas: [EtapaProcesso.Reidratar(
-            new Guid($"9999fff{variante:x}-0000-4000-8000-000000000001"),
-            new IdentificacaoDaEtapa(Nome: "Etapa Única", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1.0000m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null),
-            itens: null)],
-        atendimentoEspecializado: AtendimentoEspecializado.Criar([], [], []).Value!,
-        distribuicaoVagas: [DistribuicaoInstitucional()],
-        bonusRegional: null,
-        criteriosDesempate: [],
-        classificacao: ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'a'),
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '3'),
-        }).Value!,
-        cronogramaFases: [FaseCronogramaConforme(variante)],
-        documentosExigidos: [],
-        nosExigencia: [],
-        referenciaTemporalFatos: null,
-        fatosColetados: [],
-        regrasDerivacao: [],
-        numeroDeOpcoesDeCurso: 1);
-
 
     /// <summary>Um termo exigido com versão fixa, para envelope determinístico.</summary>
     internal static TermoExigidoFormulario Termo(

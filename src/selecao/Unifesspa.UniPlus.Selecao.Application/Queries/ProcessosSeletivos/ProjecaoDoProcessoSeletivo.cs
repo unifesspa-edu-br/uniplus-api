@@ -137,7 +137,7 @@ internal static class ProjecaoDoProcessoSeletivo
             classificacao.CasasArredondamento,
             Referencia(classificacao.RegraOrdemAlocacao),
             [.. classificacao.RegrasEliminacao.Select(ProjetarRegraDeEliminacao)],
-            Domain.ProcessosSeletivos.Vagas.RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(processo)),
+            Domain.ProcessosSeletivos.Vagas.RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(processo.Declaracao()),
             classificacao.BaseadoEmEnem,
             classificacao.ResolucaoPesoAreaEnem,
             [.. classificacao.QuadroPesoAreaEnem

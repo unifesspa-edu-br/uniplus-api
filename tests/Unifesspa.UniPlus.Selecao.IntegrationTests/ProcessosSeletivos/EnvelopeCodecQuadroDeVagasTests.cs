@@ -20,33 +20,6 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
 {
     private const int VagasOfertadasBaseDoQuadroFixado = 40;
 
-    [Fact(DisplayName = "O quadro fixado reduzido por reduzirDe volta do envelope com o ajuste declarado e as vagas retiradas")]
-    public void RoundTrip_QuadroFixadoReduzidoPorReduzirDe_VoltaComAjusteERetiradas()
-    {
-        ArgsRegraAjusteDistribuicao ajuste = new ArgsReduzirDe("AC");
-        ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(ajuste);
-
-        EnvelopeReidratado envelope = ReidratarOEnvelopeDe(processo);
-
-        ConfiguracaoDistribuicaoVagas lida = envelope.Grafo.DistribuicaoVagas.Single();
-        lida.AjusteDoQuadro.Should().Be(ajuste);
-        lida.Quadro.Should().BeOfType<QuadroDeVagasFixadoNoEdital>().Which.TotalDeVagasRetiradasNoAjuste.Should().Be(4);
-        lida.Quadro.Should().BeEquivalentTo(processo.DistribuicaoVagas.Single().Quadro);
-    }
-
-    [Fact(DisplayName = "O quadro fixado reduzido por reduzirProporcionalEm volta do envelope com o ajuste declarado")]
-    public void RoundTrip_QuadroFixadoReduzidoPorReduzirProporcionalEm_VoltaComAjuste()
-    {
-        ArgsRegraAjusteDistribuicao ajuste = new ArgsReduzirProporcionalEm(["IND", "QUI"]);
-        ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(ajuste);
-
-        EnvelopeReidratado envelope = ReidratarOEnvelopeDe(processo);
-
-        ConfiguracaoDistribuicaoVagas lida = envelope.Grafo.DistribuicaoVagas.Single();
-        lida.AjusteDoQuadro.Should().BeOfType<ArgsReduzirProporcionalEm>().Which.ModalidadeCodigos.Should().Equal("IND", "QUI");
-        lida.Quadro.Should().BeEquivalentTo(processo.DistribuicaoVagas.Single().Quadro);
-    }
-
     [Fact(DisplayName = "O envelope descreve cada ramo só com os campos dele: o quadro fixado não tem conferência da reserva legal")]
     public void Envelope_QuadroFixado_NaoTemConferenciaDaReservaLegal()
     {
@@ -61,19 +34,6 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
         vagas["conferenciaDaReservaLegal"].Should().BeNull();
         vagas["ajusteDoQuadroFixado"]!["totalDeVagasRetiradas"]!.GetValue<int>().Should().Be(4);
         vagas["totalDeVagasDoEdital"]!.GetValue<int>().Should().Be(VagasOfertadasBaseDoQuadroFixado);
-    }
-
-    [Fact(DisplayName = "A Lei de Cotas com escassez de vagas volta do envelope com a conferência da reserva legal")]
-    public void RoundTrip_LeiDeCotasComEscassez_VoltaComConferenciaDaReservaLegal()
-    {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(vagasOfertadasBaseDaLeiDeCotas: 3);
-
-        EnvelopeReidratado envelope = ReidratarOEnvelopeDe(processo);
-
-        QuadroDeVagasDaLeiDeCotas quadro = envelope.Grafo.DistribuicaoVagas
-            .Select(static d => d.Quadro).OfType<QuadroDeVagasDaLeiDeCotas>().First();
-        quadro.ConferenciaDaReservaLegal.VagasCortadasPorEscassez.Should().BePositive();
-        envelope.Grafo.DistribuicaoVagas.Should().OnlyContain(static d => d.AjusteDoQuadro == null && d.PercentualDaReservaLegal != null);
     }
 
     [Theory(DisplayName = "Envelope com o quadro adulterado, diferente do que a declaração monta, é recusado na leitura")]
@@ -114,14 +74,6 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
         reidratado.Error!.Code.Should().Be(DistribuicaoDeVagasErrorCodes.QuantidadeVagaNegativa);
     }
 
-    private static EnvelopeReidratado ReidratarOEnvelopeDe(ProcessoSeletivo processo)
-    {
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
-        CorpusEnvelopeEntrada.Publicar(processo);
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
-        return AssertRoundTrip(processo, versao, congelado);
-    }
-
     private static ProcessoSeletivo ProcessoComQuadroFixadoReduzido(ArgsRegraAjusteDistribuicao ajuste)
     {
         (ProcessoSeletivo processo, FaseCronograma _) = ProcessoDeInscricao("PS Quadro Fixado Reduzido");
@@ -135,7 +87,7 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
                 Modalidades = [ModalidadeDoQuadroFixado("AC", 25, null), ModalidadeDoQuadroFixado("IND", 10, "AC"), ModalidadeDoQuadroFixado("QUI", 9, "AC")],
             },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga)
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo)
             .IsSuccess.Should().BeTrue();
         return processo;
     }

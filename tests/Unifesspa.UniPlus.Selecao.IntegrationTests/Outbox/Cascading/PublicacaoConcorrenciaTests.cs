@@ -70,7 +70,7 @@ public sealed class PublicacaoConcorrenciaTests
                 "Prova Discursiva (revisada)", CaraterEtapa.Classificatoria,
                 TipoEtapaOrigemId: new Guid("019fee1e-7000-7000-8000-000000000001"),
                 Peso: 1m, NotaMinima: null, Ordem: 1,
-                Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m, FormaDeAvaliacao: "OBJETIVA", FaseCodigo: "RESULTADO_FINAL")], PrecondicaoIfMatch.Ausente);
+                Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m, FormaDeAvaliacao: "OBJETIVA", FaseCodigo: "RESULTADO_FINAL")]);
         var publicarCommand = new PublicarProcessoSeletivoCommand(
             processoId,
             Numero: null,
@@ -89,15 +89,12 @@ public sealed class PublicacaoConcorrenciaTests
         IMessageBus definirEtapasBus = definirEtapasScope.ServiceProvider.GetRequiredService<IMessageBus>();
         IMessageBus publicarBus = publicarScope.ServiceProvider.GetRequiredService<IMessageBus>();
 
-        // Os Definir* passaram a devolver o ETag da sessão editorial (ADR-0110 D5): o tipo de
-        // retorno é Result<MutacaoAceita>. Pedir Result nu ao bus devolveria null, e a corrida
-        // "provaria" o que quer que o NullReferenceException interrompesse primeiro.
-        Task<Result<MutacaoAceita>> definirEtapasTask = definirEtapasBus.InvokeAsync<Result<MutacaoAceita>>(definirEtapasCommand);
+        Task<Result> definirEtapasTask = definirEtapasBus.InvokeAsync<Result>(definirEtapasCommand);
         Task<Result> publicarTask = publicarBus.InvokeAsync<Result>(publicarCommand);
 
         await Task.WhenAll(definirEtapasTask, publicarTask);
 
-        Result<MutacaoAceita> definirEtapasResultado = await definirEtapasTask;
+        Result definirEtapasResultado = await definirEtapasTask;
         Result publicarResultado = await publicarTask;
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();
@@ -207,8 +204,7 @@ public sealed class PublicacaoConcorrenciaTests
             RegraCodigo: "REMANEJ-CASCATA-LEI-12711",
             RegraVersao: "v1",
             FallbackCodigo: "AC",
-            Destinos: MatrizLegalCompletaComoInput(),
-            Precondicao: PrecondicaoIfMatch.Ausente);
+            Destinos: MatrizLegalCompletaComoInput());
         var publicarCommand = new PublicarProcessoSeletivoCommand(
             processoId,
             Numero: null,
@@ -224,12 +220,12 @@ public sealed class PublicacaoConcorrenciaTests
         IMessageBus definirBus = definirScope.ServiceProvider.GetRequiredService<IMessageBus>();
         IMessageBus publicarBus = publicarScope.ServiceProvider.GetRequiredService<IMessageBus>();
 
-        Task<Result<MutacaoAceita>> definirTask = definirBus.InvokeAsync<Result<MutacaoAceita>>(definirCascataCommand);
+        Task<Result> definirTask = definirBus.InvokeAsync<Result>(definirCascataCommand);
         Task<Result> publicarTask = publicarBus.InvokeAsync<Result>(publicarCommand);
 
         await Task.WhenAll(definirTask, publicarTask);
 
-        Result<MutacaoAceita> definirResultado = await definirTask;
+        Result definirResultado = await definirTask;
         Result publicarResultado = await publicarTask;
 
         await using AsyncServiceScope readScope = api.Services.CreateAsyncScope();

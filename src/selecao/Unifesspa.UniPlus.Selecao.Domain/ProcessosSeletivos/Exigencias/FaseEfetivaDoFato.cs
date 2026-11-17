@@ -8,7 +8,6 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -24,6 +23,10 @@ public static class FaseEfetivaDoFato
     /// habilitação usa, de outra finalidade, só fatos da inscrição. Inscrição e isenção podem dividir
     /// a fase, e por isso a regra olha a finalidade da exigência, e não a fase.
     /// </summary>
+    /// <param name="publicadas">
+    /// O que as versões publicadas coletaram, na retificação: o fato de outra finalidade tem de ter sido
+    /// coletado em todas elas. Nula na escrita da exigência e na primeira publicação.
+    /// </param>
     /// <remarks>
     /// Fato que o processo não coleta, não deriva e o catálogo não situa não é recusado aqui: a
     /// recusa por fato fora do processo é da conferência do universo. O derivado do sistema usa a
@@ -32,25 +35,26 @@ public static class FaseEfetivaDoFato
     /// finalidade, que a definição das exigências confere.
     /// </remarks>
     public static DomainError? RecusaDeFaseDoGatilho(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         string fato,
         Guid exigidoNaFaseId,
         FinalidadeFormulario? finalidadeDaExigencia,
         IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
-        IReadOnlyDictionary<string, string> membroPorAgregado)
+        IReadOnlyDictionary<string, string> membroPorAgregado,
+        FatosDasVersoesPublicadas? publicadas = null)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentException.ThrowIfNullOrWhiteSpace(fato);
         ArgumentNullException.ThrowIfNull(pontoResolucaoPorFato);
         ArgumentNullException.ThrowIfNull(membroPorAgregado);
 
-        if (estado.CronogramaFases.FirstOrDefault(f => f.Id == exigidoNaFaseId) is not { } faseDaExigencia
+        if (configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == exigidoNaFaseId) is not { } faseDaExigencia
             || Services.ValidadorVinculoDaExigencia.RecusaDaFinalidade(finalidadeDaExigencia, faseDaExigencia) is not null)
         {
             return null;
         }
 
-        FaseEfetiva efetiva = Resolver(estado, fato, pontoResolucaoPorFato, membroPorAgregado, []);
+        FaseEfetiva efetiva = Resolver(configuracao, fato, pontoResolucaoPorFato, membroPorAgregado, []);
         if (efetiva.Recusa is { } recusa)
         {
             return recusa;
@@ -64,7 +68,7 @@ public static class FaseEfetivaDoFato
         }
 
         if (finalidadeDaExigencia != FinalidadeFormulario.IsencaoTaxa
-            && DependeDeFatoSoDaIsencao(estado, fato, membroPorAgregado, []))
+            && DependeDeFatoSoDaIsencao(configuracao, fato, membroPorAgregado, []))
         {
             return new DomainError(
                 DocumentoExigidoErrorCodes.FatoDaIsencaoEmOutraFinalidade,
@@ -73,16 +77,19 @@ public static class FaseEfetivaDoFato
 
         // As exigências de uma finalidade seguem a versão do formulário dela; o fato de outra
         // finalidade tem de ter sido coletado em todas as versões publicadas (UNI-REQ-0144).
-        return CitacoesDosFormularios.CitacaoNaoGarantida(
-            estado,
-            [($"o gatilho de um documento exigido na fase '{faseDaExigencia.Codigo}'", fato)],
-            finalidadeDaExigencia,
-            membroPorAgregado);
+        return publicadas is null
+            ? null
+            : CitacoesDosFormularios.CitacaoNaoGarantida(
+                configuracao,
+                publicadas,
+                [($"o gatilho de um documento exigido na fase '{faseDaExigencia.Codigo}'", fato)],
+                finalidadeDaExigencia,
+                membroPorAgregado);
     }
 
     /// <summary>A fase em que o fato fica conhecido no processo, ou a recusa quando o catálogo o situa fora do cronograma.</summary>
     internal static FaseEfetiva Resolver(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         string fato,
         IReadOnlyDictionary<string, string> pontoResolucaoPorFato,
         IReadOnlyDictionary<string, string> membroPorAgregado,
@@ -99,7 +106,7 @@ public static class FaseEfetivaDoFato
 
         if (pontoResolucaoPorFato.TryGetValue(fato, out string? ponto))
         {
-            if (estado.CronogramaFases.FirstOrDefault(f => string.Equals(f.Codigo, ponto, StringComparison.Ordinal)) is not { } faseDoPonto)
+            if (configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => string.Equals(f.Codigo, ponto, StringComparison.Ordinal)) is not { } faseDoPonto)
             {
                 return new FaseEfetiva(null, new DomainError(
                     DocumentoExigidoErrorCodes.PontoResolucaoForaDoCronograma,
@@ -109,17 +116,17 @@ public static class FaseEfetivaDoFato
             Considerar(faseDoPonto);
         }
 
-        if (estado.Campos.FirstOrDefault(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado
-            && estado.FormularioDe(coletado.Finalidade)?.FaseId is { } faseDoFormulario)
+        if (configuracao.Coleta.Campos.FirstOrDefault(f => string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal)) is { } coletado
+            && configuracao.Coleta.FormularioDe(coletado.Finalidade)?.FaseId is { } faseDoFormulario)
         {
-            Considerar(estado.CronogramaFases.FirstOrDefault(f => f.Id == faseDoFormulario));
+            Considerar(configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == faseDoFormulario));
         }
 
         if (emAvaliacao.Add(fato))
         {
-            foreach (string dependencia in DependenciasDoFato(estado, fato, membroPorAgregado))
+            foreach (string dependencia in DependenciasDoFato(configuracao, fato, membroPorAgregado))
             {
-                FaseEfetiva daDependencia = Resolver(estado, dependencia, pontoResolucaoPorFato, membroPorAgregado, emAvaliacao);
+                FaseEfetiva daDependencia = Resolver(configuracao, dependencia, pontoResolucaoPorFato, membroPorAgregado, emAvaliacao);
                 if (daDependencia.Recusa is not null)
                 {
                     return daDependencia;
@@ -133,18 +140,18 @@ public static class FaseEfetivaDoFato
     }
 
     /// <summary>Se o fato vem só do formulário de isenção, diretamente ou por uma dependência.</summary>
-    internal static bool DependeDeFatoSoDaIsencao(EstadoDaConfiguracao estado, string fato, IReadOnlyDictionary<string, string> membroPorAgregado, HashSet<string> emAvaliacao) =>
-        estado.Campos.Any(f => f.Finalidade == FinalidadeFormulario.IsencaoTaxa && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
+    internal static bool DependeDeFatoSoDaIsencao(ConfiguracaoDeclarada configuracao, string fato, IReadOnlyDictionary<string, string> membroPorAgregado, HashSet<string> emAvaliacao) =>
+        configuracao.Coleta.Campos.Any(f => f.Finalidade == FinalidadeFormulario.IsencaoTaxa && string.Equals(f.FatoCodigo, fato, StringComparison.Ordinal))
         || (emAvaliacao.Add(fato)
-            && DependenciasDoFato(estado, fato, membroPorAgregado).Any(d => DependeDeFatoSoDaIsencao(estado, d, membroPorAgregado, emAvaliacao)));
+            && DependenciasDoFato(configuracao, fato, membroPorAgregado).Any(d => DependeDeFatoSoDaIsencao(configuracao, d, membroPorAgregado, emAvaliacao)));
 
     /// <summary>
     /// Os fatos de que o valor do fato depende no processo: os citados pela regra de derivação dele,
     /// os declarados pelo mecanismo do derivado do sistema, ou o fato de membro, quando ele é
     /// agregado sobre grupo repetível.
     /// </summary>
-    internal static IEnumerable<string> DependenciasDoFato(EstadoDaConfiguracao estado, string fato, IReadOnlyDictionary<string, string> membroPorAgregado) =>
-        (estado.DerivacoesEfetivas().FirstOrDefault(r => string.Equals(r.CodigoFato, fato, StringComparison.Ordinal))?.FatosCitados ?? [])
+    internal static IEnumerable<string> DependenciasDoFato(ConfiguracaoDeclarada configuracao, string fato, IReadOnlyDictionary<string, string> membroPorAgregado) =>
+        (configuracao.DerivacoesEfetivas().FirstOrDefault(r => string.Equals(r.CodigoFato, fato, StringComparison.Ordinal))?.FatosCitados ?? [])
             .Concat(DerivadosDoSistema.Dependencias.GetValueOrDefault(fato) ?? [])
             .Concat(membroPorAgregado.TryGetValue(fato, out string? membro) ? [membro] : []);
 

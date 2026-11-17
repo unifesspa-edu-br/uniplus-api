@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Conformi
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -46,9 +45,9 @@ public sealed class SequenciaDosItensDoCronogramaTests
     [Fact(DisplayName = "Os itens do cronograma saem na ordem do painel, sem repetir nenhum")]
     public void Avaliar_ProcessoConforme_DevolveOsItensNaOrdemDoPainel()
     {
-        EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(ApoioDaPublicacaoDoProcessoSeletivo.NovoProcessoConforme());
+        ConfiguracaoDeclarada configuracao = ApoioDaPublicacaoDoProcessoSeletivo.NovoProcessoConforme().Declaracao();
 
-        string[] codigos = [.. ItensDoCronograma.Avaliar(estado, CadastrosDeTeste.Padrao).Select(static item => item.Codigo)];
+        string[] codigos = [.. ItensDoCronograma.Avaliar(configuracao, CadastrosDeTeste.Padrao).Select(static item => item.Codigo)];
 
         codigos.Should().Equal(SequenciaEsperada);
         codigos.Distinct().Should().HaveCount(codigos.Length);

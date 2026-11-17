@@ -18,7 +18,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 /// O canonicalizador (<c>SerializarDivulgacao</c>) não recebe a regra congelada por parâmetro —
 /// ele deriva <c>abrevia ? RegrasDeNomeAbreviado.Vigente : null</c>, direto do agregado. Isso é
 /// seguro <b>hoje</b> porque não há como a vigente ter mudado entre a publicação de uma versão
-/// antiga e a recanonicalização dela no descarte de uma retificação: as duas acontecem sob o
+/// antiga e a recanonicalização dela na conferência de uma retificação: as duas acontecem sob o
 /// mesmo binário, sem regime de codec por versão em produção.
 /// </para>
 /// <para>
@@ -43,12 +43,10 @@ public sealed class RegraDeNomeAbreviadoUnicaTests
             "(RegrasDeNomeAbreviado.Vigente) em vez de reinjetar a regra que a versão congelou — " +
             "e essa derivação só é indistinguível da reinjeção enquanto existir UMA ÚNICA regra " +
             "conhecida (issue #563, D3). Se este teste falhou, uma segunda regra acabou de nascer: " +
-            "a partir de agora, recanonicalizar uma versão antiga (o caminho do descarte de " +
-            "retificação) usando a regra VIGENTE pode produzir um identificador diferente do que " +
-            "aquela versão congelou — a prova de fidelidade (round-trip) vai acusar divergência em " +
-            "certames legítimos. A correção é reintroduzir o transporte explícito da regra " +
-            "congelada (um campo em EntradaCanonicalizacao/EnvelopeReidratado, propagado por " +
-            "RestauradorDeConfiguracao) — ou, se o primeiro certame publicado em qualquer " +
+            "a partir de agora, recanonicalizar uma versão antiga usando a regra VIGENTE pode produzir um " +
+            "identificador diferente do que aquela versão congelou. A correção é reintroduzir o " +
+            "transporte explícito da regra congelada (um campo em EntradaCanonicalizacao/EnvelopeReidratado) — " +
+            "ou, se o primeiro certame publicado em qualquer " +
             "ambiente, inclusive homologação, já tiver ocorrido, resolver pelo regime de codec " +
             "por versão (um decoder por schema_version, cada um com a semântica da sua época).");
     }

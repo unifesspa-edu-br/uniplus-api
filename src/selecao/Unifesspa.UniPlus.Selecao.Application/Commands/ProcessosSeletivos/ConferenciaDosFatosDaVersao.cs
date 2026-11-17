@@ -30,36 +30,36 @@ internal sealed record FatosConferidos(
 public sealed class ConferenciaDosFatosDaVersao(ConferenciaDosMotivosAoCongelar motivos)
 {
     internal async Task<FatosConferidos> ConferirAsync(
-        ProcessoSeletivo processo, OrigemDoCongelamento origem, LeiturasDoCongelamento lidos, CancellationToken cancellationToken)
+        ProcessoSeletivo processo, LeiturasDoCongelamento lidos, int numeroDaVersaoQueNasce, CancellationToken cancellationToken)
     {
-        FatosConferidos fatos = ConferirOsFatosCongelados(processo, origem, lidos);
-        Result dosMotivos = await motivos.ConferirAsync(processo, origem.NumeroDaVersaoQueNasce, cancellationToken).ConfigureAwait(false);
+        FatosConferidos fatos = ConferirOsFatosCongelados(processo, lidos);
+        Result dosMotivos = await motivos.ConferirAsync(processo, numeroDaVersaoQueNasce, cancellationToken).ConfigureAwait(false);
 
         return fatos with { Causas = [.. fatos.Causas, .. dosMotivos.Errors] };
     }
 
-    private static FatosConferidos ConferirOsFatosCongelados(ProcessoSeletivo processo, OrigemDoCongelamento origem, LeiturasDoCongelamento lidos)
+    private static FatosConferidos ConferirOsFatosCongelados(ProcessoSeletivo processo, LeiturasDoCongelamento lidos)
     {
         IReadOnlyList<ItemNoDocumento> naoColetaveis = ConferenciaDeColetabilidadeDeFatos.NaoColetaveis(processo, lidos.Catalogo.PorCodigo);
         HashSet<string> excluidos = [.. naoColetaveis.Select(static n => n.Item.FatoCodigo)];
         Resolucao resolucao = new(
             naoColetaveis.Count == 0
-                ? ConferenciaDosFatosAoCongelar.Conferir(processo, lidos.Catalogo.PorCodigo)
+                ? ConferenciaDosFatosAoCongelar.Conferir(processo, lidos.Catalogo.PorCodigo, lidos.Recopiado.Publicadas)
                 : ResolvedorMetadadosFatosCongelados.Resolver(processo, lidos.Catalogo.PorCodigo, excluidos),
             ResolvedorValoresSelecionaveisCongelados.Resolver(processo, lidos.Catalogo.PorCodigo, excluidos),
             excluidos);
 
-        return Reunir(processo, origem, lidos, naoColetaveis, resolucao);
+        return Reunir(processo, lidos, naoColetaveis, resolucao);
     }
 
     private static FatosConferidos Reunir(
-        ProcessoSeletivo processo, OrigemDoCongelamento origem, LeiturasDoCongelamento lidos, IReadOnlyList<ItemNoDocumento> naoColetaveis, Resolucao resolucao)
+        ProcessoSeletivo processo, LeiturasDoCongelamento lidos, IReadOnlyList<ItemNoDocumento> naoColetaveis, Resolucao resolucao)
     {
         IReadOnlyList<DefinicaoAgregado> agregados = AgregadosDosFatosColetaveis(processo, lidos, resolucao.Excluidos);
         Result<DefinicaoAvaliavel>? avaliavel = naoColetaveis.Count == 0 && resolucao.Valores.IsSuccess
             ? DefinicaoAvaliavelDoProcesso.DaConfiguracaoViva(processo, lidos.Catalogo.Fatos)
             : null;
-        IEnumerable<FieldError> eixo = EixoTrocado(processo, origem, lidos, resolucao, agregados);
+        IEnumerable<FieldError> eixo = EixoTrocado(processo, lidos, resolucao, agregados);
 
         return new FatosConferidos(
             resolucao.Metadados.Value, resolucao.Valores.Value, agregados, avaliavel?.Value, Causas(naoColetaveis, resolucao, eixo, avaliavel));
@@ -89,15 +89,10 @@ public sealed class ConferenciaDosFatosDaVersao(ConferenciaDosMotivosAoCongelar 
     // fato que o catálogo não tem ou não deixa coletar já é causa própria e fica fora, e os demais continuam comparados.
     private static IEnumerable<FieldError> EixoTrocado(
         ProcessoSeletivo processo,
-        OrigemDoCongelamento origem,
         LeiturasDoCongelamento lidos,
         Resolucao resolucao,
         IReadOnlyList<DefinicaoAgregado> agregados) =>
-        ComoCausas(
-        [
-            .. DaVersaoPublicada(lidos, MetadadosComparaveis(processo, lidos, resolucao), agregados),
-            .. origem.ItensComEixoTrocado(ItensVigentes(processo, resolucao.Excluidos)),
-        ]);
+        ComoCausas(DaVersaoPublicada(lidos, MetadadosComparaveis(processo, lidos, resolucao), agregados));
 
     private static IReadOnlyDictionary<string, MetadadoFatoCongelado>? MetadadosComparaveis(
         ProcessoSeletivo processo, LeiturasDoCongelamento lidos, Resolucao resolucao)
@@ -117,11 +112,6 @@ public sealed class ConferenciaDosFatosDaVersao(ConferenciaDosMotivosAoCongelar 
             .SelectMany(static d => d.Condicoes)
             .Select(static c => c.Fato)
             .Where(fato => !lidos.Catalogo.PorCodigo.ContainsKey(fato));
-
-    private static IReadOnlyList<FatoColetado> ItensVigentes(ProcessoSeletivo processo, IReadOnlySet<string> excluidos) =>
-    [
-        .. processo.FatosColetados.Concat(processo.GruposColetados.SelectMany(static g => g.Subitens)).Where(item => !excluidos.Contains(item.FatoCodigo)),
-    ];
 
     private static IReadOnlyList<DomainError> DaVersaoPublicada(
         LeiturasDoCongelamento lidos, IReadOnlyDictionary<string, MetadadoFatoCongelado>? metadados, IReadOnlyList<DefinicaoAgregado> agregados) =>

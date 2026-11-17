@@ -23,7 +23,7 @@ public sealed class CondicoesDaCanonicalizacaoTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        CondicoesDaCanonicalizacao.Causas(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().BeEmpty();
+        CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "As conferências independentes acumulam as causas, na ordem em que são aplicadas, cada uma no bloco do documento")]
@@ -31,9 +31,9 @@ public sealed class CondicoesDaCanonicalizacaoTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirItensComFaseDeInscricao([FatoDosMunicipiosDoBonus()]).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([TermoSemForma()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([TermoSemForma()]).IsSuccess.Should().BeTrue();
 
-        IReadOnlyList<FieldError> causas = CondicoesDaCanonicalizacao.Causas(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao);
+        IReadOnlyList<FieldError> causas = CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), CadastrosDeTeste.Padrao);
 
         causas.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(
             ("formularios", FatoSemValoresOfertados),
@@ -46,7 +46,7 @@ public sealed class CondicoesDaCanonicalizacaoTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirItensComFaseDeInscricao([FatoDosMunicipiosDoBonus()]).IsSuccess.Should().BeTrue();
 
-        CondicoesDaCanonicalizacao.Causas(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
+        CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), CadastrosDeTeste.Padrao)
             .Select(static causa => causa.Error.Code).Should().Equal(FatoSemValoresOfertados);
     }
 

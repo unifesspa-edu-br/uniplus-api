@@ -86,22 +86,6 @@ public sealed class ConformidadeLegalGateTests
         eventos.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "CA-14 (FecharRetificacao): regra legal vigente reprovada recusa e a sessão editorial permanece aberta")]
-    public async Task FecharRetificacao_ComRegraLegalReprovada_RecusaESessaoPermaneceAberta()
-    {
-        DependenciasDosHandlersQueCongelam handlers = DependenciasDosHandlersQueCongelam.ParaProcessoEmRetificacao();
-        handlers.ObrigatoriedadesLegais = RepositorioCom(RegraQueReprova());
-
-        (Result resposta, IEnumerable<object> eventos) = await handlers.FecharRetificacaoAsync();
-
-        resposta.IsFailure.Should().BeTrue();
-        resposta.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeLegalInsuficiente");
-        _ = handlers.Canonicalizer.DidNotReceive().Canonicalizar(Arg.Any<EntradaCanonicalizacao>());
-        eventos.Should().BeEmpty();
-        handlers.Processo.Rascunho.Should().NotBeNull(
-            "uma recusa de conformidade legal não destrói a sessão editorial — o administrador corrige e tenta de novo");
-    }
-
     private static void ConferirRegraCongelada(EntradaCanonicalizacao? entrada, ObrigatoriedadeLegal regra)
     {
         entrada.Should().NotBeNull();

@@ -153,7 +153,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
                 new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
                 bancasRequeridas: []).Value!),
         ];
-        Processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        Processo.DefinirCronogramaFases(fases, []).IsSuccess.Should().BeTrue();
         return fases[0];
     }
 
@@ -171,7 +171,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
     {
         DeclararFatosDaOpcaoPelasCotas();
         Processo.DefinirDistribuicaoVagas(
-            [DistribuicaoDeVagasCom(modalidades)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [DistribuicaoDeVagasCom(modalidades)], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
     public Task<Result<AplicacaoDeModeloDto>> AplicarAsync(ModeloFormularioView modelo)
@@ -182,7 +182,7 @@ internal sealed class CenarioDaAplicacaoDoModeloDeFormulario
 
     public Task<Result<AplicacaoDeModeloDto>> AplicarAsync(Guid modeloId) =>
         AplicarModeloFormularioCommandHandler.Handle(
-            new AplicarModeloFormularioCommand(Processo.Id, modeloId, PrecondicaoIfMatch.Ausente),
+            new AplicarModeloFormularioCommand(Processo.Id, modeloId),
             _repository, _modelos, Fatos, Termos, _tiposDocumento, _modelosDeDocumento, UnitOfWork, CancellationToken.None);
 
     private static FatoCandidatoView DerivadoBooleano(string codigo, string rotulo) =>

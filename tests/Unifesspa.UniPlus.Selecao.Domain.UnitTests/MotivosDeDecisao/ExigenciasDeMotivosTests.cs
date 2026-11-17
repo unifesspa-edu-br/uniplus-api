@@ -69,7 +69,7 @@ public sealed class ExigenciasDeMotivosTests
 
         FieldError[] faltas = [.. new ExigenciaDaIsencaoDaTaxa().Faltas(processo, escolhidos)];
 
-        faltas.Should().HaveCount(3).And.OnlyContain(f => f.Field == "motivosDeDecisao");
+        faltas.Should().HaveCount(3).And.OnlyContain(f => f.Field == "motivos");
         faltas.Select(f => f.Error.Message).Should().Equal(
         [
             $"Falta escolher ao menos um motivo desfavorável para o fundamento de isenção {FundamentoIsencaoCodigo.CadastroUnico}.",
@@ -113,6 +113,6 @@ public sealed class ExigenciasDeMotivosTests
     private sealed class ExigenciaFalsa(string codigo) : IExigenciaDeMotivos
     {
         public IEnumerable<FieldError> Faltas(ProcessoSeletivo processo, IReadOnlyCollection<MotivoDoProcesso> escolhidos) =>
-            [new FieldError("motivosDeDecisao", new DomainError(codigo, "Falta de teste."))];
+            [new FieldError("motivos", new DomainError(codigo, "Falta de teste."))];
     }
 }

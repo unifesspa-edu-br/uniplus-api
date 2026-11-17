@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// Processo mínimo conforme às seis dimensões estruturais de
 /// <c>ProcessoSeletivo.ItensEstruturaisDeConformidade</c> (etapas, atendimento especializado,
 /// distribuição de vagas, classificação, cronograma de fases, taxa de inscrição — issue #1112)
-/// — compartilhado pelos testes dos handlers que congelam (Publicar/Retificar/FecharRetificacao),
+/// — compartilhado pelos testes dos handlers que congelam (Publicar/Retificar),
 /// que precisam de um processo que passe pelo gate estrutural antes de exercitar o gate
 /// específico de cada teste.
 /// </summary>
@@ -42,7 +42,7 @@ internal static class ProcessoSeletivoConformeBuilder
         DefinirClassificacaoImportada(processo);
 
         FaseCronograma fase = FaseDeResultadoFinal(bancasDaFase);
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         faseId = fase.Id;
 
         DefinirEtapaDaProvaObjetiva(processo);
@@ -59,10 +59,10 @@ internal static class ProcessoSeletivoConformeBuilder
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
+            AtendimentoEspecializado.Criar([], [], []).Value!)
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas([DistribuicaoAmplaConcorrencia()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)
+        processo.DefinirDistribuicaoVagas([DistribuicaoAmplaConcorrencia()], FatosDeModalidadeDeTeste.DoCatalogo)
             .IsSuccess.Should().BeTrue();
         return processo;
     }
@@ -74,8 +74,7 @@ internal static class ProcessoSeletivoConformeBuilder
             {
                 RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
                 RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
-            }).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            }).Value!).IsSuccess.Should().BeTrue();
     }
 
     private static void DefinirEtapaDaProvaObjetiva(ProcessoSeletivo processo)
@@ -83,16 +82,14 @@ internal static class ProcessoSeletivoConformeBuilder
         processo.DefinirEtapas(
             [EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(CadastrosVivos.IdentidadeDe("PROVA_OBJETIVA"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]).IsSuccess.Should().BeTrue();
     }
 
     private static void DefinirTaxaSemCobranca(ProcessoSeletivo processo)
     {
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }
 

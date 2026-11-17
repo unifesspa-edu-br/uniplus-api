@@ -45,8 +45,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.Payload
 internal static class CronogramaEFormularioDoContextoDoEnvelope
 {
     public static Task<HttpResponseMessage> PutCronogramaFasesAsync(this ContextoDoEnvelopeFechado contexto) =>
-        contexto.EnviarAsync(HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/cronograma-fases", CronogramaDeFases(contexto.Catalogos), ifMatch: null);
-
+        contexto.EnviarAsync(HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/cronograma-fases", CronogramaDeFases(contexto.Catalogos));
 
     public static Task<HttpResponseMessage> PutFatosColetadosAsync(this ContextoDoEnvelopeFechado contexto)
     {
@@ -86,9 +85,8 @@ internal static class CronogramaEFormularioDoContextoDoEnvelope
 
         return contexto.EnviarAsync(
             HttpMethod.Put, FormularioDeInscricaoHttp.RotaDosItens(contexto.ProcessoId).ToString(),
-            FormularioDeInscricaoHttp.CorpoDosItens(fatos), ifMatch: null);
+            FormularioDeInscricaoHttp.CorpoDosItens(fatos));
     }
-
 
     public static Task<HttpResponseMessage> PutRegrasDerivacaoAsync(this ContextoDoEnvelopeFechado contexto)
     {
@@ -109,9 +107,8 @@ internal static class CronogramaEFormularioDoContextoDoEnvelope
             },
         ];
 
-        return contexto.EnviarAsync(HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/regras-derivacao", configuracoes, ifMatch: null);
+        return contexto.EnviarAsync(HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/regras-derivacao", configuracoes);
     }
-
 
     /// <summary>
     /// Matriz 8×7, fallback AC — a MESMA forma do <c>esquema_args</c> congelado da regra
@@ -141,16 +138,13 @@ internal static class CronogramaEFormularioDoContextoDoEnvelope
                 regraVersao = "v1",
                 fallbackCodigo = ModalidadesFederaisLei12711.Ac,
                 destinos,
-            },
-            ifMatch: null);
+            });
     }
 
-
     public static Task<HttpResponseMessage> PutDocumentosExigidosAsync(this ContextoDoEnvelopeFechado contexto, object[] raizes) =>
-        contexto.EnviarAsync(HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/documentos-exigidos", raizes, ifMatch: null);
+        contexto.EnviarAsync(HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/documentos-exigidos", raizes);
 
-
-    public static Task<HttpResponseMessage> PutFormularioAsync(this ContextoDoEnvelopeFechado contexto, string titulo, Guid faseId, string? ifMatch) =>
+    public static Task<HttpResponseMessage> PutFormularioAsync(this ContextoDoEnvelopeFechado contexto, string titulo, Guid faseId) =>
         contexto.EnviarAsync(
             HttpMethod.Put, $"/api/selecao/admin/processos-seletivos/{contexto.ProcessoId}/formularios/INSCRICAO",
             new
@@ -162,12 +156,10 @@ internal static class CronogramaEFormularioDoContextoDoEnvelope
                     new { codigo = "DADOS", ordem = 0, tipo = "SECAO", bloco = (string?)null, titulo = "Dados" },
                     new { codigo = "REVISAO", ordem = 1, tipo = "BLOCO", bloco = "REVISAO_E_ACEITE", titulo = "Revisão e aceite" },
                 },
-            },
-            ifMatch);
+            });
 
-
-    public static Task<HttpResponseMessage> PutDivulgacaoAsync(this ContextoDoEnvelopeFechado contexto, IReadOnlyList<string>? camposPublicos, string? justificativa, string? ifMatch) =>
+    public static Task<HttpResponseMessage> PutDivulgacaoAsync(this ContextoDoEnvelopeFechado contexto, IReadOnlyList<string>? camposPublicos, string? justificativa) =>
         contexto.EnviarAsync(
             HttpMethod.Put, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/divulgacao",
-            new { camposPublicos, justificativa }, ifMatch);
+            new { camposPublicos, justificativa });
 }

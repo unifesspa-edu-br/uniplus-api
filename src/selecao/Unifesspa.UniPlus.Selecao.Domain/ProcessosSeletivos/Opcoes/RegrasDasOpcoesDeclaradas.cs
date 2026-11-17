@@ -7,16 +7,15 @@ using Unifesspa.UniPlus.Regras.Services;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class RegrasDasOpcoesDeclaradas
 {
     internal static DomainError? ConferirSubstituicao(
-        EstadoDaConfiguracao estado, string fato, IReadOnlyList<OpcaoDeclaradaFato> opcoes, IReadOnlyCollection<string>? agregadosDoFato)
+        ConfiguracaoDeclarada configuracao, string fato, IReadOnlyList<OpcaoDeclaradaFato> opcoes, IReadOnlyCollection<string>? agregadosDoFato)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         if (AtendimentoEspecializado.GereOpcoesDoFato(fato))
         {
@@ -26,7 +25,7 @@ public static class RegrasDasOpcoesDeclaradas
         }
 
         // A edição do ENEM só tem sentido quando a classificação lê notas do ENEM do candidato.
-        if (string.Equals(fato, EdicaoDoEnem.Fato, StringComparison.Ordinal) && estado.Classificacao is not { BaseadoEmEnem: true })
+        if (string.Equals(fato, EdicaoDoEnem.Fato, StringComparison.Ordinal) && configuracao.Avaliacao.Classificacao is not { BaseadoEmEnem: true })
         {
             return new DomainError(
                 OpcaoDeclaradaFatoErrorCodes.EdicaoEnemForaDeProcessoEnem,
@@ -44,7 +43,7 @@ public static class RegrasDasOpcoesDeclaradas
             return new DomainError(OpcaoDeclaradaFatoErrorCodes.CodigoRepetido, "Cada opção do fato precisa de um código próprio.");
         }
 
-        return DeixariaCondicaoVivaSemOpcao(estado, fato, codigos, agregadosDoFato)
+        return DeixariaCondicaoVivaSemOpcao(configuracao, fato, codigos, agregadosDoFato)
             ? new DomainError(
                 OpcaoDeclaradaFatoErrorCodes.ReferenciadaPorExigenciaViva,
                 "Uma condição viva (exigência documental, pré-condição de campo ou regra de derivação) cita uma opção que deixaria de existir — ajuste ou remova a condição antes de redefinir as opções.")
@@ -52,9 +51,9 @@ public static class RegrasDasOpcoesDeclaradas
     }
 
     private static bool DeixariaCondicaoVivaSemOpcao(
-        EstadoDaConfiguracao estado, string fato, HashSet<string> codigos, IReadOnlyCollection<string>? agregadosDoFato) =>
-        ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, fato, codigos)
-        || (agregadosDoFato ?? []).Any(agregado => ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, agregado, codigos));
+        ConfiguracaoDeclarada configuracao, string fato, HashSet<string> codigos, IReadOnlyCollection<string>? agregadosDoFato) =>
+        ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(configuracao, fato, codigos)
+        || (agregadosDoFato ?? []).Any(agregado => ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(configuracao, agregado, codigos));
 
     /// <summary>A origem das opções de um campo coletado: a copiada do catálogo, salvo condição e recurso de atendimento, que são sempre do processo porque o atendimento especializado é o dono deles.</summary>
     public static OrigemValoresColeta OrigemDasOpcoes(FatoColetado fato)
@@ -65,17 +64,17 @@ public static class RegrasDasOpcoesDeclaradas
             : fato.OrigemValores;
     }
 
-    public static IReadOnlyList<OpcaoDoProcesso> OpcoesDoProcesso(EstadoDaConfiguracao estado, string fatoCodigo)
+    public static IReadOnlyList<OpcaoDoProcesso> OpcoesDoProcesso(ConfiguracaoDeclarada configuracao, string fatoCodigo)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentException.ThrowIfNullOrWhiteSpace(fatoCodigo);
 
         if (AtendimentoEspecializado.GereOpcoesDoFato(fatoCodigo))
         {
-            return estado.AtendimentoEspecializado?.OpcoesDoFato(fatoCodigo) ?? [];
+            return configuracao.Vagas.AtendimentoEspecializado?.OpcoesDoFato(fatoCodigo) ?? [];
         }
 
-        return [.. estado.OpcoesDeclaradas
+        return [.. configuracao.Coleta.OpcoesDeclaradas
             .Where(o => string.Equals(o.FatoCodigo, fatoCodigo, StringComparison.Ordinal))
             .OrderBy(static o => o.Ordem)
             .ThenBy(static o => o.Codigo, StringComparer.Ordinal)

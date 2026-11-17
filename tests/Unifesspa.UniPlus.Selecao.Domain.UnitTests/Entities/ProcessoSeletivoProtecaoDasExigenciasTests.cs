@@ -56,7 +56,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: inscricao);
         processo.DefinirItens([Fato(FatoSensivel, 0, "SENSIVEL")]).IsSuccess.Should().BeTrue();
         processo.DefinirDocumentosExigidos(
-            [.. exigencias.Select((e, i) => NoExigencia.CriarFolha(e(inscricao.Id), i).Value!)], PrecondicaoIfMatch.Ausente)
+            [.. exigencias.Select((e, i) => NoExigencia.CriarFolha(e(inscricao.Id), i).Value!)])
             .IsSuccess.Should().BeTrue();
         return processo;
     }
@@ -74,7 +74,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo, CadastrosDeTeste.Com(protecao: protecao));
 
     private static IEnumerable<string> VermelhosDoPainel(ProcessoSeletivo processo, ProtecaoVigenteDasExigencias? protecao) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(protecao: protecao))
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(protecao: protecao))
             .Where(i => !i.Ok).Select(i => i.Codigo);
 
     [Fact(DisplayName = "Exigência pessoal que comprova fato sensível é recusada, citando o tipo e o fato")]
@@ -87,7 +87,7 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         pendencia.Should().NotBeNull();
         pendencia!.Code.Should().Be(ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado);
         pendencia.Message.Should().Contain("ATESTADO_SIMPLES").And.Contain(FatoSensivel);
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
             .Should().Contain(i => !i.Ok && i.Codigo == "exigencia_menos_protegida_que_fato_comprovado");
     }
 
@@ -186,8 +186,8 @@ public sealed class ProcessoSeletivoProtecaoDasExigenciasTests
         Guid exigenciaId = processo.DocumentosExigidos.Single().Id;
         ProtecaoVigenteDasExigencias rebaixada = new(Catalogo, new Dictionary<Guid, ProtecaoDoDocumento> { [exigenciaId] = ProtecaoDoDocumentoDeTeste.De(ClassificacaoDeProtecao.Pessoal) }, new HashSet<string>(), new HashSet<Guid>());
 
-        Result<ConfiguracaoAptaACongelar> comRebaixada = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(protecao: rebaixada));
-        Result<ConfiguracaoAptaACongelar> comProtecaoDoCadastro = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(protecao: ComCatalogo));
+        Result<ConfiguracaoAptaACongelar> comRebaixada = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(protecao: rebaixada));
+        Result<ConfiguracaoAptaACongelar> comProtecaoDoCadastro = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(protecao: ComCatalogo));
 
         comRebaixada.Errors.Select(static causa => causa.Error.Code).Should().Contain(ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado);
         comProtecaoDoCadastro.Errors.Select(static causa => causa.Error.Code).Should().NotContain(ProcessoSeletivoErrorCodes.ExigenciaMenosProtegidaQueFatoComprovado);

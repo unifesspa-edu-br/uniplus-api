@@ -45,9 +45,10 @@ public sealed class FatoReclassificadoNaPublicacaoEndpointTests
 
         JsonElement[] erros = await ErrosDaRecusaAsync(resposta);
         erros.Select(static e => e.GetProperty("code").GetString()).Should().Equal(Enumerable.Repeat("uniplus.selecao.processo_seletivo.fato_coletado_nao_mais_declarado", 2));
-        erros.Select(static e => e.GetProperty("field").GetString()).Should().Equal(
-            $"formularios[INSCRICAO].itens[{await PosicaoDoItemAsync(processoId, item)}].fatoCodigo",
-            "formularios[INSCRICAO].grupos[0].subitens[0].fatoCodigo");
+        int posicaoDoItem = await PosicaoDoItemAsync(processoId, item);
+        erros.Select(static e => e.GetProperty("field").GetString()).Should().SatisfyRespectively(
+            campo => campo.Should().MatchRegex($@"^/formularios/\d+/itens/{posicaoDoItem}/fatoCodigo$"),
+            campo => campo.Should().MatchRegex(@"^/formularios/\d+/grupos/0/subitens/0/fatoCodigo$"));
     }
 
     private static (string Item, string Campo) CodigosDosFatos()

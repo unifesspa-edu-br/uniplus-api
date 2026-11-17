@@ -17,7 +17,7 @@ internal static class CongelamentoDeTeste
     public static Result<VersaoConfiguracao> Publicar(this ProcessoSeletivo processo, CenarioDeCongelamento cenario) =>
         Congelar(
             processo,
-            TransicoesDaVersao.ConferirEstadoParaPublicar(EstadoDaConfiguracao.De(processo)),
+            TransicoesDaVersao.ConferirEstadoParaPublicar(processo.Status),
             cenario,
             configuracao => processo.Publicar(Pedido(cenario, configuracao)));
 
@@ -25,19 +25,9 @@ internal static class CongelamentoDeTeste
         this ProcessoSeletivo processo, CenarioDeCongelamento cenario, VersaoConfiguracao versaoAtual, string motivo) =>
         Congelar(
             processo,
-            TransicoesDaVersao.ConferirEstadoParaRetificar(EstadoDaConfiguracao.De(processo), versaoAtual, motivo),
+            TransicoesDaVersao.ConferirEstadoParaRetificar(processo.Id, processo.Status, versaoAtual, motivo),
             cenario,
             configuracao => processo.Retificar(Pedido(cenario, configuracao), versaoAtual, motivo));
-
-    public static Result<VersaoConfiguracao> FecharRetificacao(
-        this ProcessoSeletivo processo, CenarioDeCongelamento cenario, VersaoConfiguracao versaoAtual, PrecondicaoIfMatch precondicao) =>
-        Congelar(
-            processo,
-            processo.Rascunho is { } sessao
-                ? TransicoesDaVersao.ConferirEstadoParaFechar(EstadoDaConfiguracao.De(processo), versaoAtual, sessao)
-                : Result.Success(),
-            cenario,
-            configuracao => processo.FecharRetificacao(Pedido(cenario, configuracao), versaoAtual, precondicao));
 
     // A ordem do congelamento: a conferência do estado da transição, depois a da configuração, e só então a transição, que
     // recebe a configuração apta.
@@ -52,7 +42,7 @@ internal static class CongelamentoDeTeste
             return Result<VersaoConfiguracao>.ValidationFailure(doEstado.Errors);
         }
 
-        Result<ConfiguracaoAptaACongelar> daConfiguracao = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDe(processo, cenario));
+        Result<ConfiguracaoAptaACongelar> daConfiguracao = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDe(processo, cenario));
 
         return daConfiguracao.IsFailure
             ? Result<VersaoConfiguracao>.ValidationFailure(daConfiguracao.Errors)

@@ -23,12 +23,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// O pareamento entre preliminar e definitivo vem de <see cref="PreliminaresDaMateria"/>, que o cronograma também
 /// consulta para liberar o definitivo. O item se identifica, na versão publicada e no cronograma novo, por
 /// <see cref="IdentidadeDoItemDoEdital"/> (lugar, tipo de ato e papel), e não pelo <c>Id</c> do produto, que muda
-/// sem que o ciclo mude quando o descarte de uma sessão recria os produtos. As recusas se acumulam (ADR-0125), uma
-/// por matéria desfeita, em ordem ordinal do código do tipo de ato.
+/// sem que o ciclo mude quando o cronograma recria os produtos. As recusas se acumulam (ADR-0125), uma
+/// por matéria desfeita, em ordem ordinal do código do tipo de ato, e apontam as fases do cronograma, onde o preliminar e o
+/// definitivo se mantêm.
 /// </para>
 /// </remarks>
 public static class ConferenciaDoCicloRecursalAberto
 {
+    private const string FasesNoDocumento = "cronograma.fases";
+
     /// <param name="fasesPublicadas">As fases da versão publicada vigente.</param>
     /// <param name="etapasPublicadas">As etapas da versão publicada vigente.</param>
     /// <param name="fasesNovas">As fases do cronograma que a retificação propõe.</param>
@@ -103,7 +106,7 @@ public static class ConferenciaDoCicloRecursalAberto
     }
 
     private static FieldError Recusa(string atoCodigo) => new(
-        $"cronograma.ciclosRecursais[{atoCodigo}]",
+        FasesNoDocumento,
         new DomainError(
             ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto,
             $"A retificação desfaz o ciclo de recurso da matéria '{atoCodigo}': o resultado preliminar já foi publicado, o definitivo ainda não, "

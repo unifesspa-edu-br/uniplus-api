@@ -3,10 +3,9 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Contratos;
 using System.Text.Json.Nodes;
 
 /// <summary>
-/// Percorre o esquema publicado do documento da configuração, segmento a segmento, para saber se um caminho de campo existe nele:
-/// as propriedades (inclusive as que vêm de <c>allOf</c>, <c>anyOf</c> e <c>oneOf</c>), o item de cada lista ou o valor de cada
-/// mapa quando o segmento tem colchete, seja qual for o índice ou a chave, e as referências internas e para outro arquivo. O
-/// contrato é lido como dado.
+/// Percorre o esquema publicado do documento da configuração, segmento a segmento, para saber se um ponteiro JSON (RFC 6901) existe
+/// nele: as propriedades (inclusive as que vêm de <c>allOf</c>, <c>anyOf</c> e <c>oneOf</c>), o item de cada lista quando o
+/// segmento é numérico, seja qual for a posição, e as referências internas e para outro arquivo. O contrato é lido como dado.
 /// </summary>
 internal sealed class CaminhosDoDocumentoNoEsquema
 {
@@ -22,14 +21,14 @@ internal sealed class CaminhosDoDocumentoNoEsquema
 
     internal CaminhosDoDocumentoNoEsquema(string diretorio) => _diretorio = diretorio;
 
-    /// <summary>O caminho percorrido até o primeiro segmento que o esquema não tem, esse incluído; nulo quando o caminho inteiro existe.</summary>
-    internal string? PrimeiroSegmentoAusente(string caminho)
+    /// <summary>O ponteiro percorrido até o primeiro segmento que o esquema não tem, esse incluído; nulo quando o ponteiro inteiro existe.</summary>
+    internal string? PrimeiroSegmentoAusente(string ponteiro)
     {
         List<NoDoEsquema> atuais = [Resolver(new NoDoEsquema(Raiz(Documento), Documento))];
         string percorrido = string.Empty;
-        foreach (SegmentoDoCaminho segmento in Segmentos(caminho))
+        foreach (SegmentoDoCaminho segmento in Segmentos(ponteiro))
         {
-            percorrido += segmento.Texto;
+            percorrido += "/" + segmento.Texto;
             atuais = [.. atuais.SelectMany(atual => Avancar(atual, segmento))];
             if (atuais.Count == 0)
             {
@@ -43,10 +42,10 @@ internal sealed class CaminhosDoDocumentoNoEsquema
     private IEnumerable<NoDoEsquema> Avancar(NoDoEsquema atual, SegmentoDoCaminho segmento) =>
         Fragmentos(atual).Select(fragmento => Filho(fragmento, segmento)).OfType<NoDoEsquema>();
 
-    // O segmento com colchete é o item da lista ou o valor do mapa, qualquer que seja o índice ou a chave.
+    // O segmento numérico é o item da lista ou o valor do mapa, qualquer que seja a posição.
     private NoDoEsquema? Filho(NoDoEsquema fragmento, SegmentoDoCaminho segmento)
     {
-        JsonNode? filho = segmento.Colchete
+        JsonNode? filho = segmento.Indice
             ? fragmento.Esquema["items"] ?? fragmento.Esquema["additionalProperties"]
             : fragmento.Esquema["properties"]?[segmento.Nome];
 
@@ -89,28 +88,20 @@ internal sealed class CaminhosDoDocumentoNoEsquema
         return raiz;
     }
 
-    private static IEnumerable<SegmentoDoCaminho> Segmentos(string caminho)
+    private static IEnumerable<SegmentoDoCaminho> Segmentos(string ponteiro)
     {
-        int posicao = 0;
-        while (posicao < caminho.Length)
+        if (!ponteiro.StartsWith('/'))
         {
-            int fim = caminho[posicao] == '['
-                ? caminho.IndexOf(']', posicao) + 1
-                : ProximoSeparador(caminho, posicao);
-            string texto = caminho[posicao..fim];
-            yield return new SegmentoDoCaminho(texto.Trim('.'), caminho[posicao] == '[', texto);
-            posicao = fim;
+            throw new ArgumentException($"O ponteiro '{ponteiro}' não começa na raiz do documento.", nameof(ponteiro));
         }
-    }
 
-    private static int ProximoSeparador(string caminho, int posicao)
-    {
-        int fim = caminho.IndexOfAny(['.', '['], posicao + 1);
-
-        return fim < 0 ? caminho.Length : fim;
+        return ponteiro.Split('/')[1..].Select(static texto => new SegmentoDoCaminho(
+            texto.Replace("~1", "/", StringComparison.Ordinal).Replace("~0", "~", StringComparison.Ordinal),
+            texto.Length > 0 && texto.All(char.IsAsciiDigit),
+            texto));
     }
 
     private sealed record NoDoEsquema(JsonNode Esquema, string Arquivo);
 
-    private sealed record SegmentoDoCaminho(string Nome, bool Colchete, string Texto);
+    private sealed record SegmentoDoCaminho(string Nome, bool Indice, string Texto);
 }

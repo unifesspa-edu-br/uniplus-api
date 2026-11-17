@@ -127,6 +127,6 @@ public sealed class MinimoDeIntegrantesNaPublicacaoEndpointTests
                 FormaDeAvaliacao: FormaDeAvaliacao.Humana, RegraConsolidacao: consolidacao, EscalaDeAtendimento: null)).Value!;
         etapa.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes, quorum: 2))]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
     }
 }

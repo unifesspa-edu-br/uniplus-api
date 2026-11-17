@@ -11,14 +11,14 @@ using Enums;
 /// <remarks>
 /// <para>
 /// O <c>Id</c> do produto não serve a isso: ele é identidade dentro de uma versão, e muda sem que o item
-/// mude quando o descarte de uma sessão de retificação recria os produtos de uma fase, ou quando a sessão
-/// remove o item e o declara de novo. O ato publicado, que precisa reconhecer o mesmo item na versão
+/// mude quando a redefinição do cronograma recria os produtos de uma fase, ou quando o item
+/// é removido e declarado de novo. O ato publicado, que precisa reconhecer o mesmo item na versão
 /// seguinte, guarda esta identidade.
 /// </para>
 /// <para>
 /// O lugar é a fase canônica de origem da fase, única no cronograma, ou o <c>Id</c> da etapa, que a
-/// restauração da configuração preserva. O nome da etapa e o código da fase são rótulos editoriais; a
-/// ordem muda quando a sessão desloca as fases.
+/// reidratação da configuração preserva. O nome da etapa e o código da fase são rótulos editoriais; a
+/// ordem muda quando o cronograma desloca as fases.
 /// </para>
 /// </remarks>
 public sealed record IdentidadeDoItemDoEdital

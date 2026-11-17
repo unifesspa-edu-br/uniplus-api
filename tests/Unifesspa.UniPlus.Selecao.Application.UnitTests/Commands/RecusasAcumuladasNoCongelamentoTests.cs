@@ -81,7 +81,7 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
     public async Task FatoNaoMaisDeclarado_RecusaSemAsConferenciasQueLeriamOCatalogo()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Fato reclassificado");
-        processo.DefinirItens([ItemDaModalidade()], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([ItemDaModalidade()]).IsSuccess.Should().BeTrue();
         ServicosDoCongelamentoDeTeste servicos = ServicosDoCongelamentoDeTeste.Para(processo)
             .ComCatalogoDeFatos(CatalogoComAModalidadeDerivada());
 
@@ -95,7 +95,6 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
     [Theory(DisplayName = "A proteção pendente não impede conferir a configuração: a causa da aprovação sai na frente da do identificador ausente, nas três operações")]
     [InlineData(OperacaoQueCongela.Publicar)]
     [InlineData(OperacaoQueCongela.Retificar)]
-    [InlineData(OperacaoQueCongela.FecharRetificacao)]
     public async Task ProtecaoPendenteEIdentificadorAusente_AcumulamNaOrdem(OperacaoQueCongela operacao)
     {
         CenarioDeRecusaNoCongelamento cenario = Para(operacao).Com(DefeitoDoCongelamento.ProtecaoPendente);
@@ -104,8 +103,8 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
         (Result resposta, IEnumerable<object> eventos) = await cenario.ExecutarAsync();
 
         resposta.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            ("documentosExigidos.LAUDO_MEDICO", CodigoDa(DefeitoDoCongelamento.ProtecaoPendente)),
-            ("identificacao.identificadorLegivel", "ProcessoSeletivo.IdentificadorLegivelAusente"));
+            (null, CodigoDa(DefeitoDoCongelamento.ProtecaoPendente)),
+            ("/identificacao/identificadorLegivel", "ProcessoSeletivo.IdentificadorLegivelAusente"));
         eventos.Should().BeEmpty();
         await cenario.Servicos.NadaFoiGravadoAsync();
     }
@@ -113,7 +112,6 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
     [Theory(DisplayName = "O fuso institucional ausente recusa com erro único do ambiente, ainda que o catálogo também recuse, sem canonicalizar nem gravar")]
     [InlineData(OperacaoQueCongela.Publicar)]
     [InlineData(OperacaoQueCongela.Retificar)]
-    [InlineData(OperacaoQueCongela.FecharRetificacao)]
     public async Task FusoAusente_RecusaSozinho(OperacaoQueCongela operacao)
     {
         CenarioDeRecusaNoCongelamento cenario = Para(operacao).Com(DefeitoDoCongelamento.ProtecaoPendente);

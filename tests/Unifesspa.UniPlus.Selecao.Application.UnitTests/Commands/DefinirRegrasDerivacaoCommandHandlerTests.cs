@@ -48,7 +48,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         return mocks;
     }
 
-    private static Task<Result<MutacaoAceita>> HandleAsync(Mocks mocks, DefinirRegrasDerivacaoCommand command) =>
+    private static Task<Result> HandleAsync(Mocks mocks, DefinirRegrasDerivacaoCommand command) =>
         DefinirRegrasDerivacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
 
@@ -74,7 +74,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoBase();
 
-        processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!])
             .IsSuccess.Should().BeTrue();
 
         ReferenciaRegra regraDistribuicao = ReferenciaRegra.De(
@@ -97,7 +97,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraDistribuicao, Modalidades = [ac] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -121,7 +121,7 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         Guid processoId = Guid.CreateVersion7();
         Mocks mocks = NovosMocks(processo: null, processoId);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processoId, [], PrecondicaoIfMatch.Ausente));
+        Result resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processoId, []));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -138,12 +138,11 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
             ConfigDerivado(
                 new RegraDerivacaoInput(0, "AC", null),
                 new RegraDerivacaoInput(1, "AC", [[Condicao("COR_RACA", "IGUAL", "PRETA")]])),
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
-        resultado.Value!.ETag.Should().BeNull("em rascunho não há sessão editorial nem ETag");
         processo.RegrasDerivacao.Should().ContainSingle(c => c.CodigoFato == Derivado);
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -154,9 +153,9 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         ProcessoSeletivo processo = ProcessoBase();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [new ConfiguracaoDerivacaoInput("BOGUS", [new RegraDerivacaoInput(0, "AC", null)])], PrecondicaoIfMatch.Ausente);
+            [new ConfiguracaoDerivacaoInput("BOGUS", [new RegraDerivacaoInput(0, "AC", null)])]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDerivacaoFato.FatoDesconhecido");
@@ -168,9 +167,9 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         ProcessoSeletivo processo = ProcessoBase();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [new ConfiguracaoDerivacaoInput("COR_RACA", [new RegraDerivacaoInput(0, "PRETA", null)])], PrecondicaoIfMatch.Ausente);
+            [new ConfiguracaoDerivacaoInput("COR_RACA", [new RegraDerivacaoInput(0, "PRETA", null)])]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ConfiguracaoDerivacaoFato.FatoNaoDerivavel");
@@ -192,10 +191,9 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         ]));
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
             [new ConfiguracaoDerivacaoInput("INDIGENA_DECLARADO",
-                [new RegraDerivacaoInput(0, contribui, [[Condicao("COR_RACA", "IGUAL", "INDIGENA")]])])],
-            PrecondicaoIfMatch.Ausente);
+                [new RegraDerivacaoInput(0, contribui, [[Condicao("COR_RACA", "IGUAL", "INDIGENA")]])])]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         (resultado.Error?.Code).Should().Be(recusa);
     }
@@ -217,9 +215,9 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
                 "GLOBAL", Ativo: true, ClassificacaoProtecao: "PESSOAL", HipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, FinalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, ProtecaoAprovada: true),
         ]));
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [new ConfiguracaoDerivacaoInput("FORMA_CONCLUSAO", [new RegraDerivacaoInput(0, contribui, null)])], PrecondicaoIfMatch.Ausente);
+            [new ConfiguracaoDerivacaoInput("FORMA_CONCLUSAO", [new RegraDerivacaoInput(0, contribui, null)])]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         if (recusa is null)
         {
@@ -239,8 +237,8 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         ProcessoSeletivo processo = ProcessoComModalidadeAcEColeta();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processo.Id,
-            [new ConfiguracaoDerivacaoInput(codigoFato, [new RegraDerivacaoInput(0, "AC", null)])], PrecondicaoIfMatch.Ausente));
+        Result resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processo.Id,
+            [new ConfiguracaoDerivacaoInput(codigoFato, [new RegraDerivacaoInput(0, "AC", null)])]));
 
         resultado.IsFailure.Should().BeTrue("as duas saem das modalidades ofertadas");
         resultado.Errors.Should().ContainSingle(e => e.Field == "configuracoes[0].codigoFato")
@@ -252,21 +250,20 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
     public async Task Handle_CitaOEgressoSuprido_Aceita()
     {
         ProcessoSeletivo processo = ProcessoBase();
-        processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([FatoColetado.Criar("COR_RACA", 0, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!])
             .IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
                 new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [ModalidadeDe("AC", NaturezaLegalModalidade.Ampla), ModalidadeDe("LI_EP", NaturezaLegalModalidade.CotaReservada)] },
                 new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!],
-            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         processo.RegrasDerivacao.Should().BeEmpty("o processo não configura o egresso");
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processo.Id,
+        Result resultado = await HandleAsync(mocks, new DefinirRegrasDerivacaoCommand(processo.Id,
             [ConfigDerivado(
                 new RegraDerivacaoInput(0, "AC", null),
-                new RegraDerivacaoInput(1, "AC_PCD", [[Condicao(OrigemEscolar.FatoEgresso, "IGUAL", true)]]))],
-            PrecondicaoIfMatch.Ausente));
+                new RegraDerivacaoInput(1, "AC_PCD", [[Condicao(OrigemEscolar.FatoEgresso, "IGUAL", true)]]))]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -279,9 +276,9 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
         // BAIXA_RENDA existe no vocabulário mas não é coletado nem derivado neste processo.
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [ConfigDerivado(new RegraDerivacaoInput(0, "AC", [[Condicao("BAIXA_RENDA", "IGUAL", true)]]))], PrecondicaoIfMatch.Ausente);
+            [ConfigDerivado(new RegraDerivacaoInput(0, "AC", [[Condicao("BAIXA_RENDA", "IGUAL", true)]]))]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.FatoNaoColetadoPeloProcesso");
@@ -297,9 +294,9 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
         [
             new ConfiguracaoDerivacaoInput("", [new RegraDerivacaoInput(0, "AC", null)]),
             ConfigDerivado(new RegraDerivacaoInput(-1, "", null)),
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
@@ -319,9 +316,9 @@ public sealed class DefinirRegrasDerivacaoCommandHandlerTests
 
         // COR_RACA é categórico: MAIOR_IGUAL não se aplica.
         DefinirRegrasDerivacaoCommand command = new(processo.Id,
-            [ConfigDerivado(new RegraDerivacaoInput(0, "AC", [[Condicao("COR_RACA", "MAIOR_IGUAL", "PRETA")]]))], PrecondicaoIfMatch.Ausente);
+            [ConfigDerivado(new RegraDerivacaoInput(0, "AC", [[Condicao("COR_RACA", "MAIOR_IGUAL", "PRETA")]]))]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.OperadorIncompativelComDominio");

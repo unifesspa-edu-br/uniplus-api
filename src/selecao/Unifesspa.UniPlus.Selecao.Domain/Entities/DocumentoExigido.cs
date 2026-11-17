@@ -298,10 +298,8 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
     /// <summary>
     /// Reidrata uma exigência a partir de uma <see cref="VersaoConfiguracao"/> congelada,
     /// <b>preservando o <see cref="EntityBase.Id"/></b> — que <see cref="Criar"/> não
-    /// aceita, por decisão (Story #554, PR #903, CA-09). Diferente das demais entidades-filhas
-    /// do agregado (ADR-0110 D2 — só <see cref="EtapaProcesso.Id"/> era preservado, porque
-    /// só ele era referenciado por outro bloco do envelope), <c>DocumentoExigido.Id</c>
-    /// passa a ser o segundo: é o <c>exigenciaId</c> que o resolvedor de exigências
+    /// aceita, por decisão (Story #554, PR #903, CA-09). Como <see cref="EtapaProcesso.Id"/>,
+    /// <c>DocumentoExigido.Id</c> é preservado: é o <c>exigenciaId</c> que o resolvedor de exigências
     /// documentais usa para correlacionar uma apresentação à exigência certa — sem
     /// preservá-lo, cada retificação trocaria silenciosamente a identidade de exigências
     /// inalteradas, e apresentações já vinculadas ao <c>exigenciaId</c> antigo deixariam de
@@ -412,19 +410,6 @@ public sealed class DocumentoExigido : EntityBase, IParteDoProcesso
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) =>
         ProcessoSeletivoId = processoSeletivoId;
-
-    /// <summary>
-    /// Corrige o ponteiro para a fase quando a reconciliação de <c>AplicarGrafo</c>
-    /// (restauração da configuração congelada) reusa a instância VIVA de
-    /// <see cref="Entities.FaseCronograma"/> em vez da decodificada (Ordem, não Id — ver
-    /// <see cref="Entities.FaseCronograma.AtualizarDe"/>). Sem este remapeamento, um
-    /// documento congelado com <see cref="ExigidoNaFaseId"/> apontando para o Id FROZEN da
-    /// fase (agora trocado pelo Id da instância viva) ficaria referenciando uma fase
-    /// ausente de <c>CronogramaFases</c> após a restauração (Story #554, PR #903, achado
-    /// de revisão).
-    /// </summary>
-    internal void RemapearFase(Guid exigidoNaFaseId) =>
-        ExigidoNaFaseId = exigidoNaFaseId;
 
     /// <summary>
     /// Determina se a exigência "conta" para efeito de resultado — obrigatória ou com

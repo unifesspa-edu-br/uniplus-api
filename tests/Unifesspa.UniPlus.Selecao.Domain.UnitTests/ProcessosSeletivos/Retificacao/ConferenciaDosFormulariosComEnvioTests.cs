@@ -18,13 +18,13 @@ public sealed class ConferenciaDosFormulariosComEnvioTests
         FormulariosComEnvio = new HashSet<CodigoDoFormulario>(codigos.Select(Codigo)),
     };
 
-    [Fact(DisplayName = "O formulário com envio que sai do documento é recusado, no campo dele")]
+    [Fact(DisplayName = "O formulário com envio que sai do documento é recusado, apontando a coleção dos formulários")]
     public void FormularioComEnvioRetirado_Recusa()
     {
         IReadOnlyList<FieldError> recusas = ConferenciaDosFormulariosComEnvio.Conferir([Codigo("HABILITACAO")], ComEnvio("INSCRICAO", "HABILITACAO"));
 
         FieldError recusa = recusas.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be("formularios[INSCRICAO]");
+        recusa.Field.Should().Be("formularios");
         recusa.Error.Code.Should().Be(RetificacaoErrorCodes.FormularioComEnvioNaoSai);
     }
 
@@ -32,7 +32,7 @@ public sealed class ConferenciaDosFormulariosComEnvioTests
     public void FormulariosComEnvioRetirados_Acumulam()
     {
         ConferenciaDosFormulariosComEnvio.Conferir([], ComEnvio("INSCRICAO", "ISENCAO", "HABILITACAO"))
-            .Select(static r => r.Field).Should().Equal("formularios[HABILITACAO]", "formularios[INSCRICAO]", "formularios[ISENCAO]");
+            .Select(static r => r.Field).Should().Equal("formularios", "formularios", "formularios");
     }
 
     [Fact(DisplayName = "O formulário com envio mantido, e o sem envio retirado, não são recusados")]

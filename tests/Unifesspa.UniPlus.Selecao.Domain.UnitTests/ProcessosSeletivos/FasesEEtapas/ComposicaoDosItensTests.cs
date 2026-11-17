@@ -24,7 +24,7 @@ public sealed class ComposicaoDosItensTests
     private static readonly DateTimeOffset Inicio = new(2026, 3, 2, 12, 0, 0, TimeSpan.Zero);
 
     private static IReadOnlyList<ItemConformidade> Itens(ProcessoSeletivo processo) =>
-        ItensDoCronograma.Avaliar(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao);
+        ItensDoCronograma.Avaliar(processo.Declaracao(), CadastrosDeTeste.Padrao);
 
     private static string[] Pendentes(IReadOnlyList<ItemConformidade> itens) => [.. itens.Where(static item => !item.Ok).Select(static item => item.Codigo)];
 
@@ -41,7 +41,7 @@ public sealed class ComposicaoDosItensTests
     }
 
     private static EtapaProcesso EtapaCarregada(string nome, int ordem, string faseCodigo, CaraterEtapa carater = CaraterEtapa.Classificatoria, decimal? peso = 1m) =>
-        ApoioProcessoSeletivoRestaurarConfiguracao.EtapaCongeladaDeProvaObjetiva(Guid.CreateVersion7(), nome, ordem, faseCodigo, peso ?? 0m, carater: carater);
+        ApoioDeEtapaReidratada.DeProvaObjetiva(Guid.CreateVersion7(), nome, ordem, faseCodigo, peso ?? 0m, carater: carater);
 
     [Fact(DisplayName = "O processo conforme tem os vinte e seis itens do cronograma, todos conformes")]
     public void Itens_ProcessoConforme_TodosVerdes()

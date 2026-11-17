@@ -58,9 +58,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirEtapas(
             [EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Curinga)
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([]).IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Cronograma: fase de avaliação sem etapa pontuada — item vermelho e Publicar recusa com AvaliacaoSemEtapa")]
@@ -74,7 +74,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         // PendenciaDoCronograma descreve como "defesa em profundidade".
         processo.DefinirCronogramaFases(
             [FaseDeResultadoFinal()],
-            [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            []).IsSuccess.Should().BeTrue();
         DefinirEDepoisRemoverAEtapaPontuada(processo);
 
         SoEstesItensVermelhos(processo, "cronograma_fase_agrupadora_sem_etapa_pontuada");
@@ -89,7 +89,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         processo.DefinirEtapas(
             [EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Curinga)
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!])
             .IsSuccess.Should().BeTrue();
 
         // Sem saber em que fase a etapa acontece, não se sabe se a fase que agrupa etapas tem etapa nela: o item fica indeterminado, e vermelho.
@@ -105,10 +105,10 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar(
                 "CEPS",
                 "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas([DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportada()).IsSuccess.Should().BeTrue();
         return processo;
     }
 
@@ -116,7 +116,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
     public void Cronograma_InscricaoPropriaSemFaseDeColeta()
     {
         ProcessoSeletivo processo = NovoProcessoDeInscricaoPropriaSemCronograma();
-        processo.DefinirCronogramaFases([FaseBase(coletaInscricao: false)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseBase(coletaInscricao: false)], []).IsSuccess.Should().BeTrue();
         DeclararTaxaSemCobranca(processo);
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
@@ -132,7 +132,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
 
         // A fase coleta inscrição e é NA_EXECUCAO, então a janela é opcional para o cadastro (§3.2)
         // — mas não para publicar: é dela que o Edital tira o prazo (issue #1350).
-        processo.DefinirCronogramaFases([FaseBase(coletaInscricao: true)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseBase(coletaInscricao: true)], []).IsSuccess.Should().BeTrue();
         DeclararTaxaSemCobranca(processo);
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
@@ -155,7 +155,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         FaseCronograma habilitacao = FaseDeHabilitacao();
 
         // O rascunho aceita a fase ainda sem unidade; só a publicação a exige.
-        processo.DefinirCronogramaFases([FaseBase(), habilitacao], [], PrecondicaoIfMatch.Curinga)
+        processo.DefinirCronogramaFases([FaseBase(), habilitacao], [])
             .IsSuccess.Should().BeTrue();
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
@@ -180,9 +180,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         ProcessoSeletivo processo = ProcessoConforme();
         processo.DefinirCronogramaFases(
             [FaseDeMatricula()],
-            [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            []).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().ContainSingle(i => !i.Ok)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().ContainSingle(i => !i.Ok)
             .Which.Codigo.Should().Be("cronograma_vagas_sem_fase_que_produz_resultado");
 
         ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.VagasSemFaseQueProduzResultado");

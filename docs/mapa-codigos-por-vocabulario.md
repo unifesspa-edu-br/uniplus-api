@@ -264,7 +264,6 @@ Ocorrências por arquivo de teste, com as linhas e a ação. `Habilitacao` como 
 | `Selecao.Application.UnitTests/Commands/PublicarProdutoDoEditalCommandHandlerTests.cs` | fase-HOMOLOGACAO | 79,118,127,136,150,163,180,199,209,220,261,271,283,303,318 | renomear |
 | `Selecao.Application.UnitTests/Commands/DefinirDocumentosExigidosCommandHandlerTests.cs` | fase-HOMOLOGACAO | 1021,1028,1032,1047,1052,1062,1085,1087 | renomear |
 | `Selecao.Application.UnitTests/Commands/DefinirDocumentosExigidosCommandHandlerTests.cs` | fase-HABILITACAO | 1107,1108,1118,1145 | manter (ponto em aberto) |
-| `Selecao.Application.UnitTests/Commands/FecharRetificacaoUnidadeDeFaseIniciadaTests.cs` | fase-HABILITACAO | 95 | manter (ponto em aberto) |
 | `Selecao.Application.UnitTests/Services/ProjecaoDaAvaliacaoDaInscricaoTests.cs` | fase-HABILITACAO | 28,47,63,94 | manter (ponto em aberto) |
 | `Configuracao.Domain.UnitTests/Entities/PrecedenciaFaseTests.cs` | fase-HOMOLOGACAO | 20,33,37,86,160,163,172,185,188,197,198,210,211,224,248,255 | renomear |
 | `Configuracao.Domain.UnitTests/Entities/PrecedenciaFaseTests.cs` | fase-HABILITACAO | 227,228 | manter (ponto em aberto) |

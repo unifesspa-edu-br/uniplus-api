@@ -46,5 +46,5 @@ public sealed class PreparacaoDoDocumentoDoRascunho(LeituraDoDocumentoDaConfigur
             : Result<DocumentoPreparado>.Success(new DocumentoPreparado(documento, codigoDaUnidade));
 
     private static IReadOnlyList<FieldError> NoPonteiroDoDocumento(IReadOnlyList<FieldError> erros) =>
-        [.. erros.Select(static erro => new FieldError(erro.Field == nameof(DocumentoDoRascunho.Nome) ? PonteiroDoNome : string.Empty, erro.Error))];
+        [.. erros.Select(static erro => new FieldError(erro.Field == nameof(DocumentoDoRascunho.Nome) ? PonteiroDoNome : null, erro.Error))];
 }

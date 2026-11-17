@@ -50,7 +50,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
         FatoColetado corRaca = FatoColetado.Criar("COR_RACA", 1, "Cor ou raça", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca,
             [Precondicao(0, "BAIXA_RENDA", Operador.Igual, true)], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         // Passa fora de ordem de propósito — a projeção é quem ordena.
-        processo.DefinirItens([corRaca, baixaRenda], PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([corRaca, baixaRenda], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         ProcessoSeletivoDto dto = await ProjetarAsync(processo);
         IReadOnlyList<FatoColetadoDto> fatos = dto.Formularios.Should().ContainSingle().Which.FatosColetados;
@@ -80,7 +80,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerColetaDeFatosTests
             [CondicaoRegra(0, "COR_RACA", Operador.Igual, "PRETA")]).Value!;
         // Regras fora de ordem — a projeção ordena por Ordem.
         ConfiguracaoDerivacaoFato config = ConfiguracaoDerivacaoFato.Criar("REGIME_DE_VAGA", [condicional, ancora]).Value!;
-        processo.DefinirRegrasDerivacao([config], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([config]).IsSuccess.Should().BeTrue();
 
         ProcessoSeletivoDto dto = await ProjetarAsync(processo);
 

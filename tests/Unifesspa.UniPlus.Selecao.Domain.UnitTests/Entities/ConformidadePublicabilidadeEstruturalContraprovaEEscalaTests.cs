@@ -32,13 +32,13 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     public void Contraprova_FatoColetadoCondicaoAtendimentoComOferta_ChecklistVerde()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirAtendimentoEspecializado(OfertaComCondicaoPcd(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(OfertaComCondicaoPcd()).IsSuccess.Should().BeTrue();
         FatoColetado fato = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Você se enquadra em alguma condição de atendimento?",
             TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().Contain(
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().Contain(
             i => i.Codigo == "fato_coletavel_sem_valores_ofertados" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -56,7 +56,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
             TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
         processo.DefinirItensComFaseDeInscricao([fato]).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().Contain(
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().Contain(
             i => i.Codigo == "fato_coletavel_sem_valores_ofertados" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
@@ -84,10 +84,10 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     public void Contraprova_SemGatilhoPorFaixaEtaria_ChecklistVerde()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirDocumentosExigidos([ExigenciaGeralDeIdentidade(processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([ExigenciaGeralDeIdentidade(processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id)])
             .IsSuccess.Should().BeTrue();
 
-        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao);
+        IReadOnlyList<ItemConformidade> checklist = ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao);
         foreach (string item in ItensDeReferenciaTemporal)
         {
             checklist.Should().Contain(i => i.Codigo == item && i.Ok, $"sem gatilho por FAIXA_ETARIA — \"{item}\" não pode ficar vermelho");
@@ -156,7 +156,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     public void ContagemDePrazos_AlgoritmoNaoDeclarado()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirCronogramaFases([FaseComRecurso(), FaseFinal(2)], [], PrecondicaoIfMatch.Curinga)
+        processo.DefinirCronogramaFases([FaseComRecurso(), FaseFinal(2)], [])
             .IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(processo, ComCalendario(), "algoritmo_contagem_prazo_nao_declarado");
@@ -223,9 +223,9 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     private static ProcessoSeletivo ProcessoComContagemETaxaPendentes()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirCronogramaFases([FaseComRecurso(), FaseFinal(2)], [], PrecondicaoIfMatch.Curinga)
+        processo.DefinirCronogramaFases([FaseComRecurso(), FaseFinal(2)], [])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirTaxaInscricao(null!, PrecondicaoIfMatch.Curinga);
+        processo.DefinirTaxaInscricao(null!);
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         return processo;
@@ -236,7 +236,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     {
         ProcessoSeletivo processo = ProcessoComContagemETaxaPendentes();
 
-        string[] vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(ComCalendario())).Where(static i => !i.Ok).Select(static i => i.Codigo)];
+        string[] vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(ComCalendario())).Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
         // Equal, não BeEquivalentTo: aqui a ORDEM é o que está sendo provado.
         vermelhos.Should().Equal(
@@ -270,7 +270,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     {
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica), OfertaAmpla(5, GrupoHumanisticaI)]);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Select(static i => i.Codigo).Should().Contain(
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Select(static i => i.Codigo).Should().Contain(
             ["classificacao_resolucao_peso_area_enem_ausente", "distribuicao_vagas_oferta_sem_grupo_area_enem", "classificacao_grupo_area_enem_da_oferta_fora_do_quadro", "desempate_area_enem_sem_quadro"],
             "a exigência existe, e o item existe com ela; o do desempate sem quadro some só quando a resolução está pendente");
         SoEstesItensVermelhos(processo);
@@ -289,8 +289,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
                     new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "NOTA_ENEM", "Nota do ENEM", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: true).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                     new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
                 EtapaDeProvaObjetiva("Entrevista", CaraterEtapa.Classificatoria, 2, 1m, null, "RESULTADO_FINAL"),
-            ],
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            ]).IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(processo);
 
@@ -313,7 +312,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     public void EscalaDaNotaFinal_CalculoLocalSemEscala_Recusa()
     {
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica)]);
-        processo.DefinirClassificacao(ClassificacaoLocalSemEscala(), PrecondicaoIfMatch.Curinga)
+        processo.DefinirClassificacao(ClassificacaoLocalSemEscala())
             .IsSuccess.Should().BeTrue("o rascunho aceita a classificação sem a escala");
 
         SoEstesItensVermelhos(processo, "classificacao_escala_nota_final_nao_declarada");
@@ -330,7 +329,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
             .Select(static i => i.Codigo).Should().NotContain("classificacao_escala_nota_final_nao_declarada");
     }
 }

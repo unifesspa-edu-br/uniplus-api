@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Bancas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -23,12 +24,22 @@ public sealed record CronogramaDoProcesso
     public IReadOnlyList<FaseDeclarada> Fases { get; }
 
     /// <summary>O cronograma das fases vivas, cada uma lida como declarou: as recusas do estado carregado do banco ficam à vista.</summary>
-    public static CronogramaDoProcesso Do(IEnumerable<FaseCronograma> fases)
+    public static CronogramaDoProcesso Do(IEnumerable<FaseCronograma> fases) => Do(fases, OrigemNoDocumento.Identidade);
+
+    /// <summary>
+    /// O cronograma das fases, na ordem canônica, lido contra a origem do documento: a lista de uma fase com parte recusada pela
+    /// leitura fica sem julgar nas regras que a quantificam.
+    /// </summary>
+    public static CronogramaDoProcesso Do(IEnumerable<FaseCronograma> fases, OrigemNoDocumento origem)
     {
         ArgumentNullException.ThrowIfNull(fases);
+        ArgumentNullException.ThrowIfNull(origem);
 
-        return new([.. fases.Select(static fase => fase.Declaracao())]);
+        return new([.. fases.Select((fase, posicao) => fase.Declaracao(origem.ColecoesRecusadasDe($"fases[{posicao}]")))]);
     }
+
+    /// <summary>Se alguma fase tem parte recusada na lista dos produtos: o que se conclui da publicação de resultado de todas fica sem julgar.</summary>
+    public bool ProdutosComParteRecusadaEmAlgumaFase => Fases.Any(static fase => fase.ParteRecusadaEm(FaseDeclarada.ListaDosProdutos));
 
     /// <summary>A fase de menor ordem entre as que coletam inscrição: a que ancora o período que o edital publica.</summary>
     public FaseDeclarada? FaseQueAncoraOPeriodoDeInscricao =>
@@ -124,7 +135,7 @@ public sealed record CronogramaDoProcesso
         "cronograma_vagas_sem_fase_que_produz_resultado",
         DimensaoConformidade.Cronograma,
         "Cronograma: vagas ofertadas têm fase que produz resultado",
-        !VagasSemFaseQueProduzResultado(haVagasOfertadas));
+        !VagasSemFaseQueProduzResultado(haVagasOfertadas) && !(haVagasOfertadas && ProdutosComParteRecusadaEmAlgumaFase));
 
     /// <summary>O item de que o cronograma tem ao menos uma fase, derivado da mesma recusa da estrutura.</summary>
     public ItemConformidade ItemDaExistenciaDeFases() => new(
@@ -182,7 +193,7 @@ public sealed record CronogramaDoProcesso
         origem == OrigemCandidatos.InscricaoPropria && !Fases.Any(static fase => fase.ColetaInscricao);
 
     private bool VagasSemFaseQueProduzResultado(bool haVagasOfertadas) =>
-        haVagasOfertadas && !Fases.Any(static fase => fase.Atos.ProduzResultado);
+        haVagasOfertadas && !ProdutosComParteRecusadaEmAlgumaFase && !Fases.Any(static fase => fase.Atos.ProduzResultado);
 
     private static bool TemOCodigo(FaseDeclarada fase, string codigo) => string.Equals(fase.Codigo, codigo, StringComparison.Ordinal);
 

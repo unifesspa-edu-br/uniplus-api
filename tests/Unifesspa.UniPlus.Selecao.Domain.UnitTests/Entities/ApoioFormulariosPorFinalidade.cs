@@ -26,7 +26,7 @@ internal static class ApoioFormulariosPorFinalidade
     internal static ProcessoSeletivo ComHabilitacao()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente)
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, FormularioDeTeste.Etapas())
             .IsSuccess.Should().BeTrue();
         return processo;
     }

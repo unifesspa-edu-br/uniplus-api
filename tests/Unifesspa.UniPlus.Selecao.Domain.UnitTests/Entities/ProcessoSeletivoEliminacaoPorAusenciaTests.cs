@@ -57,9 +57,9 @@ public sealed class ProcessoSeletivoEliminacaoPorAusenciaTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso entrevista = EtapaSemNota();
-        processo.DefinirEtapas([EtapaComNota(), entrevista], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaComNota(), entrevista]).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirClassificacao(ClassificacaoComAusenciaEm(entrevista.Id), PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirClassificacao(ClassificacaoComAusenciaEm(entrevista.Id));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -69,9 +69,9 @@ public sealed class ProcessoSeletivoEliminacaoPorAusenciaTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso objetiva = EtapaComNota();
-        processo.DefinirEtapas([objetiva], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([objetiva]).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirClassificacao(ClassificacaoComAusenciaEm(objetiva.Id), PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirClassificacao(ClassificacaoComAusenciaEm(objetiva.Id));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -80,9 +80,9 @@ public sealed class ProcessoSeletivoEliminacaoPorAusenciaTests
     public void DefinirClassificacao_AusenciaEmEtapaInexistente_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaComNota()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaComNota()]).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirClassificacao(ClassificacaoComAusenciaEm(Guid.CreateVersion7()), PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirClassificacao(ClassificacaoComAusenciaEm(Guid.CreateVersion7()));
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
             [("regrasEliminacao[0].etapaRef", "ProcessoSeletivo.EtapaRefEliminacaoInexistente")]);
@@ -93,9 +93,9 @@ public sealed class ProcessoSeletivoEliminacaoPorAusenciaTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso enem = EtapaNotaEnem();
-        processo.DefinirEtapas([enem], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([enem]).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirClassificacao(ClassificacaoComAusenciaEm(enem.Id, baseadoEmEnem: true), PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirClassificacao(ClassificacaoComAusenciaEm(enem.Id, baseadoEmEnem: true));
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().Equal(
             [("regrasEliminacao[0].etapaRef", "ProcessoSeletivo.AusenciaNaEtapaDoEnem")]);
@@ -106,10 +106,10 @@ public sealed class ProcessoSeletivoEliminacaoPorAusenciaTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso entrevista = EtapaSemNota();
-        processo.DefinirEtapas([EtapaComNota(), entrevista], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoComAusenciaEm(entrevista.Id), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaComNota(), entrevista]).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoComAusenciaEm(entrevista.Id)).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirEtapas([EtapaComNota()], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirEtapas([EtapaComNota()]);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorClassificacao");
     }
@@ -119,10 +119,10 @@ public sealed class ProcessoSeletivoEliminacaoPorAusenciaTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Guid etapaId = Guid.CreateVersion7();
-        processo.DefinirEtapas([EtapaComNota(etapaId)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoComAusenciaEm(etapaId, baseadoEmEnem: true), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaComNota(etapaId)]).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoComAusenciaEm(etapaId, baseadoEmEnem: true)).IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirEtapas([EtapaNotaEnem(etapaId)], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirEtapas([EtapaNotaEnem(etapaId)]);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.AusenciaNaEtapaDoEnem");
     }

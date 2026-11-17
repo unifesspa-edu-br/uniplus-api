@@ -36,7 +36,6 @@ internal sealed class SelecaoDosDocumentosDoModelo(
     public async Task<Result> CopiarAsync(
         IReadOnlyList<DocumentoExigidoDoModeloInput> documentos,
         IReadOnlyList<FatoCandidatoView> catalogo,
-        PrecondicaoIfMatch precondicao,
         CancellationToken cancellationToken)
     {
         if (documentos.Count == 0)
@@ -55,7 +54,7 @@ internal sealed class SelecaoDosDocumentosDoModelo(
             .Where(static n => n.Tipo == TipoNo.Folha)
             .All(n => n.DocumentoExigido!.Finalidade == finalidade))];
         return await DefinicaoDosDocumentosExigidos.DefinirAsync(
-                processo, entradas.Value!, mantidas, precondicao, cadastros, cancellationToken)
+                processo, entradas.Value!, mantidas, cadastros, cancellationToken)
             .ConfigureAwait(false);
     }
 

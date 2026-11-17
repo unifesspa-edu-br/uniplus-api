@@ -47,13 +47,13 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
         NoExigencia grupo = NoExigencia.CriarGrupo(
             TipoNo.GrupoOu, 0, 1, "REMOVE_VANTAGEM", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
 
-        processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
@@ -66,15 +66,15 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
         NoExigencia grupo = NoExigencia.CriarGrupo(
             TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Pendente)], [folha]).Value!;
 
-        processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
             .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && !item.Ok);
     }
 
@@ -83,15 +83,15 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
         NoExigencia grupo = NoExigencia.CriarGrupo(
             TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
 
-        processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
             .Should().Contain(item => item.Codigo == "exigencias_base_legal_nao_resolvida" && item.Ok);
     }
 
@@ -100,12 +100,12 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: false);
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
         NoExigencia grupo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, "PENDENCIA_REENVIO", [], [folha]).Value!;
 
-        Result resultado = processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDocumentosExigidos([grupo]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.PendenciaReenvioExigeComplementacao");
@@ -117,14 +117,14 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
         ProcessoSeletivo processo = NovoProcesso();
         Guid faseCanonicaOrigemId = Guid.CreateVersion7();
         FaseCronograma faseComComplementacao = NovaFase(faseCanonicaOrigemId, permiteComplementacao: true);
-        processo.DefinirCronogramaFases([faseComComplementacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([faseComComplementacao], []).IsSuccess.Should().BeTrue();
 
         NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(faseComComplementacao.Id), 0).Value!;
         NoExigencia grupo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, "PENDENCIA_REENVIO", [], [folha]).Value!;
-        processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
         FaseCronograma faseSemComplementacao = NovaFase(faseCanonicaOrigemId, permiteComplementacao: false);
-        Result resultado = processo.DefinirCronogramaFases([faseSemComplementacao], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([faseSemComplementacao], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.PendenciaReenvioExigeComplementacao");
@@ -141,10 +141,10 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0, quantidadeMinima: 2).Value!;
-        processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
@@ -156,12 +156,12 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         NoExigencia folha = NoExigencia.CriarFolha(
             DocumentoQualquer(fase.Id), 0, quantidadeMinima: 1,
             chaveDistincao: ChaveDistincao.Ocorrencia).Value!;
-        processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
@@ -173,10 +173,10 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
-        processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
@@ -197,7 +197,7 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
         GrupoColetado composicao = GrupoColetado.Criar(
             "COMPOSICAO_FAMILIAR", 0, FormularioDeTeste.Secao, "Composição familiar", 1, 10, null, Obrigatoriedade.Sempre,
             [FatoColetado.Criar("MAIOR_IDADE", 0, "Maior de idade", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).Value!;
-        Result formulario = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase.Id, null, FormularioDeTeste.Etapas(), PrecondicaoIfMatch.Ausente);
+        Result formulario = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase.Id, null, FormularioDeTeste.Etapas());
         formulario.IsSuccess.Should().BeTrue(formulario.Error?.Message);
         processo.DefinirItens([], grupos: [composicao]).IsSuccess.Should().BeTrue();
     }
@@ -207,11 +207,11 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = FaseDeInscricao();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         DefinirComposicaoFamiliarNaInscricao(processo, fase);
         NoExigencia folha = NoExigencia.CriarFolha(
             DocumentoQualquer(fase.Id, FinalidadeFormulario.Inscricao), 0, repetePorEntidade: "COMPOSICAO_FAMILIAR").Value!;
-        processo.DefinirDocumentosExigidos([folha], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([folha]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 
@@ -223,12 +223,12 @@ public sealed class ProcessoSeletivoNoExigenciaConferenciasTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma fase = NovaFase(Guid.CreateVersion7(), permiteComplementacao: true);
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         NoExigencia folha = NoExigencia.CriarFolha(DocumentoQualquer(fase.Id), 0).Value!;
         NoExigencia grupo = NoExigencia.CriarGrupo(
             TipoNo.GrupoOu, 0, 1, "ELIMINA", [BaseLegal(StatusBaseLegal.Resolvido)], [folha]).Value!;
-        processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
 
         DomainError? pendencia = CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo);
 

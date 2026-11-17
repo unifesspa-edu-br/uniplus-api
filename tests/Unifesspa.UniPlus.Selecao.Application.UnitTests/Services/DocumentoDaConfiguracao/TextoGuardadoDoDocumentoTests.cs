@@ -54,7 +54,7 @@ public sealed class TextoGuardadoDoDocumentoTests
         Result<string> acima = TextoGuardadoDoDocumento.Gerar(new JsonObject { ["a"] = new string('x', sobra + 1) });
 
         noLimite.IsSuccess.Should().BeTrue();
-        acima.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal((string.Empty, DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite));
+        acima.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal((null, DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite));
     }
 
     [Fact(DisplayName = "A profundidade 32 é aceita e a 33 é recusada no objeto que passa do limite")]

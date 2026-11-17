@@ -69,8 +69,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             Modalidade("AC", NaturezaLegalModalidade.Ampla, PredicadoDnf.SemClausula),
             Modalidade("LI_EP", NaturezaLegalModalidade.CotaReservada, Exige((OpcaoPelasCotasDaLei.Fato, true))));
         processo.DefinirRegrasDerivacao(
-            [ConfiguracaoDerivacaoFato.Criar(OrigemEscolar.FatoEgresso, [RegraDerivacaoConfigurada.Criar(0, null, null).Value!]).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [ConfiguracaoDerivacaoFato.Criar(OrigemEscolar.FatoEgresso, [RegraDerivacaoConfigurada.Criar(0, null, null).Value!]).Value!]).IsSuccess.Should().BeTrue();
         processo.DefinirItens([Booleano(OpcaoPelasCotasDaLei.FatoConcorrerEscolaPublica, 0)], finalidade: finalidade).IsSuccess.Should().BeTrue();
 
         Item(processo, ItemFatoNaoColetado).Ok.Should().Be(esperadoOk,
@@ -130,7 +129,7 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
 
         AfirmarRecusaDoCampoDeMembro(recusa, esperadoAceito);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado))
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(fatosDeModalidade: ComOAgregado))
             .Single(i => i.Codigo == ItemFatoNaoColetado).Ok.Should().Be(esperadoAceito);
     }
 
@@ -230,14 +229,14 @@ public sealed class RegrasDasModalidadesNaPublicacaoTests
             finalidade).Value!;
 
     private static ItemConformidade Item(ProcessoSeletivo processo, string codigo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Single(i => i.Codigo == codigo);
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Single(i => i.Codigo == codigo);
 
     private static void Ofertar(ProcessoSeletivo processo, params ModalidadeSelecionada[] modalidades) =>
         processo.DefinirDistribuicaoVagas(
             [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
                 new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 10 * modalidades.Length, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades },
                 new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!],
-            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
     private static ModalidadeSelecionada Modalidade(string codigo, NaturezaLegalModalidade natureza, PredicadoDnf regra) =>
         ModalidadeSelecionada.Criar(

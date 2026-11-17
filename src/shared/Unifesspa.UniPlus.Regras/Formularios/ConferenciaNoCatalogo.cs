@@ -160,12 +160,12 @@ public static class ConferenciaNoCatalogo
         List<FieldError> erros = [.. propostos.Fatos
             .Where(fato => !existentes.Fatos.Contains(fato) && catalogo.TryGetValue(fato, out FatoDoCatalogo? doCatalogo) && !doCatalogo.Ativo)
             .Order(StringComparer.Ordinal)
-            .Select(static fato => new FieldError(string.Empty, new DomainError(
+            .Select(static fato => new FieldError(null, new DomainError(
                 VinculoCatalogoErrorCodes.FatoDesativado, $"O fato '{fato}' está desativado no catálogo e não aceita vínculo novo."), fato))];
         erros.AddRange(propostos.Fatos
             .Where(fato => !existentes.Fatos.Contains(fato) && catalogo.TryGetValue(fato, out FatoDoCatalogo? doCatalogo) && !doCatalogo.ProtecaoAprovada)
             .Order(StringComparer.Ordinal)
-            .Select(static fato => new FieldError(string.Empty, new DomainError(
+            .Select(static fato => new FieldError(null, new DomainError(
                 VinculoCatalogoErrorCodes.FatoComProtecaoPendente,
                 $"O fato '{fato}' aguarda a aprovação da proteção de dados e não aceita vínculo novo."), fato)));
         erros.AddRange(propostos.Valores
@@ -173,7 +173,7 @@ public static class ConferenciaNoCatalogo
                 && catalogo.TryGetValue(valor.Fato, out FatoDoCatalogo? doCatalogo) && doCatalogo.Valores.Any(v => v.Codigo == valor.Valor && !v.Ativo))
             .OrderBy(static v => v.Fato, StringComparer.Ordinal)
             .ThenBy(static v => v.Valor, StringComparer.Ordinal)
-            .Select(static v => new FieldError(string.Empty, new DomainError(
+            .Select(static v => new FieldError(null, new DomainError(
                 VinculoCatalogoErrorCodes.ValorDesativado, $"O valor '{v.Valor}' do fato '{v.Fato}' está desativado no catálogo e não aceita vínculo novo."), $"{v.Fato}.{v.Valor}")));
         return erros.Count > 0 ? Result.ValidationFailure(erros) : Result.Success();
     }

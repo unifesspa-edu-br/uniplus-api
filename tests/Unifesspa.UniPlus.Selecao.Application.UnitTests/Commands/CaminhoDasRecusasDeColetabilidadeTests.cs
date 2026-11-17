@@ -14,14 +14,14 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// A recusa do fato que o catálogo deixou de aceitar aponta o campo do documento que o cita, <c>fatoCodigo</c> do item ou do campo
-/// do grupo, no mesmo caminho que as demais conferências do formulário dão, e sai na ordem do documento: por formulário, os itens
+/// do grupo, no mesmo caminho, de posições do documento, que as demais conferências do formulário dão, e sai na ordem do documento: por formulário, os itens
 /// e depois os grupos.
 /// </summary>
 public sealed class CaminhoDasRecusasDeColetabilidadeTests
 {
     private const string NaoMaisDeclarado = "ProcessoSeletivo.FatoColetadoNaoMaisDeclarado";
 
-    [Fact(DisplayName = "O item e o campo do grupo recusados apontam o fatoCodigo no formulário da finalidade")]
+    [Fact(DisplayName = "O item e o campo do grupo recusados apontam o fatoCodigo no formulário, pela posição dele no documento")]
     public void ItemECampoDoGrupo_ApontamOFatoCodigoNoFormulario()
     {
         ProcessoSeletivo processo = NovoProcesso();
@@ -32,10 +32,10 @@ public sealed class CaminhoDasRecusasDeColetabilidadeTests
         Result resultado = ConferenciaDeColetabilidadeDeFatos.Conferir(processo, CatalogoSemNada());
 
         resultado.Errors.Select(static e => e.Field).Should().Equal(
-            "formularios[HABILITACAO].itens[0].fatoCodigo",
-            "formularios[HABILITACAO].itens[1].fatoCodigo",
-            "formularios[HABILITACAO].grupos[0].subitens[0].fatoCodigo",
-            "formularios[HABILITACAO].grupos[0].subitens[1].fatoCodigo");
+            "formularios[0].itens[0].fatoCodigo",
+            "formularios[0].itens[1].fatoCodigo",
+            "formularios[0].grupos[0].subitens[0].fatoCodigo",
+            "formularios[0].grupos[0].subitens[1].fatoCodigo");
         resultado.Errors.Select(static e => e.Error.Code).Should().OnlyContain(codigo => codigo == NaoMaisDeclarado);
     }
 
@@ -51,7 +51,7 @@ public sealed class CaminhoDasRecusasDeColetabilidadeTests
 
         naoColetaveis.Select(static n => n.Item.FatoCodigo).Should().Equal("ISEN_ITEM", "HAB_ITEM", "HAB_CAMPO");
         naoColetaveis.Select(static n => n.Caminho).Should().Equal(
-            "formularios[ISENCAO_TAXA].itens[0]", "formularios[HABILITACAO].itens[0]", "formularios[HABILITACAO].grupos[0].subitens[0]");
+            "formularios[0].itens[0]", "formularios[1].itens[0]", "formularios[1].grupos[0].subitens[0]");
     }
 
     private static ProcessoSeletivo NovoProcesso() => ProcessoSeletivo.Criar(

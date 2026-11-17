@@ -9,5 +9,5 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 internal static class CausasDeConformidadeDeTeste
 {
     public static IReadOnlyList<FieldError> De(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.CausasDeConformidade(EstadoDaConfiguracao.De(processo));
+        ChecklistDeConformidade.CausasDeConformidade(processo.Declaracao());
 }

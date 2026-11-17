@@ -29,7 +29,7 @@ public sealed class RecusasPorFatoNaColetaDoCongelamentoTests
     public async Task FatoReclassificadoECampoSemValores_RecusamJuntos()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Recusas por fato");
-        processo.DefinirItens([ItemDeSelecao("MODALIDADE", 0), ItemDeSelecao("TIPO_DEFICIENCIA", 1)], PrecondicaoIfMatch.Curinga)
+        processo.DefinirItens([ItemDeSelecao("MODALIDADE", 0), ItemDeSelecao("TIPO_DEFICIENCIA", 1)])
             .IsSuccess.Should().BeTrue();
         ServicosDoCongelamentoDeTeste servicos = ServicosDoCongelamentoDeTeste.Para(processo)
             .ComCatalogoDeFatos(Catalogo(ModalidadeDerivada(), TipoDeDeficienciaSemTipoVivo()));
@@ -47,7 +47,7 @@ public sealed class RecusasPorFatoNaColetaDoCongelamentoTests
     public void DoisFatosReclassificados_RecusamUmaVezCada()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirItens([ItemDeSelecao("MODALIDADE", 0), ItemDeSelecao("TIPO_DEFICIENCIA", 1)], PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao)
+        processo.DefinirItens([ItemDeSelecao("MODALIDADE", 0), ItemDeSelecao("TIPO_DEFICIENCIA", 1)], finalidade: FinalidadeFormulario.Habilitacao)
             .IsSuccess.Should().BeTrue();
         Dictionary<string, FatoCandidatoView> catalogo = PorCodigo(ModalidadeDerivada(), TipoDeDeficienciaSemTipoVivo() with { Origem = "DERIVADO" });
 
@@ -63,7 +63,7 @@ public sealed class RecusasPorFatoNaColetaDoCongelamentoTests
     public void DoisCamposSemValores_RecusamUmaVezCada()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirItens([ItemDeSelecao("TIPO_DEFICIENCIA", 0), ItemDeSelecao("OUTRO_TIPO", 1)], PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao)
+        processo.DefinirItens([ItemDeSelecao("TIPO_DEFICIENCIA", 0), ItemDeSelecao("OUTRO_TIPO", 1)], finalidade: FinalidadeFormulario.Habilitacao)
             .IsSuccess.Should().BeTrue();
         Dictionary<string, FatoCandidatoView> catalogo = PorCodigo(
             TipoDeDeficienciaSemTipoVivo(), TipoDeDeficienciaSemTipoVivo() with { Codigo = "OUTRO_TIPO", Binding = "CAMPO_FORMULARIO:OUTRO_TIPO" });
@@ -82,7 +82,7 @@ public sealed class RecusasPorFatoNaColetaDoCongelamentoTests
     public void FatoExcluido_NaoEResolvido()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirItens([ItemDeSelecao("MODALIDADE", 0)], PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([ItemDeSelecao("MODALIDADE", 0)], finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         Result<IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>> resultado =
             ResolvedorValoresSelecionaveisCongelados.Resolver(processo, new Dictionary<string, FatoCandidatoView>(), new HashSet<string> { "MODALIDADE" });

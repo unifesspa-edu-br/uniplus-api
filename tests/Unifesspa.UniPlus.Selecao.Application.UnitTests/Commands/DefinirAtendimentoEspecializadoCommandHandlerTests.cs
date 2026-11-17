@@ -46,9 +46,9 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
         mocks.TipoDeficienciaReader.ObterPorIdAsync(tipoDeficienciaId, Arg.Any<CancellationToken>())
             .Returns(new TipoDeficienciaView(tipoDeficienciaId, "DEFICIENCIA_VISUAL", "Deficiência visual", "Deficiência relacionada à visão", null));
 
-        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId], PrecondicaoIfMatch.Ausente);
+        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId]);
 
-        Result<MutacaoAceita> result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
+        Result result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
             command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -70,9 +70,9 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
         mocks.TipoDeficienciaReader.ObterPorIdAsync(tipoDeficienciaId, Arg.Any<CancellationToken>())
             .Returns(new TipoDeficienciaView(tipoDeficienciaId, "DEFICIENCIA_VISUAL", "Deficiência visual", "Deficiência relacionada à visão", null));
 
-        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId], PrecondicaoIfMatch.Ausente);
+        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [tipoDeficienciaId]);
 
-        Result<MutacaoAceita> result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
+        Result result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
             command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -88,9 +88,9 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
 
         (IProcessoSeletivoRepository Repository, ICondicaoAtendimentoReader CondicaoReader, IRecursoAcessibilidadeReader RecursoReader, ITipoDeficienciaReader TipoDeficienciaReader, IUnitOfWork UnitOfWork) mocks = NovosMocks(processo, processo.Id);
 
-        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId, condicaoId], [], [], PrecondicaoIfMatch.Ausente);
+        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId, condicaoId], [], []);
 
-        Result<MutacaoAceita> result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
+        Result result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
             command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -108,9 +108,9 @@ public sealed class DefinirAtendimentoEspecializadoCommandHandlerTests
         mocks.CondicaoReader.ObterPorIdAsync(condicaoId, Arg.Any<CancellationToken>())
             .Returns((CondicaoAtendimentoView?)null);
 
-        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], [], PrecondicaoIfMatch.Ausente);
+        DefinirAtendimentoEspecializadoCommand command = new(processo.Id, [condicaoId], [], []);
 
-        Result<MutacaoAceita> result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
+        Result result = await DefinirAtendimentoEspecializadoCommandHandler.Handle(
             command, mocks.Repository, mocks.CondicaoReader, mocks.RecursoReader, mocks.TipoDeficienciaReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();

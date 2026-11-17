@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O que uma declaração de etapa precisa cumprir para valer: a forma básica, que não depende do cadastro
-/// de tipos de etapa, e a coerência da avaliação com o tipo resolvido. As recusas se acumulam (ADR-0125).
+/// de tipos de etapa, e o que o tipo resolvido admite: o caráter e a coerência da avaliação. As recusas se
+/// acumulam (ADR-0125).
 /// </summary>
 public static class ConferenciaDaDeclaracaoDaEtapa
 {
@@ -44,11 +45,13 @@ public static class ConferenciaDaDeclaracaoDaEtapa
         ArgumentNullException.ThrowIfNull(avaliacao);
         ExigirTipoResolvido(identificacao.TipoEtapa);
 
+        TipoEtapaSnapshot tipo = identificacao.TipoEtapa;
         List<FieldError> erros = ValidarFormaBasica(identificacao.Nome, identificacao.Carater, identificacao.Ordem, avaliacao, itens);
+        erros.AddRange(CaraterDaEtapa.ValidarAdmitido(identificacao.Carater, tipo.AdmitePontuacao, tipo.AdmiteEliminacao, tipo.Nome));
         erros.AddRange(CoerenciaDaAvaliacaoDaEtapa.Validar(new AvaliacaoParaCoerencia(
-            identificacao.TipoEtapa.NotaDeOrigemNoEnem, avaliacao.FormaDeAvaliacao, avaliacao.RegraConsolidacao?.Codigo,
+            tipo.NotaDeOrigemNoEnem, avaliacao.FormaDeAvaliacao, avaliacao.RegraConsolidacao?.Codigo,
             avaliacao.PassoDoLancamento, DeclaraItens: itens?.Count > 0, DeclaraEscala: avaliacao.EscalaDeAtendimento?.Count > 0,
-            ExigeCorrecaoIndependente: identificacao.TipoEtapa.ExigeCorrecaoIndependente)));
+            ExigeCorrecaoIndependente: tipo.ExigeCorrecaoIndependente)));
 
         return erros;
     }

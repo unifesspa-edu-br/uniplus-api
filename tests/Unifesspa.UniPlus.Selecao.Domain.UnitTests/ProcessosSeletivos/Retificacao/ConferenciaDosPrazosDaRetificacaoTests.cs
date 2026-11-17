@@ -37,10 +37,10 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
 
         Conferir([prova, resultado], [prova, resultado], iniciadas).Should().BeEmpty();
         Recusas(Conferir([prova, resultado], [ComJanela(prova, Passado, Passado.AddDays(9)), resultado], iniciadas)).Should().Equal(
-            ("cronograma.fases[PROVA].fim", RetificacaoErrorCodes.FaseConcluidaAlterada));
+            ("fases[0].fim", RetificacaoErrorCodes.FaseConcluidaAlterada));
         Recusas(Conferir([prova, resultado], [ComJanela(prova, Passado.AddDays(1), Passado.AddDays(9)), resultado], iniciadas)).Should().Equal(
-            ("cronograma.fases[PROVA].inicio", RetificacaoErrorCodes.FaseConcluidaAlterada),
-            ("cronograma.fases[PROVA].fim", RetificacaoErrorCodes.FaseConcluidaAlterada));
+            ("fases[0].inicio", RetificacaoErrorCodes.FaseConcluidaAlterada),
+            ("fases[0].fim", RetificacaoErrorCodes.FaseConcluidaAlterada));
     }
 
     [Fact(DisplayName = "O início da fase em andamento não muda, nem adiado nem antecipado")]
@@ -52,7 +52,7 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
         foreach (DateTimeOffset novo in new[] { Passado.AddDays(1), Passado.AddDays(-1) })
         {
             Recusas(Conferir([prova], [ComJanela(prova, novo, prova.Fim)], iniciadas)).Should().Equal(
-                ("cronograma.fases[PROVA].inicio", RetificacaoErrorCodes.InicioDeFaseIniciadaAlterado));
+                ("fases[0].inicio", RetificacaoErrorCodes.InicioDeFaseIniciadaAlterado));
         }
     }
 
@@ -72,7 +72,7 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
         FasesIniciadas iniciadas = Iniciadas(prova);
 
         Recusas(Conferir([prova], [ComJanela(prova, prova.Inicio, Instante.AddDays(9))], iniciadas)).Should().Equal(
-            ("cronograma.fases[PROVA].fim", RetificacaoErrorCodes.TerminoDeFaseEmAndamentoAntecipado));
+            ("fases[0].fim", RetificacaoErrorCodes.TerminoDeFaseEmAndamentoAntecipado));
         Conferir([prova], [ComJanela(prova, prova.Inicio, Instante.AddDays(30))], iniciadas).Should().BeEmpty();
     }
 
@@ -82,8 +82,8 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
         FaseCronograma prova = EmAndamento();
 
         Recusas(Conferir([prova], [ComJanela(prova, Passado.AddDays(1), Instante.AddDays(9))], Iniciadas(prova))).Should().Equal(
-            ("cronograma.fases[PROVA].inicio", RetificacaoErrorCodes.InicioDeFaseIniciadaAlterado),
-            ("cronograma.fases[PROVA].fim", RetificacaoErrorCodes.TerminoDeFaseEmAndamentoAntecipado));
+            ("fases[0].inicio", RetificacaoErrorCodes.InicioDeFaseIniciadaAlterado),
+            ("fases[0].fim", RetificacaoErrorCodes.TerminoDeFaseEmAndamentoAntecipado));
     }
 
     [Fact(DisplayName = "O término das inscrições nunca é antecipado, nem antes de abrir; prorrogar vale, mesmo com o prazo vencido")]
@@ -95,9 +95,9 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
         FaseCronograma homologacao = Fase(2, "HOMOLOGACAO");
 
         Recusas(Conferir([aberta], [ComJanela(aberta, aberta.Inicio, Instante.AddDays(9))], Iniciadas(aberta))).Should().Equal(
-            ("cronograma.fases[INSCRICAO].fim", RetificacaoErrorCodes.TerminoDaInscricaoAntecipado));
+            ("fases[0].fim", RetificacaoErrorCodes.TerminoDaInscricaoAntecipado));
         Recusas(Conferir([futura], [ComJanela(futura, futura.Inicio, Instante.AddDays(14))], Iniciadas())).Should().Equal(
-            ("cronograma.fases[INSCRICAO].fim", RetificacaoErrorCodes.TerminoDaInscricaoAntecipado));
+            ("fases[0].fim", RetificacaoErrorCodes.TerminoDaInscricaoAntecipado));
         Conferir([vencida, homologacao], [ComJanela(vencida, vencida.Inicio, Instante.AddDays(3)), homologacao], Iniciadas(vencida)).Should().BeEmpty();
     }
 
@@ -108,7 +108,7 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
         FaseCronograma homologacao = Fase(2, "HOMOLOGACAO");
 
         Recusas(Conferir([vencida, homologacao], [ComJanela(vencida, vencida.Inicio, Instante.AddDays(3)), homologacao], Iniciadas(vencida, homologacao))).Should().Equal(
-            ("cronograma.fases[INSCRICAO].fim", RetificacaoErrorCodes.FaseConcluidaAlterada));
+            ("fases[0].fim", RetificacaoErrorCodes.FaseConcluidaAlterada));
     }
 
     [Fact(DisplayName = "Adiar o início das inscrições antes de abrir é aceito: não é redução")]
@@ -125,7 +125,7 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
         FaseCronograma futura = Fase(1, "ISENCAO", (Instante.AddDays(2), Instante.AddDays(9)), coletaIsencao: true);
 
         Recusas(Conferir([futura], [ComJanela(futura, futura.Inicio, Instante.AddDays(8))], Iniciadas())).Should().Equal(
-            ("cronograma.fases[ISENCAO].fim", RetificacaoErrorCodes.JanelaDeIsencaoReduzida));
+            ("fases[0].fim", RetificacaoErrorCodes.JanelaDeIsencaoReduzida));
         Conferir([futura], [ComJanela(futura, futura.Inicio, Instante.AddDays(12))], Iniciadas()).Should().BeEmpty();
     }
 
@@ -137,9 +137,21 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
         FaseCronograma seguinte = Fase(2, "INSCRICAO");
 
         Recusas(Conferir([encerrada, seguinte], [ComJanela(encerrada, encerrada.Inicio, Instante.AddDays(3)), seguinte], Iniciadas(encerrada))).Should().Equal(
-            ("cronograma.fases[ISENCAO].fim", RetificacaoErrorCodes.JanelaDeIsencaoEncerradaReaberta));
+            ("fases[0].fim", RetificacaoErrorCodes.JanelaDeIsencaoEncerradaReaberta));
         Recusas(Conferir([noInstante, seguinte], [ComJanela(noInstante, noInstante.Inicio, Instante.AddDays(1)), seguinte], Iniciadas(noInstante))).Should().Equal(
-            ("cronograma.fases[ISENCAO].fim", RetificacaoErrorCodes.JanelaDeIsencaoEncerradaReaberta));
+            ("fases[0].fim", RetificacaoErrorCodes.JanelaDeIsencaoEncerradaReaberta));
+    }
+
+    [Fact(DisplayName = "A fase recusada é apontada pela posição na ordem do documento, e não pela posição na lista como veio")]
+    public void FaseRecusada_ApontaAPosicaoNoDocumento()
+    {
+        FaseCronograma inscricao = Fase(1, "INSCRICAO", (Passado, Passado.AddDays(5)));
+        FaseCronograma prova = Fase(2, "PROVA", (Passado, Passado.AddDays(5)));
+        FaseCronograma resultado = Fase(3, "RESULTADO");
+
+        Recusas(Conferir(
+            [inscricao, prova, resultado], [resultado, ComJanela(prova, Passado, Passado.AddDays(9)), inscricao], Iniciadas(inscricao, prova, resultado))).Should().Equal(
+            ("fases[1].fim", RetificacaoErrorCodes.FaseConcluidaAlterada));
     }
 
     [Fact(DisplayName = "A fase retirada do cronograma novo não é recusada aqui")]
@@ -160,7 +172,7 @@ public sealed class ConferenciaDosPrazosDaRetificacaoTests
 
         ConferenciaDosPrazosDaRetificacao.Conferir([], [CopiaComInicio(iniciada, Passado.AddDays(2)), CopiaComInicio(porComecar, Instante.AddDays(9))], andamento)
             .Select(static r => (r.Field, r.Error.Code)).Should().Equal(
-                ("cronograma.etapas[Prova objetiva].inicio", RetificacaoErrorCodes.InicioDeEtapaIniciadaAlterado));
+                ("etapas[1].inicio", RetificacaoErrorCodes.InicioDeEtapaIniciadaAlterado));
         ConferenciaDosPrazosDaRetificacao.Conferir([], [CopiaComInicio(iniciada, Passado), porComecar], andamento).Should().BeEmpty();
     }
 

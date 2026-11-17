@@ -41,17 +41,17 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
         Guid ofertaCursoId, string regra, Guid[] modalidadeIds, params QuantidadeVagaInput[] quadro) =>
         new(ofertaCursoId, 60, null, regra, "v1", null, null, null, modalidadeIds, quadro);
 
-    private static async Task<Result<MutacaoComDistribuicaoVagasDto>> DefinirAsync(
+    private static async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>> DefinirAsync(
         Mocks mocks, ProcessoSeletivo processo, params ConfiguracaoDistribuicaoVagasInput[] distribuicoes) =>
         await DefinirDistribuicaoVagasCommandHandler.Handle(
-            new DefinirDistribuicaoVagasCommand(processo.Id, distribuicoes, PrecondicaoIfMatch.Ausente),
+            new DefinirDistribuicaoVagasCommand(processo.Id, distribuicoes),
             mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
     private static (int Oferta, string Campo, string Codigo) Recusa(int oferta, string campo, string codigo) =>
         (oferta, campo, "ConfiguracaoDistribuicaoVagas." + codigo);
 
     private static void DeveRecusarNaOrdem(
-        Result<MutacaoComDistribuicaoVagasDto> resultado, params (int Oferta, string Campo, string Codigo)[] recusas) =>
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado, params (int Oferta, string Campo, string Codigo)[] recusas) =>
         resultado.Errors.Select(static erro => erro.Field + "|" + erro.Error.Code).Should().Equal(
             recusas.Select(static r => $"distribuicaoVagas[{r.Oferta}].{r.Campo}|{r.Codigo}"));
 
@@ -63,7 +63,7 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
         Mocks mocks = MocksComOferta(processo, oferta, RegraDistribuicao(Institucional));
         mocks.ModalidadeReader.ObterPorIdAsync(modalidade, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidade));
 
-        Result<MutacaoComDistribuicaoVagasDto> resultado = await DefinirAsync(
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await DefinirAsync(
             mocks, processo, Pedido(oferta, Institucional, [modalidade], new QuantidadeVagaInput(modalidade, -3)));
 
         DeveRecusarNaOrdem(resultado, Recusa(0, "quadro[0].quantidade", "QuantidadeVagaNegativa"));
@@ -98,7 +98,7 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
             .Returns(NovaOferta(oferta) with { Codigo = new string('X', OfertaCursoSnapshot.CodigoMaxLength + 1) });
         mocks.ModalidadeReader.ObterPorIdAsync(modalidade, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidade));
 
-        Result<MutacaoComDistribuicaoVagasDto> resultado = await DefinirAsync(
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await DefinirAsync(
             mocks, processo, Pedido(oferta, Institucional, [modalidade], new QuantidadeVagaInput(modalidade, 150)) with { VagasOfertadasBase = 150 });
 
         resultado.Errors.Select(static erro => erro.Field).Should().Contain(
@@ -113,7 +113,7 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
         Mocks mocks = MocksComOferta(processo, oferta);
         mocks.ModalidadeReader.ObterPorIdAsync(modalidade, Arg.Any<CancellationToken>()).Returns(NovaModalidadeAmpla(modalidade));
 
-        Result<MutacaoComDistribuicaoVagasDto> resultado = await DefinirAsync(
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await DefinirAsync(
             mocks, processo, Pedido(oferta, RegraDistribuicaoVagasCodigo.Lei12711, [modalidade]));
 
         DeveRecusarNaOrdem(resultado, Recusa(0, "regraDistribuicaoCodigo", "RegraDistribuicaoNaoEncontrada"));
@@ -127,7 +127,7 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
         Mocks mocks = MocksComOferta(processo, oferta, RegraDistribuicaoComRol(Institucional, "IND", "QUI"));
         mocks.ModalidadeReader.ObterPorIdAsync(aceita, Arg.Any<CancellationToken>()).Returns(NovaModalidadeCotaReservada(aceita, "IND"));
 
-        Result<MutacaoComDistribuicaoVagasDto> resultado = await DefinirAsync(
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await DefinirAsync(
             mocks, processo, Pedido(oferta, Institucional, [aceita, recusada]));
 
         DeveRecusarNaOrdem(
@@ -145,7 +145,7 @@ public sealed class DefinirDistribuicaoVagasAcumulacaoTests
             Guid.CreateVersion7(), "X", [selecionada],
             new QuantidadeVagaInput(selecionada, 10), new QuantidadeVagaInput(Guid.CreateVersion7(), 10), new QuantidadeVagaInput(Guid.CreateVersion7(), 10));
 
-        Result<MutacaoComDistribuicaoVagasDto> resultado = await DefinirAsync(NovosMocks(processo, processo.Id), processo, pedido);
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> resultado = await DefinirAsync(NovosMocks(processo, processo.Id), processo, pedido);
 
         resultado.Errors.Take(2).Select(static erro => erro.Field).Should().Equal(
             "distribuicaoVagas[0].quadro[1].modalidadeId", "distribuicaoVagas[0].quadro[2].modalidadeId");

@@ -16,7 +16,6 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 internal sealed class AplicacaoDoModeloDeFormulario(
     ProcessoSeletivo processo,
     ModeloFormularioView modelo,
-    PrecondicaoIfMatch precondicao,
     CadastrosDaAplicacaoDoModelo cadastros,
     IUnitOfWork unitOfWork)
 {
@@ -29,7 +28,7 @@ internal sealed class AplicacaoDoModeloDeFormulario(
             return Result<AplicacaoDeModeloDto>.ValidationFailure(plano.Errors);
         }
 
-        Result aplicada = processo.AplicarModeloDeFormulario(plano.Value!.Copia, precondicao);
+        Result aplicada = processo.AplicarModeloDeFormulario(plano.Value!.Copia);
         if (aplicada.IsFailure)
         {
             return Result<AplicacaoDeModeloDto>.ValidationFailure([.. aplicada.Errors.Select(plano.Value.Indices.RecusaDoAgregado)]);
@@ -38,7 +37,7 @@ internal sealed class AplicacaoDoModeloDeFormulario(
         // O conjunto padrão de documentos entra no mesmo estado em memória e na mesma gravação: a recusa de
         // um documento desfaz a aplicação inteira.
         Result documentos = await new SelecaoDosDocumentosDoModelo(processo, plano.Value.Copia.Finalidade, cadastros.Documentos)
-            .CopiarAsync(modelo.Conteudo.DocumentosExigidos ?? [], plano.Value.Catalogo, precondicao, cancellationToken).ConfigureAwait(false);
+            .CopiarAsync(modelo.Conteudo.DocumentosExigidos ?? [], plano.Value.Catalogo, cancellationToken).ConfigureAwait(false);
         if (documentos.IsFailure)
         {
             return RecusaDosDocumentos(documentos);

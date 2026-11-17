@@ -62,7 +62,7 @@ internal sealed class CenarioDaClassificacao
             RegraCalculoCodigo.FormulaMediaPonderada, "v1",
             RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
             RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1",
-            [], false, null, null, PrecondicaoIfMatch.Ausente);
+            [], false, null, null);
 
     public static DefinirClassificacaoCommand ComandoComEliminacao(Guid processoId, RegraEliminacaoInput eliminacao) =>
         ComandoDeMediaPonderada(processoId) with { RegrasEliminacao = [eliminacao] };
@@ -71,9 +71,9 @@ internal sealed class CenarioDaClassificacao
         Guid processoId, string? resolucao, bool baseadoEmEnem = true, string regraCalculo = RegraCalculoCodigo.FormulaMediaPonderada) =>
         regraCalculo == RegraCalculoCodigo.ClassificacaoImportada
             ? new(processoId, regraCalculo, "v1", null, null, null,
-                RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], baseadoEmEnem, resolucao, null, PrecondicaoIfMatch.Ausente)
+                RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], baseadoEmEnem, resolucao, null)
             : new(processoId, regraCalculo, "v1", RegraArredondamentoCodigo.PrecisaoTruncar, "v1", 2,
-                RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], baseadoEmEnem, resolucao, null, PrecondicaoIfMatch.Ausente);
+                RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", [], baseadoEmEnem, resolucao, null);
 
     public static DefinirClassificacaoCommand ComandoEnemLocalComEliminacao(Guid processoId, RegraEliminacaoInput eliminacao) =>
         ComandoEnemLocal(processoId, ResolucaoDePesos) with { RegrasEliminacao = [eliminacao] };
@@ -116,7 +116,7 @@ internal sealed class CenarioDaClassificacao
         return this;
     }
 
-    public Task<Result<MutacaoAceita>> DefinirAsync(DefinirClassificacaoCommand command) =>
+    public Task<Result> DefinirAsync(DefinirClassificacaoCommand command) =>
         DefinirClassificacaoCommandHandler.Handle(
             command, _repository, _regraCatalogoReader, PesoAreaEnemReader, UnitOfWork, CancellationToken.None);
 

@@ -56,10 +56,6 @@ internal static class PassosDoEnvelopeFechado
 
         public string HashV1 { get; set; } = string.Empty;
 
-        public string EtagDaAbertura { get; set; } = string.Empty;
-
-        public string EtagNovo { get; set; } = string.Empty;
-
         public Guid AtoV2Id { get; set; }
 
         public Guid VersaoV2Id { get; set; }
@@ -98,13 +94,6 @@ internal static class PassosDoEnvelopeFechado
         await ConfirmarAtoV1Async(c);
     }
 
-    internal static async Task RetificarSobSessaoEditorialAsync(Cenario c)
-    {
-        await AbrirSessaoEditorialAsync(c);
-        await AlterarEtapasSobASessaoAsync(c);
-        await FecharSessaoEditorialAsync(c);
-    }
-
     internal static async Task ConferirIdentidadeEAtoV2Async(Cenario c)
     {
         await ConferirIdentidadeDasVersoesAsync(c);
@@ -123,19 +112,17 @@ internal static class PassosDoEnvelopeFechado
     }
 
     // Passo 2 — cronograma e etapas (ordem de §4.2 do plano: etapas antes de tudo que as referencia).
-    // O peso inicial da Objetiva é âncora: sem este valor fixado, um corpus que já nascesse com o peso
-    // pós-retificação (4.0000) tornaria vácua a asserção de peso no envelope depois do fechamento.
     internal static async Task DeclararEtapasAsync(Cenario c)
     {
         await ExecutarPassoAsync(() => c.Ctx.PutCronogramaFasesAsync(), HttpStatusCode.NoContent, "PUT cronograma-fases", "/cronograma-fases");
-        await ExecutarPassoAsync(() => c.Ctx.PutEtapasAsync(EtapasIniciais(c.Ctx.Catalogos.TipoBancaId), ifMatch: null), HttpStatusCode.NoContent, "PUT etapas", "/etapas");
+        await ExecutarPassoAsync(() => c.Ctx.PutEtapasAsync(EtapasIniciais(c.Ctx.Catalogos.TipoBancaId)), HttpStatusCode.NoContent, "PUT etapas", "/etapas");
 
         ProcessoSeletivoDto processo = await c.Ctx.ObterProcessoAsync();
         c.ObjetivaId = processo.Etapas.Single(e => e.Identificacao.Nome == "Prova Objetiva").Id;
         c.RedacaoId = processo.Etapas.Single(e => e.Identificacao.Nome == "Redação").Id;
         c.EntrevistaId = processo.Etapas.Single(e => e.Identificacao.Nome == "Entrevista").Id;
         processo.Etapas.Single(e => e.Id == c.ObjetivaId).Nota.Peso.Should().Be(
-            3.5000m, "a Prova Objetiva nasce com este peso em EtapasIniciais — é o valor que a sessão editorial altera");
+            3.5000m, "a Prova Objetiva nasce com este peso em EtapasIniciais — é o valor que o envelope das duas versões carrega");
     }
 
     // Passos 3, 4 e 4b — atendimento especializado (listas vazias: o checklist só exige AtendimentoEspecializado
@@ -184,7 +171,7 @@ internal static class PassosDoEnvelopeFechado
         Guid faseDeInscricaoId = (await c.Ctx.ObterProcessoAsync()).CronogramaFases.Single(f => f.FaseCanonica.ColetaInscricao).Id;
 
         await ExecutarPassoAsync(
-            () => c.Ctx.PutFormularioAsync("Formulário de Inscrição — PS Rico E2E", faseDeInscricaoId, ifMatch: null),
+            () => c.Ctx.PutFormularioAsync("Formulário de Inscrição — PS Rico E2E", faseDeInscricaoId),
             HttpStatusCode.NoContent, "PUT formulario", "admin/processos-seletivos/{id}/formularios/INSCRICAO");
         await ExecutarPassoAsync(
             () => c.Ctx.PutFatosColetadosAsync(),
@@ -200,7 +187,7 @@ internal static class PassosDoEnvelopeFechado
         await ExecutarPassoAsync(() => c.Ctx.PutCascataRemanejamentoAsync(), HttpStatusCode.NoContent, "PUT cascata-remanejamento", "/cascata-remanejamento");
         await ExecutarPassoAsync(() => c.Ctx.PutDocumentosExigidosAsync([]), HttpStatusCode.NoContent, "PUT documentos-exigidos", "/documentos-exigidos");
         await ExecutarPassoAsync(
-            () => c.Ctx.PutDivulgacaoAsync(["numero_inscricao", "nome_abreviado"], justificativa: null, ifMatch: null),
+            () => c.Ctx.PutDivulgacaoAsync(["numero_inscricao", "nome_abreviado"], justificativa: null),
             HttpStatusCode.NoContent, "PUT divulgacao", "/divulgacao");
     }
 
@@ -250,54 +237,32 @@ internal static class PassosDoEnvelopeFechado
         ato.VersaoDoObjeto.Hash.Should().Be(hashV1, "o hash guardado em Publicações é o mesmo que Seleção congelou para V1");
     }
 
-    // Passo 17 — abrir a SESSÃO editorial (não o atalho atômico) e capturar o ETag da abertura.
-    internal static async Task AbrirSessaoEditorialAsync(Cenario c)
-    {
-        HttpResponseMessage abertura = await ExecutarPassoAsync(
-            () => c.Ctx.AbrirRetificacaoAsync("Correção do peso da prova objetiva"),
-            HttpStatusCode.Created, "POST retificacao-em-curso (abrir)", "/retificacao-em-curso");
-        c.EtagDaAbertura = LerETag(abertura, "abrir sessão");
-    }
-
-    // Passo 18 — PUT de uma dimensão SOB a sessão, com o If-Match da abertura, capturando o ETag
-    // NOVO. Chave de idempotência nova por requisição: nunca reutilizar.
-    internal static async Task AlterarEtapasSobASessaoAsync(Cenario c)
-    {
-        object[] etapasAlteradas = EtapasComPesoAlterado(c.ObjetivaId, c.RedacaoId, c.EntrevistaId, c.Ctx.Catalogos.TipoBancaId);
-        HttpResponseMessage mutacao = await ExecutarPassoAsync(
-            () => c.Ctx.PutEtapasAsync(etapasAlteradas, c.EtagDaAbertura),
-            HttpStatusCode.NoContent, "PUT etapas sob sessão", "/etapas");
-
-        c.EtagNovo = LerETag(mutacao, "PUT etapas sob sessão");
-        c.EtagNovo.Should().NotBe(c.EtagDaAbertura, "toda mutação aceita sob a sessão incrementa a revisão, e o controller devolve o tag novo");
-    }
-
-    // Passo 19 — fechar a sessão com o ETag NOVO (não o da abertura: o tag velho devolveria 412).
-    internal static async Task FecharSessaoEditorialAsync(Cenario c)
+    // Passo 17 — retificar pelo envio único: o ato retificador e o documento do edital da versão 2.
+    internal static async Task RetificarPeloEnvioUnicoAsync(Cenario c)
     {
         Guid documentoV2 = await SemearDocumentoConfirmadoAsync(c.Api, c.Ctx.ProcessoId);
 
         await ExecutarPassoAsync(
-            () => c.Ctx.FecharRetificacaoAsync(documentoV2, numero: "042/2026-R", tipoAtoCodigo: "EDITAL_RETIFICACAO", c.EtagNovo),
-            HttpStatusCode.NoContent, "POST retificacao-em-curso/fechamento", "/retificacao-em-curso/fechamento");
+            () => c.Ctx.RetificarAsync(documentoV2, "Correção do edital", numero: "042/2026-R", tipoAtoCodigo: "EDITAL_RETIFICACAO"),
+            HttpStatusCode.NoContent, "POST retificacoes", "/retificacoes");
     }
 
-    // Passo 20 — identidade das versões pelo AtoCriadorId: V2 retifica V1, nunca "qualquer ato do
+    // Passo 18 — identidade das versões pelo AtoCriadorId: V2 retifica V1, nunca "qualquer ato do
     // processo". V1 permanece intacta (append-only).
     internal static async Task ConferirIdentidadeDasVersoesAsync(Cenario c)
     {
         (Guid atoV2Id, Guid atoV2RetificaId, string hashV1AposFechamento, Guid versaoV2Id, string hashV2) =
             await LerVersoesAposFechamentoAsync(c.Api, c.Ctx.ProcessoId);
 
-        atoV2Id.Should().NotBe(c.AtoV1Id, "o fechamento cria um ato novo — nunca reaproveita o de abertura");
+        atoV2Id.Should().NotBe(c.AtoV1Id, "a retificação cria um ato novo — nunca reaproveita o de abertura");
         atoV2RetificaId.Should().Be(c.AtoV1Id, "V2.AtoCriadorRetificaId aponta para o ato que ela retifica: V1");
-        hashV1AposFechamento.Should().Be(c.HashV1, "a versão anterior é imutável — o fechamento não muta o passado (append-only)");
+        hashV1AposFechamento.Should().Be(c.HashV1, "a versão anterior é imutável — a retificação não muta o passado (append-only)");
         c.AtoV2Id = atoV2Id;
         c.VersaoV2Id = versaoV2Id;
         c.HashV2 = hashV2;
     }
 
-    // Passo 21 — confirmar o ato V2 em Publicações pela identidade EXATA de V2, não "qualquer ato do
+    // Passo 19 — confirmar o ato V2 em Publicações pela identidade EXATA de V2, não "qualquer ato do
     // processo": é a barreira que o plano nomeia como bloqueante.
     internal static async Task ConfirmarAtoV2Async(Cenario c)
     {
@@ -311,18 +276,18 @@ internal static class PassosDoEnvelopeFechado
         c.HashV2.Should().NotBe(c.HashV1, "V2 congela outra configuração — se os hashes coincidissem, a asserção de identidade acima seria vácua");
     }
 
-    // Passo 22 — GET /snapshot-vigente == versão 2. A diferença de hash sozinha não prova que a edição
-    // entrou: toda retificação acrescenta o bloco `retificacao` ao envelope. A prova é o valor do peso
-    // dentro da configuração congelada, casado pelo id da etapa — nunca por posição no array.
+    // Passo 20 — GET /snapshot-vigente == versão 2. A retificação de ato único recongela a configuração
+    // vigente: o peso dentro da configuração congelada, casado pelo id da etapa — nunca por posição no
+    // array —, segue o da versão 1.
     internal static async Task ConferirSnapshotVigenteAsync(Cenario c)
     {
         HttpResponseMessage resposta = await ExecutarPassoAsync(() => c.Ctx.ObterSnapshotVigenteAsync(), HttpStatusCode.OK, "GET snapshot-vigente", "/snapshot-vigente");
         SnapshotVigenteDto snapshot = (await resposta.Content.ReadFromJsonAsync<SnapshotVigenteDto>())!;
 
-        snapshot.AtoId.Should().Be(c.AtoV2Id, "o snapshot vigente aponta para o ato que o governa — V2, depois do fechamento");
+        snapshot.AtoId.Should().Be(c.AtoV2Id, "o snapshot vigente aponta para o ato que o governa — V2, depois da retificação");
         LocalizarEtapaPorId(snapshot.Configuracao, c.ObjetivaId)["peso"]!.GetValue<string>().Should().Be(
-            "4.0000", "V2 congela a configuração EDITADA sob a sessão — o peso da Prova Objetiva enviado no passo 18");
-        snapshot.HashConfiguracao.Should().NotBe(c.HashV1, "V2 é uma versão congelada distinta de V1 — consequência de qualquer retificação, provada aqui só como reforço da asserção de peso acima");
+            "3.5000", "V2 congela a configuração vigente — o peso da Prova Objetiva é o da versão 1");
+        snapshot.HashConfiguracao.Should().NotBe(c.HashV1, "V2 é uma versão congelada distinta de V1: toda retificação acrescenta o bloco da retificação ao envelope");
         ConferirQuadroDePesosPorArea(snapshot.Configuracao["classificacao"]!, c.ResolucaoPesoAreaEnem);
         await ConferirQueSoHaDuasVersoesAsync(c);
     }
@@ -344,6 +309,6 @@ internal static class PassosDoEnvelopeFechado
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         int total = await db.VersoesConfiguracao.AsNoTracking().CountAsync(v => v.ProcessoSeletivoId == c.Ctx.ProcessoId);
 
-        total.Should().Be(2, "publicação (V1) + fechamento da sessão (V2) — nada mais congelou uma versão");
+        total.Should().Be(2, "publicação (V1) + retificação (V2) — nada mais congelou uma versão");
     }
 }

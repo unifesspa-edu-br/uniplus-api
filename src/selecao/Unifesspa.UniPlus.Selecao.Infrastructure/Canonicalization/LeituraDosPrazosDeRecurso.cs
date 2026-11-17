@@ -21,7 +21,7 @@ internal static class LeituraDosPrazosDeRecurso
     /// <summary>
     /// O recorte de competência da banca — as categorias de documento que ela julga. Como
     /// as próprias bancas, as categorias não congelam <c>id</c>: nada aponta para a linha
-    /// de fora dela, e a reposição as recria por inteiro.
+    /// de fora dela, e a reidratação as recria por inteiro.
     /// </summary>
     internal static List<CategoriaJulgada> LerRecorteDeCompetencia(LeitorEnvelope leitor, JsonObject bancaItem, string pathPai)
     {
@@ -61,7 +61,7 @@ internal static class LeituraDosPrazosDeRecurso
     /// <remarks>
     /// O <c>produtoAncoraId</c> é irmão de <c>regra</c> e <c>args</c>, e não campo de
     /// <c>args</c>: ele não é parâmetro que alguém preencha, e sim a referência que a fase
-    /// deriva do próprio produto preliminar. A restauração o repõe como estava congelado —
+    /// deriva do próprio produto preliminar. A reidratação o repõe como estava congelado —
     /// é ele que o ato já publicado resolve de volta para achar o prazo que lhe corresponde
     /// (UNI-REQ-0093).
     /// </remarks>

@@ -29,7 +29,7 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         ResultadoDoCicloNovo resultado = publicado.Conferir(publicado.ComPrazoNovoEm(publicado.Prova), [], publicado.ItemPreliminar);
 
         FieldError recusa = resultado.Recusas.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be($"cronograma.ciclosNovos[{publicado.ItemPreliminar.Chave}]");
+        recusa.Field.Should().BeNull("o ciclo novo é declarado no pedido, e não no documento");
         recusa.Error.Code.Should().Be(RetificacaoErrorCodes.CicloNovoNaoDeclarado);
         recusa.Error.Message.Should().Contain(Materia).And.Contain("exige declarar o novo ciclo");
         resultado.CiclosRecursaisRefeitos.Should().BeEmpty();
@@ -111,7 +111,7 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         ResultadoDoCicloNovo resultado = publicado.Conferir(publicado.Fases, [publicado.ItemPreliminar]);
 
         FieldError recusa = resultado.Recusas.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be($"cronograma.ciclosNovos[{publicado.ItemPreliminar.Chave}]");
+        recusa.Field.Should().BeNull("o ciclo novo é declarado no pedido, e não no documento");
         recusa.Error.Code.Should().Be(RetificacaoErrorCodes.CicloNovoDeItemSemPreliminarAberto);
         resultado.CiclosRecursaisRefeitos.Should().BeEmpty();
     }
@@ -170,7 +170,7 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         ResultadoDoCicloNovo recusado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [publicada], [prova], [nova], new HashSet<IdentidadeDoItemDoEdital>(), Fatos(Iniciadas(), item));
         ResultadoDoCicloNovo declarado = ConferenciaDoCicloNovoDaRetificacao.Conferir([prova], [publicada], [prova], [nova], new HashSet<IdentidadeDoItemDoEdital> { item }, Fatos(Iniciadas(), item));
 
-        recusado.Recusas.Should().ContainSingle().Which.Field.Should().Be($"cronograma.ciclosNovos[{item.Chave}]");
+        recusado.Recusas.Should().ContainSingle().Which.Field.Should().BeNull();
         declarado.Recusas.Should().BeEmpty();
         declarado.CiclosRecursaisRefeitos.Should().Equal(item);
     }
@@ -246,7 +246,9 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         resultado.Recusas.Select(static r => r.Error.Code).Should().Equal(
             RetificacaoErrorCodes.CicloNovoNaoDeclarado, RetificacaoErrorCodes.CicloNovoNaoDeclarado,
             RetificacaoErrorCodes.CicloNovoDeItemSemPreliminarAberto, RetificacaoErrorCodes.CicloNovoDeItemSemPreliminarAberto);
-        resultado.Recusas.Select(static r => r.Field).Should().Equal([.. CamposEmOrdem(piso), .. CamposEmOrdem(definitivosDeclarados)]);
+        resultado.Recusas.Select(static r => r.Field).Should().AllSatisfy(static campo => campo.Should().BeNull());
+        resultado.Recusas.Select(static r => r.Error.Message).Zip([.. AtosEmOrdem(piso), .. AtosEmOrdem(definitivosDeclarados)])
+            .Should().OnlyContain(static par => par.First.Contains($"'{par.Second}'", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Fase do lugar do preliminar ausente no cronograma novo não exige declarar o ciclo aqui")]
@@ -260,8 +262,8 @@ public sealed class ConferenciaDoCicloNovoDaRetificacaoTests
         resultado.Recusas.Should().BeEmpty();
     }
 
-    private static IEnumerable<string> CamposEmOrdem(IEnumerable<IdentidadeDoItemDoEdital> itens) =>
-        itens.OrderBy(static i => i.Chave, StringComparer.Ordinal).Select(static i => $"cronograma.ciclosNovos[{i.Chave}]");
+    private static IEnumerable<string> AtosEmOrdem(IEnumerable<IdentidadeDoItemDoEdital> itens) =>
+        itens.OrderBy(static i => i.Chave, StringComparer.Ordinal).Select(static i => i.AtoCodigo);
 
     private static IdentidadeDoItemDoEdital PreliminarDaEtapa(EtapaProcesso etapa) =>
         IdentidadeDoItemDoEdital.DaEtapa(etapa, etapa.Produtos.Single(static p => p.Papel == PapelProdutoFase.Preliminar));

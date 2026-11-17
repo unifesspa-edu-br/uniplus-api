@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 
 /// <summary>
 /// Os eixos que a versão publicada congela no item que coleta um fato: como o campo é desenhado,
@@ -56,13 +57,13 @@ public sealed record EixosDeVersaoPublicada(
     IReadOnlyDictionary<string, string> OperacaoDosAgregados);
 
 /// <summary>
-/// Um eixo que a sessão de retificação congelaria diferente do que a versão publicada congelou, num
+/// Um eixo que a retificação congelaria diferente do que a versão publicada congelou, num
 /// fato que o candidato já pode ter respondido (UNI-REQ-0144), ou na operação de um agregado de
 /// grupo, que o fato de membro já coletado alimenta.
 /// </summary>
 public sealed record TrocaDeEixo(string Fato, string Eixo, string? Publicado, string? Novo, bool DeAgregado = false)
 {
-    public const string Codigo = "RascunhoRetificacao.EixoDoFatoJaColetadoAlterado";
+    public const string Codigo = RetificacaoErrorCodes.EixoDoFatoJaColetadoAlterado;
 
     public DomainError ParaErro() => new(Codigo, DeAgregado ? MensagemDoAgregado() : MensagemDoFato());
 

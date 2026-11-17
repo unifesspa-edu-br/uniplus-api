@@ -51,12 +51,12 @@ public sealed class ConformidadeAvaliacaoDasEtapasTests
     private static ProcessoSeletivo ProcessoCom(params EtapaProcesso[] etapas)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirEtapas(etapas, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue();
         return processo;
     }
 
     private static IEnumerable<ItemConformidade> Vermelhos(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
             .Where(static i => !i.Ok && i.Dimensao == DimensaoConformidade.Etapas);
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(

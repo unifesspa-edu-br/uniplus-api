@@ -15,7 +15,6 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
@@ -45,12 +44,12 @@ internal static class RegrasDasEtapas
     /// o ENEM, o que a configuração já cita, a fase e a janela no cronograma e, por fim, o fechamento do ciclo recursal. Uma
     /// lista vazia é válida: o processo sem prova (classificação importada) não tem etapa.
     /// </summary>
-    internal static Result ConferirSubstituicao(EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> etapas)
+    internal static Result ConferirSubstituicao(ConfiguracaoDeclarada configuracao, IReadOnlyList<EtapaProcesso> etapas)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         EtapasDoProcesso declaradas = EtapasDoProcesso.Das(etapas);
-        IReadOnlyList<FieldError> causas = CausasDaSubstituicao(estado, etapas, declaradas);
+        IReadOnlyList<FieldError> causas = CausasDaSubstituicao(configuracao, etapas, declaradas);
 
         return causas.Count == 0 ? Result.Success() : Result.ValidationFailure(causas);
     }
@@ -58,15 +57,15 @@ internal static class RegrasDasEtapas
     // A coerência com o ENEM vem depois das causas do conjunto: a classificação é gravada depois das etapas, e num processo
     // novo ela ainda é nula aqui. A etapa que declara fase fora do cronograma não tem janela a conferir contra ela.
     private static IReadOnlyList<FieldError> CausasDaSubstituicao(
-        EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> etapas, EtapasDoProcesso declaradas)
+        ConfiguracaoDeclarada configuracao, IReadOnlyList<EtapaProcesso> etapas, EtapasDoProcesso declaradas)
     {
-        CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do(estado.CronogramaFases);
+        CronogramaDoProcesso cronograma = CronogramaDoProcesso.Do(configuracao.Cronograma.CronogramaFases);
 
         return
         [
             .. declaradas.Conferir(),
-            .. CausasDaRecusa.Da(EtapaNotaEnemSemClassificacaoEnem(etapas, estado.Classificacao)),
-            .. CausasDaRecusa.Da(RecusaDasReferenciasDaConfiguracao(estado, etapas)),
+            .. CausasDaRecusa.Da(EtapaNotaEnemSemClassificacaoEnem(etapas, configuracao.Avaliacao.Classificacao)),
+            .. CausasDaRecusa.Da(RecusaDasReferenciasDaConfiguracao(configuracao, etapas)),
             .. EtapasNoCronograma.ConferirFaseDasEtapas(cronograma, declaradas),
             .. EtapasNoCronograma.ConferirJanelaDasEtapas(cronograma, declaradas),
             .. declaradas.ConferirFechamentoDoCiclo(),
@@ -74,20 +73,20 @@ internal static class RegrasDasEtapas
     }
 
     // O que a configuração já cita da etapa não pode ficar sem ela nem mudar de lugar.
-    private static DomainError? RecusaDasReferenciasDaConfiguracao(EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> etapas)
+    private static DomainError? RecusaDasReferenciasDaConfiguracao(ConfiguracaoDeclarada configuracao, IReadOnlyList<EtapaProcesso> etapas)
     {
         List<Guid> novosIds = [.. etapas.Select(e => e.Id)];
 
-        return EtapaCitadaPeloDesempate(estado, novosIds)
-            ?? EtapaCitadaPelaClassificacao(estado, etapas, novosIds)
-            ?? EtapaCitadaPelaExigenciaDocumental(estado, novosIds)
-            ?? EtapaQueMudouDeFaseDaExigencia(estado, etapas);
+        return EtapaCitadaPeloDesempate(configuracao, novosIds)
+            ?? EtapaCitadaPelaClassificacao(configuracao, etapas, novosIds)
+            ?? EtapaCitadaPelaExigenciaDocumental(configuracao, novosIds)
+            ?? EtapaQueMudouDeFaseDaExigencia(configuracao, etapas);
     }
 
     // Trocar as etapas deixaria o critério apontando para uma etapa removida: desempate inexecutável.
-    private static DomainError? EtapaCitadaPeloDesempate(EstadoDaConfiguracao estado, List<Guid> novosIds)
+    private static DomainError? EtapaCitadaPeloDesempate(ConfiguracaoDeclarada configuracao, List<Guid> novosIds)
     {
-        foreach (CriterioDesempate criterio in estado.CriteriosDesempate)
+        foreach (CriterioDesempate criterio in configuracao.Avaliacao.CriteriosDesempate)
         {
             if (criterio.Args is ArgsDesempateMaiorNotaEtapa args && !novosIds.Contains(args.EtapaRef))
             {
@@ -101,8 +100,8 @@ internal static class RegrasDasEtapas
     }
 
     private static DomainError? EtapaCitadaPelaClassificacao(
-        EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> etapas, List<Guid> novosIds) =>
-        estado.Classificacao is { } classificacao
+        ConfiguracaoDeclarada configuracao, IReadOnlyList<EtapaProcesso> etapas, List<Guid> novosIds) =>
+        configuracao.Avaliacao.Classificacao is { } classificacao
             ? EtapaOrfaDeRegraDeEliminacao(classificacao, novosIds) ?? AusenciaQueTocaAEtapaDoEnem(classificacao, etapas)
             : null;
 
@@ -121,9 +120,9 @@ internal static class RegrasDasEtapas
             ? AusenciaNaEtapaDoEnemRecusada()
             : null;
 
-    private static DomainError? EtapaCitadaPelaExigenciaDocumental(EstadoDaConfiguracao estado, List<Guid> novosIds)
+    private static DomainError? EtapaCitadaPelaExigenciaDocumental(ConfiguracaoDeclarada configuracao, List<Guid> novosIds)
     {
-        DocumentoExigido? exigenciaOrfa = estado.DocumentosExigidos
+        DocumentoExigido? exigenciaOrfa = configuracao.Exigencias.DocumentosExigidos
             .FirstOrDefault(d => d.ExigidoNaEtapaId is { } etapaRef && !novosIds.Contains(etapaRef));
         return exigenciaOrfa is null
             ? null
@@ -134,15 +133,15 @@ internal static class RegrasDasEtapas
 
     // Manter o id não basta: a exigência declara a fase E a etapa em que o documento é coletado, e só
     // este caminho pode mover a etapa de fase depois de ela já estar referenciada.
-    private static DomainError? EtapaQueMudouDeFaseDaExigencia(EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> etapas) =>
-        estado.DocumentosExigidos
-            .Select(exigencia => MudancaDeFaseDaEtapaExigida(estado, etapas, exigencia))
+    private static DomainError? EtapaQueMudouDeFaseDaExigencia(ConfiguracaoDeclarada configuracao, IReadOnlyList<EtapaProcesso> etapas) =>
+        configuracao.Exigencias.DocumentosExigidos
+            .Select(exigencia => MudancaDeFaseDaEtapaExigida(configuracao, etapas, exigencia))
             .FirstOrDefault(static recusa => recusa is not null);
 
-    private static DomainError? MudancaDeFaseDaEtapaExigida(EstadoDaConfiguracao estado, IReadOnlyList<EtapaProcesso> etapas, DocumentoExigido exigencia)
+    private static DomainError? MudancaDeFaseDaEtapaExigida(ConfiguracaoDeclarada configuracao, IReadOnlyList<EtapaProcesso> etapas, DocumentoExigido exigencia)
     {
         EtapaProcesso? etapaNova = etapas.FirstOrDefault(e => e.Id == exigencia.ExigidoNaEtapaId);
-        FaseCronograma? faseDaExigencia = estado.CronogramaFases.FirstOrDefault(f => f.Id == exigencia.ExigidoNaFaseId);
+        FaseCronograma? faseDaExigencia = configuracao.Cronograma.CronogramaFases.FirstOrDefault(f => f.Id == exigencia.ExigidoNaFaseId);
 
         return exigencia.ExigidoNaEtapaId is not null
             && etapaNova is not null
@@ -206,21 +205,21 @@ internal static class RegrasDasEtapas
     /// A etapa é referenciada por configuração que não pertence à fase dela — critério de
     /// desempate por nota de etapa ou regra de eliminação que a cita.
     /// </summary>
-    internal static bool EtapaReferenciadaPorClassificacaoOuDesempate(EstadoDaConfiguracao estado, Guid etapaId) =>
-        EtapaReferenciadaPorDesempate(estado, etapaId)
-        || (estado.Classificacao?.RegrasEliminacao ?? []).Any(regra => regra.Args.EtapaReferenciada() == etapaId);
+    internal static bool EtapaReferenciadaPorClassificacaoOuDesempate(ConfiguracaoDeclarada configuracao, Guid etapaId) =>
+        EtapaReferenciadaPorDesempate(configuracao, etapaId)
+        || (configuracao.Avaliacao.Classificacao?.RegrasEliminacao ?? []).Any(regra => regra.Args.EtapaReferenciada() == etapaId);
 
     /// <summary>Como a configuração do processo cita a nota das etapas: pelo desempate e pela eliminação por nota mínima.</summary>
-    internal static CitacoesDeNota CitacoesDeNotaDaConfiguracao(EstadoDaConfiguracao estado) => new(
-        [.. estado.Etapas.Select(static e => e.Id).Where(id => EtapaReferenciadaPorDesempate(estado, id))],
-        [.. estado.Etapas.SelectMany(etapa => EliminacoesPorNotaMinimaDaEtapa(estado, etapa.Id).Select(args => (etapa.Id, args.NotaMinima)))]);
+    internal static CitacoesDeNota CitacoesDeNotaDaConfiguracao(ConfiguracaoDeclarada configuracao) => new(
+        [.. configuracao.Avaliacao.Etapas.Select(static e => e.Id).Where(id => EtapaReferenciadaPorDesempate(configuracao, id))],
+        [.. configuracao.Avaliacao.Etapas.SelectMany(etapa => EliminacoesPorNotaMinimaDaEtapa(configuracao, etapa.Id).Select(args => (etapa.Id, args.NotaMinima)))]);
 
-    internal static bool EtapaReferenciadaPorDesempate(EstadoDaConfiguracao estado, Guid etapaId) =>
-        estado.CriteriosDesempate.Any(c => c.Args is ArgsDesempateMaiorNotaEtapa args && args.EtapaRef == etapaId);
+    internal static bool EtapaReferenciadaPorDesempate(ConfiguracaoDeclarada configuracao, Guid etapaId) =>
+        configuracao.Avaliacao.CriteriosDesempate.Any(c => c.Args is ArgsDesempateMaiorNotaEtapa args && args.EtapaRef == etapaId);
 
     /// <summary>As regras de eliminação por nota mínima que citam a etapa.</summary>
-    internal static IEnumerable<ArgsElimNotaMinimaEtapa> EliminacoesPorNotaMinimaDaEtapa(EstadoDaConfiguracao estado, Guid etapaId) =>
-        (estado.Classificacao?.RegrasEliminacao ?? [])
+    internal static IEnumerable<ArgsElimNotaMinimaEtapa> EliminacoesPorNotaMinimaDaEtapa(ConfiguracaoDeclarada configuracao, Guid etapaId) =>
+        (configuracao.Avaliacao.Classificacao?.RegrasEliminacao ?? [])
             .Select(static regra => regra.Args)
             .OfType<ArgsElimNotaMinimaEtapa>()
             .Where(args => args.EtapaRef == etapaId);

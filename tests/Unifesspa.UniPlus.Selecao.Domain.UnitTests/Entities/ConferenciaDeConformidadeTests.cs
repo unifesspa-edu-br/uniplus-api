@@ -68,7 +68,7 @@ public sealed class ConferenciaDeConformidadeTests
         // Um processo sem prova (SiSU, classificação importada) publica sem etapa: "Etapas" não é item incondicional.
         causas.Should().OnlyContain(static causa => causa.Error.Code == "ProcessoSeletivo.ConformidadeInsuficiente");
         causas.Should().Contain(static causa => causa.Field == "classificacao" && causa.Error.Message.Contains("Classificação", StringComparison.Ordinal));
-        ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Errors
+        ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Errors
             .Select(static causa => causa.Error.Code).Should().Contain("ProcessoSeletivo.CronogramaFasesVazio");
     }
 

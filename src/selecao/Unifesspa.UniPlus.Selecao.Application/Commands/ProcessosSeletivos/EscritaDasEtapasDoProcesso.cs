@@ -46,11 +46,6 @@ internal static class EscritaDasEtapasDoProcesso
         EtapaProcessoInput input, FormaDeAvaliacao? forma, ReferenciaRegra? regraConsolidacao) =>
         new(input.Peso, input.NotaMinima, input.NotaMaxima, input.PassoDoLancamento, forma, regraConsolidacao, NiveisDeclarados(input));
 
-    /// <summary>As recusas do caráter declarado contra o que o tipo da etapa admite, já com a posição.</summary>
-    public static IReadOnlyList<FieldError> ErrosDeCarater(
-        CaraterEtapa carater, bool admitePontuacao, bool admiteEliminacao, string nomeDoTipo, int indice) =>
-        ComIndice(CaraterDaEtapa.ValidarAdmitido(carater, admitePontuacao, admiteEliminacao, nomeDoTipo), indice);
-
     private static IReadOnlyList<FieldError> ErrosDoPayloadDaEtapa(EtapaProcessoInput etapa, int indice) =>
         ComIndice(FormaDaEtapa(etapa), indice);
 

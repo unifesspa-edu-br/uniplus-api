@@ -81,7 +81,8 @@ public static class UniPlusOpenApiServiceCollectionExtensions
     {
         services.TryAddSingleton<UniPlusOperationTransformer>();
         services.TryAddSingleton<CursorPaginationOperationTransformer>();
-        services.TryAddSingleton<PrecondicaoOperationTransformer>();
+        services.TryAddSingleton<HeadersDeRespostaOperationTransformer>();
+        services.TryAddSingleton<PrecondicaoObrigatoriaOperationTransformer>();
         services.TryAddSingleton<IdempotenciaOperationTransformer>();
         services.TryAddSingleton<EsperaEsgotadaPelaTravaOperationTransformer>();
         services.TryAddSingleton<AuthorizationOperationTransformer>();
@@ -110,7 +111,8 @@ public static class UniPlusOpenApiServiceCollectionExtensions
     {
         options.AddOperationTransformer<UniPlusOperationTransformer>();
         options.AddOperationTransformer<CursorPaginationOperationTransformer>();
-        options.AddOperationTransformer<PrecondicaoOperationTransformer>();
+        options.AddOperationTransformer<HeadersDeRespostaOperationTransformer>();
+        options.AddOperationTransformer<PrecondicaoObrigatoriaOperationTransformer>();
         options.AddOperationTransformer<IdempotenciaOperationTransformer>();
         options.AddOperationTransformer<EsperaEsgotadaPelaTravaOperationTransformer>();
         options.AddOperationTransformer<AuthorizationOperationTransformer>();

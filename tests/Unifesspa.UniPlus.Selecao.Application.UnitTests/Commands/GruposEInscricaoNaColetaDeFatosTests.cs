@@ -29,7 +29,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
     [Fact(DisplayName = "Grupo de opções condicionado a campo posterior é recusado")]
     public async Task Handle_CondicaoDasOpcoesSobreCampoPosterior_Recusa()
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
             new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null,
@@ -52,7 +52,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
             : [new FatoColetadoInput("DATA_NASCIMENTO", ordemDaData, "Data de nascimento", "DATA", "SEMPRE", null)];
         FatoColetadoInput maiorDeIdade = new("BAIXA_RENDA", ordemDoItem, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("FAIXA_ETARIA", "MAIOR_IGUAL", 18)]]);
 
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(ProcessoEmRascunho(), [.. dataDeNascimento, maiorDeIdade]);
+        Result resultado = await DefinirNaHabilitacaoAsync(ProcessoEmRascunho(), [.. dataDeNascimento, maiorDeIdade]);
 
         resultado.IsSuccess.Should().Be(recusa is null, resultado.Error?.Message);
         resultado.Errors.Select(static e => e.Error.Code).Should().Equal(recusa is null ? [] : [recusa]);
@@ -61,7 +61,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
     [Fact(DisplayName = "Regra do item que cita fato calculado de atributos do candidato sem dependências declaradas é recusada pelo nome")]
     public async Task Handle_CitaAtributoDoCandidato_RecusaNomeada()
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
             new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("FAIXA_DE_RENDA", "IGUAL", "DE_18_A_59")]]),
@@ -80,10 +80,9 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
-            [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao(null!, "IGUAL", true)]])],
-            PrecondicaoIfMatch.Ausente);
+            [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao(null!, "IGUAL", true)]])]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
     }
@@ -96,7 +95,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         FatoColetadoInput[] itens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens + 1)
             .Select(static i => new FatoColetadoInput($"FATO_{i}", i, "Campo", "BOOLEANO", "SEMPRE", null))];
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao, itens, PrecondicaoIfMatch.Ausente));
+        Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao, itens));
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
         await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
@@ -108,7 +107,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, Composicao()));
+        Result resultado = await HandleAsync(mocks, ComGrupo(processo, Composicao()));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.GruposColetados.Should().ContainSingle().Which.Subitens.Select(static s => s.FatoCodigo)
@@ -125,7 +124,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
             Subitens = [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "SEMPRE", null)],
         };
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
+        Result resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
 
         FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
         erro.Field.Should().Be("grupos[0].subitens[0].fatoCodigo");
@@ -139,7 +138,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Mocks mocks = NovosMocks(processo, processo.Id);
         GrupoColetadoInput grupo = Composicao() with { Exibicao = [[Condicao("COR_RACA", "IGUAL", "VERDE")]] };
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
+        Result resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("grupos[0].exibicao");
     }
@@ -151,7 +150,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Mocks mocks = NovosMocks(processo, processo.Id);
         GrupoColetadoInput grupo = Composicao() with { Exibicao = [[Condicao("FAIXA_DE_RENDA", "IGUAL", "MENOR_DE_18")]] };
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
+        Result resultado = await HandleAsync(mocks, ComGrupo(processo, grupo));
 
         resultado.Errors.Should().Contain(static e => e.Field == "grupos[0]" && e.Error.Code == GrafoFormularioErrorCodes.CitaAtributoDoCandidato);
     }
@@ -173,7 +172,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, GrupoComVariasRecusas()));
+        Result resultado = await HandleAsync(mocks, ComGrupo(processo, GrupoComVariasRecusas()));
 
         resultado.Errors.Select(static e => e.Field).Should().Contain(
             ["grupos[0].maximo", "grupos[0].exibicao", "grupos[0].subitens[0].fatoCodigo", "grupos[0].subitens[1].etapaCodigo"]);
@@ -186,7 +185,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         Mocks mocks = NovosMocks(processo, processo.Id);
         (await HandleAsync(mocks, ComGrupo(processo, Composicao()))).IsSuccess.Should().BeTrue();
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, Composicao()) with { Grupos = null });
+        Result resultado = await HandleAsync(mocks, ComGrupo(processo, Composicao()) with { Grupos = null });
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.GruposColetados.Should().ContainSingle();
@@ -200,8 +199,8 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         FatoColetadoInput[] itens = [.. Enumerable.Range(0, FormaDoItem.MaximoDeItens - 2)
             .Select(static i => new FatoColetadoInput($"ITEM_{i}", i, "Item", "BOOLEANO", "NUNCA", null))];
 
-        Result<MutacaoAceita> resultado = await HandleAsync(
-            mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao, itens, PrecondicaoIfMatch.Ausente, [Composicao()]));
+        Result resultado = await HandleAsync(
+            mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao, itens, [Composicao()]));
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be(ItemFormularioErrorCodes.ItensEmExcesso);
         await mocks.FatoCandidatoReader.DidNotReceive().ListarAsync(Arg.Any<CancellationToken>());
@@ -215,7 +214,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
             [.. VocabularioSeed().Select(static f => f.Codigo == "MENOR_SOB_GUARDA" ? f with { Ativo = false } : f)]));
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, ComGrupo(processo, Composicao()));
+        Result resultado = await HandleAsync(mocks, ComGrupo(processo, Composicao()));
 
         resultado.Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
     }
@@ -229,9 +228,9 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         [
             new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "SEMPRE", [[Condicao("NACIONALIDADE", "DIFERENTE", "ESTRANGEIRO")]],
                 EtapaCodigo: FormularioDeTeste.Secao),
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.FatosColetados.ForaDoConjuntoBasico().Should().ContainSingle().Which.Ordem.Should().Be(FormularioDeTeste.PrimeiraOrdemDeInscricao);
@@ -244,9 +243,9 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoComInscricao();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirFatosColetadosCommand command = new(
-            processo.Id, FinalidadeFormulario.Inscricao, [.. ConjuntoBasicoDaInscricao.Itens], PrecondicaoIfMatch.Ausente);
+            processo.Id, FinalidadeFormulario.Inscricao, [.. ConjuntoBasicoDaInscricao.Itens]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.FatosColetados.Should().HaveCount(ConjuntoBasicoDaInscricao.Itens.Count);
@@ -264,7 +263,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoComInscricao();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        Result<MutacaoAceita> resultado = await DefinirNaInscricaoAsync(mocks, processo, ItensComDadoBasicoAlteradoENaSecaoReservada());
+        Result resultado = await DefinirNaInscricaoAsync(mocks, processo, ItensComDadoBasicoAlteradoENaSecaoReservada());
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -279,7 +278,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
     [InlineData("ESTADO_CIVIL", false)]
     public async Task Handle_MunicipioCitaComoUf_SoCampoDeUfDoGeo(string fatoDaUf, bool aceito)
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
             new FatoColetadoInput(fatoDaUf, 0, "UF", "SELECAO_UNICA", "SEMPRE", null),
@@ -303,7 +302,7 @@ public sealed class GruposEInscricaoNaColetaDeFatosTests
         (await DefinirNaInscricaoAsync(mocks, processo, itens, [Composicao()])).IsSuccess.Should().BeTrue();
         int ordemGravada = processo.GruposColetados.Single().Ordem;
 
-        Result<MutacaoAceita> resultado = await DefinirNaInscricaoAsync(mocks, processo, itens);
+        Result resultado = await DefinirNaInscricaoAsync(mocks, processo, itens);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.GruposColetados.Should().ContainSingle().Which.Ordem.Should().Be(ordemGravada, "o grupo omitido fica entre os itens, onde estava");

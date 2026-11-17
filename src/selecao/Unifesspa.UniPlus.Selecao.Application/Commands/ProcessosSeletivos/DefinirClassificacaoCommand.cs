@@ -54,5 +54,4 @@ public sealed record DefinirClassificacaoCommand(
     IReadOnlyList<RegraEliminacaoInput> RegrasEliminacao,
     bool BaseadoEmEnem,
     string? ResolucaoPesoAreaEnem,
-    decimal? EscalaNotaFinal,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    decimal? EscalaNotaFinal) : ICommand<Result>;

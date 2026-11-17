@@ -91,7 +91,7 @@ public sealed class EtapaBancaPersistenciaTests(ProcessoSeletivoDbFixture fixtur
         ProcessoSeletivo processo = NovoProcesso(nome);
         EtapaProcesso etapa = NovaEtapaDeTitulos();
         etapa.DefinirBancas(bancas).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
         escrita.ProcessosSeletivos.Add(processo);
         await escrita.SaveChangesAsync();
         return (processo.Id, etapa.Id);

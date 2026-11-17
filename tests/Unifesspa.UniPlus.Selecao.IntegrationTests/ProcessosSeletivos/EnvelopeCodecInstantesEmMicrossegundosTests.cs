@@ -1,9 +1,12 @@
 namespace Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos;
 
+using System.Globalization;
+
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 using Xunit;
 
@@ -12,33 +15,39 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 
 /// <summary>
 /// Os instantes do envelope têm seis casas fixas de fração: o período de inscrição, a janela da fase e a da etapa
-/// fazem a ida e volta byte a byte com os microssegundos, e o decodificador recusa qualquer outra forma.
+/// são lidos sem perda dos microssegundos, e o decodificador recusa qualquer outra forma.
 /// </summary>
 public sealed class EnvelopeCodecInstantesEmMicrossegundosTests
 {
-    [Theory(DisplayName = "O instante com microssegundos no período e na janela da fase volta byte a byte")]
+    [Theory(DisplayName = "O instante com microssegundos no período e na janela da fase é lido sem perda")]
     [InlineData("periodo.inicio", "2026-03-02T00:00:00.000001Z")]
     [InlineData("periodo.fim", "2026-03-20T23:59:59.000001Z")]
     [InlineData("cronogramaFases.fases.0.inicio", "2026-03-02T00:00:00.000001Z")]
     [InlineData("cronogramaFases.fases.0.fim", "2026-03-20T23:59:59.000001Z")]
-    public void Janela_ComMicrossegundos_VoltaByteAByte(string caminho, string instante)
+    public void Janela_ComMicrossegundos_ELidaSemPerda(string caminho, string instante)
     {
-        (byte[] originais, byte[] mutados, byte[] recodificados) = MutarEReidratar(caminho, instante);
+        EnvelopeReidratado envelope = ReidratarMutado(caminho, instante);
 
-        recodificados.Should().NotEqual(originais);
-        recodificados.Should().Equal(mutados);
+        DateTimeOffset esperado = DateTimeOffset.Parse(instante, CultureInfo.InvariantCulture);
+        DateTimeOffset?[] lidos = caminho switch
+        {
+            "periodo.inicio" => [envelope.Dados.PeriodoInscricaoInicio],
+            "periodo.fim" => [envelope.Dados.PeriodoInscricaoFim],
+            "cronogramaFases.fases.0.inicio" => [envelope.Grafo.CronogramaFases[0].Inicio],
+            _ => [envelope.Grafo.CronogramaFases[0].Fim],
+        };
+        lidos.Should().Equal(esperado);
     }
 
-    [Theory(DisplayName = "O instante com microssegundos na janela da etapa volta byte a byte")]
+    [Theory(DisplayName = "O instante com microssegundos na janela da etapa é lido sem perda")]
     [InlineData("inicio", "2026-03-02T00:00:00.000001Z")]
     [InlineData("fim", "2026-03-20T23:59:59.999999Z")]
-    public void JanelaDaEtapa_ComMicrossegundos_VoltaByteAByte(string chave, string instante)
+    public void JanelaDaEtapa_ComMicrossegundos_ELidaSemPerda(string chave, string instante)
     {
-        (byte[] originais, byte[] mutados, byte[] recodificados) = MutarEReidratar(
-            envelope => envelope["etapas"]!.AsArray()[0]![chave] = instante);
+        EnvelopeReidratado envelope = ReidratarMutado(mutado => mutado["etapas"]!.AsArray()[0]![chave] = instante);
 
-        recodificados.Should().NotEqual(originais);
-        recodificados.Should().Equal(mutados);
+        EtapaProcesso etapa = envelope.Grafo.Etapas[0];
+        (chave == "inicio" ? etapa.Inicio : etapa.Fim).Should().Be(DateTimeOffset.Parse(instante, CultureInfo.InvariantCulture));
     }
 
     [Theory(DisplayName = "O instante fora da forma de seis casas e Z é recusado com o caminho do campo")]

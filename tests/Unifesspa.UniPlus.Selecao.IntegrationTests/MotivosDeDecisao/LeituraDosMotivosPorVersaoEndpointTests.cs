@@ -15,12 +15,11 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence;
 
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.MotivosDeDecisao.ChamadasDosMotivosDeTeste;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.CicloDaRetificacaoApoio;
 
 /// <summary>
 /// A leitura dos motivos do processo numa versão publicada do edital pelo endpoint real, contra Postgres via Testcontainers
-/// (UNI-REQ-0124, UNI-REQ-0285): a versão 1 só traz o motivo escolhido antes da publicação, a versão 2 traz também o
-/// incluído na retificação, e o motivo que saiu vale até a versão anterior à saída.
+/// (UNI-REQ-0124, UNI-REQ-0285): a versão 1 traz o motivo escolhido antes da publicação, a versão 2, nascida da retificação do ato, o
+/// conserva, e o motivo que saiu vale até a versão anterior à saída.
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
@@ -41,57 +40,78 @@ public sealed class LeituraDosMotivosPorVersaoEndpointTests : IAsyncLifetime
 
     public Task DisposeAsync() => _chamadas.LimparAsync();
 
-    [Fact(DisplayName = "A versão 1 traz o motivo A, a versão 2 traz A e B, e a versão que o processo não publicou devolve versão não publicada")]
+    [Fact(DisplayName = "A versão 1 e a versão 2, nascida da retificação do ato, trazem o motivo escolhido antes da publicação, e a versão que o processo não publicou devolve versão não publicada")]
     public async Task Leitura_PorVersao_TrazOQueValiaNela()
     {
-        (Guid processoId, MotivoDeDecisao a, MotivoDeDecisao b) = await PublicarComAERetificarComBAsync(nameof(Leitura_PorVersao_TrazOQueValiaNela));
+        (Guid processoId, MotivoDeDecisao a) = await PublicarERetificarOAtoAsync(nameof(Leitura_PorVersao_TrazOQueValiaNela));
 
         Codigos(await _chamadas.LerAsync(processoId, versao: 1)).Should().Equal(a.Codigo.Valor);
-        Codigos(await _chamadas.LerAsync(processoId, versao: 2)).Should().BeEquivalentTo([a.Codigo.Valor, b.Codigo.Valor]);
-        Codigos(await _chamadas.LerAsync(processoId)).Should().BeEquivalentTo([a.Codigo.Valor, b.Codigo.Valor]);
+        Codigos(await _chamadas.LerAsync(processoId, versao: 2)).Should().Equal(a.Codigo.Valor);
+        Codigos(await _chamadas.LerAsync(processoId)).Should().Equal(a.Codigo.Valor);
         using HttpResponseMessage naoPublicada = await _chamadas.LerRespostaAsync(processoId, versao: 3);
         naoPublicada.StatusCode.Should().Be(HttpStatusCode.NotFound);
         (await CodigoDoErroAsync(naoPublicada)).Should().Be("uniplus.selecao.motivo_de_decisao.versao_nao_publicada");
     }
 
-    [Fact(DisplayName = "O motivo com saída na versão 2 vale na versão 1 e não vale na 2 nem na escolha atual")]
-    public async Task Leitura_MotivoComSaida_ValeAteAVersaoAnterior()
+    [Fact(DisplayName = "Retificado o ato depois de o cadastro desativar o motivo e mudar a descrição, a retificação é aceita e a versão 2 traz a cópia publicada")]
+    public async Task Retificacao_MotivoDesativadoEEditadoNoCadastro_ConservaACopiaPublicada()
     {
-        (Guid processoId, MotivoDeDecisao a, MotivoDeDecisao b) = await PublicarComAERetificarComBAsync(nameof(Leitura_MotivoComSaida_ValeAteAVersaoAnterior));
+        (Guid processoId, Guid documentoId) = await _chamadas.SemearProcessoAsync(nameof(Retificacao_MotivoDesativadoEEditadoNoCadastro_ConservaACopiaPublicada));
+        MotivoDeDecisao a = await _chamadas.SemearMotivoAsync();
+        Guid fase = await LugaresDoProcessoDeTeste.FaseAsync(_chamadas.Services, processoId);
+        (await _chamadas.IncluirAsync(LugaresDoProcessoDeTeste.RotaDaFase(processoId, fase, a.Id))).StatusCode.Should().Be(HttpStatusCode.NoContent);
+        await _chamadas.PublicarAsync(processoId, documentoId);
+        await DesativarEEditarNoCadastroAsync(a.Id, "Redação do cadastro depois da publicação");
+
+        await RetificarOAtoAsync(processoId);
+
+        JsonElement naVersao2 = (await _chamadas.LerAsync(processoId, versao: 2)).Should().ContainSingle().Subject;
+        naVersao2.GetProperty("descricao").GetString().Should().Be(a.Descricao);
+        naVersao2.GetProperty("codigo").GetString().Should().Be(a.Codigo.Valor);
+    }
+
+    [Fact(DisplayName = "Com a versão de saída gravada por SQL, estado que o código ainda não produz, a leitura por versão devolve o motivo na versão anterior à saída e não devolve na saída nem na escolha atual")]
+    public async Task Leitura_VersaoDeSaidaGravadaPorSql_ValeAteAVersaoAnterior()
+    {
+        (Guid processoId, MotivoDeDecisao a) = await PublicarERetificarOAtoAsync(nameof(Leitura_VersaoDeSaidaGravadaPorSql_ValeAteAVersaoAnterior));
         await DefinirSaidaNaVersaoAsync(processoId, a.Id, versaoDeSaida: 2);
 
         Codigos(await _chamadas.LerAsync(processoId, versao: 1)).Should().Equal(a.Codigo.Valor);
-        Codigos(await _chamadas.LerAsync(processoId, versao: 2)).Should().Equal(b.Codigo.Valor);
-        Codigos(await _chamadas.LerAsync(processoId)).Should().Equal(b.Codigo.Valor);
+        Codigos(await _chamadas.LerAsync(processoId, versao: 2)).Should().BeEmpty();
+        Codigos(await _chamadas.LerAsync(processoId)).Should().BeEmpty();
     }
 
     private static string?[] Codigos(IReadOnlyList<JsonElement> escolhidos) =>
         [.. escolhidos.Select(static e => e.GetProperty("codigo").GetString())];
 
-    private async Task<(Guid ProcessoId, MotivoDeDecisao A, MotivoDeDecisao B)> PublicarComAERetificarComBAsync(string nome)
+    private async Task<(Guid ProcessoId, MotivoDeDecisao A)> PublicarERetificarOAtoAsync(string nome)
     {
         (Guid processoId, Guid documentoId) = await _chamadas.SemearProcessoAsync(nome);
         MotivoDeDecisao a = await _chamadas.SemearMotivoAsync();
-        MotivoDeDecisao b = await _chamadas.SemearMotivoAsync();
         Guid fase = await LugaresDoProcessoDeTeste.FaseAsync(_chamadas.Services, processoId);
         (await _chamadas.IncluirAsync(LugaresDoProcessoDeTeste.RotaDaFase(processoId, fase, a.Id))).StatusCode.Should().Be(HttpStatusCode.NoContent);
         await _chamadas.PublicarAsync(processoId, documentoId);
-        await RetificarIncluindoNaEtapaAsync(processoId, b.Id);
+        await RetificarOAtoAsync(processoId);
 
-        return (processoId, a, b);
+        return (processoId, a);
     }
 
-    private async Task RetificarIncluindoNaEtapaAsync(Guid processoId, Guid motivoId)
+    private async Task RetificarOAtoAsync(Guid processoId)
     {
-        Guid etapa = await LugaresDoProcessoDeTeste.EtapaAsync(_chamadas.Services, processoId);
         using HttpClient client = _fixture.Factory.CreateClient();
-        CicloDaRetificacao ciclo = new(_fixture.Factory, client, processoId);
-        string etag = LerETag(await ciclo.AbrirAsync("Inclusão de motivo de decisão"));
-        using HttpResponseMessage inclusao = await _chamadas.IncluirAsync(
-            LugaresDoProcessoDeTeste.RotaDaEtapa(processoId, etapa, motivoId), "Retorno do INEP passou a ser exigido pela norma.", etag);
-        inclusao.StatusCode.Should().Be(HttpStatusCode.NoContent, await inclusao.Content.ReadAsStringAsync());
-        using HttpResponseMessage fechamento = await ciclo.FecharAsync(await SemearDocumentoConfirmadoAsync(ciclo), LerETag(await ciclo.ObterSessaoAsync()));
-        fechamento.StatusCode.Should().Be(HttpStatusCode.NoContent, await fechamento.Content.ReadAsStringAsync());
+        Guid documento = await PublicacaoPeloEndpointDeTeste.SemearDocumentoConfirmadoAsync(_fixture.Factory, processoId);
+        using HttpResponseMessage retificacao = await PublicacaoPeloEndpointDeTeste.RetificarAsync(client, processoId, documento);
+        retificacao.StatusCode.Should().Be(HttpStatusCode.NoContent, await retificacao.Content.ReadAsStringAsync());
+    }
+
+    private async Task DesativarEEditarNoCadastroAsync(Guid motivoId, string descricao)
+    {
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        MotivoDeDecisao motivo = await db.MotivosDeDecisao.SingleAsync(m => m.Id == motivoId);
+        motivo.Atualizar(descricao).IsSuccess.Should().BeTrue();
+        motivo.Desativar().IsSuccess.Should().BeTrue();
+        await db.SaveChangesAsync();
     }
 
     private async Task DefinirSaidaNaVersaoAsync(Guid processoId, Guid motivoOrigemId, int versaoDeSaida)

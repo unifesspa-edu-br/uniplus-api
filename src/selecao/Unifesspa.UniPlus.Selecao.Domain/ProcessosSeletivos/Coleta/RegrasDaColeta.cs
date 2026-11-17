@@ -14,24 +14,24 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public static class RegrasDaColeta
 {
     internal static Result<MudancaDaConfiguracao> Planejar(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         FinalidadeFormulario finalidade,
         IReadOnlyList<FatoColetado> fatosColetados,
         IReadOnlyList<GrupoColetado>? grupos)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         // Sem grupos informados, os do formulário ficam como estão.
-        IReadOnlyList<GrupoColetado> gruposFinais = grupos ?? [.. CitacoesDosFormularios.GruposDaFinalidade(estado, finalidade)];
-        if (estado.FormularioDe(finalidade) is not { } formulario)
+        IReadOnlyList<GrupoColetado> gruposFinais = grupos ?? [.. CitacoesDosFormularios.GruposDaFinalidade(configuracao, finalidade)];
+        if (configuracao.Coleta.FormularioDe(finalidade) is not { } formulario)
         {
             return Result<MudancaDaConfiguracao>.Failure(RegrasDosFormularios.FormularioInexistente(finalidade));
         }
 
-        Result conferencia = ConferirFatosColetados(estado, formulario, finalidade, fatosColetados, gruposFinais);
+        Result conferencia = ConferirFatosColetados(configuracao, formulario, finalidade, fatosColetados, gruposFinais);
         return conferencia.IsFailure
             ? Result<MudancaDaConfiguracao>.ValidationFailure(conferencia.Errors)
-            : Result<MudancaDaConfiguracao>.Success(PlanejarTroca(estado, finalidade, fatosColetados, gruposFinais));
+            : Result<MudancaDaConfiguracao>.Success(PlanejarTroca(configuracao, finalidade, fatosColetados, gruposFinais));
     }
 
     /// <summary>
@@ -39,7 +39,7 @@ public static class RegrasDaColeta
     /// novos, já vinculados a ela.
     /// </summary>
     internal static MudancaDaConfiguracao PlanejarTroca(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         FinalidadeFormulario finalidade,
         IReadOnlyList<FatoColetado> fatosColetados,
         IReadOnlyList<GrupoColetado> grupos)
@@ -47,9 +47,9 @@ public static class RegrasDaColeta
         MudancaDaConfiguracao mudanca = new()
         {
             Campos = Troca.Substituindo(
-                estado.Campos.Where(f => f.Finalidade == finalidade),
+                configuracao.Coleta.Campos.Where(f => f.Finalidade == finalidade),
                 [.. fatosColetados, .. grupos.SelectMany(static g => g.Subitens)]),
-            GruposColetados = Troca.Substituindo(estado.GruposColetados.Where(g => g.Finalidade == finalidade), grupos),
+            GruposColetados = Troca.Substituindo(configuracao.Coleta.GruposColetados.Where(g => g.Finalidade == finalidade), grupos),
         };
         VincularFinalidade(finalidade, fatosColetados, grupos);
         return mudanca;
@@ -69,14 +69,14 @@ public static class RegrasDaColeta
         }
     }
 
-    internal static Result ConferirDerivacoes(EstadoDaConfiguracao estado, IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao)
+    internal static Result ConferirDerivacoes(ConfiguracaoDeclarada configuracao, IReadOnlyList<ConfiguracaoDerivacaoFato> regrasDerivacao)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         // O derivado não coincide com grupo repetível nem com campo de grupo: o código do grupo é único
         // no processo, e o campo é fato de membro, que existe por ocorrência.
         HashSet<string> dosGrupos = new(
-            estado.GruposColetados.SelectMany(static g => g.Subitens.Select(static s => s.FatoCodigo).Append(g.Codigo)), StringComparer.Ordinal);
+            configuracao.Coleta.GruposColetados.SelectMany(static g => g.Subitens.Select(static s => s.FatoCodigo).Append(g.Codigo)), StringComparer.Ordinal);
         HashSet<string> codigos = new(StringComparer.Ordinal);
         foreach (ConfiguracaoDerivacaoFato config in regrasDerivacao)
         {
@@ -100,31 +100,17 @@ public static class RegrasDaColeta
         return Result.Success();
     }
 
-    internal static MudancaDaConfiguracao PlanejarLimpezaParaRestauracao(EstadoDaConfiguracao estado)
-    {
-        ArgumentNullException.ThrowIfNull(estado);
-
-        return new MudancaDaConfiguracao
-        {
-            Campos = Troca.Retirando(estado.Campos),
-            GruposColetados = Troca.Retirando(estado.GruposColetados),
-            RegrasDerivacao = Troca.Retirando(estado.RegrasDerivacao),
-            TermosExigidos = Troca.Retirando(estado.TermosExigidos),
-            Formularios = Troca.Retirando(estado.Formularios),
-        };
-    }
-
     internal static Result<PlanoDaRecopiaDoCatalogo> PlanejarRecopia(
-        EstadoDaConfiguracao estado, IReadOnlyDictionary<string, CopiaDoItemNoCatalogo> catalogo, IReadOnlySet<string> fatosJaColetados)
+        ConfiguracaoDeclarada configuracao, IReadOnlyDictionary<string, CopiaDoItemNoCatalogo> catalogo, IReadOnlySet<string> fatosJaColetados)
     {
-        IReadOnlyList<RecusaDaCopiaDoItem> recusas = ConferirCopiasDoCatalogo(estado, catalogo, fatosJaColetados);
+        IReadOnlyList<RecusaDaCopiaDoItem> recusas = ConferirCopiasDoCatalogo(configuracao, catalogo, fatosJaColetados);
         if (recusas.Count > 0)
         {
             return Result<PlanoDaRecopiaDoCatalogo>.ValidationFailure([.. recusas.Select(static r => r.Erro)]);
         }
 
         return Result<PlanoDaRecopiaDoCatalogo>.Success(new PlanoDaRecopiaDoCatalogo(
-            [.. estado.Campos
+            [.. configuracao.Coleta.Campos
                 .Where(item => catalogo.ContainsKey(item.FatoCodigo))
                 .Select(item => (item, catalogo[item.FatoCodigo], fatosJaColetados.Contains(item.FatoCodigo)))]));
     }
@@ -138,16 +124,16 @@ public static class RegrasDaColeta
     /// <param name="catalogo">A cópia que o catálogo de hoje tem de cada fato, por código.</param>
     /// <param name="fatosJaColetados">Os fatos que alguma versão publicada coletou, por código ordinal.</param>
     public static IReadOnlyList<RecusaDaCopiaDoItem> ConferirCopiasDoCatalogo(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         IReadOnlyDictionary<string, CopiaDoItemNoCatalogo> catalogo, IReadOnlySet<string> fatosJaColetados)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         ArgumentNullException.ThrowIfNull(catalogo);
         ArgumentNullException.ThrowIfNull(fatosJaColetados);
 
         List<RecusaDaCopiaDoItem> recusas = [];
-        foreach (FatoColetado item in estado.Campos)
+        foreach (FatoColetado item in configuracao.Coleta.Campos)
         {
             if (fatosJaColetados.Contains(item.FatoCodigo) || !catalogo.TryGetValue(item.FatoCodigo, out CopiaDoItemNoCatalogo? copia))
             {
@@ -165,7 +151,7 @@ public static class RegrasDaColeta
     /// o grafo, as citações, o código e o produtor únicos e as seções.
     /// </summary>
     internal static Result ConferirFatosColetados(
-        EstadoDaConfiguracao estado,
+        ConfiguracaoDeclarada configuracao,
         FormularioProcesso formulario, FinalidadeFormulario finalidade, IReadOnlyList<FatoColetado> fatosColetados, IReadOnlyList<GrupoColetado> grupos)
     {
         if (FormaDoItem.ValidarQuantidade(CitacoesDosFormularios.QuantidadeNoTeto(fatosColetados.Count, grupos)) is [var excesso, ..])
@@ -178,44 +164,16 @@ public static class RegrasDaColeta
             return Result.ValidationFailure(foraDaInscricao);
         }
 
-        // Sob retificação, o fato que a inscrição já coletava continua coletado por ela, no mesmo
-        // papel: quem se inscreveu numa versão anterior o informou, e as outras finalidades e as
-        // versões seguintes contam com ele (UNI-REQ-0144).
-        if (finalidade == FinalidadeFormulario.Inscricao
-            && estado.Rascunho?.FatosDasVersoesPublicadas.PrimeiroDaInscricaoQueDeixaDeSerColetado(fatosColetados, grupos) is { } retirado)
-        {
-            return Result.Failure(new DomainError(
-                "RascunhoRetificacao.FatoJaColetadoRemovido",
-                $"O fato '{retirado}' já é coletado pelo formulário de inscrição do edital publicado: a retificação não o retira do formulário nem o passa de item para campo de grupo, ou de um grupo para outro."));
-        }
-
-        // O candidato pode ter respondido o fato em qualquer versão publicada, e a classificação e a
-        // elegibilidade leem as respostas juntas: o item regravado não troca o eixo que a versão
-        // publicada congelou (UNI-REQ-0144).
-        if (estado.Rascunho?.FatosDasVersoesPublicadas.PrimeiroItemComEixoTrocado(fatosColetados, grupos) is { } troca)
-        {
-            return Result.Failure(troca.ParaErro());
-        }
-
         // A inscrição só cita os próprios campos; as outras finalidades citam também os dela.
         HashSet<string> daInscricao = finalidade == FinalidadeFormulario.Inscricao
             ? new(StringComparer.Ordinal)
-            : CitacoesDosFormularios.FatosDaInscricao(estado.Itens);
-        if (CitacoesDosFormularios.ValidarGrafoDeFatos(formulario.Etapas, fatosColetados, grupos, daInscricao, CitacoesDosFormularios.DependenciasDasDerivacoes(estado)) is { } erro)
+            : CitacoesDosFormularios.FatosDaInscricao(configuracao.Coleta.Itens);
+        if (CitacoesDosFormularios.ValidarGrafoDeFatos(formulario.Etapas, fatosColetados, grupos, daInscricao, CitacoesDosFormularios.DependenciasDasDerivacoes(configuracao)) is { } erro)
         {
             return Result.Failure(erro);
         }
 
-        if (CitacoesDosFormularios.CitacaoNaoGarantida(
-                estado,
-                CitacoesDosFormularios.DoFormulario(finalidade, CitacoesDosFormularios.CitacoesDosCampos(fatosColetados, grupos).Select(static c => (c.Dono, c.Citado))),
-                finalidade,
-                CitacoesDosFormularios.SemCatalogo) is { } naoGarantida)
-        {
-            return Result.Failure(naoGarantida);
-        }
-
-        if (finalidade == FinalidadeFormulario.Inscricao && CitacoesDosFormularios.CitacaoQueFicariaOrfa(estado, fatosColetados) is { } orfa)
+        if (finalidade == FinalidadeFormulario.Inscricao && CitacoesDosFormularios.CitacaoQueFicariaOrfa(configuracao, fatosColetados) is { } orfa)
         {
             return Result.Failure(orfa);
         }
@@ -223,11 +181,11 @@ public static class RegrasDaColeta
         // O código do grupo é único no processo e não coincide com o de fato coletado: um grupo novo
         // não repete grupo nem fato de outro formulário, e um fato novo não repete grupo de outro.
         HashSet<string> deOutrosFormularios = new(
-            estado.Campos.Where(f => f.Finalidade != finalidade).Select(static f => f.FatoCodigo)
-                .Concat(estado.GruposColetados.Where(g => g.Finalidade != finalidade).Select(static g => g.Codigo)),
+            configuracao.Coleta.Campos.Where(f => f.Finalidade != finalidade).Select(static f => f.FatoCodigo)
+                .Concat(configuracao.Coleta.GruposColetados.Where(g => g.Finalidade != finalidade).Select(static g => g.Codigo)),
             StringComparer.Ordinal);
         HashSet<string> gruposDeOutros = new(
-            estado.GruposColetados.Where(g => g.Finalidade != finalidade).Select(static g => g.Codigo), StringComparer.Ordinal);
+            configuracao.Coleta.GruposColetados.Where(g => g.Finalidade != finalidade).Select(static g => g.Codigo), StringComparer.Ordinal);
         if ((grupos.Select(static g => g.Codigo).FirstOrDefault(deOutrosFormularios.Contains)
                 ?? fatosColetados.Concat(grupos.SelectMany(static g => g.Subitens)).Select(static f => f.FatoCodigo).FirstOrDefault(gruposDeOutros.Contains))
             is { } codigoRepetido)
@@ -240,7 +198,7 @@ public static class RegrasDaColeta
         // Produtor único (UNI-REQ-0144): cada fato é coletado por um só formulário do processo,
         // contando os campos dos grupos.
         HashSet<string> novos = new(fatosColetados.Concat(grupos.SelectMany(static g => g.Subitens)).Select(static f => f.FatoCodigo), StringComparer.Ordinal);
-        if (estado.Campos.FirstOrDefault(f => f.Finalidade != finalidade && novos.Contains(f.FatoCodigo)) is { } jaProduzido)
+        if (configuracao.Coleta.Campos.FirstOrDefault(f => f.Finalidade != finalidade && novos.Contains(f.FatoCodigo)) is { } jaProduzido)
         {
             string outro = EstruturaFormulario.ParaToken(jaProduzido.Finalidade);
             return Result.Failure(new DomainError(

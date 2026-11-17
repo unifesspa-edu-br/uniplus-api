@@ -33,7 +33,7 @@ internal static class LeituraDasModalidades
     /// </summary>
     /// <remarks>
     /// O envelope o congela por valor (ADR-0061), e o decoder não passa pelo cadastro — sem
-    /// esta lista, um token inventado faria round-trip perfeito e restauraria uma
+    /// esta lista, um token inventado faria round-trip perfeito e reidrataria uma
     /// <b>instrução que o motor de homologação não sabe executar</b>. A lista está aqui, e
     /// não numa referência ao módulo Configuração, porque ela é a do vocabulário
     /// <b>congelado</b> nesta forma do envelope: um token novo no cadastro exige atualizar
@@ -54,7 +54,7 @@ internal static class LeituraDasModalidades
     /// O formato que o <c>CodigoCondicao</c> do cadastro impõe
     /// (<c>^[A-Z][A-Z0-9_]{1,49}$</c>). O código da condição é <b>chave natural</b> — é por
     /// ele que a invariante ADR-0067 reconhece a condição PcD (<c>CodigoCondicaoPcd</c>) —,
-    /// e um <c>"pcd"</c> minúsculo restaurado do envelope seria uma condição que o cadastro
+    /// e um <c>"pcd"</c> minúsculo reidratado do envelope seria uma condição que o cadastro
     /// não produz e que o resto do código trata como chave.
     /// </summary>
     internal static readonly Regex FormatoCodigoCondicao =
@@ -132,7 +132,7 @@ internal static class LeituraDasModalidades
         }
 
         // A coerência entre natureza e remanejamento é do cadastro, e a cópia congelada não passa por
-        // ele: um envelope adulterado restauraria, por exemplo, uma ampla concorrência que remaneja as
+        // ele: um envelope adulterado reidrataria, por exemplo, uma ampla concorrência que remaneja as
         // próprias vagas ociosas. A regra é a mesma que a publicação aplica.
         return modalidade.Value!.RemanejamentoCoerenteComANatureza()
             ? modalidade.Value

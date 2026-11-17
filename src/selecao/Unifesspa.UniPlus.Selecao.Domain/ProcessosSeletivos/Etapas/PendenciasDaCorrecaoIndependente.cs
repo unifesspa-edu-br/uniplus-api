@@ -5,7 +5,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConceitoDaAvaliacao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -18,12 +17,12 @@ internal static class PendenciasDaCorrecaoIndependente
 {
     private const int MinimoDeCorretores = 2;
 
-    internal static IReadOnlyList<FieldError> CausasDaCorrecaoIndependente(EstadoDaConfiguracao estado, CorretoresDasEtapas corretores)
+    internal static IReadOnlyList<FieldError> CausasDaCorrecaoIndependente(ConfiguracaoDeclarada configuracao, CorretoresDasEtapas corretores)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(corretores);
 
-        return CausasDaRecusa.Da(estado.Etapas
+        return CausasDaRecusa.Da(configuracao.Avaliacao.Etapas
             .Where(static etapa => etapa.TipoEtapa.ExigeCorrecaoIndependente && etapa.RegraConsolidacao is not null)
             .Select(etapa => Pendencia(etapa, corretores))
             .OfType<DomainError>());

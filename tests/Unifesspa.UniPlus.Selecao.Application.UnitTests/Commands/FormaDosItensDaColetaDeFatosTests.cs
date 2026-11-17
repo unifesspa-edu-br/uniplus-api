@@ -31,7 +31,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     [Fact(DisplayName = "Predicado da obrigatoriedade que cita fato fora do vocabulário é recusado no campo dele")]
     public async Task Handle_PredicadoDaObrigatoriedadeComFatoDesconhecido_Recusa()
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
             new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "QUANDO", null,
@@ -49,8 +49,8 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(
-            processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput(fatoCodigo, 0, "Rótulo", tipoRenderizacao, "SEMPRE", null)], PrecondicaoIfMatch.Ausente));
+        Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(
+            processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput(fatoCodigo, 0, "Rótulo", tipoRenderizacao, "SEMPRE", null)]));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.FatosColetados.Single().TipoRenderizacao.Should().Be(TipoRenderizacaoCodigo.FromCodigo(tipoRenderizacao));
@@ -64,7 +64,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
             [.. VocabularioSeed().Select(static f => f.Codigo == "NOME_SOCIAL" ? f with { Cardinalidade = "MULTIVALORADO" } : f)]));
         DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao,
-            [new FatoColetadoInput("NOME_SOCIAL", 0, "Nome social", "TEXTO", "NUNCA", null)], PrecondicaoIfMatch.Ausente);
+            [new FatoColetadoInput("NOME_SOCIAL", 0, "Nome social", "TEXTO", "NUNCA", null)]);
 
         (await HandleAsync(mocks, command)).Error!.Code.Should().Be("ItemFormulario.TipoRenderizacaoIncoerenteComDominio");
     }
@@ -73,7 +73,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     public async Task Handle_CampoDeTexto_CongelaOFormatoDoCatalogo()
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             processo,
             [new FatoColetadoInput("NOME_SOCIAL", 0, "Nome social", "TEXTO", "NUNCA", null)]);
 
@@ -85,7 +85,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     public async Task Handle_CampoDeTexto_CongelaAClassificacaoDoCatalogo()
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             processo,
             [new FatoColetadoInput("CPF", 0, "CPF", "TEXTO", "NUNCA", null)]);
 
@@ -103,9 +103,9 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         [
             new FatoColetadoInput("COR_RACA", -1, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null),
             new FatoColetadoInput("BAIXA_RENDA", 1, "", "BOOLEANO", "NUNCA", null),
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(["itens[0].ordem", "itens[1].rotulo"]);
@@ -115,7 +115,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     [Fact(DisplayName = "FatoCodigo vazio recusa com FatoCodigoObrigatorio, não FatoDesconhecido: o item de forma inválida não segue para o catálogo")]
     public async Task Handle_FatoCodigoVazio_RecusaComErroDeFormaNaoDeVocabulario()
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [new FatoColetadoInput("", 0, "Rótulo", "SELECAO_UNICA", "NUNCA", null)]);
 
@@ -125,7 +125,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     [Fact(DisplayName = "ADR-0125: a forma inválida de um item e o fato desconhecido de outro saem juntos, cada um no seu campo")]
     public async Task Handle_FormaInvalidaEmUmFatoEVocabularioDesconhecidoNoOutro_AcumulaAsDuas()
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
             new FatoColetadoInput("COR_RACA", -1, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null),
@@ -146,7 +146,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         // coletabilidade recusa antes da coerência de renderização ser sequer checada. Este
         // teste prova que o erro devolvido continua sendo o de coletabilidade, não o de
         // coerência, quando o TipoRenderizacao informado é o coerente com o domínio.
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [new FatoColetadoInput("MODALIDADE", 0, "Modalidade", "SELECAO_MULTIPLA", "NUNCA", null)]);
 
@@ -160,7 +160,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     [InlineData("TAMANHO_TEXTO", 10.0, 2.0, "RestricaoValor.LimitesIncoerentes")]
     public async Task Handle_RestricaoDeFormaInvalida_Recusa(string tipo, double? minimo, double? maximo, string codigo)
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
             new FatoColetadoInput("NOME_SOCIAL", 0, "Nome social", "TEXTO", "NUNCA", null,
@@ -191,7 +191,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     [Fact(DisplayName = "Faixa de data com a mínima depois da máxima e faixa de data fora do campo de data são recusadas juntas")]
     public async Task Handle_FaixaDeDataInvalida_RecusaCadaUmaNoSeuCampo()
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(ProcessoEmRascunho(), [DataComLimitesInvertidos(), DataDeNascimentoComFaixaForaDoCampo()]);
+        Result resultado = await DefinirNaHabilitacaoAsync(ProcessoEmRascunho(), [DataComLimitesInvertidos(), DataDeNascimentoComFaixaForaDoCampo()]);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -203,7 +203,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     [Fact(DisplayName = "Opção permitida fora do domínio do próprio fato é recusada no grupo dela")]
     public async Task Handle_OpcaoForaDoDominio_Recusa()
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
             new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null,
@@ -220,7 +220,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     [Fact(DisplayName = "Opções permitidas em campo que não é de seleção são recusadas pela coerência com o tipo do campo")]
     public async Task Handle_OpcoesEmCampoBooleano_RecusaPelaCoerencia()
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
             new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null,
@@ -237,7 +237,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     [Fact(DisplayName = "ADR-0125: recusa semântica da restrição e recusa do próprio item saem no mesmo lote")]
     public async Task Handle_RecusaSemanticaERecusaDoItem_Acumulam()
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
             new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null,
@@ -265,7 +265,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
         [
             new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null,
                 Restricoes: [new RestricaoValorInput("OPCOES_PERMITIDAS", Entradas: [new OpcoesCondicionadasInput(null, ["AMARELA"])])]),
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
 
         (await HandleAsync(mocks, command)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.ValorDesativado);
     }
@@ -284,7 +284,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
 
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(processo, OpcoesDasRespostasDe(fonte));
+        Result resultado = await DefinirNaHabilitacaoAsync(processo, OpcoesDasRespostasDe(fonte));
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.FatosColetados.Single(static f => f.FatoCodigo == "OPCAO_LISTA_ESPERA").FatosCitados.Should().Equal(fonte);
@@ -293,7 +293,7 @@ public sealed class FormaDosItensDaColetaDeFatosTests
     [Fact(DisplayName = "Opções formadas pelas respostas de campo com opções de outro domínio são recusadas no campo das respostas")]
     public async Task Handle_OpcoesDasRespostas_RecusaOpcoesDeOutroDominio()
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(ProcessoEmRascunho(), OpcoesDasRespostasDe("COR_RACA"));
+        Result resultado = await DefinirNaHabilitacaoAsync(ProcessoEmRascunho(), OpcoesDasRespostasDe("COR_RACA"));
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("itens[1].restricoes[0].fatos", ItemFormularioErrorCodes.OpcoesDeOutroDominio));

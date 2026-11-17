@@ -36,8 +36,8 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        Result<MutacaoAceita> result = await DefinirIdentificadorLegivelCommandHandler.Handle(
-            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq-2026", PrecondicaoIfMatch.Ausente),
+        Result result = await DefinirIdentificadorLegivelCommandHandler.Handle(
+            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq-2026"),
             mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
@@ -52,8 +52,8 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
         IdentificadorLegivel? original = processo.IdentificadorLegivel;
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        Result<MutacaoAceita> result = await DefinirIdentificadorLegivelCommandHandler.Handle(
-            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq 2026", PrecondicaoIfMatch.Ausente),
+        Result result = await DefinirIdentificadorLegivelCommandHandler.Handle(
+            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq 2026"),
             mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelFormatoInvalido);
@@ -61,19 +61,19 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
         await mocks.Repository.DidNotReceiveWithAnyArgs().IdentificadorLegivelEmUsoAsync(default, default, default);
     }
 
-    [Fact(DisplayName = "Processo publicado sem sessão recusa pela precondição antes do formato")]
-    public async Task Handle_PublicadoSemSessao_FormatoInvalido_RecusaPelaPrecondicao()
+    [Fact(DisplayName = "Processo publicado recusa a mutação antes do formato")]
+    public async Task Handle_Publicado_FormatoInvalido_RecusaAMutacao()
     {
         ProcessoSeletivo processo = NovoProcesso();
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        Result<MutacaoAceita> result = await DefinirIdentificadorLegivelCommandHandler.Handle(
-            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq 2026", PrecondicaoIfMatch.Ausente),
+        Result result = await DefinirIdentificadorLegivelCommandHandler.Handle(
+            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq 2026"),
             mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada",
-            "o gate de estado e concorrência sai antes da validação do valor");
+            "a recusa de estado sai antes da validação do valor");
     }
 
     [Fact(DisplayName = "Identificador em uso por outro processo é recusado e o rastreamento é descartado")]
@@ -85,8 +85,8 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
                 IdentificadorLegivel.Criar("psiq-2026").Value, processo.Id, Arg.Any<CancellationToken>())
             .Returns(true);
 
-        Result<MutacaoAceita> result = await DefinirIdentificadorLegivelCommandHandler.Handle(
-            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq-2026", PrecondicaoIfMatch.Ausente),
+        Result result = await DefinirIdentificadorLegivelCommandHandler.Handle(
+            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq-2026"),
             mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelEmUso);
@@ -101,8 +101,8 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
         typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Status))!.SetValue(processo, StatusProcesso.Publicado);
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        Result<MutacaoAceita> result = await DefinirIdentificadorLegivelCommandHandler.Handle(
-            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq-2026", PrecondicaoIfMatch.Ausente),
+        Result result = await DefinirIdentificadorLegivelCommandHandler.Handle(
+            new DefinirIdentificadorLegivelCommand(processo.Id, "psiq-2026"),
             mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
@@ -119,8 +119,8 @@ public sealed class DefinirIdentificadorLegivelCommandHandlerTests
         IdentificadorLegivel? original = processo.IdentificadorLegivel;
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        Result<MutacaoAceita> result = await DefinirIdentificadorLegivelCommandHandler.Handle(
-            new DefinirIdentificadorLegivelCommand(processo.Id, identificador, PrecondicaoIfMatch.Ausente),
+        Result result = await DefinirIdentificadorLegivelCommandHandler.Handle(
+            new DefinirIdentificadorLegivelCommand(processo.Id, identificador),
             mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente);

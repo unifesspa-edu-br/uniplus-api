@@ -97,7 +97,7 @@ public sealed class ProcessoSeletivoAtendimentoEspecializadoTests
             recursos: [RecursoOfertado.Criar(Guid.CreateVersion7(), "PROVA_AMPLIADA", "Prova ampliada")],
             tiposDeficiencia: []).Value!;
 
-        Result result = processo.DefinirAtendimentoEspecializado(atendimento, PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirAtendimentoEspecializado(atendimento);
 
         result.IsSuccess.Should().BeTrue();
         processo.AtendimentoEspecializado.Should().NotBeNull();

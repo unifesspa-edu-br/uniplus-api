@@ -58,12 +58,12 @@ internal sealed class CenarioDosCriteriosDeDesempate
             ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
             QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
             EscalaNotaFinal = 100m,
-        }).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }).Value!).IsSuccess.Should().BeTrue();
         return processo;
     }
 
     public static DefinirCriteriosDesempateCommand Comando(Guid processoId, params CriterioDesempateInput[] criterios) =>
-        new(processoId, criterios, PrecondicaoIfMatch.Ausente);
+        new(processoId, criterios);
 
     public static CriterioDesempateInput CriterioSimples(int ordem, string codigo) =>
         new(ordem, codigo, "v1", null, null, null, null, null);
@@ -96,7 +96,7 @@ internal sealed class CenarioDosCriteriosDeDesempate
         return this;
     }
 
-    public Task<Result<MutacaoAceita>> DefinirAsync(DefinirCriteriosDesempateCommand command) =>
+    public Task<Result> DefinirAsync(DefinirCriteriosDesempateCommand command) =>
         DefinirCriteriosDesempateCommandHandler.Handle(
             command, Repository, RegraCatalogoReader, FatoCandidatoReader, UnitOfWork, CancellationToken.None);
 

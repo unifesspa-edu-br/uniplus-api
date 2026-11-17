@@ -25,7 +25,7 @@ internal static class LeituraDoCalendario
     /// Calendário congelado por valor (UNI-REQ-0080). Reconstruído pelos mesmos value objects que
     /// a publicação usa, e não por atribuição direta: a assimetria entre escrita e leitura é
     /// invisível ao round-trip byte a byte — o encoder reemitiria o valor sujo tal qual, a prova
-    /// passaria, e a configuração restaurada carregaria um calendário que o domínio recusaria
+    /// passaria, e a configuração reidratada carregaria um calendário que o domínio recusaria
     /// criar.
     /// </summary>
     /// <remarks>
@@ -71,7 +71,7 @@ internal static class LeituraDoCalendario
 
     // Nenhuma transição que gera versão publica processo com fase ou etapa que aceita recurso e sem
     // calendário vigente. Um envelope nessa combinação não saiu de publicação legítima, e aceitá-lo
-    // restauraria configuração que o gate recusa: o round-trip não acusaria, porque o encoder reemitiria
+    // reidrataria configuração que a conferência recusa: o round-trip não acusaria, porque o encoder reemitiria
     // a mesma ausência.
     private static void ConferirAusencia(LeitorEnvelope leitor, IReadOnlyList<FaseCronograma> cronogramaFases, IReadOnlyList<EtapaProcesso> etapas)
     {
@@ -178,7 +178,7 @@ internal static class LeituraDoCalendario
         && string.Equals(dia.Uf, uf, StringComparison.Ordinal)
         // O encoder normaliza o nome do município para NFC. Sem exigir o mesmo aqui, um texto
         // decomposto passaria na comparação — a factory só apara espaço — e a recanonicalização
-        // mudaria os bytes, revelando a divergência tarde demais, já na restauração.
+        // mudaria os bytes, revelando a divergência tarde demais, já na reidratação.
         && (municipioNome is null
             || string.Equals(HashCanonicalComputer.NormalizeNfc(municipioNome), municipioNome, StringComparison.Ordinal));
 
@@ -195,7 +195,7 @@ internal static class LeituraDoCalendario
     /// <para>
     /// A referência é reconstruída por <see cref="ReferenciaRegra.De"/>, e não por
     /// atribuição direta, pela mesma razão da localidade: um envelope adulterado com hash
-    /// fora de forma é malformado, e reidratá-lo daria ao processo restaurado uma
+    /// fora de forma é malformado, e reidratá-lo daria ao processo reidratado uma
     /// referência que o domínio recusaria criar.
     /// </para>
     /// </remarks>
@@ -233,7 +233,7 @@ internal static class LeituraDoCalendario
     /// <remarks>
     /// A localidade é reconstruída por <see cref="LocalidadeRegente.Criar"/>, e não por atribuição
     /// direta: um envelope adulterado com código fora de forma ou UF incoerente é malformado, e
-    /// reidratá-lo daria ao processo restaurado uma localidade que o domínio recusaria criar. O
+    /// reidratá-lo daria ao processo reidratado uma localidade que o domínio recusaria criar. O
     /// fuso é validado como zona conhecida aqui mesmo — deixar
     /// <c>FindSystemTimeZoneById</c> estourar depois transformaria envelope adulterado em exceção
     /// sem causa nomeada.

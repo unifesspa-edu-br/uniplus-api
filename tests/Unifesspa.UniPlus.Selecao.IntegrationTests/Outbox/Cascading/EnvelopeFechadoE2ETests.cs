@@ -45,9 +45,9 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.Payload
 /// <summary>
 /// A cadeia completa do envelope fechado (issue #1045, story-pai #40): um processo RICO,
 /// publicado pelo caminho HTTP com todas as dimensões que a cascata #1059/#1067/#1068/#563/#1069
-/// entregou, o ato confirmado em Publicações — não só enfileirado —, uma sessão editorial que
-/// altera e fecha, o segundo ato confirmado retificando o primeiro, e a versão vigente refletindo
-/// o fechamento.
+/// entregou, o ato confirmado em Publicações — não só enfileirado —, a retificação pelo envio
+/// único, o segundo ato confirmado retificando o primeiro, e a versão vigente refletindo a
+/// retificação.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -92,7 +92,7 @@ public sealed class EnvelopeFechadoE2ETests
         await ConfigurarTodasAsDimensoesAsync(cenario);
         await ConferirChecklistVerdeAsync(cenario);
         await PublicarEConfirmarV1Async(cenario);
-        await RetificarSobSessaoEditorialAsync(cenario);
+        await RetificarPeloEnvioUnicoAsync(cenario);
         await ConferirIdentidadeEAtoV2Async(cenario);
         await ConferirSnapshotVigenteAsync(cenario);
     }

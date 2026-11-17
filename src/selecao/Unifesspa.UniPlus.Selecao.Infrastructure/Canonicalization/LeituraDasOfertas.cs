@@ -73,7 +73,7 @@ internal static class LeituraDasOfertas
             ? null
             : new DomainError(
                 ErrosCodecEnvelope.BlocosDerivadosIncoerentes,
-                "Os blocos 'distribuicao', 'modalidades', 'vagas' e 'ofertas' derivam da mesma coleção e não declaram o mesmo conjunto de ofertas de curso (ADR-0110 D8).");
+                "Os blocos 'distribuicao', 'modalidades', 'vagas' e 'ofertas' derivam da mesma coleção e não declaram o mesmo conjunto de ofertas de curso.");
     }
 
     private static DomainError? RepeticaoDeOferta(List<Guid> ofertas, string mensagem) =>

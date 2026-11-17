@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// <summary>
 /// Define as etapas do processo em duas passadas (ADR-0125). A primeira confere o payload inteiro —
 /// forma, caráter, avaliação — sem mutar nada; só se ela vier limpa a segunda reconcilia as etapas, declara
-/// os filhos de cada uma, entrega a coleção ao agregado e leva junto os motivos pendentes das etapas que saem
+/// os filhos de cada uma, entrega a coleção ao agregado e leva junto os motivos das etapas que saem
 /// (<see cref="MotivosDosLugaresQueSaem"/>). A segunda passada muta instâncias rastreadas, e por isso quem chama
 /// descarta as alterações quando ela recusa: sem o descarte o <c>SaveChanges</c> persistiria a mutação parcial mesmo
 /// com a coleção recusada.
@@ -39,9 +39,12 @@ public sealed class DefinicaoDasEtapas(
 
         LugaresDaDecisao lugaresAntes = LugaresDaDecisao.Do(processo);
         Result substituida = await SubstituirAsync(NovaEdicao(processo, command, agora), cancellationToken).ConfigureAwait(false);
-        return substituida.IsFailure
-            ? substituida
-            : await motivosDosLugaresQueSaem.RetirarAsync(processo, lugaresAntes, cancellationToken).ConfigureAwait(false);
+        if (substituida.IsSuccess)
+        {
+            await motivosDosLugaresQueSaem.RetirarAsync(processo, lugaresAntes, cancellationToken).ConfigureAwait(false);
+        }
+
+        return substituida;
     }
 
     private EdicaoDasEtapas NovaEdicao(ProcessoSeletivo processo, DefinirEtapasCommand command, DateTimeOffset agora) =>
@@ -64,7 +67,7 @@ public sealed class DefinicaoDasEtapas(
     {
         Dictionary<Guid, EtapaProcesso> existentes = edicao.Processo.Etapas.ToDictionary(e => e.Id);
         List<EtapaConferida> declaradas = [.. edicao.Command.Etapas.Select(etapa => EtapaConferida.De(etapa, existentes))];
-        Result<List<EtapaConferida>> comCarater = await new ConferenciaDoCaraterDasEtapas(edicao.Cadastros.TiposDeEtapa)
+        Result<List<EtapaConferida>> comCarater = await new ConferenciaDoTipoEDoCaraterDasEtapas(edicao.Cadastros.TiposDeEtapa)
             .ConferirAsync(declaradas, cancellationToken).ConfigureAwait(false);
         return comCarater.IsFailure
             ? comCarater
@@ -89,7 +92,7 @@ public sealed class DefinicaoDasEtapas(
             return declaradas;
         }
 
-        Result definidas = edicao.Processo.DefinirEtapas(etapas.Value!, edicao.Command.Precondicao);
+        Result definidas = edicao.Processo.DefinirEtapas(etapas.Value!);
         return definidas.IsFailure ? Result.ValidationFailure(definidas.Errors) : definidas;
     }
 

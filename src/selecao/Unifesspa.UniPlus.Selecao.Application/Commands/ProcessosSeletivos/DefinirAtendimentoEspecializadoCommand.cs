@@ -17,5 +17,4 @@ public sealed record DefinirAtendimentoEspecializadoCommand(
     Guid ProcessoSeletivoId,
     IReadOnlyList<Guid> CondicaoIds,
     IReadOnlyList<Guid> RecursoIds,
-    IReadOnlyList<Guid> TipoDeficienciaIds,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    IReadOnlyList<Guid> TipoDeficienciaIds) : ICommand<Result>;

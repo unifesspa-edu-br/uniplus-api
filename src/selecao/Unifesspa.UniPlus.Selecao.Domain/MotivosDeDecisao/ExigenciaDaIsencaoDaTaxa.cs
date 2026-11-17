@@ -23,7 +23,7 @@ public sealed class ExigenciaDaIsencaoDaTaxa : IExigenciaDeMotivos
         return from fundamento in fundamentos
                from sentido in Sentidos
                where !escolhidos.Any(e => Cobre(e, fundamento.ToCodigo(), sentido))
-               select new FieldError("motivosDeDecisao", new DomainError(
+               select new FieldError("motivos", new DomainError(
                    MotivoDeDecisaoErrorCodes.CoberturaInsuficiente,
                    $"Falta escolher ao menos um motivo {sentido.Rotulo()} para o fundamento de isenção {fundamento.ToCodigo()}."));
     }

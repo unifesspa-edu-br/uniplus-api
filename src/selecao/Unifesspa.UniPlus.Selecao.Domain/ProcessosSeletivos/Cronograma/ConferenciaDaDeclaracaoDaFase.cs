@@ -76,15 +76,16 @@ internal static class ConferenciaDaDeclaracaoDaFase
     }
 
     // A janela invertida acumula aqui, e não no validator, para a resposta trazê-la junto das outras
-    // violações da mesma fase.
+    // violações da mesma fase. A lista com parte recusada na leitura do documento deixa sem julgar a regra que a quantifica.
     internal static List<FieldError> Violacoes(
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase cronograma,
         PublicacoesDaFase publicacoes,
-        IReadOnlyList<BancaRequerida> bancasRequeridas) =>
+        IReadOnlyList<BancaRequerida> bancasRequeridas,
+        IReadOnlySet<string> colecoesComParteRecusada) =>
     [
         .. JanelaDaFase.Violacoes(origem.Codigo, origem.OrigemData, cronograma),
-        .. ViolacoesDasPublicacoes(origem.Codigo, publicacoes),
+        .. ViolacoesDasPublicacoes(origem.Codigo, publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
         .. TiposDeDecisaoDeclarados.Validar(publicacoes.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo),
         .. RecorteDeCompetenciaDasBancas.Violacoes(origem.Codigo, bancasRequeridas),
         .. RecortesEmBancaDeRecursos(origem.Codigo, bancasRequeridas),
@@ -110,13 +111,15 @@ internal static class ConferenciaDaDeclaracaoDaFase
         ArgumentNullException.ThrowIfNull(bancasRequeridas);
     }
 
-    private static List<FieldError> ViolacoesDasPublicacoes(string codigo, PublicacoesDaFase publicacoes)
+    // O ato repetido entre os produtos que ficaram continua repetido; o parecer sem resultado e a âncora do recurso leem a
+    // lista inteira, e uma parte recusada pode ser o resultado ou o preliminar que falta.
+    private static List<FieldError> ViolacoesDasPublicacoes(string codigo, PublicacoesDaFase publicacoes, bool produtosComParteRecusada)
     {
         FieldError?[] violacoes =
         [
             AtoDuplicado(codigo, publicacoes.Produtos),
-            ParecerIndividualSemResultado(codigo, publicacoes),
-            AncoraDoRecursoDaFase.Violacao(codigo, publicacoes.Produtos, publicacoes.RegraRecurso),
+            produtosComParteRecusada ? null : ParecerIndividualSemResultado(codigo, publicacoes),
+            produtosComParteRecusada ? null : AncoraDoRecursoDaFase.Violacao(codigo, publicacoes.Produtos, publicacoes.RegraRecurso),
         ];
 
         return [.. violacoes.OfType<FieldError>()];

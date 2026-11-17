@@ -30,7 +30,7 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
         Result resultado = await ConferirAsync(cenario);
 
         FieldError recusa = resultado.Errors.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be($"cronograma.ciclosRecursais[{Materia}]");
+        recusa.Field.Should().Be("/cronograma/fases");
         recusa.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
     }
 

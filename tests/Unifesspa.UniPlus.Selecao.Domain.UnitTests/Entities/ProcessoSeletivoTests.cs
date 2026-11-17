@@ -66,17 +66,6 @@ public sealed class ProcessoSeletivoTests
         processo.UnidadeAdministradora.Should().BeSameAs(snapshot);
     }
 
-    [Fact(DisplayName = "SombraParaVerificacao copia a unidade administradora da raiz viva (issue #849)")]
-    public void SombraParaVerificacao_CopiaUnidadeAdministradora()
-    {
-        ProcessoSeletivo processo = NovoProcesso();
-
-        ProcessoSeletivo sombra = processo.SombraParaVerificacao();
-
-        sombra.UnidadeAdministradoraOrigemId.Should().Be(processo.UnidadeAdministradoraOrigemId);
-        sombra.UnidadeAdministradora.Should().BeSameAs(processo.UnidadeAdministradora);
-    }
-
     [Fact(DisplayName = "Etapa classificatoria ou ambas com peso compõe o divisor da media (CA-02)")]
     public void Etapa_ComponeDivisorDaMedia()
     {
@@ -87,11 +76,11 @@ public sealed class ProcessoSeletivoTests
             EtapaDeProva("Prova Objetiva", CaraterEtapa.Classificatoria, 1, 3m, null),
             EtapaDeProva("Redação", CaraterEtapa.Ambas, 2, 2m, 5m),
             EtapaDeProva("Banca de heteroidentificação", CaraterEtapa.Eliminatoria, 3, null, null),
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
 
         // Só as etapas que pontuam (classificatória/ambas, com peso) entram no divisor: 3 + 2 = 5.
         result.IsSuccess.Should().BeTrue();
-        EstadoDaConfiguracao.De(processo).CalcularDivisorMedia().Should().Be(5m);
+        processo.Declaracao().Avaliacao.CalcularDivisorMedia().Should().Be(5m);
     }
 
     [Fact(DisplayName = "DefinirEtapas com ordem duplicada é recusado")]
@@ -103,7 +92,7 @@ public sealed class ProcessoSeletivoTests
         [
             EtapaDeProva("Prova Objetiva", CaraterEtapa.Classificatoria, 1, 3m, null),
             EtapaDeProva("Redação", CaraterEtapa.Classificatoria, 1, 2m, null),
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.OrdemEtapaDuplicada");
@@ -117,7 +106,7 @@ public sealed class ProcessoSeletivoTests
         Result result = processo.DefinirEtapas(
         [
             EtapaDeProva("Banca de heteroidentificação", CaraterEtapa.Eliminatoria, 1, null, null),
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NenhumaEtapaComponeNota");
@@ -131,7 +120,7 @@ public sealed class ProcessoSeletivoTests
         Result result = processo.DefinirEtapas(
         [
             EtapaDeProva("Análise de histórico", CaraterEtapa.Classificatoria, 1, null, null),
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NenhumaEtapaComponeNota");
@@ -141,9 +130,9 @@ public sealed class ProcessoSeletivoTests
     public void DefinirEtapas_Substitui()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaDeProva("Prova Objetiva", CaraterEtapa.Classificatoria, null, 3m, null)], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaDeProva("Prova Objetiva", CaraterEtapa.Classificatoria, null, 3m, null)]);
 
-        processo.DefinirEtapas([EtapaDeProva("Entrevista", CaraterEtapa.Ambas, null, 1m, null)], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaDeProva("Entrevista", CaraterEtapa.Ambas, null, 1m, null)]);
 
         processo.Etapas.Should().HaveCount(1);
         processo.Etapas.Single().Nome.Should().Be("Entrevista");

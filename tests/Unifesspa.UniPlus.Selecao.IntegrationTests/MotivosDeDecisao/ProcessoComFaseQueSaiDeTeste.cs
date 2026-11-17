@@ -41,9 +41,9 @@ internal static class ProcessoComFaseQueSaiDeTeste
     private static void AcrescentarAFaseQueSai(ProcessoSeletivo processo)
     {
         FaseCronograma faseDaInscricao = processo.CronogramaFases.Single();
-        Result cronograma = processo.DefinirCronogramaFases([faseDaInscricao, FaseDeAvaliacao()], [], PrecondicaoIfMatch.Ausente);
+        Result cronograma = processo.DefinirCronogramaFases([faseDaInscricao, FaseDeAvaliacao()], []);
         cronograma.IsSuccess.Should().BeTrue(cronograma.Error?.Message);
-        Result etapas = processo.DefinirEtapas([ProvaObjetivaNaFaseDeAvaliacao()], PrecondicaoIfMatch.Ausente);
+        Result etapas = processo.DefinirEtapas([ProvaObjetivaNaFaseDeAvaliacao()]);
         etapas.IsSuccess.Should().BeTrue(etapas.Error?.Message);
     }
 

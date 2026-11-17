@@ -106,7 +106,7 @@ public sealed class SubstitutoIsoladoNoDocumentoTests
             new CenarioDoRascunho().Preparacao.Preparar(CenarioDoRascunho.DocumentoValido(nome: "Processo\\uD800"));
 
         resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(
-            (string.Empty, DocumentoDaConfiguracaoErrorCodes.FormaInvalida),
+            (null, DocumentoDaConfiguracaoErrorCodes.FormaInvalida),
             ("/identificacao/nome", DocumentoDaConfiguracaoErrorCodes.ValorInvalido));
     }
 

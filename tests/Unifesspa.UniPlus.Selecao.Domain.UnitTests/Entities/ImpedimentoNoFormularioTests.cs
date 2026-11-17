@@ -46,8 +46,7 @@ public sealed class ImpedimentoNoFormularioTests
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirFatosColetados(
                 FinalidadeFormulario.Inscricao,
-                [.. FormularioDeTeste.DadosBasicos(), Campo(obrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca)],
-                PrecondicaoIfMatch.Ausente)
+                [.. FormularioDeTeste.DadosBasicos(), Campo(obrigatorio ? Obrigatoriedade.Sempre : Obrigatoriedade.Nunca)])
             .IsSuccess.Should().BeTrue();
 
         (CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)?.Code)

@@ -28,7 +28,7 @@ public sealed class ConferenciaDosEixosDosFatosColetadosTests
         IReadOnlyList<DomainError> erros = ConferenciaDosEixosDosFatosColetados.Conferir(Publicadas, Metadado("BOOLEANO", "Sim"), []);
 
         DomainError erro = erros.Should().ContainSingle().Subject;
-        erro.Code.Should().Be("RascunhoRetificacao.EixoDoFatoJaColetadoAlterado");
+        erro.Code.Should().Be("Retificacao.EixoDoFatoJaColetadoAlterado");
         erro.Message.Should().Contain("SEXO").And.Contain("domínio").And.Contain("processo novo");
     }
 

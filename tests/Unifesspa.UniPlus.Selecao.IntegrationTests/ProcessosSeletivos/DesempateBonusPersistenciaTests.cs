@@ -48,7 +48,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         EtapaProcesso etapa = EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([etapa]);
 
         CriterioDesempate maiorNotaEtapa = CriterioDesempate.Criar(
             1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!;
@@ -61,12 +61,12 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         CriterioDesempate maiorNotaAreaEnem = CriterioDesempate.Criar(
             5, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, "f"), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!;
 
-        Result desempateResult = processo.DefinirCriteriosDesempate([maiorNotaEtapa, idoso, maiorIdade, predicadoFato, maiorNotaAreaEnem], PrecondicaoIfMatch.Ausente);
+        Result desempateResult = processo.DefinirCriteriosDesempate([maiorNotaEtapa, idoso, maiorIdade, predicadoFato, maiorNotaAreaEnem]);
         desempateResult.IsSuccess.Should().BeTrue();
 
         Guid baseLegalId = Guid.CreateVersion7();
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.20m, null, "PEDE_O_ACRESCIMO", new BaseLegalCongelada(baseLegalId, "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
-        processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: true, bonus: bonus).IsSuccess.Should().BeTrue();
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -119,11 +119,11 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026 — Reconfig", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirEtapas([EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente);
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, "a"), new ArgsDesempateMaiorIdade()).Value!], PrecondicaoIfMatch.Ausente);
+            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, "a"), new ArgsDesempateMaiorIdade()).Value!]);
         processo.DefinirBonusRegional(
-            aplica: true, bonus: ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "b"), 1.10m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!, PrecondicaoIfMatch.Ausente);
+            aplica: true, bonus: ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "b"), 1.10m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!);
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -141,11 +141,11 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             [
                 CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.Idoso, "c"), new ArgsDesempateIdoso(65)).Value!,
                 CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorIdade, "d"), new ArgsDesempateMaiorIdade()).Value!,
-            ], PrecondicaoIfMatch.Ausente);
+            ]);
             desempateResult.IsSuccess.Should().BeTrue();
 
             Result bonusResult = carregado.DefinirBonusRegional(
-                aplica: true, bonus: ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.30m, 5m, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!, PrecondicaoIfMatch.Ausente);
+                aplica: true, bonus: ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "e"), 1.30m, 5m, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!);
             bonusResult.IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);
@@ -170,9 +170,9 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         EtapaProcesso etapa = EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([etapa]);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!], PrecondicaoIfMatch.Ausente);
+            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!]);
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -195,7 +195,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
                 new IdentificacaoDaEtapa(Nome: "Redação (revisada)", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
-            Result result = carregado.DefinirEtapas([etapaTracked], PrecondicaoIfMatch.Ausente);
+            Result result = carregado.DefinirEtapas([etapaTracked]);
             result.IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);

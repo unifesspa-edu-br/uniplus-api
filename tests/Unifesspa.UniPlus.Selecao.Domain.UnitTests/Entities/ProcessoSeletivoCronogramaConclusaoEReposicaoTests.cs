@@ -21,7 +21,7 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
         FaseCronograma fase = Fase(
             1, "RESULTADO_FINAL", produtos: Definitiva(), faseConcluinteCodigo: "OUTRA_FASE").Value!;
 
-        Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([fase], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
@@ -42,7 +42,7 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
             1, "HOMOLOGACAO_INSCRICOES", produtos: ProdutosPreliminarEDefinitivoDaHomologacao(),
             faseConcluinteCodigo: "HOMOLOGACAO_INSCRICOES").Value!;
 
-        Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([fase], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
@@ -68,7 +68,7 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
         FaseCronograma resultadoFinal = Fase(2, "RESULTADO_FINAL", produtos: Definitiva()).Value!;
 
         Result resultado = processo.DefinirCronogramaFases(
-            [avaliacao, resultadoFinal], [], PrecondicaoIfMatch.Ausente);
+            [avaliacao, resultadoFinal], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -89,7 +89,7 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
         FaseCronograma recursos = Fase(2, "RECURSOS").Value!;
 
         Result resultado = processo.DefinirCronogramaFases(
-            [avaliacao, recursos], [], PrecondicaoIfMatch.Ausente);
+            [avaliacao, recursos], []);
 
         resultado.IsFailure.Should().BeTrue(
             "dar precedência à declaração é conferi-la, não aceitá-la de olhos fechados");
@@ -104,7 +104,7 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
         FaseCronograma fase = Fase(
             1, "RESULTADO_PRELIMINAR", produtos: Preliminar(), faseConcluinteCodigo: "FASE_INEXISTENTE").Value!;
 
-        Result resultado = processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([fase], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
@@ -119,7 +119,7 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
             1, "RESULTADO_PRELIMINAR", produtos: Preliminar(), faseConcluinteCodigo: "RECURSOS").Value!;
         FaseCronograma recursos = Fase(2, "RECURSOS").Value!;
 
-        Result resultado = processo.DefinirCronogramaFases([preliminar, recursos], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([preliminar, recursos], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
@@ -134,7 +134,7 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
             1, "RESULTADO_PRELIMINAR", produtos: Preliminar("GABARITO"), faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
         FaseCronograma concluinte = Fase(2, "RESULTADO_FINAL", produtos: Definitiva("RESULTADO_CLASSIFICACAO")).Value!;
 
-        Result resultado = processo.DefinirCronogramaFases([abre, concluinte], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([abre, concluinte], []);
 
         resultado.IsFailure.Should().BeTrue();
         FieldError erro = resultado.Errors.Should().ContainSingle().Subject;
@@ -158,7 +158,7 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
             faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
         FaseCronograma concluinte = Fase(2, "RESULTADO_FINAL", produtos: Definitiva("GABARITO")).Value!;
 
-        Result resultado = processo.DefinirCronogramaFases([abre, concluinte], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([abre, concluinte], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle().Which.Error.Message.Should().Contain("'RESULTADO_CLASSIFICACAO'");
@@ -180,7 +180,7 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
             faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
         FaseCronograma concluinte = Fase(2, "RESULTADO_FINAL", produtos: Definitiva("RESULTADO_CLASSIFICACAO")).Value!;
 
-        Result resultado = processo.DefinirCronogramaFases([abre, concluinte], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([abre, concluinte], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -193,7 +193,7 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
         FaseCronograma preliminar = Fase(
             2, "RESULTADO_PRELIMINAR", produtos: Preliminar(), faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
 
-        Result resultado = processo.DefinirCronogramaFases([definitiva, preliminar], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([definitiva, preliminar], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
@@ -211,7 +211,7 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
             2, "RESULTADO_FINAL", produtos: Definitiva(),
             inicio: new DateTimeOffset(2026, 2, 1, 0, 0, 0, TimeSpan.Zero)).Value!;
 
-        Result resultado = processo.DefinirCronogramaFases([preliminar, definitiva], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([preliminar, definitiva], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle()
@@ -226,7 +226,7 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
             1, "RESULTADO_PRELIMINAR", produtos: Preliminar(), faseConcluinteCodigo: "RESULTADO_FINAL").Value!;
         FaseCronograma definitiva = Fase(2, "RESULTADO_FINAL", produtos: Definitiva()).Value!;
 
-        Result resultado = processo.DefinirCronogramaFases([preliminar, definitiva], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([preliminar, definitiva], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
     }
@@ -240,7 +240,7 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
             2, "RESULTADO_FINAL", produtos: Definitiva(), faseConcluinteCodigo: "OUTRA_FASE").Value!;
 
         Result resultado = processo.DefinirCronogramaFases(
-            [semDeclaracao, declaracaoIndevida], [], PrecondicaoIfMatch.Ausente);
+            [semDeclaracao, declaracaoIndevida], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(e => e.Field).Should().BeEquivalentTo(
@@ -257,10 +257,10 @@ public sealed class ProcessoSeletivoCronogramaConclusaoEReposicaoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         FaseCronograma primeira = Fase(1, "INSCRICAO", coletaInscricao: true).Value!;
-        processo.DefinirCronogramaFases([primeira], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([primeira], []).IsSuccess.Should().BeTrue();
 
         FaseCronograma segunda = Fase(1, "HOMOLOGACAO_INSCRICOES").Value!;
-        Result resultado = processo.DefinirCronogramaFases([segunda], [], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirCronogramaFases([segunda], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.CronogramaFases.Should().ContainSingle().Which.Codigo.Should().Be("HOMOLOGACAO_INSCRICOES");

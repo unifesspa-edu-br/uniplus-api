@@ -104,12 +104,11 @@ public sealed class FinalidadeDaExigenciaEndpointTests
             complementar: p =>
             {
                 Guid fase = p.CronogramaFases.Single().Id;
-                p.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, fase, null, FormularioDeTeste.Etapas(FinalidadeFormulario.IsencaoTaxa), PrecondicaoIfMatch.Ausente)
+                p.DefinirFormulario(FinalidadeFormulario.IsencaoTaxa, fase, null, FormularioDeTeste.Etapas(FinalidadeFormulario.IsencaoTaxa))
                     .IsSuccess.Should().BeTrue();
                 p.DefinirFatosColetados(
                         FinalidadeFormulario.IsencaoTaxa,
-                        [FatoColetado.Criar(fatoDaIsencao, 0, "Bolsista", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-                        PrecondicaoIfMatch.Ausente)
+                        [FatoColetado.Criar(fatoDaIsencao, 0, "Bolsista", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!])
                     .IsSuccess.Should().BeTrue();
             });
         return processo;

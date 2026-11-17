@@ -19,7 +19,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.Publicacao
 using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.RegrasLegaisDeTeste;
 
 /// <summary>
-/// As dependências dos três handlers que congelam uma versão (Publicar, Retificar e FecharRetificacao) e a
+/// As dependências dos dois handlers que congelam uma versão (Publicar e Retificar) e a
 /// chamada a cada um. Os cadastros vêm com o que a suíte usa; o teste troca só o que quer descrever. A lista
 /// de dependências de cada handler fica aqui, de modo que uma mudança de assinatura se faz num lugar só.
 /// </summary>
@@ -104,15 +104,6 @@ internal sealed class DependenciasDosHandlersQueCongelam
         return ComVersaoVigente(processo, versaoAtual);
     }
 
-    /// <summary>O processo publicado, com a sessão editorial de retificação aberta.</summary>
-    public static DependenciasDosHandlersQueCongelam ParaProcessoEmRetificacao()
-    {
-        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicado();
-        AbrirRetificacao(processo, versaoAtual);
-
-        return ComVersaoVigente(processo, versaoAtual);
-    }
-
     public Task<(Result Resposta, IEnumerable<object> Eventos)> PublicarAsync() =>
         _servicos.PublicarAsync(
             new PublicarProcessoSeletivoCommand(Processo.Id, "001/2026", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()));
@@ -121,11 +112,6 @@ internal sealed class DependenciasDosHandlersQueCongelam
         _servicos.RetificarAsync(
             new RetificarProcessoSeletivoCommand(
                 Processo.Id, "Correção do prazo", "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto()));
-
-    public Task<(Result Resposta, IEnumerable<object> Eventos)> FecharRetificacaoAsync() =>
-        _servicos.FecharRetificacaoAsync(
-            new FecharRetificacaoCommand(
-                Processo.Id, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga));
 
     private static DependenciasDosHandlersQueCongelam ComVersaoVigente(ProcessoSeletivo processo, VersaoConfiguracao versaoAtual)
     {

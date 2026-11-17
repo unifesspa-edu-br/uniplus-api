@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// </summary>
 public static class DefinirConfiguracaoDivulgacaoCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirConfiguracaoDivulgacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IUnitOfWork unitOfWork,
@@ -30,14 +30,14 @@ public static class DefinirConfiguracaoDivulgacaoCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         ConfiguracaoDivulgacao? configuracao = null;
@@ -47,20 +47,20 @@ public static class DefinirConfiguracaoDivulgacaoCommandHandler
                 ConfiguracaoDivulgacao.Criar(command.CamposPublicos, command.Justificativa);
             if (configuracaoResult.IsFailure)
             {
-                return Result<MutacaoAceita>.ValidationFailure(configuracaoResult.Errors);
+                return Result.ValidationFailure(configuracaoResult.Errors);
             }
 
             configuracao = configuracaoResult.Value!;
         }
 
-        Result definirResult = processo.DefinirConfiguracaoDivulgacao(configuracao, command.Precondicao);
+        Result definirResult = processo.DefinirConfiguracaoDivulgacao(configuracao);
         if (definirResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(definirResult.Error!);
+            return Result.Failure(definirResult.Error!);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

@@ -78,7 +78,7 @@ public sealed class QuadroDePesoPorAreaEnemPersistenciaTests
             ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
 
             ConfiguracaoClassificacao semEnem = ClassificacaoSemEnem();
-            carregado.DefinirClassificacao(semEnem, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            carregado.DefinirClassificacao(semEnem).IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);
         }
@@ -136,7 +136,7 @@ public sealed class QuadroDePesoPorAreaEnemPersistenciaTests
         ProcessoSeletivo processo = NovoProcesso("PS 2027 — Medicina", TiposDeProcessoDeTeste.PSVR);
 
         ConfiguracaoClassificacao classificacao = ClassificacaoDoEnem();
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
 
         return processo;
     }

@@ -4,7 +4,6 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
-using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>As fases e etapas em que o processo decide, e o que saiu delas entre dois retratos do processo.</summary>
 public sealed class LugaresDaDecisaoTests
@@ -30,29 +29,31 @@ public sealed class LugaresDaDecisaoTests
         LugaresDaDecisao.Do(processo).Contem(LugarDaDecisao.DaEtapa(identidadeDaFase)).Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Os lugares ausentes do retrato posterior saem com as fases antes das etapas, cada uma na sua ordem, com o campo e o nome")]
-    public void AusentesEm_FasesAntesDasEtapasNaOrdem()
+    [Fact(DisplayName = "Os lugares ausentes do retrato posterior são todos os que o retrato anterior tinha, fases e etapas")]
+    public void AusentesEm_TodosOsQueSaem()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
         LugaresDaDecisao semNada = LugaresDaDecisao.Do(ProcessoParaMotivos.SemFasesNemEtapas());
 
-        LugarNoProcesso[] ausentes = [.. LugaresDaDecisao.Do(processo).AusentesEm(semNada)];
+        LugarDaDecisao[] ausentes = [.. LugaresDaDecisao.Do(processo).AusentesEm(semNada)];
 
-        ausentes.Select(a => a.Campo).Should().Equal(
-            "cronograma.fases[INSCRICAO]", "cronograma.fases[HOMOLOGACAO_INSCRICOES]",
-            "cronograma.etapas[Prova objetiva]", "cronograma.etapas[Prova discursiva]");
-        ausentes.Select(a => a.Descricao).Should().Equal(
-            "A fase 'INSCRICAO'", "A fase 'HOMOLOGACAO_INSCRICOES'", "A etapa 'Prova objetiva'", "A etapa 'Prova discursiva'");
+        ausentes.Should().BeEquivalentTo([
+            ProcessoParaMotivos.LugarDaFase(processo, "INSCRICAO"),
+            ProcessoParaMotivos.LugarDaFase(processo, "HOMOLOGACAO_INSCRICOES"),
+            ProcessoParaMotivos.LugarDaEtapa(processo, "Prova objetiva"),
+            ProcessoParaMotivos.LugarDaEtapa(processo, "Prova discursiva"),
+        ]);
     }
 
     [Fact(DisplayName = "Só a etapa devolvida sem a identidade anterior aparece como ausente")]
     public void AusentesEm_SoOQueSaiu()
     {
         ProcessoSeletivo processo = ProcessoParaMotivos.Rascunho();
+        LugarDaDecisao discursiva = ProcessoParaMotivos.LugarDaEtapa(processo, "Prova discursiva");
         LugaresDaDecisao antes = LugaresDaDecisao.Do(processo);
         EtapaProcesso mantida = processo.Etapas.First();
-        processo.DefinirEtapas([mantida], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([mantida]).IsSuccess.Should().BeTrue();
 
-        antes.AusentesEm(LugaresDaDecisao.Do(processo)).Select(a => a.Campo).Should().Equal("cronograma.etapas[Prova discursiva]");
+        antes.AusentesEm(LugaresDaDecisao.Do(processo)).Should().Equal(discursiva);
     }
 }

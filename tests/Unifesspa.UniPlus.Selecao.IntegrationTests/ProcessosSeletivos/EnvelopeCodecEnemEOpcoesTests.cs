@@ -32,58 +32,6 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 
 public sealed class EnvelopeCodecEnemEOpcoesTests
 {
-    /// <summary>
-    /// Não reaproveita <see cref="MutarEReidratar"/>: o corpus rico (<see cref="CorpusEnvelopeProcessoRico.ProcessoRico"/>)
-    /// já tem <c>ELIM-CORTE-REDACAO</c>/<c>ELIM-ZERO-EM-AREA</c> (<c>baseadoEmEnem: true</c>) —
-    /// mutar o campo para <c>false</c> sobre esse corpus faria o decoder CORRETAMENTE recusar a
-    /// reidratação (a invariante ENEM×eliminação é validada dentro de
-    /// <see cref="ConfiguracaoClassificacao.Criar"/>), o que quebraria a prova de round-trip em
-    /// vez de exercitá-la. Aqui o corpus não tem eliminação ENEM nenhuma e a classificação é
-    /// importada — com cálculo local, <c>baseadoEmEnem</c> exigiria a resolução de Pesos por
-    /// Área num sentido e a recusaria no outro —, então os dois valores continuam válidos nos
-    /// dois sentidos. A mutação vai de falso para verdadeiro: a contrária produziria um envelope
-    /// que pede a edição do ENEM sem classificação ENEM, que o codec recusa. O outro sentido é a
-    /// leitura do corpus sem ENEM sem mutação, no teste seguinte.
-    /// </summary>
-    [Fact(DisplayName = "O decoder não perde baseadoEmEnem — corpus sem eliminação ENEM, mutado para verdadeiro")]
-    public void Decoder_NaoPerdeCampo_BaseadoEmEnem()
-    {
-        ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
-        CorpusEnvelopeEntrada.Publicar(processo);
-
-        JsonObject mutado = Envelope(congelado);
-        Mutar(mutado, "classificacao.baseadoEmEnem", "True");
-
-        byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
-        bytesMutados.Should().NotEqual(congelado.Bytes, "pré-condição: mutar baseadoEmEnem tem de mudar os bytes");
-
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, bytesMutados);
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
-        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
-
-        Result reposicao = processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo);
-        reposicao.IsSuccess.Should().BeTrue(reposicao.Error?.Message);
-
-        byte[] recodificados = CorpusEnvelope.Registro.Recodificar(
-            versao.SchemaVersion,
-            new EntradaCanonicalizacao(
-                processo,
-                reidratado.Value.Dados,
-                reidratado.Value.HashDocumento, FusoInstitucional.ZoneId,
-                reidratado.Value.Retificacao,
-                reidratado.Value.Conformidade,
-                reidratado.Value.MetadadosFatosCongelados,
-                reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados, FatosDerivadosCongelados: reidratado.Value.FatosDerivadosCongelados)).Value!.Bytes;
-
-        recodificados.Should().NotEqual(congelado.Bytes,
-            "o decoder tem de LER 'classificacao.baseadoEmEnem' — se o ignorasse, a recodificação traria o valor " +
-            "original de volta");
-        recodificados.Should().Equal(bytesMutados,
-            "baseadoEmEnem não é chave de ordenação — o resto do envelope reidratado reproduz o mutado inteiro");
-    }
 
     [Fact(DisplayName = "O decoder lê baseadoEmEnem falso do envelope sem ENEM, sem assumir verdadeiro")]
     public void Decoder_LeBaseadoEmEnemFalso()
@@ -96,169 +44,6 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
 
         reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
         reidratado.Value!.Grafo.Classificacao.BaseadoEmEnem.Should().BeFalse();
-    }
-
-    [Fact(DisplayName = "A resolução de Pesos por Área congelada em NFC volta igual depois de publicar e restaurar")]
-    public void ResolucaoPesoAreaEnem_CongelarPublicarRestaurar_ContinuaAMesma()
-    {
-        // O cadastro grava a resolução em NFC; o operador pode enviá-la decomposta.
-        string doCadastro = "Resolução 805/2024".Normalize(System.Text.NormalizationForm.FormC);
-        string enviada = doCadastro.Normalize(System.Text.NormalizationForm.FormD);
-        ProcessoSeletivo processo = ProcessoMinimo(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = CorpusEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
-            RegraArredondamento = CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
-            CasasArredondamento = 2,
-            RegraOrdemAlocacao = CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
-            BaseadoEmEnem = true,
-            ResolucaoPesoAreaEnem = enviada,
-            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
-            EscalaNotaFinal = 100m,
-        }).Value!, etapaDeNotaDoEnem: false);
-        processo.Classificacao!.ResolucaoPesoAreaEnem.Should().Be(doCadastro, "congelada na forma do cadastro");
-        processo.DefinirOpcoesDeclaradas(
-            "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
-        CorpusEnvelopeEntrada.Publicar(processo);
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
-        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
-        processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
-
-        processo.Classificacao!.ResolucaoPesoAreaEnem.Should().Be(doCadastro,
-            "depois da restauração a resolução continua igual à do cadastro: o vínculo é pelo valor");
-        processo.Classificacao.QuadroPesoAreaEnem.Should().HaveCount(4);
-    }
-
-    /// <summary>
-    /// Os goldens e o corpus rico só têm etapas cuja nota não vem do ENEM. Aqui o atributo ligado
-    /// sai do encoder, e não é injetado no JSON, e volta na etapa reidratada.
-    /// </summary>
-    [Fact(DisplayName = "A etapa de nota do ENEM congelada no envelope volta declarando a nota do ENEM")]
-    public void EtapaDeNotaDoEnem_CongelarPublicarRestaurar_ContinuaDeclarandoAnotaDoEnem()
-    {
-        ProcessoSeletivo processo = ProcessoMinimo(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = CorpusEnvelope.Regra(RegraCalculoCodigo.FormulaMediaPonderada, '2'),
-            RegraArredondamento = CorpusEnvelope.Regra(RegraArredondamentoCodigo.PrecisaoTruncar, '3'),
-            CasasArredondamento = 2,
-            RegraOrdemAlocacao = CorpusEnvelope.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, '4'),
-            BaseadoEmEnem = true,
-            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
-            EscalaNotaFinal = 100m,
-        }).Value!, etapaDeNotaDoEnem: true);
-        processo.DefinirOpcoesDeclaradas(
-            "EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Ausente)
-            .IsSuccess.Should().BeTrue();
-
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
-        Envelope(congelado)["etapas"]![0]!["tipoEtapa"]!["notaDeOrigemNoEnem"]!.GetValue<bool>().Should().BeTrue(
-            "o encoder congela o atributo ligado");
-        CorpusEnvelopeEntrada.Publicar(processo);
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
-        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
-        processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
-
-        processo.Etapas.Should().ContainSingle().Which.DeclaraNotaDoEnem.Should().BeTrue(
-            "a etapa reidratada declara a nota do ENEM pelo atributo que o envelope congelou");
-    }
-
-    [Fact(DisplayName = "As opções que o processo declarou voltam na restauração, reconstruídas dos valores selecionáveis congelados")]
-    public void OpcoesDeclaradas_CongelarPublicarRestaurar_VoltamComRotuloEOrdem()
-    {
-        ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
-        processo.DefinirItens(
-            [FatoColetado.Criar("FATO_OPCAO_DE_TESTE", 0, "Opção de Teste", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-                origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeclaradas(
-            "FATO_OPCAO_DE_TESTE",
-            [OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2025", "Opção 2025", 0).Value!,
-             OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2024", "Opção 2024", 1).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo) with
-        {
-            ValoresSelecionaveisCongelados = CatalogoDoConjuntoBasico.ComValoresCongelados(new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
-            {
-                ["FATO_OPCAO_DE_TESTE"] = [.. processo.OpcoesDoProcesso("FATO_OPCAO_DE_TESTE")
-                    .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))],
-            }),
-        };
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
-        CorpusEnvelopeEntrada.Publicar(processo, entrada);
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
-        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
-
-        processo.LimparColetaEDerivacaoParaRestauracao();
-        processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
-
-        processo.OpcoesDoProcesso("FATO_OPCAO_DE_TESTE").Should().Equal(
-            new OpcaoDoProcesso("2025", "Opção 2025", 0),
-            new OpcaoDoProcesso("2024", "Opção 2024", 1));
-    }
-
-    [Fact(DisplayName = "O descarte repõe as opções congeladas e preserva as de fato que a versão não coleta")]
-    public void OpcoesDeclaradas_EdicaoDaSessao_DescarteRepoeCongeladasEPreservaAsVivas()
-    {
-        ProcessoSeletivo processo = ProcessoSemEliminacaoEnem(baseadoEmEnem: false);
-        processo.DefinirItens(
-            [FatoColetado.Criar("FATO_OPCAO_DE_TESTE", 0, "Opção de Teste", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-                origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeclaradas(
-            "FATO_OPCAO_DE_TESTE",
-            [OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2025", "Opção 2025", 0).Value!,
-             OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2024", "Opção 2024", 1).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeclaradas(
-            "LOCAL_PROVA", [OpcaoDeclaradaFato.Criar("LOCAL_PROVA", "MARABA", "Marabá", 0).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-
-        EntradaCanonicalizacao entrada = CorpusEnvelopeEntrada.Entrada(processo) with
-        {
-            ValoresSelecionaveisCongelados = CatalogoDoConjuntoBasico.ComValoresCongelados(new Dictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>(StringComparer.Ordinal)
-            {
-                ["FATO_OPCAO_DE_TESTE"] = [.. processo.OpcoesDoProcesso("FATO_OPCAO_DE_TESTE")
-                    .Select(static o => new ValorDominioDeclaradoCongelado(o.Codigo, o.Rotulo, o.Ordem))],
-            }),
-        };
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(entrada);
-        CorpusEnvelopeEntrada.Publicar(processo, entrada);
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
-        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
-
-        // A sessão de retificação edita o rótulo e a ordem, acrescenta uma opção e passa a
-        // coletar um fato cujas opções já estavam declaradas.
-        processo.AbrirRetificacao("Ajusta as opções", versao, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "teste", DateTimeOffset.UtcNow)
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirItens(
-            [FatoColetado.Criar("FATO_OPCAO_DE_TESTE", 0, "Opção de Teste", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-                origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-             FatoColetado.Criar("LOCAL_PROVA", 1, "Local de prova", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null,
-                origemValores: OrigemValoresColeta.OpcoesDoProcesso, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeclaradas(
-            "FATO_OPCAO_DE_TESTE",
-            [OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2024", "Opção 2024", 0).Value!,
-             OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2025", "Editado na sessão", 1).Value!,
-             OpcaoDeclaradaFato.Criar("FATO_OPCAO_DE_TESTE", "2023", "Opção 2023", 2).Value!],
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-
-        processo.LimparColetaEDerivacaoParaRestauracao();
-        processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo).IsSuccess.Should().BeTrue();
-
-        processo.OpcoesDoProcesso("FATO_OPCAO_DE_TESTE").Should().Equal(
-            new OpcaoDoProcesso("2025", "Opção 2025", 0),
-            new OpcaoDoProcesso("2024", "Opção 2024", 1));
-        processo.OpcoesDeclaradas.Should().Contain(static o => o.FatoCodigo == "LOCAL_PROVA" && o.Codigo == "MARABA",
-            "a versão não congela as opções de fato que não coleta: elas são configuração viva");
     }
 
     /// <summary>Corpus mínimo sem ELIM-CORTE-REDACAO/ELIM-ZERO-EM-AREA — os dois valores de <c>baseadoEmEnem</c> continuam válidos.</summary>
@@ -292,15 +77,15 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
 
         processo.DefinirCronogramaFases([
             FaseDeResultadoFinal(),
-        ], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: etapaDeNotaDoEnem).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: etapaDeNotaDoEnem ? null : 10m, PassoDoLancamento: null, FormaDeAvaliacao: etapaDeNotaDoEnem ? null : FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
 
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada
@@ -316,9 +101,9 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
             ]
             },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = ("TECNOLOGICA", "Tecnológica"), OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         if (classificacao.BaseadoEmEnem)
@@ -328,8 +113,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
 
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
         return processo;

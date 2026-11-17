@@ -10,11 +10,10 @@ using Kernel.Results;
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 
 /// <summary>
-/// Congela uma versão de configuração, na ordem de recusa que a publicação, a retificação de ato único e o fechamento da
-/// sessão compartilham: a conferência do estado, o ato e o documento (que dão o instante único da operação), a conferência
+/// Congela uma versão de configuração, na ordem de recusa que a publicação e a retificação de ato único compartilham: a conferência do estado, o ato e o documento (que dão o instante único da operação), a conferência
 /// da configuração (<see cref="ConferenciaDaConfiguracaoAoCongelar"/>), a montagem do pedido, a transição do agregado e a
 /// gravação. O que difere entre as operações é a <see cref="OrigemDoCongelamento"/> e a transição que o handler passa. O
-/// handler carrega o agregado com trava e confere o que precede a base (ADR-0110).
+/// handler carrega o agregado com bloqueio e confere o que precede a base.
 /// </summary>
 public sealed class CongelamentoDaVersao(
     ConferenciaDoAtoEDoDocumento atoEDocumento,

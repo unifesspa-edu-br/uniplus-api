@@ -186,8 +186,8 @@ public sealed class EnvelopeCanonicoGoldenTests
         Result<ConfiguracaoClassificacao> classificacao = ClassificacaoComEliminacoes(corteRedacaoPrimeiro);
         classificacao.IsSuccess.Should().BeTrue(classificacao.Error?.Message);
 
-        processo.DefinirClassificacao(classificacao.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(classificacao.Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
 
         return Canonicalizer.Canonicalizar(EntradaDeReferencia(
             processo, DadosDeReferencia(), valoresSelecionaveis: CatalogoDoConjuntoBasico.ComValoresCongelados())).Bytes;
@@ -202,12 +202,12 @@ public sealed class EnvelopeCanonicoGoldenTests
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
 
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas([DistribuicaoDeReferencia()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoDeReferencia()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         return processo;
     }
 

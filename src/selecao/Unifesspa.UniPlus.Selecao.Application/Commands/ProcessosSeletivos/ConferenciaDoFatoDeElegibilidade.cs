@@ -21,7 +21,7 @@ internal static class ConferenciaDoFatoDeElegibilidade
         ArgumentNullException.ThrowIfNull(processo);
         ArgumentNullException.ThrowIfNull(catalogo);
 
-        return RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo),
+        return RegrasDosFatos.ConferirFatoDeElegibilidade(processo.Declaracao(),
             VocabularioDeFatos.PontoResolucaoPorFato(catalogo.Values),
             VocabularioDeFatos.MembroPorAgregado(catalogo.Values));
     }

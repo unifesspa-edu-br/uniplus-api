@@ -57,6 +57,18 @@ Extensions condicionais:
 - **`errors`** (array) — presente apenas em erros de validação (status 422). Cada elemento contém `field` (caminho dot-notation, ex.: `inscricao.candidato.cpf`), `code` (próprio do nível de campo, mesma taxonomia do `code` raiz) e `message` (pt-BR genérica). **Nunca** carrega `value` ou qualquer reflexo do dado rejeitado.
 - **`legal_reference`** (objeto) — presente quando o erro decorre de regra normativa rastreável. Campos: `norma_id` (ex.: `lei-14.723-2023`), `artigo` (ex.: `art.5,§2`), `clausula_edital` (ex.: `edital-2026-1.cap-3.item-7`), `edital_snapshot_id` (referência ao snapshot congelado dos parâmetros do edital). Todos os subcampos são opcionais entre si — basta um para a extension fazer sentido.
 
+> **Emenda (2026-11-17) — a presença do `errors[]`, o item sem `field` e o `field` como ponteiro JSON nos endpoints do documento da configuração.**
+>
+> **Presença do `errors[]`.** No lugar de "presente apenas em erros de validação (status 422)", o `errors[]` **vai na resposta quando há mais de uma causa ou quando alguma causa aponta um campo, em qualquer status**. Uma única causa sem campo não leva `errors[]`: o `code` e o `detail` da raiz já são a causa. Uma única causa com campo leva `errors[]` com um item. Com mais de uma causa, o `code` e o `detail` da raiz são os da primeira, que é também o primeiro item do array.
+>
+> **Item sem `field`.** A causa que não aponta campo **sai sem a chave `field`**, e não com `field: null`, em todo endpoint, inclusive na gravação por dimensão. A chave ausente é a única forma de dizer "sem campo".
+>
+> **O `field` do documento da configuração.** A conferência única da configuração ([ADR-0174](0174-conferencia-unica-da-configuracao-do-processo-com-todas-as-causas.md)) devolve, de uma vez, todas as causas que impedem congelar o documento ([ADR-0172](0172-esquema-json-versionado-do-documento-de-configuracao.md)). Nos endpoints do documento, `errors[].field` é o **ponteiro JSON (RFC 6901)** do trecho que a causa aponta, com os nomes que o esquema publicado dá aos campos e a **posição numérica no documento enviado** em cada lista: `/cronograma/fases/2/unidadeResponsavelCodigo`, `/formularios/0/itens/3/fatoCodigo`. O ponteiro nunca usa chave de negócio. A posição é a do documento enviado, que é o guardado e o exportado: nesses endpoints o pedido é o próprio documento, e a conversão traduz a posição canônica, em que a conferência trabalha, para a posição de origem. O texto vazio (`""`) é o ponteiro da **raiz do documento**, nunca "sem campo". O `field` em notação de pontos, descrito acima, continua valendo para a gravação por dimensão ([ADR-0125](0125-dominio-fonte-unica-validacao-sem-fluentvalidation-duplicado.md)), em que o campo é o do corpo do pedido.
+>
+> A causa que não corresponde a trecho do documento (o catálogo, a aprovação de proteção, o pedido da retificação) segue a regra do item sem `field`. A causa que aponta uma coleção da qual o item foi retirado aponta a coleção.
+>
+> **Decisão registrada, a implementar depois:** cada item de `errors[]` **pode** carregar `type`, a URI do catálogo montada por `problemTypeUriFactory.Build(code)` a partir do `code` do próprio item, para que o cliente chegue à página do erro sem montar a URI. Esta emenda só registra a decisão; a implementação e o contrato ficam para a entrega própria (uniplus-api#2523).
+
 Extensions adicionais não definidas aqui são proibidas em V1 sem ADR de extensão. Extensions que carregam dado pessoal são proibidas por princípio (umbrella, princípio 3).
 
 ### Mensagens em pt-BR e mascaramento

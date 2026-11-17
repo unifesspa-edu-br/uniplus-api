@@ -46,7 +46,7 @@ public sealed class ProcessoSeletivoPersistenciaDerivacaoESplitQueryTests : ICla
                 RegraDerivacaoConfigurada.Criar(1, "AC_PCD",
                     [CondicaoRegraDerivacao.Criar(1, "CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!,
             ]).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -68,7 +68,7 @@ public sealed class ProcessoSeletivoPersistenciaDerivacaoESplitQueryTests : ICla
                 [
                     RegraDerivacaoConfigurada.Criar(0, "AC", condicoes: null).Value!,
                 ]).Value!,
-            ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ]).IsSuccess.Should().BeTrue();
 
             await mutateContext.SaveChangesAsync(CancellationToken.None);
         }

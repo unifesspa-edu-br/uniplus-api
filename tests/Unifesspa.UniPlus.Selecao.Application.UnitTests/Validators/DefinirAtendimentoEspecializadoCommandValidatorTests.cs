@@ -14,7 +14,7 @@ public sealed class DefinirAtendimentoEspecializadoCommandValidatorTests
     public void Aceita_ListasVazias()
     {
         ValidationResult result = new DefinirAtendimentoEspecializadoCommandValidator()
-            .Validate(new DefinirAtendimentoEspecializadoCommand(Guid.CreateVersion7(), [], [], [], PrecondicaoIfMatch.Ausente));
+            .Validate(new DefinirAtendimentoEspecializadoCommand(Guid.CreateVersion7(), [], [], []));
 
         result.IsValid.Should().BeTrue();
     }
@@ -23,7 +23,7 @@ public sealed class DefinirAtendimentoEspecializadoCommandValidatorTests
     public void Rejeita_ProcessoSeletivoIdVazio()
     {
         ValidationResult result = new DefinirAtendimentoEspecializadoCommandValidator()
-            .Validate(new DefinirAtendimentoEspecializadoCommand(Guid.Empty, [], [], [], PrecondicaoIfMatch.Ausente));
+            .Validate(new DefinirAtendimentoEspecializadoCommand(Guid.Empty, [], [], []));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "ProcessoSeletivoId");
@@ -33,7 +33,7 @@ public sealed class DefinirAtendimentoEspecializadoCommandValidatorTests
     public void Rejeita_CondicaoIdVazio()
     {
         ValidationResult result = new DefinirAtendimentoEspecializadoCommandValidator()
-            .Validate(new DefinirAtendimentoEspecializadoCommand(Guid.CreateVersion7(), [Guid.Empty], [], [], PrecondicaoIfMatch.Ausente));
+            .Validate(new DefinirAtendimentoEspecializadoCommand(Guid.CreateVersion7(), [Guid.Empty], [], []));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "CondicaoIds[0]");
@@ -43,7 +43,7 @@ public sealed class DefinirAtendimentoEspecializadoCommandValidatorTests
     public void Rejeita_ListaNula()
     {
         ValidationResult result = new DefinirAtendimentoEspecializadoCommandValidator()
-            .Validate(new DefinirAtendimentoEspecializadoCommand(Guid.CreateVersion7(), null!, [], [], PrecondicaoIfMatch.Ausente));
+            .Validate(new DefinirAtendimentoEspecializadoCommand(Guid.CreateVersion7(), null!, [], []));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "CondicaoIds");

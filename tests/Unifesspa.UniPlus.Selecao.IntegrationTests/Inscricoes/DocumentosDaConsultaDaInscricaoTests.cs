@@ -60,8 +60,7 @@ public sealed class DocumentosDaConsultaDaInscricaoTests
                 NoExigencia.CriarFolha(renda, 1).Value!,
                 NoExigencia.CriarFolha(doMembro, 2, repetePorEntidade: familia).Value!,
                 NoExigencia.CriarFolha(daConvocacao, 3).Value!,
-            ],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ]).IsSuccess.Should().BeTrue();
         await using UniPlusDbContext db = _cenario.CriarDbContext();
         (Guid processoId, _) = await PublicarEDivulgarAsync(db, processo);
         IUserContext fernanda = UsuarioComCpf(PersonasDeTeste.FernandaDrumond);

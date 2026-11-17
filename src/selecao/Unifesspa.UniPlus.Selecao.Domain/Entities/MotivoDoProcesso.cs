@@ -14,8 +14,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// processo, e o motivo desativado continua utilizável onde já consta do edital publicado (UNI-REQ-0122).
 /// </summary>
 /// <remarks>
-/// A escolha nasce já com a versão do edital em que entra: a primeira, no rascunho, ou a que a sessão de retificação
-/// prepara. Congelar a versão não grava nada nela; a descrição se refaz do cadastro só na versão em que a escolha entra.
+/// A escolha nasce já com a versão do edital em que entra: a primeira, porque só o rascunho escolhe. Congelar a versão
+/// não grava nada nela; a descrição se refaz do cadastro só na versão em que a escolha entra.
 /// A regra de quando incluir e retirar é de <see cref="EscolhaDosMotivos"/>, que enxerga o estado do processo.
 /// </remarks>
 public sealed class MotivoDoProcesso : EntityBase, IAuditableEntity
@@ -77,9 +77,8 @@ public sealed class MotivoDoProcesso : EntityBase, IAuditableEntity
     internal void Recopiar(MotivoDeDecisao origem) => Descricao = origem.Descricao;
 
     /// <summary>
-    /// Se a escolha ainda é só da sessão, estando <paramref name="numeroDaVersaoEmPreparo"/> em preparo: a que entra nessa
-    /// versão (ou depois dela, se sobrou de uma sessão descartada) ainda não consta de edital publicado; a que entrou antes
-    /// já consta.
+    /// Se a escolha ainda não consta de edital publicado, estando <paramref name="numeroDaVersaoEmPreparo"/> em preparo: a
+    /// que entra nessa versão ou depois dela ainda não consta; a que entrou antes já consta.
     /// </summary>
     public bool PendenteNa(int numeroDaVersaoEmPreparo) => Vigencia.VersaoDoEditalDeEntrada >= numeroDaVersaoEmPreparo;
 

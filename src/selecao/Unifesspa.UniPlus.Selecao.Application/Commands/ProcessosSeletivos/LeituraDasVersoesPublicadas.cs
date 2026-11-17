@@ -9,8 +9,9 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 /// <summary>
-/// Lê as versões publicadas do processo e o que elas congelaram de cada fato coletado, uma vez por retificação sem
-/// sessão. Sem versão, não há o que ler. A versão que o sistema não sabe reidratar recusa, como a abertura da sessão.
+/// Lê as versões publicadas do processo e o que elas congelaram de cada fato coletado, uma vez por retificação
+/// (UNI-REQ-0144). Sem versão, não há o que ler. Toda versão tem de ser reidratável: a que o sistema não conhece ou
+/// não sabe reidratar recusa, porque sem lê-la não há como saber que fatos cada formulário coletou.
 /// </summary>
 public sealed class LeituraDasVersoesPublicadas(IProcessoSeletivoRepository processos, IRegistroCodecsEnvelope registroCodecs)
 {
@@ -24,9 +25,54 @@ public sealed class LeituraDasVersoesPublicadas(IProcessoSeletivoRepository proc
             return Result<FatosDasVersoesPublicadas?>.Success(null);
         }
 
-        Result<VersoesPublicadasLidas> lidas = VersoesPublicadasLidas.Ler(registroCodecs, versoes, abrindoSessao: false);
-        return lidas.IsFailure
-            ? Result<FatosDasVersoesPublicadas?>.Failure(lidas.Error!)
-            : Result<FatosDasVersoesPublicadas?>.Success(lidas.Value!.Fatos);
+        Result<FatosDasVersoesPublicadas> fatos = Reidratar(versoes);
+        return fatos.IsFailure
+            ? Result<FatosDasVersoesPublicadas?>.Failure(fatos.Error!)
+            : Result<FatosDasVersoesPublicadas?>.Success(fatos.Value);
     }
+
+    // As versões vão da primeira à base, que é a última.
+    private Result<FatosDasVersoesPublicadas> Reidratar(IReadOnlyList<VersaoConfiguracao> versoes)
+    {
+        List<EnvelopeReidratado> reidratadas = new(versoes.Count);
+        foreach (VersaoConfiguracao versao in versoes)
+        {
+            Result<EnvelopeReidratado> reidratada = ReidratarVersao(versao);
+            if (reidratada.IsFailure)
+            {
+                return Result<FatosDasVersoesPublicadas>.Failure(reidratada.Error!);
+            }
+
+            reidratadas.Add(reidratada.Value!);
+        }
+
+        return Result<FatosDasVersoesPublicadas>.Success(Fatos(reidratadas));
+    }
+
+    private static FatosDasVersoesPublicadas Fatos(List<EnvelopeReidratado> reidratadas) => FatosDasVersoesPublicadas.De(
+        [.. reidratadas.Select(static r => r.Grafo)],
+        [.. reidratadas.Select(ConferenciaDosEixosDosFatosColetados.DaVersao)]);
+
+    private Result<EnvelopeReidratado> ReidratarVersao(VersaoConfiguracao versao) =>
+        PendenciaDeReidratacao(versao) is { } pendencia
+            ? Result<EnvelopeReidratado>.Failure(pendencia)
+            : registroCodecs.Reidratar(versao);
+
+    // A recusa é nomeada: distingue a versão que o sistema não conhece da que ele conhece e não sabe reconstruir.
+    private DomainError? PendenciaDeReidratacao(VersaoConfiguracao versao) => CapacidadeDa(versao) switch
+    {
+        null => new DomainError(
+            "EnvelopeCodec.VersaoDesconhecida",
+            $"A versão {versao.SchemaVersion} do envelope congelado não está no registro de codecs — não há como reconstruir esta configuração, e {Consequencia(versao)}."),
+        { Reidratavel: false } capacidade => new DomainError(
+            "EnvelopeCodec.VersaoNaoReidratavel",
+            $"A versão {versao.SchemaVersion} do envelope é conhecida, mas não pode ser reidratada ({capacidade.MotivoDaRecusa}) — {Consequencia(versao)}."),
+        _ => null,
+    };
+
+    private CapacidadeCodec? CapacidadeDa(VersaoConfiguracao versao) => registroCodecs.Capacidades
+        .FirstOrDefault(c => string.Equals(c.SchemaVersion, versao.SchemaVersion, StringComparison.Ordinal));
+
+    private static string Consequencia(VersaoConfiguracao versao) =>
+        $"sem ler a versão {versao.NumeroVersao}, não há como saber que fatos cada formulário coletou em todas as versões publicadas";
 }

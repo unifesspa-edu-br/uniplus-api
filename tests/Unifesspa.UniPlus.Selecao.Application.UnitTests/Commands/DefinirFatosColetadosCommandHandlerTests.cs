@@ -36,7 +36,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         processo.DefinirItensComFaseDeInscricao([]).IsSuccess.Should().BeTrue();
         FatoColetado baixaRenda = BaixaRendaNaSecao(ordemDaBaixaRenda);
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicosDeAntesDosDadosDeGenero(), baixaRenda], PrecondicaoIfMatch.Ausente, [ComposicaoFamiliar(ordemDoGrupo)])
+                FinalidadeFormulario.Inscricao, [.. FormularioDeTeste.DadosBasicosDeAntesDosDadosDeGenero(), baixaRenda], [ComposicaoFamiliar(ordemDoGrupo)])
             .IsSuccess.Should().BeTrue();
         processo.FatosColetados.Where(static f => f.FatoCodigo is "SEXO_CIVIL" or "IDENTIDADE_GENERO" or "ORIENTACAO_SEXUAL")
             .Should().BeEmpty("pré-condição: o formulário foi gravado antes dos três dados");
@@ -53,7 +53,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             [FatoColetado.Criar("PARENTESCO", 0, "Parentesco", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Sempre, null, "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
             FinalidadeFormulario.Inscricao).Value!;
 
-    private static Task<Result<MutacaoAceita>> RegravarSoOsItensAsync(ProcessoSeletivo processo, FatoColetado baixaRenda) =>
+    private static Task<Result> RegravarSoOsItensAsync(ProcessoSeletivo processo, FatoColetado baixaRenda) =>
         DefinirNaInscricaoAsync(
             NovosMocks(processo, processo.Id), processo,
             [new FatoColetadoInput("BAIXA_RENDA", baixaRenda.Ordem, "Baixa renda", "BOOLEANO", "NUNCA", null) { EtapaCodigo = FormularioDeTeste.Secao }]);
@@ -65,7 +65,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
             ConjuntoBasicoDaInscricao.Itens.Count - 3, ConjuntoBasicoDaInscricao.Itens.Count - 2);
         CodigosDaConferencia(processo).Should().Contain(FormularioProcessoErrorCodes.InscricaoSemConjuntoBasico);
 
-        Result<MutacaoAceita> resultado = await RegravarSoOsItensAsync(processo, baixaRenda);
+        Result resultado = await RegravarSoOsItensAsync(processo, baixaRenda);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         List<FatoColetado> daInscricao = [.. processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao)];
@@ -83,7 +83,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         int fimDaSecao = ConjuntoBasicoDaInscricao.Itens.Count - 3;
         (ProcessoSeletivo processo, FatoColetado baixaRenda) = ProcessoComInscricaoGravadaSemOsTresDados(fimDaSecao + 3, fimDaSecao);
 
-        Result<MutacaoAceita> resultado = await RegravarSoOsItensAsync(processo, baixaRenda);
+        Result resultado = await RegravarSoOsItensAsync(processo, baixaRenda);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.FatosColetados.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao).Select(static f => f.Ordem)
@@ -97,9 +97,9 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         Guid processoId = Guid.CreateVersion7();
         Mocks mocks = NovosMocks(processo: null, processoId);
-        DefinirFatosColetadosCommand command = new(processoId, FinalidadeFormulario.Habilitacao, [], PrecondicaoIfMatch.Ausente);
+        DefinirFatosColetadosCommand command = new(processoId, FinalidadeFormulario.Habilitacao, []);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -117,11 +117,10 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(
-            processo.Id, FinalidadeFormulario.Habilitacao, ItensDaColetaValida(), PrecondicaoIfMatch.Ausente));
+        Result resultado = await HandleAsync(mocks, new DefinirFatosColetadosCommand(
+            processo.Id, FinalidadeFormulario.Habilitacao, ItensDaColetaValida()));
 
         resultado.IsSuccess.Should().BeTrue();
-        resultado.Value!.ETag.Should().BeNull("em rascunho não há sessão editorial nem ETag");
         processo.FatosColetados.Select(f => f.FatoCodigo).Should().BeEquivalentTo(["COR_RACA", "BAIXA_RENDA"]);
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
@@ -129,7 +128,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     [Fact(DisplayName = "Dois itens fora das seções do formulário saem juntos, cada um no seu campo")]
     public async Task Handle_ItensForaDeSecao_AcumulaAsRecusas()
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
             new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null, EtapaCodigo: "INEXISTENTE"),
@@ -147,13 +146,12 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
             [.. VocabularioSeed().Select(static f => f.Codigo == "BAIXA_RENDA" ? f with { Ativo = false } : f)]));
         DefinirFatosColetadosCommand coletaBaixaRenda = new(
-            processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null)], PrecondicaoIfMatch.Ausente);
+            processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null)]);
 
         (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoDesativado);
 
         processo.DefinirItens(
-            [FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-            PrecondicaoIfMatch.Ausente, FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+            [FatoColetado.Criar("BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!], FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
         (await HandleAsync(mocks, coletaBaixaRenda)).IsSuccess.Should().BeTrue("o fato já era coletado pelo processo");
     }
 
@@ -167,15 +165,15 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     public async Task Handle_FatoPendenteSoComprovadoPorExigencia_ColetaNovaERecusada()
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS comprovado", out Guid faseId);
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao, PrecondicaoIfMatch.Ausente);
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
         DocumentoExigido exigencia = ExigenciaQueComprovaBaixaRenda(faseId);
-        Result definida = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente);
+        Result definida = processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]);
         definida.IsSuccess.Should().BeTrue(definida.Error?.Message);
         Mocks mocks = NovosMocks(processo, processo.Id);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
             [.. VocabularioSeed().Select(static f => f.Codigo == "BAIXA_RENDA" ? f with { ProtecaoAprovada = false } : f)]));
         DefinirFatosColetadosCommand coletaBaixaRenda = new(
-            processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null)], PrecondicaoIfMatch.Ausente);
+            processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null)]);
 
         (await HandleAsync(mocks, coletaBaixaRenda)).Error!.Code.Should().Be(VinculoCatalogoErrorCodes.FatoComProtecaoPendente);
     }
@@ -185,9 +183,9 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput("MODALIDADE", 0, "Modalidade", "SELECAO_MULTIPLA", "NUNCA", null)], PrecondicaoIfMatch.Ausente);
+        DefinirFatosColetadosCommand command = new(processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput("MODALIDADE", 0, "Modalidade", "SELECAO_MULTIPLA", "NUNCA", null)]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ItemFormulario.FatoNaoColetavel");
@@ -202,9 +200,9 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>()).Returns(CatalogoDoConjuntoBasico.Com(
             [.. VocabularioSeed().Select(static f => f.Codigo == "BAIXA_RENDA" ? f with { Escopo = "MEMBRO_GRUPO" } : f)]));
         DefinirFatosColetadosCommand command = new(
-            processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null)], PrecondicaoIfMatch.Ausente);
+            processo.Id, FinalidadeFormulario.Habilitacao, [new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", null)]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.Error!.Code.Should().Be(ItemFormularioErrorCodes.FatoNaoColetavel);
     }
@@ -212,7 +210,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     [Fact(DisplayName = "Coletar um fato computado de atributo (RENDA_PER_CAPITA) é recusado como não coletável")]
     public async Task Handle_FatoComputado_RetornaNaoColetavel()
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [new FatoColetadoInput("RENDA_PER_CAPITA", 0, "Renda per capita", "NUMERO", "NUNCA", null)]);
 
@@ -223,7 +221,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     [Fact(DisplayName = "Fato fora do vocabulário é recusado como desconhecido, sem tradução")]
     public async Task Handle_FatoForaDoVocabulario_RetornaDesconhecido()
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [new FatoColetadoInput("V", 0, "V", "SELECAO_UNICA", "NUNCA", null)]);
 
@@ -242,9 +240,9 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         [
             new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null),
             new FatoColetadoInput("BAIXA_RENDA", 1, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("COR_RACA", "MAIOR_IGUAL", "PRETA")]]),
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("PredicadoDnf.OperadorIncompativelComDominio");
@@ -261,9 +259,9 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
         [
             new FatoColetadoInput("BAIXA_RENDA", 0, "Baixa renda", "BOOLEANO", "NUNCA", [[Condicao("COR_RACA", "IGUAL", "PRETA")]]),
             new FatoColetadoInput("COR_RACA", 1, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null),
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
 
-        Result<MutacaoAceita> resultado = await HandleAsync(mocks, command);
+        Result resultado = await HandleAsync(mocks, command);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("GrafoFormulario.CitaFatoPosterior");
@@ -282,7 +280,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     public async Task Handle_TipoRenderizacaoIncoerente_RetornaErroDeCoerencia(
         string fatoCodigo, string tipoRenderizacaoIncoerente, string motivo)
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [new FatoColetadoInput(fatoCodigo, 0, "Rótulo", tipoRenderizacaoIncoerente, "NUNCA", null)]);
 
@@ -296,7 +294,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     [InlineData("OBRIGATORIO", false)]
     public async Task Handle_ObrigatoriedadeIncoerente_Recusa(string tipo, bool comPredicado)
     {
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(
+        Result resultado = await DefinirNaHabilitacaoAsync(
             ProcessoEmRascunho(),
             [
             new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "NUNCA", null),
@@ -322,7 +320,7 @@ public sealed class DefinirFatosColetadosCommandHandlerTests
     public async Task Handle_ObrigatoriedadeQuando_Aceita()
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
-        Result<MutacaoAceita> resultado = await DefinirNaHabilitacaoAsync(processo, ItensComObrigatoriedadeQuando());
+        Result resultado = await DefinirNaHabilitacaoAsync(processo, ItensComObrigatoriedadeQuando());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         FatoColetado baixaRenda = processo.FatosColetados.Single(static f => f.FatoCodigo == "BAIXA_RENDA");

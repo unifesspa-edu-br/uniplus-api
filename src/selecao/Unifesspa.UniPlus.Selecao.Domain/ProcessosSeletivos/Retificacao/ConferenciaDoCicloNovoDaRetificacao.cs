@@ -17,9 +17,10 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// ciclos novos, ao menos o piso, e pode declarar mais.
 /// </para>
 /// <para>
-/// As recusas se acumulam (ADR-0125), no campo do item pela chave da <see cref="IdentidadeDoItemDoEdital"/>: primeiro
-/// o piso que não foi declarado e depois o declarado que não tem preliminar publicado com ciclo aberto, cada grupo em
-/// ordem ordinal da chave.
+/// As recusas se acumulam (ADR-0125): primeiro o piso que não foi declarado e depois o declarado que não tem preliminar
+/// publicado com ciclo aberto, cada grupo em ordem ordinal da chave da <see cref="IdentidadeDoItemDoEdital"/>. Os ciclos novos
+/// são declarados no pedido da retificação, e não no documento da configuração: a recusa chega sem campo, e a mensagem diz o
+/// item e a declaração que ela aponta.
 /// </para>
 /// </remarks>
 public static class ConferenciaDoCicloNovoDaRetificacao
@@ -60,23 +61,21 @@ public static class ConferenciaDoCicloNovoDaRetificacao
     private static IEnumerable<FieldError> RecusasDoPisoNaoDeclarado(
         IEnumerable<IdentidadeDoItemDoEdital> piso, IReadOnlySet<IdentidadeDoItemDoEdital> declarados) =>
         EmOrdem(piso.Where(item => !declarados.Contains(item))).Select(static item => new FieldError(
-            CampoDoCiclo(item),
+            null,
             new DomainError(
                 RetificacaoErrorCodes.CicloNovoNaoDeclarado,
                 $"A retificação muda a regra ou os dados de entrada do resultado preliminar '{item.AtoCodigo}', que já foi publicado, "
-                + "e exige declarar o novo ciclo: o novo preliminar é publicado antes do definitivo.")));
+                + "e exige declarar o novo ciclo no pedido: o novo preliminar é publicado antes do definitivo.")));
 
     private static IEnumerable<FieldError> RecusasDosDeclaradosSemCicloAberto(
         IReadOnlySet<IdentidadeDoItemDoEdital> declarados, HashSet<IdentidadeDoItemDoEdital> abertos) =>
         EmOrdem(declarados.Where(item => !abertos.Contains(item))).Select(static item => new FieldError(
-            CampoDoCiclo(item),
+            null,
             new DomainError(
                 RetificacaoErrorCodes.CicloNovoDeItemSemPreliminarAberto,
-                $"O ciclo novo declarado para '{item.AtoCodigo}' não tem resultado preliminar publicado com o ciclo aberto: "
+                $"O ciclo novo declarado no pedido para '{item.AtoCodigo}' não tem resultado preliminar publicado com o ciclo aberto: "
                 + "o preliminar não foi publicado, o definitivo já o fechou ou o item não existe na versão publicada. Retire o item dos ciclos novos.")));
 
     private static IOrderedEnumerable<IdentidadeDoItemDoEdital> EmOrdem(IEnumerable<IdentidadeDoItemDoEdital> itens) =>
         itens.OrderBy(static item => item.Chave, StringComparer.Ordinal);
-
-    private static string CampoDoCiclo(IdentidadeDoItemDoEdital item) => $"cronograma.ciclosNovos[{item.Chave}]";
 }

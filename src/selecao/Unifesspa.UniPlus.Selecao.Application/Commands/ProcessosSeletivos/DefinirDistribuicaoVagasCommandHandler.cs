@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </summary>
 public static class DefinirDistribuicaoVagasCommandHandler
 {
-    public static async Task<Result<MutacaoComDistribuicaoVagasDto>> Handle(
+    public static async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>> Handle(
         DefinirDistribuicaoVagasCommand command, IProcessoSeletivoRepository processoSeletivoRepository, ConfiguracaoDistribuicaoVagasResolver resolvedor,
         IFatoCandidatoReader fatoCandidatoReader, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
@@ -33,20 +33,20 @@ public static class DefinirDistribuicaoVagasCommandHandler
         Result<ProcessoSeletivo> definido = await DefinirNoProcessoAsync(
             command, processoSeletivoRepository, resolvedor, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
         return definido.IsFailure
-            ? Result<MutacaoComDistribuicaoVagasDto>.ValidationFailure(definido.Errors)
+            ? Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.ValidationFailure(definido.Errors)
             : await PersistirAsync(definido.Value!, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
     // Agregado tracked (ObterParaMutacaoAsync): a nova coleção e suas filhas (Guid v7 já preenchido) são persistidas
     // por change detection. NÃO chamar DbSet.Update — marcaria os filhos novos como Modified, emitindo UPDATE de
     // linhas nunca inseridas.
-    private static async Task<Result<MutacaoComDistribuicaoVagasDto>> PersistirAsync(
+    private static async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>> PersistirAsync(
         ProcessoSeletivo processo, IUnitOfWork unitOfWork, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<MutacaoComDistribuicaoVagasDto>.Success(Persistida(processo));
+        return Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>>.Success(Persistida(processo));
     }
 
     private static async Task<Result<ProcessoSeletivo>> DefinirNoProcessoAsync(
@@ -71,10 +71,7 @@ public static class DefinirDistribuicaoVagasCommandHandler
             : await DefinirAsync(command, processo.Value!, resolvidas.Value!, fatoCandidatoReader, cancellationToken).ConfigureAwait(false);
     }
 
-    // A precondição é conferida logo depois do 404 e antes das regras de negócio que este handler avalia: ela as
-    // precede na ordem da ADR-0110 D9. Não precede a validação de schema do payload, que o FluentValidation faz
-    // como middleware do Wolverine antes deste handler (desvio consciente: corrigi-lo exigiria carregar o agregado
-    // no middleware). O mesmo guard continua dentro do Definir* do domínio: esta antecipação dá a ordem, não a garantia.
+    // Fora do rascunho a recusa vem antes de consultar cadastros.
     private static async Task<Result<ProcessoSeletivo>> CarregarParaMutacaoAsync(
         DefinirDistribuicaoVagasCommand command, IProcessoSeletivoRepository processoSeletivoRepository, CancellationToken cancellationToken)
     {
@@ -85,7 +82,7 @@ public static class DefinirDistribuicaoVagasCommandHandler
         return processo is null
             ? Result<ProcessoSeletivo>.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."))
-            : processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio
+            : processo.MutacaoBloqueada() is { } bloqueio
                 ? Result<ProcessoSeletivo>.Failure(bloqueio)
                 : Result<ProcessoSeletivo>.Success(processo);
     }
@@ -103,13 +100,13 @@ public static class DefinirDistribuicaoVagasCommandHandler
 
         FatosDeModalidade fatosDeModalidade = VocabularioDeFatos.ComValoresDeModalidade(
             await fatoCandidatoReader.ListarAsync(cancellationToken).ConfigureAwait(false));
-        Result definido = processo.DefinirDistribuicaoVagas(distribuicoes, fatosDeModalidade, command.Precondicao);
+        Result definido = processo.DefinirDistribuicaoVagas(distribuicoes, fatosDeModalidade);
         return definido.IsFailure ? Result<ProcessoSeletivo>.Failure(definido.Error!) : Result<ProcessoSeletivo>.Success(processo);
     }
 
     // Reprojeta do agregado (não da lista local): DefinirDistribuicaoVagas substitui a coleção inteira, então
     // processo.DistribuicaoVagas já reflete exatamente o que foi persistido — mesma projeção do GET, para o corpo
     // da resposta nunca divergir do que um GET mostraria em seguida.
-    private static MutacaoComDistribuicaoVagasDto Persistida(ProcessoSeletivo processo) =>
-        new(processo.ETagDaSessaoEditorial, [.. processo.DistribuicaoVagas.Select(ProjecaoDasVagas.ProjetarDistribuicao)]);
+    private static IReadOnlyList<ConfiguracaoDistribuicaoVagasDto> Persistida(ProcessoSeletivo processo) =>
+        [.. processo.DistribuicaoVagas.Select(ProjecaoDasVagas.ProjetarDistribuicao)];
 }

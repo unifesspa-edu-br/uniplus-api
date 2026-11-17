@@ -5482,11 +5482,6 @@
       "titulo": "O envelope referencia um código de regra fora do rol conhecido"
     },
     {
-      "codigo": "uniplus.selecao.envelope_codec.round_trip_divergente",
-      "status": 422,
-      "titulo": "A configuração reidratada não reproduz os bytes congelados"
-    },
-    {
       "codigo": "uniplus.selecao.envelope_codec.versao_desconhecida",
       "status": 422,
       "titulo": "A versão do envelope congelado não está no registro de codecs"
@@ -5787,11 +5782,6 @@
       "titulo": "O tamanho máximo em bytes por formato, quando presente, deve ser maior que zero"
     },
     {
-      "codigo": "uniplus.selecao.formulario_processo.aplicacao_de_modelo_so_em_rascunho",
-      "status": 422,
-      "titulo": "O modelo se aplica só em rascunho"
-    },
-    {
       "codigo": "uniplus.selecao.formulario_processo.fase_fora_do_cronograma",
       "status": 422,
       "titulo": "A fase do formulário não está no cronograma do processo"
@@ -5810,11 +5800,6 @@
       "codigo": "uniplus.selecao.formulario_processo.isencao_sem_taxa",
       "status": 422,
       "titulo": "Formulário de isenção de taxa em processo que não cobra taxa"
-    },
-    {
-      "codigo": "uniplus.selecao.formulario_processo.remocao_so_em_rascunho",
-      "status": 422,
-      "titulo": "A retificação acrescenta formulário, mas não remove"
     },
     {
       "codigo": "uniplus.selecao.grafo_dependencia_conjunta.grafo_conjunto_com_ciclo",
@@ -6387,11 +6372,6 @@
       "titulo": "Descrição do motivo fora do tamanho permitido"
     },
     {
-      "codigo": "uniplus.selecao.motivo_de_decisao.fase_ou_etapa_com_motivo_publicado",
-      "status": 422,
-      "titulo": "A fase ou etapa removida tem motivo de decisão publicado"
-    },
-    {
       "codigo": "uniplus.selecao.motivo_de_decisao.fase_ou_etapa_nao_encontrada",
       "status": 404,
       "titulo": "Fase ou etapa não encontrada no processo"
@@ -6919,7 +6899,7 @@
     {
       "codigo": "uniplus.selecao.precondicao_falhou",
       "status": 412,
-      "titulo": "O If-Match não corresponde ao estado atual da sessão editorial"
+      "titulo": "O If-Match não corresponde ao estado atual do recurso"
     },
     {
       "codigo": "uniplus.selecao.precondicao_malformada",
@@ -6929,7 +6909,7 @@
     {
       "codigo": "uniplus.selecao.precondicao_requerida",
       "status": 428,
-      "titulo": "Há uma retificação em curso — a mutação exige o If-Match com o ETag da sessão"
+      "titulo": "A mutação exige o If-Match com o ETag corrente"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.acao_quando_indeferido_divergente",
@@ -7065,16 +7045,6 @@
       "codigo": "uniplus.selecao.processo_seletivo.derivacao_da_oferta",
       "status": 422,
       "titulo": "O fato é derivado das modalidades que o processo oferta e não se configura no processo"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.descarte_com_versao_errada",
-      "status": 500,
-      "titulo": "A configuração reposta não é a da versão base da retificação"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.descarte_sem_restauracao",
-      "status": 500,
-      "titulo": "A sessão editorial não pode ser encerrada sem repor a configuração congelada"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.desempate_area_enem_fora_do_quadro",
@@ -7312,19 +7282,9 @@
       "titulo": "O fuso institucional aplicado não é uma zona reconhecida"
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.id_etapa_ausente",
-      "status": 422,
-      "titulo": "Toda etapa restaurada declara o Id congelado no envelope"
-    },
-    {
       "codigo": "uniplus.selecao.processo_seletivo.id_etapa_duplicado",
       "status": 422,
       "titulo": "O mesmo identificador de etapa aparece em mais de uma etapa"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.id_no_exigencia_duplicado",
-      "status": 422,
-      "titulo": "O mesmo Id de nó da árvore de satisfação não pode aparecer mais de uma vez na configuração restaurada"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.identidade_incompleta",
@@ -7447,44 +7407,9 @@
       "titulo": "Ao menos uma etapa deve compor a nota final"
     },
     {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_consequencia_nao_canonica",
-      "status": 422,
-      "titulo": "Um nó da árvore de satisfação restaurada declara uma consequência que não está na forma canônica"
-    },
-    {
       "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_documento_exigido_duplicado",
       "status": 422,
-      "titulo": "Duas folhas da árvore de satisfação restaurada não podem referenciar o mesmo DocumentoExigido"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_folha_com_base_legal",
-      "status": 422,
-      "titulo": "Uma folha da árvore de satisfação restaurada carrega base legal — campo exclusivo de grupo OU/N-de"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_folha_com_filhos",
-      "status": 422,
-      "titulo": "Uma folha da árvore de satisfação restaurada não pode ter filhos"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_folha_sem_documento_exigido",
-      "status": 422,
-      "titulo": "Uma folha da árvore de satisfação restaurada referencia um DocumentoExigido que não existe na configuração restaurada"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_grupo_com_campo_de_folha",
-      "status": 422,
-      "titulo": "Um grupo da árvore de satisfação restaurada carrega chaveDistincao, dataReferencia ou ocorrenciasEsperadas — campos exclusivos de folha"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_quantidade_minima_ausente",
-      "status": 422,
-      "titulo": "Uma folha ou grupo OU/N-de da árvore de satisfação restaurada não declara quantidadeMinima"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.no_exigencia_tipo_invalido",
-      "status": 422,
-      "titulo": "Um nó da árvore de satisfação restaurada tem um tipo desconhecido"
+      "titulo": "Duas folhas não podem citar a mesma exigência"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.ocorrencia_simulada_invalida",
@@ -7605,11 +7530,6 @@
       "codigo": "uniplus.selecao.processo_seletivo.reserva_pcd_sem_cota_pcd_da_lei",
       "status": 422,
       "titulo": "O processo oferta a reserva de pessoa com deficiência de ampla concorrência e cota da lei, sem a cota da lei para pessoa com deficiência"
-    },
-    {
-      "codigo": "uniplus.selecao.processo_seletivo.restauracao_fora_de_publicado",
-      "status": 422,
-      "titulo": "Só um processo publicado tem configuração congelada a restaurar"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.resultado_declarado_sem_papel",
@@ -7740,26 +7660,6 @@
       "codigo": "uniplus.selecao.rascunho_de_processo_seletivo.unidade_fora_da_permissao",
       "status": 403,
       "titulo": "Sem permissão para configurar processos na unidade informada"
-    },
-    {
-      "codigo": "uniplus.selecao.rascunho_publicacao.conteudo_muito_grande",
-      "status": 422,
-      "titulo": "Rascunho da publicação acima do tamanho permitido"
-    },
-    {
-      "codigo": "uniplus.selecao.rascunho_publicacao.gravacao_concorrente",
-      "status": 409,
-      "titulo": "Outra gravação do mesmo rascunho chegou primeiro"
-    },
-    {
-      "codigo": "uniplus.selecao.rascunho_publicacao.sem_usuario_autenticado",
-      "status": 422,
-      "titulo": "O rascunho da publicação pertence a quem o escreve"
-    },
-    {
-      "codigo": "uniplus.selecao.rascunho_publicacao.versao_invalida",
-      "status": 422,
-      "titulo": "Versão do formato do rascunho inválida"
     },
     {
       "codigo": "uniplus.selecao.recurso_da_etapa.alvo_do_procedimento_de_recurso_inexistente",
@@ -8087,31 +7987,6 @@
       "titulo": "A retificação não retira da inscrição fato que ela já coleta"
     },
     {
-      "codigo": "uniplus.selecao.retificacao.motivo_muito_longo",
-      "status": 422,
-      "titulo": "O motivo da retificação excede o limite de caracteres"
-    },
-    {
-      "codigo": "uniplus.selecao.retificacao.motivo_obrigatorio",
-      "status": 422,
-      "titulo": "O motivo da retificação é obrigatório"
-    },
-    {
-      "codigo": "uniplus.selecao.retificacao_base_desatualizada",
-      "status": 409,
-      "titulo": "A versão sobre a qual a retificação foi aberta não é mais o topo da cadeia"
-    },
-    {
-      "codigo": "uniplus.selecao.retificacao_ja_aberta",
-      "status": 409,
-      "titulo": "Já existe uma retificação em curso neste processo"
-    },
-    {
-      "codigo": "uniplus.selecao.retificacao_nao_aberta",
-      "status": 409,
-      "titulo": "Não há retificação em curso neste processo"
-    },
-    {
       "codigo": "uniplus.selecao.snapshot.vigente_ausente",
       "status": 422,
       "titulo": "Nenhuma publicação vigente para o instante"
@@ -8225,11 +8100,6 @@
       "codigo": "uniplus.selecao.versao_configuracao.versao_anterior_de_outro_processo",
       "status": 422,
       "titulo": "A cadeia de versões não atravessa certames"
-    },
-    {
-      "codigo": "uniplus.selecao.versao_configuracao.versao_de_outro_processo",
-      "status": 422,
-      "titulo": "A configuração congelada de um certame não se repõe em outro"
     },
     {
       "codigo": "uniplus.selecao.versao_configuracao.vigencia_regressiva",

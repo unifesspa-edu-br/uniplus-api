@@ -43,8 +43,8 @@ public sealed class DefinirEtapasCorrecaoIndependenteTests
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
-        Result<MutacaoAceita> result = await Executar(
-            new DefinirEtapasCommand(processo.Id, [EtapaObjetiva()], PrecondicaoIfMatch.Ausente),
+        Result result = await Executar(
+            new DefinirEtapasCommand(processo.Id, [EtapaObjetiva()]),
             repository, unitOfWork, ReaderDoTipoQueExige(exigeCorrecaoIndependente: true));
 
         result.IsFailure.Should().BeTrue();
@@ -61,8 +61,8 @@ public sealed class DefinirEtapasCorrecaoIndependenteTests
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
-        Result<MutacaoAceita> result = await Executar(
-            new DefinirEtapasCommand(processo.Id, [EtapaObjetiva()], PrecondicaoIfMatch.Ausente),
+        Result result = await Executar(
+            new DefinirEtapasCommand(processo.Id, [EtapaObjetiva()]),
             repository, Substitute.For<IUnitOfWork>(), ReaderDoTipoQueExige(exigeCorrecaoIndependente: false));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
@@ -78,13 +78,13 @@ public sealed class DefinirEtapasCorrecaoIndependenteTests
         EtapaProcesso existente = EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: semExigir, Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([existente], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([existente]).IsSuccess.Should().BeTrue();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
         EtapaProcessoInput humana = EtapaObjetiva(existente.Id, CaraterEtapa.Ambas) with { FormaDeAvaliacao = FormaDeAvaliacaoCodigo.Humana };
-        Result<MutacaoAceita> result = await Executar(
-            new DefinirEtapasCommand(processo.Id, [humana], PrecondicaoIfMatch.Ausente),
+        Result result = await Executar(
+            new DefinirEtapasCommand(processo.Id, [humana]),
             repository, Substitute.For<IUnitOfWork>(), ReaderDoTipoQueExige(exigeCorrecaoIndependente: true));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);

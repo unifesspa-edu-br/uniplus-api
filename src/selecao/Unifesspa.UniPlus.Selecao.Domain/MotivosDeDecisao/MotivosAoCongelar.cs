@@ -6,7 +6,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
 
 /// <summary>
-/// O que a publicação, a retificação e o fechamento da sessão fazem com os motivos escolhidos: a escolha que entra na
+/// O que a publicação e a retificação de ato único fazem com os motivos escolhidos: a escolha que entra na
 /// versão que nasce tem de vir de motivo ativo (UNI-REQ-0122) e copia a descrição vigente do cadastro. A escolha que já
 /// entrou em versão anterior não muda, nem quando o motivo de origem foi desativado depois.
 /// </summary>
@@ -30,7 +30,7 @@ public static class MotivosAoCongelar
     }
 
     private static FieldError Desativado(MotivoEscolhidoComOrigem escolhido) =>
-        new("motivosDeDecisao", new DomainError(
+        new("motivos", new DomainError(
             MotivoDeDecisaoErrorCodes.MotivoDesativado,
             $"O motivo {escolhido.Escolhido.Codigo.Valor} foi desativado no cadastro depois de escolhido; troque-o antes de publicar."));
 }

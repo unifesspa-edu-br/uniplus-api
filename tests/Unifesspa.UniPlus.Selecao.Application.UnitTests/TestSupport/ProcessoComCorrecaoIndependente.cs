@@ -110,7 +110,7 @@ internal static class ProcessoComCorrecaoIndependente
                 Guid.CreateVersion7(), "2026", [DiaNaoUtilCongelado.Criar(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null).Value!]).Value,
             FusoInstitucional: TimeZoneInfo.Utc);
         Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(
-            EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(contexto, corretores: corretores));
+            processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(contexto, corretores: corretores));
         conferida.IsSuccess.Should().BeTrue(conferida.Error?.Message);
 
         return conferida.Value!;
@@ -121,15 +121,14 @@ internal static class ProcessoComCorrecaoIndependente
         new(new Dictionary<ReferenciaRegra, CorretoresDaRegra> { [CorrecaoIndependente] = CorretoresDaRegra.SemNovoCorretor(3), [AvaliacaoUnica] = CorretoresDaRegra.SemNovoCorretor(1) });
 
     private static void DeclararBancaDaEtapa(EtapaProcesso etapa, int integrantes, int quorum) =>
-        AlinhamentoDasBancasDaEtapa.Definir(etapa, [BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes, quorum))])
+        etapa.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes, quorum))])
             .IsSuccess.Should().BeTrue();
 
     private static ProcessoSeletivo ComEtapas(ProcessoSeletivo processo, params EtapaProcesso[] etapas)
     {
-        processo.DefinirEtapas(etapas, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue();
         processo.DefinirAlgoritmoContagemPrazo(
-            ReferenciaRegra.De(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ReferenciaRegra.De(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, "v1", ProcessoSeletivoConformeBuilder.HashFixo)).IsSuccess.Should().BeTrue();
         foreach (EtapaProcesso etapa in processo.Etapas)
         {
             ComRecurso(etapa);

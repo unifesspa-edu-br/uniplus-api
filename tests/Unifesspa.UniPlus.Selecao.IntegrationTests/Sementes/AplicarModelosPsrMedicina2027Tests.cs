@@ -187,11 +187,11 @@ public sealed class AplicarModelosPsrMedicina2027Tests
                         [(0, CondicaoDnf.Criar(OpcaoPelasCotasDaLei.Fato, Operador.Igual, System.Text.Json.JsonSerializer.SerializeToElement(true)).Value!)]).Value!, 10),
                 ] },
                 new FatosDaOfertaNoCadastro { OfertaCurso = Testes.Compartilhado.OfertaCursoDeTeste.Medicina }).Value!],
-            Testes.Compartilhado.FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+            Testes.Compartilhado.FatosDeModalidadeDeTeste.DoCatalogo);
         distribuida.IsSuccess.Should().BeTrue(distribuida.Error?.Message);
 
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('e', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
-        Result definido = processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente);
+        Result definido = processo.DefinirBonusRegional(aplica: true, bonus: bonus);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);
 
         AtendimentoEspecializado atendimento = AtendimentoEspecializado.Criar(
@@ -216,22 +216,21 @@ public sealed class AplicarModelosPsrMedicina2027Tests
                 ResolucaoPesoAreaEnem = Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Resolucao,
                 QuadroPesoAreaEnem = Testes.Compartilhado.QuadroPesoAreaEnemDeTeste.Completo(),
                 EscalaNotaFinal = 100m,
-            }).Value!,
-            PrecondicaoIfMatch.Ausente);
+            }).Value!);
         classificada.IsSuccess.Should().BeTrue(classificada.Error?.Message);
         Result edicoes = processo.DefinirOpcoesDeclaradas(
-            EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(EdicaoDoEnem.Fato, "2025", "ENEM 2025", 0).Value!], PrecondicaoIfMatch.Ausente);
+            EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(EdicaoDoEnem.Fato, "2025", "ENEM 2025", 0).Value!]);
         edicoes.IsSuccess.Should().BeTrue(edicoes.Error?.Message);
 
         if (ofertarAtendimento)
         {
-            Result ofertada = processo.DefinirAtendimentoEspecializado(atendimento, PrecondicaoIfMatch.Ausente);
+            Result ofertada = processo.DefinirAtendimentoEspecializado(atendimento);
             ofertada.IsSuccess.Should().BeTrue(ofertada.Error?.Message);
         }
 
         // O modelo exige os documentos do atendimento na fase de inscrição do cronograma.
         FaseCronograma inscricao = FaseDeInscricao();
-        Result cronograma = processo.DefinirCronogramaFases([.. processo.CronogramaFases, inscricao], [], PrecondicaoIfMatch.Ausente);
+        Result cronograma = processo.DefinirCronogramaFases([.. processo.CronogramaFases, inscricao], []);
         cronograma.IsSuccess.Should().BeTrue(string.Join("; ", cronograma.Errors.Select(static e => e.Error.Code)) + cronograma.Error?.Message);
     }
 

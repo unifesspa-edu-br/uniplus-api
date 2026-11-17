@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
-/// Portão da publicação, da retificação e do fechamento da sessão: o processo só congela com os
+/// Conferência da publicação e da retificação: o processo só congela com os
 /// motivos que as suas decisões exigem. Cada exigência vive em <see cref="ExigenciasDeMotivos"/>;
 /// as faltas de todas elas são agregadas na ordem do registro.
 /// </summary>

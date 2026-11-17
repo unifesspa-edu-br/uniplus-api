@@ -48,7 +48,7 @@ public sealed class TiposDeDecisaoNoRastreamentoTests
         contexto.Attach(processo);
         FaseCronograma rastreada = processo.CronogramaFases.Single();
 
-        processo.DefinirCronogramaFases([NovaFase(origemId, ["CLASSIFICACAO"])], [], PrecondicaoIfMatch.Curinga)
+        processo.DefinirCronogramaFases([NovaFase(origemId, ["CLASSIFICACAO"])], [])
             .IsSuccess.Should().BeTrue();
         contexto.ChangeTracker.DetectChanges();
 
@@ -92,7 +92,7 @@ public sealed class TiposDeDecisaoNoRastreamentoTests
     private static ProcessoSeletivo NovoProcessoComFase(Guid origemId, IReadOnlyList<string?> tipos)
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCronogramaFases([NovaFase(origemId, tipos)], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([NovaFase(origemId, tipos)], [])
             .IsSuccess.Should().BeTrue();
         return processo;
     }

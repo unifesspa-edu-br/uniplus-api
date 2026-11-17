@@ -14141,121 +14141,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         });
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoDePublicacao", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<string>("Conteudo")
-                        .IsRequired()
-                        .HasColumnType("text")
-                        .HasColumnName("conteudo");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<DateTimeOffset>("ExpiraEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("expira_em");
-
-                    b.Property<Guid>("ProcessoSeletivoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<string>("UsuarioContaId")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("usuario_conta_id");
-
-                    b.Property<int>("Versao")
-                        .HasColumnType("integer")
-                        .HasColumnName("versao");
-
-                    b.HasKey("Id")
-                        .HasName("pk_rascunhos_publicacao");
-
-                    b.HasIndex("ExpiraEm")
-                        .HasDatabaseName("ix_rascunhos_publicacao_expira_em");
-
-                    b.HasIndex("ProcessoSeletivoId", "UsuarioContaId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_rascunhos_publicacao_processo_operador");
-
-                    b.ToTable("rascunhos_publicacao", "selecao");
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoRetificacao", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uuid")
-                        .HasColumnName("id");
-
-                    b.Property<DateTimeOffset>("AbertoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("aberto_em");
-
-                    b.Property<string>("AbertoPorContaId")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("aberto_por_conta_id");
-
-                    b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("created_at");
-
-                    b.Property<string>("FatosDasVersoesPublicadas")
-                        .IsRequired()
-                        .HasColumnType("jsonb")
-                        .HasColumnName("fatos_das_versoes_publicadas");
-
-                    b.Property<string>("Motivo")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)")
-                        .HasColumnName("motivo");
-
-                    b.Property<int>("NumeroVersaoBase")
-                        .HasColumnType("integer")
-                        .HasColumnName("numero_versao_base");
-
-                    b.Property<Guid>("ProcessoSeletivoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("processo_seletivo_id");
-
-                    b.Property<int>("Revisao")
-                        .HasColumnType("integer")
-                        .HasColumnName("revisao");
-
-                    b.Property<DateTimeOffset?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("updated_at");
-
-                    b.Property<bool>("VersaoBaseComIdentificadorLegivel")
-                        .HasColumnType("boolean")
-                        .HasColumnName("versao_base_com_identificador_legivel");
-
-                    b.Property<Guid>("VersaoBaseId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("versao_base_id");
-
-                    b.HasKey("Id")
-                        .HasName("pk_rascunhos_retificacao");
-
-                    b.HasIndex("ProcessoSeletivoId")
-                        .IsUnique()
-                        .HasDatabaseName("ux_rascunhos_retificacao_processo");
-
-                    b.ToTable("rascunhos_retificacao", "selecao");
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RecursoDaEtapa", b =>
                 {
                     b.Property<Guid>("Id")
@@ -20185,26 +20070,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasConstraintName("fk_produtos_da_fase_fases_cronograma_fase_cronograma_id");
                 });
 
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoDePublicacao", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
-                        .WithMany()
-                        .HasForeignKey("ProcessoSeletivoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_rascunhos_publicacao_processo_seletivo");
-                });
-
-            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoRetificacao", b =>
-                {
-                    b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.ProcessoSeletivo", null)
-                        .WithOne("Rascunho")
-                        .HasForeignKey("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoRetificacao", "ProcessoSeletivoId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("fk_rascunhos_retificacao_processo_seletivo");
-                });
-
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RecursoDaEtapa", b =>
                 {
                     b.HasOne("Unifesspa.UniPlus.Selecao.Domain.Entities.EtapaProcesso", null)
@@ -20808,8 +20673,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Navigation("NosExigencia");
 
                     b.Navigation("OpcoesDeclaradas");
-
-                    b.Navigation("Rascunho");
 
                     b.Navigation("RegrasDerivacao");
 

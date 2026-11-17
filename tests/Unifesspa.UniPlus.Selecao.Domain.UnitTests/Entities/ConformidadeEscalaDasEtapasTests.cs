@@ -41,7 +41,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
     private static ProcessoSeletivo ProcessoCom(params EtapaProcesso[] etapas)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirEtapas(etapas, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue();
         return processo;
     }
 
@@ -75,31 +75,30 @@ public sealed class ConformidadeEscalaDasEtapasTests
     private static ProcessoSeletivo ProcessoComEtapaDoEnem(EtapaProcesso enem)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirClassificacao(ClassificacaoDoEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([EtapaDaMedia(), enem], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoDoEnem()).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaDaMedia(), enem]).IsSuccess.Should().BeTrue();
         return processo;
     }
 
     private static void CitarPorEliminacao(ProcessoSeletivo processo, Guid etapaId, decimal notaMinima) =>
-        processo.DefinirClassificacao(ClassificacaoComEliminacao(etapaId, notaMinima), PrecondicaoIfMatch.Curinga)
+        processo.DefinirClassificacao(ClassificacaoComEliminacao(etapaId, notaMinima))
             .IsSuccess.Should().BeTrue();
 
     private static void CitarPorDesempate(ProcessoSeletivo processo, Guid etapaId)
     {
-        processo.DefinirClassificacao(ClassificacaoSemEliminacao(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoSemEliminacao()).IsSuccess.Should().BeTrue();
         processo.DefinirCriteriosDesempate(
             [CriterioDesempate.Criar(
                 1,
                 ProcessoConformeFactory.Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "f"),
-                new ArgsDesempateMaiorNotaEtapa(etapaId)).Value!],
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+                new ArgsDesempateMaiorNotaEtapa(etapaId)).Value!]).IsSuccess.Should().BeTrue();
     }
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(
         new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" });
 
     private static IEnumerable<ItemConformidade> Vermelhos(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
             .Where(static i => !i.Ok && i.Dimensao == DimensaoConformidade.Etapas);
 
     /// <summary>
@@ -129,7 +128,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
         }
         else
         {
-            processo.DefinirClassificacao(ClassificacaoSemEliminacao(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            processo.DefinirClassificacao(ClassificacaoSemEliminacao()).IsSuccess.Should().BeTrue();
         }
 
         return processo;
@@ -171,7 +170,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
             new IdentificacaoDaEtapa(Nome: "Prova", Carater: CaraterEtapa.Classificatoria, TipoEtapa: Tipo(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
 
-        processo.DefinirEtapas([etapaSemFaseDeclarada], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([etapaSemFaseDeclarada]).IsSuccess.Should().BeTrue();
     }
 
     [Fact(DisplayName = "Etapa sem nota com nota máxima ou com passo recusa a publicação; sem escala publica")]

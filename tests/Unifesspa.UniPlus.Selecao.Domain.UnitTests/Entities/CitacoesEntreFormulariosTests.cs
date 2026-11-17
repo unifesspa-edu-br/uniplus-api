@@ -29,11 +29,11 @@ public sealed class CitacoesEntreFormulariosTests
     public void OutraFinalidade_CitaFatoDaInscricao()
     {
         ProcessoSeletivo processo = ComHabilitacao();
-        processo.DefinirItens([Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_RENDA")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_RENDA")])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_BOLSA")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_BOLSA")])
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
@@ -41,13 +41,13 @@ public sealed class CitacoesEntreFormulariosTests
     public void Inscricao_NaoPerdeFatoCitadoPorOutraFinalidade()
     {
         ProcessoSeletivo processo = ComHabilitacao();
-        processo.DefinirItens([Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_RENDA")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCita("COMPROVANTE_RENDA", 0, "TEM_RENDA")])
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirItens([Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([Item("COR_RACA", 0)])
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
-        processo.RemoverFormulario(FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Ausente)
+        processo.RemoverFormulario(FinalidadeFormulario.Inscricao)
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
@@ -55,11 +55,11 @@ public sealed class CitacoesEntreFormulariosTests
     public void Item_CitaDerivado_PelasDependencias()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirItens([Item("TEM_RENDA", 0), ItemQueCitaODerivado(1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([Item("TEM_RENDA", 0), ItemQueCitaODerivado(1)])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirItens([ItemQueCitaODerivado(0), Item("TEM_RENDA", 1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([ItemQueCitaODerivado(0), Item("TEM_RENDA", 1)])
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
@@ -67,12 +67,12 @@ public sealed class CitacoesEntreFormulariosTests
     public void Publicacao_DerivacaoMudaDepoisDaCitacao_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirItens([Item("TEM_RENDA", 0), ItemQueCitaODerivado(1), Item("TEM_BOLSA", 2)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([Item("TEM_RENDA", 0), ItemQueCitaODerivado(1), Item("TEM_BOLSA", 2)])
             .IsSuccess.Should().BeTrue();
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
 
-        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_BOLSA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_BOLSA")]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
@@ -81,12 +81,12 @@ public sealed class CitacoesEntreFormulariosTests
     public void Termo_CitaSoOQueOFormularioConhece()
     {
         ProcessoSeletivo processo = ComHabilitacao();
-        processo.DefinirItens([Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [Item("COMPROVANTE_RENDA", 0)]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA"), TermoQueCita("COMPROVANTE_RENDA", 1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA"), TermoQueCita("COMPROVANTE_RENDA", 1)])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Inscricao, [TermoQueCita("COMPROVANTE_RENDA")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Inscricao, [TermoQueCita("COMPROVANTE_RENDA")])
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "termos[0]",
@@ -98,11 +98,11 @@ public sealed class CitacoesEntreFormulariosTests
     public void Inscricao_NaoPerdeFatoCitadoPorTermoDeOutraFinalidade()
     {
         ProcessoSeletivo processo = ComHabilitacao();
-        processo.DefinirItens([Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA")])
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirItens([Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([Item("COR_RACA", 0)])
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
@@ -110,14 +110,14 @@ public sealed class CitacoesEntreFormulariosTests
     public void Inscricao_CitacaoJaInvalidaEmOutroFormulario_NaoTravaAEdicao()
     {
         ProcessoSeletivo processo = ComHabilitacao();
-        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirItens([Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.Habilitacao, [ItemQueCitaODerivado(0), Item("COMPROVANTE_RENDA", 1)], PrecondicaoIfMatch.Ausente)
+                FinalidadeFormulario.Habilitacao, [ItemQueCitaODerivado(0), Item("COMPROVANTE_RENDA", 1)])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("COMPROVANTE_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("COMPROVANTE_RENDA")]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirItens([Item("TEM_RENDA", 0), Item("COR_RACA", 1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([Item("TEM_RENDA", 0), Item("COR_RACA", 1)])
             .IsSuccess.Should().BeTrue("a troca da inscrição não tira nada que a habilitação conhecia");
     }
 
@@ -125,11 +125,11 @@ public sealed class CitacoesEntreFormulariosTests
     public void Inscricao_MantemFatoCitadoPorOutraFinalidade_Aceita()
     {
         ProcessoSeletivo processo = ComHabilitacao();
-        processo.DefinirItens([Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA")])
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirItens([Item("TEM_RENDA", 0), Item("COR_RACA", 1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([Item("TEM_RENDA", 0), Item("COR_RACA", 1)])
             .IsSuccess.Should().BeTrue();
     }
 
@@ -137,16 +137,16 @@ public sealed class CitacoesEntreFormulariosTests
     public void Inscricao_InvalidaCitacaoComOutraJaInvalida_Recusa()
     {
         ProcessoSeletivo processo = ComHabilitacao();
-        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirItens([Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
         processo.DefinirFatosColetados(
-                FinalidadeFormulario.Habilitacao, [ItemQueCitaODerivado(0), Item("COMPROVANTE_RENDA", 1)], PrecondicaoIfMatch.Ausente)
+                FinalidadeFormulario.Habilitacao, [ItemQueCitaODerivado(0), Item("COMPROVANTE_RENDA", 1)])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTermosDoFormulario(FinalidadeFormulario.Habilitacao, [TermoQueCita("TEM_RENDA")])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("COMPROVANTE_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("COMPROVANTE_RENDA")]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirItens([Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([Item("COR_RACA", 0)])
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
@@ -154,13 +154,13 @@ public sealed class CitacoesEntreFormulariosTests
     public void Inscricao_ComparaCadaCitacaoDoItem()
     {
         ProcessoSeletivo processo = ComHabilitacao();
-        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirItens([Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCitaOsDois(), Item("COMPROVANTE_RENDA", 1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirFatosColetados(FinalidadeFormulario.Habilitacao, [ItemQueCitaOsDois(), Item("COMPROVANTE_RENDA", 1)])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("COMPROVANTE_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("COMPROVANTE_RENDA")]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirItens([Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([Item("COR_RACA", 0)])
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 

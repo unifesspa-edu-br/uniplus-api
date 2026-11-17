@@ -5,12 +5,12 @@ using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
 /// <summary>
-/// O que o sistema sabe fazer com <b>uma</b> versão do envelope (ADR-0110 D1).
+/// O que o sistema sabe fazer com <b>uma</b> versão do envelope.
 /// </summary>
 /// <remarks>
 /// É um <b>codec</b>, e não um decoder: provar que a reidratação de uma <c>1.1</c> foi
 /// fiel exige recanonicalizá-la com o encoder <b>da <c>1.1</c></b>. Aposentar o encoder
-/// de uma versão no dia em que ela deixa de ser a corrente tornaria o descarte de todo
+/// de uma versão no dia em que ela deixa de ser a corrente tornaria a leitura de todo
 /// certame congelado antes daquele bump <b>não verificável</b> — e uma reidratação sem
 /// prova é a que destrói configuração em silêncio.
 /// </remarks>

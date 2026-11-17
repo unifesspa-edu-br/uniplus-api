@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
+using System.Collections.Frozen;
+
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -11,13 +13,22 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public sealed record FaseDeclarada
 {
+    /// <summary>A lista dos produtos da fase, pelo nome que <see cref="ParteRecusadaEm"/> reconhece.</summary>
+    public const string ListaDosProdutos = "produtos";
+
+    /// <summary>A lista das bancas que a fase requer, pelo nome que <see cref="ParteRecusadaEm"/> reconhece.</summary>
+    public const string ListaDasBancasRequeridas = "bancasRequeridas";
+
+    private readonly IReadOnlySet<string> _colecoesComParteRecusada;
+
     private FaseDeclarada(
         Guid id,
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase decisoes,
         AtosDaFase atos,
         BancasDaFase bancas,
-        IReadOnlyList<FieldError> recusas)
+        IReadOnlyList<FieldError> recusas,
+        IReadOnlySet<string> colecoesComParteRecusada)
     {
         Id = id;
         OrigemId = origem.OrigemId;
@@ -32,6 +43,7 @@ public sealed record FaseDeclarada
         Atos = atos;
         Bancas = bancas;
         Recusas = recusas;
+        _colecoesComParteRecusada = colecoesComParteRecusada;
     }
 
     public Guid Id { get; }
@@ -60,15 +72,23 @@ public sealed record FaseDeclarada
 
     public IReadOnlyList<FieldError> Recusas { get; }
 
+    /// <summary>
+    /// Se a leitura do documento recusou alguma parte da lista da fase (<see cref="ListaDosProdutos"/>, <see cref="ListaDasBancasRequeridas"/>):
+    /// a lista declarada não é a que o autor escreveu, e a regra que a quantifica não a julga.
+    /// </summary>
+    public bool ParteRecusadaEm(string colecao) => _colecoesComParteRecusada.Contains(colecao);
+
     public static FaseDeclarada Declarar(
         Guid id,
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase decisoes,
         PublicacoesDaFase publicacoes,
-        IReadOnlyList<BancaRequerida> bancas)
+        IReadOnlyList<BancaRequerida> bancas,
+        IReadOnlySet<string>? colecoesComParteRecusada = null)
     {
         ConferenciaDaDeclaracaoDaFase.ExigirDeclaracaoPresente(origem, decisoes, publicacoes, bancas);
         ConferenciaDaDeclaracaoDaFase.ExigirIdCongelado(id);
+        IReadOnlySet<string> suspensas = colecoesComParteRecusada ?? FrozenSet<string>.Empty;
 
         return new FaseDeclarada(
             id,
@@ -76,6 +96,7 @@ public sealed record FaseDeclarada
             decisoes,
             new AtosDaFase(publicacoes),
             new BancasDaFase(bancas),
-            ConferenciaDaDeclaracaoDaFase.Violacoes(origem, decisoes, publicacoes, bancas));
+            ConferenciaDaDeclaracaoDaFase.Violacoes(origem, decisoes, publicacoes, bancas, suspensas),
+            suspensas);
     }
 }

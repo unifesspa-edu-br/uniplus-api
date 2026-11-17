@@ -96,23 +96,22 @@ internal static class ProcessoDoEnemPublicadoDeTeste
                 ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
                 QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
                 EscalaNotaFinal = 100m,
-            }).Value!,
-            PrecondicaoIfMatch.Curinga));
+            }).Value!));
 
-        Exigir(processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Curinga));
+        Exigir(processo.DefinirEtapas([etapa]));
 
         Exigir(processo.DefinirDistribuicaoVagas(
             [
                 DistribuicaoDaOferta(ofertaTecnologica, ("TECNOLOGICA", "Tecnológica"), OfertaCursoDeTeste.Medicina),
                 DistribuicaoDaOferta(ofertaHumanistica, ("HUMANISTICA_I", "Humanística I"), OfertaCursoDeTeste.Pedagogia),
             ],
-            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga));
+            FatosDeModalidadeDeTeste.DoCatalogo));
 
         Exigir(processo.DefinirOpcoesDeclaradas(
-            Regras.Services.EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(Regras.Services.EdicaoDoEnem.Fato, Edicao, Edicao, 0).Value!], PrecondicaoIfMatch.Curinga));
+            Regras.Services.EdicaoDoEnem.Fato, [OpcaoDeclaradaFato.Criar(Regras.Services.EdicaoDoEnem.Fato, Edicao, Edicao, 0).Value!]));
 
         FatoColetado[] basicos = [.. FormularioDeTeste.DadosBasicos()];
-        Exigir(processo.DefinirItens([.. basicos, FormularioDeTeste.CampoDaEdicaoDoEnem(basicos.Max(static f => f.Ordem) + 1)], PrecondicaoIfMatch.Curinga));
+        Exigir(processo.DefinirItens([.. basicos, FormularioDeTeste.CampoDaEdicaoDoEnem(basicos.Max(static f => f.Ordem) + 1)]));
 
         return etapa.Id;
     }

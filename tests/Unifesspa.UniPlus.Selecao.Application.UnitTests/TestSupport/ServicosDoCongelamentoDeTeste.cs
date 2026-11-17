@@ -53,8 +53,6 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public IDocumentoAPublicarRepository Documentos { get; private set; } = Substitute.For<IDocumentoAPublicarRepository>();
 
-    public IRascunhoDePublicacaoRepository Rascunhos { get; } = Substitute.For<IRascunhoDePublicacaoRepository>();
-
     public IAtoDoProcessoRepository Atos { get; private set; } = Substitute.For<IAtoDoProcessoRepository>();
 
     public ICertameDivulgadoRepository Certames { get; } = Substitute.For<ICertameDivulgadoRepository>();
@@ -84,8 +82,6 @@ internal sealed class ServicosDoCongelamentoDeTeste
     public IRegraCatalogoReader RegrasDeConsolidacao { get; private set; } = RegrasDeConsolidacaoDeTeste.Catalogo();
 
     public IRegistroCodecsEnvelope Codecs { get; private set; } = CodecsDeTeste.QueReidrataSemTiposDeAto();
-
-    public IFasesIniciadasDoProcesso FasesIniciadas { get; private set; } = FasesIniciadasDeTeste.Nenhuma();
 
     public TimeProvider Relogio { get; private set; } = new RelogioFixo(Agora);
 
@@ -223,14 +219,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return this;
     }
 
-    public ServicosDoCongelamentoDeTeste ComFasesIniciadas(IFasesIniciadasDoProcesso fasesIniciadas)
-    {
-        FasesIniciadas = fasesIniciadas;
-
-        return this;
-    }
-
-    /// <summary>A versão vigente que o repositório devolve ao processo, para a retificação e o fechamento da sessão.</summary>
+    /// <summary>A versão vigente que o repositório devolve ao processo, para a retificação.</summary>
     public ServicosDoCongelamentoDeTeste ComVersaoVigente(ProcessoSeletivo processo, VersaoConfiguracao versaoVigente)
     {
         ArgumentNullException.ThrowIfNull(processo);
@@ -258,7 +247,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public ConferenciaDoAtoEDoDocumento AtoEDocumento() => new(Documentos, Repositorio, TiposDeAto, LeituraDoInstante());
 
-    public LeituraDaBaseDaRetificacao LeituraDaBase() => new(Repositorio, Atos, Codecs, FasesIniciadas);
+    public LeituraDaBaseDaRetificacao LeituraDaBase() => new(Repositorio, Atos, Codecs);
 
     public LeituraDasVersoesPublicadas VersoesPublicadas() => new(Repositorio, Codecs);
 
@@ -283,7 +272,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public ConferenciaDosFatosDaVersao FatosDaVersao() => new(Motivos());
 
-    public ConferenciaDaOperacaoAoCongelar Operacao() => new(DocumentosDaOperacao(), FatosDaVersao(), LeituraDaBase());
+    public ConferenciaDaOperacaoAoCongelar Operacao() => new(DocumentosDaOperacao(), FatosDaVersao());
 
     public ConferenciaDaConfiguracaoAoCongelar Conferencia() =>
         new(Catalogos(), Recopia(), FusoDaConferencia ?? Fuso, TiposDeAtoUnicos(), Contextos(), Corretores(), Operacao());
@@ -292,7 +281,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
 
     public MontagemDaDivulgacao Divulgacao() => new(Certames, EnderecoNoAcervo());
 
-    public GravacaoDaVersaoCongelada Gravacao() => new(Repositorio, Atos, Rascunhos, Registro, Divulgacao(), UnitOfWork);
+    public GravacaoDaVersaoCongelada Gravacao() => new(Repositorio, Atos, Registro, Divulgacao(), UnitOfWork);
 
     public CongelamentoDaVersao Congelamento() => new(AtoEDocumento(), Conferencia(), Montagem(), Gravacao(), UnitOfWork);
 
@@ -303,10 +292,6 @@ internal sealed class ServicosDoCongelamentoDeTeste
         RetificarProcessoSeletivoCommandHandler.Handle(
             comando, Repositorio, Congelamento(), LeituraDaBase(), CancellationToken.None);
 
-    public Task<(Result Resposta, IEnumerable<object> Eventos)> FecharRetificacaoAsync(FecharRetificacaoCommand comando) =>
-        FecharRetificacaoCommandHandler.Handle(
-            comando, Repositorio, Congelamento(), LeituraDaBase(), CancellationToken.None);
-
     public Task<(Result Resposta, IEnumerable<object> Eventos)> PublicarAsync(Guid processoId) =>
         PublicarAsync(new PublicarProcessoSeletivoCommand(
             processoId, "001/2026", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: PublicacaoDeTeste.NovoAto()));
@@ -314,10 +299,6 @@ internal sealed class ServicosDoCongelamentoDeTeste
     public Task<(Result Resposta, IEnumerable<object> Eventos)> RetificarAsync(Guid processoId) =>
         RetificarAsync(new RetificarProcessoSeletivoCommand(
             processoId, "Correção do prazo", "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: PublicacaoDeTeste.NovoAto()));
-
-    public Task<(Result Resposta, IEnumerable<object> Eventos)> FecharRetificacaoAsync(Guid processoId) =>
-        FecharRetificacaoAsync(new FecharRetificacaoCommand(
-            processoId, "001/2026-R1", null, null, DocumentoEditalId: Guid.CreateVersion7(), Ato: PublicacaoDeTeste.NovoAto(), Precondicao: PrecondicaoIfMatch.Curinga));
 
     public AvaliacaoDaConformidade Avaliacao() => new(Repositorio, Contextos(), Corretores(), TiposDeAtoUnicos(), Catalogos(), Codecs);
 

@@ -65,20 +65,6 @@ public sealed class FatoDeElegibilidadeGateTests
         AfirmarRecusaDoFatoConhecidoDepoisDaInscricao(resposta, eventos, canonicalizer);
     }
 
-    [Fact(DisplayName = "Fechar a retificação recusa, antes de canonicalizar, o fato de elegibilidade que o catálogo só resolve na habilitação")]
-    public async Task FecharRetificacao_FatoResolvidoNaHabilitacao_Recusa()
-    {
-        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicado();
-        PublicacaoDeTeste.AbrirRetificacao(processo, versaoAtual);
-        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
-
-        (Result resposta, IEnumerable<object> eventos) = await ServicosDoCatalogoQueResolveNaHabilitacao(processo, versaoAtual, canonicalizer)
-            .FecharRetificacaoAsync(processo.Id);
-
-        AfirmarRecusaDoFatoConhecidoDepoisDaInscricao(resposta, eventos, canonicalizer);
-        processo.Rascunho.Should().NotBeNull("a recusa não destrói a sessão editorial");
-    }
-
     private static ServicosDoCongelamentoDeTeste ServicosDoCatalogoQueResolveNaHabilitacao(
         ProcessoSeletivo processo, VersaoConfiguracao versaoAtual, ISnapshotPublicacaoCanonicalizer canonicalizer) =>
         ServicosDoCongelamentoDeTeste.Para(processo)
@@ -112,13 +98,13 @@ public sealed class FatoDeElegibilidadeGateTests
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Gate Elegibilidade");
         FaseCronograma habilitacao = FaseDoCronograma();
-        FormularioDeTeste.TrocarCronograma(processo, [.. processo.CronogramaFases, habilitacao], PrecondicaoIfMatch.Ausente)
+        FormularioDeTeste.TrocarCronograma(processo, [.. processo.CronogramaFases, habilitacao])
             .IsSuccess.Should().BeTrue();
 
         DefinirOFatoDoAcrescimo(processo);
         DefinirOBonusRegionalDoAcrescimo(processo);
 
-        RegrasDosFatos.ConferirFatoDeElegibilidade(EstadoDaConfiguracao.De(processo), new Dictionary<string, string>(), new Dictionary<string, string>())
+        RegrasDosFatos.ConferirFatoDeElegibilidade(processo.Declaracao(), new Dictionary<string, string>(), new Dictionary<string, string>())
             .Should().BeNull("sem o catálogo, o campo da inscrição é conhecido na inscrição");
         return processo;
     }
@@ -134,8 +120,7 @@ public sealed class FatoDeElegibilidadeGateTests
     {
         processo.DefinirBonusRegional(
             aplica: true,
-            ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", HashFixo), 1.20m, null, Fato, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")])).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", HashFixo), 1.20m, null, Fato, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "EDITAL", "Edital nº 1/2026", "Fator de Atenuação das Desigualdades de Acesso", [("1504208", "Marabá", "PA")])).Value!).IsSuccess.Should().BeTrue();
     }
 
     private static (ProcessoSeletivo Processo, VersaoConfiguracao VersaoAtual) ProcessoPublicado()

@@ -38,9 +38,9 @@ public sealed class PendenciasDaCorrecaoIndependenteTests
     private static IReadOnlyList<FieldError> Causas(CorretoresDasEtapas corretores, params EtapaProcesso[] etapas)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirEtapas(etapas, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue();
 
-        return PendenciasDaCorrecaoIndependente.CausasDaCorrecaoIndependente(EstadoDaConfiguracao.De(processo), corretores);
+        return PendenciasDaCorrecaoIndependente.CausasDaCorrecaoIndependente(processo.Declaracao(), corretores);
     }
 
     private static DomainError? Pendencia(EtapaProcesso etapa, CorretoresDasEtapas corretores) => Causas(corretores, etapa) is { Count: > 0 } causas ? causas[0].Error : null;
@@ -98,10 +98,10 @@ public sealed class PendenciasDaCorrecaoIndependenteTests
     public void Conferencia_RecusaSoComMenosDeDoisCorretores(int corretores, bool recusa)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirEtapas([Etapa(tipoExige: true)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([Etapa(tipoExige: true)]).IsSuccess.Should().BeTrue();
 
         Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(
-            EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(corretores: Com(CorretoresDaRegra.SemNovoCorretor(corretores))));
+            processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(corretores: Com(CorretoresDaRegra.SemNovoCorretor(corretores))));
 
         conferida.Errors.Any(static causa => causa.Error.Code == EtapaProcessoErrorCodes.CorrecaoIndependenteComMenosDeDoisCorretores).Should().Be(recusa);
     }

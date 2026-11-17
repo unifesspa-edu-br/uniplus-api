@@ -10,6 +10,7 @@ using Services;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -30,7 +31,7 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
 
     /// <summary>
     /// Código canônico da fase onde a etapa acontece (ex.: <c>"AVALIACAO"</c>); é por código, e não por
-    /// id, porque o id da fase não sobrevive à reconciliação da restauração.
+    /// id, porque o id da fase não identifica a fase fora do processo.
     /// </summary>
     public string? FaseCodigo { get; private set; }
 
@@ -136,6 +137,31 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     }
 
     /// <summary>
+    /// Adota a declaração de um documento lido como a etapa está declarada, <b>sem conferi-la</b>: a recusa da declaração é do
+    /// congelamento, que a lê pela <see cref="Declaracao(IReadOnlySet{string}?)"/>. A etapa nasce com identidade nova, e o
+    /// conceito da avaliação, que não é parte da entidade, fica de fora.
+    /// </summary>
+    internal static EtapaProcesso Adotar(
+        IdentificacaoDaEtapa identificacao,
+        AvaliacaoDeclaradaDaEtapa avaliacao,
+        JanelaDeTempo janela,
+        PublicacoesDaEtapa publicacoes,
+        IReadOnlyList<BancaDaEtapa> bancas)
+    {
+        ArgumentNullException.ThrowIfNull(identificacao);
+        ArgumentNullException.ThrowIfNull(avaliacao);
+        ArgumentNullException.ThrowIfNull(janela);
+        ArgumentNullException.ThrowIfNull(publicacoes);
+        ArgumentNullException.ThrowIfNull(bancas);
+
+        EtapaProcesso etapa = new();
+        etapa.AdotarAvaliacao(identificacao, avaliacao);
+        etapa.AdotarPublicacoes(janela, publicacoes, bancas);
+
+        return etapa;
+    }
+
+    /// <summary>
     /// Reidrata uma etapa de uma <see cref="VersaoConfiguracao"/> congelada, <b>preservando o
     /// <see cref="EntityBase.Id"/></b>, que <see cref="Criar"/> não aceita.
     /// </summary>
@@ -205,6 +231,22 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         FormaDeAvaliacao = avaliacao.FormaDeAvaliacao;
         RegraConsolidacao = avaliacao.RegraConsolidacao;
         EscalaDeAtendimento = NiveisDeAtendimento.EmOrdemCanonica(avaliacao.EscalaDeAtendimento);
+    }
+
+    private void AdotarAvaliacao(IdentificacaoDaEtapa identificacao, AvaliacaoDeclaradaDaEtapa avaliacao)
+    {
+        DefinirIdentificacaoECarater(identificacao);
+        DefinirLancamentoDaNota(avaliacao.Declaracao);
+        SubstituirItens(ReconciliacaoDosItensDeAvaliacao.Reconciliar([], avaliacao.Itens));
+    }
+
+    private void AdotarPublicacoes(JanelaDeTempo janela, PublicacoesDaEtapa publicacoes, IReadOnlyList<BancaDaEtapa> bancas)
+    {
+        AplicarJanelaEParecer(janela.Inicio, janela.Fim, publicacoes.EmiteParecerIndividual);
+        FilhasDoAgregado.Substituir(_tiposDeDecisao, TiposDeDecisaoDeclarados.Canonicos(publicacoes.TiposDeDecisao));
+        SubstituirProdutos(publicacoes.Produtos);
+        SubstituirBancas(bancas);
+        SubstituirRecursos(publicacoes.Recursos);
     }
 
     private IdentificacaoDaEtapa IdentificacaoAtual() => new(Nome, Carater, TipoEtapa, Ordem, FaseCodigo);
@@ -292,9 +334,10 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
     /// <summary>
     /// A etapa como está agora, lida como se acabasse de ser declarada: a âncora de uma janela recursal pode
     /// ter ficado sem o que a sustentava, e a hidratação do EF materializa estado violado. O conceito não é
-    /// parte da entidade e fica ausente.
+    /// parte da entidade e fica ausente. As listas da etapa que a leitura do documento deixou sem alguma parte
+    /// (<paramref name="colecoesComParteRecusada"/>) ficam sem julgar nas regras que as quantificam.
     /// </summary>
-    public EtapaDeclarada Declaracao() => EtapaDeclarada.Declarar(
+    public EtapaDeclarada Declaracao(IReadOnlySet<string>? colecoesComParteRecusada = null) => EtapaDeclarada.Declarar(
         Id,
         IdentificacaoAtual(),
         new AvaliacaoDeclaradaDaEtapa(
@@ -302,8 +345,9 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
             [.. ItensDeAvaliacao.Select(static item => new ItemDeAvaliacaoDeclarado(item.Id, item.Rotulo, item.PontuacaoMaxima))],
             null),
         new JanelaDeTempo(Inicio, Fim),
-        new PublicacoesDaEtapa([.. _produtos], EmiteParecerIndividual, [.. _recursos], [.. _tiposDeDecisao]),
-        [.. _bancas]);
+        new PublicacoesDaEtapa([.. OrdemCanonicaDaConfiguracao.ProdutosDaEtapa(_produtos)], EmiteParecerIndividual, [.. _recursos], [.. _tiposDeDecisao]),
+        [.. OrdemCanonicaDaConfiguracao.BancasDaEtapa(_bancas)],
+        colecoesComParteRecusada);
 
     /// <summary>O que da etapa entra no resultado preliminar que ela publica (ver <see cref="ValueObjects.EntradaDoPreliminar"/>).</summary>
     public EntradaDoPreliminar EntradaDoPreliminar() => EntradaDoPreliminarDaEtapa.De(this);
@@ -330,47 +374,6 @@ public sealed class EtapaProcesso : EntityBase, IParteDoProcesso
         SubstituirRecursos(recursos);
 
         return Result.Success();
-    }
-
-    /// <summary>
-    /// Repõe numa etapa viva os dados da sua versão congelada, preservando o <see cref="EntityBase.Id"/>
-    /// e o <c>CreatedAt</c> da instância rastreada. Só a reconciliação da restauração
-    /// (<c>ProcessoSeletivo.AplicarGrafo</c>) chama.
-    /// </summary>
-    /// <remarks>
-    /// Não passa pela conferência da declaração: repor não é declarar. Os dados vêm de um envelope com
-    /// peso jurídico, e uma regra de forma criada depois não pode tornar a reposição impossível, o que
-    /// trancaria o certame num estado do qual o descarte da retificação nunca sairia.
-    /// </remarks>
-    internal void ReporDe(EtapaProcesso congelada)
-    {
-        ArgumentNullException.ThrowIfNull(congelada);
-
-        DefinirIdentificacaoECarater(congelada.IdentificacaoAtual());
-        DefinirLancamentoDaNota(congelada.AvaliacaoAtual());
-        AplicarJanelaEParecer(congelada.Inicio, congelada.Fim, congelada.EmiteParecerIndividual);
-        FilhasDoAgregado.Substituir(_tiposDeDecisao, congelada._tiposDeDecisao);
-        SubstituirItens(ReconciliacaoDosItensDeAvaliacao.ReporCongelados(_itensDeAvaliacao, congelada.ItensDeAvaliacao));
-        IReadOnlyDictionary<Guid, Guid> produtoVivoPorCongelado = ReporProdutosDe(congelada);
-        SubstituirBancas(congelada.Bancas);
-        SubstituirRecursos(JanelasRecursaisDaEtapa.Repor(_recursos, congelada.Recursos, produtoVivoPorCongelado));
-    }
-
-    /// <summary>
-    /// Produtos em duas passadas, como na fase: a linha que só trocou de papel mantém o Id, senão voltaria
-    /// como inserção disputando o slot do índice único (etapa, ato, papel) com o DELETE da órfã. O ato é
-    /// comparado em NFC: o envelope o congela assim e a linha viva guarda o que o cliente escreveu.
-    /// </summary>
-    /// <returns>O Id da linha que ficou, por Id do produto congelado.</returns>
-    private IReadOnlyDictionary<Guid, Guid> ReporProdutosDe(EtapaProcesso congelada)
-    {
-        ProdutosReconciliados<ProdutoDaEtapa> reconciliados = ProdutosPublicados
-            .ReconciliarPreservandoIdentidadeMesmoComTrocaDePapel(
-                _produtos, congelada.Produtos, HashCanonicalComputer.NormalizeNfc);
-
-        SubstituirProdutos(reconciliados.Produtos);
-
-        return reconciliados.IdentidadeVivaPorIdentidadeChegada;
     }
 
     private void SubstituirProdutos(IEnumerable<ProdutoDaEtapa> produtos) =>

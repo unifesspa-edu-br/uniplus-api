@@ -50,7 +50,7 @@ internal static class CenariosDeDefinirEtapas
     /// produtos precisa stubar o catálogo e passá-lo aqui, sob pena de recusa por ato fora do
     /// catálogo em vez do que ele pretendia exercitar.
     /// </remarks>
-    internal static Task<Result<MutacaoAceita>> Executar(
+    internal static Task<Result> Executar(
         DefinirEtapasCommand command,
         IProcessoSeletivoRepository repository,
         IUnitOfWork unitOfWork,
@@ -99,7 +99,7 @@ internal static class CenariosDeDefinirEtapas
     internal static ProcessoSeletivo ProcessoComAEtapa(EtapaProcesso etapa)
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([etapa]);
 
         return processo;
     }
@@ -126,7 +126,7 @@ internal static class CenariosDeDefinirEtapas
     /// A recusa da substituição das etapas não grava nada e descarta o rastreamento, como toda recusa da substituição:
     /// o SaveChangesAsync automático do Wolverine persistiria qualquer mutação parcial que o rastreamento ainda guardasse.
     /// </summary>
-    internal static async Task RecusouSemGravarAsync(Result<MutacaoAceita> result, IUnitOfWork unitOfWork, string codigo)
+    internal static async Task RecusouSemGravarAsync(Result result, IUnitOfWork unitOfWork, string codigo)
     {
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be(codigo);

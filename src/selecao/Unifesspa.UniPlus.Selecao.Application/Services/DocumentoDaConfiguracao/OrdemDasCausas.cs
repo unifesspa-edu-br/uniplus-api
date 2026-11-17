@@ -7,8 +7,9 @@ using Kernel.Results;
 
 /// <summary>
 /// Põe as causas na ordem única do diagnóstico: a posição do ponto no documento, o ponto que contém antes dos que ele contém,
-/// e uma causa só por ponteiro (a primeira recebida, então quem chama passa antes a de maior precedência). O que o documento
-/// não contém, como o campo obrigatório ausente, vem depois do que o objeto contém e segue a ordem em que foi recebido.
+/// e uma causa só por ponteiro (a primeira recebida, então quem chama passa antes a de maior precedência). Só entram causas
+/// que apontam o documento: o ponteiro vazio é a raiz dele, e a causa sem campo é recusada. O que o documento não contém,
+/// como o campo obrigatório ausente, vem depois do que o objeto contém e segue a ordem em que foi recebido.
 /// </summary>
 public static class OrdemDasCausas
 {
@@ -19,10 +20,18 @@ public static class OrdemDasCausas
 
         return
         [
-            .. causas.GroupBy(static causa => causa.Field ?? string.Empty, StringComparer.Ordinal)
+            .. ExigirCampoEmCadaCausa(causas).GroupBy(static causa => causa.Field!, StringComparer.Ordinal)
                 .Select(static grupo => grupo.First())
-                .OrderBy(causa => PosicaoDe(documento, causa.Field ?? string.Empty), ComparadorDePosicao.Instancia),
+                .OrderBy(causa => PosicaoDe(documento, causa.Field!), ComparadorDePosicao.Instancia),
         ];
+    }
+
+    private static FieldError[] ExigirCampoEmCadaCausa(IEnumerable<FieldError> causas)
+    {
+        FieldError[] doDocumento = [.. causas];
+        return doDocumento.Any(static causa => causa.Field is null)
+            ? throw new ArgumentException("A causa sem campo não aponta ponto do documento e não entra na ordem do diagnóstico.", nameof(causas))
+            : doDocumento;
     }
 
     private static int[] PosicaoDe(JsonNode documento, string ponteiro)

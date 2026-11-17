@@ -6,7 +6,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -19,11 +18,11 @@ public static class RegrasDoDesempate
     /// </summary>
     public const int CriteriosDesempateMaximo = 20;
 
-    internal static Result ConferirSubstituicao(EstadoDaConfiguracao estado, IReadOnlyList<CriterioDesempate> criterios)
+    internal static Result ConferirSubstituicao(ConfiguracaoDeclarada configuracao, IReadOnlyList<CriterioDesempate> criterios)
     {
-        List<FieldError> erros = ConferirCriteriosDesempate(estado, [.. criterios.Select(CriterioDesempateInformado.De)]);
+        List<FieldError> erros = ConferirCriteriosDesempate(configuracao, [.. criterios.Select(CriterioDesempateInformado.De)]);
         return erros.Count > 0
-            ? Result.ValidationFailure(AnexarAreasAceitasDoDesempate(estado, erros))
+            ? Result.ValidationFailure(AnexarAreasAceitasDoDesempate(configuracao, erros))
             : Result.Success();
     }
 
@@ -63,16 +62,16 @@ public static class RegrasDoDesempate
     /// foi possível montá-los. Assim a ordem duplicada e a área fora do quadro saem junto com a
     /// recusa do item, e não só na tentativa seguinte.
     /// </param>
-    public static List<FieldError> ConferirCriteriosDesempate(EstadoDaConfiguracao estado, IReadOnlyList<CriterioDesempateInformado> criterios)
+    public static List<FieldError> ConferirCriteriosDesempate(ConfiguracaoDeclarada configuracao, IReadOnlyList<CriterioDesempateInformado> criterios)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(criterios);
 
         List<FieldError> excesso = ConferirQuantidadeDeCriteriosDesempate(criterios.Count);
 
         return excesso.Count > 0
             ? excesso
-            : [.. OrdensRepetidas(criterios), .. EtapasCitadasInexistentes(criterios, estado.Etapas), .. RecusasDasAreasCitadas(criterios, estado.Classificacao)];
+            : [.. OrdensRepetidas(criterios), .. EtapasCitadasInexistentes(criterios, configuracao.Avaliacao.Etapas), .. RecusasDasAreasCitadas(criterios, configuracao.Avaliacao.Classificacao)];
     }
 
     // Uma recusa por critério que repete uma ordem já vista, da segunda ocorrência em diante.
@@ -196,7 +195,7 @@ public static class RegrasDoDesempate
     /// <summary>
     /// A ordem de áreas mal formada — vazia, acima do teto, com código fora da forma ou
     /// repetido —, pela mesma regra de <see cref="CriterioDesempate.Criar"/>. Os critérios
-    /// gravados e os restaurados já passaram por ela; conferi-la aqui serve ao gate, para o
+    /// gravados e os reidratados já passaram por ela; conferi-la aqui serve à conferência do congelamento, para o
     /// critério que chega por outro caminho.
     /// </summary>
     internal static List<ViolacaoDoDesempatePorArea> OrdensDeAreasMalFormadas(List<CriterioDesempateInformado> criterios)
@@ -243,11 +242,11 @@ public static class RegrasDoDesempate
     /// Anexa a lista de áreas aceitas às recusas de área do desempate — as da criação de cada
     /// critério e as da conferência contra o processo — já reunidas por quem as acumulou.
     /// </summary>
-    public static List<FieldError> AnexarAreasAceitasDoDesempate(EstadoDaConfiguracao estado, IEnumerable<FieldError> erros)
+    public static List<FieldError> AnexarAreasAceitasDoDesempate(ConfiguracaoDeclarada configuracao, IEnumerable<FieldError> erros)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
-        return AnexarAreasAceitas(erros, estado.Classificacao);
+        return AnexarAreasAceitas(erros, configuracao.Avaliacao.Classificacao);
     }
 
     internal static DomainError ComAreasAceitas(DomainError erro, ConfiguracaoClassificacao? classificacao) =>
@@ -285,13 +284,13 @@ public static class RegrasDoDesempate
     /// surge sem quadro, que é pendência da resolução
     /// (<see cref="ItensEstruturaisDeConformidade.ItensDaMediaPelosPesosPorAreaDoEnem"/>): repeti-la aqui daria duas pendências
     /// pela mesma causa, uma delas longe de onde se corrige. A gravação do desempate e a
-    /// restauração recusam pela regra inteira.
+    /// reidratação recusam pela regra inteira.
     /// </summary>
-    internal static List<ViolacaoDoDesempatePorArea> ConferirDesempatePorAreaParaPublicar(EstadoDaConfiguracao estado)
+    internal static List<ViolacaoDoDesempatePorArea> ConferirDesempatePorAreaParaPublicar(ConfiguracaoDeclarada configuracao)
     {
-        List<CriterioDesempateInformado> criterios = EmOrdem(estado.CriteriosDesempate);
-        IEnumerable<ViolacaoDoDesempatePorArea> contraOQuadro = ConferirDesempatePorAreaContraOQuadro(criterios, estado.Classificacao);
-        if (estado.Classificacao is { CalculaPelosPesosPorAreaDoEnem: true })
+        List<CriterioDesempateInformado> criterios = EmOrdem(configuracao.Avaliacao.CriteriosDesempate);
+        IEnumerable<ViolacaoDoDesempatePorArea> contraOQuadro = ConferirDesempatePorAreaContraOQuadro(criterios, configuracao.Avaliacao.Classificacao);
+        if (configuracao.Avaliacao.Classificacao is { CalculaPelosPesosPorAreaDoEnem: true })
         {
             contraOQuadro = contraOQuadro.Where(static violacao => violacao.Erro.Code != DesempatePorAreaEnemErrorCodes.SemQuadro);
         }

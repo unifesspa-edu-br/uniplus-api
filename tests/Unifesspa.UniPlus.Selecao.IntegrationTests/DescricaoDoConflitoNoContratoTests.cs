@@ -16,9 +16,8 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 /// <para>
 /// Declarar um status no atributo faz o gerador escrever a frase-padrão daquele status como
 /// descrição — <c>"Conflict"</c> —, e uma palavra não diz ao cliente nem o que aconteceu nem o
-/// que fazer. Nestas seis rotas o 409 tem causas distintas entre si: corrida no congelamento da
-/// versão, retificação já aberta, retificação inexistente, base defasada. Quem gera cliente a
-/// partir do contrato não descobre nada disso num rótulo genérico.
+/// que fazer. Nestas duas rotas o 409 tem causa própria: a corrida no congelamento da
+/// versão. Quem gera cliente a partir do contrato não descobre nada disso num rótulo genérico.
 /// </para>
 /// <para>
 /// A conferência é contra a <b>frase-padrão que o próprio framework produz</b>, e não contra a
@@ -27,7 +26,7 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 /// dentro do nosso código.
 /// </para>
 /// <para>
-/// Cobre só estas seis. As outras rotas do monólito que declaram 409 seguem com o rótulo genérico
+/// Cobre só estas duas. As outras rotas do monólito que declaram 409 seguem com o rótulo genérico
 /// por decisão: descrever cada uma é trabalho de quem conhece a rota, e uma descrição errada é
 /// pior que uma genérica.
 /// </para>
@@ -42,10 +41,6 @@ public sealed class DescricaoDoConflitoNoContratoTests
     [
         ("post", $"{Base}/publicacao"),
         ("post", $"{Base}/retificacoes"),
-        ("post", $"{Base}/retificacao-em-curso"),
-        ("put", $"{Base}/retificacao-em-curso"),
-        ("delete", $"{Base}/retificacao-em-curso"),
-        ("post", $"{Base}/retificacao-em-curso/fechamento"),
     ];
 
     private readonly CascadingFixture _fixture;

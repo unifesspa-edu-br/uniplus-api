@@ -38,20 +38,20 @@ internal static class ApoioDaColetaDeFatos
         return mocks;
     }
 
-    internal static Task<Result<MutacaoAceita>> HandleAsync(Mocks mocks, DefinirFatosColetadosCommand command) =>
+    internal static Task<Result> HandleAsync(Mocks mocks, DefinirFatosColetadosCommand command) =>
         DefinirFatosColetadosCommandHandler.Handle(
             command, mocks.Repository, mocks.FatoCandidatoReader, mocks.UnitOfWork, CancellationToken.None);
 
     /// <summary>Define os itens no formulário de habilitação do processo, com o catálogo do vocabulário de teste.</summary>
-    internal static Task<Result<MutacaoAceita>> DefinirNaHabilitacaoAsync(ProcessoSeletivo processo, IReadOnlyList<FatoColetadoInput> itens) =>
+    internal static Task<Result> DefinirNaHabilitacaoAsync(ProcessoSeletivo processo, IReadOnlyList<FatoColetadoInput> itens) =>
         HandleAsync(
             NovosMocks(processo, processo.Id),
-            new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao, itens, PrecondicaoIfMatch.Ausente));
+            new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Habilitacao, itens));
 
     /// <summary>Define os itens, e os grupos quando há, no formulário de inscrição do processo.</summary>
-    internal static Task<Result<MutacaoAceita>> DefinirNaInscricaoAsync(
+    internal static Task<Result> DefinirNaInscricaoAsync(
         Mocks mocks, ProcessoSeletivo processo, IReadOnlyList<FatoColetadoInput> itens, IReadOnlyList<GrupoColetadoInput>? grupos = null) =>
-        HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Inscricao, itens, PrecondicaoIfMatch.Ausente, grupos));
+        HandleAsync(mocks, new DefinirFatosColetadosCommand(processo.Id, FinalidadeFormulario.Inscricao, itens, grupos));
 
     internal static IReadOnlyList<FatoCandidatoView> VocabularioSeed() =>
         [.. DeclaradosDoCandidato(), .. OpcoesDeCurso(), .. DerivadosDoCandidato(), .. DaHabilitacao()];
@@ -101,12 +101,12 @@ internal static class ApoioDaColetaDeFatos
     ];
 
     internal static IEnumerable<string> CodigosDaConferencia(ProcessoSeletivo processo) =>
-        ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Errors.Select(static e => e.Error.Code);
+        ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Errors.Select(static e => e.Error.Code);
 
     internal static ProcessoSeletivo ProcessoEmRascunho()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Fatos", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao, PrecondicaoIfMatch.Ausente);
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Habilitacao);
         return processo;
     }
 
@@ -116,7 +116,7 @@ internal static class ApoioDaColetaDeFatos
     internal static ProcessoSeletivo ProcessoComInscricao()
     {
         ProcessoSeletivo processo = ProcessoEmRascunho();
-        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao, PrecondicaoIfMatch.Ausente);
+        FormularioDeTeste.GarantirFormulario(processo, FinalidadeFormulario.Inscricao);
         return processo;
     }
 
@@ -131,6 +131,5 @@ internal static class ApoioDaColetaDeFatos
     internal static DefinirFatosColetadosCommand ComGrupo(ProcessoSeletivo processo, GrupoColetadoInput grupo) => new(
         processo.Id, FinalidadeFormulario.Habilitacao,
         [new FatoColetadoInput("COR_RACA", 0, "Cor ou raça", "SELECAO_UNICA", "SEMPRE", null, EtapaCodigo: FormularioDeTeste.Secao)],
-        PrecondicaoIfMatch.Ausente,
         [grupo]);
 }

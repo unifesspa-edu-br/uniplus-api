@@ -34,7 +34,7 @@ public sealed class ConferenciaDaEstruturaDoDocumentoTests
 
     [Fact(DisplayName = "Um byte acima de 2 MiB é recusado na raiz, sem apontar item")]
     public void UmByteAcima_ERecusadoNaRaiz() =>
-        Causas(ComTamanhoEmBytes(LimitesDoDocumento.TamanhoMaximoEmBytes + 1)).Should().Equal((string.Empty, DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite));
+        Causas(ComTamanhoEmBytes(LimitesDoDocumento.TamanhoMaximoEmBytes + 1)).Should().Equal((null, DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite));
 
     [Fact(DisplayName = "O tamanho é medido em bytes UTF-8, não em caracteres")]
     public void Tamanho_EMedidoEmBytes()
@@ -42,7 +42,7 @@ public sealed class ConferenciaDaEstruturaDoDocumentoTests
         string texto = $$"""{"a":"{{new string('é', LimitesDoDocumento.TamanhoMaximoEmBytes / 2)}}"}""";
 
         texto.Length.Should().BeLessThan(LimitesDoDocumento.TamanhoMaximoEmBytes);
-        Causas(texto).Should().Equal((string.Empty, DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite));
+        Causas(texto).Should().Equal((null, DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite));
     }
 
     [Fact(DisplayName = "A profundidade 32 é aceita")]
@@ -76,7 +76,7 @@ public sealed class ConferenciaDaEstruturaDoDocumentoTests
     [InlineData("// comentário\n{}")]
     [InlineData("{\"a\":\"\\u12\"}")]
     public void Malformado_EFormaInvalida(string texto) =>
-        Causas(texto).Should().Equal((string.Empty, DocumentoDaConfiguracaoErrorCodes.FormaInvalida));
+        Causas(texto).Should().Equal((null, DocumentoDaConfiguracaoErrorCodes.FormaInvalida));
 
     [Theory(DisplayName = "A raiz que não é objeto é recusada como tipo inválido")]
     [InlineData("[]")]

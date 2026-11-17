@@ -49,7 +49,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
 
     internal static void SoEstesItensVermelhos(
         ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto, params string[] itensVermelhos) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(contexto)).Where(static i => !i.Ok).Select(static i => i.Codigo)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(contexto)).Where(static i => !i.Ok).Select(static i => i.Codigo)
             .Should().BeEquivalentTo(itensVermelhos);
 
     internal static CondicaoGatilho GatilhoFaixaEtaria() =>
@@ -75,13 +75,13 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
         IReadOnlyList<GrupoPesoAreaEnemCongelado>? quadro = null)
     {
         ProcessoSeletivo processo = ProcessoConformeComEtapaQueCompoeNota();
-        processo.DefinirDistribuicaoVagas(ofertas, FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoEnemLocal(quadro ?? QuadroPesoAreaEnemDeTeste.Completo()), PrecondicaoIfMatch.Curinga)
+        processo.DefinirDistribuicaoVagas(ofertas, FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoEnemLocal(quadro ?? QuadroPesoAreaEnemDeTeste.Completo()))
             .IsSuccess.Should().BeTrue();
         // Classificação baseada em ENEM exige ao menos uma edição admitida (issue #1620) — sem
         // ela, o item "classificacao_edicao_enem_nao_declarada" ficaria vermelho e interferiria
         // nos testes desta classe, que focam nos itens do quadro de pesos por área.
-        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!])
             .IsSuccess.Should().BeTrue();
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
@@ -93,7 +93,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
             .GetField("_quadroPesoAreaEnem", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(classificacao)!).Clear();
 
     internal static ItemConformidade Item(ProcessoSeletivo processo, string codigo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Single(i => i.Codigo == codigo);
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Single(i => i.Codigo == codigo);
 
     /// <summary>
     /// Processo conforme com uma etapa que compõe nota e a fase que a agrupa: sem elas o
@@ -110,9 +110,9 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
                 new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
                 new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
                 bancasRequeridas: []).Value!],
-            [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(
-            [EtapaDeProvaObjetiva("Prova", CaraterEtapa.Classificatoria, 1, 1m, null, "RESULTADO_FINAL")], PrecondicaoIfMatch.Curinga)
+            [EtapaDeProvaObjetiva("Prova", CaraterEtapa.Classificatoria, 1, 1m, null, "RESULTADO_FINAL")])
             .IsSuccess.Should().BeTrue();
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
@@ -162,13 +162,13 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
-        processo.DefinirCascataRemanejamento(CascataCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(CascataCompleta()).IsSuccess.Should().BeTrue();
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
     }
 
     internal static bool ItemDaExclusividadeOk(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
             .Single(i => i.Codigo == "derivacao_cota_e_acao_afirmativa_juntas").Ok;
 
     internal static ProcessoSeletivo CotaEAcaoAfirmativaPor(string fato, object valorDaCota, object valorDaAcaoAfirmativa) =>
@@ -229,7 +229,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     /// isola.
     /// </summary>
     internal static IEnumerable<ItemConformidade> VermelhosForaDoFormulario(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
             .Where(static i => !i.Ok && !i.Codigo.StartsWith("formulario_", StringComparison.Ordinal));
 
     /// <summary>Fase mínima e coerente: não agrupa etapas (dispensável sem prova), produz resultado, não coleta inscrição.</summary>
@@ -253,12 +253,12 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     {
         ProcessoSeletivo processo = ProcessoVazioDaMatrizEstrutural();
 
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente)
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirDistribuicaoVagas(distribuicao ?? [DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)
+        processo.DefinirDistribuicaoVagas(distribuicao ?? [DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirCronogramaFases([FaseBase()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportada()).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseBase()], []).IsSuccess.Should().BeTrue();
         // Publicar sem declarar cobrança de taxa é recusado: declarada aqui para manter as quatro conferências estruturais
         // vazias até o teste acrescentar a única razão que quer isolar.
         DeclararTaxaSemCobranca(processo);
@@ -279,7 +279,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
         NoExigenciaBaseLegal.Criar("Lei 12.711/2012, art. 3º", TipoAbrangencia.Federal, status, null).Value!;
 
     internal static IReadOnlyList<ItemConformidade> Checklist(ProcessoSeletivo processo) =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao);
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao);
 
     internal static Guid FaseDoResultado(ProcessoSeletivo processo) => processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
 
@@ -313,7 +313,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
         NoExigencia folha = NoExigencia.CriarFolha(DocumentoGeral(FaseDoResultado(processo), obrigatorio: false, consequencia: null), 0).Value!;
         NoExigencia grupo = NoExigencia.CriarGrupo(TipoNo.GrupoOu, 0, 1, consequencia, [BaseLegalDoGrupo(StatusBaseLegal.Resolvido)], [folha]).Value!;
 
-        processo.DefinirDocumentosExigidos([grupo], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([grupo]).IsSuccess.Should().BeTrue();
     }
 
     internal static void ExigirPublicacaoRecusada(ProcessoSeletivo processo, string codigoDaRecusa)
@@ -326,8 +326,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     internal static void DeclararTaxaSemCobranca(ProcessoSeletivo processo)
     {
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }
 

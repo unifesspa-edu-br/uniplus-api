@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Retifica
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
@@ -70,7 +71,8 @@ public sealed class ConferenciaDoCicloNovoPelosTiposDeDecisaoTests
 
         ResultadoDoCicloNovo resultado = ConferirEtapas(prova, [objetiva, analise], [objetivaComTipos, analise], ItemPreliminarDaEtapa(objetiva), ItemPreliminarDaEtapa(analise));
 
-        resultado.Recusas.Should().ContainSingle().Which.Field.Should().Contain(ItemPreliminarDaEtapa(objetiva).Chave);
+        FieldError recusa = resultado.Recusas.Should().ContainSingle().Which;
+        recusa.Error.Message.Should().Contain($"'{Materia}'").And.NotContain($"'{OutraMateria}'");
     }
 
     [Fact(DisplayName = "Declarar os mesmos tipos de decisão da etapa em outra ordem não exige declarar o novo ciclo")]

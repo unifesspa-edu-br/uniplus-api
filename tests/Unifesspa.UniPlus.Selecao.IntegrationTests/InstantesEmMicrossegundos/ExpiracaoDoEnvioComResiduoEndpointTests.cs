@@ -22,7 +22,6 @@ using Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading;
 public sealed class ExpiracaoDoEnvioComResiduoEndpointTests
 {
     private static readonly TimeSpan PrazoDoEnvio = TimeSpan.FromSeconds(900);
-    private static readonly TimeSpan PrazoDoRascunho = TimeSpan.FromDays(30);
 
     private readonly InstantesEmResiduoFixture _fixture;
 
@@ -60,21 +59,6 @@ public sealed class ExpiracaoDoEnvioComResiduoEndpointTests
         corpo.GetProperty("expiraEm").GetDateTimeOffset().Should().Be(esperado);
         Guid id = corpo.GetProperty("modeloDeDocumentoId").GetGuid();
         (await LerAsync(db => db.ModelosDeDocumento.AsNoTracking().SingleAsync(m => m.Id == id))).ExpiraEm.Should().Be(esperado);
-    }
-
-    [Fact(DisplayName = "Salvar o rascunho da publicação grava a validade de 30 dias em microssegundos inteiros")]
-    public async Task RascunhoDaPublicacao_ValidadeEmMicrossegundos()
-    {
-        Guid processoId = await SemearProcessoAsync();
-
-        await EnviarComORelogioNoResiduoAsync(
-            HttpMethod.Put,
-            $"/api/selecao/processos-seletivos/{processoId}/rascunho-da-publicacao",
-            new { versao = 1, conteudo = new { numero = "001/2027" } });
-
-        RascunhoDePublicacao gravado = await LerAsync(db => db.RascunhosDePublicacao.AsNoTracking()
-            .SingleAsync(r => r.ProcessoSeletivoId == processoId));
-        gravado.ExpiraEm.Should().Be(InstantesDeTeste.EmMicrossegundos + PrazoDoRascunho);
     }
 
     private async Task<JsonElement> EnviarComORelogioNoResiduoAsync(HttpMethod metodo, string rota, object corpo)

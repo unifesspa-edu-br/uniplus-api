@@ -43,7 +43,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         Produtos: [], Bancas: [], Recursos: [], TiposDeDecisao: tipos);
 
     private static DefinirEtapasCommand Comando(ProcessoSeletivo processo, params EtapaProcessoInput[] etapas) =>
-        new(processo.Id, etapas, PrecondicaoIfMatch.Ausente);
+        new(processo.Id, etapas);
 
     private static IProcessoSeletivoRepository RepositorioDe(ProcessoSeletivo processo)
     {
@@ -52,7 +52,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         return repository;
     }
 
-    private static (string? Campo, string Codigo)[] Recusas(Result<MutacaoAceita> resultado) =>
+    private static (string? Campo, string Codigo)[] Recusas(Result resultado) =>
         [.. resultado.Errors.Select(static e => (e.Field, e.Error.Code))];
 
     private static ProdutoDaEtapaInput Definitivo() => new(AtoDaClassificacao, PapelProdutoFaseCodigo.Definitivo);
@@ -106,7 +106,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         return cadastro;
     }
 
-    private static Task<Result<MutacaoAceita>> ExecutarComOsCadastros(ProcessoSeletivo processo, params EtapaProcessoInput[] etapas) =>
+    private static Task<Result> ExecutarComOsCadastros(ProcessoSeletivo processo, params EtapaProcessoInput[] etapas) =>
         Executar(
             Comando(processo, etapas), RepositorioDe(processo), Substitute.For<IUnitOfWork>(),
             tipoBancaReader: CadastroComOTipoDeBanca(),
@@ -119,7 +119,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         ProcessoSeletivo processo = ProcessoSemEtapas();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             Comando(processo, Etapa(1, tipos: [Isencao, Classificacao, Heteroidentificacao])), RepositorioDe(processo), unitOfWork);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -136,7 +136,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         (await Executar(Comando(processo, Etapa(1, tipos: [Classificacao])), repository, Substitute.For<IUnitOfWork>())).IsSuccess.Should().BeTrue();
         EtapaProcesso etapa = processo.Etapas.Single();
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             Comando(processo, Etapa(1, id: etapa.Id)), repository, Substitute.For<IUnitOfWork>());
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -149,7 +149,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         ProcessoSeletivo processo = ProcessoSemEtapas();
         ITipoEtapaReader tipoEtapaReader = Substitute.For<ITipoEtapaReader>();
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             Comando(processo, Etapa(1, tipos: [null]), Etapa(2, nome: "")),
             RepositorioDe(processo), Substitute.For<IUnitOfWork>(), tipoEtapaReader);
 
@@ -162,7 +162,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             Comando(
                 processo,
                 Etapa(1, tipos: [TipoForaDoVocabulario]),
@@ -180,7 +180,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
 
-        Result<MutacaoAceita> resultado = await ExecutarComOsCadastros(processo, EtapaComJanelaInvertidaEBancaRepetida());
+        Result resultado = await ExecutarComOsCadastros(processo, EtapaComJanelaInvertidaEBancaRepetida());
 
         Recusas(resultado).Should().Equal(
             ("etapas[0].fim", "EtapaProcesso.JanelaInvertida"),
@@ -196,7 +196,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         EtapaProcessoInput comTipoInvalido = Etapa(1, tipos: [TipoForaDoVocabulario]);
         EtapaProcessoInput comAtoRepetido = Etapa(2, nome: "Redação") with { Produtos = [Definitivo(), Definitivo()] };
 
-        Result<MutacaoAceita> resultado = await ExecutarComOsCadastros(processo, comTipoInvalido, comAtoRepetido);
+        Result resultado = await ExecutarComOsCadastros(processo, comTipoInvalido, comAtoRepetido);
 
         Recusas(resultado).Should().Equal(
             ("etapas[0].tiposDeDecisao[0]", MotivoDeDecisaoErrorCodes.TipoInvalido),
@@ -209,7 +209,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         ProcessoSeletivo processo = ProcessoSemEtapas();
         EtapaProcessoInput etapa = ComProdutosDoRecurso(Etapa(1, tipos: [Isencao]), ProcedimentoDaClassificacao());
 
-        Result<MutacaoAceita> resultado = await ExecutarComOsCadastros(processo, etapa);
+        Result resultado = await ExecutarComOsCadastros(processo, etapa);
 
         Recusas(resultado).Should().Equal((
             "etapas[0].recursos[0].procedimentos[0].tipoDeDecisao", CodigosDoProcedimentoDeRecurso.DaEtapa.ParaDecisaoNaoDeclarada));
@@ -222,7 +222,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         EtapaProcessoInput etapa = ComProdutosDoRecurso(
             Etapa(1, tipos: ["CLASIFICACAO"]), ProcedimentoDaClassificacao(regra: "PROCEDIMENTO-INEXISTENTE"));
 
-        Result<MutacaoAceita> resultado = await ExecutarComOsCadastros(processo, etapa);
+        Result resultado = await ExecutarComOsCadastros(processo, etapa);
 
         Recusas(resultado).Should().Equal(
             ("etapas[0].tiposDeDecisao[0]", MotivoDeDecisaoErrorCodes.TipoInvalido),
@@ -240,7 +240,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
             Fim = FimAntesDoInicio,
         };
 
-        Result<MutacaoAceita> resultado = await ExecutarComOsCadastros(processo, etapa);
+        Result resultado = await ExecutarComOsCadastros(processo, etapa);
 
         Recusas(resultado).Select(static r => r.Campo).Should().Equal("etapas[0].produtos", "etapas[0].fim", "etapas[0].tiposDeDecisao[0]");
     }
@@ -251,7 +251,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         ProcessoSeletivo processo = ProcessoSemEtapas();
         Guid id = Guid.CreateVersion7();
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             Comando(processo, Etapa(1, id: id, tipos: [null]), Etapa(2, id: id)), RepositorioDe(processo), Substitute.For<IUnitOfWork>());
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.IdEtapaDuplicado");
@@ -263,7 +263,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         ProcessoSeletivo processo = ProcessoSemEtapas();
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             Comando(processo, Etapa(1, tipos: [TipoForaDoVocabulario])), RepositorioDe(processo), unitOfWork);
 
         resultado.IsFailure.Should().BeTrue();
@@ -280,7 +280,7 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         ITipoAtoPublicadoReader catalogoSemAtos = Substitute.For<ITipoAtoPublicadoReader>();
         EtapaProcessoInput etapa = Etapa(1, tipos: [Classificacao]) with { Produtos = [new ProdutoDaEtapaInput("ATO_INEXISTENTE", null)] };
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             Comando(processo, etapa), RepositorioDe(processo), unitOfWork, tipoAtoPublicadoReader: catalogoSemAtos);
 
         resultado.Error!.Code.Should().Be("ProdutoDaEtapa.AtoNaoEncontradoNoCatalogo");
@@ -295,21 +295,20 @@ public sealed class DefinirEtapasTiposDeDecisaoTests
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((ProcessoSeletivo?)null);
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             Comando(processo, Etapa(1, tipos: [TipoForaDoVocabulario])), repository, Substitute.For<IUnitOfWork>());
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Precondição recusada vence os tipos inválidos")]
-    public async Task Handle_PrecondicaoRecusadaComTiposInvalidos_RecusaPelaPrecondicao()
+    [Fact(DisplayName = "Processo publicado vence os tipos inválidos")]
+    public async Task Handle_ProcessoPublicadoComTiposInvalidos_RecusaPelaPublicacao()
     {
-        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicado();
-        AbrirRetificacao(processo, versaoAtual);
+        (ProcessoSeletivo processo, _) = ProcessoPublicado();
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             Comando(processo, Etapa(1, tipos: [TipoForaDoVocabulario])), RepositorioDe(processo), Substitute.For<IUnitOfWork>());
 
-        resultado.Error!.Code.Should().Be("Precondicao.Requerida");
+        resultado.Error!.Code.Should().Be("ProcessoSeletivo.MutacaoPosPublicacaoBloqueada");
     }
 }

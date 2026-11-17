@@ -119,7 +119,7 @@ internal static class ErrosDoCronograma
     /// papel só cabe onde o catálogo diz que o ato é resultado, classificação intrínseca do tipo, que nunca varia por edital. O
     /// catálogo também diz o que o tipo não pode ser: o resultado sem preliminar é declarado definitivo, e o tipo que congela a
     /// configuração não é item de resultado, porque a correção de um resultado não cria versão nova. O código declarado na etapa vira
-    /// o nome do produto no cronograma público e a chave por onde a restauração da configuração congelada reencontra o produto.
+    /// o nome do produto no cronograma público e a chave do produto no cronograma público.
     /// </summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> ProdutosETiposDeAto() =>
     [

@@ -441,7 +441,7 @@ public static class AvaliadorConformidadeLegal
 
     private static (bool, string?, string?) AvaliarConcorrenciaDuplaObrigatoria(ProcessoSeletivo processo)
     {
-        bool aprovada = RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(EstadoDaConfiguracao.De(processo));
+        bool aprovada = RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(processo.Declaracao());
         return (aprovada, aprovada ? null : "nenhuma modalidade de cota reservada (CotaReservada) cadastrada", null);
     }
 }

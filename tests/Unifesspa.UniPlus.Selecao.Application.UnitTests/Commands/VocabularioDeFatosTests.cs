@@ -129,7 +129,7 @@ public sealed class VocabularioDeFatosTests
     {
         ProcessoSeletivo processo = Processo();
         processo.DefinirOpcoesDeclaradas(
-            "CATEGORIA_RENDA", [OpcaoDeclaradaFato.Criar("CATEGORIA_RENDA", "RURAL", "Trabalhador rural", 0).Value!], PrecondicaoIfMatch.Ausente)
+            "CATEGORIA_RENDA", [OpcaoDeclaradaFato.Criar("CATEGORIA_RENDA", "RURAL", "Trabalhador rural", 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         VocabularioDeFatos.DominiosDinamicos(processo, [Agregado("CATEGORIAS_RENDA_FAMILIA", "CATEGORIA_RENDA")])["CATEGORIAS_RENDA_FAMILIA"]

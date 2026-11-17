@@ -31,7 +31,7 @@ public sealed class ProcessoSeletivoClassificacaoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result result = processo.DefinirClassificacao(NovaClassificacao(), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(NovaClassificacao());
 
         result.IsSuccess.Should().BeTrue();
         processo.Classificacao.Should().NotBeNull();
@@ -43,9 +43,9 @@ public sealed class ProcessoSeletivoClassificacaoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso etapa = EtapaDeProva("Objetiva", CaraterEtapa.Classificatoria, 1, 1m, null);
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([etapa]);
 
-        Result result = processo.DefinirClassificacao(NovaClassificacao([EliminacaoPorNotaMinimaNaEtapa(etapa.Id)]), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(NovaClassificacao([EliminacaoPorNotaMinimaNaEtapa(etapa.Id)]));
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -56,7 +56,7 @@ public sealed class ProcessoSeletivoClassificacaoTests
         ProcessoSeletivo processo = ProcessoComEliminacaoNaEtapa(out _);
 
         Result result = processo.DefinirEtapas(
-            [EtapaDeProva("Entrevista", CaraterEtapa.Classificatoria, 1, 1m, null)], PrecondicaoIfMatch.Ausente);
+            [EtapaDeProva("Entrevista", CaraterEtapa.Classificatoria, 1, 1m, null)]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorClassificacao");
@@ -67,7 +67,7 @@ public sealed class ProcessoSeletivoClassificacaoTests
     {
         ProcessoSeletivo processo = ProcessoComEliminacaoNaEtapa(out EtapaProcesso etapa);
 
-        Result result = processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirEtapas([etapa]);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -76,10 +76,10 @@ public sealed class ProcessoSeletivoClassificacaoTests
     public void DefinirClassificacao_EtapaRefEliminacaoInexistente_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaDeProva("Objetiva", CaraterEtapa.Classificatoria, 1, 1m, null)], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaDeProva("Objetiva", CaraterEtapa.Classificatoria, 1, 1m, null)]);
 
         Result result = processo.DefinirClassificacao(
-            NovaClassificacao([EliminacaoPorNotaMinimaNaEtapa(Guid.CreateVersion7())]), PrecondicaoIfMatch.Ausente);
+            NovaClassificacao([EliminacaoPorNotaMinimaNaEtapa(Guid.CreateVersion7())]));
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefEliminacaoInexistente");
@@ -91,8 +91,8 @@ public sealed class ProcessoSeletivoClassificacaoTests
         ProcessoSeletivo psiq = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
         ProcessoSeletivo sisu = NovoProcesso("SiSU 2026", TiposDeProcessoDeTeste.SiSU);
 
-        Result resultadoPsiq = psiq.DefinirClassificacao(ClassificacaoEnemComCorteEmArea(), PrecondicaoIfMatch.Ausente);
-        Result resultadoSisu = sisu.DefinirClassificacao(ClassificacaoEnemComCorteEmArea(), PrecondicaoIfMatch.Ausente);
+        Result resultadoPsiq = psiq.DefinirClassificacao(ClassificacaoEnemComCorteEmArea());
+        Result resultadoSisu = sisu.DefinirClassificacao(ClassificacaoEnemComCorteEmArea());
 
         resultadoPsiq.IsSuccess.Should().BeTrue(resultadoPsiq.Error?.Message);
         resultadoSisu.IsSuccess.Should().Be(resultadoPsiq.IsSuccess,
@@ -103,8 +103,8 @@ public sealed class ProcessoSeletivoClassificacaoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         etapa = EtapaDeProva("Objetiva", CaraterEtapa.Classificatoria, 1, 1m, null);
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
-        processo.DefinirClassificacao(NovaClassificacao([EliminacaoPorNotaMinimaNaEtapa(etapa.Id)]), PrecondicaoIfMatch.Ausente)
+        processo.DefinirEtapas([etapa]);
+        processo.DefinirClassificacao(NovaClassificacao([EliminacaoPorNotaMinimaNaEtapa(etapa.Id)]))
             .IsSuccess.Should().BeTrue();
         return processo;
     }

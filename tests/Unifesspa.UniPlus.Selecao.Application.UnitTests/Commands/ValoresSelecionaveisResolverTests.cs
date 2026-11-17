@@ -39,7 +39,7 @@ public sealed class ValoresSelecionaveisResolverTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         // COR_RACA é coletado pela seção dos dados básicos do formulário de inscrição.
-        processo.DefinirItens([], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([]).IsSuccess.Should().BeTrue();
         processo.DocumentosExigidos.Should().BeEmpty("pré-condição: COR_RACA não é citado em gatilho algum");
 
         FatoValorDominioViewItem[] seisValores =
@@ -84,7 +84,7 @@ public sealed class ValoresSelecionaveisResolverTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         FatoColetado baixaRenda = FatoColetado.Criar(
             "BAIXA_RENDA", 0, "Baixa renda", TipoRenderizacao.Booleano, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        processo.DefinirItens([baixaRenda], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([baixaRenda]).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView baixaRendaNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "BAIXA_RENDA", Nome: "Baixa renda", Descricao: "Descrição do fato.",
@@ -123,12 +123,11 @@ public sealed class ValoresSelecionaveisResolverTests
                     CondicaoOfertada.Criar(Guid.CreateVersion7(), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência"),
                 ],
                 recursos: [],
-                tiposDeficiencia: []).Value!,
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+                tiposDeficiencia: []).Value!).IsSuccess.Should().BeTrue();
 
         FatoColetado condicaoAtendimento = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        processo.DefinirItens([condicaoAtendimento], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([condicaoAtendimento]).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView condicaoAtendimentoNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: "Descrição do fato.",
@@ -170,12 +169,11 @@ public sealed class ValoresSelecionaveisResolverTests
                     CondicaoOfertada.Criar(Guid.CreateVersion7(), "SABATISTA", "Sabatista"),
                 ],
                 recursos: [],
-                tiposDeficiencia: []).Value!,
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+                tiposDeficiencia: []).Value!).IsSuccess.Should().BeTrue();
 
         FatoColetado condicaoAtendimento = FatoColetado.Criar(
             "CONDICAO_ATENDIMENTO", 0, "Condição de atendimento", TipoRenderizacao.SelecaoMultipla, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!;
-        processo.DefinirItens([condicaoAtendimento], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([condicaoAtendimento]).IsSuccess.Should().BeTrue();
 
         FatoCandidatoView condicaoAtendimentoNoCatalogo = new(
             Id: Guid.CreateVersion7(), Codigo: "CONDICAO_ATENDIMENTO", Nome: "Condição de atendimento", Descricao: "Descrição do fato.",

@@ -133,7 +133,7 @@ public sealed class ConfiguracaoClassificacao : EntityBase, IParteDoProcesso
     /// <see cref="RegraCalculo"/> e <see cref="RegraArredondamento"/>, a escala da nota final, as
     /// eliminações (as que dependem do ENEM, as repetidas e o corte contra o quadro de Pesos por
     /// Área) e a resolução de Pesos por Área com o quadro dela. Por ser a mesma construção que o
-    /// decoder do envelope usa, essas recusas valem também na restauração. A invariante que
+    /// decoder do envelope usa, essas recusas valem também na reidratação. A invariante que
     /// depende de OUTRA dimensão do agregado (a <c>etapa_ref</c> de eliminação existe no processo)
     /// continua validada pela raiz, que tem acesso a ela
     /// (<see cref="ProcessoSeletivo.DefinirClassificacao"/>). A mensagem de eliminação ENEM fora de

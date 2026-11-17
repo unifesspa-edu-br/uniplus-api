@@ -80,7 +80,7 @@ public sealed class ConferenciaDosMotivosAoCongelarTests
     {
         ProcessoSeletivo processo = ProcessoSemEtapas();
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!, PrecondicaoIfMatch.Ausente);
+            ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!);
 
         return processo;
     }

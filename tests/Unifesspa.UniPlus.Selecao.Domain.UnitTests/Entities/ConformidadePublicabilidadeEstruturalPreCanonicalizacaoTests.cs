@@ -39,7 +39,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
 
     private static void ReferenciarOFimDaFase(ProcessoSeletivo processo, FaseCronograma fase) =>
         processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, fase.Id).Value!, PrecondicaoIfMatch.Curinga)
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, fase.Id).Value!)
             .IsSuccess.Should().BeTrue();
 
     private static void ExigirDeclaracaoDeMaioridade(ProcessoSeletivo processo, Guid faseId)
@@ -49,7 +49,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [GatilhoFaixaEtaria()], basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!])
             .IsSuccess.Should().BeTrue();
     }
 
@@ -62,7 +62,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
         // ReferenciaTemporalFatos, que DefinirCronogramaFases não guarda contra remoção).
         FaseCronograma faseComExigencia = FaseBase();
         FaseCronograma faseAncora = FaseDeHomologacao();
-        processo.DefinirCronogramaFases([faseComExigencia, faseAncora], [], PrecondicaoIfMatch.Curinga)
+        processo.DefinirCronogramaFases([faseComExigencia, faseAncora], [])
             .IsSuccess.Should().BeTrue();
 
         ExigirDeclaracaoDeMaioridade(processo, faseComExigencia.Id);
@@ -71,7 +71,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
 
         // Remove a fase-âncora do cronograma — só faseComExigencia sobrevive (mesma
         // FaseCanonicaOrigemId, então DefinirDocumentosExigidos.ExigidoNaFaseId não fica órfão).
-        processo.DefinirCronogramaFases([faseComExigencia], [], PrecondicaoIfMatch.Curinga)
+        processo.DefinirCronogramaFases([faseComExigencia], [])
             .IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(processo, "referencia_temporal_fase_fora_do_cronograma");
@@ -91,7 +91,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         FaseCronograma faseSemExtremo = FaseDeHomologacaoNaOrdem2();
-        processo.DefinirCronogramaFases([FaseBase(), faseSemExtremo], [], PrecondicaoIfMatch.Curinga)
+        processo.DefinirCronogramaFases([FaseBase(), faseSemExtremo], [])
             .IsSuccess.Should().BeTrue();
 
         Guid faseComExigenciaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
@@ -114,11 +114,11 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
             Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
             condicoes: [GatilhoFaixaEtaria()], basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!])
             .IsSuccess.Should().BeTrue();
         // FaseBase() não coleta inscrição — nenhuma fase resolve FIM_INSCRICAO.
         processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!, PrecondicaoIfMatch.Curinga)
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!)
             .IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(processo, "referencia_temporal_fim_inscricao_indisponivel");
@@ -134,7 +134,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
             1, "BOGUS", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
         RegraDerivacaoConfigurada regra = RegraDerivacaoConfigurada.Criar(0, "X", [condicao]).Value!;
         ConfiguracaoDerivacaoFato configuracao = ConfiguracaoDerivacaoFato.Criar("D1", [regra]).Value!;
-        processo.DefinirRegrasDerivacao([configuracao], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
+        processo.DefinirRegrasDerivacao([configuracao]).IsSuccess.Should().BeTrue(
             "a definição isolada só valida forma e unicidade — não conhece o universo de fatos do processo");
 
         SoEstesItensVermelhos(processo, "derivacao_fatos_citados_inexistentes");
@@ -180,7 +180,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
         ProcessoSeletivo processo = ProcessoConforme();
         // Condição PcD ofertada (pré-requisito da ADR-0067), mas nenhum TipoDeficiencia —
         // só o fato de tipo de deficiência fica sem valor para oferecer ao candidato.
-        processo.DefinirAtendimentoEspecializado(OfertaComCondicaoPcd(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(OfertaComCondicaoPcd()).IsSuccess.Should().BeTrue();
         FatoColetado fato = FatoColetado.Criar(
             "TIPO_DEFICIENCIA", 0, "Qual o tipo de deficiência?",
             TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, precondicoes: null, classificacaoProtecao: "PESSOAL",
@@ -219,8 +219,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
                 [],
                 [RecursoOfertado.Criar(Guid.CreateVersion7(), "SALA_AMAMENTACAO", "Sala para amamentação"),
                  RecursoOfertado.Criar(Guid.CreateVersion7(), "LEDOR", "Ledor")],
-                []).Value!,
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+                []).Value!).IsSuccess.Should().BeTrue();
         processo.DefinirItensComFaseDeInscricao([CampoRecursoAcessibilidade()]).IsSuccess.Should().BeTrue();
 
         processo.OpcoesDoProcesso(AtendimentoEspecializado.FatoRecursoAcessibilidade)
@@ -235,7 +234,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     public void PreCanon_CotasDaLeiDiferentesEntreOfertas()
     {
         ProcessoSeletivo processo = ProcessoConforme([OfertaFederalCompleta(), DistribuicaoAmpla(10)]);
-        processo.DefinirCascataRemanejamento(CascataCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(CascataCompleta()).IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(processo, "modalidade_cotas_da_lei_diferentes_entre_ofertas");
 

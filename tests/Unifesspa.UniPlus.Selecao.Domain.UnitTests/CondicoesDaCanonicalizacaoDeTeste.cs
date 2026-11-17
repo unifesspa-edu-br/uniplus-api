@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 internal static class CondicoesDaCanonicalizacaoDeTeste
 {
     public static DomainError? PrimeiraCausa(ProcessoSeletivo processo, CadastrosDaConfiguracao? cadastros = null) =>
-        CondicoesDaCanonicalizacao.Causas(EstadoDaConfiguracao.De(processo), cadastros ?? CadastrosDeTeste.Padrao) is [var primeira, ..]
+        CondicoesDaCanonicalizacao.Causas(processo.Declaracao(), cadastros ?? CadastrosDeTeste.Padrao) is [var primeira, ..]
             ? primeira.Error
             : null;
 }

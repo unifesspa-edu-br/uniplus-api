@@ -59,18 +59,6 @@ internal static class PayloadsDoEnvelopeFechado
         new { nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, tipoEtapaOrigemId = TipoEtapaEntrevistaOrigemId, peso = (decimal?)null, notaMinima = 60.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 3, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
     ];
 
-    /// <summary>
-    /// A mesma coleção, com o Id de cada etapa ECOADO (reconciliação in-place —
-    /// <c>DefinirEtapasCommandHandler.cs:64-77</c>) e o peso da Objetiva alterado — é a
-    /// dimensão que muda sob a sessão editorial (passo 18).
-    /// </summary>
-    internal static object[] EtapasComPesoAlterado(Guid objetivaId, Guid redacaoId, Guid entrevistaId, Guid tipoBancaId) =>
-    [
-        new { id = objetivaId, nome = "Prova Objetiva", carater = (int)CaraterEtapa.Ambas, tipoEtapaOrigemId = TipoEtapaProvaObjetivaOrigemId, peso = 4.0000m, notaMinima = 40.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 1, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
-        new { id = redacaoId, nome = "Redação", carater = (int)CaraterEtapa.Classificatoria, tipoEtapaOrigemId = TipoEtapaRedacaoOrigemId, peso = 2.2500m, notaMinima = (decimal?)null, notaMaxima = 100m, formaDeAvaliacao = "HUMANA", passoDoLancamento = 0.5000m, regraConsolidacaoCodigo = RegraConsolidacaoCodigo.CorrecaoIndependente, regraConsolidacaoVersao = "v1", ordem = 2, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = new object[] { BancaDoTipo(tipoBancaId) }, recursos = Array.Empty<object>() },
-        new { id = entrevistaId, nome = "Entrevista", carater = (int)CaraterEtapa.Eliminatoria, tipoEtapaOrigemId = TipoEtapaEntrevistaOrigemId, peso = (decimal?)null, notaMinima = 60.0000m, notaMaxima = 100m, formaDeAvaliacao = "OBJETIVA", ordem = 3, faseCodigo = "AVALIACAO", produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>() },
-    ];
-
     internal static object RegraDeDeliberacaoDaBanca() => new
     {
         modo = "colegiadaComVotacao",
@@ -105,7 +93,7 @@ internal static class PayloadsDoEnvelopeFechado
 
     // A fase publica preliminar e definitiva da mesma matéria, com o mesmo tipo de ato, e por isso
     // conclui a si mesma — não declara fase concluinte. O tipo é semeado à parte de TiposDeAtoSeeder,
-    // que só cobre os dois atos da sessão editorial.
+    // que só cobre os atos de abertura e de retificação.
     internal static object FaseDeResultadoPreliminar(CatalogosSemeados catalogos) => new
     {
         ordem = 2,

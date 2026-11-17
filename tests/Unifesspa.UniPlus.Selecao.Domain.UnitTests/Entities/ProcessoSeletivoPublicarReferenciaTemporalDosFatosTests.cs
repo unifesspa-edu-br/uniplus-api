@@ -29,16 +29,16 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId), 0).Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId), 0).Value!])
             .IsSuccess.Should().BeTrue();
         TimeZoneInfo fuso = TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId);
 
-        ReferenciaTemporalDosFatos.DataReferenciaFatosEmMontagem(EstadoDaConfiguracao.De(processo), fuso).Should().BeNull("o rascunho ainda não declarou a referência, e a simulação não pode cair por isso");
+        ReferenciaTemporalDosFatos.DataReferenciaFatosEmMontagem(processo.Declaracao(), fuso).Should().BeNull("o rascunho ainda não declarou a referência, e a simulação não pode cair por isso");
 
         processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!, PrecondicaoIfMatch.Curinga)
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!)
             .IsSuccess.Should().BeTrue();
-        ReferenciaTemporalDosFatos.DataReferenciaFatosEmMontagem(EstadoDaConfiguracao.De(processo), fuso).Should().Be(new DateOnly(2026, 1, 31));
+        ReferenciaTemporalDosFatos.DataReferenciaFatosEmMontagem(processo.Declaracao(), fuso).Should().Be(new DateOnly(2026, 1, 31));
     }
 
     [Fact(DisplayName = "DefinirReferenciaTemporalFatos: fase de outro processo é recusada")]
@@ -48,7 +48,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         ReferenciaTemporalFatos referencia = ReferenciaTemporalFatos.Criar(
             ReferenciaTipo.FimFase, null, Guid.CreateVersion7()).Value!;
 
-        Result resultado = processo.DefinirReferenciaTemporalFatos(referencia, PrecondicaoIfMatch.Curinga);
+        Result resultado = processo.DefinirReferenciaTemporalFatos(referencia);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ReferenciaTemporalFatos.FaseNaoPertenceAoProcesso");
@@ -61,7 +61,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         Guid faseId = processo.CronogramaFases.Single().Id;
         ReferenciaTemporalFatos referencia = ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!;
 
-        Result resultado = processo.DefinirReferenciaTemporalFatos(referencia, PrecondicaoIfMatch.Curinga);
+        Result resultado = processo.DefinirReferenciaTemporalFatos(referencia);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.ReferenciaTemporalFatos.Should().Be(referencia);
@@ -73,10 +73,10 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!, PrecondicaoIfMatch.Curinga)
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!)
             .IsSuccess.Should().BeTrue();
 
-        Result resultado = processo.DefinirReferenciaTemporalFatos(null, PrecondicaoIfMatch.Curinga);
+        Result resultado = processo.DefinirReferenciaTemporalFatos(null);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.ReferenciaTemporalFatos.Should().BeNull();
@@ -87,7 +87,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId), 0).Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseId), 0).Value!])
             .IsSuccess.Should().BeTrue();
         // Nenhuma ReferenciaTemporalFatos configurada — com a guarda B-01 removida, a
         // checagem B-03 (issue #892) agora é alcançada e recusa nomeadamente.
@@ -104,7 +104,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single().Id;
         processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!, PrecondicaoIfMatch.Curinga)
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseId).Value!)
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
@@ -118,10 +118,10 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         ProcessoSeletivo processo = NovoProcessoConforme();
         Guid faseSemExtremoId = AcrescentarFaseSemExtremo(processo);
         Guid faseComEtapaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId), 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId), 0).Value!])
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseSemExtremoId).Value!, PrecondicaoIfMatch.Curinga)
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseSemExtremoId).Value!)
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
@@ -147,10 +147,10 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme(OrigemCandidatos.ImportacaoExterna);
         Guid faseColetaId = DefinirCronogramaSemFaseDeColeta(processo);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseColetaId, finalidade: null), 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseColetaId, finalidade: null), 0).Value!])
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!, PrecondicaoIfMatch.Curinga)
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!)
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(CenarioDoEdital());
@@ -178,16 +178,16 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         // Insere a fase de Ordem 2 ANTES da de Ordem 1 — _cronogramaFases preserva a ordem
         // de ENTRADA de DefinirCronogramaFases, diferente do envelope (sempre ordenado por
         // Ordem). Se a resolução dependesse dessa ordem de inserção, pegaria a fase errada.
-        FormularioDeTeste.TrocarCronograma(processo, [coletaOrdem2, coletaOrdem1], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, [coletaOrdem2, coletaOrdem1]).IsSuccess.Should().BeTrue();
         Guid faseOrdem1Id = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
 
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseOrdem1Id), 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseOrdem1Id), 0).Value!])
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!, PrecondicaoIfMatch.Curinga)
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!)
             .IsSuccess.Should().BeTrue();
 
-        ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(EstadoDaConfiguracao.De(processo), TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)).Should().Be(new DateOnly(2026, 1, 15),
+        ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(processo.Declaracao(), TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)).Should().Be(new DateOnly(2026, 1, 15),
             "a fase de Ordem 1 (Fim 2026-01-15) precisa vencer a de Ordem 2 (Fim 2026-01-25) por Ordem — se a " +
             "escolha dependesse da ordem de inserção em _cronogramaFases, a reidratação (sempre ordenada por " +
             "Ordem) poderia resolver outra data e quebrar o round-trip");
@@ -211,17 +211,17 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         // exigência referencia a fase 1 (ExigidoNaFaseId), redefinir o cronograma depois
         // recriaria a fase 1 com outra FaseCanonicaOrigemId e o guard
         // FaseCronograma.ReferenciadaPorExigenciaViva recusaria a redefinição.
-        FormularioDeTeste.TrocarCronograma(processo, [FaseConforme(), faseComVirada], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, [FaseConforme(), faseComVirada]).IsSuccess.Should().BeTrue();
         Guid faseComEtapaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
         Guid faseComViradaId = processo.CronogramaFases.Single(f => f.Ordem == 2).Id;
 
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId), 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId), 0).Value!])
             .IsSuccess.Should().BeTrue();
         processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseComViradaId).Value!, PrecondicaoIfMatch.Curinga)
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseComViradaId).Value!)
             .IsSuccess.Should().BeTrue();
 
-        ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(EstadoDaConfiguracao.De(processo), TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)).Should().Be(new DateOnly(2026, 3, 1),
+        ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(processo.Declaracao(), TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)).Should().Be(new DateOnly(2026, 3, 1),
             "o Fim (2026-03-02T01:30:00Z) convertido para o fuso institucional (America/Belem, UTC-3, sem DST) é 2026-03-01T22:30 — o dia LOCAL, não o dia UTC");
     }
 
@@ -250,7 +250,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
             new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
-        FormularioDeTeste.TrocarCronograma(processo, [FaseConforme(), semExtremo], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, [FaseConforme(), semExtremo]).IsSuccess.Should().BeTrue();
         return semExtremo.Id;
     }
 
@@ -276,7 +276,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
             new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
-        FormularioDeTeste.TrocarCronograma(processo, [resultado], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        FormularioDeTeste.TrocarCronograma(processo, [resultado]).IsSuccess.Should().BeTrue();
         return resultado.Id;
     }
 }

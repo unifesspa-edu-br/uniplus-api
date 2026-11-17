@@ -18,7 +18,7 @@ public static class DefinirEtapasCommandHandler
     /// só serializa handlers concorrentes porque roda enrolado nela, e <c>[NonTransactional]</c> o
     /// desabilitaria.
     /// </remarks>
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirEtapasCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         DefinicaoDasEtapas definicao,
@@ -34,14 +34,11 @@ public static class DefinirEtapasCommandHandler
 
         Result<ProcessoSeletivo> obtido = await ObterParaEdicaoAsync(processoSeletivoRepository, command, cancellationToken).ConfigureAwait(false);
         return obtido.IsFailure
-            ? Result<MutacaoAceita>.Failure(obtido.Error!)
+            ? Result.Failure(obtido.Error!)
             : await DefinirEGravarAsync(obtido.Value!, command, definicao, unitOfWork, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
     }
 
-    // A precondição precede as regras de negócio que a definição avalia, na ordem da ADR-0110: quem tem If-Match
-    // defasado precisa saber disso antes de caçar um cadastro que não errou. Só a validação de schema do payload a
-    // antecede, no middleware; o mesmo guard continua dentro do Definir* do domínio, que dá a garantia enquanto esta
-    // antecipação dá a ordem.
+    // Fora do rascunho a recusa vem antes de consultar cadastros.
     private static async Task<Result<ProcessoSeletivo>> ObterParaEdicaoAsync(
         IProcessoSeletivoRepository repositorio, DefinirEtapasCommand command, CancellationToken cancellationToken)
     {
@@ -53,12 +50,12 @@ public static class DefinirEtapasCommandHandler
             return Result<ProcessoSeletivo>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
         }
 
-        return processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio
+        return processo.MutacaoBloqueada() is { } bloqueio
             ? Result<ProcessoSeletivo>.Failure(bloqueio)
             : Result<ProcessoSeletivo>.Success(processo);
     }
 
-    private static async Task<Result<MutacaoAceita>> DefinirEGravarAsync(
+    private static async Task<Result> DefinirEGravarAsync(
         ProcessoSeletivo processo,
         DefinirEtapasCommand command,
         DefinicaoDasEtapas definicao,
@@ -70,10 +67,10 @@ public static class DefinirEtapasCommandHandler
         if (definida.IsFailure)
         {
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<MutacaoAceita>.ValidationFailure(definida.Errors);
+            return Result.ValidationFailure(definida.Errors);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

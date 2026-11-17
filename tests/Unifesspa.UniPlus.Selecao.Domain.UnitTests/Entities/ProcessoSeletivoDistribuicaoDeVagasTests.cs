@@ -29,7 +29,7 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
         ProcessoSeletivo processo = NovoProcesso();
         ConfiguracaoDistribuicaoVagas configuracao = Oferta(Guid.CreateVersion7(), 50, [Ac(50)]);
 
-        Result result = processo.DefinirDistribuicaoVagas([configuracao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirDistribuicaoVagas([configuracao], FatosDeModalidadeDeTeste.DoCatalogo);
 
         result.IsSuccess.Should().BeTrue();
         processo.DistribuicaoVagas.Should().ContainSingle();
@@ -43,7 +43,7 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
         ConfiguracaoDistribuicaoVagas ofertaA = Oferta(Guid.CreateVersion7(), 10, [ModalidadeV("RECLASSIFICAR_AC", 2), Ac(8)]);
         ConfiguracaoDistribuicaoVagas ofertaB = Oferta(Guid.CreateVersion7(), 10, [ModalidadeV("RECLASSIFICAR_REGRA_EDITAL", 2), Ac(8)]);
 
-        Result result = processo.DefinirDistribuicaoVagas([ofertaA, ofertaB], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirDistribuicaoVagas([ofertaA, ofertaB], FatosDeModalidadeDeTeste.DoCatalogo);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.AcaoQuandoIndeferidoDivergente");
@@ -56,7 +56,7 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
         ConfiguracaoDistribuicaoVagas ofertaA = Oferta(Guid.CreateVersion7(), 10, [ModalidadeV(null, 2, Exige("PCD")), Ac(8)]);
         ConfiguracaoDistribuicaoVagas ofertaB = Oferta(Guid.CreateVersion7(), 10, [ModalidadeV(null, 2, Exige("CONCORRER_PCD")), Ac(8)]);
 
-        Result result = processo.DefinirDistribuicaoVagas([ofertaA, ofertaB], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirDistribuicaoVagas([ofertaA, ofertaB], FatosDeModalidadeDeTeste.DoCatalogo);
 
         result.IsFailure.Should().BeTrue("uma modalidade tem uma regra só no processo");
         result.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RegraDeAplicabilidadeDivergente);
@@ -67,7 +67,7 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result result = processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.DistribuicaoVagasVazia");
@@ -83,7 +83,7 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
         [
             Oferta(ofertaCursoId, 50, [Ac(50)]),
             Oferta(ofertaCursoId, 50, [Ac(50)]),
-        ], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        ], FatosDeModalidadeDeTeste.DoCatalogo);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.OfertaCursoDuplicada");
@@ -93,9 +93,9 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
     public void ConcorrenciaDuplaAplicavel_SemCotaReservada_Falsa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirDistribuicaoVagas([Oferta(Guid.CreateVersion7(), 50, [Ac(50)])], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        processo.DefinirDistribuicaoVagas([Oferta(Guid.CreateVersion7(), 50, [Ac(50)])], FatosDeModalidadeDeTeste.DoCatalogo);
 
-        RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(EstadoDaConfiguracao.De(processo)).Should().BeFalse();
+        RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(processo.Declaracao()).Should().BeFalse();
     }
 
     // Só exercita o cenário mínimo de derivação: a regra institucional evita que a matriz das
@@ -106,9 +106,9 @@ public sealed class ProcessoSeletivoDistribuicaoDeVagasTests
         ProcessoSeletivo processo = NovoProcesso();
         ConfiguracaoDistribuicaoVagas distribuicao = Oferta(Guid.CreateVersion7(), 50, [Ac(30), CotaReservadaPpi(20)]);
 
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo);
 
-        RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(EstadoDaConfiguracao.De(processo)).Should().BeTrue();
+        RegrasDaDistribuicaoDeVagas.ConcorrenciaDuplaAplicavel(processo.Declaracao()).Should().BeTrue();
     }
 
     private static ConfiguracaoDistribuicaoVagas Oferta(Guid ofertaCursoId, int vagasOfertadasBase, IReadOnlyList<ModalidadeSelecionada> modalidades) =>

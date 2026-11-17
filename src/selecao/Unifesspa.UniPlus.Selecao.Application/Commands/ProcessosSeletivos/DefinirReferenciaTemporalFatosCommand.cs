@@ -16,5 +16,4 @@ public sealed record DefinirReferenciaTemporalFatosCommand(
     Guid ProcessoSeletivoId,
     string? Tipo,
     DateOnly? Data,
-    Guid? FaseId,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    Guid? FaseId) : ICommand<Result>;

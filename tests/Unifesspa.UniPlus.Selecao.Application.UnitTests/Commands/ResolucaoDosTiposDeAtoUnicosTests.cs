@@ -140,7 +140,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicosTests
     private static ProcessoSeletivo ProcessoQueProduz(params (string Tipo, PapelProdutoFase? Papel)[] produtos)
     {
         ProcessoSeletivo processo = ProcessosDeTeste.SemConfiguracao("PS", OrigemCandidatos.ImportacaoExterna);
-        processo.DefinirCronogramaFases([FaseDeClassificacaoQuePublica(produtos)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseDeClassificacaoQuePublica(produtos)], []).IsSuccess.Should().BeTrue();
 
         return processo;
     }

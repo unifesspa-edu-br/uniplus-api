@@ -42,7 +42,7 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
         AdicionarEtapas(processo, Etapa("Análise documental", "HABILITACAO", 1), Etapa("Prova objetiva", "AVALIACAO", 2));
 
         Result resultado = processo.DefinirCronogramaFases(
-            [Fase(1, "AVALIACAO", avaliacao.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Ausente);
+            [Fase(1, "AVALIACAO", avaliacao.FaseCanonicaOrigemId)], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.Etapas.Should().ContainSingle()
@@ -65,7 +65,7 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
             Etapa("Envio dos comprovantes de renda", "HABILITACAO", 3));
 
         Result resultado = processo.DefinirCronogramaFases(
-            [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Ausente);
+            [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.Etapas.Should().HaveCount(2);
@@ -85,7 +85,7 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
         ExigirFolhas(processo, Exigencia(isencao.Id), Exigencia(habilitacao.Id, finalidade: FinalidadeFormulario.Habilitacao));
 
         Result resultado = processo.DefinirCronogramaFases(
-            [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Ausente);
+            [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().ContainSingle()
@@ -105,10 +105,10 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
         EtapaProcesso prova = Etapa("Prova objetiva", "AVALIACAO", 1);
         AdicionarEtapas(processo, prova);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempateComEtapa(prova.Id)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [CriterioDesempateComEtapa(prova.Id)]).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirCronogramaFases(
-            [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Ausente);
+            [Fase(1, "HABILITACAO", habilitacao.FaseCanonicaOrigemId)], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.EtapaDaFaseReferenciada");
@@ -121,11 +121,11 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
         FaseCronograma faseQueSai = Fase(2, "RECURSO");
         ProcessoSeletivo processo = ProcessoComFases(faseQueFica, faseQueSai);
         NoExigencia folhaQueFica = FolhaDaFase(faseQueFica.Id, 0);
-        processo.DefinirDocumentosExigidos([folhaQueFica, GrupoAninhadoDaFase(faseQueSai)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([folhaQueFica, GrupoAninhadoDaFase(faseQueSai)])
             .IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirCronogramaFases(
-            [Fase(1, "INSCRICAO", faseQueFica.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+            [Fase(1, "INSCRICAO", faseQueFica.FaseCanonicaOrigemId)], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().ContainSingle().Which.ExigidoNaFaseId.Should().Be(faseQueFica.Id);

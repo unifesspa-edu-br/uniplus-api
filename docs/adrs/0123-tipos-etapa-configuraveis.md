@@ -192,6 +192,16 @@ tratar a etapa de nota do ENEM sem conhecer o código. As etapas congeladas ante
 emenda ficam sem o atributo e deixam de declarar nota do ENEM: sem produção, nada a
 preservar.
 
+## Emenda 3 (2026-11-17) — no documento de configuração, os atributos do tipo de etapa são resolvidos ao ler
+
+O documento de configuração ([ADR-0172](0172-esquema-json-versionado-do-documento-de-configuracao.md)) cita o tipo de etapa só pelo código e não tem gravação por dimensão. Salvar o rascunho guarda o documento sem ler o cadastro. Por isso a cópia na gravação da Emenda 1 não se aplica a ele. Os sinalizadores (`admitePontuacao`, `admiteEliminacao`) e o atributo de nota do ENEM da Emenda 2 não são gravados no rascunho. São resolvidos pelo código, junto com a identidade, na leitura única dos cadastros que a conferência faz num só instante ([ADR-0174](0174-conferencia-unica-da-configuracao-do-processo-com-todas-as-causas.md) §2). Isso vale no diagnóstico, na exportação e no congelamento. O caráter é conferido contra os valores dessa leitura, e a publicação os congela na versão. Dali em diante, a avaliação usa só a versão congelada.
+
+**Retificação.** Na retificação, o código igual ao já congelado herda a cópia congelada, sinalizadores incluídos ([ADR-0172](0172-esquema-json-versionado-do-documento-de-configuracao.md) § Resolução). O caráter declarado é conferido contra essa cópia, mesmo se o tipo tiver sido estreitado ou desativado depois. Só o código novo ou trocado lê o cadastro.
+
+**O que permanece.** Valem a identidade estável do tipo, a comparação da conformidade pelo código congelado, a recusa do tipo inexistente ou inativo e a coerência entre nota do ENEM e pontuação. A Emenda 1 vale para a gravação por dimensão do rascunho ([ADR-0175](0175-o-processo-publicado-nao-tem-edicao-direta-nem-sessao-editorial.md) §4) enquanto essa via existir; ao retirar a via, a entrega que a retira registra que a Emenda 1 deixa de valer para a gravação. O parágrafo "Sem espelho na restauração" da Emenda 1 fica sem objeto, porque a reposição deixou de existir.
+
+**Derivados só de leitura.** O documento pode trazer os sinalizadores e os demais derivados do tipo de etapa, da fase e do ramo por modalidade como propriedades `readOnly` opcionais. A exportação os preenche com a leitura do instante, ou com a versão congelada quando o processo está publicado, e a importação os ignora. O que vale é o código. Um derivado divergente no documento enviado nunca causa recusa e nunca altera a conferência.
+
 ## Mais informações
 
 - UNI-REQ-0015, UNI-REQ-0087 — requisitos de produto relacionados.

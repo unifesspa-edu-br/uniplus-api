@@ -72,12 +72,6 @@ internal static class CheckpointsDoEnvelopeFechado
         return resposta;
     }
 
-    internal static string LerETag(HttpResponseMessage resposta, string passo)
-    {
-        resposta.Headers.ETag.Should().NotBeNull($"passo '{passo}': a resposta de uma sessão editorial carrega o ETag");
-        return resposta.Headers.ETag!.ToString();
-    }
-
     /// <summary>
     /// Localiza, dentro do bloco <c>etapas</c> do envelope congelado, o item cujo <c>id</c>
     /// bate com <paramref name="etapaId"/> — casamento por identidade, nunca por posição no

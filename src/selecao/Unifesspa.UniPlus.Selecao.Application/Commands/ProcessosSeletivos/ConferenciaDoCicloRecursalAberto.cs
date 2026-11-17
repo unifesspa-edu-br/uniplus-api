@@ -4,6 +4,7 @@ using Abstractions;
 
 using Domain.Entities;
 using Domain.Interfaces;
+using Domain.ProcessosSeletivos.FasesEEtapas;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -61,7 +62,7 @@ internal static class ConferenciaDoCicloRecursalAberto
         IReadOnlyList<FieldError> recusas = ConferenciaDoDominio.Conferir(
             grafo.CronogramaFases, grafo.Etapas, processo.CronogramaFases, processo.Etapas, ItensPublicados(atos, grafo));
 
-        return recusas.Count == 0 ? Result.Success() : Result.ValidationFailure(recusas);
+        return recusas.Count == 0 ? Result.Success() : Result.ValidationFailure(PonteiroNoDocumento.Converter(recusas, OrigemNoDocumento.Identidade));
     }
 
     private static HashSet<IdentidadeDoItemDoEdital> ItensPublicados(IReadOnlyList<AtoDoProcesso> atos, GrafoConfiguracao publicado)

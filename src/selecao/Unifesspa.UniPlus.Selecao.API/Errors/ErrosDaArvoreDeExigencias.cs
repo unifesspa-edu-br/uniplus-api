@@ -42,7 +42,7 @@ internal static class ErrosDaArvoreDeExigencias
         new("FormatosPermitidos.TamanhoMaximoBytesMaxInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.formatos_permitidos.tamanho_maximo_bytes_max_invalido", "O tamanho máximo em bytes por formato, quando presente, deve ser maior que zero")),
         // Coerência consequência↔ação da vaga —
         // ProcessoSeletivo.PendenciaDeCoerenciaDaConsequenciaDeIndeferimento, chamado em
-        // Publicar/Retificar/FecharRetificacao logo após as guardas de publicação.
+        // Publicar/Retificar logo após as guardas de publicação.
         new("DocumentoExigido.RemoveVantagemSemVantagemViva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.remove_vantagem_sem_vantagem_viva", "A exigência declara REMOVE_VANTAGEM, mas o processo não tem nenhuma vantagem viva para remover")),
         new("DocumentoExigido.ConsequenciaIncoerenteComAcaoDaVaga", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.documento_exigido.consequencia_incoerente_com_acao_da_vaga", "A consequência de indeferimento da exigência é incoerente com a ação de indeferimento da modalidade que ela alcança")),
         // Gate PENDENCIA_REENVIO×PermiteComplementacao FORWARD — complementa
@@ -89,6 +89,11 @@ internal static class ErrosDaArvoreDeExigencias
         new("NoExigenciaBaseLegal.ReferenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.referencia_obrigatoria", "A referência da base legal é obrigatória")),
         new("NoExigenciaBaseLegal.AbrangenciaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.abrangencia_obrigatoria", "A abrangência da base legal é obrigatória")),
         new("NoExigenciaBaseLegal.StatusObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.no_exigencia_base_legal.status_obrigatorio", "O status da base legal é obrigatório")),
+        // Unicidade que o banco garante na escrita normal da árvore de satisfação: ordem única entre as raízes,
+        // entre os irmãos de um mesmo nó pai e uma única folha por exigência de documento.
+        new("ProcessoSeletivo.OrdemRaizNoExigenciaDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_raiz_no_exigencia_duplicada", "Cada raiz da árvore de satisfação deve ter uma ordem única dentro do processo")),
+        new("ProcessoSeletivo.OrdemIrmaoNoExigenciaDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_irmao_no_exigencia_duplicada", "Cada filho de um mesmo nó pai deve ter uma ordem única entre os irmãos")),
+        new("ProcessoSeletivo.NoExigenciaDocumentoExigidoDuplicado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.no_exigencia_documento_exigido_duplicado", "Duas folhas não podem citar a mesma exigência")),
         // Resolvedor da árvore de satisfação (substitui ResolvedorExigencias.* do
         // grupo plano) — domain service puro, sem caller HTTP (o runtime de
         // coleta é fora de escopo); registrado por disciplina uniforme com o resto do módulo.

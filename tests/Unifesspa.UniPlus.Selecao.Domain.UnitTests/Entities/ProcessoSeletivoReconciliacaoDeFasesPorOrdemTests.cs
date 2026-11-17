@@ -24,10 +24,10 @@ public sealed class ProcessoSeletivoReconciliacaoDeFasesPorOrdemTests
         DocumentoExigido exigencia = Exigencia(fase.Id);
         ExigirFolhas(processo, exigencia);
 
-        // Mesma Ordem E mesma FaseCanonicaOrigemId: é a edição da mesma fase (uma sessão editorial que
+        // Mesma Ordem E mesma FaseCanonicaOrigemId: é a edição da mesma fase (uma edição que
         // só ajusta datas), não a troca de qual fase ocupa o slot. A reconciliação reusa a instância viva.
         Result resultado = processo.DefinirCronogramaFases(
-            [Fase(1, "INSCRICAO_REVISADA", fase.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+            [Fase(1, "INSCRICAO_REVISADA", fase.FaseCanonicaOrigemId)], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.CronogramaFases.Should().ContainSingle(f => f.Id == fase.Id, "a reconciliação por Ordem reusa a MESMA instância, preservando o Id");
@@ -49,7 +49,7 @@ public sealed class ProcessoSeletivoReconciliacaoDeFasesPorOrdemTests
 
         // Mesma Ordem, mas FaseCanonicaOrigemId DIFERENTE (não informado — gera um novo): é uma
         // fase DIFERENTE ocupando o slot, não uma edição da mesma fase.
-        Result resultado = processo.DefinirCronogramaFases([Fase(1, "ANALISE")], [], PrecondicaoIfMatch.Curinga);
+        Result resultado = processo.DefinirCronogramaFases([Fase(1, "ANALISE")], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().BeEmpty(
@@ -66,7 +66,7 @@ public sealed class ProcessoSeletivoReconciliacaoDeFasesPorOrdemTests
         // Mesma Ordem, FaseCanonicaOrigemId DIFERENTE e nenhuma exigência na fase antiga: a reconciliação
         // casa por FaseCanonicaOrigemId, não por Ordem, então a linha antiga sai e uma nova entra
         // (nunca retargeta a origem de uma linha rastreada, o que criaria dependência circular).
-        Result resultado = processo.DefinirCronogramaFases([Fase(1, "ANALISE")], [], PrecondicaoIfMatch.Curinga);
+        Result resultado = processo.DefinirCronogramaFases([Fase(1, "ANALISE")], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.CronogramaFases.Should().ContainSingle(f => f.Id != fase.Id, "é uma fase canônica diferente — remoção+inserção, não reconciliação");
@@ -82,7 +82,7 @@ public sealed class ProcessoSeletivoReconciliacaoDeFasesPorOrdemTests
 
         // A assume a Ordem de B e B assume a Ordem de A — um ciclo fechado de tamanho 2.
         Result resultado = processo.DefinirCronogramaFases(
-            [FaseNaOrdem(faseA, 2), FaseNaOrdem(faseB, 1)], [], PrecondicaoIfMatch.Curinga);
+            [FaseNaOrdem(faseA, 2), FaseNaOrdem(faseB, 1)], []);
 
         resultado.IsFailure.Should().BeTrue("um ciclo fechado não tem uma ordem de UPDATE que o resolva num único SaveChanges");
         resultado.Error!.Code.Should().Be("FaseCronograma.PermutacaoDeOrdemNaoSuportada");
@@ -98,7 +98,7 @@ public sealed class ProcessoSeletivoReconciliacaoDeFasesPorOrdemTests
 
         // A -> Ordem de B, B -> Ordem de C, C -> Ordem de A: ciclo de tamanho 3.
         Result resultado = processo.DefinirCronogramaFases(
-            [FaseNaOrdem(faseA, 2), FaseNaOrdem(faseB, 3), FaseNaOrdem(faseC, 1)], [], PrecondicaoIfMatch.Curinga);
+            [FaseNaOrdem(faseA, 2), FaseNaOrdem(faseB, 3), FaseNaOrdem(faseC, 1)], []);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("FaseCronograma.PermutacaoDeOrdemNaoSuportada");
@@ -111,7 +111,7 @@ public sealed class ProcessoSeletivoReconciliacaoDeFasesPorOrdemTests
         ProcessoSeletivo processo = ProcessoComFases(fase);
 
         Result resultado = processo.DefinirCronogramaFases(
-            [Fase(5, "INSCRICAO", fase.FaseCanonicaOrigemId)], [], PrecondicaoIfMatch.Curinga);
+            [Fase(5, "INSCRICAO", fase.FaseCanonicaOrigemId)], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.CronogramaFases.Should().ContainSingle(f => f.Id == fase.Id, "a Ordem 5 nunca foi usada — não há ciclo, e a reconciliação por identidade preserva o Id");
@@ -128,7 +128,7 @@ public sealed class ProcessoSeletivoReconciliacaoDeFasesPorOrdemTests
         // C é nova (Ordem 1); A desloca para 2; B desloca para 3 — uma CADEIA que termina
         // numa Ordem livre (3), não um ciclo.
         Result resultado = processo.DefinirCronogramaFases(
-            [Fase(1, "C"), FaseNaOrdem(faseA, 2), FaseNaOrdem(faseB, 3)], [], PrecondicaoIfMatch.Curinga);
+            [Fase(1, "C"), FaseNaOrdem(faseA, 2), FaseNaOrdem(faseB, 3)], []);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.CronogramaFases.Should().Contain(f => f.Id == faseA.Id && f.Ordem == 2);

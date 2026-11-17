@@ -73,7 +73,7 @@ public sealed class AplicarModeloDeIsencaoDaTaxaTests
             {
                 ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(
                     cobra: true, valor: 100m, fundamentosCodigos: [FundamentoIsencaoCodigo.CarenciaSocioeconomica]).Value!;
-                Result taxaDefinida = p.DefinirTaxaInscricao(taxa, PrecondicaoIfMatch.Ausente);
+                Result taxaDefinida = p.DefinirTaxaInscricao(taxa);
                 taxaDefinida.IsSuccess.Should().BeTrue(taxaDefinida.Error?.Message);
 
                 int ordem = FormularioDeTeste.PrimeiraOrdemDeInscricao;

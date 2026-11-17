@@ -28,7 +28,7 @@ public sealed class RecusasAcumuladasNaGravacaoDasEtapasTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirCronogramaFases(
-            [new ModeloDeFase(FaseDaAvaliacao, 1).Janela(0, 10).Criar()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [new ModeloDeFase(FaseDaAvaliacao, 1).Janela(0, 10).Criar()], []).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -44,7 +44,7 @@ public sealed class RecusasAcumuladasNaGravacaoDasEtapasTests
         ProcessoSeletivo processo = ProcessoComFaseDeAvaliacao();
         EtapaProcesso[] etapas = [Etapa("Prova", 1, "FASE_A").Criar(), Etapa("Redação", 2, "FASE_B").Criar()];
 
-        Result resultado = processo.DefinirEtapas(etapas, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirEtapas(etapas);
 
         Causas(resultado).Should().Equal(("etapas[0].faseCodigo", EtapaSemFase), ("etapas[1].faseCodigo", EtapaSemFase));
     }
@@ -57,7 +57,7 @@ public sealed class RecusasAcumuladasNaGravacaoDasEtapasTests
         ModeloDeEtapa semFase = Etapa("Prova", 1, "FASE_INEXISTENTE") with { Inicio = foraDaFase, Fim = foraDaFase.AddDays(1) };
         ModeloDeEtapa foraDaJanela = Etapa("Redação", 2, FaseDaAvaliacao) with { Inicio = foraDaFase, Fim = foraDaFase.AddDays(1) };
 
-        Result resultado = processo.DefinirEtapas([semFase.Criar(), foraDaJanela.Criar()], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirEtapas([semFase.Criar(), foraDaJanela.Criar()]);
 
         Causas(resultado).Select(static causa => causa.Codigo).Should().Equal(EtapaSemFase, EtapaComecaAntesDaFase, EtapaForaDaJanela);
         resultado.Errors.Skip(1).Should().OnlyContain(static causa => causa.Field!.StartsWith("etapas[1]", StringComparison.Ordinal));
@@ -69,7 +69,7 @@ public sealed class RecusasAcumuladasNaGravacaoDasEtapasTests
         ProcessoSeletivo processo = ProcessoComFaseDeAvaliacao();
         EtapaProcesso[] etapas = [Etapa("Prova", 1, FaseDaAvaliacao).Criar(), Etapa("Redação", 1, "FASE_INEXISTENTE").Criar()];
 
-        Result resultado = processo.DefinirEtapas(etapas, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirEtapas(etapas);
 
         Causas(resultado).Select(static causa => causa.Codigo).Should().Equal(OrdemRepetida, EtapaSemFase);
     }
@@ -79,7 +79,7 @@ public sealed class RecusasAcumuladasNaGravacaoDasEtapasTests
     {
         ProcessoSeletivo processo = ProcessoComFaseDeAvaliacao();
 
-        Result resultado = processo.DefinirEtapas([Etapa("Prova", 1, FaseDaAvaliacao).Criar()], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirEtapas([Etapa("Prova", 1, FaseDaAvaliacao).Criar()]);
 
         resultado.IsSuccess.Should().BeTrue();
         processo.Etapas.Should().ContainSingle();

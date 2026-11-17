@@ -1,14 +1,17 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-/// <summary>O que toda família lê para julgar: o estado da configuração, os cadastros e as declarações do cronograma e das etapas.</summary>
+/// <summary>O que toda família lê para julgar: a configuração declarada, os cadastros e as declarações do cronograma e das etapas.</summary>
 internal sealed record ContextoDaConferencia(
-    EstadoDaConfiguracao Estado, CadastrosDaConfiguracao Cadastros, CronogramaDoProcesso Cronograma, EtapasDoProcesso Etapas)
+    ConfiguracaoDeclarada Configuracao, CadastrosDaConfiguracao Cadastros, CronogramaDoProcesso Cronograma, EtapasDoProcesso Etapas)
 {
-    internal static ContextoDaConferencia De(EstadoDaConfiguracao estado, CadastrosDaConfiguracao cadastros) =>
-        new(estado, cadastros, CronogramaDoProcesso.Do(estado.CronogramaFases), EtapasDoProcesso.Das(estado.Etapas));
+    internal static ContextoDaConferencia De(ConfiguracaoDeclarada configuracao, CadastrosDaConfiguracao cadastros) =>
+        new(
+            configuracao,
+            cadastros,
+            CronogramaDoProcesso.Do(configuracao.Cronograma.CronogramaFases, configuracao.Origem),
+            EtapasDoProcesso.Das(configuracao.Avaliacao.Etapas, configuracao.Origem));
 }

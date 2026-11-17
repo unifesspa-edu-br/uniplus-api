@@ -4,7 +4,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -15,12 +14,12 @@ public static class ChecklistDeConformidade
     /// publicação. Lista própria, separada de <see cref="AvaliarConformidade"/>, porque aquela coincide
     /// com a conferência da configuração e um aviso nunca recusa uma publicação.
     /// </summary>
-    public static IReadOnlyList<AvisoConformidade> AvaliarAvisos(EstadoDaConfiguracao estado)
+    public static IReadOnlyList<AvisoConformidade> AvaliarAvisos(ConfiguracaoDeclarada configuracao)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         return [
-            .. CicloRecursal.DefinitivosEmMaisDeUmLugar(TiposDeAtoDoCronograma.DeclaracoesDeAtos(estado))
+            .. CicloRecursal.DefinitivosEmMaisDeUmLugar(TiposDeAtoDoCronograma.DeclaracoesDeAtos(configuracao))
                 .Select(static repetido => new AvisoConformidade(
                     CodigosDeAvisoDeConformidade.CronogramaTipoDefinitivoEmMaisDeUmLugar,
                     DimensaoConformidade.Cronograma,
@@ -47,18 +46,18 @@ public static class ChecklistDeConformidade
     /// dois ao mesmo tempo.
     /// </para>
     /// </remarks>
-    public static IReadOnlyList<ItemConformidade> AvaliarConformidade(EstadoDaConfiguracao estado, CadastrosDaConfiguracao cadastros)
+    public static IReadOnlyList<ItemConformidade> AvaliarConformidade(ConfiguracaoDeclarada configuracao, CadastrosDaConfiguracao cadastros)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(cadastros);
 
         return
         [
-            .. ItensDaContagemDePrazos.Avaliar(estado, cadastros.ContagemDePrazos),
-            .. ItensEstruturaisDeConformidade.Avaliar(estado),
-            .. ItensDoCronograma.Avaliar(estado, cadastros),
-            .. ItensDaCascata.Avaliar(estado),
-            .. ItensDasCondicoesDaCanonicalizacao.Avaliar(estado, cadastros),
+            .. ItensDaContagemDePrazos.Avaliar(configuracao, cadastros.ContagemDePrazos),
+            .. ItensEstruturaisDeConformidade.Avaliar(configuracao),
+            .. ItensDoCronograma.Avaliar(configuracao, cadastros),
+            .. ItensDaCascata.Avaliar(configuracao),
+            .. ItensDasCondicoesDaCanonicalizacao.Avaliar(configuracao, cadastros),
         ];
     }
 
@@ -70,13 +69,13 @@ public static class ChecklistDeConformidade
     /// As duas transições que congelam abrem uma <c>VersaoConfiguracao</c> append-only e juridicamente vinculante: uma
     /// versão congelada a partir de configuração incompleta é irreparável, porque o passado não se muta.
     /// </remarks>
-    internal static IReadOnlyList<FieldError> CausasDeConformidade(EstadoDaConfiguracao estado)
+    internal static IReadOnlyList<FieldError> CausasDeConformidade(ConfiguracaoDeclarada configuracao)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         return
         [
-            .. ItensEstruturaisDeConformidade.Avaliar(estado)
+            .. ItensEstruturaisDeConformidade.Avaliar(configuracao)
                 .Where(static item => !item.Ok)
                 .Select(static item => new FieldError(
                     DimensaoConformidade.BlocoDoDocumento(item.Dimensao),

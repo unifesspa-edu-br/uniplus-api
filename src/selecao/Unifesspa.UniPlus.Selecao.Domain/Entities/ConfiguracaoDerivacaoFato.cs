@@ -11,10 +11,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Só é editável antes da primeira publicação (processo em rascunho), como a coleta de fatos: a
-/// regra ainda não entra no envelope congelado nem na restauração, e permitir a edição sob
-/// retificação criaria estado mutável fora da configuração congelada. A edição sob retificação,
-/// junto do congelamento da regra no envelope, é entregue na story do congelamento conjunto.
+/// Só é editável antes da primeira publicação (processo em rascunho), como a coleta de fatos.
 /// </para>
 /// <para>
 /// A validação aqui é <b>estrutural</b> — forma das condições, unicidade da ordem das regras. A

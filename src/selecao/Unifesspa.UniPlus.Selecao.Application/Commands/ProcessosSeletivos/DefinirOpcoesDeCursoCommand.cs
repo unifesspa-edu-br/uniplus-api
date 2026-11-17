@@ -12,5 +12,4 @@ using Unifesspa.UniPlus.Application.Abstractions.Messaging;
 /// </summary>
 public sealed record DefinirOpcoesDeCursoCommand(
     Guid ProcessoSeletivoId,
-    int Numero,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    int Numero) : ICommand<Result>;

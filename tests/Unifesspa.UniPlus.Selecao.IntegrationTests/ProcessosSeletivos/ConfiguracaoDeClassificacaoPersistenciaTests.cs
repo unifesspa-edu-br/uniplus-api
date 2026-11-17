@@ -57,7 +57,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
         EtapaProcesso etapa = EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
 
         RegraEliminacao notaMinima = RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"),
@@ -88,7 +88,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
             EscalaNotaFinal = 100m,
         });
         configResult.IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(configResult.Value!).IsSuccess.Should().BeTrue();
 
         await _cenario.PersistirAsync(processo);
 
@@ -135,7 +135,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
         ProcessoSeletivo processo = NovoProcesso("PS 2026 — Transferência", TiposDeProcessoDeTeste.TransferenciaExterna);
         processo.DefinirEtapas([EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Análise curricular", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente)
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!])
             .IsSuccess.Should().BeTrue();
 
         Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
@@ -144,7 +144,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
             RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "2"),
         });
         configResult.IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(configResult.Value!).IsSuccess.Should().BeTrue();
 
         await _cenario.PersistirAsync(processo);
 
@@ -168,7 +168,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
         EtapaProcesso etapa = EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao original = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
@@ -178,7 +178,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
             RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
             EscalaNotaFinal = 100m,
         }).Value!;
-        processo.DefinirClassificacao(original, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(original).IsSuccess.Should().BeTrue();
 
         await _cenario.PersistirAsync(processo);
 
@@ -203,7 +203,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
                 EscalaNotaFinal = 100m,
             }).Value!;
 
-            Result result = carregado.DefinirClassificacao(nova, PrecondicaoIfMatch.Ausente);
+            Result result = carregado.DefinirClassificacao(nova);
             result.IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);
@@ -227,7 +227,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
         EtapaProcesso etapa = EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([etapa]);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"), new ArgsElimNotaMinimaEtapa(etapa.Id, 3m)).Value!;
@@ -240,7 +240,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
             RegrasEliminacao = [eliminacao],
             EscalaNotaFinal = 100m,
         }).Value!;
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
 
         await _cenario.PersistirAsync(processo);
 
@@ -258,7 +258,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva (revisada)", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
 
-            Result result = carregado.DefinirEtapas([etapaTracked], PrecondicaoIfMatch.Ausente);
+            Result result = carregado.DefinirEtapas([etapaTracked]);
             result.IsSuccess.Should().BeTrue();
 
             await configureContext.SaveChangesAsync(CancellationToken.None);
@@ -288,7 +288,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
         processo.DefinirEtapas(
             [EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente);
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]);
 
         Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
@@ -302,7 +302,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
             EscalaNotaFinal = 100m,
         });
         configResult.IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(configResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(configResult.Value!).IsSuccess.Should().BeTrue();
 
         await _cenario.PersistirAsync(processo);
 

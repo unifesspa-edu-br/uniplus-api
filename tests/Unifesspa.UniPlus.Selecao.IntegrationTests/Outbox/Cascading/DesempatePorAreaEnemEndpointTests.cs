@@ -251,7 +251,7 @@ public sealed class DesempatePorAreaEnemEndpointTests
             // para o processo ser publicável, e aqui ele sai.
             (ProcessoSeletivo processo, _) = await ProcessoSeletivoPublicavelSeeder
                 .SemearAsync(db, $"{nome} {Guid.CreateVersion7()}", complementar: semear =>
-                    semear.DefinirCriteriosDesempate([], Domain.ValueObjects.PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue());
+                    semear.DefinirCriteriosDesempate([]).IsSuccess.Should().BeTrue());
             processoId = processo.Id;
         }
 

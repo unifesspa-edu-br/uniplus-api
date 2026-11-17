@@ -19,16 +19,20 @@ public static class ConferenciaDasBancas
     [
         new("cronograma_recurso_com_banca_de_analise",
             "Cronograma: todo recurso tem a banca de análise de recursos que o julga, na fase ou na etapa",
-            static (cronograma, etapas, _) => ConferirRecursosSemBanca(cronograma, etapas)),
+            static (cronograma, etapas, _) => ConferirRecursosSemBanca(cronograma, etapas),
+            static (cronograma, etapas) => ConjuntoDeEtapasJulgadasIndeterminado(cronograma, etapas)),
         new("cronograma_banca_de_recursos_sem_recorte",
             "Cronograma: a banca de análise de recursos não declara recorte de competência",
-            static (cronograma, _, _) => cronograma.RecusasDasDeclaracoes(ExigenciaDeBancaDeRecurso.CodigosDoRecorte)),
+            static (cronograma, _, _) => cronograma.RecusasDasDeclaracoes(ExigenciaDeBancaDeRecurso.CodigosDoRecorte),
+            static (_, _) => false),
         new("cronograma_banca_com_regra_de_deliberacao",
             "Cronograma: toda banca declarada tem a regra de deliberação",
-            static (cronograma, etapas, _) => ConferirRegrasDeDeliberacao(cronograma, etapas)),
+            static (cronograma, etapas, _) => ConferirRegrasDeDeliberacao(cronograma, etapas),
+            static (_, _) => false),
         new("cronograma_banca_com_o_minimo_de_integrantes",
             "Cronograma: toda banca tem ao menos o mínimo de integrantes que o quórum e os corretores das etapas julgadas exigem",
-            ConferirMinimoDeIntegrantes),
+            ConferirMinimoDeIntegrantes,
+            static (cronograma, etapas) => EtapaJulgadaIndeterminada(cronograma, etapas)),
     ];
 
     public static IReadOnlyList<FieldError> ConferirRecursosSemBanca(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas)
@@ -66,22 +70,38 @@ public static class ConferenciaDasBancas
 
     public static IReadOnlyList<ItemConformidade> Itens(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, CorretoresDasEtapas corretores) =>
         [.. ItensDaBanca.Select(item => new ItemConformidade(
-            item.Codigo, DimensaoConformidade.Cronograma, item.Mensagem, item.Causas(cronograma, etapas, corretores).Count == 0))];
+            item.Codigo, DimensaoConformidade.Cronograma, item.Mensagem, item.Causas(cronograma, etapas, corretores).Count == 0 && !item.SemJulgar(cronograma, etapas)))];
 
     internal static DomainError RegraDeDeliberacaoAusente(string nomeDaBanca, string onde) =>
         new(BancaErrorCodes.RegraDeDeliberacaoObrigatoria, $"A banca '{nomeDaBanca}' {onde} não declara a regra de deliberação.");
 
+    // Quem julga o recurso de cada etapa sai da lista das bancas da fase e da etapa e da lista dos recursos da etapa: com parte
+    // recusada em alguma delas, a banca que julga pode ser outra, e o item fica pendente em vez de aprovado por omissão.
+    private static bool ConjuntoDeEtapasJulgadasIndeterminado(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+        cronograma.Fases.Any(static fase => fase.ParteRecusadaEm(FaseDeclarada.ListaDasBancasRequeridas))
+        || EtapaJulgadaIndeterminada(cronograma, etapas);
+
+    // O mínimo só fica indeterminado onde há etapa cuja julgadora não se sabe: parte recusada em fase sem etapa não o afeta.
+    private static bool EtapaJulgadaIndeterminada(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
+        etapas.Etapas.Any(etapa => JulgadoraDaEtapaIndeterminada(cronograma, etapa));
+
     private static IEnumerable<FieldError> FasesSemBancaDeRecursos(CronogramaDoProcesso cronograma) =>
         cronograma.Fases
             .Select(static (fase, posicao) => (fase, posicao))
-            .Where(static par => par.fase.Atos.AdmiteRecurso && !par.fase.Bancas.TemBancaDeRecursos)
+            .Where(static par => par.fase.Atos.AdmiteRecurso && !par.fase.ParteRecusadaEm(FaseDeclarada.ListaDasBancasRequeridas) && !par.fase.Bancas.TemBancaDeRecursos)
             .Select(static par => CronogramaDoProcesso.NaFase(par.posicao, "bancasRequeridas", ExigenciaDeBancaDeRecurso.FaseSemBancaDeRecursos(par.fase.Codigo)));
 
     private static IEnumerable<FieldError> EtapasSemBancaDeRecursos(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas) =>
         etapas.Etapas
             .Select(static (etapa, posicao) => (etapa, posicao))
-            .Where(par => ExigenciaDeBancaDeRecurso.EtapaSemBancaQueJulgue(par.etapa.Atos.TemRecursos, par.etapa.Bancas.TemBancaDeRecursos, FaseDaEtapaTemBancaDeRecursos(cronograma, par.etapa)))
+            .Where(par => !JulgadoraDaEtapaIndeterminada(cronograma, par.etapa)
+                && ExigenciaDeBancaDeRecurso.EtapaSemBancaQueJulgue(par.etapa.Atos.TemRecursos, par.etapa.Bancas.TemBancaDeRecursos, FaseDaEtapaTemBancaDeRecursos(cronograma, par.etapa)))
             .Select(static par => EtapasDoProcesso.NaEtapa(par.posicao, "bancas", ExigenciaDeBancaDeRecurso.EtapaSemBancaDeRecursos(par.etapa.Nome)));
+
+    private static bool JulgadoraDaEtapaIndeterminada(CronogramaDoProcesso cronograma, EtapaDeclarada etapa) =>
+        etapa.ParteRecusadaEm(EtapaDeclarada.ListaDasBancas)
+        || etapa.ParteRecusadaEm(EtapaDeclarada.ListaDosRecursos)
+        || cronograma.Fases.Any(fase => string.Equals(fase.Codigo, etapa.FaseCodigo, StringComparison.Ordinal) && fase.ParteRecusadaEm(FaseDeclarada.ListaDasBancasRequeridas));
 
     private static bool FaseDaEtapaTemBancaDeRecursos(CronogramaDoProcesso cronograma, EtapaDeclarada etapa) =>
         cronograma.Fases.Any(fase => string.Equals(fase.Codigo, etapa.FaseCodigo, StringComparison.Ordinal) && fase.Bancas.TemBancaDeRecursos);
@@ -106,7 +126,7 @@ public static class ConferenciaDasBancas
                 banca.Nome,
                 $"da fase '{fase.Codigo}'",
                 banca.Regra!,
-                banca.DeRecursos ? EtapasRecorridasSemBancaPropria(etapas, fase) : [])));
+                banca.DeRecursos ? EtapasRecorridasSemBancaPropria(cronograma, etapas, fase) : [])));
 
     private static IEnumerable<BancaJulgadora> BancasDasEtapas(EtapasDoProcesso etapas) =>
         etapas.Etapas.SelectMany(static (etapa, posicao) => etapa.Bancas.Declaradas
@@ -118,9 +138,13 @@ public static class ConferenciaDasBancas
                 banca.Regra!,
                 banca.DeRecursos ? [etapa] : [])));
 
-    // A etapa da fase com recurso e sem banca de recursos própria é julgada pela banca de recursos da fase.
-    private static EtapaDeclarada[] EtapasRecorridasSemBancaPropria(EtapasDoProcesso etapas, FaseDeclarada fase) =>
-        [.. etapas.Etapas.Where(etapa => string.Equals(etapa.FaseCodigo, fase.Codigo, StringComparison.Ordinal) && etapa.Atos.TemRecursos && !etapa.Bancas.TemBancaDeRecursos)];
+    // A etapa da fase com recurso e sem banca de recursos própria é julgada pela banca de recursos da fase; a etapa de julgadora
+    // indeterminada não se atribui a banca nenhuma, e o mínimo se confere sobre as que a banca julga com certeza.
+    private static EtapaDeclarada[] EtapasRecorridasSemBancaPropria(CronogramaDoProcesso cronograma, EtapasDoProcesso etapas, FaseDeclarada fase) =>
+        [.. etapas.Etapas.Where(etapa => string.Equals(etapa.FaseCodigo, fase.Codigo, StringComparison.Ordinal)
+            && !JulgadoraDaEtapaIndeterminada(cronograma, etapa)
+            && etapa.Atos.TemRecursos
+            && !etapa.Bancas.TemBancaDeRecursos)];
 
     private static IEnumerable<FieldError> RegrasNaoResolvidas(BancaJulgadora[] bancas, CorretoresDasEtapas corretores) =>
         bancas.SelectMany(banca => banca.Julgadas
@@ -142,7 +166,10 @@ public static class ConferenciaDasBancas
 
     /// <summary>Um item do painel das bancas e as causas que ele projeta: vermelho quando houver alguma.</summary>
     private sealed record ItemDaBanca(
-        string Codigo, string Mensagem, Func<CronogramaDoProcesso, EtapasDoProcesso, CorretoresDasEtapas, IReadOnlyList<FieldError>> Causas);
+        string Codigo,
+        string Mensagem,
+        Func<CronogramaDoProcesso, EtapasDoProcesso, CorretoresDasEtapas, IReadOnlyList<FieldError>> Causas,
+        Func<CronogramaDoProcesso, EtapasDoProcesso, bool> SemJulgar);
 
     /// <summary>Uma banca declarada com regra de deliberação, onde ela está e as etapas que julga.</summary>
     private sealed record BancaJulgadora(

@@ -9,6 +9,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -87,8 +88,8 @@ internal sealed class MotivoDoProcessoConfiguration : IEntityTypeConfiguration<M
         builder.Property(m => m.ProcessoSeletivoId).IsRequired();
         builder.Property(m => m.MotivoDeDecisaoOrigemId).IsRequired();
 
-        // Justificativa interna da inclusão depois da publicação: não vai ao candidato.
-        builder.Property(m => m.JustificativaDaInclusao).HasMaxLength(EscolhaDosMotivos.JustificativaMaxLength);
+        // Justificativa interna da inclusão depois da publicação (retificação): não vai ao candidato.
+        builder.Property(m => m.JustificativaDaInclusao).HasMaxLength(ConferenciaDosMotivosDaRetificacao.JustificativaMaxLength);
         builder.Property<uint>("Version").IsRowVersion();
         builder.Property(m => m.CreatedBy).HasMaxLength(MotivoDeDecisaoConfiguration.AuditUserMaxLength);
         builder.Property(m => m.UpdatedBy).HasMaxLength(MotivoDeDecisaoConfiguration.AuditUserMaxLength);

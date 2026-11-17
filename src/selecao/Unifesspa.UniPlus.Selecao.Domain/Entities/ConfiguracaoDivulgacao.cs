@@ -14,8 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <b>Três estados, não dois (D13 da revisão adversarial).</b> No comando que grava esta
 /// configuração, <c>CamposPublicos</c> nulo remove a configuração explícita (o processo volta ao
 /// default minimizado); lista vazia é sempre recusada aqui; lista não nula cria ou substitui
-/// integralmente. É essa distinção — nulo≠vazio — que permite desfazer uma ampliação anterior,
-/// inclusive durante uma sessão de retificação.
+/// integralmente. É essa distinção — nulo≠vazio — que permite desfazer uma ampliação anterior.
 /// </para>
 /// <para>
 /// <b>O conjunto é guardado já deduplicado e na ordem canônica</b> (ASCII, <see cref="StringComparer.Ordinal"/>)
@@ -57,8 +56,7 @@ public sealed class ConfiguracaoDivulgacao : EntityBase, IParteDoProcesso
     ];
 
     /// <summary>
-    /// Teto da justificativa normalizada — mesma grandeza de <see cref="RascunhoRetificacao.MotivoMaxLength"/>
-    /// e de <c>DocumentoExigidoBaseLegal.Observacao</c>: texto de negócio livre, não um rótulo curto.
+    /// Teto da justificativa normalizada — mesma grandeza de <c>DocumentoExigidoBaseLegal.Observacao</c>: texto de negócio livre, não um rótulo curto.
     /// </summary>
     public const int JustificativaMaxLength = 1000;
 
@@ -137,7 +135,7 @@ public sealed class ConfiguracaoDivulgacao : EntityBase, IParteDoProcesso
         // reconhece como espaço em branco nem o remove. Sem esta guarda ele chegaria ao
         // SaveChanges e o PostgreSQL recusaria o byte zero em coluna de texto (500 em vez de
         // erro de validação); recusado aqui, o mesmo guard cobre tanto o comando quanto a
-        // restauração do envelope, que também passa por este método.
+        // reidratação do envelope, que também passa por este método.
         if (justificativaNormalizada is not null && justificativaNormalizada.Contains(CaractereNulo))
         {
             erros.Add(new("justificativa", new DomainError(
@@ -179,7 +177,7 @@ public sealed class ConfiguracaoDivulgacao : EntityBase, IParteDoProcesso
     /// <summary>
     /// O default minimizado: só o piso, sem justificativa — o efetivo que um processo sem
     /// configuração explícita já divulga (D5 do plano de congelamento). Consumido pelo decoder do
-    /// envelope para decidir se o bloco restaurado deve virar ausência em vez de entidade.
+    /// envelope para decidir se o bloco reidratado deve virar ausência em vez de entidade.
     /// </summary>
     public static bool EhDefaultMinimizado(IReadOnlyList<string> camposPublicos, string? justificativa)
     {
@@ -191,8 +189,7 @@ public sealed class ConfiguracaoDivulgacao : EntityBase, IParteDoProcesso
         ProcessoSeletivoId = processoSeletivoId;
 
     /// <summary>
-    /// <b>Trim + NFC</b> — mesmo raciocínio de <see cref="RascunhoRetificacao.NormalizarMotivo"/>:
-    /// o valor guardado é o que o canonicalizador do envelope congelaria, e Postgres não normaliza
+    /// <b>Trim + NFC</b>: o valor guardado é o que o canonicalizador do envelope congelaria, e Postgres não normaliza
     /// texto. Uma justificativa só de espaços colapsa para <see langword="null"/> — não carrega
     /// informação a mais que a ausência.
     /// </summary>

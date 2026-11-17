@@ -75,7 +75,7 @@ public sealed class RecursoDaEtapa : EntityBase
         // cujo tipo seja "regra de prazo de recurso", que é a checagem que o handler faz. O
         // decodificador do envelope exige este código exato ao reidratar a janela recursal da
         // etapa: aceitar outro aqui produziria um certame publicável cujo envelope não volta,
-        // e o descarte da retificação deixaria de ser possível. A defesa fica no domínio para
+        // e a retificação não conseguiria lê-lo. A defesa fica no domínio para
         // valer também fora do caminho do handler, como a reidratação.
         if (regra.Codigo != RegraPrazoRecursoCodigo.AncoradoEmAto)
         {
@@ -128,9 +128,9 @@ public sealed class RecursoDaEtapa : EntityBase
     /// <para>
     /// Reidratar não é caminho de confiança. O argumento de que "o envelope já provou a forma
     /// quando foi congelado" vale para envelope que este código gerou, e é exatamente o que não
-    /// se pode supor de um envelope truncado, corrompido ou editado — e o descarte de uma
-    /// retificação repõe a configuração a partir dele. Sem estas conferências, quem controlasse
-    /// os bytes reporia um certame com prazo recursal zero: uma janela que abre e nunca fecha.
+    /// se pode supor de um envelope truncado, corrompido ou editado — e a retificação lê a
+    /// configuração a partir dele. Sem estas conferências, quem controlasse os bytes
+    /// reidrataria um certame com prazo recursal zero: uma janela que abre e nunca fecha.
     /// </para>
     /// <para>
     /// A validação é <b>delegada a <see cref="Criar"/></b> em vez de repetida aqui, para que
@@ -171,29 +171,6 @@ public sealed class RecursoDaEtapa : EntityBase
             ProdutoAncoraId = produtoAncoraId,
             Procedimentos = procedimentos,
         });
-    }
-
-    /// <summary>
-    /// Repõe o que a versão congelada declarava, preservando a linha. Não revalida: o envelope
-    /// já provou a forma quando foi congelado, e uma regra criada depois não pode tornar a
-    /// reposição impossível — mesma postura de <see cref="Reidratar"/>.
-    /// </summary>
-    internal void ReporDadosCongelados(
-        AncoraDoRecurso ancora,
-        ReferenciaRegra regra,
-        ArgsRegraPrazoRecurso args,
-        Guid produtoAncoraId,
-        ProcedimentosDeRecurso procedimentos)
-    {
-        ArgumentNullException.ThrowIfNull(regra);
-        ArgumentNullException.ThrowIfNull(args);
-        ArgumentNullException.ThrowIfNull(procedimentos);
-
-        Ancora = ancora;
-        Regra = regra;
-        Args = args;
-        ProdutoAncoraId = produtoAncoraId;
-        Procedimentos = procedimentos;
     }
 
     internal void VincularEtapa(Guid etapaProcessoId) => EtapaProcessoId = etapaProcessoId;

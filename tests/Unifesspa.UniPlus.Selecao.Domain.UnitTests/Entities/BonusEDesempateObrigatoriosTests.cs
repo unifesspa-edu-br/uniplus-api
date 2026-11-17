@@ -1,8 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 
-using System.Text;
-using System.Text.Json.Nodes;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Kernel.Results;
@@ -21,11 +18,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// </summary>
 public sealed class BonusEDesempateObrigatoriosTests
 {
-    private static readonly string HashFixo = string.Concat(Enumerable.Repeat("ab01234567", 7))[..64];
-    private static readonly byte[] BytesCanonicos = Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString());
-    private static readonly DateTimeOffset Agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
-
-    private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
+    private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
         .Where(static i => !i.Ok)
         .Select(static i => i.Codigo);
 
@@ -40,7 +33,7 @@ public sealed class BonusEDesempateObrigatoriosTests
         Vermelhos(processo).Should().Equal("bonus_regional_nao_declarado");
         Vermelhos(processo).Should().NotContain("criterios_desempate_ausentes");
 
-        processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: false, bonus: null).IsSuccess.Should().BeTrue();
 
         Vermelhos(processo).Should().BeEmpty();
         processo.AplicaBonusRegional.Should().BeFalse();
@@ -51,13 +44,13 @@ public sealed class BonusEDesempateObrigatoriosTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(declararBonus: false);
 
-        processo.DefinirBonusRegional(aplica: true, bonus: null, PrecondicaoIfMatch.Ausente)
+        processo.DefinirBonusRegional(aplica: true, bonus: null)
             .Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao);
-        processo.DefinirBonusRegional(aplica: false, bonus: Bonus(), PrecondicaoIfMatch.Ausente)
+        processo.DefinirBonusRegional(aplica: false, bonus: Bonus())
             .Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao);
         processo.AplicaBonusRegional.Should().BeNull("a recusa não declara nada");
 
-        processo.DefinirBonusRegional(aplica: true, Bonus(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: true, Bonus()).IsSuccess.Should().BeTrue();
         Vermelhos(processo).Should().BeEmpty();
     }
 
@@ -65,48 +58,12 @@ public sealed class BonusEDesempateObrigatoriosTests
     public void NaoAplica_RemoveAConfiguracaoAnterior()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(declararBonus: false);
-        processo.DefinirBonusRegional(aplica: true, Bonus(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: true, Bonus()).IsSuccess.Should().BeTrue();
 
-        processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: false, bonus: null).IsSuccess.Should().BeTrue();
 
         processo.BonusRegional.Should().BeNull();
         processo.AplicaBonusRegional.Should().BeFalse();
-    }
-
-    private static ProcessoSeletivo ProcessoPublicadoAntesDaDeclaracaoComSessaoAberta(out VersaoConfiguracao versao)
-    {
-        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        versao = processo.Publicar(
-            new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado(BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora) }).Value!;
-        // O estado de quem foi publicado antes de a declaração existir: a coluna volta nula.
-        typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.AplicaBonusRegional))!.SetValue(processo, null);
-        processo.AbrirRetificacao(
-            "Declara o bônus", versao, processo.IdentificadorLegivel, VersoesPublicadasDeTeste.SoAVigente(processo),
-            "user-conta-1", Agora).IsSuccess.Should().BeTrue("abrir a sessão não exige a declaração");
-
-        return processo;
-    }
-
-    [Fact(DisplayName = "Processo publicado antes da exigência declara o bônus dentro da sessão de retificação, e só então fecha")]
-    public void PublicadoSemDeclaracao_DeclaraNaSessaoEFecha()
-    {
-        ProcessoSeletivo processo = ProcessoPublicadoAntesDaDeclaracaoComSessaoAberta(out VersaoConfiguracao versao);
-
-        Result<VersaoConfiguracao> semDeclarar = FecharSessao(processo, versao);
-        semDeclarar.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
-
-        processo.DefinirBonusRegional(
-            aplica: false, bonus: null, PrecondicaoIfMatch.DeTags([processo.ETagDaSessaoEditorial!])).IsSuccess.Should().BeTrue();
-        FecharSessao(processo, versao).IsSuccess.Should().BeTrue();
-    }
-
-    private static Result<VersaoConfiguracao> FecharSessao(ProcessoSeletivo processo, VersaoConfiguracao versao) =>
-        processo.FecharRetificacao(
-            new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado(BytesCanonicos, "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "user-conta-1", Relogio = new RelogioFixo(Agora.AddMinutes(1)) }, versao, PrecondicaoIfMatch.Curinga);
-
-    private sealed class RelogioFixo(DateTimeOffset instante) : TimeProvider
-    {
-        public override DateTimeOffset GetUtcNow() => instante;
     }
 
     [Fact(DisplayName = "Bônus gravado antes da declaração (configuração sem declaração) volta como por declarar")]

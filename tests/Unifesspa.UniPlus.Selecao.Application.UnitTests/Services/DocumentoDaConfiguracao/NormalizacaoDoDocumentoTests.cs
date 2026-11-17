@@ -91,13 +91,44 @@ public sealed class NormalizacaoDoDocumentoTests
         documento["etapas"]!.AsArray().Select(static parte => parte?.ToJsonString()).Should().Equal("\"texto\"", "5", null, "{}");
     }
 
-    [Fact(DisplayName = "A chave repetida é apontada nas duas partes, no ponteiro da chave")]
-    public void ChaveRepetida_ApontaAsDuasPartes()
+    [Fact(DisplayName = "A chave repetida em duas partes é apontada só na posterior, no ponteiro da chave")]
+    public void ChaveRepetidaEmDuasPartes_ApontaSoAPosterior()
     {
         _ = Normalizar("""{ "etapas": [ { "chave": "a" }, { "chave": "b" }, { "chave": "a" } ] }""", out IReadOnlyList<FieldError> repetidas);
 
-        repetidas.Select(static causa => causa.Field).Should().Equal("/etapas/0/chave", "/etapas/2/chave");
+        repetidas.Select(static causa => causa.Field).Should().Equal("/etapas/2/chave");
         repetidas.Should().OnlyContain(static causa => causa.Error.Code == DocumentoDaConfiguracaoErrorCodes.ChaveRepetida);
+    }
+
+    [Fact(DisplayName = "A chave repetida em três partes é apontada na segunda e na terceira, nunca na primeira")]
+    public void ChaveRepetidaEmTresPartes_ApontaAsPosteriores()
+    {
+        _ = Normalizar("""{ "etapas": [ { "chave": "a" }, { "chave": "a" }, { "chave": "b" }, { "chave": "a" } ] }""", out IReadOnlyList<FieldError> repetidas);
+
+        repetidas.Select(static causa => causa.Field).Should().Equal("/etapas/1/chave", "/etapas/3/chave");
+    }
+
+    [Fact(DisplayName = "Cada chave repetida tem a primeira parte por dona, e as posteriores são apontadas pela posição na lista enviada")]
+    public void ChavesRepetidasDistintas_CadaUmaTemADona()
+    {
+        _ = Normalizar("""{ "etapas": [ { "chave": "b" }, { "chave": "a" }, { "chave": "b" }, { "chave": "a" } ] }""", out IReadOnlyList<FieldError> repetidas);
+
+        repetidas.Select(static causa => causa.Field).Should().BeEquivalentTo(["/etapas/2/chave", "/etapas/3/chave"]);
+    }
+
+    [Fact(DisplayName = "O ponteiro da chave repetida escapa a barra e o til do nome da lista")]
+    public void ChaveRepetida_PonteiroEscapaBarraETil()
+    {
+        FormaDoNo forma = FormaDeTeste.Objeto(new()
+        {
+            ["a/b~c"] = FormaDeTeste.Lista(FormaDeTeste.Objeto(new() { ["chave"] = FormaDeTeste.Valor() }, new ParteComChave("parte", EscopoDaChave.Documento))),
+        });
+        JsonObject documento = JsonNode.Parse("""{ "a/b~c": [ { "chave": "x" }, { "chave": "x" } ] }""")!.AsObject();
+
+        IReadOnlyList<FieldError> repetidas = new NormalizacaoDoDocumento(forma).Normalizar(documento);
+
+        repetidas.Select(static causa => causa.Field).Should().Equal("/a~1b~0c/1/chave");
+        PonteiroJson.Resolver(documento, repetidas[0].Field!)!.GetValue<string>().Should().Be("x");
     }
 
     [Fact(DisplayName = "A mesma chave em tipos diferentes, ou no item de etapas diferentes, não se repete")]
@@ -113,12 +144,12 @@ public sealed class NormalizacaoDoDocumentoTests
         repetidas.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "O item repetido dentro da mesma etapa é apontado")]
+    [Fact(DisplayName = "O item repetido dentro da mesma etapa é apontado na posição posterior")]
     public void ItemRepetidoNaMesmaEtapa_EApontado()
     {
         _ = Normalizar("""{ "etapas": [ { "itens": [ { "chave": "q" }, { "chave": "q" } ] } ] }""", out IReadOnlyList<FieldError> repetidas);
 
-        repetidas.Select(static causa => causa.Field).Should().Equal("/etapas/0/itens/0/chave", "/etapas/0/itens/1/chave");
+        repetidas.Select(static causa => causa.Field).Should().Equal("/etapas/0/itens/1/chave");
     }
 
     [Fact(DisplayName = "A chave que não é texto não entra na conferência de repetição")]

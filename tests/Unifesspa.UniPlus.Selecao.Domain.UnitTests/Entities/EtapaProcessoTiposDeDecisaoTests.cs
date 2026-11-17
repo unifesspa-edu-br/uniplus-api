@@ -124,38 +124,6 @@ public sealed class EtapaProcessoTiposDeDecisaoTests
         etapa.TiposDeDecisao.Should().Equal(Classificacao);
     }
 
-    [Fact(DisplayName = "Repor a etapa copia os tipos da etapa de origem, trocando a declaração anterior")]
-    public void ReporDe_EtapaComTipos_SubstituiADeclaracao()
-    {
-        EtapaProcesso viva = EtapaCom(Classificacao);
-
-        viva.ReporDe(EtapaCom(Isencao, Heteroidentificacao));
-
-        viva.TiposDeDecisao.Should().Equal(Heteroidentificacao, Isencao);
-    }
-
-    [Fact(DisplayName = "Repor a etapa copia: mudar a origem depois não muda a etapa reposta")]
-    public void ReporDe_OrigemAlteradaDepois_NaoMudaAEtapaReposta()
-    {
-        EtapaProcesso viva = Etapa();
-        EtapaProcesso origem = EtapaCom(Isencao);
-        viva.ReporDe(origem);
-
-        origem.DefinirTiposDeDecisao([Heteroidentificacao]);
-
-        viva.TiposDeDecisao.Should().Equal(Isencao);
-    }
-
-    [Fact(DisplayName = "Reposição a partir de etapa congelada sem tipos ainda não preserva os tipos de decisão declarados")]
-    public void Reposicao_AindaNaoPreservaOsTiposDeDecisaoDeclarados()
-    {
-        EtapaProcesso viva = EtapaCom(Classificacao, Isencao);
-
-        viva.ReporDe(Congelada());
-
-        viva.TiposDeDecisao.Should().BeEmpty();
-    }
-
     [Fact(DisplayName = "Fase e etapa podem declarar o mesmo tipo, cada uma com o que é seu")]
     public void MesmoTipoNaFaseENaEtapa_EAceito()
     {

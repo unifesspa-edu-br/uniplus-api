@@ -23,8 +23,7 @@ public sealed class AvaliadorDesempateDeveIncluirTests
         ProcessoSeletivo processo = NovoProcesso();
         ReferenciaRegra regraDesempate = ReferenciaRegra.De("DESEMPATE-IDOSO", "v1", new string('b', 64));
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, regraDesempate, new ArgsDesempateIdoso(IdadeMinima: 60)).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [CriterioDesempate.Criar(1, regraDesempate, new ArgsDesempateIdoso(IdadeMinima: 60)).Value!]).IsSuccess.Should().BeTrue();
 
         RegraAvaliada avaliada = Avaliar(processo, NovaRegra("DESEMPATE", new DesempateDeveIncluir("DESEMPATE-IDOSO")));
 

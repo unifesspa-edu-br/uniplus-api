@@ -106,10 +106,10 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
             "a cópia vale como estava na publicação: mudar o cadastro depois não muda o processo");
     }
 
-    [Fact(DisplayName = "Depois da publicação, sem retificação, o processo não retira nem inclui motivo")]
-    public async Task Publicado_SemRetificacao_Recusa()
+    [Fact(DisplayName = "Depois da publicação o processo não retira nem inclui motivo")]
+    public async Task Publicado_Recusa()
     {
-        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicado_SemRetificacao_Recusa));
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicado_Recusa));
         MotivoDeDecisao publicado = await SemearMotivoAsync();
         MotivoDeDecisao novo = await SemearMotivoAsync();
         using HttpClient client = Cliente();
@@ -122,6 +122,22 @@ public sealed class MotivosDoProcessoEndpointTests : IAsyncLifetime
         retirada.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         inclusao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
         (await ListarAsync(client, processoId)).Should().ContainSingle();
+    }
+
+    [Fact(DisplayName = "Depois da publicação, incluir motivo que o cadastro não tem e retirar o que o processo não escolheu devolvem o bloqueio da publicação")]
+    public async Task Publicado_MotivoAusente_DevolveOBloqueioEmVezDoNaoEncontrado()
+    {
+        (Guid processoId, Guid documentoId) = await SemearProcessoAsync(nameof(Publicado_MotivoAusente_DevolveOBloqueioEmVezDoNaoEncontrado));
+        using HttpClient client = Cliente();
+        (await PublicarAsync(client, processoId, documentoId)).StatusCode.Should().Be(HttpStatusCode.NoContent);
+
+        using HttpResponseMessage inclusao = await IncluirAsync(client, processoId, Guid.CreateVersion7());
+        using HttpResponseMessage retirada = await RetirarAsync(client, processoId, Guid.CreateVersion7());
+
+        inclusao.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await CodigoDoErro(inclusao)).Should().Be("uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada");
+        retirada.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity);
+        (await CodigoDoErro(retirada)).Should().Be("uniplus.selecao.processo_seletivo.mutacao_pos_publicacao_bloqueada");
     }
 
     private async Task<MotivoDeDecisao> EscolherEDesativarAsync(HttpClient client, Guid processoId)

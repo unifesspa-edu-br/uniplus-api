@@ -158,5 +158,4 @@ public sealed record ProdutoDaEtapaInput(string AtoCodigo, string? Papel);
 /// </summary>
 public sealed record DefinirEtapasCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<EtapaProcessoInput> Etapas,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    IReadOnlyList<EtapaProcessoInput> Etapas) : ICommand<Result>;

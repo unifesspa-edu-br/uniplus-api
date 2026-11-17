@@ -22,11 +22,11 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
         ProcessoSeletivo processo = NovoProcesso();
         ConfiguracaoBonusRegional bonus = ConfiguracaoBonusRegional.Criar(ReferenciaRegra.De(RegraBonusCodigo.Multiplicativo, "v1", new string('a', 64)), 1.20m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!;
 
-        processo.DefinirBonusRegional(aplica: true, bonus: bonus, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: true, bonus: bonus).IsSuccess.Should().BeTrue();
         processo.BonusRegional.Should().NotBeNull();
         processo.BonusRegional!.ProcessoSeletivoId.Should().Be(processo.Id);
 
-        processo.DefinirBonusRegional(aplica: false, bonus: null, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirBonusRegional(aplica: false, bonus: null).IsSuccess.Should().BeTrue();
         processo.BonusRegional.Should().BeNull();
     }
 
@@ -37,7 +37,7 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
         CriterioDesempate idoso = CriterioIdoso(1);
         CriterioDesempate maiorIdade = CriterioMaiorIdade(2);
 
-        Result result = processo.DefinirCriteriosDesempate([idoso, maiorIdade], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirCriteriosDesempate([idoso, maiorIdade]);
 
         result.IsSuccess.Should().BeTrue();
         processo.CriteriosDesempate.Should().HaveCount(2);
@@ -48,9 +48,9 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
     public void DefinirCriteriosDesempate_Vazia_RemoveTodos()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCriteriosDesempate([CriterioMaiorIdade(1)], PrecondicaoIfMatch.Ausente);
+        processo.DefinirCriteriosDesempate([CriterioMaiorIdade(1)]);
 
-        Result result = processo.DefinirCriteriosDesempate([], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirCriteriosDesempate([]);
 
         result.IsSuccess.Should().BeTrue();
         processo.CriteriosDesempate.Should().BeEmpty();
@@ -63,7 +63,7 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
         CriterioDesempate a = CriterioMaiorIdade(1);
         CriterioDesempate b = CriterioIdoso(1);
 
-        Result result = processo.DefinirCriteriosDesempate([a, b], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirCriteriosDesempate([a, b]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.OrdemDesempateDuplicada");
@@ -74,9 +74,9 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         EtapaProcesso etapa = EtapaDeProva("Redação", CaraterEtapa.Classificatoria, 1, 1m, null);
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([etapa]);
 
-        Result result = processo.DefinirCriteriosDesempate([CriterioDeMaiorNotaDaEtapa(etapa.Id)], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirCriteriosDesempate([CriterioDeMaiorNotaDaEtapa(etapa.Id)]);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -85,9 +85,9 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
     public void DefinirCriteriosDesempate_EtapaRefInexistente_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirEtapas([EtapaDeProva("Redação", CaraterEtapa.Classificatoria, 1, 1m, null)], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([EtapaDeProva("Redação", CaraterEtapa.Classificatoria, 1, 1m, null)]);
 
-        Result result = processo.DefinirCriteriosDesempate([CriterioDeMaiorNotaDaEtapa(Guid.CreateVersion7())], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirCriteriosDesempate([CriterioDeMaiorNotaDaEtapa(Guid.CreateVersion7())]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaRefDesempateInexistente");
@@ -100,7 +100,7 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
 
         // Troca as etapas por uma completamente nova — a antiga, referenciada pelo desempate, desaparece.
         Result result = processo.DefinirEtapas(
-            [EtapaDeProva("Prova Objetiva", CaraterEtapa.Classificatoria, 1, 1m, null)], PrecondicaoIfMatch.Ausente);
+            [EtapaDeProva("Prova Objetiva", CaraterEtapa.Classificatoria, 1, 1m, null)]);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorDesempate");
@@ -117,7 +117,7 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
         [
             redacao,
             EtapaDeProva("Prova Objetiva", CaraterEtapa.Classificatoria, 2, 2m, null),
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
 
         result.IsSuccess.Should().BeTrue();
     }
@@ -126,8 +126,8 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         redacao = EtapaDeProva("Redação", CaraterEtapa.Classificatoria, 1, 1m, null);
-        processo.DefinirEtapas([redacao], PrecondicaoIfMatch.Ausente);
-        processo.DefinirCriteriosDesempate([CriterioDeMaiorNotaDaEtapa(redacao.Id)], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([redacao]);
+        processo.DefinirCriteriosDesempate([CriterioDeMaiorNotaDaEtapa(redacao.Id)]);
         return processo;
     }
 

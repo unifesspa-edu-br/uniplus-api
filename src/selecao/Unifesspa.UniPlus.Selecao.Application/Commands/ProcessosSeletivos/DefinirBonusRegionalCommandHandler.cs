@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </remarks>
 public static class DefinirBonusRegionalCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirBonusRegionalCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
@@ -44,27 +44,15 @@ public static class DefinirBonusRegionalCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // A precondição é conferida AQUI, logo depois do 404 e antes das regras de negócio
-        // que este handler avalia (existência de cadastros, coerência de referências): ela
-        // as precede na ordem da ADR-0110 D9. Um cliente com If-Match defasado tem de saber
-        // disso antes de sair caçando um cadastro que ele não errou.
-        //
-        // O que ela NÃO precede é a validação de SCHEMA do payload: o FluentValidation roda
-        // como middleware do Wolverine, antes deste handler, e um command malformado morre
-        // ali com 422 sem que o guard chegue a rodar. É desvio consciente da D9 — corrigi-lo
-        // exigiria carregar o agregado no middleware, o que é pior. O custo é uma rodada
-        // extra para quem erra as DUAS coisas ao mesmo tempo; nenhum estado é corrompido.
-        //
-        // O mesmo guard continua dentro do Definir* do domínio: esta antecipação dá a ordem,
-        // não a garantia.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa vem antes de consultar cadastros.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         return command.Aplica
@@ -73,7 +61,7 @@ public static class DefinirBonusRegionalCommandHandler
             : await NaoAplicarAsync(command, processo, unitOfWork, cancellationToken).ConfigureAwait(false);
     }
 
-    private static async Task<Result<MutacaoAceita>> NaoAplicarAsync(
+    private static async Task<Result> NaoAplicarAsync(
         DefinirBonusRegionalCommand command,
         ProcessoSeletivo processo,
         IUnitOfWork unitOfWork,
@@ -84,22 +72,22 @@ public static class DefinirBonusRegionalCommandHandler
         if (command.RegraCodigo is not null || command.RegraVersao is not null || command.Fator is not null
             || command.Teto is not null || command.FatoElegibilidadeCodigo is not null || command.BaseLegalBonusRegionalId is not null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 ProcessoSeletivoErrorCodes.BonusRegionalNaoAplicaComConfiguracao,
                 "O processo que não aplica o bônus regional não pode ter a configuração do bônus."));
         }
 
-        Result naoAplicaResult = processo.DefinirBonusRegional(aplica: false, bonus: null, command.Precondicao);
+        Result naoAplicaResult = processo.DefinirBonusRegional(aplica: false, bonus: null);
         if (naoAplicaResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(naoAplicaResult.Error!);
+            return Result.Failure(naoAplicaResult.Error!);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 
-    private static async Task<Result<MutacaoAceita>> AplicarAsync(
+    private static async Task<Result> AplicarAsync(
         DefinirBonusRegionalCommand command,
         ProcessoSeletivo processo,
         IRegraCatalogoReader regraCatalogoReader,
@@ -109,14 +97,14 @@ public static class DefinirBonusRegionalCommandHandler
     {
         if (command.RegraCodigo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 ProcessoSeletivoErrorCodes.BonusRegionalAplicaSemConfiguracao,
                 "O processo que aplica o bônus regional precisa da configuração do bônus."));
         }
 
         if (command.RegraVersao is null || command.Fator is null || command.BaseLegalBonusRegionalId is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ConfiguracaoBonusRegional.CamposObrigatorios",
                 "RegraVersao, Fator e BaseLegalBonusRegionalId são obrigatórios quando RegraCodigo é informado."));
         }
@@ -126,14 +114,14 @@ public static class DefinirBonusRegionalCommandHandler
             .ConfigureAwait(false);
         if (regra is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ConfiguracaoBonusRegional.RegraNaoEncontrada",
                 $"Regra de bônus {command.RegraCodigo}/{command.RegraVersao} não encontrada no catálogo de regras."));
         }
 
         if (regra.Tipo != TipoRegra.RegraBonus)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ConfiguracaoBonusRegional.RegraTipoInvalido",
                 $"A regra {command.RegraCodigo}/{command.RegraVersao} não é do tipo regra_bonus."));
         }
@@ -146,7 +134,7 @@ public static class DefinirBonusRegionalCommandHandler
             .ConfigureAwait(false);
         if (baseLegal is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ConfiguracaoBonusRegional.BaseLegalNaoEncontrada",
                 $"Base legal de bônus regional {command.BaseLegalBonusRegionalId} não encontrada ou desativada."));
         }
@@ -159,18 +147,18 @@ public static class DefinirBonusRegionalCommandHandler
             Congelar(baseLegal));
         if (bonusResult.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(bonusResult.Errors);
+            return Result.ValidationFailure(bonusResult.Errors);
         }
 
-        Result definirResult = processo.DefinirBonusRegional(aplica: true, bonusResult.Value!, command.Precondicao);
+        Result definirResult = processo.DefinirBonusRegional(aplica: true, bonusResult.Value!);
         if (definirResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(definirResult.Error!);
+            return Result.Failure(definirResult.Error!);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 
     private static BaseLegalCongelada Congelar(BaseLegalBonusRegionalView baseLegal) =>

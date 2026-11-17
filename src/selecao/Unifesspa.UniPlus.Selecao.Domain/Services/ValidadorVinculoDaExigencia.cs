@@ -29,8 +29,8 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// próprio — o envelope canônico do certame publicado — que monta o mesmo grafo sem passar
 /// pela escrita. Guarda que roda num caminho só é guarda que o outro caminho não tem: uma
 /// exigência apontando para fase ou etapa inexistente atravessaria a leitura e morreria na
-/// chave estrangeira, como erro não tratado no meio de um descarte de retificação; a que
-/// aponta para etapa de outra fase nem isso — persiste, e o certame restaurado passa a
+/// chave estrangeira, como erro não tratado no meio de uma retificação; a que
+/// aponta para etapa de outra fase nem isso — persiste, e o certame reidratado passa a
 /// coletar o documento num dia que o cronograma não prevê.
 /// </para>
 /// </remarks>

@@ -99,7 +99,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerClassificacaoTests
             EscalaNotaFinal = 100m,
         }).Value!;
 
-        Result resultado = processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirClassificacao(classificacao);
         resultado.IsSuccess.Should().BeTrue();
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();

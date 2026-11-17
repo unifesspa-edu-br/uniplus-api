@@ -5,7 +5,6 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
@@ -18,7 +17,7 @@ public sealed class OrdemDasRecusasDoDesempateTests
     [Fact(DisplayName = "A ordem repetida do critério 1 vem antes da etapa inexistente do critério 0: a família vem antes da posição")]
     public void ConferirCriteriosDesempate_OrdemRepetidaEEtapaInexistente_SaiPorFamilia()
     {
-        EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(ApoioProcessoSeletivoRestaurarConfiguracao.ProcessoConforme(TiposDeProcessoDeTeste.SiSU));
+        ConfiguracaoDeclarada configuracao = ProcessoConformeFactory.Criar().Declaracao();
         Guid etapaInexistente = Guid.CreateVersion7();
         CriterioDesempateInformado[] criterios =
         [
@@ -26,7 +25,7 @@ public sealed class OrdemDasRecusasDoDesempateTests
             new(2, new ArgsDesempateMaiorIdade()),
         ];
 
-        List<FieldError> recusas = RegrasDoDesempate.ConferirCriteriosDesempate(estado, criterios);
+        List<FieldError> recusas = RegrasDoDesempate.ConferirCriteriosDesempate(configuracao, criterios);
 
         recusas.Select(static recusa => (recusa.Field, recusa.Error.Code)).Should().Equal(
             ("criterios[1].ordem", "ProcessoSeletivo.OrdemDesempateDuplicada"),

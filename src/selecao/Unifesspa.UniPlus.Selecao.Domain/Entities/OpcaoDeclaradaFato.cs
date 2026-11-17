@@ -69,11 +69,4 @@ public sealed class OpcaoDeclaradaFato : EntityBase, IParteDoProcesso
     }
 
     void IParteDoProcesso.VincularProcesso(Guid processoSeletivoId) => ProcessoSeletivoId = processoSeletivoId;
-
-    /// <summary>Repõe o rótulo e a ordem congelados na restauração de uma versão publicada.</summary>
-    internal void ReporConteudo(string rotulo, int ordem)
-    {
-        Rotulo = rotulo;
-        Ordem = ordem;
-    }
 }

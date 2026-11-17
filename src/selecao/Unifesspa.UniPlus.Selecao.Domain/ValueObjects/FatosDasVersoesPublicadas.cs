@@ -16,12 +16,12 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 /// grupo repetível depende do fato de membro.
 /// </para>
 /// <para>
-/// A versão base é a última, a vigente quando a sessão abre. A inscrição guarda dela também o papel
+/// A versão base é a última, a vigente quando a retificação parte. A inscrição guarda dela também o papel
 /// de cada fato, item ou campo de qual grupo, que a retificação não muda.
 /// </para>
 /// <para>
 /// As regras de derivação das versões não entram: o derivado usado por uma finalidade é calculado
-/// pela versão dela, a da sessão; o que varia entre as versões é só quais fatos a finalidade
+/// pela versão dela, a da retificação; o que varia entre as versões é só quais fatos a finalidade
 /// anterior coletou.
 /// </para>
 /// </remarks>
@@ -171,7 +171,7 @@ public sealed class FatosDasVersoesPublicadas
             operacoes);
     }
 
-    /// <summary>Repõe o que foi lido na abertura, como a persistência o guardou.</summary>
+    /// <summary>Reconstitui o que foi lido das versões publicadas, como foi guardado.</summary>
     public static FatosDasVersoesPublicadas Reconstituir(
         IReadOnlyDictionary<FinalidadeFormulario, IReadOnlyCollection<string>> garantidos,
         IReadOnlyCollection<string> itensDaInscricaoNaBase,
@@ -250,48 +250,7 @@ public sealed class FatosDasVersoesPublicadas
     }
 
     /// <summary>
-    /// O primeiro item ou campo de grupo dado que um candidato pode já ter respondido e cujo eixo
-    /// difere do que alguma versão publicada congelou.
-    /// </summary>
-    public TrocaDeEixo? PrimeiroItemComEixoTrocado(IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos) =>
-        ItensComEixoTrocado(itens, grupos) is [{ } primeira, ..] ? primeira : null;
-
-    /// <summary>
-    /// Cada item ou campo de grupo dado que um candidato pode já ter respondido e cujo eixo difere do que alguma versão
-    /// publicada congelou, na ordem de entrada, uma troca por item. O que o item guarda é a cópia tirada do catálogo
-    /// quando ele foi definido, então só o item regravado pode trocar de eixo; a descrição, a orientação e a ordem de um
-    /// valor não são eixo.
-    /// </summary>
-    public IReadOnlyList<TrocaDeEixo> ItensComEixoTrocado(IEnumerable<FatoColetado> itens, IEnumerable<GrupoColetado> grupos)
-    {
-        ArgumentNullException.ThrowIfNull(itens);
-        ArgumentNullException.ThrowIfNull(grupos);
-
-        return [.. itens.Concat(grupos.SelectMany(static g => g.Subitens)).Select(TrocaDoItem).OfType<TrocaDeEixo>()];
-    }
-
-    private TrocaDeEixo? TrocaDoItem(FatoColetado item)
-    {
-        if (!_eixosDosItens.TryGetValue(item.FatoCodigo, out HashSet<EixosDoItemCongelado>? publicados))
-        {
-            return null;
-        }
-
-        EixosDoItemCongelado novo = EixosDoItemCongelado.De(item);
-
-        return publicados.Select(publicado => TrocaDeEixo.Primeira(item.FatoCodigo, publicado.Eixos(), novo.Eixos())).OfType<TrocaDeEixo>().FirstOrDefault();
-    }
-
-    /// <summary>
-    /// O primeiro fato já coletado cujo metadado, ou o agregado cuja operação, a sessão congelaria
-    /// diferente do que alguma versão publicada congelou.
-    /// </summary>
-    public TrocaDeEixo? PrimeiroEixoCongeladoTrocado(
-        IReadOnlyDictionary<string, EixosDoMetadadoCongelado> metadados, IReadOnlyDictionary<string, string> operacaoDosAgregados) =>
-        EixosCongeladosTrocados(metadados, operacaoDosAgregados) is [{ } primeira, ..] ? primeira : null;
-
-    /// <summary>
-    /// Cada fato já coletado cujo metadado, e cada agregado cuja operação, a sessão congelaria diferente do que alguma versão
+    /// Cada fato já coletado cujo metadado, e cada agregado cuja operação, a versão nova congelaria diferente do que alguma versão
     /// publicada congelou: primeiro os metadados e depois os agregados, cada grupo na ordem de entrada, uma troca por fato.
     /// Recebe o que a versão nova vai congelar, nunca o catálogo vivo: o fato que a versão nova não cita numa condição não é
     /// comparado.

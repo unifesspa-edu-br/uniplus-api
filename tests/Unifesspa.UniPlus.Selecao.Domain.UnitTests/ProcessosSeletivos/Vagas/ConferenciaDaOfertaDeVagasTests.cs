@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// O que vale entre as ofertas do processo, sem consultar o estado da configuração: o processo tem
+/// O que vale entre as ofertas do processo, sem consultar a configuração declarada: o processo tem
 /// ofertas, cada curso aparece uma vez, a mesma modalidade tem a mesma ação quando indeferida e a mesma
 /// regra de aplicabilidade em todas as ofertas, e o número de opções de curso cabe nas ofertas. Todas
 /// as recusas se acumulam (ADR-0125), nessa ordem.

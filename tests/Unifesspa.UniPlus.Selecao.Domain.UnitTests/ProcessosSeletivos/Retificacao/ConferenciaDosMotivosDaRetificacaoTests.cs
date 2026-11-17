@@ -47,7 +47,7 @@ public sealed class ConferenciaDosMotivosDaRetificacaoTests
         MotivoDoDocumento publicado = Motivo("ISENCAO_NAO_COMPROVOU");
 
         Recusas(ConferenciaDosMotivosDaRetificacao.Conferir([publicado], [], Andamento())).Should().Equal(
-            ("motivosDeDecisao[ISENCAO_NAO_COMPROVOU]", MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao));
+            ("motivos", MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao));
     }
 
     [Fact(DisplayName = "O motivo publicado mantido, com ou sem avaliação iniciada, não é recusado")]
@@ -70,8 +70,22 @@ public sealed class ConferenciaDosMotivosDaRetificacaoTests
         FasesIniciadas iniciadas = ComAAvaliacaoIniciadaNaFase(FaseDeIsencao);
 
         Recusas(ConferenciaDosMotivosDaRetificacao.Conferir([], [Motivo("NOVO"), Motivo("OUTRO")], Andamento(iniciadas))).Should().Equal(
-            ("motivosDeDecisao[NOVO]", MotivoDeDecisaoErrorCodes.JustificativaObrigatoria),
-            ("motivosDeDecisao[OUTRO]", MotivoDeDecisaoErrorCodes.JustificativaObrigatoria));
+            ("motivos[0].justificativaDaInclusao", MotivoDeDecisaoErrorCodes.JustificativaObrigatoria),
+            ("motivos[1].justificativaDaInclusao", MotivoDeDecisaoErrorCodes.JustificativaObrigatoria));
+    }
+
+    [Fact(DisplayName = "A justificativa com caractere nulo ou acima do tamanho é recusada pelo domínio")]
+    public void MotivoNovo_JustificativaInvalida_Recusa()
+    {
+        AndamentoDasFases andamento = Andamento();
+
+        Recusas(ConferenciaDosMotivosDaRetificacao.Conferir([], [Motivo("NULO", justificativa: "Norma\0nova")], andamento)).Should().Equal(
+            ("motivos[0].justificativaDaInclusao", MotivoDeDecisaoErrorCodes.JustificativaCaractereInvalido));
+        Recusas(ConferenciaDosMotivosDaRetificacao.Conferir(
+            [], [Motivo("LONGO", justificativa: new string('j', ConferenciaDosMotivosDaRetificacao.JustificativaMaxLength + 1))], andamento)).Should().Equal(
+            ("motivos[0].justificativaDaInclusao", MotivoDeDecisaoErrorCodes.JustificativaTamanho));
+        ConferenciaDosMotivosDaRetificacao.Conferir(
+            [], [Motivo("NO_LIMITE", justificativa: new string('j', ConferenciaDosMotivosDaRetificacao.JustificativaMaxLength))], andamento).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "O motivo novo na fase cuja avaliação começou é recusado; na fase em que ela não começou, entra")]
@@ -82,7 +96,7 @@ public sealed class ConferenciaDosMotivosDaRetificacaoTests
         AndamentoDasFases andamento = Andamento(ComAAvaliacaoIniciadaNaFase(FaseDeIsencao));
 
         Recusas(ConferenciaDosMotivosDaRetificacao.Conferir([], [naFaseIniciada], andamento)).Should().Equal(
-            ("motivosDeDecisao[NOVO]", MotivoDeDecisaoErrorCodes.AvaliacaoIniciada));
+            ("motivos[0]", MotivoDeDecisaoErrorCodes.AvaliacaoIniciada));
         ConferenciaDosMotivosDaRetificacao.Conferir([], [emOutraFase], andamento).Should().BeEmpty();
     }
 
@@ -94,7 +108,7 @@ public sealed class ConferenciaDosMotivosDaRetificacaoTests
         AndamentoDasFases andamento = Andamento(ComAEtapaIniciada(EtapaDeAnalise));
 
         Recusas(ConferenciaDosMotivosDaRetificacao.Conferir([], [naEtapaIniciada], andamento)).Should().Equal(
-            ("motivosDeDecisao[NOVO]", MotivoDeDecisaoErrorCodes.AvaliacaoIniciada));
+            ("motivos[0]", MotivoDeDecisaoErrorCodes.AvaliacaoIniciada));
         ConferenciaDosMotivosDaRetificacao.Conferir([], [naEtapaIrma], andamento).Should().BeEmpty();
     }
 
@@ -105,10 +119,10 @@ public sealed class ConferenciaDosMotivosDaRetificacaoTests
         MotivoDoDocumento a = Motivo("A_PUBLICADO");
 
         Recusas(ConferenciaDosMotivosDaRetificacao.Conferir([b, a], [Motivo("Z_NOVO"), ComoNovo(Motivo("M_NOVO"), null)], Andamento())).Should().Equal(
-            ("motivosDeDecisao[A_PUBLICADO]", MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao),
-            ("motivosDeDecisao[B_PUBLICADO]", MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao),
-            ("motivosDeDecisao[M_NOVO]", MotivoDeDecisaoErrorCodes.JustificativaObrigatoria),
-            ("motivosDeDecisao[Z_NOVO]", MotivoDeDecisaoErrorCodes.JustificativaObrigatoria));
+            ("motivos", MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao),
+            ("motivos", MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao),
+            ("motivos[1].justificativaDaInclusao", MotivoDeDecisaoErrorCodes.JustificativaObrigatoria),
+            ("motivos[0].justificativaDaInclusao", MotivoDeDecisaoErrorCodes.JustificativaObrigatoria));
     }
 
     [Fact(DisplayName = "O motivo se identifica pelo lugar e pela origem: a mesma origem no mesmo lugar com outro código e outra justificativa é o mesmo motivo")]
@@ -126,13 +140,13 @@ public sealed class ConferenciaDosMotivosDaRetificacaoTests
         MotivoDoDocumento movido = publicado with { Lugar = LugarDaDecisao.DaFase(OutraFase), Justificativa = Justificativa };
 
         Recusas(ConferenciaDosMotivosDaRetificacao.Conferir([publicado], [movido], Andamento())).Should().Equal(
-            ("motivosDeDecisao[ISENCAO_NAO_COMPROVOU]", MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao));
+            ("motivos", MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao));
     }
 
     [Fact(DisplayName = "Origens distintas com o mesmo código são motivos distintos: um sai e outro entra")]
     public void Identidade_MesmoCodigoOrigensDistintas()
     {
         Recusas(ConferenciaDosMotivosDaRetificacao.Conferir([Motivo("MESMO")], [Motivo("MESMO", justificativa: Justificativa)], Andamento())).Should().Equal(
-            ("motivosDeDecisao[MESMO]", MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao));
+            ("motivos", MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao));
     }
 }

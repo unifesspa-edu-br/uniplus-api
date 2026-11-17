@@ -30,13 +30,13 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null), PrecondicaoIfMatch.Ausente)
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null))
             .IsSuccess.Should().BeTrue();
-        processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")]).IsSuccess.Should().BeTrue();
 
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao("TEM_RENDA"), PrecondicaoIfMatch.Ausente)
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao("TEM_RENDA"))
             .IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao("RENDA_FORMAL"), PrecondicaoIfMatch.Ausente)
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao("RENDA_FORMAL"))
             .Errors.Should().ContainSingle().Which.Should().BeEquivalentTo(new
             {
                 Field = "etapas[2].exibicao",
@@ -49,12 +49,12 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null), PrecondicaoIfMatch.Ausente)
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null))
             .IsSuccess.Should().BeTrue();
-        processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")]).IsSuccess.Should().BeTrue();
         IReadOnlyList<EtapaFormulario> semOBlocoDeRevisao = [.. EtapasComExibicao("RENDA_FORMAL").Take(3)];
 
-        Result resultado = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, semOBlocoDeRevisao, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, semOBlocoDeRevisao);
 
         resultado.Errors.Select(static e => e.Field).Should().Contain("etapas[2].exibicao")
             .And.Contain(static campo => campo != "etapas[2].exibicao", "a estrutura recusada também é informada");
@@ -65,13 +65,13 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null), PrecondicaoIfMatch.Ausente)
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null))
             .IsSuccess.Should().BeTrue();
-        processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao("TEM_RENDA"), PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")]).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao("TEM_RENDA"))
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirItens([ItemNaSecao("RENDA_FORMAL", 0, "DADOS"), ItemNaSecao("TEM_RENDA", 1, "RENDA")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([ItemNaSecao("RENDA_FORMAL", 0, "DADOS"), ItemNaSecao("TEM_RENDA", 1, "RENDA")])
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
 
@@ -79,11 +79,11 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     public void Inscricao_NaoPerdeFatoCitadoPorSecaoDeOutraFinalidade()
     {
         ProcessoSeletivo processo = ComHabilitacao();
-        processo.DefinirItens([Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, EtapasComExibicao("TEM_RENDA"), PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.Habilitacao, null, null, EtapasComExibicao("TEM_RENDA"))
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirItens([Item("COR_RACA", 0)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([Item("COR_RACA", 0)])
             .Error!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoNaoConhecido);
     }
 
@@ -92,14 +92,14 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         Guid? fase = processo.FormularioDe(FinalidadeFormulario.Inscricao)!.FaseId;
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null), PrecondicaoIfMatch.Ausente)
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComExibicao(null))
             .IsSuccess.Should().BeTrue();
-        processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComSecaoCondicionada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([ItemNaSecao("TEM_RENDA", 0, "DADOS"), ItemNaSecao("RENDA_FORMAL", 1, "RENDA")]).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
+        processo.DefinirFormulario(FinalidadeFormulario.Inscricao, fase, null, EtapasComSecaoCondicionada()).IsSuccess.Should().BeTrue();
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
 
-        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("RENDA_FORMAL")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("RENDA_FORMAL")]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(GrafoFormularioErrorCodes.CitaFatoPosterior);
     }
@@ -108,7 +108,7 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     public void Publicacao_RegraDoFormularioCitaFaixaEtariaSemReferencia_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirItens([DataDeNascimento(Obrigatoriedade.Sempre), CitaFaixaEtaria(1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([DataDeNascimento(Obrigatoriedade.Sempre), CitaFaixaEtaria(1)])
             .IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be("ProcessoSeletivo.ReferenciaTemporalFatosAusente");
@@ -119,14 +119,14 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
         processo.DefinirReferenciaTemporalFatos(
-                ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 12, 31), null).Value!, PrecondicaoIfMatch.Curinga)
+                ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 12, 31), null).Value!)
             .IsSuccess.Should().BeTrue();
-        processo.DefinirItens([DataDeNascimento(Obrigatoriedade.Nunca), CitaFaixaEtaria(1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([DataDeNascimento(Obrigatoriedade.Nunca), CitaFaixaEtaria(1)])
             .IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
 
-        processo.DefinirItens([DataDeNascimento(Obrigatoriedade.Sempre), CitaFaixaEtaria(1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([DataDeNascimento(Obrigatoriedade.Sempre), CitaFaixaEtaria(1)])
             .IsSuccess.Should().BeTrue();
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
     }
@@ -135,12 +135,12 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
     public void Publicacao_CampoOpcionalQueAlimentaDerivacao_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirItens([Opcional("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([DerivadoQueDependeDe("TEM_RENDA")]).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([Opcional("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Code.Should().Be(ItemFormularioErrorCodes.OpcionalQueAlimentaRegra);
 
-        processo.DefinirItens([Item("TEM_RENDA", 0)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([Item("TEM_RENDA", 0)]).IsSuccess.Should().BeTrue();
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
     }
 
@@ -151,7 +151,7 @@ public sealed class ExibicaoCondicionalDosFormulariosTests
         processo.DefinirItens([
             Opcional("NACIONALIDADE_BR", 0),
             Opcional("COMPROVANTE", 1, CondicaoPrecondicaoFato.Criar(0, "NACIONALIDADE_BR", Operador.Diferente, JsonSerializer.SerializeToElement(true)).Value!),
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo)!.Message.Should().Contain("'NACIONALIDADE_BR'");
     }

@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cascata;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
@@ -19,50 +18,51 @@ internal static class CondicoesDaCanonicalizacao
 {
     private static readonly Conferencia[] Conferencias =
     [
-        new("documentosExigidos", static (estado, _) => PendenciasDasExigencias.PendenciaDasExigenciasDocumentais(estado)),
-        new("documentosExigidos", static (estado, _) => PendenciasDasExigencias.PendenciaDaFinalidadeDasExigencias(estado)),
-        new("documentosExigidos", static (estado, cadastros) => ProtecaoDasExigencias.PendenciaDoFatoComprovadoForaDoProcesso(estado, cadastros.Protecao)),
-        new("documentosExigidos", static (estado, cadastros) => ProtecaoDasExigencias.PendenciaDaProtecaoDasExigencias(estado, cadastros.Protecao)),
-        new("documentosExigidos", static (estado, cadastros) => ConsequenciaDeIndeferimento.PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(estado, cadastros.FatosDeModalidade)),
-        new("coleta", static (estado, _) => ReferenciaTemporalDosFatos.PendenciaDaReferenciaTemporalFatos(estado)),
-        new("distribuicaoVagas", static (estado, cadastros) => PendenciasDosFatos.PendenciaDasRegrasDasModalidades(estado, cadastros.FatosDeModalidade.MembroPorAgregado)),
-        new("coleta", static (estado, _) => PendenciasDosFatos.PendenciaDeFatosCitados(estado)),
-        new("formularios", static (estado, _) => CitacoesDosFormularios.PendenciaDeFatoAusenteDeVersaoPublicada(estado)),
-        new("formularios", static (estado, _) => PendenciasDosFatos.PendenciaDeCampoOpcionalQueAlimentaRegra(estado)),
-        new("documentosExigidos", static (estado, _) => PendenciasDasExigencias.PendenciaDaRepeticaoPorGrupo(estado)),
-        new("formularios", static (estado, _) => PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(estado.Campos, estado.Classificacao)),
-        new("formularios", static (estado, _) => PendenciasDosFatos.PendenciaDeFatoColetadoSemValoresOfertados(estado)),
-        new("bonusRegional", static (estado, _) => PendenciasDosFatos.PendenciaDeMunicipioDoBonusForaDaArea(estado)),
-        new("formularios", static (estado, _) => PendenciasDosFormularios.PendenciaDeTermoSemFormaDeAceite(estado)),
-        new("formularios", static (estado, _) => PendenciasDosFormularios.PendenciaDoFormularioDeInscricao(estado)),
-        new("formularios", static (estado, _) => PendenciasDosFormularios.PendenciaDoConjuntoBasico(estado)),
-        new("formularios", static (estado, _) => PendenciasDosFormularios.PendenciaDaEdicaoDoEnem(estado)),
-        new("formularios", static (estado, _) => PendenciasDosFormularios.PendenciaDaFaseDosFormularios(estado)),
-        new("formularios", static (estado, _) => PendenciasDosFormularios.PendenciaDaIsencaoSemTaxa(estado)),
-        new("formularios", static (estado, _) => PendenciasDosFormularios.PendenciaDosItensForaDeSecao(estado)),
-        new("formularios", static (estado, _) => PendenciasDosFormularios.PendenciaDosItensEmExcesso(estado)),
-        new("distribuicaoVagas", static (estado, _) => RegrasDaDistribuicaoDeVagas.RegraIncoerenteComANatureza(estado.DistribuicaoVagas)),
-        new("distribuicaoVagas", static (estado, _) => RegrasDaDistribuicaoDeVagas.RemanejamentoIncoerenteComANatureza(estado.DistribuicaoVagas)),
-        new("distribuicaoVagas", static (estado, _) => PendenciasDaDistribuicaoDeVagas.PendenciaDasCotasDaLeiEntreOfertas(estado)),
-        new("distribuicaoVagas", static (estado, _) => PendenciasDaDistribuicaoDeVagas.PendenciaDaReservaPcdSemCotaPcdDaLei(estado)),
-        new("distribuicaoVagas", static (estado, _) => ExclusividadeEntreCotaEAcaoAfirmativa.PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa(estado)),
-        new("coleta", static (estado, _) => PendenciasDosFatos.PendenciaDoGrafoConjunto(estado)),
-        new("classificacao", static (estado, _) => PendenciasDoDesempate.PendenciaDosCriteriosDesempate(estado)),
+        new("documentosExigidos", static (configuracao, _) => PendenciasDasExigencias.PendenciaDasExigenciasDocumentais(configuracao)),
+        new("documentosExigidos", static (configuracao, _) => PendenciasDasExigencias.PendenciaDaFinalidadeDasExigencias(configuracao)),
+        new("documentosExigidos", static (configuracao, cadastros) => ProtecaoDasExigencias.PendenciaDoFatoComprovadoForaDoProcesso(configuracao, cadastros.Protecao)),
+        new("documentosExigidos", static (configuracao, cadastros) => ProtecaoDasExigencias.PendenciaDaProtecaoDasExigencias(configuracao, cadastros.Protecao)),
+        new("documentosExigidos", static (configuracao, cadastros) => ConsequenciaDeIndeferimento.PendenciaDeCoerenciaDaConsequenciaDeIndeferimento(configuracao, cadastros.FatosDeModalidade)),
+        new("coleta", static (configuracao, _) => ReferenciaTemporalDosFatos.PendenciaDaReferenciaTemporalFatos(configuracao)),
+        new("distribuicaoVagas", static (configuracao, cadastros) => PendenciasDosFatos.PendenciaDasRegrasDasModalidades(configuracao, cadastros.FatosDeModalidade.MembroPorAgregado)),
+        new("coleta", static (configuracao, _) => PendenciasDosFatos.PendenciaDeFatosCitados(configuracao)),
+        new("formularios", static (configuracao, cadastros) => PendenciasDosFormularios.PendenciaDeFatoJaColetadoRemovido(configuracao, cadastros.FatosDasVersoesPublicadas)),
+        new("formularios", static (configuracao, cadastros) => CitacoesDosFormularios.PendenciaDeFatoAusenteDeVersaoPublicada(configuracao, cadastros.FatosDasVersoesPublicadas)),
+        new("formularios", static (configuracao, _) => PendenciasDosFatos.PendenciaDeCampoOpcionalQueAlimentaRegra(configuracao)),
+        new("documentosExigidos", static (configuracao, _) => PendenciasDasExigencias.PendenciaDaRepeticaoPorGrupo(configuracao)),
+        new("formularios", static (configuracao, _) => PendenciasDosFormularios.EdicaoDoEnemSemClassificacaoEnem(configuracao.Coleta.Campos, configuracao.Avaliacao.Classificacao)),
+        new("formularios", static (configuracao, _) => PendenciasDosFatos.PendenciaDeFatoColetadoSemValoresOfertados(configuracao)),
+        new("bonusRegional", static (configuracao, _) => PendenciasDosFatos.PendenciaDeMunicipioDoBonusForaDaArea(configuracao)),
+        new("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDeTermoSemFormaDeAceite(configuracao)),
+        new("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDoFormularioDeInscricao(configuracao)),
+        new("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDoConjuntoBasico(configuracao)),
+        new("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDaEdicaoDoEnem(configuracao)),
+        new("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDaFaseDosFormularios(configuracao)),
+        new("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDaIsencaoSemTaxa(configuracao)),
+        new("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDosItensForaDeSecao(configuracao)),
+        new("formularios", static (configuracao, _) => PendenciasDosFormularios.PendenciaDosItensEmExcesso(configuracao)),
+        new("distribuicaoVagas", static (configuracao, _) => RegrasDaDistribuicaoDeVagas.RegraIncoerenteComANatureza(configuracao.Vagas.DistribuicaoVagas)),
+        new("distribuicaoVagas", static (configuracao, _) => RegrasDaDistribuicaoDeVagas.RemanejamentoIncoerenteComANatureza(configuracao.Vagas.DistribuicaoVagas)),
+        new("distribuicaoVagas", static (configuracao, _) => PendenciasDaDistribuicaoDeVagas.PendenciaDasCotasDaLeiEntreOfertas(configuracao)),
+        new("distribuicaoVagas", static (configuracao, _) => PendenciasDaDistribuicaoDeVagas.PendenciaDaReservaPcdSemCotaPcdDaLei(configuracao)),
+        new("distribuicaoVagas", static (configuracao, _) => ExclusividadeEntreCotaEAcaoAfirmativa.PendenciaDaExclusividadeEntreCotaEAcaoAfirmativa(configuracao)),
+        new("coleta", static (configuracao, _) => PendenciasDosFatos.PendenciaDoGrafoConjunto(configuracao)),
+        new("classificacao", static (configuracao, _) => PendenciasDoDesempate.PendenciaDosCriteriosDesempate(configuracao)),
     ];
 
-    internal static IReadOnlyList<FieldError> Causas(EstadoDaConfiguracao estado, CadastrosDaConfiguracao cadastros)
+    internal static IReadOnlyList<FieldError> Causas(ConfiguracaoDeclarada configuracao, CadastrosDaConfiguracao cadastros)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
         ArgumentNullException.ThrowIfNull(cadastros);
 
         return
         [
             .. Conferencias
-                .Select(conferencia => (conferencia.Bloco, Pendencia: conferencia.Pendencia(estado, cadastros)))
+                .Select(conferencia => (conferencia.Bloco, Pendencia: conferencia.Pendencia(configuracao, cadastros)))
                 .Where(static par => par.Pendencia is not null)
                 .Select(static par => new FieldError(par.Bloco, par.Pendencia!)),
         ];
     }
 
-    private sealed record Conferencia(string Bloco, Func<EstadoDaConfiguracao, CadastrosDaConfiguracao, DomainError?> Pendencia);
+    private sealed record Conferencia(string Bloco, Func<ConfiguracaoDeclarada, CadastrosDaConfiguracao, DomainError?> Pendencia);
 }

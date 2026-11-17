@@ -427,7 +427,7 @@ public sealed class ObterFormularioRenderizavelQueryHandlerTests
     /// O teste central da issue #1089: a versão é aposentada, mas o JSON congelado tem a forma
     /// ATUAL e é válido — exatamente o cenário em que decidir pela forma (o que o handler fazia
     /// antes desta correção) mascara a recusa que o registro de codecs já dá em outras
-    /// superfícies (ex.: <c>AbrirRetificacaoCommandHandler</c>). Um envelope malformado não
+    /// superfícies (ex.: a leitura da base da retificação). Um envelope malformado não
     /// provaria nada aqui: o handler já o recusava antes, por <c>CertamePublicado.EnvelopeInesperado</c>.
     /// O que só esta correção resolve é a versão desconhecida com bytes que "passariam" no shape.
     /// </summary>

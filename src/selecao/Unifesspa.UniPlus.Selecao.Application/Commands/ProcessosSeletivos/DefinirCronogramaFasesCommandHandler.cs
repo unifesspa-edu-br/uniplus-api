@@ -11,13 +11,11 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// Handler do <see cref="DefinirCronogramaFasesCommand"/>: trava o processo para edição, delega a definição do
 /// cronograma (ver <see cref="DefinicaoDoCronogramaDeFases"/>) com o relógio injetado lido <b>uma vez</b> por
 /// operação (ADR-0068) e grava. A recusa do domínio sai como LOTE: a conclusão do ciclo recursal acumula uma
-/// violação por fase mal declarada, e reduzi-la a um <c>DomainError</c> apagaria os campos que localizam cada uma. A
-/// recusa descarta o rastreamento, porque o agregado já foi mutado em memória quando os motivos dos lugares que saem a
-/// provocam (ADR-0119).
+/// violação por fase mal declarada, e reduzi-la a um <c>DomainError</c> apagaria os campos que localizam cada uma.
 /// </summary>
 public static class DefinirCronogramaFasesCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirCronogramaFasesCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         DefinicaoDoCronogramaDeFases definicao,
@@ -33,11 +31,11 @@ public static class DefinirCronogramaFasesCommandHandler
 
         Result<ProcessoSeletivo> obtido = await ObterParaEdicaoAsync(processoSeletivoRepository, command, cancellationToken).ConfigureAwait(false);
         return obtido.IsFailure
-            ? Result<MutacaoAceita>.Failure(obtido.Error!)
+            ? Result.Failure(obtido.Error!)
             : await DefinirEGravarAsync(obtido.Value!, command, definicao, unitOfWork, timeProvider.GetUtcNow(), cancellationToken).ConfigureAwait(false);
     }
 
-    // A precondição precede a resolução de regras externas (ADR-0110).
+    // Fora do rascunho a recusa vem antes de resolver regras externas.
     private static async Task<Result<ProcessoSeletivo>> ObterParaEdicaoAsync(
         IProcessoSeletivoRepository repositorio, DefinirCronogramaFasesCommand command, CancellationToken cancellationToken)
     {
@@ -49,12 +47,12 @@ public static class DefinirCronogramaFasesCommandHandler
             return Result<ProcessoSeletivo>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
         }
 
-        return processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio
+        return processo.MutacaoBloqueada() is { } bloqueio
             ? Result<ProcessoSeletivo>.Failure(bloqueio)
             : Result<ProcessoSeletivo>.Success(processo);
     }
 
-    private static async Task<Result<MutacaoAceita>> DefinirEGravarAsync(
+    private static async Task<Result> DefinirEGravarAsync(
         ProcessoSeletivo processo,
         DefinirCronogramaFasesCommand command,
         DefinicaoDoCronogramaDeFases definicao,
@@ -65,11 +63,10 @@ public static class DefinirCronogramaFasesCommandHandler
         Result definida = await definicao.DefinirAsync(processo, command, agora, cancellationToken).ConfigureAwait(false);
         if (definida.IsFailure)
         {
-            unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<MutacaoAceita>.ValidationFailure(definida.Errors);
+            return Result.ValidationFailure(definida.Errors);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

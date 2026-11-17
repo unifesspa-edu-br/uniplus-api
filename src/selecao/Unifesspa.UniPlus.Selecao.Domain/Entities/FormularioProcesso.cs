@@ -103,16 +103,6 @@ public sealed class FormularioProcesso : EntityBase, IParteDoProcesso
         }
     }
 
-    /// <summary>Repõe o conteúdo congelado, inclusive o modelo de que o formulário partiu.</summary>
-    internal void Repor(FormularioProcesso congelado)
-    {
-        Substituir(congelado);
-        ModeloOrigemId = congelado.ModeloOrigemId;
-        ModeloOrigemCodigo = congelado.ModeloOrigemCodigo;
-    }
-
-    internal void RemapearFase(Guid faseId) => FaseId = faseId;
-
     /// <summary>Registra o modelo de que o conteúdo atual partiu; a cópia continua sendo a que vale.</summary>
     internal void RegistrarOrigem(Guid modeloId, string modeloCodigo)
     {
@@ -193,9 +183,6 @@ public sealed class EtapaFormulario : EntityBase
 
 public static class FormularioProcessoErrorCodes
 {
-    /// <summary>A aplicação de modelo substitui o formulário inteiro: sob retificação, não.</summary>
-    public const string AplicacaoDeModeloSoEmRascunho = "FormularioProcesso.AplicacaoDeModeloSoEmRascunho";
-
     /// <summary>Formulário publicado sem a fase em que é respondido.</summary>
     public const string SemFase = "ProcessoSeletivo.FormularioSemFase";
 
@@ -213,9 +200,6 @@ public static class FormularioProcessoErrorCodes
 
     /// <summary>Item ou termo para finalidade sem formulário.</summary>
     public const string FormularioInexistente = "FormularioProcesso.FormularioInexistente";
-
-    /// <summary>Remover formulário fora do rascunho: a retificação só acrescenta.</summary>
-    public const string RemocaoSoEmRascunho = "FormularioProcesso.RemocaoSoEmRascunho";
 
     /// <summary>Processo com inscrição própria publicado sem formulário de inscrição.</summary>
     public const string InscricaoSemFormulario = "ProcessoSeletivo.InscricaoSemFormulario";

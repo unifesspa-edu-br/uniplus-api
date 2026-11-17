@@ -49,7 +49,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     {
         ProcessoSeletivo processo = ProcessoVazio(nome);
         DefinirAtendimentoEspecializadoVazio(processo);
-        processo.DefinirDistribuicaoVagas([DistribuicaoDaModalidadeAmpla()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoDaModalidadeAmpla()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         DefinirClassificacaoImportadaEFaseDeResultadoFinal(processo, inicioDaFase);
 
         DefinirTaxaEFormularioDeInscricao(processo);
@@ -71,7 +71,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
 
     private static void DefinirAtendimentoEspecializadoVazio(ProcessoSeletivo processo) =>
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
     private static ModalidadeSelecionada ModalidadeAmplaDeTeste() => ModalidadeSelecionada.Criar(
         modalidadeOrigemId: Guid.CreateVersion7(),
@@ -106,13 +106,13 @@ internal static class ProcessoSeletivoPublicacaoSeeder
             RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
             RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
         }).Value!;
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
     }
 
     private static void DefinirFaseDeResultadoFinalComProvaObjetiva(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null)
     {
-        processo.DefinirCronogramaFases([FaseDeResultadoFinal(inicioDaFase)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([ProvaObjetivaDoResultadoFinal()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseDeResultadoFinal(inicioDaFase)], []).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([ProvaObjetivaDoResultadoFinal()]).IsSuccess.Should().BeTrue();
     }
 
     private static FaseCronograma FaseDeResultadoFinal(DateTimeOffset? inicioDaFase) => FaseCronograma.Criar(
@@ -138,7 +138,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         Result<ConfiguracaoTaxaInscricao> taxaResult = ConfiguracaoTaxaInscricao.Criar(
             cobra: false, valor: null, fundamentosCodigos: null);
         taxaResult.IsSuccess.Should().BeTrue(taxaResult.Error?.Message);
-        processo.DefinirTaxaInscricao(taxaResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTaxaInscricao(taxaResult.Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }
 
@@ -163,12 +163,12 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     {
         ProcessoSeletivo processo = ProcessoVazio(nome);
         DefinirAtendimentoEspecializadoVazio(processo);
-        processo.DefinirDistribuicaoVagas([OfertaFederalCompleta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([OfertaFederalCompleta()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
         DefinirClassificacaoImportadaEFaseDeResultadoFinal(processo);
 
         if (comCascata)
         {
-            processo.DefinirCascataRemanejamento(CascataLegalCompleta(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirCascataRemanejamento(CascataLegalCompleta()).IsSuccess.Should().BeTrue();
         }
 
         DefinirTaxaEFormularioDeInscricao(processo);

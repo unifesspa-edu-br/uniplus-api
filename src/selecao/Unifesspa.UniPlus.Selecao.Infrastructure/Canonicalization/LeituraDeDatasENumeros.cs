@@ -22,7 +22,7 @@ internal static class LeituraDeDatasENumeros
     /// (<c>NotEqual(default(DateOnly))</c>). <c>DadosEdital.Criar</c>, porém, só checa
     /// <c>fim &gt;= inicio</c> — e <c>0001-01-01</c> satisfaz isso. Como o encoder reemite a
     /// data tal qual, um envelope com o período zerado faria round-trip <b>perfeito</b> e
-    /// restauraria um certame cujo período de inscrição é impossível.
+    /// reidrataria um certame cujo período de inscrição é impossível.
     /// </remarks>
     public static DateOnly Data(this LeitorEnvelope leitor, JsonObject pai, string chave, string path)
     {

@@ -17,11 +17,11 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     public void DefinirClassificacao_SemEnemComDesempatePorArea_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoEnem(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO")]).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoEnem()).IsSuccess.Should().BeTrue();
         ConfiguracaoClassificacao anterior = processo.Classificacao!;
 
-        Result result = processo.DefinirClassificacao(ClassificacaoSemEnem(), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoSemEnem());
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.DesempateAreaEnemSemQuadro");
@@ -32,9 +32,9 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     public void DefinirClassificacao_SemEnemComDesempatePorArea_RecusaNoCampoBaseadoEmEnem()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO")]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirClassificacao(ClassificacaoSemEnem(), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoSemEnem());
 
         result.Errors.Should().ContainSingle().Which.Field.Should().Be("baseadoEmEnem");
     }
@@ -43,9 +43,9 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     public void DefinirClassificacao_ImportadaDoEnemComDesempatePorArea_RecusaNoCampoDaRegraDeCalculo()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO")]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirClassificacao(ClassificacaoImportadaDoEnem(), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoImportadaDoEnem());
 
         result.Errors.Should().ContainSingle().Which.Field.Should().Be("regraCalculoCodigo");
     }
@@ -54,10 +54,10 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     public void DefinirClassificacao_EtapaDoEnemEDesempateSemQuadro_CadaCampoUmaVez()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO")]).IsSuccess.Should().BeTrue();
         AdicionarEtapasDeNotaDoEnem(processo, 1);
 
-        Result result = processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoImportadaSemEnem());
 
         result.Errors.Select(static e => e.Field).Should().Equal("baseadoEmEnem", "regraCalculoCodigo");
         processo.Classificacao.Should().BeNull();
@@ -67,9 +67,9 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     public void DefinirClassificacao_ImportadaSemEnemComDesempatePorArea_RecusaNosDoisCampos()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO")]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoImportadaSemEnem());
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -82,9 +82,9 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     public void DefinirClassificacao_VariosCriteriosSemQuadro_CadaCampoUmaVez()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO"), MaiorIdade(2), PorArea(3, "MATEMATICA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO"), MaiorIdade(2), PorArea(3, "MATEMATICA")]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirClassificacao(ClassificacaoImportadaSemEnem(), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoImportadaSemEnem());
 
         result.Errors.Select(static e => e.Field).Should().Equal("baseadoEmEnem", "regraCalculoCodigo");
     }
@@ -93,7 +93,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     public void DefinirClassificacao_EliminacaoOrfaEDesempateSemQuadro_Acumulam()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO")]).IsSuccess.Should().BeTrue();
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, 'a'),
@@ -104,7 +104,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
             EscalaNotaFinal = 100m,
         }).Value!;
 
-        Result result = processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(classificacao);
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("regrasEliminacao[0].etapaRef", "ProcessoSeletivo.EtapaRefEliminacaoInexistente"),
@@ -115,9 +115,9 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     public void DefinirClassificacao_QuadroSemAreasCitadas_UmaRecusaPorCriterio()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCriteriosDesempate([PorArea(1, "MATEMATICA", "CIENCIAS_HUMANAS"), PorArea(2, "CIENCIAS_DA_NATUREZA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate([PorArea(1, "MATEMATICA", "CIENCIAS_HUMANAS"), PorArea(2, "CIENCIAS_DA_NATUREZA")]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirClassificacao(ClassificacaoEnem(QuadroComGrupoSemMatematica()), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoEnem(QuadroComGrupoSemMatematica()));
 
         result.Errors.Select(static e => e.Field).Should().Equal("resolucaoPesoAreaEnem", "resolucaoPesoAreaEnem");
         result.Errors[0].Error.Message.Should().Contain("ordem 1").And.Contain("MATEMATICA, CIENCIAS_HUMANAS").And.Contain("Áreas aceitas:");
@@ -129,7 +129,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result result = processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO", "MATEMATICA"), MaiorIdade(2), PorArea(3, "LINGUAGENS", "REDACAO")], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO", "MATEMATICA"), MaiorIdade(2), PorArea(3, "LINGUAGENS", "REDACAO")]);
 
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
         (erro.Field, erro.Error.Code).Should().Be(("criterios[2].areas[1]", "ProcessoSeletivo.AreaEnemCitadaPorOutroCriterio"));
@@ -141,7 +141,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result result = processo.DefinirCriteriosDesempate([PorArea(2, "REDACAO"), PorArea(1, "REDACAO", "MATEMATICA")], PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirCriteriosDesempate([PorArea(2, "REDACAO"), PorArea(1, "REDACAO", "MATEMATICA")]);
 
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
         (erro.Field, erro.Error.Code).Should().Be(("criterios[0].areas[0]", "ProcessoSeletivo.AreaEnemCitadaPorOutroCriterio"));
@@ -154,7 +154,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
         ProcessoSeletivo processo = NovoProcesso();
         DuplicarEtapaDeNotaDoEnem(processo);
 
-        Result result = processo.DefinirClassificacao(ClassificacaoEnem(), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoEnem());
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemDuplicada");
@@ -165,10 +165,10 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     public void DefinirClassificacao_EtapaNotaEnemDuplicadaComRecusaDeCampo_SoRecusasDeCampo()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO", "MATEMATICA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO", "MATEMATICA")]).IsSuccess.Should().BeTrue();
         DuplicarEtapaDeNotaDoEnem(processo);
 
-        Result result = processo.DefinirClassificacao(ClassificacaoEnem(QuadroComGrupoSemMatematica()), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoEnem(QuadroComGrupoSemMatematica()));
 
         result.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
             ("resolucaoPesoAreaEnem", "ProcessoSeletivo.DesempateAreaEnemForaDoQuadro"));
@@ -179,9 +179,9 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     public void DefinirClassificacao_QuadroSemAreaCitada_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO", "MATEMATICA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO", "MATEMATICA")]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirClassificacao(ClassificacaoEnem(QuadroComGrupoSemMatematica()), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoEnem(QuadroComGrupoSemMatematica()));
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.DesempateAreaEnemForaDoQuadro");
@@ -193,9 +193,9 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     public void DefinirClassificacao_QuadroComAsAreasCitadas_Aceita()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO", "MATEMATICA")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate([PorArea(1, "REDACAO", "MATEMATICA")]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirClassificacao(ClassificacaoEnem(), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoEnem());
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
     }
@@ -204,9 +204,9 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
     public void DefinirClassificacao_SemEnemSemDesempatePorArea_Aceita()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCriteriosDesempate([MaiorIdade(1)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCriteriosDesempate([MaiorIdade(1)]).IsSuccess.Should().BeTrue();
 
-        Result result = processo.DefinirClassificacao(ClassificacaoSemEnem(), PrecondicaoIfMatch.Ausente);
+        Result result = processo.DefinirClassificacao(ClassificacaoSemEnem());
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
     }

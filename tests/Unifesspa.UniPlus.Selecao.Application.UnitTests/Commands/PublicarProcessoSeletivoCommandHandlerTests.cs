@@ -151,7 +151,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
             mocks, processo, documento, unidades: ResolvedorDeUnidadeDeTeste.Com());
 
         resposta.Error!.Code.Should().Be("FaseCronograma.UnidadeResponsavelNaoEncontrada");
-        resposta.Errors.Should().ContainSingle().Which.Field.Should().Be("fases[0].unidadeResponsavelId");
+        resposta.Errors.Should().ContainSingle().Which.Field.Should().Be("/cronograma/fases/0/unidadeResponsavelCodigo");
         eventos.Should().BeEmpty();
         mocks.Canonicalizer.DidNotReceiveWithAnyArgs().Canonicalizar(default!);
     }
@@ -334,7 +334,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     {
         // A modalidade do candidato vem da ampla concorrência que o processo oferta.
         ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         EntradaCanonicalizacao? entradaCapturada = null;
@@ -361,7 +361,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     public async Task Handle_ItemSemProtecaoAprovada_Recusa()
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!])
             .IsSuccess.Should().BeTrue();
         (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
@@ -383,11 +383,10 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
         const string derivado = "REGIME_DE_VAGA";
         ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
         processo.DefinirRegrasDerivacao(
-            [ConfiguracaoDerivacaoFato.Criar(derivado, [RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!]).Value!],
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, derivado), 0).Value!], PrecondicaoIfMatch.Curinga)
+            [ConfiguracaoDerivacaoFato.Criar(derivado, [RegraDerivacaoConfigurada.Criar(0, "AC", null).Value!]).Value!]).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, derivado), 0).Value!])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirRegrasDerivacao([], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([]).IsSuccess.Should().BeTrue();
 
         (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
         mocks.FatoCandidatoReader.ListarAsync(Arg.Any<CancellationToken>())
@@ -405,13 +404,12 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
         processo.DefinirItens(
-            [FatoColetado.Criar("TEM_RENDA", 0, "Tem renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!],
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            [FatoColetado.Criar("TEM_RENDA", 0, "Tem renda?", TipoRenderizacao.Booleano, Obrigatoriedade.Sempre, null, etapaCodigo: FormularioDeTeste.Secao, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!]).IsSuccess.Should().BeTrue();
         processo.DefinirDistribuicaoVagas(
             [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(PredicadoDnf.CriarDeCondicoesAgrupadas(
                 [(0, CondicaoDnf.Criar("TEM_RENDA", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!)],
-            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!], PrecondicaoIfMatch.Curinga)
+            FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "MODALIDADE"), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         (Mocks mocks, DocumentoAPublicar documento) = NovosMocks(processo);
@@ -437,7 +435,7 @@ public sealed class PublicarProcessoSeletivoCommandHandlerTests
     public async Task Handle_CodigoDeFatoNaoResolve_AbortaAntesDeCanonicalizar()
     {
         ProcessoSeletivo processo = NovoProcessoConforme(out Guid faseId);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "FATO_INEXISTENTE"), 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilhoPorFato(faseId, "FATO_INEXISTENTE"), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         // O catálogo (D4-bis) não conhece "FATO_INEXISTENTE": NovosMocks traz só o conjunto básico.

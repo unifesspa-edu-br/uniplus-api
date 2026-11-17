@@ -14,7 +14,7 @@ internal static class LeituraDasVagas
 {
     /// <summary>
     /// Recombina os <b>quatro blocos derivados</b> da mesma coleção — <c>distribuicao</c>,
-    /// <c>modalidades</c>, <c>vagas</c> e <c>ofertas</c> (ADR-0110 D8). A exigência é <b>igualdade
+    /// <c>modalidades</c>, <c>vagas</c> e <c>ofertas</c>. A exigência é <b>igualdade
     /// exata de conjuntos</b> de <c>ofertaCursoOrigemId</c>, não mera inclusão: recombinar
     /// em silêncio um envelope incoerente reconstruiria um agregado que <b>nunca
     /// existiu</b> — uma modalidade sem oferta, uma oferta sem vagas.

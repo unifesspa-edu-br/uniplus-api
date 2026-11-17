@@ -10,7 +10,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Events;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Publicacao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Edicao;
@@ -26,14 +25,14 @@ public sealed class ConfiguracaoAptaACongelarTests
     private static readonly DateTimeOffset Agora = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
     private static readonly byte[] Bytes = Encoding.UTF8.GetBytes(new JsonObject { ["status"] = "ok" }.ToJsonString());
 
-    public static TheoryData<string> Transicoes => ["Publicar", "Retificar", "FecharRetificacao"];
+    public static TheoryData<string> Transicoes => ["Publicar", "Retificar"];
 
     [Fact(DisplayName = "O processo conforme tem configuração apta, que carrega só o processo")]
     public void ProcessoConforme_TemConfiguracaoApta()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao);
+        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao);
 
         conferida.IsSuccess.Should().BeTrue(conferida.Error?.Message);
         conferida.Value!.ProcessoId.Should().Be(processo.Id);
@@ -47,7 +46,7 @@ public sealed class ConfiguracaoAptaACongelarTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(semEtapas), CadastrosDeTeste.Padrao);
+        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(semEtapas.Id, semEtapas.Declaracao(), CadastrosDeTeste.Padrao);
 
         conferida.IsFailure.Should().BeTrue();
         conferida.Value.Should().BeNull();
@@ -63,7 +62,7 @@ public sealed class ConfiguracaoAptaACongelarTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        IReadOnlyList<FieldError> causas = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(semEtapas), CadastrosDeTeste.Padrao).Errors
+        IReadOnlyList<FieldError> causas = ConfiguracaoAptaACongelar.Conferir(semEtapas.Id, semEtapas.Declaracao(), CadastrosDeTeste.Padrao).Errors
             .Where(static causa => causa.Error.Code == "ProcessoSeletivo.ConformidadeInsuficiente").ToList();
 
         causas.Should().HaveCountGreaterThan(1);
@@ -71,15 +70,15 @@ public sealed class ConfiguracaoAptaACongelarTests
             && causa.Error.Message.EndsWith('.') && !causa.Error.Message.EndsWith("..", StringComparison.Ordinal) && causa.Origem != null);
     }
 
-    [Fact(DisplayName = "Conferir sem estado ou sem cadastros lança")]
+    [Fact(DisplayName = "Conferir sem a configuração ou sem cadastros lança")]
     public void Conferir_ArgumentoNulo_Lanca()
     {
-        EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(ProcessoConformeFactory.Criar());
+        ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
 
-        Action semEstado = () => ConfiguracaoAptaACongelar.Conferir(null!, CadastrosDeTeste.Padrao);
-        Action semCadastros = () => ConfiguracaoAptaACongelar.Conferir(estado, null!);
+        Action semConfiguracao = () => ConfiguracaoAptaACongelar.Conferir(processo.Id, null!, CadastrosDeTeste.Padrao);
+        Action semCadastros = () => ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), null!);
 
-        semEstado.Should().Throw<ArgumentNullException>().WithParameterName("estado");
+        semConfiguracao.Should().Throw<ArgumentNullException>().WithParameterName("configuracao");
         semCadastros.Should().Throw<ArgumentNullException>().WithParameterName("cadastros");
     }
 
@@ -87,8 +86,8 @@ public sealed class ConfiguracaoAptaACongelarTests
     [MemberData(nameof(Transicoes))]
     public void ConfiguracaoAptaDeOutroProcesso_Lanca(string transicao)
     {
-        ConfiguracaoAptaACongelar deOutroProcesso = ConfiguracaoAptaACongelar.Conferir(
-            EstadoDaConfiguracao.De(ProcessoConformeFactory.Criar()), CadastrosDeTeste.Padrao).Value!;
+        ProcessoSeletivo outro = ProcessoConformeFactory.Criar();
+        ConfiguracaoAptaACongelar deOutroProcesso = ConfiguracaoAptaACongelar.Conferir(outro.Id, outro.Declaracao(), CadastrosDeTeste.Padrao).Value!;
 
         Action congelar = AcaoQueCongela(transicao, deOutroProcesso);
 
@@ -99,7 +98,7 @@ public sealed class ConfiguracaoAptaACongelarTests
     public void InstanteDoPedido_ValeParaAVersaoEParaOEvento()
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar();
-        ConfiguracaoAptaACongelar apta = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Value!;
+        ConfiguracaoAptaACongelar apta = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Value!;
         DateTimeOffset instante = new(2026, 3, 10, 8, 30, 15, 123, TimeSpan.Zero);
 
         Result<VersaoConfiguracao> resultado = processo.Publicar(Pedido(apta, instante));
@@ -117,18 +116,8 @@ public sealed class ConfiguracaoAptaACongelarTests
         return transicao switch
         {
             "Publicar" => () => ProcessoConformeFactory.Criar().Publicar(pedido),
-            "Retificar" => () => ProcessoEmEdicaoDeTeste.PublicadoSemSessao(out VersaoConfiguracao versao).Retificar(pedido, versao, "Correção do prazo"),
-            _ => () => FecharComSessaoAberta(pedido),
+            _ => () => ProcessoEmEdicaoDeTeste.Publicado(out VersaoConfiguracao versao).Retificar(pedido, versao, "Correção do prazo"),
         };
-    }
-
-    private static void FecharComSessaoAberta(PedidoDeCongelamento pedido)
-    {
-        ProcessoSeletivo emSessao = ProcessoEmEdicaoDeTeste.EmSessao();
-        VersaoConfiguracao versao = VersaoConfiguracao.Abrir(
-            emSessao.Id, new DocumentoCongelado(Bytes, "1.1", "canonical-json/sha256@v1", new string('a', 64)), Guid.CreateVersion7(), "user-conta-123", Agora);
-
-        emSessao.FecharRetificacao(pedido, versao, PrecondicaoIfMatch.DeTags([emSessao.ETagDaSessaoEditorial!]));
     }
 
     private static PedidoDeCongelamento Pedido(ConfiguracaoAptaACongelar apta, DateTimeOffset instante) => new()

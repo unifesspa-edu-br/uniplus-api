@@ -96,10 +96,10 @@ public sealed class CoberturaDosMotivosNaPublicacaoEndpointTests : IAsyncLifetim
                 UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
-        processo.DefinirCronogramaFases([processo.CronogramaFases.Single(), isencao], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([processo.CronogramaFases.Single(), isencao], [])
             .IsSuccess.Should().BeTrue();
         ConfiguracaoTaxaInscricao taxa = ConfiguracaoTaxaInscricao.Criar(cobra: true, valor: 100m, fundamentosCodigos: [Fundamento]).Value!;
-        processo.DefinirTaxaInscricao(taxa, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirTaxaInscricao(taxa).IsSuccess.Should().BeTrue();
     }
 
     private async Task IncluirNovoMotivoAsync(HttpClient client, Guid processoId, SentidoDoMotivo sentido)

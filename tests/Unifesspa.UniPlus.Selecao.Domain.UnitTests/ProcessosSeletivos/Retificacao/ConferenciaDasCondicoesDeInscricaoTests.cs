@@ -52,15 +52,15 @@ public sealed class ConferenciaDasCondicoesDeInscricaoTests
     public void OfertaComInscricao_Retirada_Recusa()
     {
         Recusas(ConferenciaDasCondicoesDeInscricao.Conferir([Distribuicao(OutraOferta, Ampla)], null, null, Fatos(Concorridas(Oferta, Ampla)))).Should().Equal(
-            ($"ofertas[{Oferta:D}]", RetificacaoErrorCodes.OfertaComInscricaoNaoSai));
+            ("distribuicaoVagas", RetificacaoErrorCodes.OfertaComInscricaoNaoSai));
     }
 
     [Fact(DisplayName = "Cada modalidade concorrida que sai da oferta é recusada, ampla e cota juntas, em ordem de origem")]
     public void ModalidadesConcorridas_Retiradas_Acumulam()
     {
         Recusas(ConferenciaDasCondicoesDeInscricao.Conferir([Distribuicao(Oferta)], null, null, Fatos(Concorridas(Oferta, Cota, Ampla)))).Should().Equal(
-            ($"ofertas[{Oferta:D}].modalidades[{Ampla:D}]", RetificacaoErrorCodes.ModalidadeConcorridaNaoSai),
-            ($"ofertas[{Oferta:D}].modalidades[{Cota:D}]", RetificacaoErrorCodes.ModalidadeConcorridaNaoSai));
+            ("distribuicaoVagas[0].modalidades", RetificacaoErrorCodes.ModalidadeConcorridaNaoSai),
+            ("distribuicaoVagas[0].modalidades", RetificacaoErrorCodes.ModalidadeConcorridaNaoSai));
     }
 
     [Fact(DisplayName = "A modalidade sem inscrição pode sair, e a concorrida mantida passa; acrescentar modalidade e oferta passa")]
@@ -82,7 +82,7 @@ public sealed class ConferenciaDasCondicoesDeInscricaoTests
         Dictionary<Guid, IReadOnlySet<Guid>> concorridas = new() { [Oferta] = new HashSet<Guid> { Ampla }, [OutraOferta] = new HashSet<Guid> { Ampla } };
 
         Recusas(ConferenciaDasCondicoesDeInscricao.Conferir([Distribuicao(Oferta, Ampla), Distribuicao(OutraOferta, Cota)], null, null, Fatos(concorridas))).Should().Equal(
-            ($"ofertas[{OutraOferta:D}].modalidades[{Ampla:D}]", RetificacaoErrorCodes.ModalidadeConcorridaNaoSai));
+            ("distribuicaoVagas[1].modalidades", RetificacaoErrorCodes.ModalidadeConcorridaNaoSai));
     }
 
     [Fact(DisplayName = "Todas as ofertas retiradas vêm antes das modalidades retiradas, ainda que a oferta com modalidade retirada tenha origem menor")]
@@ -91,8 +91,8 @@ public sealed class ConferenciaDasCondicoesDeInscricaoTests
         Dictionary<Guid, IReadOnlySet<Guid>> concorridas = new() { [Oferta] = new HashSet<Guid> { Ampla }, [OutraOferta] = new HashSet<Guid> { Ampla } };
 
         Recusas(ConferenciaDasCondicoesDeInscricao.Conferir([Distribuicao(Oferta, Cota)], null, null, Fatos(concorridas))).Should().Equal(
-            ($"ofertas[{OutraOferta:D}]", RetificacaoErrorCodes.OfertaComInscricaoNaoSai),
-            ($"ofertas[{Oferta:D}].modalidades[{Ampla:D}]", RetificacaoErrorCodes.ModalidadeConcorridaNaoSai));
+            ("distribuicaoVagas", RetificacaoErrorCodes.OfertaComInscricaoNaoSai),
+            ("distribuicaoVagas[0].modalidades", RetificacaoErrorCodes.ModalidadeConcorridaNaoSai));
     }
 
     [Fact(DisplayName = "Com inscrição enviada, a taxa não declarada nos dois lados passa")]
@@ -118,7 +118,7 @@ public sealed class ConferenciaDasCondicoesDeInscricaoTests
         ConfiguracaoTaxaInscricao depois = Taxa(cobraDepois, valorDepois, cobraDepois ? [FundamentoIsencaoCodigo.CadastroUnico] : []);
 
         Recusas(ConferenciaDasCondicoesDeInscricao.Conferir([], antes, depois, Fatos(inscricao: true))).Should().Equal(
-            ("taxaInscricao", RetificacaoErrorCodes.TaxaComInscricaoNaoMuda));
+            ("taxaDeInscricao", RetificacaoErrorCodes.TaxaComInscricaoNaoMuda));
     }
 
     [Fact(DisplayName = "Com inscrição enviada, a taxa igual passa, e os critérios de isenção mudam sem pedido de isenção")]
@@ -132,7 +132,7 @@ public sealed class ConferenciaDasCondicoesDeInscricaoTests
     public void CriteriosDeIsencao_ComPedido()
     {
         Recusas(ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, FundamentoIsencaoCodigo.CadastroUnico), Taxa(true, 100m, FundamentoIsencaoCodigo.DoacaoMedulaOssea), Fatos(inscricao: true, pedidoDeIsencao: true))).Should().Equal(
-            ("taxaInscricao.fundamentos", RetificacaoErrorCodes.CriteriosDeIsencaoComPedidoNaoMudam));
+            ("taxaDeInscricao.fundamentos", RetificacaoErrorCodes.CriteriosDeIsencaoComPedidoNaoMudam));
         ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, FundamentoIsencaoCodigo.CadastroUnico, FundamentoIsencaoCodigo.DoacaoMedulaOssea), Taxa(true, 100m, FundamentoIsencaoCodigo.DoacaoMedulaOssea, FundamentoIsencaoCodigo.CadastroUnico), Fatos(inscricao: true, pedidoDeIsencao: true)).Should().BeEmpty();
     }
 
@@ -140,8 +140,8 @@ public sealed class ConferenciaDasCondicoesDeInscricaoTests
     public void Recusas_Acumulam()
     {
         Recusas(ConferenciaDasCondicoesDeInscricao.Conferir([], Taxa(true, 100m, FundamentoIsencaoCodigo.CadastroUnico), Taxa(true, 90m, FundamentoIsencaoCodigo.DoacaoMedulaOssea), Fatos(Concorridas(Oferta, Ampla), inscricao: true, pedidoDeIsencao: true))).Should().Equal(
-            ($"ofertas[{Oferta:D}]", RetificacaoErrorCodes.OfertaComInscricaoNaoSai),
-            ("taxaInscricao", RetificacaoErrorCodes.TaxaComInscricaoNaoMuda),
-            ("taxaInscricao.fundamentos", RetificacaoErrorCodes.CriteriosDeIsencaoComPedidoNaoMudam));
+            ("distribuicaoVagas", RetificacaoErrorCodes.OfertaComInscricaoNaoSai),
+            ("taxaDeInscricao", RetificacaoErrorCodes.TaxaComInscricaoNaoMuda),
+            ("taxaDeInscricao.fundamentos", RetificacaoErrorCodes.CriteriosDeIsencaoComPedidoNaoMudam));
     }
 }

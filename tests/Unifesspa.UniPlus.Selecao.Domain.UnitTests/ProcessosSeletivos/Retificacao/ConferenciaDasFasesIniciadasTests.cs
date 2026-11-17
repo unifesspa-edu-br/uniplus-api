@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Contratos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -16,7 +17,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
     private const string CodigoDaRemocaoDaFase = "FaseCronograma.FaseIniciadaNaoSaiDoCronograma";
     private const string CodigoDaRemocaoDaEtapa = "FaseCronograma.EtapaIniciadaNaoSaiDoCronograma";
 
-    [Fact(DisplayName = "A unidade trocada numa fase iniciada é recusada, citando a fase, com o caminho dela")]
+    [Fact(DisplayName = "A unidade trocada numa fase iniciada é recusada, citando a fase, com a unidade dela como caminho")]
     public void Conferir_UnidadeTrocadaEmFaseIniciada_Recusa()
     {
         FaseCronograma habilitacao = Fase(1, "HABILITACAO");
@@ -24,7 +25,8 @@ public sealed class ConferenciaDasFasesIniciadasTests
         IReadOnlyList<FieldError> recusas = Conferencia(Iniciadas(habilitacao), [ComUnidade(habilitacao, UnidadesDeTeste.Cga)]);
 
         FieldError recusa = recusas.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be("cronograma.fases");
+        recusa.Field.Should().Be("fases[0].unidadeResponsavel");
+        PonteiroNoDocumento.Converter(recusa.Field, OrigemNoDocumento.Identidade).Should().Be("/cronograma/fases/0/unidadeResponsavelCodigo");
         recusa.Error.Code.Should().Be(CodigoDaTroca);
         recusa.Error.Message.Should().Contain("HABILITACAO").And.Contain("ordem 1");
     }
@@ -45,7 +47,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
         Conferencia(FasesIniciadas.Nenhuma, [ComUnidade(habilitacao, UnidadesDeTeste.Cga)]).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Duas fases com a unidade trocada geram duas recusas, cada uma com o caminho da própria fase")]
+    [Fact(DisplayName = "Duas fases com a unidade trocada geram duas recusas, cada uma com a unidade da própria fase como caminho")]
     public void Conferir_DuasUnidadesTrocadas_AcumulaDuasRecusas()
     {
         FaseCronograma habilitacao = Fase(1, "HABILITACAO");
@@ -55,11 +57,28 @@ public sealed class ConferenciaDasFasesIniciadasTests
             Iniciadas(habilitacao, classificacao),
             [ComUnidade(habilitacao, UnidadesDeTeste.Cga), ComUnidade(classificacao, UnidadesDeTeste.Cga)]);
 
-        recusas.Select(static r => r.Field).Should().Equal("cronograma.fases", "cronograma.fases");
+        recusas.Select(static r => r.Field).Should().Equal("fases[0].unidadeResponsavel", "fases[1].unidadeResponsavel");
         recusas.Select(static r => r.Error.Code).Should().AllBe(CodigoDaTroca);
     }
 
-    [Fact(DisplayName = "Remover do cronograma uma fase iniciada é recusado, citando a fase, com o caminho dela")]
+    [Fact(DisplayName = "A fase trocada é apontada pela posição no documento, na ordem canônica, e não pela posição na lista como veio")]
+    public void Conferir_FasesForaDeOrdem_ApontaAPosicaoNoDocumento()
+    {
+        FaseCronograma habilitacao = Fase(1, "HABILITACAO");
+        FaseCronograma classificacao = Fase(2, "CLASSIFICACAO");
+        FaseCronograma resultado = Fase(3, "RESULTADO");
+
+        IReadOnlyList<FieldError> recusas = Conferencia(
+            Iniciadas(habilitacao, classificacao, resultado),
+            [ComUnidade(resultado, UnidadesDeTeste.Cga), habilitacao, ComUnidade(classificacao, UnidadesDeTeste.Cga)]);
+
+        recusas.Select(static r => r.Error.Message).Should().SatisfyRespectively(
+            static primeira => primeira.Should().Contain("CLASSIFICACAO"), static segunda => segunda.Should().Contain("RESULTADO"));
+        recusas.Select(static r => PonteiroNoDocumento.Converter(r.Field, OrigemNoDocumento.Identidade)).Should().Equal(
+            "/cronograma/fases/1/unidadeResponsavelCodigo", "/cronograma/fases/2/unidadeResponsavelCodigo");
+    }
+
+    [Fact(DisplayName = "Remover do cronograma uma fase iniciada é recusado, citando a fase, com a coleção das fases como caminho")]
     public void Conferir_FaseIniciadaRemovida_Recusa()
     {
         (FaseCronograma habilitacao, FaseCronograma classificacao) = DuasFases();
@@ -68,6 +87,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
 
         FieldError recusa = recusas.Should().ContainSingle().Subject;
         recusa.Field.Should().Be("cronograma.fases");
+        PonteiroNoDocumento.Converter(recusa.Field, OrigemNoDocumento.Identidade).Should().Be("/cronograma/fases");
         recusa.Error.Code.Should().Be(CodigoDaRemocaoDaFase);
         recusa.Error.Message.Should().Contain("HABILITACAO");
     }
@@ -103,7 +123,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
         Conferencia(iniciadas, [classificacao]).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Remover uma etapa iniciada é recusado, citando a etapa, com o caminho dela")]
+    [Fact(DisplayName = "Remover uma etapa iniciada é recusado, citando a etapa, com a coleção das etapas como caminho")]
     public void Conferir_EtapaIniciadaRemovida_Recusa()
     {
         (EtapaProcesso prova, EtapaProcesso heteroidentificacao, EtapaProcesso analise) = TresEtapas();
@@ -112,6 +132,7 @@ public sealed class ConferenciaDasFasesIniciadasTests
 
         FieldError recusa = recusas.Should().ContainSingle().Subject;
         recusa.Field.Should().Be("etapas");
+        PonteiroNoDocumento.Converter(recusa.Field, OrigemNoDocumento.Identidade).Should().Be("/etapas");
         recusa.Error.Code.Should().Be(CodigoDaRemocaoDaEtapa);
         recusa.Error.Message.Should().Contain("Heteroidentificação");
     }
@@ -166,9 +187,10 @@ public sealed class ConferenciaDasFasesIniciadasTests
         IReadOnlyList<FieldError> recusas = Conferencia(iniciadas, [ComUnidade(classificacao, UnidadesDeTeste.Cga)], [prova]);
 
         recusas.Select(static r => r.Error.Code).Should().Equal(CodigoDaTroca, CodigoDaRemocaoDaFase, CodigoDaRemocaoDaEtapa);
-        recusas.Select(static r => r.Field).Should().Equal("cronograma.fases", "cronograma.fases", "etapas");
-        recusas.Select(static r => r.Field!).Where(campo => CaminhosDoDocumentoNoEsquema.Publicado.PrimeiroSegmentoAusente(campo) is not null)
-            .Should().BeEmpty("o campo de cada recusa do fechamento existe no esquema publicado");
+        recusas.Select(static r => r.Field).Should().Equal("fases[0].unidadeResponsavel", "cronograma.fases", "etapas");
+        PonteiroNoDocumento.Converter(recusas, OrigemNoDocumento.Identidade).Select(static r => r.Field!)
+            .Where(ponteiro => CaminhosDoDocumentoNoEsquema.Publicado.PrimeiroSegmentoAusente(ponteiro) is not null)
+            .Should().BeEmpty("o ponteiro de cada recusa do fechamento existe no esquema publicado");
     }
 
     [Fact(DisplayName = "Sem fase nem etapa iniciada, nada é recusado")]

@@ -95,7 +95,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result resultado = processo.DefinirDocumentosExigidos([], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDocumentosExigidos([]);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.DocumentosExigidos.Should().BeEmpty();

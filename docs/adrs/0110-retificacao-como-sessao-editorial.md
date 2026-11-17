@@ -1,5 +1,5 @@
 ---
-status: "accepted"
+status: "superseded by ADR-0175"
 date: "2026-07-13"
 decision-makers:
   - "Tech Lead (CTIC)"
@@ -10,6 +10,8 @@ informed:
 ---
 
 # ADR-0110: A retificação é uma sessão editorial sobre a configuração, não um estado do certame
+
+> **Superada.** A [ADR-0175](0175-o-processo-publicado-nao-tem-edicao-direta-nem-sessao-editorial.md) retira a sessão editorial, a reposição da configuração congelada e o `If-Match` das gravações por dimensão. O que esta ADR decidiu sobre o registro de codecs do envelope (D1, Emenda 2 e a emenda da ADR-0137) segue valendo para a leitura das versões publicadas. Leia o restante como registro histórico, não como contrato.
 
 ## Contexto e enunciado do problema
 

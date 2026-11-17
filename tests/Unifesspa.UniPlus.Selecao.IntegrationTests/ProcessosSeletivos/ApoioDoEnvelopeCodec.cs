@@ -65,26 +65,6 @@ internal static class ApoioDoEnvelopeCodec
         return reidratado.Value!;
     }
 
-    internal static byte[] Recodificado(ProcessoSeletivo processo, VersaoConfiguracao versao, EnvelopeReidratado envelope) =>
-        CorpusEnvelope.Registro.Recodificar(
-            versao.SchemaVersion,
-            new EntradaCanonicalizacao(
-                processo,
-                envelope.Dados,
-                envelope.HashDocumento, FusoInstitucional.ZoneId,
-                envelope.Retificacao,
-                envelope.Conformidade,
-                envelope.MetadadosFatosCongelados,
-                envelope.ValoresSelecionaveisCongelados,
-                envelope.CalendarioDiasUteis, envelope.AgregadosDosGrupos, envelope.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: envelope.TiposDeAtoCongelados, FatosDerivadosCongelados: envelope.FatosDerivadosCongelados)).Value!.Bytes;
-
-    internal static void ConferirQueARecodificacaoReproduzOsBytes(
-        byte[] recodificado, SnapshotCanonico congelado, string objeto) =>
-        recodificado.Should().Equal(
-            congelado.Bytes,
-            $"reidratar e recanonicalizar {objeto} tem de reproduzir os bytes congelados inteiros — " +
-            "qualquer campo perdido pelo decoder sai daqui como divergência");
     internal static JsonObject Envelope(SnapshotCanonico snapshot) =>
         JsonNode.Parse(Encoding.UTF8.GetString(snapshot.Bytes))!.AsObject();
 
@@ -134,13 +114,16 @@ internal static class ApoioDoEnvelopeCodec
         _ => JsonValue.Create(valor),
     };
 
-    internal static (byte[] Originais, byte[] Mutados, byte[] Recodificados) MutarEReidratar(string caminho, string valorNovo)
+    /// <summary>
+    /// Congela o processo rico, muda o envelope congelado e o reidrata: o que a leitura entende do envelope mudado.
+    /// O caminho pode nomear mais de uma ocorrência, separadas por '|': a mesma modalidade é ofertada pelos dois cursos
+    /// do processo rico, e o processo não aceita duas cópias diferentes dela.
+    /// </summary>
+    internal static EnvelopeReidratado ReidratarMutado(string caminho, string valorNovo)
     {
         ArgumentNullException.ThrowIfNull(caminho);
 
-        // A mesma modalidade é ofertada pelos dois cursos do processo rico, e o processo não aceita
-        // duas cópias diferentes dela: o caminho pode nomear as duas ocorrências, separadas por '|'.
-        return MutarEReidratar(mutado =>
+        return ReidratarMutado(mutado =>
         {
             foreach (string ocorrencia in caminho.Split('|'))
             {
@@ -149,7 +132,7 @@ internal static class ApoioDoEnvelopeCodec
         });
     }
 
-    internal static (byte[] Originais, byte[] Mutados, byte[] Recodificados) MutarEReidratar(Action<JsonObject> mutar)
+    internal static EnvelopeReidratado ReidratarMutado(Action<JsonObject> mutar)
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
@@ -158,33 +141,30 @@ internal static class ApoioDoEnvelopeCodec
         mutar(mutado);
         byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
         bytesMutados.Should().NotEqual(congelado.Bytes, "pré-condição: a mutação tem de mudar os bytes");
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, bytesMutados);
-        EnvelopeReidratado reidratado = Reidratado(versao);
-        Result reposicao = processo.RestaurarConfiguracaoCongelada(versao, reidratado.Grafo);
-        reposicao.IsSuccess.Should().BeTrue(reposicao.Error?.Message);
 
-        return (congelado.Bytes, bytesMutados, Recodificado(processo, versao, reidratado));
+        return Reidratado(CorpusEnvelopeEntrada.VersaoDeAbertura(processo, bytesMutados));
     }
 
     /// <summary>
-    /// Reidrata, repõe e recanonicaliza <b>com o encoder da versão dela</b> — nunca com o
-    /// corrente. É o que torna a prova não-circular: no dia da <c>1.2</c>, recanonicalizar
-    /// uma <c>1.1</c> com o encoder corrente produziria bytes de <c>1.2</c>, e a fidelidade
-    /// da reidratação de tudo o que já foi publicado deixaria de ser verificável.
+    /// Reidrata e recanonicaliza <b>com o encoder da versão dela</b>, nunca com o corrente: no dia da próxima versão do
+    /// esquema, recanonicalizar uma versão anterior com o encoder corrente produziria bytes da nova, e a fidelidade da
+    /// reidratação de tudo o que já foi publicado deixaria de ser verificável.
     /// </summary>
-    internal static EnvelopeReidratado AssertRoundTrip(
-        ProcessoSeletivo processo,
-        VersaoConfiguracao versao,
-        SnapshotCanonico congelado)
+    internal static EnvelopeReidratado AssertRoundTrip(ProcessoSeletivo processo, VersaoConfiguracao versao, SnapshotCanonico congelado)
     {
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
-        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
+        EnvelopeReidratado envelope = Reidratado(versao);
+        SnapshotCanonico recodificado = Recodificado(processo, versao, envelope);
 
-        EnvelopeReidratado envelope = reidratado.Value!;
+        recodificado.Bytes.Should().Equal(congelado.Bytes,
+            "reidratar e recanonicalizar tem de reproduzir os bytes congelados inteiros: qualquer campo que o decoder perca sai daqui como divergência");
+        recodificado.SchemaVersion.Should().Be(congelado.SchemaVersion);
+        recodificado.AlgoritmoHash.Should().Be(congelado.AlgoritmoHash);
 
-        Result restauracao = processo.RestaurarConfiguracaoCongelada(versao, envelope.Grafo);
-        restauracao.IsSuccess.Should().BeTrue(restauracao.Error?.Message);
+        return envelope;
+    }
 
+    private static SnapshotCanonico Recodificado(ProcessoSeletivo processo, VersaoConfiguracao versao, EnvelopeReidratado envelope)
+    {
         Result<SnapshotCanonico> recodificado = CorpusEnvelope.Registro.Recodificar(
             versao.SchemaVersion,
             new EntradaCanonicalizacao(
@@ -194,26 +174,6 @@ internal static class ApoioDoEnvelopeCodec
                 TiposDeAtoCongelados: envelope.TiposDeAtoCongelados, FatosDerivadosCongelados: envelope.FatosDerivadosCongelados));
         recodificado.IsSuccess.Should().BeTrue(recodificado.Error?.Message);
 
-        // Os três são independentes no modelo (VersaoConfiguracao guarda schema_version e
-        // algoritmo em colunas próprias). Comparar só os bytes deixaria passar uma versão
-        // reidratada que declarasse outra forma ou outro algoritmo de hash.
-        recodificado.Value!.Bytes.Should().Equal(congelado.Bytes,
-            "reidratar e recanonicalizar tem de reproduzir os bytes congelados INTEIROS — qualquer campo que o " +
-            "decoder perca sai daqui como uma divergência de bytes, e é a única forma de vê-lo");
-        recodificado.Value.SchemaVersion.Should().Be(congelado.SchemaVersion);
-        recodificado.Value.AlgoritmoHash.Should().Be(congelado.AlgoritmoHash);
-
-        return envelope;
-    }
-
-    internal static void ConferirRoundTripDaVersaoDeAbertura()
-    {
-        ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
-        SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
-        CorpusEnvelopeEntrada.Publicar(processo);
-
-        VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, congelado.Bytes);
-
-        AssertRoundTrip(processo, versao, congelado);
+        return recodificado.Value!;
     }
 }

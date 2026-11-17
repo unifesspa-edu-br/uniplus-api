@@ -2,14 +2,16 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 
 using Domain.Entities;
 using Domain.Enums;
+using Domain.ProcessosSeletivos.OrdemCanonica;
 
 using Unifesspa.UniPlus.Regras.Formularios;
 
 /// <summary>
 /// O percurso do documento da configuração sobre os formulários do processo: por finalidade, os itens e depois os grupos
-/// repetíveis com os seus campos, cada um com o caminho que o documento lhe dá (<c>formularios[{finalidade}].itens[i]</c>,
-/// <c>formularios[{finalidade}].grupos[g].subitens[c]</c>). A posição é a da ordem dentro da finalidade, a mesma que o
-/// documento congela, de modo que toda conferência que aponta um item usa o mesmo caminho.
+/// repetíveis com os seus campos, cada um com o caminho que o documento lhe dá (<c>formularios[f].itens[i]</c>,
+/// <c>formularios[f].grupos[g].subitens[c]</c>). Cada posição é a do item na ordem canônica do documento
+/// (<see cref="OrdemCanonicaDaConfiguracao"/>): o formulário pela finalidade e os itens, os grupos e os campos pela ordem dentro
+/// dela, de modo que toda conferência que aponta um item usa o mesmo caminho.
 /// </summary>
 internal static class ItensDoFormularioNoDocumento
 {
@@ -17,7 +19,10 @@ internal static class ItensDoFormularioNoDocumento
     {
         ArgumentNullException.ThrowIfNull(processo);
 
-        return [.. processo.Campos.Select(static c => c.Finalidade).Distinct().Order().Select(finalidade => DaFinalidade(processo, finalidade))];
+        IEnumerable<FinalidadeFormulario> comItens = processo.Campos.Select(static c => c.Finalidade).Concat(processo.GruposColetados.Select(static g => g.Finalidade));
+        IEnumerable<FinalidadeFormulario> finalidades = OrdemCanonicaDaConfiguracao.Finalidades(processo.Formularios.Select(static f => f.Finalidade).Concat(comItens));
+
+        return [.. finalidades.Select((finalidade, posicao) => DaFinalidade(processo, finalidade, posicao))];
     }
 
     /// <summary>Os campos coletados do processo, itens e campos de grupo, na ordem do documento: por finalidade, os itens e depois os grupos.</summary>
@@ -36,11 +41,11 @@ internal static class ItensDoFormularioNoDocumento
         return caminhos;
     }
 
-    private static FormularioComOsSeusItens DaFinalidade(ProcessoSeletivo processo, FinalidadeFormulario finalidade)
+    private static FormularioComOsSeusItens DaFinalidade(ProcessoSeletivo processo, FinalidadeFormulario finalidade, int posicaoDoFormulario)
     {
-        string formulario = $"formularios[{EstruturaFormulario.ParaToken(finalidade)}]";
-        FatoColetado[] itens = [.. processo.FatosColetados.Where(i => i.Finalidade == finalidade).OrderBy(static i => i.Ordem)];
-        GrupoColetado[] grupos = [.. processo.GruposColetados.Where(g => g.Finalidade == finalidade).OrderBy(static g => g.Ordem)];
+        string formulario = $"formularios[{posicaoDoFormulario}]";
+        FatoColetado[] itens = [.. OrdemCanonicaDaConfiguracao.Campos(processo.FatosColetados.Where(i => i.Finalidade == finalidade))];
+        GrupoColetado[] grupos = [.. OrdemCanonicaDaConfiguracao.Grupos(processo.GruposColetados.Where(g => g.Finalidade == finalidade))];
 
         return new(
             [.. itens.Select((item, posicao) => new ItemNoDocumento(item, $"{formulario}.itens[{posicao}]"))],
@@ -50,7 +55,7 @@ internal static class ItensDoFormularioNoDocumento
     private static GrupoNoDocumento DoGrupo(GrupoColetado grupo, string caminho) => new(
         grupo,
         caminho,
-        [.. grupo.Subitens.OrderBy(static s => s.Ordem).Select((campo, posicao) => new ItemNoDocumento(campo, $"{caminho}.subitens[{posicao}]"))]);
+        [.. OrdemCanonicaDaConfiguracao.Campos(grupo.Subitens).Select((campo, posicao) => new ItemNoDocumento(campo, $"{caminho}.subitens[{posicao}]"))]);
 }
 
 /// <summary>Os itens e os grupos de uma finalidade, na ordem do documento: os itens primeiro.</summary>

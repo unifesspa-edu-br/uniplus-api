@@ -30,7 +30,7 @@ public sealed record EtapaProcessoDto(
 /// <param name="Ordem">A posição da etapa na sequência, ou nulo enquanto não declarada.</param>
 /// <param name="FaseCodigo">
 /// O código da fase do cronograma onde a etapa acontece; é por código, e não por id, porque o id da fase
-/// não sobrevive à reconciliação da restauração.
+/// não identifica a fase fora do processo.
 /// </param>
 public sealed record IdentificacaoDaEtapaDto(
     string Nome,

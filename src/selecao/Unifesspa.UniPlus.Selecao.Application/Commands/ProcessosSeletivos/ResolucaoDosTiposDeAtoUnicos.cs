@@ -160,7 +160,7 @@ public sealed class ResolucaoDosTiposDeAtoUnicos(
         string? codigoJaConferido,
         IReadOnlyDictionary<string, TipoDeAtoCongelado> jaCongelados) =>
     [
-        .. TiposDeAtoDoCronograma.DeclaracoesDeAtos(EstadoDaConfiguracao.De(processo))
+        .. TiposDeAtoDoCronograma.DeclaracoesDeAtos(processo.Declaracao())
             .Select(static declaracao => declaracao.AtoCodigo)
             .Concat(codigosOcupados)
             .Where(codigo => !string.Equals(codigo, codigoJaConferido, StringComparison.Ordinal) && !jaCongelados.ContainsKey(codigo))

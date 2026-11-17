@@ -117,5 +117,4 @@ public sealed record FaseCronogramaInput(
 /// </summary>
 public sealed record DefinirCronogramaFasesCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<FaseCronogramaInput> Fases,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    IReadOnlyList<FaseCronogramaInput> Fases) : ICommand<Result>;

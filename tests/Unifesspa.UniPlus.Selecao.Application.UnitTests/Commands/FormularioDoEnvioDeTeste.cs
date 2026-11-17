@@ -81,9 +81,9 @@ internal static class FormularioDoEnvioDeTeste
             Guid.CreateVersion7(), Guid.CreateVersion7(), "TERMO_DE_TESTE", 1, "Termo de veracidade", "Declaro que as informações são verdadeiras.",
             "Lei 9.784/1999", "ACEITE_EXPLICITO", new string('b', 64));
         ProcessoSeletivo processoBase = ProcessoSeletivoConformeBuilder.Criar("PS 2026 — Submeter inscrição");
-        Result itensDefinidos = processoBase.DefinirItens([ItemApelidoObrigatorio(), .. outrosItens ?? []], PrecondicaoIfMatch.Ausente, grupos: grupos);
+        Result itensDefinidos = processoBase.DefinirItens([ItemApelidoObrigatorio(), .. outrosItens ?? []], grupos: grupos);
         itensDefinidos.IsSuccess.Should().BeTrue(itensDefinidos.Error?.Message);
-        processoBase.DefinirTermosDoFormulario(FinalidadeFormulario.Inscricao, [TermoDeVeracidade(versaoDoTermo)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
+        processoBase.DefinirTermosDoFormulario(FinalidadeFormulario.Inscricao, [TermoDeVeracidade(versaoDoTermo)]).IsSuccess.Should().BeTrue(
             "o termo não cita fato nenhum, então não tem citação pendente de garantir");
         ajustar?.Invoke(processoBase);
 

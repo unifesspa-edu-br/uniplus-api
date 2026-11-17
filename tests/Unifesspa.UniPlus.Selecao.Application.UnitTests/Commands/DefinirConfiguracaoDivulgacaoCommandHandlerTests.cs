@@ -34,9 +34,9 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
     public async Task Handle_ProcessoInexistente_RetornaNaoEncontrado()
     {
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7());
-        DefinirConfiguracaoDivulgacaoCommand command = new(Guid.CreateVersion7(), null, null, PrecondicaoIfMatch.Ausente);
+        DefinirConfiguracaoDivulgacaoCommand command = new(Guid.CreateVersion7(), null, null);
 
-        Result<MutacaoAceita> result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
+        Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -48,13 +48,12 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, null, null, PrecondicaoIfMatch.Ausente);
+        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, null, null);
 
-        Result<MutacaoAceita> result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
+        Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -68,9 +67,9 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirConfiguracaoDivulgacaoCommand command = new(
-            processo.Id, ["numero_inscricao", "nome"], "Ampliação para dar transparência ao resultado.", PrecondicaoIfMatch.Ausente);
+            processo.Id, ["numero_inscricao", "nome"], "Ampliação para dar transparência ao resultado.");
 
-        Result<MutacaoAceita> result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
+        Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -85,9 +84,9 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, ["numero_inscricao", "cpf"], null, PrecondicaoIfMatch.Ausente);
+        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, ["numero_inscricao", "cpf"], null);
 
-        Result<MutacaoAceita> result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
+        Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -101,28 +100,27 @@ public sealed class DefinirConfiguracaoDivulgacaoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirConfiguracaoDivulgacao(
-            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!).IsSuccess.Should().BeTrue();
 
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, ["numero_inscricao"], null, PrecondicaoIfMatch.Ausente);
+        DefinirConfiguracaoDivulgacaoCommand command = new(processo.Id, ["numero_inscricao"], null);
 
-        Result<MutacaoAceita> result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
+        Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         processo.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal("numero_inscricao");
     }
 
-    [Fact(DisplayName = "Handle com processo já publicado (SEM sessão editorial) propaga MutacaoPosPublicacaoBloqueada e NÃO persiste (CA-06)")]
-    public async Task Handle_ProcessoPublicadoSemSessao_PropagaBloqueioENaoPersiste()
+    [Fact(DisplayName = "Handle com processo já publicado propaga MutacaoPosPublicacaoBloqueada e NÃO persiste (CA-06)")]
+    public async Task Handle_ProcessoPublicado_PropagaBloqueioENaoPersiste()
     {
         ProcessoSeletivo processo = ApoioDaCascataDeRemanejamento.NovoProcessoPublicado();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirConfiguracaoDivulgacaoCommand command = new(
-            processo.Id, ["numero_inscricao", "nome_abreviado"], null, PrecondicaoIfMatch.Ausente);
+            processo.Id, ["numero_inscricao", "nome_abreviado"], null);
 
-        Result<MutacaoAceita> result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
+        Result result = await DefinirConfiguracaoDivulgacaoCommandHandler.Handle(
             command, mocks.Repository, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();

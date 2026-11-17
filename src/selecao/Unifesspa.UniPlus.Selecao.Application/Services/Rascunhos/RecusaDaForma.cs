@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 public static class RecusaDaForma
 {
     private static readonly FieldError Grupo = new(
-        string.Empty,
+        null,
         new DomainError(
             DocumentoDaConfiguracaoErrorCodes.FormaInvalida,
             "O documento não respeita o formato da configuração do processo seletivo."));

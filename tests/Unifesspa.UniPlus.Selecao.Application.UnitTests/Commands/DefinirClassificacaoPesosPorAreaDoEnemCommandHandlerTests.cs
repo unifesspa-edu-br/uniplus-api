@@ -42,7 +42,7 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoEnem();
         CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo).ComResolucaoDosPesos();
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, ResolucaoDePesos));
+        Result result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, ResolucaoDePesos));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         ConfiguracaoClassificacao classificacao = processo.Classificacao!;
@@ -60,7 +60,7 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         ResolucaoPesoAreaEnemView semSaude = ResolucaoCom(GruposDoAnexoI.Where(g => g.Codigo != "SAUDE_E_BIOLOGICAS"), ("SAUDE_E_BIOLOGICAS", "Saúde e Biológicas"));
         CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo).ComResolucaoDosPesos(semSaude);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, ResolucaoDePesos));
+        Result result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, ResolucaoDePesos));
 
         result.IsFailure.Should().BeTrue();
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
@@ -77,7 +77,7 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoEnem();
         CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo).ComResolucaoCadastrada(null);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, "Res. inexistente"));
+        Result result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, "Res. inexistente"));
 
         result.IsFailure.Should().BeTrue();
         FieldError erro = result.Errors.Should().ContainSingle().Subject;
@@ -92,7 +92,7 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoEnem();
         CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, resolucao: "   "));
+        Result result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, resolucao: "   "));
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Should().ContainSingle(e =>
@@ -110,7 +110,7 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoEnem();
         CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, resolucao));
+        Result result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, resolucao));
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Should().ContainSingle(e =>
@@ -125,7 +125,7 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoEnem();
         CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, "Res. 805" + (char)0xFFFE));
+        Result result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, "Res. 805" + (char)0xFFFE));
 
         result.Errors.Should().ContainSingle(e => e.Error.Code == "ConfiguracaoClassificacao.ResolucaoPesoAreaEnemInvalida");
         await cenario.NaoConsultouOCadastroDePesosAsync();
@@ -138,7 +138,7 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo);
         DefinirClassificacaoCommand command = ComandoEnemLocal(processo.Id, "805\u0000") with { CasasArredondamento = 0 };
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(command);
+        Result result = await cenario.DefinirAsync(command);
 
         result.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
         [
@@ -156,7 +156,7 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
             .ComRegra(RegraCalculoCodigo.ClassificacaoImportada, TipoRegra.RegraCalculo)
             .ComRegra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, TipoRegra.RegraOrdemAlocacao);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(
+        Result result = await cenario.DefinirAsync(
             ComandoEnemLocal(processo.Id, "Resolução com quarenta e um caracteres ..", baseadoEmEnem: true, RegraCalculoCodigo.ClassificacaoImportada));
 
         result.Errors.Select(e => e.Error.Code).Should().Equal(
@@ -172,7 +172,7 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo)
             .ComResolucaoCadastrada(ResolucaoCom(GruposDoAnexoI) with { Resolucao = "Resolução canônica" });
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, "texto do comando"));
+        Result result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, "texto do comando"));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.Classificacao!.ResolucaoPesoAreaEnem.Should().Be("Resolução canônica");
@@ -185,7 +185,7 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo).ComResolucaoCadastrada(null);
         DefinirClassificacaoCommand command = ComandoEnemLocal(processo.Id, "Res. inexistente") with { CasasArredondamento = 0 };
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(command);
+        Result result = await cenario.DefinirAsync(command);
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
@@ -204,7 +204,7 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         RegraEliminacaoInput falta = new(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "v1", null, null, null, null);
         DefinirClassificacaoCommand command = ComandoEnemLocal(processo.Id, "Res. inexistente") with { RegrasEliminacao = [falta, falta] };
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(command);
+        Result result = await cenario.DefinirAsync(command);
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
@@ -224,7 +224,7 @@ public sealed class DefinirClassificacaoPesosPorAreaDoEnemCommandHandlerTests
         ProcessoSeletivo processo = NovoProcessoEnem();
         CenarioDaClassificacao cenario = CenarioDeEnemLocal(processo).ComRegra(RegraCalculoCodigo.ClassificacaoImportada, TipoRegra.RegraCalculo);
 
-        Result<MutacaoAceita> result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, ResolucaoDePesos, baseadoEmEnem, regraCalculo));
+        Result result = await cenario.DefinirAsync(ComandoEnemLocal(processo.Id, ResolucaoDePesos, baseadoEmEnem, regraCalculo));
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Should().ContainSingle(e =>

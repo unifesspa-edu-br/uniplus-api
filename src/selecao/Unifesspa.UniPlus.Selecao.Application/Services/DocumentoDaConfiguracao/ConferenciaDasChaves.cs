@@ -5,9 +5,9 @@ using System.Text.Json.Nodes;
 using Kernel.Results;
 
 /// <summary>
-/// Aponta as chaves que se repetem dentro de um mesmo <see cref="ConjuntoDaChaveUnica"/>. Todas as partes que compartilham
-/// a chave são apontadas, a que repete e a que ela cita, cada uma no ponteiro da própria chave. A chave ausente não é
-/// conferida aqui: é o esquema que a exige.
+/// Aponta as chaves que se repetem dentro de um mesmo <see cref="ConjuntoDaChaveUnica"/>. A primeira parte com a chave, na
+/// ordem do documento enviado, é a dona dela; cada parte seguinte com a mesma chave é apontada no ponteiro da própria chave.
+/// A chave ausente não é conferida aqui: é o esquema que a exige.
 /// </summary>
 internal static class ConferenciaDasChaves
 {
@@ -20,7 +20,7 @@ internal static class ConferenciaDasChaves
             .Where(static parte => parte.Chave is not null)
             .GroupBy(static parte => (parte.Conjunto, parte.Chave))
             .Where(static grupo => grupo.Count() > 1)
-            .SelectMany(static grupo => grupo)
+            .SelectMany(static grupo => grupo.Skip(1))
             .Select(static parte => CausasDaForma.ChaveRepetida(PonteiroJson.Acrescentar(parte.Ponteiro, NomeDaPropriedade))),
     ];
 

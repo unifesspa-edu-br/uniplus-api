@@ -52,7 +52,6 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<ICertameDivulgadoRepository, CertameDivulgadoRepository>();
         services.AddScoped<ISnapshotPublicacaoCanonicalizer, SnapshotPublicacaoCanonicalizer>();
         services.AddScoped<IRegistroCodecsEnvelope, RegistroCodecsEnvelope>();
-        services.AddScoped<IRestauradorDeConfiguracao, RestauradorDeConfiguracao>();
     }
 
     private static void AddRepositoriosDoModulo(this IServiceCollection services)
@@ -63,7 +62,6 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IAtoDoProcessoRepository, AtoDoProcessoRepository>();
         services.AddScoped<IModeloDeDocumentoRepository, ModeloDeDocumentoRepository>();
         services.AddScoped<IDocumentoDaInscricaoRepository, DocumentoDaInscricaoRepository>();
-        services.AddScoped<IRascunhoDePublicacaoRepository, RascunhoDePublicacaoRepository>();
         services.AddScoped<IRascunhoDeProcessoSeletivoRepository, RascunhoDeProcessoSeletivoRepository>();
         services.AddScoped<IInscricaoRepository, InscricaoRepository>();
         services.AddScoped<ILoteDeNotasDoEnemRepository, LoteDeNotasDoEnemRepository>();
@@ -94,7 +92,6 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<ILancamentosDeNotaReader, LancamentosDeNotaReader>();
         services.AddScoped<IAvaliacoesDaEtapaReader, AvaliacoesDaEtapaReader>();
         services.AddScoped<IRegraCatalogoReader, RegraCatalogoReader>();
-        services.AddScoped<IRetificacaoEmCursoReader, RetificacaoEmCursoReader>();
 
         // O esquema do documento é montado uma vez, dos arquivos embutidos no assembly, e é compartilhado por todas as requisições.
         services.AddSingleton<IEsquemaDoDocumentoDaConfiguracao, EsquemaDoDocumentoDaConfiguracao>();

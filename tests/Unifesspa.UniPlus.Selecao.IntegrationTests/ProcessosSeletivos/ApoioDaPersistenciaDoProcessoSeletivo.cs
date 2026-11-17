@@ -60,7 +60,7 @@ internal sealed class ApoioDaPersistenciaDoProcessoSeletivo
         EtapaProcesso etapa = EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
         return etapa;
     }
 
@@ -68,7 +68,7 @@ internal sealed class ApoioDaPersistenciaDoProcessoSeletivo
         grafo.Processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar(
             condicoes: [CondicaoOfertada.Criar(grafo.CondicaoOrigemId, "PCD", "Pessoa com deficiência")],
             recursos: [RecursoOfertado.Criar(grafo.RecursoOrigemId, "LEDOR", "Ledor")],
-            tiposDeficiencia: []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            tiposDeficiencia: []).Value!).IsSuccess.Should().BeTrue();
 
     internal static void DefinirDistribuicaoDoSplitQuery(GrafoDeTodasAsColecoes grafo)
     {
@@ -81,7 +81,7 @@ internal sealed class ApoioDaPersistenciaDoProcessoSeletivo
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = regraDistribuicao, Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-        grafo.Processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        grafo.Processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
     internal static void DefinirClassificacaoDoSplitQuery(ProcessoSeletivo processo, EtapaProcesso etapa)
@@ -98,7 +98,7 @@ internal sealed class ApoioDaPersistenciaDoProcessoSeletivo
             RegrasEliminacao = [eliminacao],
             EscalaNotaFinal = 100m,
         }).Value!;
-        processo.DefinirClassificacao(classificacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
     }
 
     internal static void DefinirCronogramaDoSplitQuery(ProcessoSeletivo processo)
@@ -112,7 +112,7 @@ internal sealed class ApoioDaPersistenciaDoProcessoSeletivo
                 UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: [BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", "Banca de teste", [])]).Value!;
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
     }
 
     internal async Task GravarAsync(ProcessoSeletivo processo)

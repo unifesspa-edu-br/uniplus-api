@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// A precondição de concorrência que uma mutação carrega — o <c>If-Match</c> já
-/// <b>decodificado</b> (ADR-0110 D5).
+/// <b>decodificado</b>.
 /// </summary>
 /// <remarks>
 /// <para>

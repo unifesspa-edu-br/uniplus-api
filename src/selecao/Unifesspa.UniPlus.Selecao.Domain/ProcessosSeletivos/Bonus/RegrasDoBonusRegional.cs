@@ -4,7 +4,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -15,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class RegrasDoBonusRegional
 {
-    internal static DomainError? Recusa(EstadoDaConfiguracao estado, bool aplica, ConfiguracaoBonusRegional? bonus)
+    internal static DomainError? Recusa(ConfiguracaoDeclarada configuracao, bool aplica, ConfiguracaoBonusRegional? bonus)
     {
         if (aplica && bonus is null)
         {
@@ -31,18 +30,18 @@ internal static class RegrasDoBonusRegional
                 "O processo que não aplica o bônus regional não pode ter a configuração do bônus.");
         }
 
-        return MunicipioCitadoForaDaArea(estado, bonus)
+        return MunicipioCitadoForaDaArea(configuracao, bonus)
             ? new DomainError(
                 "ProcessoSeletivo.MunicipioDoBonusReferenciadoPorCondicaoViva",
                 "Existe condição citando um município que deixaria a área do bônus regional — ajuste ou remova a condição antes de redefinir o bônus.")
             : null;
     }
 
-    private static bool MunicipioCitadoForaDaArea(EstadoDaConfiguracao estado, ConfiguracaoBonusRegional? bonus)
+    private static bool MunicipioCitadoForaDaArea(ConfiguracaoDeclarada configuracao, ConfiguracaoBonusRegional? bonus)
     {
         HashSet<string> novosMunicipios = [.. (bonus?.Municipios ?? []).Select(static m => m.CodigoIbge)];
-        return estado.Campos
+        return configuracao.Coleta.Campos
             .Where(static f => f.OrigemValores == OrigemValoresColeta.MunicipiosDoBonus)
-            .Any(f => ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(estado, f.FatoCodigo, novosMunicipios));
+            .Any(f => ReferenciasVivas.ReferenciaDinamicaSeriaInvalidada(configuracao, f.FatoCodigo, novosMunicipios));
     }
 }

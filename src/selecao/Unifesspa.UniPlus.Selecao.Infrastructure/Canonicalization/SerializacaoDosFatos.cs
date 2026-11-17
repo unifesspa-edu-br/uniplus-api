@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -83,7 +84,7 @@ internal static class SerializacaoDosFatos
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados)
     {
         JsonArray array = [];
-        foreach (FatoColetado fato in fatos.OrderBy(static f => f.Finalidade).ThenBy(static f => f.Ordem))
+        foreach (FatoColetado fato in OrdemCanonicaDaConfiguracao.Campos(fatos))
         {
             array.Add(SerializarFatoColetado(fato, ValoresSelecionaveisDoFato(fato, valoresSelecionaveisCongelados)));
         }
@@ -167,7 +168,7 @@ internal static class SerializacaoDosFatos
         IEnumerable<GrupoColetado> grupos,
         IReadOnlyDictionary<string, IReadOnlyList<ValorDominioDeclaradoCongelado>?>? valoresSelecionaveisCongelados,
         IReadOnlyList<DefinicaoAgregado>? agregados) =>
-        [.. grupos.OrderBy(static g => g.Finalidade).ThenBy(static g => g.Ordem).Select(g => (JsonNode)new JsonObject
+        [.. OrdemCanonicaDaConfiguracao.Grupos(grupos).Select(g => (JsonNode)new JsonObject
         {
             ["codigo"] = HashCanonicalComputer.NormalizeNfc(g.Codigo),
             ["finalidade"] = EstruturaFormulario.ParaToken(g.Finalidade),
@@ -220,7 +221,7 @@ internal static class SerializacaoDosFatos
 
     internal static JsonObject SerializarGrafoDependencia(ProcessoSeletivo processo)
     {
-        Result<GrafoDependenciaConjunta> grafo = Domain.ProcessosSeletivos.Formularios.CitacoesDosFormularios.ConstruirGrafoDependencia(Domain.ProcessosSeletivos.Edicao.EstadoDaConfiguracao.De(processo));
+        Result<GrafoDependenciaConjunta> grafo = Domain.ProcessosSeletivos.Formularios.CitacoesDosFormularios.ConstruirGrafoDependencia(processo.Declaracao());
         if (grafo.IsFailure)
         {
             throw new InvalidOperationException(

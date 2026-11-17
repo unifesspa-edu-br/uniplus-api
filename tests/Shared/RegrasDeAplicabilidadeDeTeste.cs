@@ -28,7 +28,7 @@ internal static class RegrasDeAplicabilidadeDeTeste
     /// pública — passa a ser derivado sem condição, ao lado do que o processo já deriva: o teste que
     /// oferta cota da lei e não mede a inscrição não precisa montar as perguntas.
     /// </summary>
-    public static void DerivarOQueAOpcaoPelasCotasCita(ProcessoSeletivo processo, PrecondicaoIfMatch? precondicao = null)
+    public static void DerivarOQueAOpcaoPelasCotasCita(ProcessoSeletivo processo)
     {
         ArgumentNullException.ThrowIfNull(processo);
         Result definido = processo.DefinirRegrasDerivacao(
@@ -36,8 +36,7 @@ internal static class RegrasDeAplicabilidadeDeTeste
                 .. processo.RegrasDerivacao.Where(static r => !OpcaoPelasCotasDaLei.DependenciasDaOpcao.Contains(r.CodigoFato)),
                 .. OpcaoPelasCotasDaLei.DependenciasDaOpcao.Select(static fato =>
                     ConfiguracaoDerivacaoFato.Criar(fato, [RegraDerivacaoConfigurada.Criar(0, null, null).Value!]).Value!),
-            ],
-            precondicao ?? PrecondicaoIfMatch.Ausente);
+            ]);
         if (definido.IsFailure)
         {
             throw new InvalidOperationException($"As derivações de teste não puderam ser definidas: {definido.Error!.Message}");

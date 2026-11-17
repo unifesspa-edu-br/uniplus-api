@@ -31,10 +31,9 @@ public sealed class DefinirCascataRemanejamentoPersistenciaCommandHandlerTests
 
         DefinirCascataRemanejamentoCommand command = new(
             processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
-            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q"), new DestinoRemanejamentoInput("LB_PPI", 2, "LB_PCD")],
-            PrecondicaoIfMatch.Ausente);
+            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q"), new DestinoRemanejamentoInput("LB_PPI", 2, "LB_PCD")]);
 
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
+        Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
@@ -54,10 +53,9 @@ public sealed class DefinirCascataRemanejamentoPersistenciaCommandHandlerTests
 
         DefinirCascataRemanejamentoCommand command = new(
             processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
-            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q"), new DestinoRemanejamentoInput("lb-ppi", 0, "LB_PCD")],
-            PrecondicaoIfMatch.Ausente);
+            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q"), new DestinoRemanejamentoInput("lb-ppi", 0, "LB_PCD")]);
 
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
+        Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -78,9 +76,9 @@ public sealed class DefinirCascataRemanejamentoPersistenciaCommandHandlerTests
 
         DefinirCascataRemanejamentoCommand command = new(
             processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC-1",
-            [new DestinoRemanejamentoInput("LB_PPI", 0, "LB_Q")], PrecondicaoIfMatch.Ausente);
+            [new DestinoRemanejamentoInput("LB_PPI", 0, "LB_Q")]);
 
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
+        Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -101,9 +99,9 @@ public sealed class DefinirCascataRemanejamentoPersistenciaCommandHandlerTests
 
         DefinirCascataRemanejamentoCommand command = new(
             processo.Id, "INEXISTENTE", "v1", "ac-invalido",
-            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")], PrecondicaoIfMatch.Ausente);
+            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")]);
 
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
+        Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -111,16 +109,16 @@ public sealed class DefinirCascataRemanejamentoPersistenciaCommandHandlerTests
         await mocks.RegraCatalogoReader.DidNotReceiveWithAnyArgs().ObterAsync(default!, default!, default);
     }
 
-    [Fact(DisplayName = "Handle com processo já publicado, sem sessão editorial, propaga bloqueio e NÃO persiste (CA-07/ADR-0110)")]
-    public async Task Handle_ProcessoPublicadoSemSessao_PropagaBloqueioENaoPersiste()
+    [Fact(DisplayName = "Handle com processo já publicado propaga bloqueio e NÃO persiste (CA-07)")]
+    public async Task Handle_ProcessoPublicado_PropagaBloqueioENaoPersiste()
     {
         ProcessoSeletivo processo = NovoProcessoPublicado();
         Mocks mocks = NovosMocks(processo, processo.Id);
         DefinirCascataRemanejamentoCommand command = new(
             processo.Id, RegraRemanejamentoCodigo.Cascata, "v1", "AC",
-            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")], PrecondicaoIfMatch.Ausente);
+            [new DestinoRemanejamentoInput("LB_PPI", 1, "LB_Q")]);
 
-        Result<MutacaoAceita> result = await DefinirCascataRemanejamentoCommandHandler.Handle(
+        Result result = await DefinirCascataRemanejamentoCommandHandler.Handle(
             command, mocks.Repository, mocks.RegraCatalogoReader, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();

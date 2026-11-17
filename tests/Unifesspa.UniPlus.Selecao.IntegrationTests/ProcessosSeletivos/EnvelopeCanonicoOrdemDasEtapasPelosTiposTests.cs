@@ -81,9 +81,9 @@ public sealed class EnvelopeCanonicoOrdemDasEtapasPelosTiposTests
     private static SnapshotCanonico Canonicalizar(params EtapaProcesso[] etapas)
     {
         (ProcessoSeletivo processo, _) = ApoioDoEnvelopeCodec.ProcessoDeInscricao("PS Tipos");
-        Result definicao = processo.DefinirEtapas(etapas, PrecondicaoIfMatch.Ausente);
+        Result definicao = processo.DefinirEtapas(etapas);
         definicao.IsSuccess.Should().BeTrue(definicao.Error?.Message);
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
 
         return Canonicalizer.Canonicalizar(EntradaDeReferencia(
             processo, DadosDeReferencia(), valoresSelecionaveis: CatalogoDoConjuntoBasico.ComValoresCongelados()));

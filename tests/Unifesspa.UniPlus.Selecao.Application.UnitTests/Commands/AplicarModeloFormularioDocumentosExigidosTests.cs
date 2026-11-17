@@ -50,7 +50,7 @@ public sealed class AplicarModeloFormularioDocumentosExigidosTests
         DocumentoExigido daHabilitacao = DocumentoExigido.Criar(
             _cenario.Processo.CronogramaFases.Single(static f => f.Codigo == "RESULTADO_FINAL").Id, Guid.CreateVersion7(), "HISTORICO_ENSINO_MEDIO", "Histórico", "ESCOLARIDADE", ProtecaoDoDocumentoDeTeste.Pessoal,
             Aplicabilidade.Geral, obrigatorio: true, null, [], [], null, FormatosPermitidos.Criar(true, null).Value!, null).Value!;
-        _cenario.Processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(daHabilitacao, 0).Value!], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        _cenario.Processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(daHabilitacao, 0).Value!]).IsSuccess.Should().BeTrue();
         return fase;
     }
 

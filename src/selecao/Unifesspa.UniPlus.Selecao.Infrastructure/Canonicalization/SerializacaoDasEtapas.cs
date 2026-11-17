@@ -15,6 +15,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Application.Abstractions;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -27,7 +28,7 @@ internal static class SerializacaoDasEtapas
     {
         IOrderedEnumerable<(EtapaProcesso Etapa, JsonObject SemId)> ordenadas = processo.Etapas
             .Select(static e => (Etapa: e, SemId: SerializarEtapaSemIdentidade(e)))
-            .OrderBy(static par => par.Etapa.Ordem ?? int.MaxValue)
+            .OrderBy(static par => OrdemCanonicaDaConfiguracao.ChaveDaEtapa(par.Etapa))
             .ThenBy(
                 static par => EscritaCanonica.PerfilAtual.Serializar(par.SemId),
                 ComparadorLexicograficoDeBytes.Instancia)
@@ -108,8 +109,7 @@ internal static class SerializacaoDasEtapas
             : null;
 
     private static JsonArray SerializarBancas(EtapaProcesso etapa) =>
-        new([.. etapa.Bancas
-            .OrderBy(static b => HashCanonicalComputer.NormalizeNfc(b.Codigo), StringComparer.Ordinal)
+        new([.. OrdemCanonicaDaConfiguracao.BancasDaEtapa(etapa.Bancas)
             .Select(static b => (JsonNode)new JsonObject
             {
                 ["tipoBancaOrigemId"] = JsonValue.Create(b.TipoBancaOrigemId),
@@ -135,9 +135,7 @@ internal static class SerializacaoDasEtapas
             })]);
 
     private static JsonArray SerializarProdutos(EtapaProcesso etapa) =>
-        new([.. etapa.Produtos
-            .OrderBy(static p => HashCanonicalComputer.NormalizeNfc(p.AtoCodigo), StringComparer.Ordinal)
-            .ThenBy(static p => p.Papel?.ToString() ?? string.Empty, StringComparer.Ordinal)
+        new([.. OrdemCanonicaDaConfiguracao.ProdutosDaEtapa(etapa.Produtos)
             .Select(static p => (JsonNode)new JsonObject
             {
                 ["id"] = JsonValue.Create(p.Id),

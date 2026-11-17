@@ -42,8 +42,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             ProcessoSeletivo processo = NovoProcesso($"PS produtos {Guid.CreateVersion7()}");
             processo.DefinirCronogramaFases(
                 [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", papel: null)])],
-                [],
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                []).IsSuccess.Should().BeTrue();
 
             await db.ProcessosSeletivos.AddAsync(processo);
             await db.SaveChangesAsync();
@@ -64,8 +63,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
                     ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
                     ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
                 ])],
-                [],
-                PrecondicaoIfMatch.Curinga);
+                []);
 
             redefinicao.IsSuccess.Should().BeTrue(redefinicao.Error?.Message);
             await db.SaveChangesAsync();
@@ -105,8 +103,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             ProcessoSeletivo processo = NovoProcesso($"PS matéria {Guid.CreateVersion7()}");
             processo.DefinirCronogramaFases(
                 [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)])],
-                [],
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                []).IsSuccess.Should().BeTrue();
 
             await db.ProcessosSeletivos.AddAsync(processo);
             await db.SaveChangesAsync();
@@ -125,8 +122,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
                     ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
                     ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
                 ])],
-                [],
-                PrecondicaoIfMatch.Curinga);
+                []);
 
             redefinicao.IsSuccess.Should().BeTrue(redefinicao.Error?.Message);
             await db.SaveChangesAsync();
@@ -161,8 +157,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
                     ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Preliminar),
                     ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo),
                 ])],
-                [],
-                PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                []).IsSuccess.Should().BeTrue();
 
             await db.ProcessosSeletivos.AddAsync(processo);
             await db.SaveChangesAsync();
@@ -174,8 +169,7 @@ public sealed class ProdutosDaFaseReconciliacaoPersistenciaTests : IClassFixture
             ProcessoSeletivo processo = await CarregarAsync(db, processoId);
             processo.DefinirCronogramaFases(
                 [Fase(faseCanonicaOrigemId, [ProdutoDaFase.Criar("RESULTADO_HOMOLOGACAO", PapelProdutoFase.Definitivo)])],
-                [],
-                PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+                []).IsSuccess.Should().BeTrue();
 
             await db.SaveChangesAsync();
         }

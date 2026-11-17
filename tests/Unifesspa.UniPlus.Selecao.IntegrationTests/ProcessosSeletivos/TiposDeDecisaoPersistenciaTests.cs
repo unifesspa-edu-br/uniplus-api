@@ -52,7 +52,7 @@ public sealed class TiposDeDecisaoPersistenciaTests(ProcessoSeletivoDbFixture fi
         await using (UniPlusDbContext db = fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-            processo.DefinirCronogramaFases([NovaFase(origemId, [Classificacao, Heteroidentificacao])], [], PrecondicaoIfMatch.Curinga)
+            processo.DefinirCronogramaFases([NovaFase(origemId, [Classificacao, Heteroidentificacao])], [])
                 .IsSuccess.Should().BeTrue();
             await db.SaveChangesAsync();
         }
@@ -69,7 +69,7 @@ public sealed class TiposDeDecisaoPersistenciaTests(ProcessoSeletivoDbFixture fi
         await using (UniPlusDbContext db = fixture.CreateDbContext())
         {
             ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-            processo.DefinirCronogramaFases([NovaFase(origemId, [])], [], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            processo.DefinirCronogramaFases([NovaFase(origemId, [])], []).IsSuccess.Should().BeTrue();
             await db.SaveChangesAsync();
         }
 
@@ -148,8 +148,8 @@ public sealed class TiposDeDecisaoPersistenciaTests(ProcessoSeletivoDbFixture fi
     {
         await using UniPlusDbContext escrita = fixture.CreateDbContext();
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCronogramaFases([NovaFase(origemId, fase)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([NovaEtapa(etapa)], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([NovaFase(origemId, fase)], []).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([NovaEtapa(etapa)]).IsSuccess.Should().BeTrue();
         escrita.ProcessosSeletivos.Add(processo);
         await escrita.SaveChangesAsync();
         return (processo.Id, processo.CronogramaFases.Single().Id, processo.Etapas.Single().Id);

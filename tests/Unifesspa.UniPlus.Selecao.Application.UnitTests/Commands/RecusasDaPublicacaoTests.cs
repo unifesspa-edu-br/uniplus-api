@@ -20,7 +20,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 using Unifesspa.UniPlus.Selecao.Domain.Interfaces;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -91,7 +90,7 @@ public sealed class RecusasDaPublicacaoTests
         public SnapshotCanonico Canonicalizar(EntradaCanonicalizacao entrada)
         {
             FoiInvocado = true;
-            ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(EstadoDaConfiguracao.De(entrada.Processo), TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
+            ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(entrada.Processo.Declaracao(), TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
             return new SnapshotCanonico(EnvelopeProjetavelDeTeste.Bytes, "1.2", "canonical-json/sha256@v1");
         }
     }
@@ -119,7 +118,7 @@ public sealed class RecusasDaPublicacaoTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS referência temporal", out faseId);
 
         DocumentoExigido exigencia = ExigenciaPorFaixaEtaria(faseId);
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!]).IsSuccess.Should().BeTrue();
 
         // Nenhuma ReferenciaTemporalFatos configurada — o gatilho FAIXA_ETARIA a exige.
 
@@ -170,7 +169,7 @@ public sealed class RecusasDaPublicacaoTests
         // Processo em rascunho, SEM nenhuma dimensão configurada — não conforme.
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Vazio", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!, PrecondicaoIfMatch.Ausente);
+            ConfiguracaoTaxaInscricao.Criar(true, 100m, [FundamentoIsencaoCodigo.CadastroUnico]).Value!);
 
         return processo;
     }

@@ -48,10 +48,9 @@ public sealed class DefinirEtapasNotaDoEnemTests
                             AncoraDoRecurso.AtoPublicado, "RECURSO-PRAZO-ANCORADO-EM-ATO", "v1",
                             2m, UnidadePrazo.DiasUteis, "RESULTADO_CLASSIFICACAO", null, null, false, null, null),
                     ], Bancas: []),
-            ],
-            PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, reader, regraCatalogoReader: regraCatalogoReader);
+        Result result = await Executar(command, repository, unitOfWork, reader, regraCatalogoReader: regraCatalogoReader);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.EtapaNotaEnemComProdutoOuRecursoEmAto");
@@ -76,10 +75,9 @@ public sealed class DefinirEtapasNotaDoEnemTests
             [
                 new EtapaProcessoInput("Nota do ENEM", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, Produtos: [], Bancas: [], Recursos: []),
                 new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 2, Produtos: [], Bancas: [], Recursos: []),
-            ],
-            PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, reader);
+        Result result = await Executar(command, repository, unitOfWork, reader);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.Etapas.Single(e => e.TipoEtapaOrigemId == TipoProvaObjetivaOrigemId).DeclaraNotaDoEnem.Should().BeTrue();
@@ -99,7 +97,7 @@ public sealed class DefinirEtapasNotaDoEnemTests
         EtapaProcesso etapa = EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Nota do ENEM", Carater: CaraterEtapa.Classificatoria, TipoEtapa: doEnem, Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
@@ -109,10 +107,9 @@ public sealed class DefinirEtapasNotaDoEnemTests
 
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Nota do ENEM", CaraterEtapa.Ambas, TipoProvaObjetivaOrigemId, 1m, 5m, 1, etapa.Id, Produtos: [], Bancas: [], Recursos: [])],
-            PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Nota do ENEM", CaraterEtapa.Ambas, TipoProvaObjetivaOrigemId, 1m, 5m, 1, etapa.Id, Produtos: [], Bancas: [], Recursos: [])]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, reader);
+        Result result = await Executar(command, repository, unitOfWork, reader);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.Etapas.Single().TipoEtapa.NotaDeOrigemNoEnem.Should().BeTrue(

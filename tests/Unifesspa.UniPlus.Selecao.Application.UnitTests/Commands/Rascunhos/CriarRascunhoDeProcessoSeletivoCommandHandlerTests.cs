@@ -71,7 +71,7 @@ public sealed class CriarRascunhoDeProcessoSeletivoCommandHandlerTests
         Result<RascunhoSalvoDto> resultado = await Criar(CenarioDoRascunho.DocumentoValido());
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
-            (string.Empty, DocumentoDaConfiguracaoErrorCodes.FormaInvalida),
+            (null, DocumentoDaConfiguracaoErrorCodes.FormaInvalida),
             ("/identificacao/nome", DocumentoDaConfiguracaoErrorCodes.TipoInvalido));
         await NadaFoiGravado();
     }

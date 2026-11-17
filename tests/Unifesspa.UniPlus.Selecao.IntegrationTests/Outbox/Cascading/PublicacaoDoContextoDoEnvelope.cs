@@ -47,17 +47,15 @@ internal static class PublicacaoDoContextoDoEnvelope
     public static async Task<ProcessoSeletivoDto> ObterProcessoAsync(this ContextoDoEnvelopeFechado contexto)
     {
         HttpResponseMessage resposta = await contexto.EnviarAsync(
-            HttpMethod.Get, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}", null, ifMatch: null, idempotente: false,
+            HttpMethod.Get, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}", null, idempotente: false,
             accept: "application/vnd.uniplus.processo-seletivo.v1+json").ConfigureAwait(false);
         resposta.StatusCode.Should().Be(HttpStatusCode.OK, "GET do recurso, usado para descobrir os Ids gerados pelo servidor");
         return (await resposta.Content.ReadFromJsonAsync<ProcessoSeletivoDto>(JsonDoContrato.Opcoes).ConfigureAwait(false))!;
     }
 
-
     public static Task<HttpResponseMessage> ObterConformidadeAsync(this ContextoDoEnvelopeFechado contexto) =>
-        contexto.EnviarAsync(HttpMethod.Get, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/conformidade", null, ifMatch: null, idempotente: false,
+        contexto.EnviarAsync(HttpMethod.Get, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/conformidade", null, idempotente: false,
             accept: "application/vnd.uniplus.conformidade-processo-seletivo.v1+json");
-
 
     public static Task<HttpResponseMessage> PublicarAsync(this ContextoDoEnvelopeFechado contexto, Guid documentoEditalId, string numero, string tipoAtoCodigo) =>
         contexto.EnviarAsync(
@@ -69,32 +67,22 @@ internal static class PublicacaoDoContextoDoEnvelope
                 // inscrição, e é da janela dela que o Edital passa a declarar o prazo (#1350).
                 documentoEditalId,
                 ato = NovoAto(tipoAtoCodigo),
-            },
-            ifMatch: null);
+            });
 
-
-    public static Task<HttpResponseMessage> AbrirRetificacaoAsync(this ContextoDoEnvelopeFechado contexto, string motivo) =>
-        contexto.EnviarAsync(HttpMethod.Post, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/retificacao-em-curso", new { motivo }, ifMatch: null);
-
-
-    public static Task<HttpResponseMessage> FecharRetificacaoAsync(this ContextoDoEnvelopeFechado contexto, Guid documentoEditalId, string numero, string tipoAtoCodigo, string ifMatch) =>
+    public static Task<HttpResponseMessage> RetificarAsync(this ContextoDoEnvelopeFechado contexto, Guid documentoEditalId, string motivo, string numero, string tipoAtoCodigo) =>
         contexto.EnviarAsync(
-            HttpMethod.Post, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/retificacao-em-curso/fechamento",
+            HttpMethod.Post, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/retificacoes",
             new
             {
+                motivo,
                 numero,
-                // O período não é mais informado: o processo do cenário tem fase que coleta
-                // inscrição, e é da janela dela que o Edital passa a declarar o prazo (#1350).
                 documentoEditalId,
                 ato = NovoAto(tipoAtoCodigo),
-            },
-            ifMatch);
-
+            });
 
     public static Task<HttpResponseMessage> ObterSnapshotVigenteAsync(this ContextoDoEnvelopeFechado contexto) =>
-        contexto.EnviarAsync(HttpMethod.Get, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/snapshot-vigente", null, ifMatch: null, idempotente: false,
+        contexto.EnviarAsync(HttpMethod.Get, $"{ContextoDoEnvelopeFechado.Rota}/{contexto.ProcessoId}/snapshot-vigente", null, idempotente: false,
             accept: "application/vnd.uniplus.snapshot-vigente-processo-seletivo.v1+json");
-
 
     internal static object NovoAto(string tipoAtoCodigo) => new
     {

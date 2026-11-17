@@ -1,6 +1,5 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -24,14 +23,14 @@ public static class TiposDeAtoDoCronograma
     /// declarados: quem precisa saber quais tipos de ato o processo cita lê daqui. A etapa é identificada pela ordem além do
     /// nome, porque o nome não é único: duas etapas de mesmo nome em lugares distintos seriam contadas como uma.
     /// </summary>
-    public static IReadOnlyList<DeclaracaoDeAto> DeclaracoesDeAtos(EstadoDaConfiguracao estado)
+    public static IReadOnlyList<DeclaracaoDeAto> DeclaracoesDeAtos(ConfiguracaoDeclarada configuracao)
     {
-        ArgumentNullException.ThrowIfNull(estado);
+        ArgumentNullException.ThrowIfNull(configuracao);
 
         return [
-            .. estado.CronogramaFases.SelectMany(static fase => fase.Produtos
+            .. configuracao.Cronograma.CronogramaFases.SelectMany(static fase => fase.Produtos
                 .Select(produto => new DeclaracaoDeAto(produto.AtoCodigo, LugarDaDeclaracao.DaFase(fase.Codigo), produto.Papel))),
-            .. estado.Etapas.SelectMany(static etapa => etapa.Produtos
+            .. configuracao.Avaliacao.Etapas.SelectMany(static etapa => etapa.Produtos
                 .Select(produto => new DeclaracaoDeAto(produto.AtoCodigo, LugarDaDeclaracao.DaEtapa(etapa.Nome, etapa.Ordem), produto.Papel))),
         ];
     }

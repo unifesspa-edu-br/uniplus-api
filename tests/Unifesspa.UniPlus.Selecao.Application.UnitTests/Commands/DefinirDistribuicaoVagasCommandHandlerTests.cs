@@ -29,9 +29,9 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         Mocks mocks = NovosMocks(processo, processo.Id);
-        DefinirDistribuicaoVagasCommand command = new(processo.Id, [], PrecondicaoIfMatch.Ausente);
+        DefinirDistribuicaoVagasCommand command = new(processo.Id, []);
 
-        Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
             command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -45,9 +45,9 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7());
         DefinirDistribuicaoVagasCommand command = new(
             Guid.CreateVersion7(),
-            [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "X", "v1", null, null, null, [Guid.CreateVersion7()], [])], PrecondicaoIfMatch.Ausente);
+            [new ConfiguracaoDistribuicaoVagasInput(Guid.CreateVersion7(), 50, 1m, "X", "v1", null, null, null, [Guid.CreateVersion7()], [])]);
 
-        Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
             command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -72,9 +72,9 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             processo.Id,
             [new ConfiguracaoDistribuicaoVagasInput(
                 ofertaCursoId, 60, 1m, RegraDistribuicaoVagasCodigo.Institucional, "v1", null, null, null,
-                [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])], PrecondicaoIfMatch.Ausente);
+                [modalidadeId], [new QuantidadeVagaInput(modalidadeId, 60)])]);
 
-        Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
             command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -83,11 +83,8 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         processo.DistribuicaoVagas.Single().VagasOfertadas.Should().ContainSingle(v => v.Quantidade == 60);
         await mocks.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
 
-        // issue #1283: o corpo devolvido reflete exatamente o que foi persistido —
-        // mesmo shape que a simulação (#1282) e o GET. Sem sessão editorial (processo
-        // recém-criado, sem retificação aberta), o ETag vem nulo.
-        result.Value!.ETag.Should().BeNull();
-        ConfiguracaoDistribuicaoVagasDto dto = result.Value!.DistribuicaoVagas.Should().ContainSingle().Subject;
+        // O corpo devolvido reflete exatamente o que foi persistido, no mesmo formato da simulação e do GET.
+        ConfiguracaoDistribuicaoVagasDto dto = result.Value!.Should().ContainSingle().Subject;
         dto.VagasOfertadasBase.Should().Be(60);
         dto.Quadro.Should().ContainSingle(v => v.Quantidade == 60);
         dto.TotalDeVagasDoEdital.Should().Be(60);
@@ -129,9 +126,9 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
             [new ConfiguracaoDistribuicaoVagasInput(
                 ofertaCursoId, 50, 0.5m, RegraDistribuicaoVagasCodigo.Lei12711, "v1",
                 "RECONCILIACAO-VAGAS-ARTIGO-11-PARAGRAFO-UNICO", "v1", referenciaId,
-                [.. federaisMaisAc.Select(f => f.Id)], [])], PrecondicaoIfMatch.Ausente);
+                [.. federaisMaisAc.Select(f => f.Id)], [])]);
 
-        Result<MutacaoComDistribuicaoVagasDto> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
+        Result<IReadOnlyList<ConfiguracaoDistribuicaoVagasDto>> result = await DefinirDistribuicaoVagasCommandHandler.Handle(
             command, mocks.Repository, mocks.Resolvedor, CadastrosVivos.CatalogoDeFatos(), mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
@@ -141,11 +138,8 @@ public sealed class DefinirDistribuicaoVagasCommandHandlerTests
         processo.DistribuicaoVagas.Single().RegraAjuste.Should().NotBeNull();
         processo.DistribuicaoVagas.Single().VagasOfertadas.Should().HaveCount(9);
 
-        // issue #1283: o corpo devolvido é a mesma projeção do agregado persistido —
-        // conservação do quadro (VrFinal + retiradas + AC = VO) confere no DTO devolvido,
-        // não só no agregado em memória.
-        result.Value!.ETag.Should().BeNull();
-        ConfiguracaoDistribuicaoVagasDto dto = result.Value!.DistribuicaoVagas.Should().ContainSingle().Subject;
+        // A conservação do quadro (VrFinal + retiradas + AC = VO) confere no DTO devolvido, não só no agregado em memória.
+        ConfiguracaoDistribuicaoVagasDto dto = result.Value!.Should().ContainSingle().Subject;
         dto.Quadro.Should().HaveCount(9);
         dto.ReferenciaDemografica.Should().NotBeNull();
         dto.ConferenciaDaReservaLegal!.ReservaLegalEfetiva.Should().Be(processo.DistribuicaoVagas.Single().ReservaLegalEfetiva!.Value);

@@ -136,7 +136,7 @@ internal static class LeituraDoDesempate
     }
 
     // A forma (ao menos uma área, código válido, sem repetição) é conferida por CriterioDesempate.Criar; a
-    // existência de cada área no quadro congelado, pela restauração do grafo.
+    // existência de cada área no quadro congelado, pela reidratação do grafo.
     private static ArgsDesempateMaiorNotaAreaEnem? LerMaiorNotaAreaEnem(LeitorEnvelope leitor, JsonObject args, string path)
     {
         leitor.ExigirChaves(args, path, "areas");

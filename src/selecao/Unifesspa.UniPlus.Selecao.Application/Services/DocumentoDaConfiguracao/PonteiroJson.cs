@@ -3,7 +3,9 @@ namespace Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao
 using System.Globalization;
 using System.Text.Json.Nodes;
 
-/// <summary>Monta e desmonta os segmentos de um JSON Pointer (RFC 6901).</summary>
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
+
+/// <summary>Monta, desmonta e resolve os segmentos de um JSON Pointer (RFC 6901) no documento enviado; o escape de cada segmento é o do <see cref="PonteiroNoDocumento"/>.</summary>
 public static class PonteiroJson
 {
     public static string Acrescentar(string ponteiro, string segmento)
@@ -11,7 +13,7 @@ public static class PonteiroJson
         ArgumentNullException.ThrowIfNull(ponteiro);
         ArgumentNullException.ThrowIfNull(segmento);
 
-        return $"{ponteiro}/{segmento.Replace("~", "~0", StringComparison.Ordinal).Replace("/", "~1", StringComparison.Ordinal)}";
+        return $"{ponteiro}/{PonteiroNoDocumento.Escapado(segmento)}";
     }
 
     public static IReadOnlyList<string> Segmentos(string ponteiro)
@@ -20,7 +22,7 @@ public static class PonteiroJson
 
         return ponteiro.Length == 0
             ? []
-            : [.. ponteiro[1..].Split('/').Select(static segmento => segmento.Replace("~1", "/", StringComparison.Ordinal).Replace("~0", "~", StringComparison.Ordinal))];
+            : [.. ponteiro[1..].Split('/').Select(PonteiroNoDocumento.Desescapado)];
     }
 
     /// <summary>O valor que o ponteiro designa no documento, ou <see langword="null"/> quando o documento não o contém.</summary>

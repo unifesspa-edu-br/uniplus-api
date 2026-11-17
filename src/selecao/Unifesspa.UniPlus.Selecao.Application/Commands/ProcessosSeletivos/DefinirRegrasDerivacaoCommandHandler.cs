@@ -33,7 +33,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// </summary>
 public static class DefinirRegrasDerivacaoCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirRegrasDerivacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IFatoCandidatoReader fatoCandidatoReader,
@@ -50,16 +50,16 @@ public static class DefinirRegrasDerivacaoCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // Precondição / bloqueio de mutação pós-publicação sem sessão ANTES da resolução do
+        // O bloqueio de mutação fora do rascunho vem ANTES da resolução do
         // vocabulário cross-módulo. O mesmo guard continua dentro de DefinirRegrasDerivacao.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         // Acumula (ADR-0125) a forma básica de TODAS as configurações e regras numa primeira
@@ -91,7 +91,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
 
         if (formaErros.Count > 0)
         {
-            return Result<MutacaoAceita>.ValidationFailure(formaErros);
+            return Result.ValidationFailure(formaErros);
         }
 
         (IReadOnlyDictionary<string, FatoCandidatoView> catalogo,
@@ -125,7 +125,7 @@ public static class DefinirRegrasDerivacaoCommandHandler
                 ResolverConfiguracao(configInput, catalogo, vocabulario, universo, dominiosDinamicos);
             if (configResult.IsFailure)
             {
-                return Result<MutacaoAceita>.ValidationFailure(configResult.Errors);
+                return Result.ValidationFailure(configResult.Errors);
             }
 
             configuracoes.Add(configResult.Value!);
@@ -133,26 +133,25 @@ public static class DefinirRegrasDerivacaoCommandHandler
 
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
             catalogo,
-            ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)),
+            ReferenciasVivas.Vinculos(processo.Declaracao()),
             VinculosDeFatos.De(
                 configuracoes.Select(static c => c.CodigoFato),
                 configuracoes.SelectMany(static c => c.Regras).SelectMany(static r => r.Condicoes).Select(static c => (c.Fato, c.Valor)),
                 configuracoes.SelectMany(static c => c.CodigosContribuidos)));
         if (vinculoNovo.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
+            return Result.Failure(vinculoNovo.Error!);
         }
 
-        Result result = processo.DefinirRegrasDerivacao(configuracoes, command.Precondicao);
+        Result result = processo.DefinirRegrasDerivacao(configuracoes);
         if (result.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(result.Error!);
+            return Result.Failure(result.Error!);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        // Rascunho puro: 204 sem ETag. Sob sessão de retificação: 204 com o ETag da nova revisão.
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 
     internal static Result<ConfiguracaoDerivacaoFato> ResolverConfiguracao(

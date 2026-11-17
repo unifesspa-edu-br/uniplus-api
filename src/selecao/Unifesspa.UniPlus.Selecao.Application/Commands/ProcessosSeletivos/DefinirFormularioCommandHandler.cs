@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// </summary>
 public static class DefinirFormularioCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirFormularioCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IFatoCandidatoReader fatoCandidatoReader,
@@ -39,13 +39,13 @@ public static class DefinirFormularioCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(ProcessoNaoEncontrado(command.ProcessoSeletivoId));
+            return Result.Failure(ProcessoNaoEncontrado(command.ProcessoSeletivoId));
         }
 
-        // A precondição de concorrência precede a validação do payload (ADR-0110 D9).
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa vem antes de consultar cadastros.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         // O formulário de inscrição tem a seção reservada dos dados básicos, a primeira; o que nasce
@@ -86,33 +86,33 @@ public static class DefinirFormularioCommandHandler
             HashSet<string> recusados = [.. erros.Select(static e => e.Field ?? string.Empty)];
             erros.AddRange(RegrasDosFormularios
                 .ConferirFormulario(
-                    EstadoDaConfiguracao.De(processo), command.Finalidade, command.FaseId, command.Titulo, etapas, etapasCompletas: etapas.Count == entradas.Count, itensDaCriacao)
+                    processo.Declaracao(), command.Finalidade, command.FaseId, command.Titulo, etapas, etapasCompletas: etapas.Count == entradas.Count, itensDaCriacao)
                 .Where(recusa => recusa.Field is not { } campo
                     || !campo.EndsWith(".exibicao", StringComparison.Ordinal)
                     || !recusados.Contains(campo)));
-            return Result<MutacaoAceita>.ValidationFailure(erros);
+            return Result.ValidationFailure(erros);
         }
 
         Result vinculoNovo = ConferenciaDeVinculoNovo.Conferir(
             contexto.Fatos,
-            ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)),
+            ReferenciasVivas.Vinculos(processo.Declaracao()),
             VinculosDeFatos.De(
                 (itensDaCriacao ?? []).Select(static f => f.FatoCodigo),
                 etapas.SelectMany(static e => e.Condicoes).Concat((itensDaCriacao ?? []).SelectMany(static f => f.Condicoes))
                     .Select(static c => (c.Fato, c.Valor))));
         if (vinculoNovo.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(vinculoNovo.Error!);
+            return Result.Failure(vinculoNovo.Error!);
         }
 
-        Result definir = processo.DefinirFormulario(command.Finalidade, command.FaseId, command.Titulo, etapas, command.Precondicao, itensDaCriacao);
+        Result definir = processo.DefinirFormulario(command.Finalidade, command.FaseId, command.Titulo, etapas, itensDaCriacao);
         if (definir.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(definir.Errors);
+            return Result.ValidationFailure(definir.Errors);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 
     internal static DomainError ProcessoNaoEncontrado(Guid id) =>
@@ -122,7 +122,7 @@ public static class DefinirFormularioCommandHandler
 /// <summary>Remove o formulário da finalidade; a regra de só em rascunho é do processo.</summary>
 public static class RemoverFormularioCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         RemoverFormularioCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IUnitOfWork unitOfWork,
@@ -137,16 +137,16 @@ public static class RemoverFormularioCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
+            return Result.Failure(DefinirFormularioCommandHandler.ProcessoNaoEncontrado(command.ProcessoSeletivoId));
         }
 
-        Result remover = processo.RemoverFormulario(command.Finalidade, command.Precondicao);
+        Result remover = processo.RemoverFormulario(command.Finalidade);
         if (remover.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(remover.Error!);
+            return Result.Failure(remover.Error!);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

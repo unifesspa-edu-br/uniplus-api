@@ -57,7 +57,6 @@ internal static class ErrosDosMotivosDeDecisao
         Recusa(MotivoDeDecisaoErrorCodes.JustificativaCaractereInvalido, "justificativa_caractere_invalido", "Justificativa contém caractere não permitido"),
         Recusa(MotivoDeDecisaoErrorCodes.AvaliacaoIniciada, "avaliacao_iniciada", "A avaliação nesta fase ou etapa já começou"),
         Recusa(MotivoDeDecisaoErrorCodes.RetiradaAposPublicacao, "retirada_apos_publicacao", "Motivo publicado não é retirado do processo"),
-        Recusa(MotivoDeDecisaoErrorCodes.FaseOuEtapaComMotivoPublicado, "fase_ou_etapa_com_motivo_publicado", "A fase ou etapa removida tem motivo de decisão publicado"),
     ];
 
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> LeituraEConferenciaAoCongelar() =>

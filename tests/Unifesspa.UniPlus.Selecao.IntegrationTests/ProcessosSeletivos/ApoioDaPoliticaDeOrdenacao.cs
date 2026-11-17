@@ -91,50 +91,48 @@ internal static class ApoioDaPoliticaDeOrdenacao
 
 
         processo.DefinirAtendimentoEspecializado(
-            atendimentoEspecializado ?? AtendimentoEspecializado.Criar([], [], []).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            atendimentoEspecializado ?? AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas([DistribuicaoMinima()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoMinima()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
         if (criteriosDesempate is not null)
         {
-            processo.DefinirCriteriosDesempate(criteriosDesempate, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirCriteriosDesempate(criteriosDesempate).IsSuccess.Should().BeTrue();
         }
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
             RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-        }).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }).Value!).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
 
         processo.DefinirCronogramaFases(
-            cronogramaFases ?? [FaseMinima()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            cronogramaFases ?? [FaseMinima()], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(etapas ?? [
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: (cronogramaFases ?? [FaseMinima()])[0].Codigo),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
 
         if (documentosExigidos is not null)
         {
-            processo.DefinirDocumentosExigidos(documentosExigidos, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirDocumentosExigidos(documentosExigidos).IsSuccess.Should().BeTrue();
         }
 
         if (fatosColetados is not null)
         {
-            processo.DefinirItens(fatosColetados, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirItens(fatosColetados).IsSuccess.Should().BeTrue();
         }
 
         if (regrasDerivacao is not null)
         {
-            processo.DefinirRegrasDerivacao(regrasDerivacao, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirRegrasDerivacao(regrasDerivacao).IsSuccess.Should().BeTrue();
         }
 
         if (cascata is not null)
         {
-            processo.DefinirCascataRemanejamento(cascata, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirCascataRemanejamento(cascata).IsSuccess.Should().BeTrue();
         }
 
         return processo;

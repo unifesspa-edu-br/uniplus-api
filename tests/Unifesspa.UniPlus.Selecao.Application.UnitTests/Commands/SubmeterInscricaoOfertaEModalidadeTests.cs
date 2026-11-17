@@ -137,7 +137,7 @@ public sealed class SubmeterInscricaoOfertaEModalidadeTests
         processo.DefinirDistribuicaoVagas(
             [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(PredicadoDnf.CriarDeCondicoesAgrupadas(
                 [(0, CondicaoDnf.Criar("CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!)],
-            FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
     [Fact(DisplayName = "Sem nenhuma modalidade aplicável, o envio é recusado no campo de que ela depende, sem gravar nada")]
     public async Task Handle_NenhumaModalidade_RecusaNoCampoQueADecide()
@@ -172,7 +172,7 @@ public sealed class SubmeterInscricaoOfertaEModalidadeTests
             ajustar: processo => processo.DefinirDistribuicaoVagas(
                 [ProcessoSeletivoConformeBuilder.DistribuicaoAmplaConcorrencia(PredicadoDnf.CriarDeCondicoesAgrupadas(
                     [(0, CondicaoDnf.Criar("MUNICIPIO_RESIDENCIA", Operador.Igual, JsonSerializer.SerializeToElement(Belem)).Value!)]).Value!)],
-                FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(),
+                FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue(),
             geo: GeoQueConhece().Indisponivel());
 
         resultado.Error!.Code.Should().Be(ConferenciaEnderecoGeoErrorCodes.GeoIndisponivel);

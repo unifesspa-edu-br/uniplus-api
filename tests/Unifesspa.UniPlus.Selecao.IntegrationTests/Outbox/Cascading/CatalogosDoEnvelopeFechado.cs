@@ -216,8 +216,8 @@ internal static class CatalogosDoEnvelopeFechado
     }
 
     /// <summary>
-    /// <see cref="TiposDeAtoSeeder"/> só cobre os dois atos da sessão editorial (abertura e
-    /// retificação). Os dois resultados que a fase publica exigem seus próprios tipos
+    /// <see cref="TiposDeAtoSeeder"/> só cobre os atos de abertura e de
+    /// retificação. Os dois resultados que a fase publica exigem seus próprios tipos
     /// vigentes no catálogo de Publicações — semeados aqui, à parte, sem duplicar o seeder
     /// existente para dois códigos extras.
     /// </summary>
@@ -321,7 +321,7 @@ internal static class CatalogosDoEnvelopeFechado
             .OrderBy(v => v.NumeroVersao)
             .ToListAsync();
 
-        versoes.Should().HaveCount(2, "publicação (V1) + fechamento da sessão (V2)");
+        versoes.Should().HaveCount(2, "publicação (V1) + retificação (V2)");
         VersaoConfiguracao v1 = versoes[0];
         VersaoConfiguracao v2 = versoes[1];
         v2.AtoCriadorRetificaId.Should().NotBeNull("V2 é uma retificação — ela emenda o ato criador de V1");

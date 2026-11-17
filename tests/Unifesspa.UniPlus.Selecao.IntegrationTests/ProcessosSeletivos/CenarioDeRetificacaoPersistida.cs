@@ -23,8 +23,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Montagem compartilhada dos testes de persistência da retificação (Postgres real): o processo
-/// conforme, a publicação da abertura, a retificação por ato que emenda a versão corrente, o
-/// fechamento e o descarte da sessão editorial.
+/// conforme, a publicação da abertura e a retificação por ato que emenda a versão corrente.
 /// </summary>
 internal sealed class CenarioDeRetificacaoPersistida
 {
@@ -46,29 +45,28 @@ internal sealed class CenarioDeRetificacaoPersistida
     public static ProcessoSeletivo NovoProcessoConforme(string nome)
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar(nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirCronogramaFases([FaseConforme()], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseConforme()], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
         ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
             Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
             null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
         processo.DefinirDistribuicaoVagas([ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"), Modalidades = [modalidade] },
-            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo)
             .IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
             RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-        }).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }).Value!).IsSuccess.Should().BeTrue();
         // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
@@ -96,13 +94,6 @@ internal sealed class CenarioDeRetificacaoPersistida
 
     public static async Task<VersaoConfiguracao> LerVersaoAsync(UniPlusDbContext leitura, Guid versaoId) =>
         await leitura.VersoesConfiguracao.AsNoTracking().FirstAsync(v => v.Id == versaoId, CancellationToken.None);
-
-    public static void AbrirRetificacao(ProcessoSeletivo processo, string motivo, VersaoConfiguracao versaoAbertura)
-    {
-        Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            motivo, versaoAbertura, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "integration-test-user", TimeProvider.System.GetUtcNow());
-        abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
-    }
 
     /// <summary>
     /// Publica o processo e persiste o processo, o documento do edital e a versão da abertura.
@@ -136,45 +127,6 @@ internal sealed class CenarioDeRetificacaoPersistida
 
     private static SnapshotCanonico Canonicalizar(ProcessoSeletivo processo, DadosEdital dados, DocumentoAPublicar documento) =>
         Canonicalizer.Canonicalizar(new EntradaCanonicalizacao(processo, dados, documento.HashSha256!, FusoInstitucional.ZoneId, ValoresSelecionaveisCongelados: CatalogoDoConjuntoBasico.ComValoresCongelados(), TiposDeAtoCongelados: TiposDeAtoCongeladosDeTeste.Dos(processo), FatosDerivadosCongelados: FatosDerivadosCongeladosDeTeste.Padrao));
-
-    /// <summary>
-    /// Fecha a retificação aberta na sessão: documento do edital novo, snapshot recanonicalizado
-    /// da configuração viva editada e persistência da versão sucessora.
-    /// </summary>
-    public static async Task<VersaoConfiguracao> FecharRetificacaoAsync(
-        UniPlusDbContext sessao, ProcessoSeletivoRepository repository, ProcessoSeletivo carregado, VersaoConfiguracao versaoAbertura)
-    {
-        DocumentoAPublicar documento = DocumentoConfirmado(carregado.Id);
-        await sessao.DocumentosAPublicar.AddAsync(documento, CancellationToken.None);
-        DadosEdital dados = NovosDados(documento.Id);
-        SnapshotCanonico canonico = Canonicalizar(carregado, dados, documento);
-
-        Result<VersaoConfiguracao> fechar = carregado.FecharRetificacao(
-            new CenarioDeCongelamento { Dados = dados, Documento = new DocumentoCongelado(canonico.Bytes, canonico.SchemaVersion, canonico.AlgoritmoHash, documento.HashSha256!), AtorUsuarioContaId = "integration-test-user", Contagem = CorpusEnvelopeDadosDoEdital.ContextoRico() }, versaoAbertura, PrecondicaoIfMatch.Curinga);
-        fechar.IsSuccess.Should().BeTrue(fechar.Error?.Message);
-
-        await repository.AdicionarVersaoConfiguracaoAsync(fechar.Value!, CancellationToken.None);
-        await sessao.SaveChangesAsync(CancellationToken.None);
-        return fechar.Value!;
-    }
-
-    /// <summary>
-    /// O descarte da sessão, com a prova de fidelidade, exatamente como em produção:
-    /// <c>RestauradorDeConfiguracao</c> só repõe DEPOIS de recanonicalizar e comparar byte a byte
-    /// com a versão da abertura.
-    /// </summary>
-    public static async Task DescartarComProvaAsync(UniPlusDbContext sessao, ProcessoSeletivo tracked, VersaoConfiguracao versaoAbertura)
-    {
-        Result<GrafoConfiguracao> prova = new RestauradorDeConfiguracao(new RegistroCodecsEnvelope()).Restaurar(tracked, versaoAbertura);
-        prova.IsSuccess.Should().BeTrue(prova.Error?.Message);
-
-        tracked.LimparColetaEDerivacaoParaRestauracao();
-        await sessao.SaveChangesAsync(CancellationToken.None);
-
-        tracked.RestaurarConfiguracaoCongelada(versaoAbertura, prova.Value!).IsSuccess.Should().BeTrue();
-        tracked.DescartarRetificacao(PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        await sessao.SaveChangesAsync(CancellationToken.None);
-    }
 
     /// <summary>
     /// Publica um processo e o retifica em seguida — persistindo as duas versões da

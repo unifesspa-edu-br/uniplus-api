@@ -20,5 +20,4 @@ public sealed record DefinirBonusRegionalCommand(
     decimal? Fator,
     decimal? Teto,
     string? FatoElegibilidadeCodigo,
-    Guid? BaseLegalBonusRegionalId,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    Guid? BaseLegalBonusRegionalId) : ICommand<Result>;

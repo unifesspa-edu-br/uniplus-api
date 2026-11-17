@@ -39,5 +39,4 @@ public sealed record CriterioDesempateInput(
 /// </summary>
 public sealed record DefinirCriteriosDesempateCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<CriterioDesempateInput> Criterios,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    IReadOnlyList<CriterioDesempateInput> Criterios) : ICommand<Result>;

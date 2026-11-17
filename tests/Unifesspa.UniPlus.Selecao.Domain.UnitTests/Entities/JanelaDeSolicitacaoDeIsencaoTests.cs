@@ -8,7 +8,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -20,8 +19,8 @@ using Xunit;
 /// </summary>
 public sealed class JanelaDeSolicitacaoDeIsencaoTests
 {
-    private static DomainError? PendenciaDoCronograma(EstadoDaConfiguracao estado, TimeZoneInfo? fuso) =>
-        CronogramaDoProcesso.Do(estado.CronogramaFases).ConferirCompletude(fuso) is [var primeira, ..] ? primeira.Error : null;
+    private static DomainError? PendenciaDoCronograma(ConfiguracaoDeclarada configuracao, TimeZoneInfo? fuso) =>
+        CronogramaDoProcesso.Do(configuracao.Cronograma.CronogramaFases).ConferirCompletude(fuso) is [var primeira, ..] ? primeira.Error : null;
 
     private static readonly TimeZoneInfo Belem = TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId);
     private static readonly DateTimeOffset AberturaDasInscricoes = InstanteEmBelem.Em(2026, 3, 2);
@@ -124,7 +123,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         var contexto = new ContextoDeContagemDePrazos(
             CalendarioVigente: null, FusoInstitucional: Belem);
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(contexto))
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(contexto))
             .Should().Contain(i => i.Codigo == "cronograma_janela_de_isencao" && !i.Ok);
     }
 
@@ -138,7 +137,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             FaseDeIsencao(AberturaDasInscricoes, InstanteEmBelem.Em(2026, 3, 3, 23, 59, 59)),
         ]);
 
-        Action semZona = () => PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), null);
+        Action semZona = () => PendenciaDoCronograma(processo.Declaracao(), null);
 
         semZona.Should().Throw<InvalidOperationException>();
     }
@@ -155,9 +154,9 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
 
         processo.DefinirCronogramaFases(
             [FaseDeIsencao(AberturaDasInscricoes, InstanteEmBelem.Em(2026, 3, 3, 23, 59, 59))],
-            [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            []).IsSuccess.Should().BeTrue();
 
-        PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem)!.Code
+        PendenciaDoCronograma(processo.Declaracao(), Belem)!.Code
             .Should().Be("ProcessoSeletivo.JanelaDeIsencaoMenorQueCincoDias");
     }
 
@@ -167,7 +166,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
         ProcessoSeletivo processo = ProcessoComCronograma(
             [FaseDeInscricao(AberturaDasInscricoes, FimDasInscricoes)]);
 
-        PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem).Should().BeNull();
+        PendenciaDoCronograma(processo.Declaracao(), Belem).Should().BeNull();
     }
 
     private static DomainError? Avaliar(
@@ -182,7 +181,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             FaseDeIsencao(aberturaIsencao, fimIsencao, recurso),
         ]);
 
-        return PendenciaDoCronograma(EstadoDaConfiguracao.De(processo), Belem);
+        return PendenciaDoCronograma(processo.Declaracao(), Belem);
     }
 
     private static FaseCronograma FaseDeInscricao(DateTimeOffset inicio, DateTimeOffset fim) =>
@@ -232,7 +231,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
 
-        processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases(fases, []).IsSuccess.Should().BeTrue();
 
         return processo;
     }

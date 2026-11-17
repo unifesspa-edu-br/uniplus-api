@@ -62,8 +62,8 @@ public static class AncoraDoRecursoDaFase
     /// publicado.
     /// </summary>
     /// <remarks>
-    /// A restauração da configuração congelada passa por dois remapeamentos sucessivos: do produto
-    /// congelado para o recriado e do recriado para o rastreado que sobrevive à reconciliação. A ponte é
+    /// A redefinição do cronograma passa por dois remapeamentos sucessivos: do produto
+    /// declarado para o recriado e do recriado para o rastreado que sobrevive à reconciliação. A ponte é
     /// o par ato e papel, porque é a chave da própria reconciliação e é único dentro da fase: o ato
     /// sozinho não é, desde que a mesma matéria passou a ser publicável como preliminar e como
     /// definitiva. Quando os produtos de origem não contêm a âncora, ou os de destino não têm o par, não

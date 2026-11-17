@@ -111,7 +111,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
     {
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = NovoProcesso($"{nome} {Guid.CreateVersion7()}");
-        processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, bancas)], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, bancas)], [])
             .IsSuccess.Should().BeTrue();
         await db.ProcessosSeletivos.AddAsync(processo);
         await db.SaveChangesAsync();
@@ -122,7 +122,7 @@ public sealed class RecorteDeCompetenciaPersistenciaTests : IClassFixture<Proces
     {
         await using UniPlusDbContext db = _fixture.CreateDbContext();
         ProcessoSeletivo processo = await CarregarAsync(db, processoId);
-        Result redefinicao = processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, bancas)], [], PrecondicaoIfMatch.Curinga);
+        Result redefinicao = processo.DefinirCronogramaFases([Fase(faseCanonicaOrigemId, bancas)], []);
         redefinicao.IsSuccess.Should().BeTrue(redefinicao.Error?.Message);
         await db.SaveChangesAsync();
     }

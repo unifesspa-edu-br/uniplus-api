@@ -26,9 +26,9 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
     private static readonly DomainError AtoJaRetificado = new("AtoNormativo.AtoJaRetificado", "O ato EDITAL nº 1/2026 já foi retificado.");
 
     public static TheoryData<OperacaoQueCongela> Atos() =>
-        [OperacaoQueCongela.Publicar, OperacaoQueCongela.Retificar, OperacaoQueCongela.FecharRetificacao];
+        [OperacaoQueCongela.Publicar, OperacaoQueCongela.Retificar];
 
-    [Theory(DisplayName = "A porta é chamada depois do ato do processo e antes da divulgação, e a remoção do rascunho e a gravação única vêm depois dela")]
+    [Theory(DisplayName = "A porta é chamada depois do ato do processo e antes da divulgação, e a gravação única vem depois dela")]
     [MemberData(nameof(Atos))]
     public async Task Sucesso_ChamaAPortaNaOrdemDaTransacao(OperacaoQueCongela operacao)
     {
@@ -43,7 +43,6 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
             _ = cenario.Servicos.Atos.AdicionarAsync(Arg.Any<AtoDoProcesso>(), Arg.Any<CancellationToken>());
             _ = cenario.Servicos.Registro.RegistrarAsync(Arg.Any<AtoNormativoPublicado>(), Arg.Any<CancellationToken>());
             _ = cenario.Servicos.Certames.ObterParaMutacaoAsync(cenario.Processo.Id, Arg.Any<CancellationToken>());
-            _ = cenario.Servicos.Rascunhos.RemoverDoProcessoAsync(cenario.Processo.Id, Arg.Any<CancellationToken>());
             _ = cenario.Servicos.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
         });
     }
@@ -78,7 +77,7 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
         return (gravada!, entregue!);
     }
 
-    [Theory(DisplayName = "A recusa da porta devolve a recusa nomeada, descarta o rastreado e não deixa evento nem remove o rascunho")]
+    [Theory(DisplayName = "A recusa da porta devolve a recusa nomeada, descarta o rastreado e e não deixa evento")]
     [MemberData(nameof(Atos))]
     public async Task RecusaDaPorta_DescartaESemEvento(OperacaoQueCongela operacao)
     {
@@ -92,7 +91,6 @@ public sealed class RegistroDoAtoNaGravacaoDaVersaoTests
         eventos.Should().BeEmpty();
         cenario.Servicos.UnitOfWork.Received(1).DescartarAlteracoesNaoSalvas();
         await cenario.Servicos.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        await cenario.Servicos.Rascunhos.DidNotReceive().RemoverDoProcessoAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
     [Theory(DisplayName = "A recusa da porta vem antes da divulgação: o certame não é montado")]

@@ -29,9 +29,9 @@ public sealed class DefinirEtapasCommandHandlerTests
 
         DefinirEtapasCommand command = new(
             Guid.CreateVersion7(),
-            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: [])]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
@@ -50,9 +50,9 @@ public sealed class DefinirEtapasCommandHandlerTests
 
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: [])]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
         result.IsSuccess.Should().BeTrue();
         processo.Etapas.Should().ContainSingle(e => e.Nome == "Prova Objetiva");
@@ -71,7 +71,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         EtapaProcesso etapaOriginal = EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapaOriginal], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([etapaOriginal]);
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -80,9 +80,9 @@ public sealed class DefinirEtapasCommandHandlerTests
 
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Prova Objetiva (revisada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: [])]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
         result.IsSuccess.Should().BeTrue();
         EtapaProcesso etapaAtualizada = processo.Etapas.Single();
@@ -99,7 +99,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         EtapaProcesso etapaOriginal = EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapaOriginal], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([etapaOriginal]);
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -108,9 +108,9 @@ public sealed class DefinirEtapasCommandHandlerTests
 
         DefinirEtapasCommand command = new(
             processo.Id,
-            [new EtapaProcessoInput("Entrevista", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 1, Produtos: [], Bancas: [], Recursos: [])], PrecondicaoIfMatch.Ausente);
+            [new EtapaProcessoInput("Entrevista", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 1, Produtos: [], Bancas: [], Recursos: [])]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
         result.IsSuccess.Should().BeTrue();
         EtapaProcesso etapaNova = processo.Etapas.Single();
@@ -125,7 +125,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         EtapaProcesso existente = EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([existente], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([existente]);
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -137,9 +137,9 @@ public sealed class DefinirEtapasCommandHandlerTests
                     Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m, PassoDoLancamento: 0.25m),
                 new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 2,
                     Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 1000m, PassoDoLancamento: 20m),
-            ], PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, Substitute.For<IUnitOfWork>(), ReaderPadrao());
+        Result result = await Executar(command, repository, Substitute.For<IUnitOfWork>(), ReaderPadrao());
 
         result.IsSuccess.Should().BeTrue();
         processo.Etapas.Single(e => e.Id == existente.Id).Should().Match<EtapaProcesso>(
@@ -162,9 +162,9 @@ public sealed class DefinirEtapasCommandHandlerTests
                     Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 0m),
                 new EtapaProcessoInput("Entrevista", CaraterEtapa.Eliminatoria, TipoProvaObjetivaOrigemId, null, 12m, 2,
                     Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m),
-            ], PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, Substitute.For<IUnitOfWork>(), ReaderPadrao());
+        Result result = await Executar(command, repository, Substitute.For<IUnitOfWork>(), ReaderPadrao());
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["etapas[0].notaMaxima", "etapas[1].notaMinima"]);
@@ -177,7 +177,7 @@ public sealed class DefinirEtapasCommandHandlerTests
         EtapaProcesso etapaOriginal = EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapaOriginal], PrecondicaoIfMatch.Ausente);
+        processo.DefinirEtapas([etapaOriginal]);
 
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
@@ -189,9 +189,9 @@ public sealed class DefinirEtapasCommandHandlerTests
             [
                 new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 1m, null, 1, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: []),
                 new EtapaProcessoInput("Prova Objetiva (duplicada)", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 2m, null, 2, etapaOriginal.Id, Produtos: [], Bancas: [], Recursos: []),
-            ], PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.IdEtapaDuplicado");
@@ -213,9 +213,9 @@ public sealed class DefinirEtapasCommandHandlerTests
             [
                 new EtapaProcessoInput("Prova Objetiva", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: []),
                 new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 2m, null, 1, Produtos: [], Bancas: [], Recursos: []),
-            ], PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
         result.IsFailure.Should().BeTrue();
         result.Error!.Code.Should().Be("ProcessoSeletivo.OrdemEtapaDuplicada");
@@ -237,9 +237,9 @@ public sealed class DefinirEtapasCommandHandlerTests
             [
                 new EtapaProcessoInput(" ", CaraterEtapa.Classificatoria, TipoProvaObjetivaOrigemId, 3m, null, 1, Produtos: [], Bancas: [], Recursos: []),
                 new EtapaProcessoInput("Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 0m, null, 2, Produtos: [], Bancas: [], Recursos: []),
-            ], PrecondicaoIfMatch.Ausente);
+            ]);
 
-        Result<MutacaoAceita> result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
+        Result result = await Executar(command, repository, unitOfWork, tipoEtapaReader);
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Select(e => e.Field).Should().BeEquivalentTo(["etapas[0].nome", "etapas[1].peso"]);

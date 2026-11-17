@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 /// </summary>
 public static class DefinirTaxaInscricaoCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirTaxaInscricaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IUnitOfWork unitOfWork,
@@ -30,46 +30,44 @@ public static class DefinirTaxaInscricaoCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // A precondição é conferida AQUI, logo depois do 404 e antes das regras de negócio que
-        // este handler avalia — mesma ordem da ADR-0110 D9 já aplicada em
-        // DefinirBonusRegionalCommandHandler.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa vem antes das regras de negócio.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         if (command.Cobra is null)
         {
-            Result removerResult = processo.DefinirTaxaInscricao(null, command.Precondicao);
+            Result removerResult = processo.DefinirTaxaInscricao(null);
             if (removerResult.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(removerResult.Error!);
+                return Result.Failure(removerResult.Error!);
             }
 
             await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-            return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+            return Result.Success();
         }
 
         Result<ConfiguracaoTaxaInscricao> configuracaoResult = ConfiguracaoTaxaInscricao.Criar(
             command.Cobra.Value, command.Valor, command.Fundamentos);
         if (configuracaoResult.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(configuracaoResult.Errors);
+            return Result.ValidationFailure(configuracaoResult.Errors);
         }
 
-        Result definirResult = processo.DefinirTaxaInscricao(configuracaoResult.Value!, command.Precondicao);
+        Result definirResult = processo.DefinirTaxaInscricao(configuracaoResult.Value!);
         if (definirResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(definirResult.Error!);
+            return Result.Failure(definirResult.Error!);
         }
 
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

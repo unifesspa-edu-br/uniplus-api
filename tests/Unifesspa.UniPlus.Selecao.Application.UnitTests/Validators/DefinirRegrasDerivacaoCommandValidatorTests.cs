@@ -18,12 +18,12 @@ public sealed class DefinirRegrasDerivacaoCommandValidatorTests
         new("COR_RACA", "IGUAL", JsonSerializer.SerializeToElement("PRETA"));
 
     private static DefinirRegrasDerivacaoCommand Comando(params RegraDerivacaoInput[] regras) =>
-        new(Guid.CreateVersion7(), [new ConfiguracaoDerivacaoInput("MODALIDADE", regras)], PrecondicaoIfMatch.Ausente);
+        new(Guid.CreateVersion7(), [new ConfiguracaoDerivacaoInput("MODALIDADE", regras)]);
 
     [Fact(DisplayName = "Passa com lista de configurações vazia — zera as regras")]
     public void Aceita_ListaVazia()
     {
-        ValidationResult result = Validator.Validate(new DefinirRegrasDerivacaoCommand(Guid.CreateVersion7(), [], PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirRegrasDerivacaoCommand(Guid.CreateVersion7(), []));
 
         result.IsValid.Should().BeTrue();
     }
@@ -48,7 +48,7 @@ public sealed class DefinirRegrasDerivacaoCommandValidatorTests
     public void Rejeita_RegrasNulo()
     {
         ValidationResult result = Validator.Validate(new DefinirRegrasDerivacaoCommand(
-            Guid.CreateVersion7(), [new ConfiguracaoDerivacaoInput("MODALIDADE", null!)], PrecondicaoIfMatch.Ausente));
+            Guid.CreateVersion7(), [new ConfiguracaoDerivacaoInput("MODALIDADE", null!)]));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Configuracoes[0].Regras");
@@ -57,7 +57,7 @@ public sealed class DefinirRegrasDerivacaoCommandValidatorTests
     [Fact(DisplayName = "Falha quando a lista de configurações é nula")]
     public void Rejeita_ConfiguracoesNulo()
     {
-        ValidationResult result = Validator.Validate(new DefinirRegrasDerivacaoCommand(Guid.CreateVersion7(), null!, PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirRegrasDerivacaoCommand(Guid.CreateVersion7(), null!));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "Configuracoes");
@@ -67,7 +67,7 @@ public sealed class DefinirRegrasDerivacaoCommandValidatorTests
     public void Aceita_CodigoFatoVazioNoValidator()
     {
         ValidationResult result = Validator.Validate(new DefinirRegrasDerivacaoCommand(
-            Guid.CreateVersion7(), [new ConfiguracaoDerivacaoInput("", [new RegraDerivacaoInput(0, "AC", null)])], PrecondicaoIfMatch.Ausente));
+            Guid.CreateVersion7(), [new ConfiguracaoDerivacaoInput("", [new RegraDerivacaoInput(0, "AC", null)])]));
 
         result.IsValid.Should().BeTrue();
     }
@@ -76,7 +76,7 @@ public sealed class DefinirRegrasDerivacaoCommandValidatorTests
     public void Aceita_SemRegrasNoValidator()
     {
         ValidationResult result = Validator.Validate(new DefinirRegrasDerivacaoCommand(
-            Guid.CreateVersion7(), [new ConfiguracaoDerivacaoInput("MODALIDADE", [])], PrecondicaoIfMatch.Ausente));
+            Guid.CreateVersion7(), [new ConfiguracaoDerivacaoInput("MODALIDADE", [])]));
 
         result.IsValid.Should().BeTrue();
     }

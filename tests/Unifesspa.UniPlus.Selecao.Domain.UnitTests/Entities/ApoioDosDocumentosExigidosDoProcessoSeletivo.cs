@@ -72,17 +72,16 @@ internal static class ApoioDosDocumentosExigidosDoProcessoSeletivo
     internal static ProcessoSeletivo ProcessoComFases(params FaseCronograma[] fases)
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases(fases, []).IsSuccess.Should().BeTrue();
         return processo;
     }
 
     internal static void AdicionarEtapas(ProcessoSeletivo processo, params EtapaProcesso[] etapas) =>
-        processo.DefinirEtapas(etapas, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue();
 
     internal static Result DefinirFolhas(ProcessoSeletivo processo, params DocumentoExigido[] exigencias) =>
         processo.DefinirDocumentosExigidos(
-            [.. exigencias.Select((exigencia, ordem) => NoExigencia.CriarFolha(exigencia, ordem).Value!)],
-            PrecondicaoIfMatch.Ausente);
+            [.. exigencias.Select((exigencia, ordem) => NoExigencia.CriarFolha(exigencia, ordem).Value!)]);
 
     internal static void ExigirFolhas(ProcessoSeletivo processo, params DocumentoExigido[] exigencias) =>
         DefinirFolhas(processo, exigencias).IsSuccess.Should().BeTrue();

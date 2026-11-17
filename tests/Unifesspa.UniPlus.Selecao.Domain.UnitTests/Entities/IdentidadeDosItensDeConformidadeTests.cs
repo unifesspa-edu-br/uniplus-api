@@ -7,7 +7,6 @@ using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -20,7 +19,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 public sealed class IdentidadeDosItensDeConformidadeTests
 {
     private static IReadOnlyList<ItemConformidade> Checklist() =>
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(ProcessoConformeFactory.Criar()), CadastrosDeTeste.Padrao);
+        ChecklistDeConformidade.AvaliarConformidade(ProcessoConformeFactory.Criar().Declaracao(), CadastrosDeTeste.Padrao);
 
     private static IReadOnlyList<string> DimensoesDeclaradas() =>
     [

@@ -80,7 +80,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
     /// </summary>
     private static VersaoConfiguracao PublicarComAlgoritmo(ProcessoSeletivo processo)
     {
-        processo.DefinirAlgoritmoContagemPrazo(Algoritmo(), PrecondicaoIfMatch.Ausente)
+        processo.DefinirAlgoritmoContagemPrazo(Algoritmo())
             .IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> publicada = Publicar(processo);
@@ -121,24 +121,6 @@ public sealed class GateDoAlgoritmoDeContagemTests
         retificar.Error!.Code.Should().Be(CodigoDaRecusa);
     }
 
-    [Fact(DisplayName = "Fechamento de sessão editorial: a terceira transição recusa com o mesmo erro nomeado")]
-    public void FechamentoDeSessao_SemAlgoritmo_Recusa()
-    {
-        ProcessoSeletivo processo = Processo(RegraDeRecurso());
-        VersaoConfiguracao versaoAtual = PublicarComAlgoritmo(processo);
-
-        processo.AbrirRetificacao("Ajustar o prazo", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "teste", DateTimeOffset.UnixEpoch)
-            .IsSuccess.Should().BeTrue();
-
-        RetirarAlgoritmo(processo);
-
-        Result<VersaoConfiguracao> fechar = processo.FecharRetificacao(
-            new CenarioDeCongelamento { Dados = ProcessoConformeFactory.Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste", Contagem = ComCalendario() }, versaoAtual, PrecondicaoIfMatch.Curinga);
-
-        fechar.IsFailure.Should().BeTrue();
-        fechar.Error!.Code.Should().Be(CodigoDaRecusa);
-    }
-
     [Fact(DisplayName = "Prazo de interposição em HORAS também exige a convenção — só as horas em dia útil avançam o relógio")]
     public void InterposicaoEmHoras_SemAlgoritmo_Recusa()
     {
@@ -167,7 +149,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
     {
         ProcessoSeletivo comAlgoritmo = Processo(
             RegraDeRecurso(prazoUnidade: UnidadePrazo.Horas, prazoValor: 48m, suspensividadeUnidade: UnidadePrazo.Dias));
-        comAlgoritmo.DefinirAlgoritmoContagemPrazo(Algoritmo(), PrecondicaoIfMatch.Ausente)
+        comAlgoritmo.DefinirAlgoritmoContagemPrazo(Algoritmo())
             .IsSuccess.Should().BeTrue();
 
         Publicar(comAlgoritmo).Error?.Code.Should().NotBe(CodigoDaRecusa,
@@ -179,27 +161,9 @@ public sealed class GateDoAlgoritmoDeContagemTests
     public void ComAlgoritmo_GateNaoRecusa()
     {
         ProcessoSeletivo processo = Processo(RegraDeRecurso());
-        processo.DefinirAlgoritmoContagemPrazo(Algoritmo(), PrecondicaoIfMatch.Ausente)
+        processo.DefinirAlgoritmoContagemPrazo(Algoritmo())
             .IsSuccess.Should().BeTrue();
 
         Publicar(processo).Error?.Code.Should().NotBe(CodigoDaRecusa);
-    }
-
-    [Fact(DisplayName = "Declarar a convenção move o ETag da sessão — sem isso, escrita concorrente com revisão velha passaria")]
-    public void DeclararAlgoritmo_MoveOETagDaSessao()
-    {
-        ProcessoSeletivo processo = Processo(RegraDeRecurso());
-        VersaoConfiguracao versaoAtual = PublicarComAlgoritmo(processo);
-
-        processo.AbrirRetificacao("Trocar a convenção", versaoAtual, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "teste", DateTimeOffset.UnixEpoch)
-            .IsSuccess.Should().BeTrue();
-        string? etagAntes = processo.ETagDaSessaoEditorial;
-        etagAntes.Should().NotBeNull("pré-condição: a sessão está aberta e tem ETag");
-
-        processo.DefinirAlgoritmoContagemPrazo(
-            ReferenciaRegra.De(AlgoritmoContagemPrazoCodigo.AvancaDataUtil, "v1", new string('d', 64)),
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-
-        processo.ETagDaSessaoEditorial.Should().NotBe(etagAntes);
     }
 }

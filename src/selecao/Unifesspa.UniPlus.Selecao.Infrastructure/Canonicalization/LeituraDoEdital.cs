@@ -138,13 +138,11 @@ internal static class LeituraDoEdital
     }
 
     /// <summary>
-    /// A identidade da Unidade administradora: lida e
-    /// validada para fechar a gramática, mas <b>não é propagada</b> — mesmo raciocínio de
-    /// <c>origemCandidatos</c> em <see cref="LeituraDoCronograma.LerCronogramaFases"/>. É atributo de raiz do
-    /// agregado (<c>ProcessoSeletivo.UnidadeAdministradoraOrigemId</c>/<c>UnidadeAdministradora</c>),
-    /// imutável após a criação (nenhum <c>Definir*</c> a altera, não há operação de re-bind) — a
-    /// prova de fidelidade do round-trip vem de <c>ProcessoSeletivo.SombraParaVerificacao()</c>,
-    /// que já copia os dois campos direto da raiz viva, nunca do envelope decodificado.
+    /// A identidade da Unidade administradora: lida e validada para fechar a gramática, mas
+    /// <b>não é propagada</b> — mesmo raciocínio de <c>origemCandidatos</c> em
+    /// <see cref="LeituraDoCronograma.LerCronogramaFases"/>. É atributo de raiz do agregado
+    /// (<c>ProcessoSeletivo.UnidadeAdministradoraOrigemId</c>/<c>UnidadeAdministradora</c>), imutável
+    /// após a criação: nenhum <c>Definir*</c> a altera e não há operação de re-bind.
     /// </summary>
     /// <remarks>
     /// A cidade (ADR-0090) é opcional all-or-nothing: nula para processos

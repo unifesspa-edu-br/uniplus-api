@@ -13,14 +13,13 @@ using Unifesspa.UniPlus.Regras.Formularios;
 /// <summary>
 /// Compara o que a versão nova vai congelar de um fato já coletado com o que as versões publicadas
 /// congelaram (UNI-REQ-0144): o metadado dos fatos citados por condição de documento exigido e a
-/// operação de cada agregado, que o handler resolve do catálogo na hora de congelar. Os itens são
-/// conferidos no agregado, ao serem regravados, e de novo no fechamento da sessão. A comparação é sempre contra o que a versão nova
+/// operação de cada agregado, que o handler resolve do catálogo na hora de congelar. A comparação é sempre contra o que a versão nova
 /// congelaria, nunca contra o catálogo vivo: edição do catálogo que a versão nova não congela não
 /// recusa a retificação.
 /// </summary>
 internal static class ConferenciaDosEixosDosFatosColetados
 {
-    /// <summary>O que a versão reidratada congelou, no formato que o rascunho guarda.</summary>
+    /// <summary>O que a versão reidratada congelou, no formato que a comparação usa.</summary>
     public static EixosDeVersaoPublicada DaVersao(EnvelopeReidratado versao)
     {
         ArgumentNullException.ThrowIfNull(versao);

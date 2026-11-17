@@ -30,7 +30,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 /// </remarks>
 public static class DefinirClassificacaoCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirClassificacaoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IRegraCatalogoReader regraCatalogoReader,
@@ -49,27 +49,15 @@ public static class DefinirClassificacaoCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // A precondição é conferida AQUI, logo depois do 404 e antes das regras de negócio
-        // que este handler avalia (existência de cadastros, coerência de referências): ela
-        // as precede na ordem da ADR-0110 D9. Um cliente com If-Match defasado tem de saber
-        // disso antes de sair caçando um cadastro que ele não errou.
-        //
-        // O que ela NÃO precede é a validação de SCHEMA do payload: o FluentValidation roda
-        // como middleware do Wolverine, antes deste handler, e um command malformado morre
-        // ali com 422 sem que o guard chegue a rodar. É desvio consciente da D9 — corrigi-lo
-        // exigiria carregar o agregado no middleware, o que é pior. O custo é uma rodada
-        // extra para quem erra as DUAS coisas ao mesmo tempo; nenhum estado é corrompido.
-        //
-        // O mesmo guard continua dentro do Definir* do domínio: esta antecipação dá a ordem,
-        // não a garantia.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa vem antes de consultar cadastros.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
         Result<ReferenciaRegra> regraCalculoResult = await ResolverRegraAsync(
@@ -77,7 +65,7 @@ public static class DefinirClassificacaoCommandHandler
             .ConfigureAwait(false);
         if (regraCalculoResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(regraCalculoResult.Error!);
+            return Result.Failure(regraCalculoResult.Error!);
         }
 
         ReferenciaRegra? regraArredondamento = null;
@@ -85,7 +73,7 @@ public static class DefinirClassificacaoCommandHandler
         {
             if (command.RegraArredondamentoVersao is null)
             {
-                return Result<MutacaoAceita>.Failure(new DomainError(
+                return Result.Failure(new DomainError(
                     "ConfiguracaoClassificacao.RegraArredondamentoVersaoObrigatoria",
                     "Versão da regra de arredondamento é obrigatória quando o código é informado."));
             }
@@ -95,7 +83,7 @@ public static class DefinirClassificacaoCommandHandler
                 .ConfigureAwait(false);
             if (regraArredondamentoResult.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(regraArredondamentoResult.Error!);
+                return Result.Failure(regraArredondamentoResult.Error!);
             }
 
             regraArredondamento = regraArredondamentoResult.Value!;
@@ -106,7 +94,7 @@ public static class DefinirClassificacaoCommandHandler
             .ConfigureAwait(false);
         if (regraOrdemAlocacaoResult.IsFailure)
         {
-            return Result<MutacaoAceita>.Failure(regraOrdemAlocacaoResult.Error!);
+            return Result.Failure(regraOrdemAlocacaoResult.Error!);
         }
 
         List<RegraEliminacao> regrasEliminacao = [];
@@ -116,7 +104,7 @@ public static class DefinirClassificacaoCommandHandler
                 .ConfigureAwait(false);
             if (resultado.IsFailure)
             {
-                return Result<MutacaoAceita>.Failure(resultado.Error!);
+                return Result.Failure(resultado.Error!);
             }
 
             regrasEliminacao.Add(resultado.Value!);
@@ -175,20 +163,20 @@ public static class DefinirClassificacaoCommandHandler
 
         if (erros.Count > 0)
         {
-            return Result<MutacaoAceita>.ValidationFailure(erros);
+            return Result.ValidationFailure(erros);
         }
 
-        Result result = processo.DefinirClassificacao(configuracaoResult.Value!, command.Precondicao);
+        Result result = processo.DefinirClassificacao(configuracaoResult.Value!);
         if (result.IsFailure)
         {
-            return Result<MutacaoAceita>.ValidationFailure(result.Errors);
+            return Result.ValidationFailure(result.Errors);
         }
 
         // Agregado tracked: persistência por change detection (ValueGeneratedNever
         // nos filhos) — não chamar DbSet.Update.
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 
     /// <summary>

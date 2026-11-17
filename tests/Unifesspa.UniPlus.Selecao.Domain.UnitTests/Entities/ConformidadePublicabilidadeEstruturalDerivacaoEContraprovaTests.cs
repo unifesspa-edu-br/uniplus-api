@@ -42,7 +42,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         ProcessoSeletivo processo = CotaEAcaoAfirmativaPor("EGRESSO_ESCOLA_PUBLICA", true, false);
         ConfiguracaoDerivacaoFato egresso = ConfiguracaoDerivacaoFato.Criar(
             "EGRESSO_ESCOLA_PUBLICA", [RegraDerivacaoConfigurada.Criar(0, contribui: null, condicoes: null).Value!]).Value!;
-        processo.DefinirRegrasDerivacao([egresso], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([egresso]).IsSuccess.Should().BeTrue();
 
         ItemDaExclusividadeOk(processo).Should().BeTrue();
     }
@@ -65,7 +65,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     public void PreCanon_GrafoConjuntoComCiclo()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirRegrasDerivacao(DuasDerivacoesQueSeCitam(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
+        processo.DefinirRegrasDerivacao(DuasDerivacoesQueSeCitam()).IsSuccess.Should().BeTrue(
             "a definição isolada só barra código duplicado — o ciclo cruza duas configurações e passa aqui");
 
         AfirmarPendenciaUnicaERecusa(processo, "grafo_dependencia_com_ciclo", GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
@@ -84,8 +84,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         PropertyInfo propriedadeClassificacao = typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Classificacao))!;
         propriedadeClassificacao.SetValue(processo, null);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(3, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [CriterioDesempate.Criar(3, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]).IsSuccess.Should().BeTrue();
         propriedadeClassificacao.SetValue(processo, classificacao);
 
         SoEstesItensVermelhos(processo, "desempate_area_enem_sem_quadro");
@@ -130,7 +129,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
             QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
             EscalaNotaFinal = 100m,
         }).Value!);
-        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!])
             .IsSuccess.Should().BeTrue();
         // A ordem mal formada não passa por CriterioDesempate.Criar: os args são trocados depois,
         // como num critério que chega ao agregado por outro caminho.
@@ -198,7 +197,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     }).Value!;
 
     private static void DeclararEdicaoDoEnem(ProcessoSeletivo processo) =>
-        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!])
             .IsSuccess.Should().BeTrue();
 
     // Sem AtendimentoEspecializado, a conferência dos itens estruturais fica pendente; a fase sem coleta de inscrição, com
@@ -209,9 +208,9 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
             "PS Precedência", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        processo.DefinirDistribuicaoVagas([DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoImportada(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirCronogramaFases([FaseBase(coletaInscricao: false)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoImportada()).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseBase(coletaInscricao: false)], []).IsSuccess.Should().BeTrue();
 
         return processo;
     }
@@ -254,8 +253,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         PropertyInfo propriedadeClassificacao = typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Classificacao))!;
         propriedadeClassificacao.SetValue(processo, null);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["FISICA"])).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["FISICA"])).Value!]).IsSuccess.Should().BeTrue();
         propriedadeClassificacao.SetValue(processo, ClassificacaoEnemPelaMediaPonderada());
         DeclararEdicaoDoEnem(processo);
 
@@ -296,7 +294,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
     {
         ProcessoSeletivo processo = ProcessoConforme();
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().OnlyContain(i => i.Ok);
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().OnlyContain(i => i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
@@ -310,9 +308,9 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         // publica sem prova local. Esta contraprova torna essa premissa EXPLÍCITA.
         processo.Etapas.Should().BeEmpty("pré-condição da contraprova: sem etapa, sob CLASSIFICACAO-IMPORTADA");
 
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().Contain(
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().Contain(
             i => i.Codigo == "cronograma_fase_agrupadora_sem_etapa_pontuada" && i.Ok);
-        ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Should().Contain(
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().Contain(
             i => i.Codigo == "cronograma_etapa_declara_a_fase" && i.Ok);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);

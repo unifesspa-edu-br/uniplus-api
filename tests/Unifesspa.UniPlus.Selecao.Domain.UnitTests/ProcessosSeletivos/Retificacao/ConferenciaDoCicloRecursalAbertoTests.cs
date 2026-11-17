@@ -34,7 +34,7 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
             publicados: [Item(publicada, preliminar)]);
 
         FieldError recusa = recusas.Should().ContainSingle().Subject;
-        recusa.Field.Should().Be($"cronograma.ciclosRecursais[{Materia}]");
+        recusa.Field.Should().Be("cronograma.fases");
         recusa.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
         recusa.Error.Message.Should().Contain(Materia).And.Contain("Publique o definitivo antes de retificar");
     }
@@ -74,7 +74,7 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
         IReadOnlyList<FieldError> recusas = Conferir(
             publicada: [publicada], nova: [Fase("PROVA", 1, null)], publicados: [Item(publicada, publicada.Produtos.Single())]);
 
-        recusas.Should().ContainSingle().Which.Field.Should().Be($"cronograma.ciclosRecursais[{Materia}]");
+        recusas.Should().ContainSingle().Which.Field.Should().Be("cronograma.fases");
     }
 
     [Fact(DisplayName = "Com o preliminar não publicado a retificação que retira o par não é recusada")]
@@ -154,7 +154,7 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
         recusas.Should().ContainSingle().Which.Error.Code.Should().Be(ProcessoSeletivoErrorCodes.RetificacaoDesfazCicloRecursalAberto);
     }
 
-    [Fact(DisplayName = "Duas matérias desfeitas geram duas recusas, em ordem ordinal do código, cada uma com o caminho da própria matéria")]
+    [Fact(DisplayName = "Duas matérias desfeitas geram duas recusas, em ordem ordinal do código, cada uma nomeando a própria matéria")]
     public void DuasMateriasDesfeitas_GeramDuasRecusasEmOrdem()
     {
         ProdutoDaFase preliminarDaProva = Produto(Materia, PapelProdutoFase.Preliminar);
@@ -167,9 +167,9 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
             nova: [Fase("PROVA", 1, null)],
             publicados: [Item(publicada, preliminarDaProva), Item(publicada, preliminarDaAnalise)]);
 
-        recusas.Select(static r => r.Field).Should().Equal($"cronograma.ciclosRecursais[{OutraMateria}]", $"cronograma.ciclosRecursais[{Materia}]");
-        recusas[0].Error.Message.Should().Contain(OutraMateria);
-        recusas[1].Error.Message.Should().Contain(Materia);
+        recusas.Select(static r => r.Field).Should().AllBe("cronograma.fases");
+        recusas.Select(static r => r.Error.Message).Should().SatisfyRespectively(
+            static primeira => primeira.Should().Contain($"'{OutraMateria}'"), static segunda => segunda.Should().Contain($"'{Materia}'"));
     }
 
     [Fact(DisplayName = "A mesma matéria desfeita em dois lugares gera uma só recusa")]
@@ -185,7 +185,7 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
             nova: [Fase("PROVA", 1, null), Fase("REAPLICACAO", 2, null)],
             publicados: [Item(prova, preliminarDaProva), Item(reaplicacao, preliminarDaReaplicacao)]);
 
-        recusas.Should().ContainSingle().Which.Field.Should().Be($"cronograma.ciclosRecursais[{Materia}]");
+        recusas.Should().ContainSingle().Which.Field.Should().Be("cronograma.fases");
     }
 
     [Fact(DisplayName = "Só a matéria cujo ciclo ficou aberto é recusada quando a outra já tem o definitivo publicado")]
@@ -202,7 +202,7 @@ public sealed class ConferenciaDoCicloRecursalAbertoTests
             nova: [Fase("PROVA", 1, null)],
             publicados: [Item(publicada, preliminarDaProva), Item(publicada, definitivoDaProva), Item(publicada, preliminarDaAnalise)]);
 
-        recusas.Should().ContainSingle().Which.Field.Should().Be($"cronograma.ciclosRecursais[{OutraMateria}]");
+        recusas.Should().ContainSingle().Which.Field.Should().Be("cronograma.fases");
     }
 
     private static HashSet<IdentidadeDoItemDoEdital> Publicados(params IdentidadeDoItemDoEdital[] itens) => [.. itens];

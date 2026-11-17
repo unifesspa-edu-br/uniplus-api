@@ -73,8 +73,8 @@ public sealed class IdentificadorLegivelCorridaTests : IClassFixture<ProcessoSel
         await using UniPlusDbContext ctx = _fixture.CreateDbContext();
         IProcessoSeletivoRepository repository = RepositorioQueNaoVeAConcorrencia(ctx);
 
-        Result<MutacaoAceita> resultado = await DefinirIdentificadorLegivelCommandHandler.Handle(
-            new DefinirIdentificadorLegivelCommand(alvo.Id, disputado.Valor, PrecondicaoIfMatch.Ausente),
+        Result resultado = await DefinirIdentificadorLegivelCommandHandler.Handle(
+            new DefinirIdentificadorLegivelCommand(alvo.Id, disputado.Valor),
             repository, ctx, CancellationToken.None);
 
         resultado.IsFailure.Should().BeTrue();

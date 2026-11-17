@@ -65,7 +65,7 @@
     },
     "referenciaDemograficaCodigo": {
       "title": "Referência demográfica",
-      "description": "Código do censo de referência da reserva demográfica no cadastro, de até 20 caracteres. Só nas regras do ramo federal.",
+      "description": "Código do censo de referência da reserva demográfica no cadastro, de até 20 caracteres. É o `censoReferencia` do cadastro de referências demográficas. Só nas regras do ramo federal.",
       "type": [
         "string",
         "null"

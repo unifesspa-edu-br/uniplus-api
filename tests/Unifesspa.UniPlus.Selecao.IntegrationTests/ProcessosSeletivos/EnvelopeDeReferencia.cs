@@ -132,7 +132,7 @@ internal static class EnvelopeDeReferencia
     private static ProcessoSeletivo ProcessoDeReferenciaComCascata()
     {
         ProcessoSeletivo processo = ProcessoDeReferencia();
-        processo.DefinirCascataRemanejamento(CascataDeReferencia(), PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCascataRemanejamento(CascataDeReferencia()).IsSuccess.Should().BeTrue();
         return processo;
     }
 
@@ -157,26 +157,26 @@ internal static class EnvelopeDeReferencia
     private static void DefinirVagasEClassificacao(ProcessoSeletivo processo)
     {
         processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
-        processo.DefinirDistribuicaoVagas([DistribuicaoDeReferencia()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([DistribuicaoDeReferencia()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
         processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
             RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-        }).Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        }).Value!).IsSuccess.Should().BeTrue();
     }
 
     private static FaseCronograma DefinirCronogramaEEtapas(ProcessoSeletivo processo)
     {
         FaseCronograma fase = FaseDeInscricao();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "INSCRICAO"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
         return fase;
     }
 
@@ -187,22 +187,21 @@ internal static class EnvelopeDeReferencia
     private static void DefinirDocumentosEFatos(ProcessoSeletivo processo, FaseCronograma fase)
     {
         processo.DefinirDocumentosExigidos(
-            [NoExigencia.CriarFolha(DocumentoExigidoDeReferencia(fase.Id), 0).Value!], PrecondicaoIfMatch.Ausente)
+            [NoExigencia.CriarFolha(DocumentoExigidoDeReferencia(fase.Id), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!,
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.DataEspecifica, new DateOnly(2026, 1, 31), null).Value!).IsSuccess.Should().BeTrue();
 
-        processo.DefinirItens([FatoCorRaca(), FatoRendaGatadoPelaCorRaca()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirItens([FatoCorRaca(), FatoRendaGatadoPelaCorRaca()]).IsSuccess.Should().BeTrue();
     }
 
     // O formulário de inscrição (Story #559, UNI-REQ-0086) traz título e um termo exigido: a
     // fixture congela a forma real do bloco "formularios", não só o caso sem termos.
     private static void DefinirFormularioEDerivacao(ProcessoSeletivo processo)
     {
-        processo.DefinirTitulo("Formulário de Inscrição", PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
-        processo.DefinirTermos([CorpusEnvelopeEntrada.Termo("DECLARACAO_VERACIDADE", 0)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirTitulo("Formulário de Inscrição").IsSuccess.Should().BeTrue();
+        processo.DefinirTermos([CorpusEnvelopeEntrada.Termo("DECLARACAO_VERACIDADE", 0)])
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirRegrasDerivacao([
@@ -212,7 +211,7 @@ internal static class EnvelopeDeReferencia
                     CondicaoRegraDerivacao.Criar(0, "RENDA", Operador.Igual, JsonSerializer.SerializeToElement("ATE_1_SM")).Value!,
                 ]).Value!,
             ]).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
     }
 
     // O corpus BASE declara "não cobra" (issue #1112): a combinação do CA-08 complementar ao
@@ -220,8 +219,7 @@ internal static class EnvelopeDeReferencia
     private static void DefinirTaxaDeInscricao(ProcessoSeletivo processo)
     {
         processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
     }
 

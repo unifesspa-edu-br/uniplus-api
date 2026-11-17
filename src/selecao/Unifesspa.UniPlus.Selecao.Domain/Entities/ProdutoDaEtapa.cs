@@ -69,7 +69,7 @@ public sealed class ProdutoDaEtapa : EntityBase, IProdutoPublicado
     }
 
     /// <summary>
-    /// Troca o papel preservando a linha. A reconciliação da restauração (<see cref="Services.ProdutosPublicados"/>) casa o produto vivo
+    /// Troca o papel preservando a linha. A reconciliação (<see cref="Services.ProdutosPublicados"/>) casa o produto vivo
     /// pelo ato quando o papel foi o que mudou; recriá-lo faria a mesma matéria sair e voltar,
     /// com DELETE e INSERT disputando o mesmo slot do índice único na mesma transação.
     /// </summary>

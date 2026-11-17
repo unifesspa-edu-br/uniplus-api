@@ -11,22 +11,36 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Classificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Coleta;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Desempate;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Exigencias;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Fatos;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Opcoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Prazos;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 public static class PendenciasDosFormularios
 {
     /// <summary>
+    /// O fato que o formulário de inscrição já coletava continua coletado por ela, no mesmo papel: quem se inscreveu
+    /// numa versão anterior o informou, e as outras finalidades e as versões seguintes contam com ele (UNI-REQ-0144).
+    /// Sem versão publicada, nada foi coletado ainda.
+    /// </summary>
+    internal static DomainError? PendenciaDeFatoJaColetadoRemovido(ConfiguracaoDeclarada configuracao, FatosDasVersoesPublicadas? publicadas) =>
+        publicadas?.PrimeiroDaInscricaoQueDeixaDeSerColetado(
+            configuracao.Coleta.Itens.Where(f => f.Finalidade == FinalidadeFormulario.Inscricao),
+            CitacoesDosFormularios.GruposDaFinalidade(configuracao, FinalidadeFormulario.Inscricao)) is { } retirado
+            ? new DomainError(
+                RetificacaoErrorCodes.FatoJaColetadoRemovido,
+                $"O fato '{retirado}' já é coletado pelo formulário de inscrição do edital publicado: a retificação não o retira do formulário nem o passa de item para campo de grupo, ou de um grupo para outro.")
+            : null;
+
+    /// <summary>
     /// Processo com inscrição própria publica o formulário de inscrição (UNI-REQ-0144): sem ele, o
     /// candidato não tem onde se inscrever.
     /// </summary>
-    internal static DomainError? PendenciaDoFormularioDeInscricao(EstadoDaConfiguracao estado) =>
-        estado.OrigemCandidatos == OrigemCandidatos.InscricaoPropria && estado.FormularioDe(FinalidadeFormulario.Inscricao) is null
+    internal static DomainError? PendenciaDoFormularioDeInscricao(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Identidade.OrigemCandidatos == OrigemCandidatos.InscricaoPropria && configuracao.Coleta.FormularioDe(FinalidadeFormulario.Inscricao) is null
             ? new DomainError(FormularioProcessoErrorCodes.InscricaoSemFormulario, "O processo tem inscrição própria e ainda não tem formulário de inscrição.")
             : null;
 
@@ -35,15 +49,15 @@ public static class PendenciasDosFormularios
     /// reservada: a escrita o garante, e a publicação recusa o formulário a que falta algum dado
     /// básico nela.
     /// </summary>
-    internal static DomainError? PendenciaDoConjuntoBasico(EstadoDaConfiguracao estado)
+    internal static DomainError? PendenciaDoConjuntoBasico(ConfiguracaoDeclarada configuracao)
     {
-        if (estado.FormularioDe(FinalidadeFormulario.Inscricao) is null)
+        if (configuracao.Coleta.FormularioDe(FinalidadeFormulario.Inscricao) is null)
         {
             return null;
         }
 
         HashSet<string> coletados = new(
-            estado.Itens.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao
+            configuracao.Coleta.Itens.Where(static f => f.Finalidade == FinalidadeFormulario.Inscricao
                     && string.Equals(f.EtapaCodigo, ConjuntoBasicoDaInscricao.CodigoDaSecao, StringComparison.Ordinal))
                 .Select(static f => f.FatoCodigo),
             StringComparer.Ordinal);
@@ -61,16 +75,16 @@ public static class PendenciasDosFormularios
     /// sempre, sem exibição condicional, fora de grupo e numa seção que não se esconde. Sem formulário
     /// de inscrição, a falta é a do próprio formulário.
     /// </summary>
-    internal static DomainError? PendenciaDaEdicaoDoEnem(EstadoDaConfiguracao estado)
+    internal static DomainError? PendenciaDaEdicaoDoEnem(ConfiguracaoDeclarada configuracao)
     {
-        if (estado.OrigemCandidatos != OrigemCandidatos.InscricaoPropria
-            || estado.Classificacao is not { BaseadoEmEnem: true }
-            || estado.FormularioDe(FinalidadeFormulario.Inscricao) is not { } formulario)
+        if (configuracao.Identidade.OrigemCandidatos != OrigemCandidatos.InscricaoPropria
+            || configuracao.Avaliacao.Classificacao is not { BaseadoEmEnem: true }
+            || configuracao.Coleta.FormularioDe(FinalidadeFormulario.Inscricao) is not { } formulario)
         {
             return null;
         }
 
-        FatoColetado? edicao = estado.Itens.FirstOrDefault(static f => f.Finalidade == FinalidadeFormulario.Inscricao
+        FatoColetado? edicao = configuracao.Coleta.Itens.FirstOrDefault(static f => f.Finalidade == FinalidadeFormulario.Inscricao
             && string.Equals(f.FatoCodigo, EdicaoDoEnem.Fato, StringComparison.Ordinal));
         bool secaoCondicional = edicao?.EtapaCodigo is { } secao
             && formulario.Etapas.Any(e => string.Equals(e.Codigo, secao, StringComparison.Ordinal) && e.Exibicao is not null);
@@ -102,9 +116,9 @@ public static class PendenciasDosFormularios
     /// Todo formulário tem a fase que a finalidade pede e que continua no cronograma — a definição
     /// confere quando a fase é informada, e o cronograma pode ter mudado depois.
     /// </summary>
-    internal static DomainError? PendenciaDaFaseDosFormularios(EstadoDaConfiguracao estado)
+    internal static DomainError? PendenciaDaFaseDosFormularios(ConfiguracaoDeclarada configuracao)
     {
-        foreach (FormularioProcesso formulario in estado.Formularios.OrderBy(static f => f.Finalidade))
+        foreach (FormularioProcesso formulario in configuracao.Coleta.Formularios.OrderBy(static f => f.Finalidade))
         {
             if (formulario.FaseId is not { } fase)
             {
@@ -112,7 +126,7 @@ public static class PendenciasDosFormularios
                     $"O formulário de {EstruturaFormulario.ParaToken(formulario.Finalidade)} ainda não declara a fase em que é respondido.");
             }
 
-            if (RegrasDosFormularios.RecusaDaFaseDoFormulario(estado, formulario.Finalidade, fase) is { } recusa)
+            if (RegrasDosFormularios.RecusaDaFaseDoFormulario(configuracao, formulario.Finalidade, fase) is { } recusa)
             {
                 return recusa;
             }
@@ -122,17 +136,17 @@ public static class PendenciasDosFormularios
     }
 
     /// <summary>Formulário de isenção só em processo que cobra taxa de inscrição (UNI-REQ-0144).</summary>
-    internal static DomainError? PendenciaDaIsencaoSemTaxa(EstadoDaConfiguracao estado) =>
-        estado.FormularioDe(FinalidadeFormulario.IsencaoTaxa) is not null && estado.ConfiguracaoTaxaInscricao?.Cobra != true
+    internal static DomainError? PendenciaDaIsencaoSemTaxa(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Coleta.FormularioDe(FinalidadeFormulario.IsencaoTaxa) is not null && configuracao.DivulgacaoETaxa.ConfiguracaoTaxaInscricao?.Cobra != true
             ? new DomainError(FormularioProcessoErrorCodes.IsencaoSemTaxa, "O processo tem formulário de isenção de taxa, mas não cobra taxa de inscrição.")
             : null;
 
     /// <summary>Todo item publicado está numa seção do seu formulário, na ordem das seções.</summary>
-    internal static DomainError? PendenciaDosItensForaDeSecao(EstadoDaConfiguracao estado)
+    internal static DomainError? PendenciaDosItensForaDeSecao(ConfiguracaoDeclarada configuracao)
     {
-        foreach (FormularioProcesso formulario in estado.Formularios.OrderBy(static f => f.Finalidade))
+        foreach (FormularioProcesso formulario in configuracao.Coleta.Formularios.OrderBy(static f => f.Finalidade))
         {
-            if (EstruturaFormulario.ValidarItens(formulario.Estrutura, RegrasDosFormularios.ItensDaFinalidade(estado, formulario.Finalidade)) is [{ } primeiro, ..])
+            if (EstruturaFormulario.ValidarItens(formulario.Estrutura, RegrasDosFormularios.ItensDaFinalidade(configuracao, formulario.Finalidade)) is [{ } primeiro, ..])
             {
                 return new DomainError(FormularioProcessoErrorCodes.ItemForaDeSecao, primeiro.Error.Message);
             }
@@ -145,10 +159,10 @@ public static class PendenciasDosFormularios
     /// O mesmo teto da gravação, conferido de novo na publicação: uma gravação feita fora do
     /// agregado não publica formulário que o PUT seguinte da mesma lista recusaria.
     /// </summary>
-    internal static DomainError? PendenciaDosItensEmExcesso(EstadoDaConfiguracao estado) =>
-        estado.Formularios.OrderBy(static f => f.Finalidade)
+    internal static DomainError? PendenciaDosItensEmExcesso(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Coleta.Formularios.OrderBy(static f => f.Finalidade)
             .Select(f => FormaDoItem.ValidarQuantidade(
-                CitacoesDosFormularios.QuantidadeNoTeto(estado.Itens.Count(i => i.Finalidade == f.Finalidade), CitacoesDosFormularios.GruposDaFinalidade(estado, f.Finalidade))))
+                CitacoesDosFormularios.QuantidadeNoTeto(configuracao.Coleta.Itens.Count(i => i.Finalidade == f.Finalidade), CitacoesDosFormularios.GruposDaFinalidade(configuracao, f.Finalidade))))
             .FirstOrDefault(static erros => erros.Count > 0) is [var excesso, ..]
             ? excesso.Error
             : null;
@@ -157,8 +171,8 @@ public static class PendenciasDosFormularios
     /// Termo exigido cuja versão ainda não definiu a forma de aceite não é publicável
     /// (UNI-REQ-0086): só o registro digital, com ou sem log de IP, é forma resolvida.
     /// </summary>
-    internal static DomainError? PendenciaDeTermoSemFormaDeAceite(EstadoDaConfiguracao estado) =>
-        estado.TermosExigidos.OrderBy(static t => t.Ordem).FirstOrDefault(static t => t.SemFormaDeAceite) is { } termo
+    internal static DomainError? PendenciaDeTermoSemFormaDeAceite(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Coleta.TermosExigidos.OrderBy(static t => t.Ordem).FirstOrDefault(static t => t.SemFormaDeAceite) is { } termo
             ? new DomainError(
                 TermoExigidoFormularioErrorCodes.SemFormaDeAceite,
                 $"O termo '{termo.Codigo}' usa uma versão sem forma de aceite definida; escolha uma versão com registro digital.")

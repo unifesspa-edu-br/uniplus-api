@@ -55,6 +55,7 @@ public sealed class RascunhoDeProcessoSeletivoEndpointTests : IAsyncLifetime
         using HttpResponseMessage depois = await _cliente.EnviarAsync(Leandro, HttpMethod.Get, $"{Rota}/{id}");
 
         obsoleta.StatusCode.Should().Be(HttpStatusCode.PreconditionFailed);
+        (await Corpo(obsoleta)).GetProperty("code").GetString().Should().Be("uniplus.selecao.precondicao_falhou");
         excluido.StatusCode.Should().Be(HttpStatusCode.NoContent);
         depois.StatusCode.Should().Be(HttpStatusCode.NotFound);
     }
@@ -100,6 +101,8 @@ public sealed class RascunhoDeProcessoSeletivoEndpointTests : IAsyncLifetime
 
         substituirSemIfMatch.StatusCode.Should().Be(HttpStatusCode.PreconditionRequired);
         excluirSemIfMatch.StatusCode.Should().Be(HttpStatusCode.PreconditionRequired);
+        (await Corpo(substituirSemIfMatch)).GetProperty("code").GetString().Should().Be("uniplus.selecao.precondicao_requerida");
+        (await Corpo(excluirSemIfMatch)).GetProperty("code").GetString().Should().Be("uniplus.selecao.precondicao_requerida");
         malformado.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 

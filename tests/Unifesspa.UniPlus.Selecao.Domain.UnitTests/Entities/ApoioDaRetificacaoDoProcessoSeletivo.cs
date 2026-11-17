@@ -62,21 +62,8 @@ internal static class ApoioDaRetificacaoDoProcessoSeletivo
         return resultado.Value!;
     }
 
-    internal static Result<VersaoConfiguracao> FecharRetificacaoComDadosPadrao(
-        ProcessoSeletivo processo, VersaoConfiguracao versaoBase, TimeProvider relogio) =>
-        processo.FecharRetificacao(
-            new CenarioDeCongelamento { Dados = NovosDados(), Documento = new DocumentoCongelado(BytesCanonicos, VersaoDoEsquema, VersaoDoCanonicalizador, HashFixo), AtorUsuarioContaId = Autor, Relogio = relogio }, versaoBase, PrecondicaoIfMatch.Curinga);
-
-    internal static void AbrirRetificacaoComSucesso(
-        ProcessoSeletivo processo, VersaoConfiguracao versaoBase, string motivo, RelogioManual relogio)
-    {
-        Result<RascunhoRetificacao> abertura = processo.AbrirRetificacao(
-            motivo, versaoBase, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), Autor, relogio.GetUtcNow());
-        abertura.IsSuccess.Should().BeTrue(abertura.Error?.Message);
-    }
-
     /// <summary>
-    /// Relógio manual determinístico: dá instantes distintos à abertura e à retificação
+    /// Relógio manual determinístico: dá instantes distintos à publicação e à retificação
     /// (unicidade de data_publicacao) sem depender do pacote de relógio de teste da Microsoft.
     /// </summary>
     internal sealed class RelogioManual(DateTimeOffset inicio) : TimeProvider

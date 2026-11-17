@@ -41,8 +41,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     }
 
     private static Result DefinirODesempatePorAreaEnem(ProcessoSeletivo processo) => processo.DefinirCriteriosDesempate(
-        [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!],
-        PrecondicaoIfMatch.Curinga);
+        [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]);
 
     private static ConfiguracaoClassificacao ClassificacaoLocalSemEnem() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
     {
@@ -128,35 +127,6 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
         resultado.Error.Message.Should().Contain(outraSemGrupo.OfertaCursoOrigemId.ToString());
     }
 
-    // A retificação aberta libera a gravação da distribuição; regravá-la depois de o curso
-    // perder o grupo no cadastro congela a oferta sem grupo.
-    private static (ProcessoSeletivo Processo, VersaoConfiguracao Publicada, ConfiguracaoDistribuicaoVagas SemGrupo) ProcessoComAOfertaRegravadaSemGrupo()
-    {
-        ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica)]);
-        Result<VersaoConfiguracao> publicacao = Publicar(processo);
-        publicacao.IsSuccess.Should().BeTrue(publicacao.Error?.Message);
-        VersaoConfiguracao publicada = publicacao.Value!;
-        processo.AbrirRetificacao("Ajustar as vagas", publicada, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo), "teste", DateTimeOffset.UnixEpoch)
-            .IsSuccess.Should().BeTrue();
-        ConfiguracaoDistribuicaoVagas semGrupo = OfertaAmpla(12, grupoAreaEnem: null);
-        processo.DefinirDistribuicaoVagas([semGrupo], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-
-        return (processo, publicada, semGrupo);
-    }
-
-    [Fact(DisplayName = "ENEM com cálculo local: com a retificação aberta, a distribuição regravada com oferta sem grupo faz o fechamento recusar pelo mesmo item")]
-    public void Enem_FecharRetificacaoComOfertaSemGrupo_Recusa()
-    {
-        (ProcessoSeletivo processo, VersaoConfiguracao publicada, ConfiguracaoDistribuicaoVagas semGrupo) = ProcessoComAOfertaRegravadaSemGrupo();
-
-        Result<VersaoConfiguracao> fechar = processo.FecharRetificacao(
-            new CenarioDeCongelamento { Dados = Dados(), Documento = new DocumentoCongelado("{}"u8.ToArray(), "1.1", "canonical-json/sha256@v1", HashFixo), AtorUsuarioContaId = "teste" }, publicada, PrecondicaoIfMatch.Curinga);
-
-        fechar.IsFailure.Should().BeTrue();
-        fechar.Error!.Code.Should().Be("ProcessoSeletivo.ConformidadeInsuficiente");
-        fechar.Error.Message.Should().Contain(semGrupo.OfertaCursoOrigemId.ToString());
-    }
-
     [Fact(DisplayName = "ENEM com cálculo local: a recusa de Publicar traz uma causa por item, com a pontuação da mensagem do painel")]
     public void Enem_CausaPorItemBemPontuada()
     {
@@ -220,13 +190,12 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     {
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica)]);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!],
-            PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]).IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao semQuadro = ClassificacaoEnemLocal(QuadroPesoAreaEnemDeTeste.Completo());
         EsvaziarQuadro(semQuadro);
 
-        Result resultado = processo.DefinirClassificacao(semQuadro, PrecondicaoIfMatch.Curinga);
+        Result resultado = processo.DefinirClassificacao(semQuadro);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().Equal(
@@ -268,8 +237,8 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     public void Enem_CalculoLocalSemEnemDispensaGrupo()
     {
         ProcessoSeletivo processo = ProcessoConformeComEtapaQueCompoeNota();
-        processo.DefinirDistribuicaoVagas([OfertaAmpla(10, grupoAreaEnem: null)], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(ClassificacaoLocalSemEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([OfertaAmpla(10, grupoAreaEnem: null)], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        processo.DefinirClassificacao(ClassificacaoLocalSemEnem()).IsSuccess.Should().BeTrue();
 
         AfirmarSemItensDaMediaPorAreaEPublicacaoAceita(processo);
     }
@@ -278,8 +247,8 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     public void Enem_ClassificacaoImportadaDispensaGrupo()
     {
         ProcessoSeletivo processo = ProcessoConforme([OfertaAmpla(10, grupoAreaEnem: null)]);
-        processo.DefinirClassificacao(ClassificacaoImportadaBaseadaEmEnem(), PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
-        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirClassificacao(ClassificacaoImportadaBaseadaEmEnem()).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         AfirmarSemItensDaMediaPorAreaEPublicacaoAceita(processo);
@@ -298,7 +267,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
             .Which.Codigo.Should().Be("fato_coletavel_sem_valores_ofertados");
 
-        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")])
             .IsSuccess.Should().BeTrue();
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().BeNull();
@@ -314,7 +283,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
         ProcessoSeletivo processo = ProcessoConforme();
         List<OpcaoDeclaradaFato> opcoes = [.. Enumerable.Range(0, quantidade).Select(static i => Opcao("2025", i))];
 
-        processo.DefinirOpcoesDeclaradas(fato, opcoes, PrecondicaoIfMatch.Ausente)
+        processo.DefinirOpcoesDeclaradas(fato, opcoes)
             .Error!.Code.Should().Be(codigoEsperado);
     }
 
@@ -322,7 +291,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     public void DefinirOpcoesDeclaradas_OpcaoCitadaPorExigencia_Recusa()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2024"), Opcao("2025", 1)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2024"), Opcao("2025", 1)])
             .IsSuccess.Should().BeTrue();
         Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
         DocumentoExigido exigencia = DocumentoExigido.Criar(
@@ -331,10 +300,10 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
             condicoes: [CondicaoGatilho.Criar(0, "FATO_OPCAO_DE_TESTE", Operador.Igual, JsonSerializer.SerializeToElement("2024")).Value!],
             basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
             formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!])
             .IsSuccess.Should().BeTrue();
 
-        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")], PrecondicaoIfMatch.Ausente)
+        processo.DefinirOpcoesDeclaradas("FATO_OPCAO_DE_TESTE", [Opcao("2025")])
             .Error!.Code.Should().Be("OpcaoDeclaradaFato.ReferenciadaPorExigenciaViva");
     }
 

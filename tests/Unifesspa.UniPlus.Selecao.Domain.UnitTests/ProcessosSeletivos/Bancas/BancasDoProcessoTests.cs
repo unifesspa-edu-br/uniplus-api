@@ -62,7 +62,7 @@ public sealed class BancasDoProcessoTests
     private static ProcessoSeletivo ProcessoComEtapas(IReadOnlyList<BancaRequerida>? bancasDaFase, params EtapaProcesso[] etapas)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(fase: ProcessoConformeFactory.FaseConforme(bancas: bancasDaFase ?? []));
-        processo.DefinirEtapas(etapas, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas(etapas).IsSuccess.Should().BeTrue();
         return processo;
     }
 
@@ -84,7 +84,7 @@ public sealed class BancasDoProcessoTests
             .FirstOrDefault();
 
     private static IEnumerable<string> CodigosDaConferencia(ProcessoSeletivo processo, CorretoresDasEtapas corretores) =>
-        ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Com(corretores: corretores)).Errors
+        ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Com(corretores: corretores)).Errors
             .Where(static causa => causa.Error.Code != "ProcessoSeletivo.ConformidadeInsuficiente"
                 && causa.Field?.StartsWith("identificacao", StringComparison.Ordinal) != true)
             .Select(static causa => causa.Error.Code);
@@ -367,19 +367,21 @@ public sealed class BancasDoProcessoTests
         CodigosDaConferencia(processo, CorretoresDeTeste.SemConsolidacao).Should().Equal("EtapaProcesso.RegraDeConsolidacaoNaoResolvida");
     }
 
-    [Fact(DisplayName = "Redefinir as bancas da etapa leva à linha reaproveitada o nome e a regra declarados")]
-    public void Redefinir_AlinhaNomeERegraDaLinhaReaproveitada()
+    [Fact(DisplayName = "Redefinir as bancas da etapa reaproveita a linha de mesmo código e leva a ela a origem, o nome e a regra declarados")]
+    public void Redefinir_ReaproveitaALinhaEAlinhaOsDadosDeclarados()
     {
         EtapaProcesso etapa = NovaEtapa("Redação", 1);
         etapa.DefinirBancas([BancaDaEtapa.Criar(Tipo, "BANCA_EXAMINADORA", "Antigo", BancasDeTeste.Regra(3, 2))]).IsSuccess.Should().BeTrue();
         Guid linha = etapa.Bancas.Single().Id;
+        Guid outraOrigem = Guid.CreateVersion7();
 
-        Result definidas = AlinhamentoDasBancasDaEtapa.Definir(
-            etapa, [BancaDaEtapa.Criar(Tipo, "BANCA_EXAMINADORA", "Novo", BancasDeTeste.Regra(5, 4))]);
+        Result definidas = etapa.DefinirBancas(
+            [BancaDaEtapa.Criar(outraOrigem, "BANCA_EXAMINADORA", "Novo", BancasDeTeste.Regra(5, 4))]);
 
         definidas.IsSuccess.Should().BeTrue();
         BancaDaEtapa banca = etapa.Bancas.Single();
         banca.Id.Should().Be(linha);
+        banca.TipoBancaOrigemId.Should().Be(outraOrigem);
         banca.Nome.Should().Be("Novo");
         banca.RegraDeDeliberacao!.Integrantes.Should().Be(5);
     }

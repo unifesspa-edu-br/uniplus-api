@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.Entities;
 
+using System.Collections.Frozen;
+
 using Enums;
 
 using Services;
@@ -10,6 +12,7 @@ using Unifesspa.UniPlus.Regras.Formularios;
 using Unifesspa.UniPlus.Selecao.Domain.MotivosDeDecisao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 
 using ValueObjects;
 
@@ -178,22 +181,37 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
         ConferenciaDaDeclaracaoDaFase.ExigirDeclaracaoPresente(origem, cronograma, publicacoes, bancasRequeridas);
         ConferenciaDaDeclaracaoDaFase.ExigirValoresDeCriacao(cronograma.Ordem, origem.OrigemId, origem.OrigemData);
 
-        List<FieldError> violacoes = ConferenciaDaDeclaracaoDaFase.Violacoes(origem, cronograma, publicacoes, bancasRequeridas);
+        List<FieldError> violacoes = ConferenciaDaDeclaracaoDaFase.Violacoes(origem, cronograma, publicacoes, bancasRequeridas, FrozenSet<string>.Empty);
         if (violacoes.Count > 0)
         {
             return Result<FaseCronograma>.ValidationFailure(violacoes);
         }
 
+        return Result<FaseCronograma>.Success(Adotar(origem, cronograma, publicacoes, bancasRequeridas));
+    }
+
+    /// <summary>
+    /// Adota a declaração de um documento lido como a fase está declarada, <b>sem conferi-la</b>: a recusa da declaração é do
+    /// congelamento, que a lê pela <see cref="Declaracao()"/>. A fase nasce com identidade nova.
+    /// </summary>
+    internal static FaseCronograma Adotar(
+        OrigemCanonicaDaFase origem,
+        DecisoesDeCronogramaDaFase cronograma,
+        PublicacoesDaFase publicacoes,
+        IReadOnlyList<BancaRequerida> bancasRequeridas)
+    {
+        ConferenciaDaDeclaracaoDaFase.ExigirDeclaracaoPresente(origem, cronograma, publicacoes, bancasRequeridas);
+
         FaseCronograma fase = new();
         fase.AdotarDeclaracao(origem, cronograma, publicacoes, bancasRequeridas);
 
-        return Result<FaseCronograma>.Success(fase);
+        return fase;
     }
 
     /// <summary>
     /// Reidrata uma fase de uma <see cref="VersaoConfiguracao"/> congelada, <b>preservando o
     /// <see cref="EntityBase.Id"/></b>: os documentos exigidos e a referência temporal dos fatos apontam
-    /// para a fase por esse Id, e a sombra de verificação da restauração começa sem fase viva a reconciliar.
+    /// para a fase por esse Id, que a reidratação preserva.
     /// </summary>
     /// <remarks>
     /// Reidratar não é criar: as guardas são a última linha contra erro de programação, e a revalidação
@@ -216,6 +234,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
 
         return fase;
     }
+
     private void AdotarDeclaracao(
         OrigemCanonicaDaFase origem,
         DecisoesDeCronogramaDaFase cronograma,
@@ -232,14 +251,16 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
 
     /// <summary>
     /// A fase como está agora, lida como se acabasse de ser declarada: a hidratação do EF materializa estado
-    /// violado sem passar por fábrica, e as recusas da declaração o mostram.
+    /// violado sem passar por fábrica, e as recusas da declaração o mostram. As listas da fase que a leitura do documento
+    /// deixou sem alguma parte (<paramref name="colecoesComParteRecusada"/>) ficam sem julgar nas regras que as quantificam.
     /// </summary>
-    public FaseDeclarada Declaracao() => FaseDeclarada.Declarar(
+    public FaseDeclarada Declaracao(IReadOnlySet<string>? colecoesComParteRecusada = null) => FaseDeclarada.Declarar(
         Id,
         OrigemCanonica(),
         DecisoesDeCronograma(),
-        new PublicacoesDaFase([.. _produtos], EmiteParecerIndividual, RegraRecurso, [.. _tiposDeDecisao], RegraDeHomologacao),
-        [.. _bancasRequeridas]);
+        new PublicacoesDaFase([.. OrdemCanonicaDaConfiguracao.ProdutosDaFase(_produtos)], EmiteParecerIndividual, RegraRecurso, [.. _tiposDeDecisao], RegraDeHomologacao),
+        [.. OrdemCanonicaDaConfiguracao.BancasDaFase(_bancasRequeridas)],
+        colecoesComParteRecusada);
 
     /// <summary>O que da fase entra no resultado preliminar que ela publica (ver <see cref="ValueObjects.EntradaDoPreliminar"/>).</summary>
     public EntradaDoPreliminar EntradaDoPreliminar() => EntradaDoPreliminarDaFase.De(this);
@@ -267,8 +288,7 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
 
     /// <summary>
     /// Atualiza os dados da MESMA fase (mesmo <see cref="EntityBase.Id"/>) em vez de recriá-la, copiando-os
-    /// de <paramref name="origem"/>. Serve à reposição da configuração congelada, que reconcilia por
-    /// <see cref="Ordem"/>, e à redefinição ao vivo do cronograma, que reconcilia por
+    /// de <paramref name="origem"/>. Serve à redefinição do cronograma, que reconcilia por
     /// <see cref="FaseCanonicaOrigemId"/> e na qual <see cref="Ordem"/> pode mudar.
     /// </summary>
     /// <remarks>

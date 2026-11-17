@@ -80,7 +80,7 @@ public sealed class LeituraDoDocumentoComEsquemaRealTests
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("/etapas/0/chave");
     }
 
-    [Fact(DisplayName = "A chave repetida entre duas etapas é recusada nas duas, e o item repetido em etapas diferentes não é")]
+    [Fact(DisplayName = "A chave repetida entre etapas é recusada na etapa posterior, e o item repetido em etapas diferentes não é")]
     public void ChaveRepetida_RecusadaSoNoMesmoEscopo()
     {
         Result<DocumentoLido> resultado = Ler("""
@@ -91,8 +91,19 @@ public sealed class LeituraDoDocumentoComEsquemaRealTests
             """);
 
         resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(
-            ("/etapas/0/chave", DocumentoDaConfiguracaoErrorCodes.ChaveRepetida),
             ("/etapas/1/chave", DocumentoDaConfiguracaoErrorCodes.ChaveRepetida));
+    }
+
+    [Fact(DisplayName = "A chave repetida em três etapas é recusada na segunda e na terceira, na posição da lista enviada")]
+    public void ChaveRepetidaEmTresEtapas_RecusadaNasPosteriores()
+    {
+        Result<DocumentoLido> resultado = Ler("""
+            "etapas": [ { "chave": "prova" }, { "chave": "redacao" }, { "chave": "prova" }, { "chave": "prova" } ]
+            """);
+
+        resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(
+            ("/etapas/2/chave", DocumentoDaConfiguracaoErrorCodes.ChaveRepetida),
+            ("/etapas/3/chave", DocumentoDaConfiguracaoErrorCodes.ChaveRepetida));
     }
 
     [Fact(DisplayName = "As causas de forma saem juntas, na ordem do documento, sem repetir o texto digitado")]
@@ -104,7 +115,7 @@ public sealed class LeituraDoDocumentoComEsquemaRealTests
             """);
 
         resultado.Errors.Select(static causa => causa.Field).Should().Equal(
-            "/formato", "/etapas/0/nome", "/etapas/0/invento", "/etapas/0/chave", "/etapas/1/chave", "/opcoesDeCurso/numero");
+            "/formato", "/etapas/0/nome", "/etapas/0/invento", "/etapas/1/chave", "/opcoesDeCurso/numero");
         resultado.Errors.Select(static causa => causa.Error.Message).Should().NotContain(static mensagem => mensagem.Contains("SEGREDO", StringComparison.Ordinal));
     }
 

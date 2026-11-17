@@ -54,6 +54,10 @@ public sealed class ItemDeErroDeCampoTests
     public void Serializar_QualquerPoliticaDeNomes_UsaOsNomesFixosDoFio(JsonSerializerOptions opcoes) =>
         JsonSerializer.Serialize(new ItemDeErroDeCampo("/a", "c", "m"), opcoes).Should().Be("""{"field":"/a","code":"c","message":"m"}""");
 
+    [Fact(DisplayName = "No fio o item sem campo sai sem a chave field")]
+    public void Serializar_ItemSemCampo_OmiteAChaveField() =>
+        JsonSerializer.Serialize(new ItemDeErroDeCampo(null, "c", "m")).Should().Be("""{"code":"c","message":"m"}""");
+
     [Fact(DisplayName = "O erro e o mapeador são obrigatórios")]
     public void De_ArgumentoNulo_Lanca()
     {

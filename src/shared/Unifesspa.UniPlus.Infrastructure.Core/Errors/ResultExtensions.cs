@@ -78,17 +78,14 @@ public static class ResultExtensions
         }
     }
 
-    // errors[] é extension condicional a erro DE CAMPO (ADR-0023) — não a status
-    // 422 isolado nem a ter mais de uma violação. Um Result.Failure comum
-    // (ex.: CampusResponsavelNaoEncontrado, Snapshot.VigenteAusente) também
-    // resolve para 422 por regra de negócio sem ser validação de campo, e vira
-    // FieldError(null, error) só pela forma interna do Result — não tem
-    // "field" nenhum para reportar, então não pode aparecer no array com
-    // field: null. O sinal correto é a presença de Field, que só existe
-    // quando o Result veio de ValidationFailure.
+    // errors[] (ADR-0023) sai quando há mais de uma causa ou quando alguma aponta campo, em qualquer
+    // status. Uma única causa sem campo (ex.: CampusResponsavelNaoEncontrado, Snapshot.VigenteAusente)
+    // já é dita inteira pelo code e pelo detail da raiz, e repeti-la num array só traria um item sem
+    // campo. Dentro do array, a causa sem campo sai sem a chave "field", em vez de "field": null
+    // (ItemDeErroDeCampo). "" não é ausência: é a raiz do corpo ou do documento.
     private static void DeclararErrosDeCampo(ProblemDetails problem, IReadOnlyList<FieldError> errors, IDomainErrorMapper mapper)
     {
-        if (errors.Any(fieldError => fieldError.Field is not null))
+        if (errors.Count > 1 || errors.Any(fieldError => fieldError.Field is not null))
         {
             problem.Extensions["errors"] = errors
                 .Select(fieldError => ItemDeErroDeCampo.De(fieldError, mapper))

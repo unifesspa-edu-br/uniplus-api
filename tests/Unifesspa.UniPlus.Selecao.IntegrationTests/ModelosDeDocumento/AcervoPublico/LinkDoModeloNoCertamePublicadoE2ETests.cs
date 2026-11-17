@@ -107,7 +107,7 @@ public sealed class LinkDoModeloNoCertamePublicadoE2ETests(AcervoPublicoE2EFixtu
                     tamanhoMaximoBytes: null,
                     modelo: ModeloDaExigencia.Do(modelo).Value!,
                     finalidade: FinalidadeFormulario.Inscricao).Value!;
-                processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!], PrecondicaoIfMatch.Ausente)
+                processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!])
                     .IsSuccess.Should().BeTrue();
             });
 

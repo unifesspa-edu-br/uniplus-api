@@ -64,9 +64,9 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id, RegraDoCatalogo());
         DefinirAlgoritmoContagemPrazoCommand command = new(
-            processo.Id, AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1", PrecondicaoIfMatch.Ausente);
+            processo.Id, AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1");
 
-        Result<MutacaoAceita> result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
+        Result result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
@@ -84,9 +84,9 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id, regra: null);
         DefinirAlgoritmoContagemPrazoCommand command = new(
-            processo.Id, "CONTAGEM-PRAZO-INVENTADA", "v9", PrecondicaoIfMatch.Ausente);
+            processo.Id, "CONTAGEM-PRAZO-INVENTADA", "v9");
 
-        Result<MutacaoAceita> result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
+        Result result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -102,9 +102,9 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
         Mocks mocks = NovosMocks(
             processo, processo.Id, RegraDoCatalogo(codigo: "BONUS-MULTIPLICATIVO", tipo: TipoRegra.RegraBonus));
         DefinirAlgoritmoContagemPrazoCommand command = new(
-            processo.Id, "BONUS-MULTIPLICATIVO", "v1", PrecondicaoIfMatch.Ausente);
+            processo.Id, "BONUS-MULTIPLICATIVO", "v1");
 
-        Result<MutacaoAceita> result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
+        Result result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -120,9 +120,9 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
     {
         ProcessoSeletivo processo = NovoProcesso();
         Mocks mocks = NovosMocks(processo, processo.Id, RegraDoCatalogo());
-        DefinirAlgoritmoContagemPrazoCommand command = new(processo.Id, codigo, versao, PrecondicaoIfMatch.Ausente);
+        DefinirAlgoritmoContagemPrazoCommand command = new(processo.Id, codigo, versao);
 
-        Result<MutacaoAceita> result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
+        Result result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
@@ -137,9 +137,9 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
     {
         Mocks mocks = NovosMocks(null, Guid.CreateVersion7(), RegraDoCatalogo());
         DefinirAlgoritmoContagemPrazoCommand command = new(
-            Guid.CreateVersion7(), AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1", PrecondicaoIfMatch.Ausente);
+            Guid.CreateVersion7(), AlgoritmoContagemPrazoCodigo.ExcluiDiaInicial, "v1");
 
-        Result<MutacaoAceita> result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
+        Result result = await DefinirAlgoritmoContagemPrazoCommandHandler.Handle(
             command, mocks.Repository, mocks.Catalogo, mocks.UnitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();

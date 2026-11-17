@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -21,11 +22,18 @@ public sealed record EtapasDoProcesso
     public IReadOnlyList<EtapaDeclarada> Etapas { get; }
 
     /// <summary>As etapas do processo vivo, cada uma lida como declarou: as recusas do estado carregado do banco ficam à vista.</summary>
-    public static EtapasDoProcesso Das(IEnumerable<EtapaProcesso> etapas)
+    public static EtapasDoProcesso Das(IEnumerable<EtapaProcesso> etapas) => Das(etapas, OrigemNoDocumento.Identidade);
+
+    /// <summary>
+    /// As etapas, na ordem canônica, lidas contra a origem do documento: a lista de uma etapa com parte recusada pela leitura
+    /// fica sem julgar nas regras que a quantificam.
+    /// </summary>
+    public static EtapasDoProcesso Das(IEnumerable<EtapaProcesso> etapas, OrigemNoDocumento origem)
     {
         ArgumentNullException.ThrowIfNull(etapas);
+        ArgumentNullException.ThrowIfNull(origem);
 
-        return new([.. etapas.Select(static etapa => etapa.Declaracao())]);
+        return new([.. etapas.Select((etapa, posicao) => etapa.Declaracao(origem.ColecoesRecusadasDe($"etapas[{posicao}]")))]);
     }
 
     /// <summary>A etapa de nota do ENEM, quando o processo declara uma só; com duas, nenhuma é a designada.</summary>
@@ -83,8 +91,12 @@ public sealed record EtapasDoProcesso
     public IReadOnlyList<FieldError> ConferirFechamentoDoCiclo() =>
     [
         .. Etapas.SelectMany(static (etapa, posicao) =>
-            etapa.Atos.TiposComCicloAberto().Select(tipo => NaEtapa(posicao, "produtos", PreliminarSemDefinitivo(etapa.Nome, tipo)))),
+            ProdutosJulgaveis(etapa).Select(tipo => NaEtapa(posicao, "produtos", PreliminarSemDefinitivo(etapa.Nome, tipo)))),
     ];
+
+    // O ciclo de um preliminar sem definitivo lê a lista dos produtos inteira: com parte recusada, o definitivo pode ser ela.
+    private static IReadOnlyList<string> ProdutosJulgaveis(EtapaDeclarada etapa) =>
+        etapa.ParteRecusadaEm(EtapaDeclarada.ListaDosProdutos) ? [] : etapa.Atos.TiposComCicloAberto();
 
     /// <summary>Toda etapa publicada declara a fase em que acontece; uma causa por etapa sem fase.</summary>
     public IReadOnlyList<FieldError> ConferirCompletude() =>

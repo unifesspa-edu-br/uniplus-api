@@ -77,7 +77,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
         ConfiguracaoCascataRemanejamento cascataComFallbackInexistente = ConfiguracaoCascataRemanejamento.Criar(
             RegraCascataRemanejamento(), "FALLBACK_INEXISTENTE",
             [.. CascataCompleta().Destinos]).Value!;
-        processo.DefinirCascataRemanejamento(cascataComFallbackInexistente, PrecondicaoIfMatch.Ausente)
+        processo.DefinirCascataRemanejamento(cascataComFallbackInexistente)
             .IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(
@@ -99,8 +99,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
         // a checagem global (origem declarada × origens SegueCascata em alguma oferta) alcança.
         processo.DefinirCascataRemanejamento(
             ConfiguracaoCascataRemanejamento.Criar(
-                RegraCascataRemanejamento(), "AC", [Destino(ModalidadesFederaisLei12711.LbPpi, 1, "AC")]).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                RegraCascataRemanejamento(), "AC", [Destino(ModalidadesFederaisLei12711.LbPpi, 1, "AC")]).Value!).IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(
             processo, "cascata_pendente", "cascata_origem_nao_segue_cascata");
@@ -126,8 +125,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
             Destino(ModalidadesFederaisLei12711.LbPpi, 8, "CODIGO_FORA_DA_OFERTA"),
         ];
         processo.DefinirCascataRemanejamento(
-            ConfiguracaoCascataRemanejamento.Criar(RegraCascataRemanejamento(), ModalidadesFederaisLei12711.Ac, destinos).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            ConfiguracaoCascataRemanejamento.Criar(RegraCascataRemanejamento(), ModalidadesFederaisLei12711.Ac, destinos).Value!).IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(
             processo, "cascata_pendente", "cascata_destino_desconhecido");
@@ -155,10 +153,10 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
     {
         ProcessoSeletivo processo = ProcessoConforme();
         Guid origem = processo.CronogramaFases.Single().FaseCanonicaOrigemId;
-        processo.DefinirCronogramaFases([FaseBase(coletaSolicitacaoIsencao: true, faseCanonicaOrigemId: origem)], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([FaseBase(coletaSolicitacaoIsencao: true, faseCanonicaOrigemId: origem)], [])
             .IsSuccess.Should().BeTrue();
         ExigirFolhas(processo, DocumentoGeral(processo.CronogramaFases.Single().Id, obrigatorio: false, consequencia: null, finalidade: FinalidadeFormulario.IsencaoTaxa));
-        processo.DefinirCronogramaFases([FaseBase(faseCanonicaOrigemId: origem)], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseBase(faseCanonicaOrigemId: origem)], []).IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(processo, "exigencia_finalidade_incoerente_com_a_fase");
         ExigirPublicacaoRecusada(processo, DocumentoExigidoErrorCodes.FaseIncoerenteComFinalidade);

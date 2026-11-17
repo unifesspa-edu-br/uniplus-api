@@ -24,15 +24,14 @@ public sealed class OpcoesDeCursoTests
     private const string CodigoAcimaDasOfertas = "uniplus.selecao.processo_seletivo.opcoes_de_curso_acima_das_ofertas";
     private const string MensagemAcimaDasOfertas = "Com 2 opções de curso, cadastre pelo menos dois cursos.";
 
-    private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao)
+    private static IEnumerable<string> Vermelhos(ProcessoSeletivo processo) => ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao)
         .Where(static i => !i.Ok)
         .Select(static i => i.Codigo);
 
     private static void DefinirOfertas(ProcessoSeletivo processo, int quantidade) =>
         processo.DefinirDistribuicaoVagas(
             [.. Enumerable.Range(0, quantidade).Select(static _ => ProcessoConformeFactory.Oferta())],
-            FatosDeModalidadeDeTeste.DoCatalogo,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
 
     private static ProcessoSeletivo ProcessoComOfertas(int quantidade, bool declararOpcoes = false)
     {
@@ -40,7 +39,7 @@ public sealed class OpcoesDeCursoTests
         DefinirOfertas(processo, quantidade);
         if (declararOpcoes)
         {
-            processo.DefinirOpcoesDeCurso(2, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirOpcoesDeCurso(2).IsSuccess.Should().BeTrue();
         }
 
         return processo;
@@ -51,7 +50,7 @@ public sealed class OpcoesDeCursoTests
     {
         ProcessoSeletivo processo = ProcessoComOfertas(1);
 
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
 
         processo.NumeroDeOpcoesDeCurso.Should().Be(1);
     }
@@ -61,7 +60,7 @@ public sealed class OpcoesDeCursoTests
     {
         ProcessoSeletivo processo = ProcessoComOfertas(1);
 
-        Result resultado = processo.DefinirOpcoesDeCurso(2, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirOpcoesDeCurso(2);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle();
@@ -78,7 +77,7 @@ public sealed class OpcoesDeCursoTests
     {
         ProcessoSeletivo processo = ProcessoComOfertas(2);
 
-        Result resultado = processo.DefinirOpcoesDeCurso(numero, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirOpcoesDeCurso(numero);
 
         resultado.Errors.Should().ContainSingle();
         resultado.Errors[0].Field.Should().Be("numero");
@@ -92,7 +91,7 @@ public sealed class OpcoesDeCursoTests
         ProcessoSeletivo processo = ProcessoComOfertas(2, declararOpcoes: true);
 
         Result resultado = processo.DefinirDistribuicaoVagas(
-            [ProcessoConformeFactory.Oferta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+            [ProcessoConformeFactory.Oferta()], FatosDeModalidadeDeTeste.DoCatalogo);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().ContainSingle();
@@ -106,7 +105,7 @@ public sealed class OpcoesDeCursoTests
     {
         ProcessoSeletivo processo = ProcessoComOfertas(2, declararOpcoes: true);
 
-        Result resultado = processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirDistribuicaoVagas([], FatosDeModalidadeDeTeste.DoCatalogo);
 
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.DistribuicaoVagasVazia");
     }
@@ -119,12 +118,12 @@ public sealed class OpcoesDeCursoTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        processo.DefinirOpcoesDeCurso(2, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(2).IsSuccess.Should().BeTrue();
 
         Vermelhos(processo).Should().Contain("distribuicao_vagas_ausente").And.NotContain("opcoes_de_curso_acima_das_ofertas",
             "sem distribuição gravada a pendência é a da distribuição ausente");
 
-        processo.DefinirDistribuicaoVagas([ProcessoConformeFactory.Oferta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente)
+        processo.DefinirDistribuicaoVagas([ProcessoConformeFactory.Oferta()], FatosDeModalidadeDeTeste.DoCatalogo)
             .Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.OpcoesDeCursoAcimaDasOfertas);
 
         DefinirOfertas(processo, 2);
@@ -139,7 +138,7 @@ public sealed class OpcoesDeCursoTests
         Vermelhos(processo).Should().Equal("opcoes_de_curso_nao_declaradas");
         CausasDeConformidadeDeTeste.De(processo).Should().ContainSingle().Which.Error.Message.Should().Contain("Número de opções de curso");
 
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
 
         Vermelhos(processo).Should().BeEmpty();
         CausasDeConformidadeDeTeste.De(processo).Should().BeEmpty();
@@ -157,41 +156,27 @@ public sealed class OpcoesDeCursoTests
         CausasDeConformidadeDeTeste.De(processo).Should().ContainSingle().Which.Error.Message.Should().Contain("Opções de curso");
     }
 
-    private static Result<VersaoConfiguracao> FecharComOEdital(ProcessoSeletivo processo, VersaoConfiguracao versaoAbertura) =>
-        processo.FecharRetificacao(
-            new CenarioDeCongelamento { Dados = DadosEdital.Criar("001/2026", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!, Documento = new DocumentoCongelado(Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64)) }, versaoAbertura, PrecondicaoIfMatch.Curinga);
-
-    // A sessão não deixa chegar aí pelas operações do agregado: a distribuição de 1 oferta é recusada.
-    private static void AbrirSessaoQueRecusaReduzirOsCursos(ProcessoSeletivo processo, VersaoConfiguracao versaoAbertura)
-    {
-        processo.AbrirRetificacao(
-            "Reduzir cursos", versaoAbertura, identificadorDaVersaoBase: null, VersoesPublicadasDeTeste.SoAVigente(processo),
-            "user-conta-123", DateTimeOffset.UtcNow).IsSuccess.Should().BeTrue();
-
-        processo.DefinirDistribuicaoVagas(
-            [ProcessoConformeFactory.Oferta()], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga)
-            .Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.OpcoesDeCursoAcimaDasOfertas);
-    }
-
-    // O fechamento também confere, para o estado que um caminho fora do agregado deixasse.
-    [Fact(DisplayName = "A regra vale na retificação: o fechamento recusa o estado com mais opções que cursos")]
-    public void Retificacao_FecharComMaisOpcoesQueCursos_Recusa()
+    // A retificação também confere, para o estado que um caminho fora do agregado deixasse.
+    [Fact(DisplayName = "A regra vale na retificação: ela recusa o estado com mais opções que cursos")]
+    public void Retificacao_ComMaisOpcoesQueCursos_Recusa()
     {
         ProcessoSeletivo processo = ProcessoPublicadoComDuasOpcoes(out VersaoConfiguracao versaoAbertura);
-        AbrirSessaoQueRecusaReduzirOsCursos(processo, versaoAbertura);
         Hidratar(processo, 2, ofertas: 1);
 
-        Result<VersaoConfiguracao> fechamento = FecharComOEdital(processo, versaoAbertura);
+        Result<VersaoConfiguracao> retificacao = processo.Retificar(
+            new CenarioDeCongelamento { Dados = DadosEdital.Criar("001/2026", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!, Documento = new DocumentoCongelado(Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64)) },
+            versaoAbertura,
+            "Reduzir cursos");
 
-        fechamento.IsFailure.Should().BeTrue();
-        fechamento.Error!.Message.Should().Contain("Opções de curso");
+        retificacao.IsFailure.Should().BeTrue();
+        retificacao.Error!.Message.Should().Contain("Opções de curso");
     }
 
     private static ProcessoSeletivo ProcessoPublicadoComDuasOpcoes(out VersaoConfiguracao versaoAbertura)
     {
         ProcessoSeletivo processo = ProcessoConformeFactory.Criar(declararOpcoesDeCurso: false);
         DefinirOfertas(processo, 2);
-        processo.DefinirOpcoesDeCurso(2, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(2).IsSuccess.Should().BeTrue();
 
         Result<VersaoConfiguracao> publicacao = processo.Publicar(
             new CenarioDeCongelamento { Dados = DadosEdital.Criar("001/2026", DateTimeOffset.UnixEpoch, DateTimeOffset.UnixEpoch.AddDays(30), Guid.CreateVersion7()).Value!, Documento = new DocumentoCongelado(Encoding.UTF8.GetBytes("{}"), "1.0", "canonical-json/sha256@v1", new string('a', 64)) });
@@ -227,7 +212,7 @@ public sealed class OpcoesDeCursoTests
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
-        processo.DefinirOpcoesDeCurso(1, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirOpcoesDeCurso(1).IsSuccess.Should().BeTrue();
 
         Vermelhos(processo).Should().NotContain("opcoes_de_curso_acima_das_ofertas");
     }

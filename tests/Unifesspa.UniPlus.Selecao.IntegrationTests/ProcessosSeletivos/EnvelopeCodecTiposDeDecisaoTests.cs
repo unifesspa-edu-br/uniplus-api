@@ -102,22 +102,20 @@ public sealed class EnvelopeCodecTiposDeDecisaoTests
         HashCanonicalComputer.ComputeSha256Hex(congelado.Bytes).Should().Be(versao.HashConfiguracao);
     }
 
-    [Fact(DisplayName = "O decodificador lê os tipos de decisão da fase: mudá-los no envelope muda os bytes recodificados")]
+    [Fact(DisplayName = "O decodificador lê os tipos de decisão da fase: mudá-los no envelope muda o que a leitura devolve")]
     public void Decodificador_LeOsTiposDaFase()
     {
-        (byte[] originais, byte[] mutados, byte[] recodificados) = MutarEReidratar(envelope =>
-            DefinirTipos(envelope, CaminhoDaFase, AnaliseDocumental, Classificacao));
+        EnvelopeReidratado envelope = ReidratarMutado(mutado => DefinirTipos(mutado, CaminhoDaFase, AnaliseDocumental, Classificacao));
 
-        recodificados.Should().Equal(mutados).And.NotEqual(originais);
+        envelope.Grafo.CronogramaFases[0].TiposDeDecisao.Should().Equal(AnaliseDocumental, Classificacao);
     }
 
-    [Fact(DisplayName = "O decodificador lê os tipos de decisão da etapa: mudá-los no envelope muda os bytes recodificados")]
+    [Fact(DisplayName = "O decodificador lê os tipos de decisão da etapa: mudá-los no envelope muda o que a leitura devolve")]
     public void Decodificador_LeOsTiposDaEtapa()
     {
-        (byte[] originais, byte[] mutados, byte[] recodificados) = MutarEReidratar(envelope =>
-            DefinirTipos(envelope, CaminhoDaEtapa, AnaliseDocumental, Classificacao));
+        EnvelopeReidratado envelope = ReidratarMutado(mutado => DefinirTipos(mutado, CaminhoDaEtapa, AnaliseDocumental, Classificacao));
 
-        recodificados.Should().Equal(mutados).And.NotEqual(originais);
+        envelope.Grafo.Etapas[0].TiposDeDecisao.Should().Equal(AnaliseDocumental, Classificacao);
     }
 
     [Theory(DisplayName = "A leitura recusa tipos de decisão da fase fora da forma que a escrita produz")]

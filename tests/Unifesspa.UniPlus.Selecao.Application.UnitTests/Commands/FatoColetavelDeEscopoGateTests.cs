@@ -41,7 +41,7 @@ public sealed class FatoColetavelDeEscopoGateTests
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
         // ProcessoSeletivoConformeBuilder já oferta atendimento vazio (sem condições) — só falta o fato coletável.
-        processo.DefinirItens([FatoCondicaoAtendimentoSemOferta()], PrecondicaoIfMatch.Ausente)
+        processo.DefinirItens([FatoCondicaoAtendimentoSemOferta()])
             .IsSuccess.Should().BeTrue();
         ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
 
@@ -49,33 +49,6 @@ public sealed class FatoColetavelDeEscopoGateTests
 
         AfirmarRecusaDoFatoSemOferta(resposta, eventos, canonicalizer);
         processo.Status.Should().Be(StatusProcesso.Rascunho, "a publicação recusada não transita o processo");
-    }
-
-    // RetificarProcessoSeletivoCommandHandler não aceita novo FatoColetado/AtendimentoEspecializado
-    // como input — re-versiona o estado JÁ existente do agregado sob um novo ato, e exige
-    // Rascunho nulo (abre e fecha uma sessão efêmera internamente). Como este gate é interno
-    // ao agregado (sem leitura cross-módulo, ao contrário da coletabilidade de fatos), não há
-    // "drift" possível entre a publicação original e uma chamada de Retificar sem sessão
-    // aberta: se o estado violasse o gate, a publicação original já teria recusado. O caminho
-    // válido para reabrir e violar o gate é a sessão de retificação explícita — coberto abaixo
-    // por FecharRetificacaoCommandHandler, que fecha pela mesma sucessão de TransicoesDaVersao (mesmo gate).
-
-    [Fact(DisplayName = "FecharRetificacao_ComFatoColetavelSemOferta_RecusaESessaoPermaneceAberta — recusa não destrói a sessão editorial")]
-    public async Task FecharRetificacao_ComFatoColetavelSemOferta_RecusaESessaoPermaneceAberta()
-    {
-        (ProcessoSeletivo processo, VersaoConfiguracao versaoAtual) = ProcessoPublicadoSemFatoColetado();
-        PublicacaoDeTeste.AbrirRetificacao(processo, versaoAtual);
-        processo.DefinirItens([FatoCondicaoAtendimentoSemOferta()], PrecondicaoIfMatch.Curinga)
-            .IsSuccess.Should().BeTrue();
-        ISnapshotPublicacaoCanonicalizer canonicalizer = CanonicalizerSubstituto();
-
-        (Result resposta, IEnumerable<object> eventos) = await ServicosSemOferta(processo, canonicalizer)
-            .ComVersaoVigente(processo, versaoAtual)
-            .FecharRetificacaoAsync(processo.Id);
-
-        AfirmarRecusaDoFatoSemOferta(resposta, eventos, canonicalizer);
-        processo.Rascunho.Should().NotBeNull(
-            "uma recusa de fato coletável sem oferta não destrói a sessão editorial — o administrador corrige e tenta de novo");
     }
 
     private static ServicosDoCongelamentoDeTeste ServicosSemOferta(ProcessoSeletivo processo, ISnapshotPublicacaoCanonicalizer canonicalizer) =>

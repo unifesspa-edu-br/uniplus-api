@@ -2,18 +2,20 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Retificacao;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.OrdemCanonica;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
 /// O que a retificação recusa numa fase ou numa etapa que já começou: a troca da unidade responsável, a remoção da
 /// fase do cronograma e a remoção da etapa. A comparação é sempre com a versão publicada vigente, que
 /// <see cref="FasesIniciadas"/> traz, e não com o rascunho anterior. As recusas se acumulam, uma por fase trocada,
-/// uma por fase removida e uma por etapa removida (ADR-0125), nessa ordem.
+/// uma por fase removida e uma por etapa removida (ADR-0125), nessa ordem. A fase trocada, que continua no documento, aponta a
+/// unidade dela pela posição da fase na ordem canônica do documento, e não na lista como veio.
 /// </summary>
 public static class ConferenciaDasFasesIniciadas
 {
-    // A recusa aponta a coleção do documento que traz a fase ou a etapa: o item retirado não tem posição nela, e a posição
-    // do que ficou não é conhecida aqui.
+    // O item retirado não tem posição no documento: a recusa aponta a coleção que traz a fase ou a etapa.
+    private const string UnidadeDaFase = "unidadeResponsavel";
     private const string FasesNoDocumento = "cronograma.fases";
     private const string EtapasNoDocumento = "etapas";
 
@@ -28,7 +30,7 @@ public static class ConferenciaDasFasesIniciadas
 
         return
         [
-            .. RecusasDaTroca(iniciadas, fases),
+            .. RecusasDaTroca(iniciadas, [.. OrdemCanonicaDaConfiguracao.Fases(fases)]),
             .. RecusasDaRemocaoDaFase(iniciadas, fases),
             .. RecusasDaRemocaoDaEtapa(iniciadas, etapas),
         ];
@@ -37,11 +39,14 @@ public static class ConferenciaDasFasesIniciadas
     // A unidade que conduz a fase decide as ações dela, e a fase que já começou tem ato e registro feitos sob a
     // unidade publicada: trocá-la deixaria o que já aconteceu sem a unidade que o conduziu. A comparação é com a
     // versão publicada, e não com o rascunho anterior, para que retirar e reinserir a fase não contorne a regra.
-    private static IEnumerable<FieldError> RecusasDaTroca(FasesIniciadas iniciadas, IReadOnlyCollection<FaseCronograma> fases) =>
-        iniciadas.FasesComUnidadeTrocada(fases).Select(static fase => Recusa(
-            FasesNoDocumento,
-            "FaseCronograma.UnidadeDeFaseIniciadaNaoMuda",
-            $"A fase '{fase.Codigo}' (ordem {fase.Ordem}) já começou, e a unidade responsável por ela não muda."));
+    private static IEnumerable<FieldError> RecusasDaTroca(FasesIniciadas iniciadas, IReadOnlyList<FaseCronograma> fasesNoDocumento) =>
+        fasesNoDocumento
+            .Select(static (fase, posicao) => (fase, posicao))
+            .Where(par => iniciadas.UnidadeTrocada(par.fase))
+            .Select(static par => Recusa(
+                $"fases[{par.posicao}].{UnidadeDaFase}",
+                "FaseCronograma.UnidadeDeFaseIniciadaNaoMuda",
+                $"A fase '{par.fase.Codigo}' (ordem {par.fase.Ordem}) já começou, e a unidade responsável por ela não muda."));
 
     // Remover a fase numa retificação e recolocá-la com outra unidade na seguinte contornaria a recusa da troca. Só conta
     // a fase que a versão publicada vigente ainda traz: a que já saiu de uma versão anterior não é removida agora.

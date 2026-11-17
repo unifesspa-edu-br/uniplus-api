@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
@@ -30,7 +31,7 @@ public sealed class ConferenciaDoCronogramaNaPublicacaoTests
             "PS", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-        Aceitar(processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Ausente));
+        Aceitar(processo.DefinirCronogramaFases(fases, []));
 
         return processo;
     }
@@ -38,7 +39,7 @@ public sealed class ConferenciaDoCronogramaNaPublicacaoTests
     private static ProcessoSeletivo ProcessoComEtapas(params EtapaProcesso[] etapas)
     {
         ProcessoSeletivo processo = ProcessoComCronograma(FaseConforme());
-        Aceitar(processo.DefinirEtapas(etapas, PrecondicaoIfMatch.Curinga));
+        Aceitar(processo.DefinirEtapas(etapas));
 
         return processo;
     }
@@ -47,10 +48,10 @@ public sealed class ConferenciaDoCronogramaNaPublicacaoTests
         resultado.IsSuccess.Should().BeTrue(string.Join(", ", resultado.Errors.Select(static e => e.Error.Code)));
 
     private static DomainError? Pendencia(ProcessoSeletivo processo) =>
-        ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao).Errors
+        PonteiroNoDocumento.Converter(ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Errors, OrigemNoDocumento.Identidade)
             .Where(static causa => causa.Error.Code != "ProcessoSeletivo.ConformidadeInsuficiente"
                 && causa.Field is not null
-                && (causa.Field.StartsWith("cronograma", StringComparison.Ordinal) || causa.Field.StartsWith("etapas", StringComparison.Ordinal)))
+                && (causa.Field.StartsWith("/cronograma", StringComparison.Ordinal) || causa.Field.StartsWith("/etapas", StringComparison.Ordinal)))
             .Select(static causa => causa.Error)
             .FirstOrDefault();
 
@@ -94,13 +95,31 @@ public sealed class ConferenciaDoCronogramaNaPublicacaoTests
         pendencia.Message.Should().Contain("MATRICULA").And.NotContain("RECURSO");
     }
 
+    [Fact(DisplayName = "A fase sem unidade é apontada pela posição na ordem do documento, e não pela ordem em que foi declarada")]
+    public void Publicacao_FasesDeclaradasForaDeOrdem_ApontamAPosicaoNoDocumento()
+    {
+        ProcessoSeletivo processo = ProcessoComCronograma(
+            new ModeloDeFase("RECURSO", 3) { ComUnidade = false }.Criar(),
+            new ModeloDeFase("RESULTADO", 1).Criar(),
+            new ModeloDeFase("MATRICULA", 2) { ComUnidade = false }.Criar());
+
+        IReadOnlyList<FieldError> causas = PonteiroNoDocumento.Converter(
+            ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao).Errors, OrigemNoDocumento.Identidade);
+
+        causas.Where(static causa => causa.Error.Code == "ProcessoSeletivo.FaseSemUnidadeResponsavel").Select(static causa => (causa.Field, causa.Error.Message))
+            .Should().SatisfyRespectively(
+                static primeira => (primeira.Field, primeira.Message.Contains("MATRICULA", StringComparison.Ordinal)).Should().Be(("/cronograma/fases/1/unidadeResponsavelCodigo", true)),
+                static segunda => (segunda.Field, segunda.Message.Contains("RECURSO", StringComparison.Ordinal)).Should().Be(("/cronograma/fases/2/unidadeResponsavelCodigo", true)));
+        processo.Declaracao().Cronograma.CronogramaFases.Select(static fase => fase.Codigo).Should().Equal("RESULTADO", "MATRICULA", "RECURSO");
+    }
+
     [Fact(DisplayName = "Duas fases com o mesmo código e origens diferentes são recusadas na gravação do cronograma")]
     public void Gravacao_MesmoCodigoComOrigensDiferentes_RecusaFaseCanonicaDuplicada()
     {
         ProcessoSeletivo processo = ProcessoComCronograma(FaseConforme());
         FaseCronograma[] fases = [new ModeloDeFase("INSCRICAO", 1).Criar(), new ModeloDeFase("INSCRICAO", 2).Criar()];
 
-        Result resultado = processo.DefinirCronogramaFases(fases, [], PrecondicaoIfMatch.Curinga);
+        Result resultado = processo.DefinirCronogramaFases(fases, []);
 
         resultado.Errors.Should().ContainSingle().Which.Error.Code.Should().Be("ProcessoSeletivo.FaseCanonicaDuplicada");
     }

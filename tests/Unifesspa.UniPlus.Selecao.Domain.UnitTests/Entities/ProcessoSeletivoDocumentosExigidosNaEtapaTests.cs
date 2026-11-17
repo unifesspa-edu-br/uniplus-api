@@ -98,7 +98,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
         AdicionarEtapas(processo, etapa);
         ExigirFolhas(processo, ExigenciaNaEtapa(fase.Id, etapa.Id, FinalidadeFormulario.Habilitacao));
 
-        Result resultado = processo.DefinirEtapas([Etapa("Entrevista", "HABILITACAO", 1)], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirEtapas([Etapa("Entrevista", "HABILITACAO", 1)]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaReferenciadaPorExigenciaDocumental");
@@ -120,7 +120,7 @@ public sealed class ProcessoSeletivoDocumentosExigidosNaEtapaTests
 
         // A MESMA etapa, com o MESMO id — só a fase mudou. A guarda de remoção não vê nada,
         // porque o id continua na lista.
-        Result resultado = processo.DefinirEtapas([EtapaMovidaParaAFase(etapa, "AVALIACAO")], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirEtapas([EtapaMovidaParaAFase(etapa, "AVALIACAO")]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("DocumentoExigido.EtapaNaoPertenceAFase");

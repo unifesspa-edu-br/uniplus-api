@@ -50,14 +50,14 @@ public sealed class ConferenciaDaObrigatoriedadeDosFormulariosTests
         resultado.ConclusoesDecorrentes.Should().ContainSingle().Which.ObrigatoriosNaVersaoNova.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "O obrigatório com envio que passa a facultativo é recusado, no campo dele, e não registra conclusão")]
+    [Fact(DisplayName = "O obrigatório com envio que passa a facultativo é recusado, na posição dele no documento, e não registra conclusão")]
     public void ObrigatorioComEnvioViraFacultativo_Recusa()
     {
         ResultadoDaObrigatoriedade resultado = ConferenciaDaObrigatoriedadeDosFormularios.Conferir(
             [Formulario("INSCRICAO", FaseA, true)], [Formulario("INSCRICAO", FaseA, false)], ComEnvio("INSCRICAO"));
 
         resultado.Recusas.Should().ContainSingle().Which.Should().Match<Unifesspa.UniPlus.Kernel.Results.FieldError>(
-            r => r.Field == "formularios[INSCRICAO]" && r.Error.Code == RetificacaoErrorCodes.FormularioObrigatorioComEnvioNaoViraFacultativo);
+            r => r.Field == "formularios[0]" && r.Error.Code == RetificacaoErrorCodes.FormularioObrigatorioComEnvioNaoViraFacultativo);
         resultado.ConclusoesDecorrentes.Should().BeEmpty();
     }
 
@@ -110,7 +110,7 @@ public sealed class ConferenciaDaObrigatoriedadeDosFormulariosTests
             [Formulario("INSCRICAO", FaseA, true)], [Formulario("INSCRICAO", FaseB, true)], ComEnvio("INSCRICAO")).Recusas.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Vários obrigatórios com envio que passam a facultativos acumulam as recusas em ordem ordinal do código")]
+    [Fact(DisplayName = "Vários obrigatórios com envio que passam a facultativos acumulam as recusas em ordem ordinal do código, cada uma na posição do formulário no documento")]
     public void ObrigatoriosComEnvioViramFacultativos_AcumulamEmOrdem()
     {
         ResultadoDaObrigatoriedade resultado = ConferenciaDaObrigatoriedadeDosFormularios.Conferir(
@@ -118,7 +118,7 @@ public sealed class ConferenciaDaObrigatoriedadeDosFormulariosTests
             [Formulario("INSCRICAO", FaseA, false), Formulario("ISENCAO", FaseA, false), Formulario("DADOS", FaseA, false)],
             ComEnvio("ISENCAO", "INSCRICAO", "DADOS"));
 
-        resultado.Recusas.Select(static r => r.Field).Should().Equal("formularios[DADOS]", "formularios[INSCRICAO]", "formularios[ISENCAO]");
+        resultado.Recusas.Select(static r => r.Field).Should().Equal("formularios[2]", "formularios[0]", "formularios[1]");
         resultado.ConclusoesDecorrentes.Should().BeEmpty();
     }
 }

@@ -75,7 +75,7 @@ public sealed record DiaNaoUtilCongelado
         // materializa, e reidratar "0001-01-01" como data legítima seria aceitar um dia que
         // ninguém declarou. Recusar aqui é o que impede o caminho oposto, mais grave: congelar
         // o default numa versão publicada a tornaria impossível de reidratar para sempre, e com
-        // ela morreriam a restauração e a retificação daquele certame.
+        // ela morreriam a reidratação e a retificação daquele certame.
         if (data == default)
         {
             return Falha(

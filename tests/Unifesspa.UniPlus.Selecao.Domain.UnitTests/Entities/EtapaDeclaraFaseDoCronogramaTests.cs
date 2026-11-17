@@ -8,7 +8,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -29,7 +28,7 @@ public sealed class EtapaDeclaraFaseDoCronogramaTests
         // uma causa que o painel de conformidade aprovava, e quem lê o painel não teria o que
         // corrigir.
         IReadOnlyList<ItemConformidade> checklist =
-            ChecklistDeConformidade.AvaliarConformidade(EstadoDaConfiguracao.De(ProcessoConformeFactory.Criar()), CadastrosDeTeste.Padrao);
+            ChecklistDeConformidade.AvaliarConformidade(ProcessoConformeFactory.Criar().Declaracao(), CadastrosDeTeste.Padrao);
 
         checklist.Should().ContainSingle(i => i.Codigo == "cronograma_etapa_fora_da_janela_da_fase")
             .Which.Ok.Should().BeTrue("o processo conforme não tem etapa pendurada fora da fase");
@@ -40,9 +39,9 @@ public sealed class EtapaDeclaraFaseDoCronogramaTests
     {
         ProcessoSeletivo processo = Processo();
         FaseCronograma habilitacao = Fase(1, "HABILITACAO");
-        processo.DefinirCronogramaFases([habilitacao], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([habilitacao], []).IsSuccess.Should().BeTrue();
 
-        processo.DefinirEtapas([Etapa("Envio dos documentos pessoais", "HABILITACAO")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([Etapa("Envio dos documentos pessoais", "HABILITACAO")]).IsSuccess.Should().BeTrue();
 
         // A relação tem uma representação só, o código: a etapa aparece sob a fase que declarou, e não sob nenhuma outra.
         processo.EtapasDaFase("HABILITACAO").Should().ContainSingle()
@@ -54,11 +53,11 @@ public sealed class EtapaDeclaraFaseDoCronogramaTests
     public void EtapaComFaseAusente_Recusada()
     {
         ProcessoSeletivo processo = Processo();
-        processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([Fase(1, "INSCRICAO")], [])
             .IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirEtapas(
-            [Etapa("Envio dos documentos pessoais", "HABILITACAO")], PrecondicaoIfMatch.Ausente);
+            [Etapa("Envio dos documentos pessoais", "HABILITACAO")]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.EtapaSemFaseNoCronograma");
@@ -69,11 +68,10 @@ public sealed class EtapaDeclaraFaseDoCronogramaTests
     public void FaseNaoAgrupadora_AceitaVariasEtapas()
     {
         ProcessoSeletivo processo = Processo();
-        processo.DefinirCronogramaFases([Fase(1, "HABILITACAO")], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([Fase(1, "HABILITACAO")], []).IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirEtapas(
-            [Etapa("Preenchimento do cadastro acadêmico", "HABILITACAO"), Etapa("Envio dos documentos pessoais", "HABILITACAO"), Etapa("Envio dos comprovantes da cota de renda", "HABILITACAO")],
-            PrecondicaoIfMatch.Ausente);
+            [Etapa("Preenchimento do cadastro acadêmico", "HABILITACAO"), Etapa("Envio dos documentos pessoais", "HABILITACAO"), Etapa("Envio dos comprovantes da cota de renda", "HABILITACAO")]);
 
         resultado.IsSuccess.Should().BeTrue();
         processo.EtapasDaFase("HABILITACAO").Should().HaveCount(3);
@@ -85,12 +83,11 @@ public sealed class EtapaDeclaraFaseDoCronogramaTests
     {
         ProcessoSeletivo processo = Processo();
         processo.DefinirCronogramaFases(
-            [Fase(1, "AVALIACAO"), Fase(2, "HABILITACAO")], [], PrecondicaoIfMatch.Ausente)
+            [Fase(1, "AVALIACAO"), Fase(2, "HABILITACAO")], [])
             .IsSuccess.Should().BeTrue();
 
         processo.DefinirEtapas(
-            [Etapa("Prova objetiva", "AVALIACAO"), Etapa("Envio dos documentos pessoais", "HABILITACAO")],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            [Etapa("Prova objetiva", "AVALIACAO"), Etapa("Envio dos documentos pessoais", "HABILITACAO")]).IsSuccess.Should().BeTrue();
 
         processo.EtapasDaFase("AVALIACAO").Single().Nome.Should().Be("Prova objetiva");
         processo.EtapasDaFase("HABILITACAO").Single().Nome.Should().Be("Envio dos documentos pessoais");
@@ -105,11 +102,11 @@ public sealed class EtapaDeclaraFaseDoCronogramaTests
         // A ordem que o vínculo impõe: a fase entra primeiro, e só então a etapa pode
         // declará-la. É por isso que a guarda eager de "agrupadora sem etapa" saiu da
         // gravação do cronograma — ali ela fecharia um ciclo sem ordem possível.
-        processo.DefinirCronogramaFases([avaliacao], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([avaliacao], [])
             .IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirEtapas(
-            [Etapa("Prova objetiva", "AVALIACAO")], PrecondicaoIfMatch.Ausente);
+            [Etapa("Prova objetiva", "AVALIACAO")]);
 
         resultado.IsSuccess.Should().BeTrue();
         processo.EtapasDaFase("AVALIACAO").Should().HaveCount(1);
@@ -119,11 +116,11 @@ public sealed class EtapaDeclaraFaseDoCronogramaTests
     public void EtapaSemFaseDeclarada_ContinuaAceita()
     {
         ProcessoSeletivo processo = Processo();
-        processo.DefinirCronogramaFases([Fase(1, "AVALIACAO")], [], PrecondicaoIfMatch.Ausente)
+        processo.DefinirCronogramaFases([Fase(1, "AVALIACAO")], [])
             .IsSuccess.Should().BeTrue();
 
         Result resultado = processo.DefinirEtapas(
-            [Etapa("Prova objetiva", faseCodigo: null)], PrecondicaoIfMatch.Ausente);
+            [Etapa("Prova objetiva", faseCodigo: null)]);
 
         resultado.IsSuccess.Should().BeTrue();
 

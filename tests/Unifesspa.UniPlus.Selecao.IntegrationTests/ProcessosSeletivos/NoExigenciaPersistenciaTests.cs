@@ -74,9 +74,9 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Árvore", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseDeInscricao();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
-        Result definirResult = processo.DefinirDocumentosExigidos([RaizOuComGrupoE(fase.Id)], PrecondicaoIfMatch.Ausente);
+        Result definirResult = processo.DefinirDocumentosExigidos([RaizOuComGrupoE(fase.Id)]);
         definirResult.IsSuccess.Should().BeTrue(definirResult.Error?.Message);
 
         return processo;
@@ -120,7 +120,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
     // O processo cru deixa pendente o resto da configuração; aqui só importam as causas do bloco das exigências documentais.
     private static void AfirmarSemCausasDaArvore(ProcessoSeletivo processo)
     {
-        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(EstadoDaConfiguracao.De(processo), CadastrosDeTeste.Padrao);
+        Result<ConfiguracaoAptaACongelar> conferida = ConfiguracaoAptaACongelar.Conferir(processo.Id, processo.Declaracao(), CadastrosDeTeste.Padrao);
         FieldError[] daArvore = [.. conferida.Errors.Where(static e => e.Field == "documentosExigidos" && e.Origem is null)];
         daArvore.Should().BeEmpty(string.Join(";", daArvore.Select(static e => e.Error.Message)));
     }
@@ -141,7 +141,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Substituição de árvore", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseDeInscricao();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         await using UniPlusDbContext context = _fixture.CreateDbContext();
         ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(context);
@@ -158,7 +158,7 @@ public sealed class NoExigenciaPersistenciaTests : IClassFixture<ProcessoSeletiv
                 TipoNo.GrupoE, 0, null, null, [],
                 [NoExigencia.CriarFolha(Documento(fase.Id), 0).Value!, NoExigencia.CriarFolha(Documento(fase.Id), 1).Value!]).Value!;
 
-            Result definirResult = processo.DefinirDocumentosExigidos([grupoE], PrecondicaoIfMatch.Curinga);
+            Result definirResult = processo.DefinirDocumentosExigidos([grupoE]);
             definirResult.IsSuccess.Should().BeTrue(definirResult.Error?.Message);
 
             Func<Task> salvar = async () => await context.SaveChangesAsync(CancellationToken.None);

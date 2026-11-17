@@ -8,12 +8,10 @@ using Outbox.Cascading;
 
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.MotivosDeDecisao.ChamadasDosMotivosDeTeste;
-using static Unifesspa.UniPlus.Selecao.IntegrationTests.Outbox.Cascading.CicloDaRetificacaoApoio;
 
 /// <summary>
-/// A etapa que sai do processo leva junto os motivos pendentes dela, e o motivo já publicado recusa a saída
-/// (UNI-REQ-0124, UNI-REQ-0285), pelos endpoints reais contra Postgres via Testcontainers.
+/// A etapa ou a fase que sai do processo leva junto os motivos escolhidos nela (UNI-REQ-0285), pelos endpoints reais
+/// contra Postgres via Testcontainers.
 /// </summary>
 [Collection(CascadingCollection.Name)]
 [Trait("Category", "OutboxCapability")]
@@ -53,43 +51,6 @@ public sealed class MotivosDosLugaresQueSaemEndpointTests : IAsyncLifetime
         (await _chamadas.LerAsync(processoId)).Should().BeEmpty("a etapa nova nasce sem motivo, e o da etapa que saiu foi junto");
     }
 
-    [Fact(DisplayName = "Na retificação, a etapa que sai com motivo já publicado recusa com 422, o estado e o ETag ficam intactos, e a mesma chave devolve a mesma recusa")]
-    public async Task Retificacao_EtapaComMotivoPublicado_Recusa_EstadoIntacto()
-    {
-        (Guid processoId, Guid etapa) = await PublicarComMotivoNaEtapaAsync(nameof(Retificacao_EtapaComMotivoPublicado_Recusa_EstadoIntacto));
-        using HttpClient client = _fixture.Factory.CreateClient();
-        CicloDaRetificacao ciclo = new(_fixture.Factory, client, processoId);
-        string etag = LerETag(await ciclo.AbrirAsync("Troca da etapa"));
-        string chave = Guid.CreateVersion7().ToString("N");
-
-        using HttpResponseMessage recusada = await SubstituirEtapaAsync(processoId, id: null, etag, chave);
-        using HttpResponseMessage repetida = await SubstituirEtapaAsync(processoId, id: null, etag, chave);
-
-        await ConferirRecusaDoMotivoPublicadoAsync(recusada);
-        await ConferirRecusaDoMotivoPublicadoAsync(repetida);
-        LerETag(await ciclo.ObterSessaoAsync()).Should().Be(etag, "a recusa não avança a revisão da sessão");
-        (await LugaresDoProcessoDeTeste.EtapaAsync(_chamadas.Services, processoId)).Should().Be(etapa, "a etapa continua a mesma");
-        (await _chamadas.LerAsync(processoId)).Should().ContainSingle();
-    }
-
-    [Fact(DisplayName = "Na retificação, a etapa nova com motivo pendente que sai leva o motivo, e o descarte da sessão segue funcionando")]
-    public async Task Retificacao_EtapaNovaComMotivoPendente_Sai_DescarteFunciona()
-    {
-        (Guid processoId, Guid documentoId) = await _chamadas.SemearProcessoAsync(nameof(Retificacao_EtapaNovaComMotivoPendente_Sai_DescarteFunciona));
-        await _chamadas.PublicarAsync(processoId, documentoId);
-        using HttpClient client = _fixture.Factory.CreateClient();
-        CicloDaRetificacao ciclo = new(_fixture.Factory, client, processoId);
-        string etagComMotivo = await IncluirMotivoNaEtapaNovaAsync(processoId, LerETag(await ciclo.AbrirAsync("Troca da etapa")));
-
-        using HttpResponseMessage substituida = await SubstituirEtapaAsync(processoId, id: null, etagComMotivo);
-        substituida.StatusCode.Should().Be(HttpStatusCode.NoContent, await substituida.Content.ReadAsStringAsync());
-        (await _chamadas.LerAsync(processoId)).Should().BeEmpty();
-
-        using HttpResponseMessage descarte = await ciclo.DescartarAsync(LerETag(substituida));
-        descarte.IsSuccessStatusCode.Should().BeTrue(await descarte.Content.ReadAsStringAsync());
-        (await _chamadas.LerAsync(processoId)).Should().BeEmpty();
-    }
-
     [Fact(DisplayName = "No rascunho, remover a fase do cronograma leva os motivos escolhidos nela e nas etapas dela")]
     public async Task Rascunho_FaseQueSai_LevaOsMotivosDaFaseEDasEtapas()
     {
@@ -106,44 +67,13 @@ public sealed class MotivosDosLugaresQueSaemEndpointTests : IAsyncLifetime
         (await _chamadas.LerAsync(processoId)).Should().BeEmpty("a fase saiu, e a etapa dela com ela");
     }
 
-    [Fact(DisplayName = "Na retificação, a fase que sai do cronograma com motivo já publicado recusa com 422, o estado e o ETag ficam intactos, e a mesma chave devolve a mesma recusa")]
-    public async Task Retificacao_FaseComMotivoPublicado_Recusa_EstadoIntacto()
-    {
-        (Guid processoId, Guid fase) = await PublicarComMotivoNaFaseAsync(nameof(Retificacao_FaseComMotivoPublicado_Recusa_EstadoIntacto));
-        using HttpClient client = _fixture.Factory.CreateClient();
-        CicloDaRetificacao ciclo = new(_fixture.Factory, client, processoId);
-        string etag = LerETag(await ciclo.AbrirAsync("Troca do cronograma"));
-        string chave = Guid.CreateVersion7().ToString("N");
-
-        using HttpResponseMessage recusada = await SubstituirCronogramaAsync(processoId, etag, chave);
-        using HttpResponseMessage repetida = await SubstituirCronogramaAsync(processoId, etag, chave);
-
-        await ConferirRecusaDoMotivoPublicadoAsync(recusada);
-        await ConferirRecusaDoMotivoPublicadoAsync(repetida);
-        LerETag(await ciclo.ObterSessaoAsync()).Should().Be(etag, "a recusa não avança a revisão da sessão");
-        (await LugaresDoProcessoDeTeste.FaseAsync(_chamadas.Services, processoId, ProcessoComFaseQueSaiDeTeste.CodigoDaFaseQueSai)).Should().Be(fase, "a fase continua no cronograma");
-        (await _chamadas.LerAsync(processoId)).Should().ContainSingle();
-    }
-
-    private async Task<(Guid ProcessoId, Guid Fase)> PublicarComMotivoNaFaseAsync(string nome)
-    {
-        (Guid processoId, Guid documentoId) = await SemearProcessoComFaseQueSaiAsync(nome);
-        await _chamadas.AdiarAsFasesAsync(processoId);
-        MotivoDeDecisao motivo = await _chamadas.SemearMotivoAsync();
-        Guid fase = await LugaresDoProcessoDeTeste.FaseAsync(_chamadas.Services, processoId, ProcessoComFaseQueSaiDeTeste.CodigoDaFaseQueSai);
-        (await _chamadas.IncluirAsync(LugaresDoProcessoDeTeste.RotaDaFase(processoId, fase, motivo.Id))).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        await _chamadas.PublicarAsync(processoId, documentoId);
-
-        return (processoId, fase);
-    }
-
     private Task<(Guid ProcessoId, Guid DocumentoId)> SemearProcessoComFaseQueSaiAsync(string nome) =>
         ProcessoComFaseQueSaiDeTeste.SemearAsync(_chamadas.Services, $"{nome} {Guid.CreateVersion7()}");
 
     /// <summary>Substitui o cronograma só pela fase da inscrição: a fase de avaliação sai, e a etapa dela com ela.</summary>
-    private async Task<HttpResponseMessage> SubstituirCronogramaAsync(Guid processoId, string? etag = null, string? chave = null) =>
+    private async Task<HttpResponseMessage> SubstituirCronogramaAsync(Guid processoId) =>
         await _chamadas.EnviarAsync(
-            HttpMethod.Put, $"/api/selecao/processos-seletivos/{processoId}/cronograma-fases", new[] { await FaseDaInscricaoAsync() }, etag, chave);
+            HttpMethod.Put, $"/api/selecao/processos-seletivos/{processoId}/cronograma-fases", new[] { await FaseDaInscricaoAsync() });
 
     private async Task<object> FaseDaInscricaoAsync() => new
     {
@@ -158,37 +88,7 @@ public sealed class MotivosDosLugaresQueSaemEndpointTests : IAsyncLifetime
         regraRecurso = (object?)null,
     };
 
-    private async Task<(Guid ProcessoId, Guid Etapa)> PublicarComMotivoNaEtapaAsync(string nome)
-    {
-        (Guid processoId, Guid documentoId) = await _chamadas.SemearProcessoAsync(nome);
-        MotivoDeDecisao motivo = await _chamadas.SemearMotivoAsync();
-        Guid etapa = await LugaresDoProcessoDeTeste.EtapaAsync(_chamadas.Services, processoId);
-        (await _chamadas.IncluirAsync(LugaresDoProcessoDeTeste.RotaDaEtapa(processoId, etapa, motivo.Id))).StatusCode.Should().Be(HttpStatusCode.NoContent);
-        await _chamadas.PublicarAsync(processoId, documentoId);
-
-        return (processoId, etapa);
-    }
-
-    private async Task<string> IncluirMotivoNaEtapaNovaAsync(Guid processoId, string etag)
-    {
-        using HttpResponseMessage nova = await SubstituirEtapaAsync(processoId, id: null, etag);
-        nova.StatusCode.Should().Be(HttpStatusCode.NoContent, await nova.Content.ReadAsStringAsync());
-        MotivoDeDecisao motivo = await _chamadas.SemearMotivoAsync();
-        Guid etapaNova = await LugaresDoProcessoDeTeste.EtapaAsync(_chamadas.Services, processoId);
-        using HttpResponseMessage inclusao = await _chamadas.IncluirAsync(
-            LugaresDoProcessoDeTeste.RotaDaEtapa(processoId, etapaNova, motivo.Id), "Retorno do INEP passou a ser exigido pela norma.", LerETag(nova));
-        inclusao.StatusCode.Should().Be(HttpStatusCode.NoContent, await inclusao.Content.ReadAsStringAsync());
-
-        return LerETag(inclusao);
-    }
-
-    private static async Task ConferirRecusaDoMotivoPublicadoAsync(HttpResponseMessage resposta)
-    {
-        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, await resposta.Content.ReadAsStringAsync());
-        (await CodigoDoErroAsync(resposta)).Should().Be("uniplus.selecao.motivo_de_decisao.fase_ou_etapa_com_motivo_publicado");
-    }
-
-    private Task<HttpResponseMessage> SubstituirEtapaAsync(Guid processoId, Guid? id, string? etag = null, string? chave = null) =>
+    private Task<HttpResponseMessage> SubstituirEtapaAsync(Guid processoId, Guid? id) =>
         _chamadas.EnviarAsync(
             HttpMethod.Put,
             $"/api/selecao/processos-seletivos/{processoId}/etapas",
@@ -200,7 +100,5 @@ public sealed class MotivosDosLugaresQueSaemEndpointTests : IAsyncLifetime
                     formaDeAvaliacao = "OBJETIVA", ordem = 1, faseCodigo = "RESULTADO_FINAL",
                     produtos = Array.Empty<object>(), bancas = Array.Empty<object>(), recursos = Array.Empty<object>(),
                 },
-            },
-            etag,
-            chave);
+            });
 }

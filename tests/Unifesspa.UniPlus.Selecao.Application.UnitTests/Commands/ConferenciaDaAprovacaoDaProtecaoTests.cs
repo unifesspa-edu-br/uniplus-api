@@ -102,7 +102,7 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Medicina", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.ImportacaoExterna, Guid.NewGuid(), UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
         FaseCronograma fase = FaseDeInscricao();
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 
         TipoDocumentoView tipo = new(Guid.CreateVersion7(), "LAUDO_MEDICO", "Laudo médico", "SAUDE", ClassificacaoDeProtecao.Sensivel, "Comprovação do atendimento especializado.", "TUTELA_DA_SAUDE", ProtecaoAprovada: true);
         await DefinirExigenciaDoTipoAsync(processo, fase, tipo, fatosComprovados);
@@ -117,7 +117,7 @@ public sealed class ConferenciaDaAprovacaoDaProtecaoTests
         leitor.ObterPorIdAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
         ItemDocumentoExigidoInput item = new(fase.Id, tipo.Id, "GERAL", true, null, [], [], null, Qualquer, null, FatosComprovados: fatosComprovados);
         Result definido = await DefinicaoDosDocumentosExigidos.DefinirAsync(
-            processo, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], [], PrecondicaoIfMatch.Ausente,
+            processo, [new NoExigenciaInput("FOLHA", item, null, null, null, null)], [],
             new CadastrosDosDocumentosExigidos(leitor, Substitute.For<IFatoCandidatoReader>(), Substitute.For<Unifesspa.UniPlus.Selecao.Domain.Interfaces.IModeloDeDocumentoRepository>()),
             CancellationToken.None);
         definido.IsSuccess.Should().BeTrue(definido.Error?.Message);

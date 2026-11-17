@@ -9,13 +9,14 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Formularios;
 /// O obrigatório sem envio que sai do documento, passa a facultativo ou muda de fase diminui o conjunto da fase de origem, e a conferência
 /// devolve, por fase, as conclusões decorrentes, com os obrigatórios que restam, para quem passa a cumpri-la
 /// (<see cref="ConclusaoDaFase"/>). As recusas se acumulam, uma por formulário e em ordem ordinal do código; as
-/// conclusões, em ordem de fase de origem, só valem quando não há recusa.
+/// conclusões, em ordem de fase de origem, só valem quando não há recusa. A recusa aponta o formulário pela posição dele na lista do
+/// documento novo, que chega na ordem do documento.
 /// </summary>
 public static class ConferenciaDaObrigatoriedadeDosFormularios
 {
     public static ResultadoDaObrigatoriedade Conferir(
         IReadOnlyCollection<FormularioNoDocumento> formulariosDaBase,
-        IReadOnlyCollection<FormularioNoDocumento> formulariosNovos,
+        IReadOnlyList<FormularioNoDocumento> formulariosNovos,
         FatosDaExecucao fatos)
     {
         ArgumentNullException.ThrowIfNull(formulariosDaBase);
@@ -26,7 +27,7 @@ public static class ConferenciaDaObrigatoriedadeDosFormularios
         HashSet<CodigoDoFormulario> facultativosNaNova = [.. formulariosNovos.Where(static f => !f.Obrigatorio).Select(static f => f.Codigo)];
 
         return new ResultadoDaObrigatoriedade(
-            [.. deixaramDeSerObrigatorios.Where(f => fatos.FormulariosComEnvio.Contains(f.Codigo) && facultativosNaNova.Contains(f.Codigo)).Select(Recusa)],
+            [.. deixaramDeSerObrigatorios.Where(f => fatos.FormulariosComEnvio.Contains(f.Codigo) && facultativosNaNova.Contains(f.Codigo)).Select(formulario => Recusa(formulario, formulariosNovos))],
             ConclusoesDecorrentes(deixaramDeSerObrigatorios.Where(f => !fatos.FormulariosComEnvio.Contains(f.Codigo)), formulariosNovos));
     }
 
@@ -55,11 +56,14 @@ public static class ConferenciaDaObrigatoriedadeDosFormularios
                     [.. formulariosNovos.Where(f => f.Obrigatorio && f.FaseCanonicaOrigemId == fase).Select(static f => f.Codigo).Order(CodigoDoFormulario.OrdemOrdinal)])),
         ];
 
-    private static FieldError Recusa(FormularioNoDocumento formulario) => new(
-        $"formularios[{formulario.Codigo.Valor}]",
+    private static FieldError Recusa(FormularioNoDocumento formulario, IReadOnlyList<FormularioNoDocumento> formulariosNovos) => new(
+        $"formularios[{PosicaoNoDocumento(formulario, formulariosNovos)}]",
         new DomainError(
             RetificacaoErrorCodes.FormularioObrigatorioComEnvioNaoViraFacultativo,
             $"O formulário '{formulario.Codigo.Valor}' já recebeu envio de candidato e não passa de obrigatório a facultativo."));
+
+    private static int PosicaoNoDocumento(FormularioNoDocumento formulario, IReadOnlyList<FormularioNoDocumento> formulariosNovos) =>
+        formulariosNovos.Select(static (novo, posicao) => (novo.Codigo, posicao)).First(par => par.Codigo == formulario.Codigo).posicao;
 }
 
 /// <summary>As recusas da obrigatoriedade e as conclusões decorrentes que a retificação registra se não houver recusa.</summary>

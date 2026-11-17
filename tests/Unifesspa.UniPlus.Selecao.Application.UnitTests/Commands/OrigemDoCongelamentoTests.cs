@@ -20,7 +20,7 @@ using static Unifesspa.UniPlus.Selecao.Application.UnitTests.Commands.Publicacao
 
 /// <summary>
 /// O que cada origem responde às perguntas do congelamento: a primeira publicação responde com o neutro de cada uma, e
-/// as duas formas de retificar partem da versão vigente e diferem só em de onde vêm os fatos já coletados.
+/// a retificação parte da versão vigente e lê os fatos já coletados das versões publicadas.
 /// </summary>
 public sealed class OrigemDoCongelamentoTests
 {
@@ -42,7 +42,7 @@ public sealed class OrigemDoCongelamentoTests
     public void PrimeiraPublicacao_NaoTemAnexoVigente(bool herdaOsDaVersao) =>
         new PrimeiraPublicacao().AnexosVigentes(herdaOsDaVersao).Should().BeEmpty();
 
-    [Fact(DisplayName = "A primeira publicação não lê as versões publicadas e não tem item com eixo trocado")]
+    [Fact(DisplayName = "A primeira publicação não lê as versões publicadas")]
     public async Task PrimeiraPublicacao_NaoLeAsVersoesPublicadas()
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
@@ -53,7 +53,6 @@ public sealed class OrigemDoCongelamentoTests
 
         fatos.IsSuccess.Should().BeTrue();
         fatos.Value.Should().BeNull();
-        origem.ItensComEixoTrocado([.. processo.FatosColetados]).Should().BeEmpty();
         await servicos.Repositorio.DidNotReceive().ObterVersoesAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
     }
 
@@ -73,7 +72,7 @@ public sealed class OrigemDoCongelamentoTests
         var erroDoCodec = new DomainError("EnvelopeCodec.VersaoDesconhecida", "A versão não é reconhecida.");
         var ilegivel = new BaseDaRetificacao(vigente, MotivoDaRetificacao, Result<EnvelopeReidratado>.Failure(erroDoCodec));
 
-        OrigemDoCongelamento origem = new FechamentoDaSessao(ilegivel, FatosPublicados());
+        OrigemDoCongelamento origem = new RetificacaoDeAtoUnico(ilegivel);
 
         origem.CongeladoNaVersaoVigente.Should().BeNull();
         origem.TiposJaCongelados().Error.Should().Be(erroDoCodec);
@@ -129,63 +128,21 @@ public sealed class OrigemDoCongelamentoTests
         Result<FatosDasVersoesPublicadas?> fatos = await origem.FatosJaPublicadosAsync(servicos.VersoesPublicadas(), processo, CancellationToken.None);
 
         fatos.Error!.Code.Should().Be(erroDoCodec.Code);
-        origem.ItensComEixoTrocado([.. processo.FatosColetados]).Should().BeEmpty();
-    }
-
-    [Fact(DisplayName = "O fechamento da sessão usa os fatos guardados no rascunho e não lê as versões publicadas")]
-    public async Task FechamentoDaSessao_UsaOsFatosGuardados()
-    {
-        (ProcessoSeletivo processo, VersaoConfiguracao vigente) = ProcessoPublicado();
-        ServicosDoCongelamentoDeTeste servicos = ServicosDoCongelamentoDeTeste.Para(processo);
-        FatosDasVersoesPublicadas guardados = FatosPublicados();
-        OrigemDoCongelamento origem = new FechamentoDaSessao(Base(vigente, servicos.Codecs), guardados);
-
-        Result<FatosDasVersoesPublicadas?> fatos = await origem.FatosJaPublicadosAsync(servicos.VersoesPublicadas(), processo, CancellationToken.None);
-
-        fatos.Value.Should().BeSameAs(guardados);
-        await servicos.Repositorio.DidNotReceive().ObterVersoesAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "O fechamento da sessão aponta o item cujo eixo mudou em relação ao que as versões congelaram")]
-    public void FechamentoDaSessao_ApontaOItemComEixoTrocado()
-    {
-        (_, VersaoConfiguracao vigente) = ProcessoPublicado();
-        ProcessoSeletivo comOutroTipo = ProcessoSoComOItemPublicado(TipoRenderizacao.Numero);
-        var origem = new FechamentoDaSessao(Base(vigente, CodecsDeTeste.QueReidrataSemTiposDeAto()), FatosPublicados());
-
-        IReadOnlyList<DomainError> erros = origem.ItensComEixoTrocado([.. comOutroTipo.FatosColetados]);
-
-        erros.Should().ContainSingle().Which.Code.Should().Be(CodigoDaRecusaDoEixoAlterado);
-    }
-
-    [Fact(DisplayName = "O fechamento da sessão não aponta item quando o eixo é o mesmo que as versões congelaram")]
-    public void FechamentoDaSessao_NaoApontaItemComOMesmoEixo()
-    {
-        (_, VersaoConfiguracao vigente) = ProcessoPublicado();
-        var origem = new FechamentoDaSessao(Base(vigente, CodecsDeTeste.QueReidrataSemTiposDeAto()), FatosPublicados());
-
-        origem.ItensComEixoTrocado([.. ProcessoSoComOItemPublicado(TipoRenderizacao.Booleano).FatosColetados]).Should().BeEmpty();
     }
 
     [Fact(DisplayName = "A primeira publicação faz nascer a versão de abertura")]
     public void PrimeiraPublicacao_FazNascerAVersaoDeAbertura() =>
         new PrimeiraPublicacao().NumeroDaVersaoQueNasce.Should().Be(VersaoConfiguracao.NumeroDaAbertura);
 
-    [Fact(DisplayName = "As duas formas de retificar fazem nascer a versão que sucede a vigente")]
+    [Fact(DisplayName = "A retificação faz nascer a versão que sucede a vigente")]
     public void Retificacao_FazNascerASucessoraDaVigente()
     {
         (_, VersaoConfiguracao vigente) = ProcessoPublicado();
         BaseDaRetificacao baseDaRetificacao = Base(vigente, CodecsDeTeste.QueReidrataSemTiposDeAto());
 
         new RetificacaoDeAtoUnico(baseDaRetificacao).NumeroDaVersaoQueNasce.Should().Be(vigente.NumeroVersao + 1);
-        new FechamentoDaSessao(baseDaRetificacao, FatosPublicados()).NumeroDaVersaoQueNasce.Should().Be(vigente.NumeroVersao + 1);
     }
 
     private static BaseDaRetificacao Base(VersaoConfiguracao vigente, IRegistroCodecsEnvelope codecs) =>
         new(vigente, MotivoDaRetificacao, codecs.Reidratar(vigente));
-
-    private static FatosDasVersoesPublicadas FatosPublicados() =>
-        FatosDasVersoesPublicadas.De(
-            [VersoesPublicadasDeTeste.DoProcesso(ProcessoSoComOItemPublicado(TipoRenderizacao.Booleano))],
-            [EixosCongelados("BOOLEANO")]);
 }

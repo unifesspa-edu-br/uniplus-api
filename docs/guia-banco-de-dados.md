@@ -62,7 +62,7 @@ Aplicada automaticamente via NuGet `EFCore.NamingConventions` + `UseSnakeCaseNam
 | FK | `fk_<tabela>_<referenciada>_<coluna>` | `fk_etapas_editais_edital_id` |
 | Índice | `ix_<tabela>_<coluna>` | `ix_inscricoes_candidato_id_edital_id` |
 | Unique index | `ux_<tabela>_<coluna>` (`IsUnique()` com `HasDatabaseName`; sem nome explícito o EF deriva `ix_`) | `ux_candidatos_cpf` |
-| Qualquer identificador (tabela, coluna, chave, FK, índice, restrição) | até 63 bytes, o limite do PostgreSQL; o nome que o EF deriva e passa disso recebe nome explícito, e a trava reprova | `fk_rascunhos_publicacao_processo_seletivo` |
+| Qualquer identificador (tabela, coluna, chave, FK, índice, restrição) | até 63 bytes, o limite do PostgreSQL; o nome que o EF deriva e passa disso recebe nome explícito, e a verificação reprova | `fk_vinculos_do_ato_com_entidade_ato` |
 
 **Regras práticas**:
 

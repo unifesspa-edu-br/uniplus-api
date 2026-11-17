@@ -54,6 +54,15 @@ public sealed class OrdemDasCausasTests
         OrdemDasCausas.Ordenar([Causa("/a~1b~0c"), Causa("/b")], documento).Select(static causa => causa.Field).Should().Equal("/b", "/a~1b~0c");
     }
 
+    [Fact(DisplayName = "A causa sem campo não aponta o documento e não entra na ordem, nem como se fosse a raiz")]
+    public void CausaSemCampo_Lanca() =>
+        Assert.Throws<ArgumentException>(() => OrdemDasCausas.Ordenar(
+            [Causa("/zeta"), new FieldError(null, new DomainError("Codigo", "Mensagem."))], Documento));
+
+    [Fact(DisplayName = "O ponteiro vazio é a raiz do documento e vem antes de tudo o que ele contém")]
+    public void PonteiroVazio_EARaizDoDocumento() =>
+        Ordenar(Causa("/zeta"), Causa(string.Empty)).Should().Equal(string.Empty, "/zeta");
+
     [Fact(DisplayName = "As causas e o documento são obrigatórios")]
     public void ArgumentoNulo_Lanca()
     {

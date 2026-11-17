@@ -37,15 +37,13 @@ public static class CaraterDaEtapa
     /// <remarks>
     /// <para>
     /// Fora de <see cref="ValidarDeclarado"/> de propósito: aquela checagem é de forma, e esta depende de
-    /// onde vêm os sinalizadores — do cadastro vivo quando a gravação lê o tipo (etapa nova, vínculo novo
-    /// ou caráter alterado), do <see cref="ValueObjects.TipoEtapaSnapshot"/> quando o tipo foi desativado
-    /// e a etapa mantém o vínculo. Quem escolhe a fonte é quem chama (ADR-0129).
+    /// onde vêm os sinalizadores — do <see cref="ValueObjects.TipoEtapaSnapshot"/> da etapa, que é o que a
+    /// declaração da etapa confere, ou do cadastro vivo quando a gravação lê o tipo (etapa nova, vínculo
+    /// novo ou caráter alterado). Quem chama escolhe a fonte (ADR-0129).
     /// </para>
     /// <para>
-    /// Não entra na criação nem na atualização dos dados da etapa: quem chama confere numa passada
-    /// própria, antes de qualquer mutação, para devolver de uma vez a recusa de todas as etapas do
-    /// payload (ADR-0125). A restauração de uma versão congelada também não confere: repor não é
-    /// declarar, e o par caráter e sinalizadores volta como foi conferido ao congelar.
+    /// A reidratação de uma versão congelada não confere: reidratar não é declarar, e o par caráter e
+    /// sinalizadores volta como foi conferido ao congelar.
     /// </para>
     /// </remarks>
     public static List<FieldError> ValidarAdmitido(

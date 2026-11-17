@@ -73,8 +73,8 @@ internal static class LeituraDeEnumsEListas
     /// <para>
     /// <b>A guarda recusa; ela não normaliza.</b> Aparar o espaço aqui mudaria o valor em
     /// relação aos bytes congelados, a recanonicalização produziria bytes distintos, e a
-    /// prova de round-trip <b>recusaria o descarte de um certame legítimo</b> — trocando um
-    /// dado sujo por um certame sem descarte. O envelope ou está na forma que o cadastro
+    /// prova de round-trip <b>recusaria a leitura de um certame legítimo</b> — trocando um
+    /// dado sujo por um certame ilegível. O envelope ou está na forma que o cadastro
     /// produz, ou não é reidratável.
     /// </para>
     /// </remarks>
@@ -160,8 +160,8 @@ internal static class LeituraDeEnumsEListas
     /// fazer o mesmo, e a razão é o próprio congelamento: a referência é <b>snapshot-copy
     /// por valor</b> (ADR-0061), e a regra que ela cita <b>pode ter sido retirada ou
     /// versionada</b> depois da publicação. Exigir que ela ainda exista tornaria
-    /// <b>irreidratável</b> um certame legitimamente publicado — o descarte da sessão
-    /// editorial dele passaria a falhar, e a configuração congelada, que é a evidência
+    /// <b>irreidratável</b> um certame legitimamente publicado — a retificação dele
+    /// passaria a falhar, e a configuração congelada, que é a evidência
     /// jurídica, ficaria inalcançável. O passado não se reinterpreta contra o catálogo de
     /// hoje (congelamento dos parâmetros na publicação, UNI-REQ-0019).
     /// </para>

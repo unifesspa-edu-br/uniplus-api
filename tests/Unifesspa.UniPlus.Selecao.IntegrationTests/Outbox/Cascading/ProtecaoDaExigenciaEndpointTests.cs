@@ -52,10 +52,10 @@ public sealed class ProtecaoDaExigenciaEndpointTests
         Guid pessoal = await SemearTipoAsync(ClassificacaoDeProtecao.Pessoal, "ATESTADO_SIMPLES");
         Guid sensivel = await SemearTipoAsync(ClassificacaoDeProtecao.Sensivel, "LAUDO_MEDICO");
 
-        await Aceito(ctx.PutExigenciaAsync(pessoal, ifMatch: null));
+        await Aceito(ctx.PutExigenciaAsync(pessoal));
         await DeveRecusarAsync(ctx.PublicarAsync(), RecusaDeProtecao);
 
-        await Aceito(ctx.PutExigenciaAsync(sensivel, ifMatch: null));
+        await Aceito(ctx.PutExigenciaAsync(sensivel));
         await Aceito(ctx.PublicarAsync());
     }
 
@@ -64,7 +64,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
     {
         Contexto ctx = await ProcessoComFatoSensivelAsync(nameof(Publicacao_CongelaAProtecaoVigenteDoTipo));
         Guid tipo = await SemearTipoAsync(ClassificacaoDeProtecao.Pessoal, "ATESTADO_SIMPLES");
-        await Aceito(ctx.PutExigenciaAsync(tipo, ifMatch: null));
+        await Aceito(ctx.PutExigenciaAsync(tipo));
 
         await ReclassificarAsync(tipo, ClassificacaoDeProtecao.Sensivel);
         await Aceito(ctx.PublicarAsync());
@@ -79,7 +79,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
     {
         Contexto ctx = await ProcessoComFatoSensivelAsync(nameof(Publicacao_TipoReclassificadoParaMenosProtegido_Recusa));
         Guid tipo = await SemearTipoAsync(ClassificacaoDeProtecao.Sensivel, "LAUDO_MEDICO");
-        await Aceito(ctx.PutExigenciaAsync(tipo, ifMatch: null));
+        await Aceito(ctx.PutExigenciaAsync(tipo));
 
         await ReclassificarAsync(tipo, ClassificacaoDeProtecao.Pessoal);
 
@@ -92,44 +92,9 @@ public sealed class ProtecaoDaExigenciaEndpointTests
         Contexto ctx = await ProcessoComFatoSensivelAsync(nameof(Publicacao_ComprovaFatoDerivadoEFatoSensivel_RecusaPeloSensivel));
         Guid pessoal = await SemearTipoAsync(ClassificacaoDeProtecao.Pessoal, "DECLARACAO_RENDA_E_SAUDE");
 
-        await Aceito(ctx.PutExigenciaAsync(pessoal, ifMatch: null, comprova: ["RENDA_PER_CAPITA", FatoSensivel]));
+        await Aceito(ctx.PutExigenciaAsync(pessoal, comprova: ["RENDA_PER_CAPITA", FatoSensivel]));
 
         await DeveRecusarAsync(ctx.PublicarAsync(), RecusaDeProtecao);
-    }
-
-    [Fact(DisplayName = "Retificar com o tipo reclassificado para pessoal mantém sensível a exigência que a versão vigente já tinha")]
-    public async Task Retificacao_MantemAProtecaoCongeladaDaExigenciaExistente()
-    {
-        Contexto ctx = await ProcessoComFatoSensivelAsync(nameof(Retificacao_MantemAProtecaoCongeladaDaExigenciaExistente));
-        Guid tipo = await SemearTipoAsync(ClassificacaoDeProtecao.Sensivel, "LAUDO_MEDICO");
-        await Aceito(ctx.PutExigenciaAsync(tipo, ifMatch: null));
-        await Aceito(ctx.PublicarAsync());
-        await ReclassificarAsync(tipo, ClassificacaoDeProtecao.Pessoal);
-
-        string etag = LerETag(await Aceito(ctx.AbrirAsync()));
-        await Aceito(ctx.FecharRetificacaoAsync(etag));
-
-        using JsonDocument processo = JsonDocument.Parse(await ctx.ObterProcessoAsync());
-        processo.RootElement.GetProperty("documentosExigidos").EnumerateArray().Single()
-            .GetProperty("classificacaoProtecao").GetString().Should().Be("SENSIVEL");
-    }
-
-    [Fact(DisplayName = "Exigência nova de um tipo reclassificado congela pelo cadastro vigente na retificação")]
-    public async Task Retificacao_ExigenciaNovaDoTipoReclassificado_CongelaPeloCadastro()
-    {
-        Contexto ctx = await ProcessoComFatoSensivelAsync(nameof(Retificacao_ExigenciaNovaDoTipoReclassificado_CongelaPeloCadastro));
-        Guid tipo = await SemearTipoAsync(ClassificacaoDeProtecao.Sensivel, "LAUDO_MEDICO");
-        await Aceito(ctx.PutExigenciaAsync(tipo, ifMatch: null, comprova: []));
-        await Aceito(ctx.PublicarAsync());
-        await ReclassificarAsync(tipo, ClassificacaoDeProtecao.Pessoal);
-
-        string etag = LerETag(await Aceito(ctx.AbrirAsync()));
-        etag = LerETag(await Aceito(ctx.PutExigenciaAsync(tipo, etag, comprova: [])));
-        await Aceito(ctx.FecharRetificacaoAsync(etag));
-
-        using JsonDocument processo = JsonDocument.Parse(await ctx.ObterProcessoAsync());
-        processo.RootElement.GetProperty("documentosExigidos").EnumerateArray().Single()
-            .GetProperty("classificacaoProtecao").GetString().Should().Be("PESSOAL");
     }
 
     [Fact(DisplayName = "O painel de conformidade marca pendente o mesmo caso que a publicação recusa")]
@@ -137,7 +102,7 @@ public sealed class ProtecaoDaExigenciaEndpointTests
     {
         Contexto ctx = await ProcessoComFatoSensivelAsync(nameof(Painel_MarcaPendenteOQueAPublicacaoRecusa));
         Guid pessoal = await SemearTipoAsync(ClassificacaoDeProtecao.Pessoal, "DECLARACAO_RENDA_E_SAUDE");
-        await Aceito(ctx.PutExigenciaAsync(pessoal, ifMatch: null, comprova: ["RENDA_PER_CAPITA", FatoSensivel]));
+        await Aceito(ctx.PutExigenciaAsync(pessoal, comprova: ["RENDA_PER_CAPITA", FatoSensivel]));
 
         await DeveRecusarAsync(ctx.PublicarAsync(), RecusaDeProtecao);
         using JsonDocument painel = JsonDocument.Parse(await ctx.ObterConformidadeAsync());
@@ -146,27 +111,12 @@ public sealed class ProtecaoDaExigenciaEndpointTests
             .GetProperty("ok").GetBoolean().Should().BeFalse();
     }
 
-    [Fact(DisplayName = "Fechar a retificação recusa a exigência que passou a comprovar fato mais protegido que o tipo")]
-    public async Task Retificacao_ExigenciaMenosProtegidaQueOFato_Recusa()
-    {
-        Contexto ctx = await ProcessoComFatoSensivelAsync(nameof(Retificacao_ExigenciaMenosProtegidaQueOFato_Recusa));
-        Guid pessoal = await SemearTipoAsync(ClassificacaoDeProtecao.Pessoal, "ATESTADO_SIMPLES");
-        Guid sensivel = await SemearTipoAsync(ClassificacaoDeProtecao.Sensivel, "LAUDO_MEDICO");
-        await Aceito(ctx.PutExigenciaAsync(sensivel, ifMatch: null));
-        await Aceito(ctx.PublicarAsync());
-
-        string etag = LerETag(await Aceito(ctx.AbrirAsync()));
-        etag = LerETag(await Aceito(ctx.PutExigenciaAsync(pessoal, etag)));
-
-        await DeveRecusarAsync(ctx.FecharRetificacaoAsync(etag), RecusaDeProtecao);
-    }
-
     [Fact(DisplayName = "Reclassificar o tipo de documento depois da gravação não muda a exigência publicada")]
     public async Task ReclassificarOTipo_NaoMudaAExigenciaPublicada()
     {
         Contexto ctx = await ProcessoComFatoSensivelAsync(nameof(ReclassificarOTipo_NaoMudaAExigenciaPublicada));
         Guid sensivel = await SemearTipoAsync(ClassificacaoDeProtecao.Sensivel, "LAUDO_MEDICO");
-        await Aceito(ctx.PutExigenciaAsync(sensivel, ifMatch: null));
+        await Aceito(ctx.PutExigenciaAsync(sensivel));
         await Aceito(ctx.PublicarAsync());
 
         await ReclassificarAsync(sensivel, ClassificacaoDeProtecao.Pessoal);
@@ -175,6 +125,53 @@ public sealed class ProtecaoDaExigenciaEndpointTests
         JsonElement exigencia = processo.RootElement.GetProperty("documentosExigidos").EnumerateArray().Single();
         exigencia.GetProperty("classificacaoProtecao").GetString().Should().Be("SENSIVEL");
         exigencia.GetProperty("fatosComprovados").EnumerateArray().Select(static f => f.GetString()).Should().Equal(FatoSensivel);
+    }
+
+    [Fact(DisplayName = "A publicação recusa o tipo e o fato que aguardam a aprovação da proteção com as duas causas, sem a chave field")]
+    public async Task Publicacao_TipoEFatoComProtecaoPendente_RecusaComAsDuasCausasSemCampo()
+    {
+        Contexto ctx = await ProcessoComFatoSensivelAsync(nameof(Publicacao_TipoEFatoComProtecaoPendente_RecusaComAsDuasCausasSemCampo));
+        Guid sensivel = await SemearTipoAsync(ClassificacaoDeProtecao.Sensivel, "LAUDO_MEDICO");
+        await Aceito(ctx.PutExigenciaAsync(sensivel));
+        await VoltarParaPendenteAsync(sensivel);
+        try
+        {
+            ConferirAsDuasCausasDeProtecaoSemCampo(await RecusadaAsync(ctx.PublicarAsync()));
+        }
+        finally
+        {
+            await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+            await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().AprovarCatalogoAsync();
+        }
+    }
+
+    private static async Task<JsonDocument> RecusadaAsync(Task<HttpResponseMessage> chamada)
+    {
+        HttpResponseMessage resposta = await chamada;
+        string corpo = await resposta.Content.ReadAsStringAsync();
+        resposta.StatusCode.Should().Be(HttpStatusCode.UnprocessableEntity, corpo);
+        return JsonDocument.Parse(corpo);
+    }
+
+    private static void ConferirAsDuasCausasDeProtecaoSemCampo(JsonDocument problema)
+    {
+        using (problema)
+        {
+            JsonElement[] causas = [.. problema.RootElement.GetProperty("errors").EnumerateArray()];
+            causas.Select(static c => c.GetProperty("code").GetString()).Should().Equal(
+                "uniplus.selecao.processo_seletivo.tipo_documento_com_protecao_pendente",
+                "uniplus.selecao.processo_seletivo.fato_com_protecao_pendente");
+            causas.Any(static c => c.TryGetProperty("field", out JsonElement _)).Should().BeFalse("a causa do cadastro não aponta campo do pedido");
+            problema.RootElement.GetProperty("code").GetString().Should().Be(causas[0].GetProperty("code").GetString());
+        }
+    }
+
+    private async Task VoltarParaPendenteAsync(Guid tipoId)
+    {
+        await using AsyncServiceScope escopo = _fixture.Factory.Services.CreateAsyncScope();
+        UniPlusDbContext db = escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>();
+        await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.tipos_de_documento SET protecao_situacao = 'PENDENTE' WHERE id = {tipoId}");
+        await db.Database.ExecuteSqlInterpolatedAsync($"UPDATE configuracao.fatos_do_candidato SET protecao_situacao = 'PENDENTE' WHERE codigo = {FatoSensivel}");
     }
 
     private async Task<Guid> SemearTipoAsync(ClassificacaoDeProtecao classificacao, string prefixo)
@@ -244,12 +241,6 @@ public sealed class ProtecaoDaExigenciaEndpointTests
         problema.RootElement.GetProperty("detail").GetString().Should().Contain(FatoSensivel);
     }
 
-    private static string LerETag(HttpResponseMessage resposta)
-    {
-        resposta.Headers.ETag.Should().NotBeNull();
-        return resposta.Headers.ETag!.ToString();
-    }
-
     private sealed record Contexto(CascadingApiFactory Api, HttpClient Client, Guid ProcessoId, Guid DocumentoEditalId, Guid FaseId)
     {
         public Task<HttpResponseMessage> PutItensAsync() =>
@@ -271,10 +262,9 @@ public sealed class ProtecaoDaExigenciaEndpointTests
                             etapaCodigo = FormularioDeInscricaoHttp.Secao,
                         },
                     },
-                },
-                ifMatch: null);
+                });
 
-        public Task<HttpResponseMessage> PutExigenciaAsync(Guid tipoDocumentoId, string? ifMatch, string[]? comprova = null) =>
+        public Task<HttpResponseMessage> PutExigenciaAsync(Guid tipoDocumentoId, string[]? comprova = null) =>
             EnviarAsync(
                 HttpMethod.Put,
                 new Uri($"/api/selecao/processos-seletivos/{ProcessoId}/documentos-exigidos", UriKind.Relative),
@@ -296,21 +286,10 @@ public sealed class ProtecaoDaExigenciaEndpointTests
                             fatosComprovados = comprova ?? [FatoSensivel],
                         },
                     },
-                },
-                ifMatch);
+                });
 
         public Task<HttpResponseMessage> PublicarAsync() =>
-            EnviarAsync(HttpMethod.Post, Rota("publicacao"), CorpoDoAto(DocumentoEditalId, "EDITAL_ABERTURA", "001/2026"), ifMatch: null);
-
-        public Task<HttpResponseMessage> AbrirAsync() =>
-            EnviarAsync(HttpMethod.Post, Rota("retificacao-em-curso"), new { motivo = "Troca do documento exigido" }, ifMatch: null);
-
-        public async Task<HttpResponseMessage> FecharRetificacaoAsync(string etag)
-        {
-            Guid documento = await SemearDocumentoConfirmadoAsync().ConfigureAwait(false);
-            return await EnviarAsync(HttpMethod.Post, Rota("retificacao-em-curso/fechamento"), CorpoDoAto(documento, "EDITAL_RETIFICACAO", "001/2026-R"), etag)
-                .ConfigureAwait(false);
-        }
+            EnviarAsync(HttpMethod.Post, Rota("publicacao"), CorpoDoAto(DocumentoEditalId, "EDITAL_ABERTURA", "001/2026"));
 
         public Task<string> ObterConformidadeAsync() => LerAsync(Rota("conformidade"));
 
@@ -325,17 +304,6 @@ public sealed class ProtecaoDaExigenciaEndpointTests
             string corpo = await resposta.Content.ReadAsStringAsync().ConfigureAwait(false);
             resposta.StatusCode.Should().Be(HttpStatusCode.OK, corpo);
             return corpo;
-        }
-
-        private async Task<Guid> SemearDocumentoConfirmadoAsync()
-        {
-            await using AsyncServiceScope scope = Api.Services.CreateAsyncScope();
-            UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
-            DocumentoAPublicar documento = DocumentoAPublicar.IniciarPendente(ProcessoId, FinalidadeDoDocumento.DocumentoDoEdital, "edital.pdf", TiposDeMidiaDeDocumento.Pdf, TimeProvider.System, TimeSpan.FromMinutes(15)).Value!;
-            documento.Confirmar(2048, string.Concat(Enumerable.Repeat("cd45670189", 7))[..64], TimeProvider.System).IsSuccess.Should().BeTrue();
-            await db.DocumentosAPublicar.AddAsync(documento);
-            await db.SaveChangesAsync();
-            return documento.Id;
         }
 
         private Uri Rota(string recurso) => new($"/api/selecao/processos-seletivos/{ProcessoId}/{recurso}".TrimEnd('/'), UriKind.Relative);
@@ -355,17 +323,12 @@ public sealed class ProtecaoDaExigenciaEndpointTests
             },
         };
 
-        private async Task<HttpResponseMessage> EnviarAsync(HttpMethod metodo, Uri rota, object corpo, string? ifMatch)
+        private async Task<HttpResponseMessage> EnviarAsync(HttpMethod metodo, Uri rota, object corpo)
         {
             using HttpRequestMessage request = new(metodo, rota) { Content = JsonContent.Create(corpo) };
             request.Headers.Authorization = new AuthenticationHeaderValue(TestAuthHandler.AuthorizationScheme, TestAuthHandler.TokenValue);
             request.Headers.TryAddWithoutValidation(TestAuthHandler.RolesHeader, "plataforma-admin");
             request.Headers.TryAddWithoutValidation("Idempotency-Key", Guid.CreateVersion7().ToString("N"));
-            if (ifMatch is not null)
-            {
-                request.Headers.TryAddWithoutValidation("If-Match", ifMatch);
-            }
-
             return await Client.SendAsync(request).ConfigureAwait(false);
         }
     }

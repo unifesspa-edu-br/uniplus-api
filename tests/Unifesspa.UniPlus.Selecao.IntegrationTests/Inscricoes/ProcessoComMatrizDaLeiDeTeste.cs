@@ -46,7 +46,7 @@ internal static class ProcessoComMatrizDaLeiDeTeste
         [
             Configurada(DerivacaoDoFato.CriarBooleana(
                 OrigemEscolar.FatoEgresso, OrigemEscolar.RegrasDoEgresso, OrigemEscolar.DependenciasDoEgresso).Value!),
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
         return processo;
     }
 

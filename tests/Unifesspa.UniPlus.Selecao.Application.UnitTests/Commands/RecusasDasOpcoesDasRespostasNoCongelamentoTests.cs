@@ -89,13 +89,13 @@ public sealed class RecusasDasOpcoesDasRespostasNoCongelamentoTests
             "PS Opções das respostas", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
-        processo.DefinirItens(campos, PrecondicaoIfMatch.Ausente, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
+        processo.DefinirItens(campos, finalidade: FinalidadeFormulario.Habilitacao).IsSuccess.Should().BeTrue();
 
         return processo;
     }
 
     private static void Opcoes(ProcessoSeletivo processo, string fato, params string[] codigos) =>
-        processo.DefinirOpcoesDeclaradas(fato, [.. codigos.Select((c, i) => OpcaoDeclaradaFato.Criar(fato, c, c, i).Value!)], PrecondicaoIfMatch.Ausente)
+        processo.DefinirOpcoesDeclaradas(fato, [.. codigos.Select((c, i) => OpcaoDeclaradaFato.Criar(fato, c, c, i).Value!)])
             .IsSuccess.Should().BeTrue();
 
     private static FatoColetado CampoDoProcesso(string codigo, int ordem, string[] formadoPor) =>

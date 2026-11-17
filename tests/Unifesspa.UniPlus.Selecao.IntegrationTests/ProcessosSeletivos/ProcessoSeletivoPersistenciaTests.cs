@@ -59,7 +59,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Redação", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 2, FaseCodigo: null),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2m, NotaMinima: 5m, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente);
+        ]);
         etapasResult.IsSuccess.Should().BeTrue();
 
         Result<AtendimentoEspecializado> atendimentoResult = AtendimentoEspecializado.Criar(
@@ -67,7 +67,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             recursos: [RecursoOfertado.Criar(recursoOrigemId, "LEDOR", "Ledor")],
             tiposDeficiencia: [DeficienciaAtendida.Criar(tipoDeficienciaOrigemId, "DEFICIENCIA_VISUAL", "Deficiência visual")]);
         atendimentoResult.IsSuccess.Should().BeTrue();
-        processo.DefinirAtendimentoEspecializado(atendimentoResult.Value!, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirAtendimentoEspecializado(atendimentoResult.Value!).IsSuccess.Should().BeTrue();
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -90,7 +90,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregado.TipoProcessoOrigemId.Should().Be(TiposDeProcessoDeTeste.SiSU.OrigemId);
         recarregado.TipoProcesso.Codigo.Should().Be("SiSU");
         recarregado.Etapas.Should().HaveCount(2);
-        EstadoDaConfiguracao.De(recarregado).CalcularDivisorMedia().Should().Be(5m);
+        recarregado.Declaracao().Avaliacao.CalcularDivisorMedia().Should().Be(5m);
         recarregado.Etapas.Single(e => e.Ordem == 1).Should().Match<EtapaProcesso>(
             e => e.NotaMaxima == 10m && e.PassoDoLancamento == 0.25m
                 && e.FormaDeAvaliacao == FormaDeAvaliacao.Humana
@@ -210,7 +210,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: 0.5m, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -272,7 +272,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS 2026 — PSIQ", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
         processo.DefinirEtapas([EtapaProcesso.Criar(
             new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: null),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!], PrecondicaoIfMatch.Ausente);
+            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]);
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -294,7 +294,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
                 EtapaProcesso.Criar(
                     new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Ambas, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 2, FaseCodigo: null),
                     new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-            ], PrecondicaoIfMatch.Ausente);
+            ]);
             result.IsSuccess.Should().BeTrue();
 
             // Persistência por change detection sobre o agregado tracked.
@@ -309,7 +309,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
         recarregado.Should().NotBeNull();
         recarregado!.Etapas.Should().HaveCount(2);
         recarregado.Etapas.Select(e => e.Nome).Should().BeEquivalentTo(["Prova Objetiva", "Entrevista"]);
-        EstadoDaConfiguracao.De(recarregado).CalcularDivisorMedia().Should().Be(5m);
+        recarregado.Declaracao().Avaliacao.CalcularDivisorMedia().Should().Be(5m);
     }
 
     [Fact(DisplayName = "Persiste e reidrata a regra de derivação nos três níveis, reconstruindo o value object do motor")]
@@ -323,7 +323,7 @@ public sealed class ProcessoSeletivoPersistenciaTests : IClassFixture<ProcessoSe
             RegraDerivacaoConfigurada.Criar(1, "AC_PCD",
                 [CondicaoRegraDerivacao.Criar(1, "CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!]).Value!,
         ]).Value!;
-        processo.DefinirRegrasDerivacao([config], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([config]).IsSuccess.Should().BeTrue();
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {

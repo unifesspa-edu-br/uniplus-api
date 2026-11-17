@@ -58,16 +58,14 @@ internal static class CenarioDeConformidadeLegal
         processo.DefinirEtapas(
             [EtapaProcesso.Criar(
                 new IdentificacaoDaEtapa(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: tipo, Ordem: 1, FaseCodigo: null),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!],
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]).IsSuccess.Should().BeTrue();
 
     internal static void DefinirAtendimento(ProcessoSeletivo processo, Guid origem, string codigo, string nome) =>
         processo.DefinirAtendimentoEspecializado(
             AtendimentoEspecializado.Criar(
                 [CondicaoOfertada.Criar(Guid.CreateVersion7(), AtendimentoEspecializado.CodigoCondicaoPcd, "Pessoa com deficiência")],
                 [],
-                [DeficienciaAtendida.Criar(origem, codigo, nome)]).Value!,
-            PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+                [DeficienciaAtendida.Criar(origem, codigo, nome)]).Value!).IsSuccess.Should().BeTrue();
 
     /// <remarks>
     /// A identidade é parâmetro porque duas ofertas que selecionam a mesma modalidade
@@ -101,12 +99,12 @@ internal static class CenarioDeConformidadeLegal
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
     internal static void DefinirOfertas(ProcessoSeletivo processo, params ConfiguracaoDistribuicaoVagas[] ofertas) =>
-        processo.DefinirDistribuicaoVagas(ofertas, FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Curinga)
+        processo.DefinirDistribuicaoVagas(ofertas, FatosDeModalidadeDeTeste.DoCatalogo)
             .IsSuccess.Should().BeTrue();
 
     internal static void DefinirDocumentos(ProcessoSeletivo processo, params DocumentoExigido[] documentos) =>
         processo.DefinirDocumentosExigidos(
-            [.. documentos.Select(d => NoExigencia.CriarFolha(d, 0).Value!)], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+            [.. documentos.Select(d => NoExigencia.CriarFolha(d, 0).Value!)]).IsSuccess.Should().BeTrue();
 
     /// <summary>Define a fase de envio de documentos e uma oferta com a modalidade; devolve o id da fase.</summary>
     internal static Guid PrepararProcessoComModalidade(ProcessoSeletivo processo, string modalidadeCodigo)
@@ -118,7 +116,7 @@ internal static class CenarioDeConformidadeLegal
             new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
             new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
-        processo.DefinirCronogramaFases([fase], [], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
         DefinirOfertas(processo, NovaOferta(NovaModalidade(modalidadeCodigo, NaturezaLegalModalidade.CotaReservada)));
         return fase.Id;
     }

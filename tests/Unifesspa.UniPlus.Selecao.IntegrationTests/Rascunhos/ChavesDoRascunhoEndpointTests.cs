@@ -131,7 +131,7 @@ public sealed class ChavesDoRascunhoEndpointTests : IAsyncLifetime
 
     private static async Task<(string? Campo, string Codigo)[]> CausasAsync(HttpResponseMessage resposta) =>
         [.. (await Corpo(resposta)).GetProperty("errors").EnumerateArray()
-            .Select(static erro => (erro.GetProperty("field").GetString(), erro.GetProperty("code").GetString()!))];
+            .Select(static erro => (erro.TryGetProperty("field", out JsonElement campo) ? campo.GetString() : null, erro.GetProperty("code").GetString()!))];
 
     private static string DocumentoComEtapas(string etapas) =>
         $$"""{ "formato": "uniplus.selecao.configuracao", "versaoFormato": 1, "identificacao": { "nome": "Processo Seletivo de Exemplo", "unidadeAdministradoraCodigo": "CEPS" }, "etapas": [ {{etapas}} ] }""";

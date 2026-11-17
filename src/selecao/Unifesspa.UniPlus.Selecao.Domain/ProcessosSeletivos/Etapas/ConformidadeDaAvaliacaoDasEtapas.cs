@@ -44,7 +44,8 @@ internal static class ConformidadeDaAvaliacaoDasEtapas
             static (etapa, citacao) => ModoEm(etapa, citacao, ModoDeAvaliacaoDaEtapa.NotaNumerica)
                 && Humana(etapa) && etapa.PassoDoLancamento is null && !etapa.TemEscalaDeAtendimento),
         new("etapa_humana_sem_banca", "Ao menos uma banca em cada etapa de avaliação humana", ForaDoEnem, [.. DadosDoModo, DadoDaEtapa.FormaDeAvaliacao],
-            static (etapa, citacao) => ComNotaOuConceito(etapa, citacao) && Humana(etapa) && !etapa.Bancas.TemBancas),
+            static (etapa, citacao) => ComNotaOuConceito(etapa, citacao) && Humana(etapa) && !etapa.Bancas.TemBancas,
+            EtapaDeclarada.ListaDasBancas),
     ];
 
     private enum Situacao
@@ -82,9 +83,12 @@ internal static class ConformidadeDaAvaliacaoDasEtapas
     }
 
     private static Situacao Avaliar(Verificacao verificacao, EtapaDeclarada etapa, CitacaoDaEtapa citacao) =>
-        verificacao.ValoresLidos.Any(etapa.Recusado) ? Situacao.Indeterminada
+        verificacao.ValoresLidos.Any(etapa.Recusado) || LeEListaComParteRecusada(verificacao, etapa) ? Situacao.Indeterminada
         : verificacao.Reprova(etapa, citacao) ? Situacao.Reprovada
         : Situacao.Conforme;
+
+    private static bool LeEListaComParteRecusada(Verificacao verificacao, EtapaDeclarada etapa) =>
+        verificacao.ListaLida is { } lista && etapa.ParteRecusadaEm(lista);
 
     // O nome é texto livre do operador e sai ecoado, em ordem estável.
     private static string Eco(string rotulo, EtapaDeclarada[] etapas) =>
@@ -123,5 +127,6 @@ internal static class ConformidadeDaAvaliacaoDasEtapas
         string Mensagem,
         Func<EtapaDeclarada, bool> Aplicavel,
         DadoDaEtapa[] ValoresLidos,
-        Func<EtapaDeclarada, CitacaoDaEtapa, bool> Reprova);
+        Func<EtapaDeclarada, CitacaoDaEtapa, bool> Reprova,
+        string? ListaLida = null);
 }

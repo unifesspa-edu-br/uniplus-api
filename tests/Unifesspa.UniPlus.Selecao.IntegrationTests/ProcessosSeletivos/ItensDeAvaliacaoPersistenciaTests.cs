@@ -45,7 +45,7 @@ public sealed class ItensDeAvaliacaoPersistenciaTests(ProcessoSeletivoDbFixture 
                 tipo,
                 [new(null, "Clareza", 4m), new(null, "Domínio", 6m)],
                 [new("Não atendeu", 0m), new("Atendeu", 1m), new("Atendeu parcialmente", 0.5m)]);
-            processo.DefinirEtapas([etapa], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+            processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
 
             escrita.ProcessosSeletivos.Add(processo);
             await escrita.SaveChangesAsync();

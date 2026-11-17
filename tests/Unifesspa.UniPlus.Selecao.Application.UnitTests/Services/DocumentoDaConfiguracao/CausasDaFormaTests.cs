@@ -11,11 +11,11 @@ public sealed class CausasDaFormaTests
 {
     private const string Ponteiro = "/etapas/0/segredo";
 
-    public static TheoryData<FieldError, string, string> Causas => new()
+    public static TheoryData<FieldError, string?, string> Causas => new()
     {
-        { CausasDaForma.Malformado(), string.Empty, DocumentoDaConfiguracaoErrorCodes.FormaInvalida },
+        { CausasDaForma.Malformado(), null, DocumentoDaConfiguracaoErrorCodes.FormaInvalida },
         { CausasDaForma.RaizNaoEhObjeto(), string.Empty, DocumentoDaConfiguracaoErrorCodes.TipoInvalido },
-        { CausasDaForma.TamanhoAcimaDoLimite(), string.Empty, DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite },
+        { CausasDaForma.TamanhoAcimaDoLimite(), null, DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite },
         { CausasDaForma.QuantidadeDeNosAcimaDoLimite(), string.Empty, DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite },
         { CausasDaForma.ProfundidadeAcimaDoLimite(Ponteiro), Ponteiro, DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite },
         { CausasDaForma.PropriedadeRepetida(Ponteiro), Ponteiro, DocumentoDaConfiguracaoErrorCodes.PropriedadeRepetida },
@@ -27,9 +27,9 @@ public sealed class CausasDaFormaTests
         { CausasDaForma.VersaoDoFormatoNaoSuportada(Ponteiro), Ponteiro, DocumentoDaConfiguracaoErrorCodes.VersaoDoFormatoNaoSuportada },
     };
 
-    [Theory(DisplayName = "Cada causa de forma aponta o ponteiro do item e tem o código de domínio da própria causa")]
+    [Theory(DisplayName = "Cada causa de forma aponta o ponteiro do item, ou nenhum campo quando não é do documento, e tem o código de domínio da própria causa")]
     [MemberData(nameof(Causas))]
-    public void Causa_ApontaOPonteiroETemOCodigoDaCausa(FieldError causa, string ponteiro, string codigo)
+    public void Causa_ApontaOPonteiroETemOCodigoDaCausa(FieldError causa, string? ponteiro, string codigo)
     {
         ArgumentNullException.ThrowIfNull(causa);
 

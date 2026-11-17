@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 
 /// <summary>
-/// As três transições que congelam uma versão recusam as famílias da configuração na mesma ordem, e acumulam todas as causas
+/// As duas transições que congelam uma versão recusam as famílias da configuração na mesma ordem, e acumulam todas as causas
 /// (ADR-0125). A ordem decide qual código o cliente vê primeiro: trocar duas famílias deixaria o cliente vendo a causa errada.
 /// </summary>
 /// <remarks>
@@ -24,7 +24,7 @@ public sealed class OrdemDasFamiliasDaConfiguracaoTests
         "Bancas", "CorrecaoIndependente", "TiposDeAto", "Cascata", "CondicoesDaCanonicalizacao",
     ];
 
-    public static TheoryData<string> Transicoes => ["Publicar", "Retificar", "FecharRetificacao"];
+    public static TheoryData<string> Transicoes => ["Publicar", "Retificar"];
 
     [Fact(DisplayName = "A conferência tem as onze famílias na ordem única escrita no teste: trocar duas de lugar, ganhar ou perder uma reprova")]
     public void Familias_SaoAsDaSequenciaEsperadaNaOrdem() =>

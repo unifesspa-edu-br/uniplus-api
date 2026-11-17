@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
 /// <summary>
-/// Público de propósito, como <see cref="RascunhoDePublicacaoRepository"/>: o codegen do Wolverine não instancia um
+/// Público de propósito: o codegen do Wolverine não instancia um
 /// concreto <c>internal</c> sob <c>ServiceLocationPolicy.NotAllowed</c> sem o opt-in da ADR-0098.
 /// </summary>
 public sealed class RascunhoDeProcessoSeletivoRepository : IRascunhoDeProcessoSeletivoRepository

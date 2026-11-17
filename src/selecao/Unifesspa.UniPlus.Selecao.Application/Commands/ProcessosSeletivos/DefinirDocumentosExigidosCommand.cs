@@ -143,5 +143,4 @@ public sealed record NoExigenciaInput(
 /// </summary>
 public sealed record DefinirDocumentosExigidosCommand(
     Guid ProcessoSeletivoId,
-    IReadOnlyList<NoExigenciaInput> Raizes,
-    PrecondicaoIfMatch Precondicao) : ICommand<Result<MutacaoAceita>>;
+    IReadOnlyList<NoExigenciaInput> Raizes) : ICommand<Result>;

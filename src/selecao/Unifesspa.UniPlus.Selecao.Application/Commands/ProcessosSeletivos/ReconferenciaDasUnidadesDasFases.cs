@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Application.Commands.ProcessosSeletivos;
 using Abstractions;
 
 using Domain.Entities;
+using Domain.ProcessosSeletivos.OrdemCanonica;
 using Domain.ValueObjects;
 
 using Kernel.Results;
@@ -30,35 +31,51 @@ internal static class ReconferenciaDasUnidadesDasFases
         ArgumentNullException.ThrowIfNull(resolvedor);
 
         Dictionary<Guid, UnidadeResponsavelSnapshot?> resolvidas = [];
+        List<FieldError> erros = await ResolverAsUnidadesDasFasesAsync(processo, resolvedor, resolvidas, cancellationToken).ConfigureAwait(false);
+
+        return erros.Count > 0
+            ? Result<IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot>>.ValidationFailure(erros)
+            : Result<IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot>>.Success(resolvidas.ToDictionary(static p => p.Key, static p => p.Value!));
+    }
+
+    private static async Task<List<FieldError>> ResolverAsUnidadesDasFasesAsync(
+        ProcessoSeletivo processo,
+        IResolvedorDaUnidadeResponsavel resolvedor,
+        Dictionary<Guid, UnidadeResponsavelSnapshot?> resolvidas,
+        CancellationToken cancellationToken)
+    {
         List<FieldError> erros = [];
-        FaseCronograma[] fases = [.. processo.CronogramaFases.OrderBy(static f => f.Ordem)];
+        FaseCronograma[] fases = [.. OrdemCanonicaDaConfiguracao.Fases(processo.CronogramaFases)];
         for (int indice = 0; indice < fases.Length; indice++)
         {
-            if (fases[indice].UnidadeResponsavelOrigemId is not { } unidadeId)
+            if (fases[indice].UnidadeResponsavelOrigemId is { } unidadeId
+                && await ResolverUmaVezAsync(unidadeId, resolvedor, resolvidas, cancellationToken).ConfigureAwait(false) is null)
             {
-                continue;
-            }
-
-            if (!resolvidas.TryGetValue(unidadeId, out UnidadeResponsavelSnapshot? viva))
-            {
-                viva = await resolvedor.ResolverAsync(unidadeId, cancellationToken).ConfigureAwait(false);
-                resolvidas[unidadeId] = viva;
-            }
-
-            if (viva is null)
-            {
-                erros.Add(new FieldError($"fases[{indice}].unidadeResponsavelId", new DomainError(
-                    "FaseCronograma.UnidadeResponsavelNaoEncontrada",
-                    $"Unidade responsável {unidadeId} da fase '{fases[indice].Codigo}' não encontrada ou não está mais viva. Escolha outra unidade para a fase.")));
+                erros.Add(UnidadeNaoEncontrada(indice, fases[indice], unidadeId));
             }
         }
 
-        if (erros.Count > 0)
-        {
-            return Result<IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot>>.ValidationFailure(erros);
-        }
-
-        return Result<IReadOnlyDictionary<Guid, UnidadeResponsavelSnapshot>>.Success(
-            resolvidas.ToDictionary(static p => p.Key, static p => p.Value!));
+        return erros;
     }
+
+    private static async Task<UnidadeResponsavelSnapshot?> ResolverUmaVezAsync(
+        Guid unidadeId,
+        IResolvedorDaUnidadeResponsavel resolvedor,
+        Dictionary<Guid, UnidadeResponsavelSnapshot?> resolvidas,
+        CancellationToken cancellationToken)
+    {
+        if (!resolvidas.TryGetValue(unidadeId, out UnidadeResponsavelSnapshot? viva))
+        {
+            viva = await resolvedor.ResolverAsync(unidadeId, cancellationToken).ConfigureAwait(false);
+            resolvidas[unidadeId] = viva;
+        }
+
+        return viva;
+    }
+
+    private static FieldError UnidadeNaoEncontrada(int indice, FaseCronograma fase, Guid unidadeId) => new(
+        $"fases[{indice}].unidadeResponsavel",
+        new DomainError(
+            "FaseCronograma.UnidadeResponsavelNaoEncontrada",
+            $"Unidade responsável {unidadeId} da fase '{fase.Codigo}' não encontrada ou não está mais viva. Escolha outra unidade para a fase."));
 }

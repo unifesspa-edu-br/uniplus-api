@@ -23,7 +23,7 @@ internal static class FatoCitadoDeTeste
     public const string Fato = "TEM_RENDA";
     public const string FatoNovo = "TEM_ENDERECO_PROPRIO";
     public const string FatoAusenteDoCatalogo = "TEM_FILHOS";
-    public const string CodigoDaRecusaDoEixoAlterado = "RascunhoRetificacao.EixoDoFatoJaColetadoAlterado";
+    public const string CodigoDaRecusaDoEixoAlterado = "Retificacao.EixoDoFatoJaColetadoAlterado";
 
     public static FatoColetado Item(TipoRenderizacao tipo) =>
         ItemColetado(Fato, 0, "Tem renda?", tipo, Obrigatoriedade.Sempre);
@@ -45,9 +45,9 @@ internal static class FatoCitadoDeTeste
     public static ProcessoSeletivo ProcessoQueColetaOFato(bool comItemNovo, bool citaFatoAusenteDoCatalogo = false)
     {
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS Eixos nos handlers", out Guid faseId);
-        processo.DefinirItens(comItemNovo ? [Item(TipoRenderizacao.Booleano), ItemNovo()] : [Item(TipoRenderizacao.Booleano)], PrecondicaoIfMatch.Curinga)
+        processo.DefinirItens(comItemNovo ? [Item(TipoRenderizacao.Booleano), ItemNovo()] : [Item(TipoRenderizacao.Booleano)])
             .IsSuccess.Should().BeTrue();
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilho(faseId, citaFatoAusenteDoCatalogo), 0).Value!], PrecondicaoIfMatch.Curinga)
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaComGatilho(faseId, citaFatoAusenteDoCatalogo), 0).Value!])
             .IsSuccess.Should().BeTrue();
 
         return processo;
@@ -57,7 +57,7 @@ internal static class FatoCitadoDeTeste
     public static ProcessoSeletivo ProcessoSoComOItemPublicado(TipoRenderizacao tipo)
     {
         ProcessoSeletivo outro = ProcessoSeletivoConformeBuilder.Criar("PS Item publicado");
-        outro.DefinirItens([Item(tipo)], PrecondicaoIfMatch.Curinga).IsSuccess.Should().BeTrue();
+        outro.DefinirItens([Item(tipo)]).IsSuccess.Should().BeTrue();
 
         return outro;
     }

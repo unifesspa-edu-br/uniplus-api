@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Só a forma do <c>ProcessoSeletivoId</c> — identificador de rota sem equivalente no
 /// agregado. O tamanho do título tem equivalente de domínio (ADR-0125) e
-/// é coberto em <c>ProcessoSeletivoSessaoEditorialTests</c>.
+/// é coberto nos testes do agregado.
 /// </summary>
 public sealed class DefinirFormularioCommandValidatorTests
 {
@@ -21,7 +21,7 @@ public sealed class DefinirFormularioCommandValidatorTests
     [Fact(DisplayName = "Passa com título nulo — ausência é estado válido")]
     public void Aceita_TituloNulo()
     {
-        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, null, null, [], PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(Guid.CreateVersion7(), FinalidadeFormulario.Inscricao, null, null, []));
 
         result.IsValid.Should().BeTrue();
     }
@@ -29,7 +29,7 @@ public sealed class DefinirFormularioCommandValidatorTests
     [Fact(DisplayName = "Falha quando ProcessoSeletivoId é vazio")]
     public void Rejeita_ProcessoSeletivoIdVazio()
     {
-        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(Guid.Empty, FinalidadeFormulario.Inscricao, null, null, [], PrecondicaoIfMatch.Ausente));
+        ValidationResult result = Validator.Validate(new DefinirFormularioCommand(Guid.Empty, FinalidadeFormulario.Inscricao, null, null, []));
 
         result.IsValid.Should().BeFalse();
         result.Errors.Should().Contain(e => e.PropertyName == "ProcessoSeletivoId");

@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </summary>
 public static class DefinirOpcoesDeCursoCommandHandler
 {
-    public static async Task<Result<MutacaoAceita>> Handle(
+    public static async Task<Result> Handle(
         DefinirOpcoesDeCursoCommand command,
         IProcessoSeletivoRepository processoSeletivoRepository,
         IUnitOfWork unitOfWork,
@@ -29,25 +29,24 @@ public static class DefinirOpcoesDeCursoCommandHandler
             .ConfigureAwait(false);
         if (processo is null)
         {
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 "ProcessoSeletivo.NaoEncontrado",
                 $"Processo Seletivo {command.ProcessoSeletivoId} não encontrado."));
         }
 
-        // A precondição é conferida antes da regra de negócio (ADR-0110), e a recusa dela
-        // (412/428) não se embrulha como erro de campo.
-        if (processo.MutacaoBloqueada(command.Precondicao) is { } bloqueio)
+        // Fora do rascunho a recusa vem antes de consultar cadastros.
+        if (processo.MutacaoBloqueada() is { } bloqueio)
         {
-            return Result<MutacaoAceita>.Failure(bloqueio);
+            return Result.Failure(bloqueio);
         }
 
-        Result result = processo.DefinirOpcoesDeCurso(command.Numero, command.Precondicao);
+        Result result = processo.DefinirOpcoesDeCurso(command.Numero);
         if (result.IsFailure)
         {
             // Só a recusa de regra tem campo; o que vem sem campo é do agregado (precondição).
             return result.Errors[0].Field is null
-                ? Result<MutacaoAceita>.Failure(result.Error!)
-                : Result<MutacaoAceita>.ValidationFailure(result.Errors);
+                ? Result.Failure(result.Error!)
+                : Result.ValidationFailure(result.Errors);
         }
 
         try
@@ -59,11 +58,11 @@ public static class DefinirOpcoesDeCursoCommandHandler
             // O endpoint tem Idempotency-Key (ADR-0119): captura local e descarte, para o
             // SaveChangesAsync do outbox não reencontrar o agregado modificado.
             unitOfWork.DescartarAlteracoesNaoSalvas();
-            return Result<MutacaoAceita>.Failure(new DomainError(
+            return Result.Failure(new DomainError(
                 ProcessoSeletivoErrorCodes.ConflitoDeConcorrencia,
                 "O processo foi alterado concorrentemente. Tente novamente."));
         }
 
-        return Result<MutacaoAceita>.Success(new MutacaoAceita(processo.ETagDaSessaoEditorial));
+        return Result.Success();
     }
 }

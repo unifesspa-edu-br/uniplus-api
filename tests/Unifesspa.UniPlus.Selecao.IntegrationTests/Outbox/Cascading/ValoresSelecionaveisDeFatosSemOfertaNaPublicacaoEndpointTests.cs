@@ -46,9 +46,11 @@ public sealed class ValoresSelecionaveisDeFatosSemOfertaNaPublicacaoEndpointTest
         JsonElement[] erros = await ErrosDaRecusaAsync(resposta);
         erros.Should().HaveCount(2);
         erros.Select(static e => e.GetProperty("code").GetString()).Distinct().Should().ContainSingle();
-        erros.Select(static e => e.GetProperty("field").GetString()).Should().Equal(
-            $"formularios[INSCRICAO].itens[{await PosicaoDoItemAsync(processoId, primeiro)}].fatoCodigo",
-            $"formularios[INSCRICAO].itens[{await PosicaoDoItemAsync(processoId, segundo)}].fatoCodigo");
+        int posicaoDoPrimeiro = await PosicaoDoItemAsync(processoId, primeiro);
+        int posicaoDoSegundo = await PosicaoDoItemAsync(processoId, segundo);
+        erros.Select(static e => e.GetProperty("field").GetString()).Should().SatisfyRespectively(
+            campo => campo.Should().MatchRegex($@"^/formularios/\d+/itens/{posicaoDoPrimeiro}/fatoCodigo$"),
+            campo => campo.Should().MatchRegex($@"^/formularios/\d+/itens/{posicaoDoSegundo}/fatoCodigo$"));
     }
 
     private static (string Primeiro, string Segundo) CodigosDosFatos()

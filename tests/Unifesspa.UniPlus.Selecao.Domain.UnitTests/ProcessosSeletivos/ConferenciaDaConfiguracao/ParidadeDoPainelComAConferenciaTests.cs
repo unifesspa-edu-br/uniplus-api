@@ -9,7 +9,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Conformidade;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
-using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Edicao;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.FasesEEtapas;
 using Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Publicacao;
@@ -31,10 +30,10 @@ public sealed class ParidadeDoPainelComAConferenciaTests
     public void Painel_TodoConforme_SeESoSeAConfiguracaoEstaApta(string cenario)
     {
         ProcessoSeletivo processo = Montar(cenario);
-        EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(processo);
+        ConfiguracaoDeclarada configuracao = processo.Declaracao();
 
-        bool painelTodoConforme = ChecklistDeConformidade.AvaliarConformidade(estado, CadastrosDeTeste.Padrao).All(static item => item.Ok);
-        bool configuracaoApta = ConfiguracaoAptaACongelar.Conferir(estado, CadastrosDeTeste.Padrao).IsSuccess;
+        bool painelTodoConforme = ChecklistDeConformidade.AvaliarConformidade(configuracao, CadastrosDeTeste.Padrao).All(static item => item.Ok);
+        bool configuracaoApta = ConfiguracaoAptaACongelar.Conferir(processo.Id, configuracao, CadastrosDeTeste.Padrao).IsSuccess;
 
         painelTodoConforme.Should().Be(configuracaoApta);
     }
@@ -43,12 +42,12 @@ public sealed class ParidadeDoPainelComAConferenciaTests
     [MemberData(nameof(Cenarios))]
     public void ItemEstruturalPendente_EUmaCausaDeConformidadeNoBlocoDaDimensao(string cenario)
     {
-        EstadoDaConfiguracao estado = EstadoDaConfiguracao.De(Montar(cenario));
+        ConfiguracaoDeclarada configuracao = Montar(cenario).Declaracao();
 
         (string Codigo, string? Bloco)[] pendentes =
-            [.. ItensEstruturaisDeConformidade.Avaliar(estado).Where(static item => !item.Ok).Select(static item => (item.Codigo, (string?)DimensaoConformidade.BlocoDoDocumento(item.Dimensao)))];
+            [.. ItensEstruturaisDeConformidade.Avaliar(configuracao).Where(static item => !item.Ok).Select(static item => (item.Codigo, (string?)DimensaoConformidade.BlocoDoDocumento(item.Dimensao)))];
         (string? Origem, string? Campo)[] causas =
-            [.. ChecklistDeConformidade.CausasDeConformidade(estado).Select(static causa => (causa.Origem, causa.Field))];
+            [.. ChecklistDeConformidade.CausasDeConformidade(configuracao).Select(static causa => (causa.Origem, causa.Field))];
 
         causas.Should().Equal(pendentes.Select(static pendente => ((string?)pendente.Codigo, pendente.Bloco)));
     }
@@ -109,7 +108,7 @@ public sealed class ParidadeDoPainelComAConferenciaTests
             .GetProperty(nameof(ProcessoSeletivo.IdentificadorLegivel), BindingFlags.Instance | BindingFlags.Public)!.SetValue(processo, null),
         ["etapa com fase inexistente"] = static processo => ProcessoCarregadoDoBanco.Etapa(
             processo,
-            ApoioProcessoSeletivoRestaurarConfiguracao.EtapaCongeladaDeProvaObjetiva(Guid.CreateVersion7(), "Prova", 99, "FASE_INEXISTENTE", 1m)),
+            ApoioDeEtapaReidratada.DeProvaObjetiva(Guid.CreateVersion7(), "Prova", 99, "FASE_INEXISTENTE", 1m)),
         ["fase com janela invertida"] = static processo => ProcessoCarregadoDoBanco.Fase(processo, FaseComJanelaInvertida()),
         ["etapa com janela invertida"] = static processo => ProcessoCarregadoDoBanco.InverterJanela(processo.Etapas.First()),
     };

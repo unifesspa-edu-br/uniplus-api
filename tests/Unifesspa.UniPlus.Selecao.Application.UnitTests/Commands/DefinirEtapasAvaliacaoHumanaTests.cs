@@ -32,8 +32,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
                 "Redação", CaraterEtapa.Classificatoria, TipoRedacaoOrigemId, 1m, null, 1,
                 Produtos: [], Bancas: [], Recursos: [], NotaMaxima: 10m, PassoDoLancamento: 0.5m,
                 FormaDeAvaliacao: forma, RegraConsolidacaoCodigo: regraCodigo, RegraConsolidacaoVersao: regraVersao),
-        ],
-        PrecondicaoIfMatch.Ausente);
+        ]);
 
     [Fact(DisplayName = "A etapa de avaliação humana congela a regra de consolidação com o hash do catálogo, nunca o do payload")]
     public async Task Handle_FormaHumanaComRegraDeConsolidacao_GravaAReferenciaDoCatalogo()
@@ -45,7 +44,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
         IRegraCatalogoReader regraCatalogoReader = Substitute.For<IRegraCatalogoReader>();
         regraCatalogoReader.ObterAsync(RegraConsolidacaoCodigo.CorrecaoIndependente, "v1", Arg.Any<CancellationToken>()).Returns(regra);
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             RedacaoHumana(processo, FormaDeAvaliacaoCodigo.Humana, RegraConsolidacaoCodigo.CorrecaoIndependente),
             repository, Substitute.For<IUnitOfWork>(), regraCatalogoReader: regraCatalogoReader);
 
@@ -67,7 +66,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
             .Returns(RegraDoCatalogo("PRECISAO-TRUNCAR", TipoRegra.RegraArredondamento));
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             RedacaoHumana(processo, FormaDeAvaliacaoCodigo.Humana, "PRECISAO-TRUNCAR"),
             repository, unitOfWork, regraCatalogoReader: regraCatalogoReader);
 
@@ -90,8 +89,8 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
             FormaDeAvaliacao: FormaDeAvaliacaoCodigo.Objetiva,
             RegraConsolidacaoCodigo: RegraConsolidacaoCodigo.AvaliacaoUnica, RegraConsolidacaoVersao: "v1");
 
-        Result<MutacaoAceita> resultado = await Executar(
-            new DefinirEtapasCommand(processo.Id, [Objetiva("Prova 1", 1), Objetiva("Prova 2", 2)], PrecondicaoIfMatch.Ausente),
+        Result resultado = await Executar(
+            new DefinirEtapasCommand(processo.Id, [Objetiva("Prova 1", 1), Objetiva("Prova 2", 2)]),
             repository, Substitute.For<IUnitOfWork>(), regraCatalogoReader: regraCatalogoReader);
 
         resultado.Errors.Select(e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
@@ -113,7 +112,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             RedacaoHumana(processo, FormaDeAvaliacaoCodigo.Humana, codigo, versao),
             repository, Substitute.For<IUnitOfWork>());
 
@@ -128,7 +127,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
         IProcessoSeletivoRepository repository = Substitute.For<IProcessoSeletivoRepository>();
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             RedacaoHumana(processo, "HUMANO", regraCodigo: null, regraVersao: null),
             repository, Substitute.For<IUnitOfWork>());
 
@@ -151,7 +150,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
         (await Executar(
-            new DefinirEtapasCommand(processo.Id, [EntrevistaComItens(null, [new(null, "Clareza", 4m), new(null, "Domínio", 6m)])], PrecondicaoIfMatch.Ausente),
+            new DefinirEtapasCommand(processo.Id, [EntrevistaComItens(null, [new(null, "Clareza", 4m), new(null, "Domínio", 6m)])]),
             repository, unitOfWork)).IsSuccess.Should().BeTrue();
         EtapaProcesso etapa = processo.Etapas.Single();
         Guid idDaClareza = etapa.ItensDeAvaliacao.Single(static i => i.Rotulo == "Clareza").Id;
@@ -159,8 +158,7 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
         (await Executar(
             new DefinirEtapasCommand(
                 processo.Id,
-                [EntrevistaComItens(etapa.Id, [new(idDaClareza, "Objetividade", 4m), new(null, "Postura", 6m)])],
-                PrecondicaoIfMatch.Ausente),
+                [EntrevistaComItens(etapa.Id, [new(idDaClareza, "Objetividade", 4m), new(null, "Postura", 6m)])]),
             repository, unitOfWork)).IsSuccess.Should().BeTrue();
 
         processo.Etapas.Single().ItensDeAvaliacao.Should().HaveCount(2)
@@ -175,14 +173,13 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
         repository.ObterParaMutacaoAsync(processo.Id, Arg.Any<CancellationToken>()).Returns(processo);
         IUnitOfWork unitOfWork = Substitute.For<IUnitOfWork>();
 
-        Result<MutacaoAceita> resultado = await Executar(
+        Result resultado = await Executar(
             new DefinirEtapasCommand(
                 processo.Id,
                 [
                     EntrevistaComItens(null, [new(null, " ", 10m)]),
                     EntrevistaComItens(null, [new(null, "Clareza", 10m)], [new("Atendeu parcialmente", 0.5m)]),
-                ],
-                PrecondicaoIfMatch.Ausente),
+                ]),
             repository, unitOfWork);
 
         resultado.Errors.Select(static e => (e.Field, e.Error.Code)).Should().BeEquivalentTo(
@@ -204,8 +201,8 @@ public sealed class DefinirEtapasAvaliacaoHumanaTests
             .Returns(new TipoEtapaView(TipoRedacaoOrigemId, "NOTA_ENEM", "Nota do ENEM", null, AdmitePontuacao: true, AdmiteEliminacao: true, NotaDeOrigemNoEnem: true, ExigeCorrecaoIndependente: false, ConceitosAdmitidos: []));
         EtapaProcessoInput etapa = EntrevistaComItens(null, [new(null, "Clareza", 10m)]) with { FormaDeAvaliacao = null };
 
-        Result<MutacaoAceita> resultado = await Executar(
-            new DefinirEtapasCommand(processo.Id, [etapa], PrecondicaoIfMatch.Ausente),
+        Result resultado = await Executar(
+            new DefinirEtapasCommand(processo.Id, [etapa]),
             repository, Substitute.For<IUnitOfWork>(), reader);
 
         resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("etapas[0].itensDeAvaliacao");

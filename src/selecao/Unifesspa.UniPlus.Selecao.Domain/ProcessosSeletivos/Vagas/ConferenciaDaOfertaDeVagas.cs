@@ -5,10 +5,10 @@ using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
-/// O que vale entre as ofertas de um processo, sem consultar o estado da configuração: ao menos uma
+/// O que vale entre as ofertas de um processo, sem consultar a configuração declarada: ao menos uma
 /// oferta, cada curso uma vez só, a mesma ação quando indeferido e a mesma regra de aplicabilidade para
 /// a mesma modalidade em todas as ofertas, e o número de opções de curso que as ofertas comportam. A
-/// escrita e a restauração do envelope congelado perguntam isto sobre a mesma declaração e recebem as
+/// escrita e a reidratação do envelope congelado perguntam isto sobre a mesma declaração e recebem as
 /// mesmas causas. As recusas não têm campo (o corpo da operação é só a lista de ofertas) e se acumulam
 /// (ADR-0125), na ordem em que as conferências estão acima.
 /// </summary>

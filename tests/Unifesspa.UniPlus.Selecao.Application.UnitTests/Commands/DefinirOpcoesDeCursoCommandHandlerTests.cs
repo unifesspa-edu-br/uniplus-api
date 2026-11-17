@@ -25,8 +25,8 @@ public sealed class DefinirOpcoesDeCursoCommandHandlerTests
     {
         (IProcessoSeletivoRepository repository, IUnitOfWork unitOfWork) = NovosMocks(null, Guid.CreateVersion7());
 
-        Result<MutacaoAceita> result = await DefinirOpcoesDeCursoCommandHandler.Handle(
-            new DefinirOpcoesDeCursoCommand(Guid.CreateVersion7(), 1, PrecondicaoIfMatch.Ausente), repository, unitOfWork, CancellationToken.None);
+        Result result = await DefinirOpcoesDeCursoCommandHandler.Handle(
+            new DefinirOpcoesDeCursoCommand(Guid.CreateVersion7(), 1), repository, unitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
@@ -37,8 +37,8 @@ public sealed class DefinirOpcoesDeCursoCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS opções", out _);
         (IProcessoSeletivoRepository repository, IUnitOfWork unitOfWork) = NovosMocks(processo, processo.Id);
 
-        Result<MutacaoAceita> result = await DefinirOpcoesDeCursoCommandHandler.Handle(
-            new DefinirOpcoesDeCursoCommand(processo.Id, 1, PrecondicaoIfMatch.Ausente), repository, unitOfWork, CancellationToken.None);
+        Result result = await DefinirOpcoesDeCursoCommandHandler.Handle(
+            new DefinirOpcoesDeCursoCommand(processo.Id, 1), repository, unitOfWork, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
         processo.NumeroDeOpcoesDeCurso.Should().Be(1);
@@ -51,8 +51,8 @@ public sealed class DefinirOpcoesDeCursoCommandHandlerTests
         ProcessoSeletivo processo = ProcessoSeletivoConformeBuilder.Criar("PS opções", out _);
         (IProcessoSeletivoRepository repository, IUnitOfWork unitOfWork) = NovosMocks(processo, processo.Id);
 
-        Result<MutacaoAceita> result = await DefinirOpcoesDeCursoCommandHandler.Handle(
-            new DefinirOpcoesDeCursoCommand(processo.Id, 2, PrecondicaoIfMatch.Ausente), repository, unitOfWork, CancellationToken.None);
+        Result result = await DefinirOpcoesDeCursoCommandHandler.Handle(
+            new DefinirOpcoesDeCursoCommand(processo.Id, 2), repository, unitOfWork, CancellationToken.None);
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Should().ContainSingle(e =>
@@ -69,8 +69,8 @@ public sealed class DefinirOpcoesDeCursoCommandHandlerTests
         unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .Returns<Task<int>>(_ => throw new Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException("xmin"));
 
-        Result<MutacaoAceita> result = await DefinirOpcoesDeCursoCommandHandler.Handle(
-            new DefinirOpcoesDeCursoCommand(processo.Id, 1, PrecondicaoIfMatch.Ausente), repository, unitOfWork, CancellationToken.None);
+        Result result = await DefinirOpcoesDeCursoCommandHandler.Handle(
+            new DefinirOpcoesDeCursoCommand(processo.Id, 1), repository, unitOfWork, CancellationToken.None);
 
         result.Error!.Code.Should().Be("ProcessoSeletivo.ConflitoDeConcorrencia");
         unitOfWork.Received(1).DescartarAlteracoesNaoSalvas();

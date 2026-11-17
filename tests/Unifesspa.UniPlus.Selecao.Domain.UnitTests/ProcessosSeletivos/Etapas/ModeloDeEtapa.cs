@@ -21,6 +21,10 @@ internal sealed record ModeloDeEtapa(string Nome)
 
     internal bool NotaDoEnem { get; init; }
 
+    internal bool TipoAdmitePontuacao { get; init; } = true;
+
+    internal bool TipoAdmiteEliminacao { get; init; } = true;
+
     internal decimal? Peso { get; init; } = 1m;
 
     internal decimal? NotaMinima { get; init; }
@@ -124,10 +128,10 @@ internal sealed record ModeloDeEtapa(string Nome)
         }
     }
 
-    private IdentificacaoDaEtapa Identificacao() => new(Nome, Carater, Tipo(), Ordem, FaseCodigo);
+    internal IdentificacaoDaEtapa Identificacao() => new(Nome, Carater, Tipo(), Ordem, FaseCodigo);
 
-    private DeclaracaoDaAvaliacaoDaEtapa Avaliacao() => new(Peso, NotaMinima, NotaMaxima, Passo, Forma, RegraConsolidacao, Escala);
+    internal DeclaracaoDaAvaliacaoDaEtapa Avaliacao() => new(Peso, NotaMinima, NotaMaxima, Passo, Forma, RegraConsolidacao, Escala);
 
     private TipoEtapaSnapshot Tipo() => TipoEtapaSnapshot.Criar(
-        Guid.CreateVersion7(), "PROVA", "Prova", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: NotaDoEnem).Value!;
+        Guid.CreateVersion7(), "PROVA", "Prova", TipoAdmitePontuacao, TipoAdmiteEliminacao, notaDeOrigemNoEnem: NotaDoEnem).Value!;
 }

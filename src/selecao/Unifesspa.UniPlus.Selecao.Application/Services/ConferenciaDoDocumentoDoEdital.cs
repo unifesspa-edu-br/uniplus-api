@@ -7,9 +7,9 @@ using Domain.Interfaces;
 using Kernel.Results;
 
 /// <summary>
-/// A conferência do documento que o ato do edital referencia — na publicação, na retificação e no
-/// fechamento da retificação: existe, é do processo, está confirmado e foi enviado como edital — o
-/// que, pela finalidade, já o faz PDF. É a mesma recusa nos três, antes de qualquer escrita.
+/// A conferência do documento que o ato do edital referencia — na publicação e na
+/// retificação: existe, é do processo, está confirmado e foi enviado como edital — o
+/// que, pela finalidade, já o faz PDF. É a mesma recusa nas duas, antes de qualquer escrita.
 /// </summary>
 public static class ConferenciaDoDocumentoDoEdital
 {

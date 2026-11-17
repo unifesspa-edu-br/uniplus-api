@@ -27,7 +27,7 @@ internal static class PublicacaoDeTeste
         Assinante: "Diretor do CEPS",
         TipoAtoCodigo: "EDITAL_ABERTURA");
 
-    /// <summary>Processo publicado (para os cenários de Retificar e FecharRetificacao), com a mesma configuração conforme.</summary>
+    /// <summary>Processo publicado (para os cenários de Retificar), com a mesma configuração conforme.</summary>
     public static (ProcessoSeletivo Processo, VersaoConfiguracao VersaoAtual) ProcessoPublicado(byte[]? envelopeCongelado = null)
     {
         ProcessoSeletivo processo = NovoProcessoConforme();
@@ -43,16 +43,6 @@ internal static class PublicacaoDeTeste
         processo.DequeueDomainEvents();
 
         return versao.Value!;
-    }
-
-    /// <summary>Abre a sessão editorial de retificação sobre a versão vigente, sem nenhuma outra versão publicada.</summary>
-    public static void AbrirRetificacao(ProcessoSeletivo processo, VersaoConfiguracao versaoAtual)
-    {
-        Result<RascunhoRetificacao> rascunho = processo.AbrirRetificacao(
-            "Correção do prazo", versaoAtual, identificadorDaVersaoBase: null,
-            VersoesPublicadasDeTeste.SoAVigente(processo), "user-conta-1", Agora);
-        rascunho.IsSuccess.Should().BeTrue(rascunho.Error?.Message);
-        processo.DequeueDomainEvents();
     }
 
     public static DadosEdital DadosDoEdital() =>

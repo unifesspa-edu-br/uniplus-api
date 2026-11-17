@@ -35,7 +35,7 @@ public sealed class ObterProcessoSeletivoQueryHandlerAlgoritmoContagemTests
 
         if (algoritmo is not null)
         {
-            processo.DefinirAlgoritmoContagemPrazo(algoritmo, PrecondicaoIfMatch.Ausente)
+            processo.DefinirAlgoritmoContagemPrazo(algoritmo)
                 .IsSuccess.Should().BeTrue();
         }
 

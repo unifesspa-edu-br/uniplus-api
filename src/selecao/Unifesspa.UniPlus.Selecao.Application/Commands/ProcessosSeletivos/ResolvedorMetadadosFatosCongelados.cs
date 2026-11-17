@@ -20,8 +20,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Referencias;
 /// </summary>
 /// <remarks>
 /// Espelha <see cref="ConferenciaDeConformidadeLegal"/>/<see cref="ConferenciaDoTipoDeAto"/>
-/// em estilo: helper estático compartilhado pelos três handlers que congelam
-/// (<c>Publicar</c>, <c>Retificar</c>, <c>FecharRetificacao</c>) — os três precisam do
+/// em estilo: helper estático compartilhado pelos dois handlers que congelam
+/// (<c>Publicar</c> e <c>Retificar</c>) — os dois precisam do
 /// mesmo metadado congelado, pela mesma razão (qualquer um deles pode congelar uma versão
 /// com gatilho de documento vivo). Não faz I/O próprio: recebe o catálogo já lido pelo
 /// handler (uma leitura só por congelamento, compartilhada com a conferência de
@@ -83,7 +83,7 @@ internal static class ResolvedorMetadadosFatosCongelados
     private static Dictionary<string, MetadadoFatoCongelado> MetadadosDosFatos(
         ProcessoSeletivo processo, IReadOnlyDictionary<string, FatoCandidatoView> catalogo, IReadOnlyList<string> codigos)
     {
-        IReadOnlySet<(string Fato, string Valor)> valoresCitados = ReferenciasVivas.Vinculos(EstadoDaConfiguracao.De(processo)).Valores;
+        IReadOnlySet<(string Fato, string Valor)> valoresCitados = ReferenciasVivas.Vinculos(processo.Declaracao()).Valores;
 
         return codigos.ToDictionary(
             static codigo => codigo,

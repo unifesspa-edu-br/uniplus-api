@@ -77,7 +77,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = codigos.Length * 10, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", new string('a', 64)), Modalidades = modalidades },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
-        processo.DefinirDistribuicaoVagas([config], FatosDeModalidadeDeTeste.DoCatalogo, PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirDistribuicaoVagas([config], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
     }
 
     /// <summary>
@@ -95,7 +95,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         ConfiguracaoDerivacaoFato d1 = ConfiguracaoDerivacaoFato.Criar("D1", [Regra(0, "X", ("D2", true))]).Value!;
         ConfiguracaoDerivacaoFato d2 = ConfiguracaoDerivacaoFato.Criar("D2", [Regra(0, "Y", ("D1", true))]).Value!;
 
-        processo.DefinirRegrasDerivacao([d1, d2], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
+        processo.DefinirRegrasDerivacao([d1, d2]).IsSuccess.Should().BeTrue(
             "a definição isolada só barra código duplicado — o ciclo cruza duas configurações e passa aqui");
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().NotBeNull();
@@ -111,7 +111,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         ProcessoSeletivo processo = NovoProcesso();
 
         Result resultado = processo.DefinirRegrasDerivacao(
-            [ConfiguracaoDerivacaoFato.Criar(codigoFato, [Ancora(0, "AC")]).Value!], PrecondicaoIfMatch.Ausente);
+            [ConfiguracaoDerivacaoFato.Criar(codigoFato, [Ancora(0, "AC")]).Value!]);
 
         resultado.IsFailure.Should().BeTrue("as duas saem das modalidades ofertadas");
         resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.DerivacaoDaOferta);
@@ -124,7 +124,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
 
         ConfiguracaoDerivacaoFato d1 = ConfiguracaoDerivacaoFato.Criar("D1", [Regra(0, "X", ("BOGUS", true))]).Value!;
 
-        processo.DefinirRegrasDerivacao([d1], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue(
+        processo.DefinirRegrasDerivacao([d1]).IsSuccess.Should().BeTrue(
             "a definição isolada só valida forma e unicidade — não conhece o universo de fatos do processo");
 
         CondicoesDaCanonicalizacaoDeTeste.PrimeiraCausa(processo).Should().NotBeNull();
@@ -137,7 +137,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result resultado = processo.DefinirRegrasDerivacao([ConfigDerivado()], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirRegrasDerivacao([ConfigDerivado()]);
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         processo.RegrasDerivacao.Should().ContainSingle(c => c.CodigoFato == Derivado);
@@ -185,7 +185,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        Result resultado = processo.DefinirRegrasDerivacao([ConfigDerivado(), ConfigDerivado()], PrecondicaoIfMatch.Ausente);
+        Result resultado = processo.DefinirRegrasDerivacao([ConfigDerivado(), ConfigDerivado()]);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ConfiguracaoDerivacaoFatoErrorCodes.CodigoFatoDuplicado);
@@ -214,11 +214,11 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     public void Definir_SubstituiPorInteiro()
     {
         ProcessoSeletivo processo = NovoProcesso();
-        processo.DefinirRegrasDerivacao([ConfigDerivado()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([ConfigDerivado()]).IsSuccess.Should().BeTrue();
 
         ConfiguracaoDerivacaoFato outra = ConfiguracaoDerivacaoFato.Criar("OUTRO_DERIVADO",
             [Ancora(0, "X")]).Value!;
-        processo.DefinirRegrasDerivacao([outra], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([outra]).IsSuccess.Should().BeTrue();
 
         processo.RegrasDerivacao.Should().ContainSingle(c => c.CodigoFato == "OUTRO_DERIVADO");
     }
@@ -228,7 +228,7 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
     {
         ProcessoSeletivo processo = NovoProcesso();
 
-        processo.DefinirRegrasDerivacao([ConfigDerivado()], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([ConfigDerivado()]).IsSuccess.Should().BeTrue();
 
         ConfiguracaoDerivacaoFato config = processo.RegrasDerivacao.Single();
         config.ProcessoSeletivoId.Should().Be(processo.Id);
@@ -258,11 +258,11 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         [
             FatoColetado.Criar("PCD", 0, "PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, null, classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
             FatoColetado.Criar("CONCORRER_PCD", 1, "CONCORRER_PCD", TipoRenderizacao.SelecaoUnica, Obrigatoriedade.Nunca, [Precond("PCD")], classificacaoProtecao: "PESSOAL", hipoteseLegal: ProtecaoDoFatoDeTeste.HipoteseLegal, finalidadeTratamento: ProtecaoDoFatoDeTeste.Finalidade, descricao: ProtecaoDoFatoDeTeste.Descricao).Value!,
-        ], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        ]).IsSuccess.Should().BeTrue();
         OfertarModalidades(processo, ("AC", PredicadoDnf.SemClausula), ("AC_PCD", PredicadoDnf.CriarDeCondicoesAgrupadas(
             [(0, CondicaoDnf.Criar("CONCORRER_PCD", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)]).Value!));
 
-        Result<GrafoDependenciaConjunta> grafo = CitacoesDosFormularios.ConstruirGrafoDependencia(EstadoDaConfiguracao.De(processo));
+        Result<GrafoDependenciaConjunta> grafo = CitacoesDosFormularios.ConstruirGrafoDependencia(processo.Declaracao());
 
         grafo.IsSuccess.Should().BeTrue(grafo.Error?.Message);
         grafo.Value!.Nos.Should().Contain(n => n.Classe == ClasseNoGrafo.Fato && n.Codigo == "MODALIDADE");
@@ -274,9 +274,9 @@ public sealed class ProcessoSeletivoRegrasDerivacaoTests
         ProcessoSeletivo processo = NovoProcesso();
         // Cada ConfiguracaoDerivacaoFato é válida isoladamente (a factory não checa citação); o ciclo
         // D1↔D2 só emerge quando as arestas de derivação são consideradas juntas.
-        processo.DefinirRegrasDerivacao([DerivadoDe("D1", "D2"), DerivadoDe("D2", "D1")], PrecondicaoIfMatch.Ausente).IsSuccess.Should().BeTrue();
+        processo.DefinirRegrasDerivacao([DerivadoDe("D1", "D2"), DerivadoDe("D2", "D1")]).IsSuccess.Should().BeTrue();
 
-        Result<GrafoDependenciaConjunta> grafo = CitacoesDosFormularios.ConstruirGrafoDependencia(EstadoDaConfiguracao.De(processo));
+        Result<GrafoDependenciaConjunta> grafo = CitacoesDosFormularios.ConstruirGrafoDependencia(processo.Declaracao());
 
         grafo.IsFailure.Should().BeTrue();
         grafo.Error!.Code.Should().Be(GrafoDependenciaConjuntaErrorCodes.GrafoConjuntoComCiclo);
