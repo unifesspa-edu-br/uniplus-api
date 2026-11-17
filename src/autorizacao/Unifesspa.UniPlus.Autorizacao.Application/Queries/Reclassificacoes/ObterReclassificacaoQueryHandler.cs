@@ -28,16 +28,25 @@ public static class ObterReclassificacaoQueryHandler
         ArgumentNullException.ThrowIfNull(detalhe);
 
         Result<Identidade?> autorizada = await autorizacao.AutorizarLeituraAsync(query.Id, verificador, cancellationToken).ConfigureAwait(false);
-        if (autorizada.IsFailure)
-        {
-            return Result<ReclassificacaoDto>.Failure(autorizada.Error!);
-        }
 
-        if (await reclassificacoes.ObterPerfilIdAsync(query.Id, cancellationToken).ConfigureAwait(false) is null)
+        return autorizada.IsFailure
+            ? Result<ReclassificacaoDto>.Failure(autorizada.Error!)
+            : await DetalheDaExistenteAsync(query.Id, autorizada.Value, reclassificacoes, detalhe, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>O detalhe para o leitor autorizado; a reclassificação inexistente é recusada antes de se montar o detalhe.</summary>
+    private static async Task<Result<ReclassificacaoDto>> DetalheDaExistenteAsync(
+        Guid id,
+        Identidade? leitor,
+        IReclassificacaoRepository reclassificacoes,
+        DetalheDaReclassificacao detalhe,
+        CancellationToken cancellationToken)
+    {
+        if (await reclassificacoes.ObterPerfilIdAsync(id, cancellationToken).ConfigureAwait(false) is null)
         {
             return Result<ReclassificacaoDto>.Failure(ReclassificacaoErros.NaoEncontrada());
         }
 
-        return await detalhe.ObterAsync(query.Id, autorizada.Value, cancellationToken).ConfigureAwait(false);
+        return await detalhe.ObterAsync(id, leitor, cancellationToken).ConfigureAwait(false);
     }
 }
