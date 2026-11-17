@@ -13,6 +13,7 @@ internal static class ErrosDoCronograma
     internal static IEnumerable<KeyValuePair<string, DomainErrorMapping>> Mapeamentos() =>
     [
         .. EstruturaDoCronograma(),
+        .. HomologacaoDasInscricoesPorOrigem(),
         .. EtapasNoCronograma(),
         .. DeclaracaoDaFase(),
         .. RecorteDeCompetencia(),
@@ -38,6 +39,18 @@ internal static class ErrosDoCronograma
         new("ProcessoSeletivo.SobreposicaoDeJanelasNaoPermitida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.sobreposicao_de_janelas_nao_permitida", "Os períodos de duas fases coincidem em parte, e o cadastro não permite essa coincidência")),
         new("ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.inscricao_propria_sem_fase_de_coleta", "A origem dos candidatos é inscrição própria, e nenhuma fase coleta inscrição")),
         new("ProcessoSeletivo.VagasSemFaseQueProduzResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.vagas_sem_fase_que_produz_resultado", "Há vagas ofertadas, e nenhuma fase do cronograma produz resultado")),
+    ];
+
+    /// <summary>
+    /// A homologação das inscrições que cada origem de candidatos exige do cronograma: a fase que tem a regra e, na importação
+    /// externa, o ciclo de recurso dela. Todos 422.
+    /// </summary>
+    private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> HomologacaoDasInscricoesPorOrigem() =>
+    [
+        new("ProcessoSeletivo.InscricaoPropriaSemHomologacaoDasInscricoes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.inscricao_propria_sem_homologacao_das_inscricoes", "O processo com inscrição própria não tem fase que homologa as inscrições")),
+        new("ProcessoSeletivo.ImportacaoDeExameSemHomologacaoDasInscricoes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.importacao_de_exame_sem_homologacao_das_inscricoes", "O processo que usa a nota do ENEM não tem fase que homologa as inscrições")),
+        new("ProcessoSeletivo.ImportacaoExternaSemHomologacaoDasInscricoes", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.importacao_externa_sem_homologacao_das_inscricoes", "O processo de importação externa não tem fase que homologa as inscrições")),
+        new("ProcessoSeletivo.ImportacaoExternaSemJanelaDeRecurso", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.importacao_externa_sem_janela_de_recurso", "A homologação da importação externa não tem preliminar, período de recurso e definitivo")),
     ];
 
     /// <summary>

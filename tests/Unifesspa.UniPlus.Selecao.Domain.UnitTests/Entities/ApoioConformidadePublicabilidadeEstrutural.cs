@@ -45,7 +45,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
 
     /// <summary>Só os itens de <see cref="ProcessoSeletivo.AvaliarConformidade"/> que se espera ver vermelhos.</summary>
     internal static void SoEstesItensVermelhos(ProcessoSeletivo processo, params string[] itensVermelhos) =>
-        SoEstesItensVermelhos(processo, ContextoDeContagemDePrazos.SemCalendario, itensVermelhos);
+        SoEstesItensVermelhos(processo, ContagemDePrazosDeTeste.ComCalendarioVigente, itensVermelhos);
 
     internal static void SoEstesItensVermelhos(
         ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto, params string[] itensVermelhos) =>
@@ -108,8 +108,8 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
                 new OrigemCanonicaDaFase(
                     Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
                 new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-                new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
-                bancasRequeridas: []).Value!],
+                HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(),
+                bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!],
             []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas(
             [EtapaDeProvaObjetiva("Prova", CaraterEtapa.Classificatoria, 1, 1m, null, "RESULTADO_FINAL")])
@@ -141,25 +141,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     /// </summary>
     internal static ProcessoSeletivo ProcessoComCotaEAcaoAfirmativa(PredicadoDnf regraDasCotas, PredicadoDnf regraDaAcaoAfirmativa)
     {
-        ModalidadeSelecionada acPcd = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
-            ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.DestinoUnico, ModalidadesFederaisLei12711.Ac, null, null, regraDaAcaoAfirmativa, null, "base legal", 2).Value!;
-        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada
-            {
-                VagasOfertadasBase = 40,
-                PercentualDaReservaLegal = 0.5m,
-                RegraDeDistribuicao = RegraLei12711(),
-                RegraDeAjuste = RegraAjusteArt11(),
-                ReferenciaDemografica = Demografica(),
-                Modalidades = [
-                .. OrigensFederais.Select(codigo =>
-                    Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, quantidadeDeclarada: null, regra: regraDasCotas)),
-                Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, quantidadeDeclarada: null),
-                acPcd,
-            ]
-            },
-            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
+        ConfiguracaoDistribuicaoVagas oferta = OfertaComCotasEAcaoAfirmativa(regraDasCotas, regraDaAcaoAfirmativa);
 
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
         processo.DefinirCascataRemanejamento(CascataCompleta()).IsSuccess.Should().BeTrue();
@@ -187,7 +169,7 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
         "001/2026", new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)), new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)), Guid.CreateVersion7()).Value!;
 
     internal static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) =>
-        Publicar(processo, ContextoDeContagemDePrazos.SemCalendario);
+        Publicar(processo, ContagemDePrazosDeTeste.ComCalendarioVigente);
 
     internal static Result<VersaoConfiguracao> Publicar(
         ProcessoSeletivo processo, ContextoDeContagemDePrazos contexto) => processo.Publicar(
@@ -235,19 +217,29 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     /// <summary>Fase mínima e coerente: não agrupa etapas (dispensável sem prova), produz resultado, não coleta inscrição.</summary>
     internal static FaseCronograma FaseBase(
         bool coletaInscricao = false, bool coletaSolicitacaoIsencao = false, Guid? faseCanonicaOrigemId = null,
-        bool semUnidadeResponsavel = false) => FaseCronograma.Criar(
+        bool semUnidadeResponsavel = false) => FaseQueHomologa(
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(), [], coletaInscricao, coletaSolicitacaoIsencao, faseCanonicaOrigemId, semUnidadeResponsavel);
+
+    /// <summary>A fase que homologa as inscrições de quem importa os candidatos: com o resultado preliminar, a janela de recurso e o definitivo.</summary>
+    internal static FaseCronograma FaseBaseDaImportacao(Guid? faseCanonicaOrigemId = null) => FaseQueHomologa(
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(), [BancasDeTeste.DeRecursosDaFase()], faseCanonicaOrigemId: faseCanonicaOrigemId);
+
+    private static FaseCronograma FaseQueHomologa(
+        PublicacoesDaFase publicacoes, IReadOnlyList<BancaRequerida> bancas, bool coletaInscricao = false, bool coletaSolicitacaoIsencao = false,
+        Guid? faseCanonicaOrigemId = null, bool semUnidadeResponsavel = false) => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             faseCanonicaOrigemId ?? Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, coletaInscricao, coletaSolicitacaoIsencao),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
-        bancasRequeridas: []).Value!;
+        publicacoes,
+        bancas).Value!;
 
     /// <summary>
     /// Processo estruturalmente conforme às QUATRO conferências estruturais: sem etapa (ImportacaoExterna +
     /// ClassificacaoImportada dispensam prova), atendimento, distribuição, classificação e
     /// cronograma coerente com uma única fase que produz resultado. Sem cascata (nenhuma
     /// modalidade SegueCascata) e sem exigências/regras de derivação/fatos coletados — as quatro
-    /// conferências ficam vazias/Ok até que o teste acrescente a única razão que quer isolar.
+    /// conferências ficam vazias/Ok até que o teste acrescente a única razão que quer isolar. A taxa vem declarada, porque publicar sem
+    /// declará-la é recusado, e a convenção de contagem também, porque a janela de recurso da importação a exige.
     /// </summary>
     internal static ProcessoSeletivo ProcessoConforme(IReadOnlyList<ConfiguracaoDistribuicaoVagas>? distribuicao = null)
     {
@@ -258,10 +250,9 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
         processo.DefinirDistribuicaoVagas(distribuicao ?? [DistribuicaoAmpla(10)], FatosDeModalidadeDeTeste.DoCatalogo)
             .IsSuccess.Should().BeTrue();
         processo.DefinirClassificacao(ClassificacaoImportada()).IsSuccess.Should().BeTrue();
-        processo.DefinirCronogramaFases([FaseBase()], []).IsSuccess.Should().BeTrue();
-        // Publicar sem declarar cobrança de taxa é recusado: declarada aqui para manter as quatro conferências estruturais
-        // vazias até o teste acrescentar a única razão que quer isolar.
+        processo.DefinirCronogramaFases([FaseBaseDaImportacao()], []).IsSuccess.Should().BeTrue();
         DeclararTaxaSemCobranca(processo);
+        ContagemDePrazosDeTeste.DeclararConvencao(processo);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         return processo;
@@ -364,4 +355,41 @@ internal static class ApoioConformidadePublicabilidadeEstrutural
     internal static ConfiguracaoDistribuicaoVagas OfertaFederalCompleta() => ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
         new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 0.5m, RegraDeDistribuicao = RegraLei12711(), RegraDeAjuste = RegraAjusteArt11(), ReferenciaDemografica = Demografica(), Modalidades = AsOitoFederaisMaisAc() },
         new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
+
+    private static ConfiguracaoDistribuicaoVagas OfertaComCotasEAcaoAfirmativa(PredicadoDnf regraDasCotas, PredicadoDnf regraDaAcaoAfirmativa)
+    {
+        ModalidadeSelecionada acPcd = ModalidadeDePcdDaAmpla(regraDaAcaoAfirmativa);
+        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada
+            {
+                VagasOfertadasBase = 40,
+                PercentualDaReservaLegal = 0.5m,
+                RegraDeDistribuicao = RegraLei12711(),
+                RegraDeAjuste = RegraAjusteArt11(),
+                ReferenciaDemografica = Demografica(),
+                Modalidades = ModalidadesComCotasEAcaoAfirmativa(regraDasCotas, acPcd),
+            },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
+        return oferta;
+    }
+
+
+    private static ModalidadeSelecionada ModalidadeDePcdDaAmpla(PredicadoDnf regraDaAcaoAfirmativa)
+    {
+        ModalidadeSelecionada acPcd = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "AC_PCD", null, NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.RetiradaDeOutraModalidade,
+            ModalidadesFederaisLei12711.Ac, RegraRemanejamentoModalidade.DestinoUnico, ModalidadesFederaisLei12711.Ac, null, null, regraDaAcaoAfirmativa, null, "base legal", 2).Value!;
+        return acPcd;
+    }
+
+
+    private static IReadOnlyList<ModalidadeSelecionada> ModalidadesComCotasEAcaoAfirmativa(
+        PredicadoDnf regraDasCotas, ModalidadeSelecionada acPcd) =>
+    [
+        .. OrigensFederais.Select(codigo =>
+            Modalidade(codigo, NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, quantidadeDeclarada: null, regra: regraDasCotas)),
+        Modalidade(ModalidadesFederaisLei12711.Ac, NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, quantidadeDeclarada: null),
+        acPcd,
+    ];
+
 }

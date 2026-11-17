@@ -62,7 +62,7 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
         bancasRequeridas: []).Value!;
 
     /// <summary>
@@ -71,10 +71,24 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
     /// </summary>
     private static ProcessoSeletivo ProcessoMinimo(ConfiguracaoClassificacao classificacao, bool etapaDeNotaDoEnem)
     {
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            "PS BaseadoEmEnem", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = NovoProcessoPsiq();
 
+        DefinirCronogramaEEtapa(processo, etapaDeNotaDoEnem);
+
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+
+        processo.DefinirDistribuicaoVagas([OfertaDaAreaTecnologica()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+
+        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
+
+        DefinirInscricao(processo, classificacao.BaseadoEmEnem);
+
+        return processo;
+    }
+
+    private static void DefinirCronogramaEEtapa(ProcessoSeletivo processo, bool etapaDeNotaDoEnem)
+    {
         processo.DefinirCronogramaFases([
             FaseDeResultadoFinal(),
         ], []).IsSuccess.Should().BeTrue();
@@ -83,10 +97,11 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
                 new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(new Guid("019fee1e-7000-7000-8000-000000000001"), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: etapaDeNotaDoEnem).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
                 new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: etapaDeNotaDoEnem ? null : 10m, PassoDoLancamento: null, FormaDeAvaliacao: etapaDeNotaDoEnem ? null : FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
         ]).IsSuccess.Should().BeTrue();
+    }
 
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
+    private static ConfiguracaoDistribuicaoVagas OfertaDaAreaTecnologica()
+    {
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada
             {
@@ -94,19 +109,24 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
                 PercentualDaReservaLegal = 1m,
                 RegraDeDistribuicao = CorpusEnvelope.Regra(RegraDistribuicaoVagasCodigo.Institucional, '1'),
                 Modalidades = [
-                ModalidadeSelecionada.Criar(
-                    Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla,
-                    ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null, RegraRemanejamentoModalidade.Nenhuma,
-                    null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!,
+                ModalidadeAmpla(),
             ]
             },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = ("TECNOLOGICA", "Tecnológica"), OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
-        processo.DefinirDistribuicaoVagas([distribuicao], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        return distribuicao;
+    }
 
-        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
 
+    private static ModalidadeSelecionada ModalidadeAmpla() => ModalidadeSelecionada.Criar(
+                    Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla,
+                    ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null, RegraRemanejamentoModalidade.Nenhuma,
+                    null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+
+
+    private static void DefinirInscricao(ProcessoSeletivo processo, bool baseadoEmEnem)
+    {
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-        if (classificacao.BaseadoEmEnem)
+        if (baseadoEmEnem)
         {
             processo.DefinirItens([FormularioDeTeste.CampoDaEdicaoDoEnem(0)]).IsSuccess.Should().BeTrue();
         }
@@ -115,7 +135,16 @@ public sealed class EnvelopeCodecEnemEOpcoesTests
         processo.DefinirTaxaInscricao(
             ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
+    }
+
+
+    private static ProcessoSeletivo NovoProcessoPsiq()
+    {
+        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
+            "PS BaseadoEmEnem", TiposDeProcessoDeTeste.PSIQ, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
+            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
 
         return processo;
     }
+
 }

@@ -20,6 +20,10 @@ public sealed record RegraDeHomologacaoDasInscricoes
 
     public bool HomologaTodaInscricaoEnviada => Alternativas.Count == 0;
 
+    /// <summary>Se alguma alternativa tem a condição de resultado no retorno do INEP.</summary>
+    public bool TemConfirmacaoDoInep => Alternativas.Any(static alternativa =>
+        alternativa.Condicoes.Any(static condicao => condicao.Tipo == TipoDeCondicaoDeHomologacao.ResultadoNoRetornoDoInep));
+
     /// <summary>Se a outra regra aponta o mesmo resultado e tem as mesmas alternativas, na mesma ordem: a ordem muda os motivos da inscrição.</summary>
     public bool MesmoConteudo(RegraDeHomologacaoDasInscricoes outra)
     {

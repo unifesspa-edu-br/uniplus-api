@@ -30,7 +30,7 @@ internal static class ProcessoSeletivoConformeBuilder
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
         bancasRequeridas).Value!;
 
     public static ProcessoSeletivo Criar(string nome, out Guid faseId) => Criar(nome, [], out faseId);
@@ -102,24 +102,27 @@ internal static class ProcessoSeletivoConformeBuilder
         (string? Codigo, string? Rotulo)? grupoAreaEnem = null,
         Guid? ofertaCursoOrigemId = null)
     {
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            modalidadeOrigemId: Guid.CreateVersion7(),
-            codigo: "AC",
-            descricao: null,
-            naturezaLegal: NaturezaLegalModalidade.Ampla,
-            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            composicaoOrigemCodigo: null,
-            regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-            remanejamentoDestino: null,
-            remanejamentoPar: null,
-            remanejamentoFallback: null,
-            regraDeAplicabilidade: regraDeAplicabilidade ?? PredicadoDnf.SemClausula,
-            acaoQuandoIndeferido: null,
-            baseLegal: "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
+        ModalidadeSelecionada modalidade = ModalidadeDeAmplaConcorrencia(regraDeAplicabilidade);
 
         return ConfiguracaoDistribuicaoVagas.Criar(ofertaCursoOrigemId ?? Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
             new FatosDaOfertaNoCadastro { GrupoAreaEnem = grupoAreaEnem, OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
     }
+
+    private static ModalidadeSelecionada ModalidadeDeAmplaConcorrencia(PredicadoDnf? regraDeAplicabilidade)
+    {
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
+            modalidadeOrigemId: Guid.CreateVersion7(),
+            codigo: "AC",
+            descricao: null, naturezaLegal: NaturezaLegalModalidade.Ampla,
+            composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
+            composicaoOrigemCodigo: null, regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+            remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+            regraDeAplicabilidade: regraDeAplicabilidade ?? PredicadoDnf.SemClausula,
+            acaoQuandoIndeferido: null,
+            baseLegal: "Res. Unifesspa 532/2021",
+            quantidadeDeclarada: 40).Value!;
+        return modalidade;
+    }
+
 }

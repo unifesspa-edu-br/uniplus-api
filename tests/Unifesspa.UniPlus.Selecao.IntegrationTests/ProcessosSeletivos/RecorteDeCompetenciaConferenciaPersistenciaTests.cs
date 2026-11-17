@@ -291,8 +291,8 @@ public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFix
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
                 UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(
-                Produtos: [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: RegraDeRecurso(preliminar.Id)),
+            HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(
+                [preliminar, ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], RegraDeRecurso(preliminar.Id)),
             bancasRequeridas: [.. BancasDoMesmoTipoComRecorteDistinto(), BancasDeTeste.DeRecursosDaFase()]).Value!;
     }
 
@@ -321,5 +321,6 @@ public sealed class RecorteDeCompetenciaConferenciaPersistenciaTests : IClassFix
                 AdmiteInstanciaSuperior: false,
                 SuspensividadeSegundaInstanciaValor: null,
                 SuspensividadeSegundaInstanciaUnidade: null),
-            produtoPreliminarId).Value!;
+            produtoPreliminarId,
+            HomologacaoDasInscricoesDeTeste.ProcedimentosDaHomologacao()).Value!;
 }

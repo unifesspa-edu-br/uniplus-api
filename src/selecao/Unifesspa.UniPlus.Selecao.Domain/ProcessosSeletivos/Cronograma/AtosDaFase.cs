@@ -16,6 +16,8 @@ public sealed record AtosDaFase
         TiposDeDecisao = TiposDeDecisaoDeclarados.Canonicos(publicacoes.TiposDeDecisao);
         RegraDeHomologacao = publicacoes.RegraDeHomologacao;
         Produtos = [.. publicacoes.Produtos.Select(static (produto, posicao) => (posicao, produto.AtoCodigo, produto.Papel))];
+        AtoDaAncoraDoRecurso = publicacoes.Produtos
+            .FirstOrDefault(produto => produto.Id == publicacoes.RegraRecurso?.ProdutoAncoraId && produto.Papel == PapelProdutoFase.Preliminar)?.AtoCodigo;
     }
 
     public bool EmiteParecerIndividual { get; }
@@ -28,11 +30,18 @@ public sealed record AtosDaFase
 
     public IReadOnlyList<(int Posicao, string AtoCodigo, PapelProdutoFase? Papel)> Produtos { get; }
 
+    /// <summary>O tipo de ato do produto preliminar em que a regra de recurso ancora o prazo; ausente quando a fase não admite recurso ou a âncora não é um preliminar da fase.</summary>
+    public string? AtoDaAncoraDoRecurso { get; }
+
     public bool ProduzResultado => CicloRecursal.ProduzResultado(ParesDeAto);
 
     public bool PublicaResultadoPreliminar => CicloRecursal.PublicaComPapel(ParesDeAto, PapelProdutoFase.Preliminar);
 
     public bool PublicaResultadoDefinitivo => CicloRecursal.PublicaComPapel(ParesDeAto, PapelProdutoFase.Definitivo);
+
+    /// <summary>Se a fase publica o tipo de ato com algum papel: é produto da fase, e não só um ato que ela cita.</summary>
+    public bool PublicaComPapel(string atoCodigo) =>
+        Produtos.Any(produto => produto.Papel is not null && string.Equals(produto.AtoCodigo, atoCodigo, StringComparison.Ordinal));
 
     public bool PublicaResultadoDefinitivoDe(string atoCodigo) => CicloRecursal.PublicaDefinitivoDe(ParesDeAto, atoCodigo);
 

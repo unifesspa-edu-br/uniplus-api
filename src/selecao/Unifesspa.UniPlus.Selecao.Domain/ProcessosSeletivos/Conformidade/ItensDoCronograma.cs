@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfigura
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
@@ -37,6 +38,7 @@ internal static class ItensDoCronograma
         EtapasNoCronograma.ItemDaFaseQueAgrupaEtapas(cronograma, etapas),
         EtapasNoCronograma.ItemDaFaseDeclaradaPelaEtapa(cronograma, etapas),
         cronograma.ItemDaInscricaoPropria(configuracao.Identidade.OrigemCandidatos),
+        .. ExigenciaDaHomologacaoPorOrigem.Itens(configuracao.Identidade.OrigemCandidatos, cronograma, etapas),
         .. cronograma.ItensDaCompletude(contexto.FusoInstitucional),
         cronograma.ItemDasVagasOfertadas(configuracao.Vagas.HaVagasOfertadas),
     ];

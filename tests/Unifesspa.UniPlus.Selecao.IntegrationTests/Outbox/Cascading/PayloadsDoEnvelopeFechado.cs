@@ -105,7 +105,24 @@ internal static class PayloadsDoEnvelopeFechado
         emiteParecerIndividual = true,
         bancasRequeridas = new object[] { BancaDoTipo(catalogos.TipoBancaId) },
         regraRecurso = (object?)null,
+        regraDeHomologacao = RegraDeHomologacaoDoResultado(),
         unidadeResponsavelId = catalogos.UnidadeId,
+    };
+
+    // A fase que publica o resultado homologa as inscrições: aponta o resultado dela e confirma o retorno do INEP.
+    internal static object RegraDeHomologacaoDoResultado() => new
+    {
+        resultadoAtoCodigo = CodigoAtoResultado,
+        alternativas = new[]
+        {
+            new
+            {
+                condicoes = new[]
+                {
+                    new { tipo = "RESULTADO_NO_RETORNO_DO_INEP", edicaoDoExame = 2026, motivoDesfavoravelCodigo = (string?)null, enquadramento = (object?)null },
+                },
+            },
+        },
     };
 
     internal static object[] ProdutosDoResultado() =>

@@ -106,11 +106,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
         EtapaProcesso etapa = ComRecursoNaEtapa(processo);
         processo.DefinirAlgoritmoContagemPrazo(Algoritmo()).IsSuccess.Should().BeTrue();
 
-        // O estado só existe em processo carregado do banco: DefinirRecursos o recusa na gravação.
-        Guid definitivo = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Definitivo).Id;
-        typeof(EtapaProcesso).GetField("_recursos", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
-            .GetValue(etapa).Should().BeAssignableTo<List<RecursoDaEtapa>>().Which
-            .Add(Janela(definitivo));
+        AdicionarRecursoNoResultadoDefinitivo(etapa);
 
         Vermelhos(processo, ComCalendario()).Should().Equal("cronograma_ancora_do_recurso_da_etapa");
 
@@ -147,9 +143,9 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             ProdutoDaEtapa.Criar("RESULTADO_PROVA", PapelProdutoFase.Definitivo),
         ]).IsSuccess.Should().BeTrue();
 
-        Vermelhos(processo, ContextoDeContagemDePrazos.SemCalendario).Should().Equal("cronograma_conclusao_do_ciclo_recursal");
+        Vermelhos(processo, ContagemDePrazosDeTeste.ComCalendarioVigente).Should().Equal("cronograma_conclusao_do_ciclo_recursal");
 
-        Result<VersaoConfiguracao> publicar = Publicar(processo, ContextoDeContagemDePrazos.SemCalendario);
+        Result<VersaoConfiguracao> publicar = Publicar(processo, ContagemDePrazosDeTeste.ComCalendarioVigente);
 
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.EtapaComPreliminarSemDefinitivo");
@@ -213,7 +209,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
         new DecisoesDeCronogramaDaFase(
             1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(produtos),
         bancasRequeridas: []).Value!;
 
     [Fact(DisplayName = "Tipo classificado como resultado declarado sem papel: item vermelho e a publicação recusa")]
@@ -224,9 +220,9 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             ProdutoDaFase.Criar("GABARITO", papel: null)));
         TiposDeAtoUnicosPorObjeto tipos = Catalogo("GABARITO", ehResultado: true, congela: false);
 
-        Vermelhos(processo, ContextoDeContagemDePrazos.SemCalendario, tipos).Should().Equal("cronograma_resultado_declarado_com_papel");
+        Vermelhos(processo, ContagemDePrazosDeTeste.ComCalendarioVigente, tipos).Should().Equal("cronograma_resultado_declarado_com_papel");
 
-        Result<VersaoConfiguracao> publicar = Publicar(processo, ContextoDeContagemDePrazos.SemCalendario, tipos);
+        Result<VersaoConfiguracao> publicar = Publicar(processo, ContagemDePrazosDeTeste.ComCalendarioVigente, tipos);
 
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.ResultadoDeclaradoSemPapel");
@@ -238,9 +234,9 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
         ProcessoSeletivo processo = ProcessoConforme(FaseComProdutos(ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
         TiposDeAtoUnicosPorObjeto tipos = Catalogo("RESULTADO_CLASSIFICACAO", ehResultado: true, congela: true);
 
-        Vermelhos(processo, ContextoDeContagemDePrazos.SemCalendario, tipos).Should().Equal("cronograma_tipo_que_congela_nao_eh_resultado");
+        Vermelhos(processo, ContagemDePrazosDeTeste.ComCalendarioVigente, tipos).Should().Equal("cronograma_tipo_que_congela_nao_eh_resultado");
 
-        Result<VersaoConfiguracao> publicar = Publicar(processo, ContextoDeContagemDePrazos.SemCalendario, tipos);
+        Result<VersaoConfiguracao> publicar = Publicar(processo, ContagemDePrazosDeTeste.ComCalendarioVigente, tipos);
 
         publicar.IsFailure.Should().BeTrue();
         publicar.Error!.Code.Should().Be("ProcessoSeletivo.TipoQueCongelaDeclaradoComoResultado");
@@ -253,8 +249,18 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
             ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo),
             ProdutoDaFase.Criar("COMUNICADO", papel: null)));
 
-        Vermelhos(processo, ContextoDeContagemDePrazos.SemCalendario, Catalogo("COMUNICADO", ehResultado: false, congela: false))
+        Vermelhos(processo, ContagemDePrazosDeTeste.ComCalendarioVigente, Catalogo("COMUNICADO", ehResultado: false, congela: false))
             .Should().BeEmpty();
-        Vermelhos(processo, ContextoDeContagemDePrazos.SemCalendario).Should().BeEmpty();
+        Vermelhos(processo, ContagemDePrazosDeTeste.ComCalendarioVigente).Should().BeEmpty();
     }
+
+    private static void AdicionarRecursoNoResultadoDefinitivo(EtapaProcesso etapa)
+    {
+        // O estado só existe em processo carregado do banco: DefinirRecursos o recusa na gravação.
+        Guid definitivo = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Definitivo).Id;
+        typeof(EtapaProcesso).GetField("_recursos", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)!
+            .GetValue(etapa).Should().BeAssignableTo<List<RecursoDaEtapa>>().Which
+            .Add(Janela(definitivo));
+    }
+
 }

@@ -115,12 +115,6 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     public RegraDeHomologacaoDasInscricoes? RegraDeHomologacao { get; private set; }
 
     /// <summary>
-    /// Se a fase homologa as inscrições: declara o tipo de decisão de homologação das inscrições e tem a regra.
-    /// </summary>
-    internal bool HomologaAsInscricoes =>
-        RegraDeHomologacao is not null && _tiposDeDecisao.Contains(TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes);
-
-    /// <summary>
     /// Se a fase declara ao menos um produto com papel: decide o piso mínimo havendo vagas e é
     /// pré-condição de recurso.
     /// </summary>
@@ -138,10 +132,6 @@ public sealed class FaseCronograma : EntityBase, IParteDoProcesso
     /// </summary>
     public IEnumerable<string> TiposComCicloAberto() =>
         CicloRecursal.TiposComCicloAberto(ParesDeAto());
-
-    /// <summary>Os tipos de ato cujo preliminar e cujo definitivo a própria fase publica.</summary>
-    internal IEnumerable<string> TiposFechadosNaPropriaFase() =>
-        CicloRecursal.TiposFechadosNoProprioLugar(ParesDeAto());
 
     private IEnumerable<(string AtoCodigo, PapelProdutoFase? Papel)> ParesDeAto() =>
         _produtos.Select(static p => (p.AtoCodigo, p.Papel));

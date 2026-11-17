@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -9,20 +10,19 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal static class AvisosDaHomologacao
 {
     /// <summary>
-    /// Um aviso por fase cuja regra não tem condição alguma, na ordem recebida. Com nota importada de exame
-    /// não há aviso: a regra vazia já é recusada pela conferência da confirmação do INEP.
+    /// Um aviso por fase cuja regra não tem condição alguma, na ordem do cronograma. A regra a que a leitura recusou alguma
+    /// alternativa não é dada como vazia: não se sabe o que o autor escreveu nela.
     /// </summary>
-    internal static IReadOnlyList<AvisoConformidade> Da(
-        IEnumerable<(string CodigoDaFase, RegraDeHomologacaoDasInscricoes Regra)> regrasPorFase,
-        bool usaNotaImportadaDeExame)
+    internal static IReadOnlyList<AvisoConformidade> Da(CronogramaDoProcesso cronograma)
     {
-        ArgumentNullException.ThrowIfNull(regrasPorFase);
+        ArgumentNullException.ThrowIfNull(cronograma);
 
-        return usaNotaImportadaDeExame
-            ? []
-            : [.. regrasPorFase
-                .Where(static fase => fase.Regra.HomologaTodaInscricaoEnviada)
-                .Select(static fase => AvisoDaFase(fase.CodigoDaFase))];
+        return
+        [
+            .. cronograma.Fases
+                .Where(static fase => fase.Atos.RegraDeHomologacao is { HomologaTodaInscricaoEnviada: true } && !fase.ParteRecusadaEm(FaseDeclarada.CampoDaRegraDeHomologacao))
+                .Select(static fase => AvisoDaFase(fase.Codigo)),
+        ];
     }
 
     private static AvisoConformidade AvisoDaFase(string codigoDaFase) => new(

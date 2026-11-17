@@ -45,20 +45,12 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
         processo.DefinirConfiguracaoDivulgacao(
             ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], "Transparência do resultado — decisão CEPS 12/2026.").Value!).IsSuccess.Should().BeTrue();
 
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        await PersistirAsync(processo);
 
         await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository leitura = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
-        ProcessoSeletivo relido = (await leitura.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
+        ProcessoSeletivo relido = await RelerAsync(readContext, processo.Id);
 
-        relido.ConfiguracaoDivulgacao.Should().NotBeNull(
-            "a configuração sobrevive ao SaveChanges e ao reload — sem o Include em ComConfiguracao ela nasceria " +
-            "null em todo carregamento novo do agregado");
+        relido.ConfiguracaoDivulgacao.Should().NotBeNull();
         relido.ConfiguracaoDivulgacao!.ProcessoSeletivoId.Should().Be(processo.Id);
         relido.ConfiguracaoDivulgacao.CamposPublicos.Should().Equal("nome", "numero_inscricao");
         relido.ConfiguracaoDivulgacao.Justificativa.Should().Be("Transparência do resultado — decisão CEPS 12/2026.");
@@ -73,39 +65,12 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
         Guid idPrimeiraVersao = processo.ConfiguracaoDivulgacao!.Id;
 
         Guid processoId = processo.Id;
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        await PersistirAsync(processo);
 
-        // Segunda gravação: substitui a configuração inteira por OUTRA — conteúdo
-        // diferente (agora com "nome" e justificativa, sem "nome_abreviado").
-        await using (UniPlusDbContext sessao = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(sessao);
-            ProcessoSeletivo tracked = (await repository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
-            tracked.DefinirConfiguracaoDivulgacao(
-                ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], "Justificativa da segunda versão.").Value!).IsSuccess.Should().BeTrue();
-            await sessao.SaveChangesAsync(CancellationToken.None);
-        }
+        await SubstituirConfiguracaoAsync(processoId,
+            ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome"], "Justificativa da segunda versão.").Value!);
 
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository leitura = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
-        ProcessoSeletivo relido = (await leitura.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
-
-        relido.ConfiguracaoDivulgacao.Should().NotBeNull();
-        relido.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal("nome", "numero_inscricao");
-        relido.ConfiguracaoDivulgacao.Justificativa.Should().Be("Justificativa da segunda versão.");
-
-        int linhas = await readContext.Set<ConfiguracaoDivulgacao>()
-            .CountAsync(c => c.ProcessoSeletivoId == processoId, CancellationToken.None);
-        linhas.Should().Be(1, "substituir a configuração inteira via DefinirConfiguracaoDivulgacao não pode deixar a primeira versão como resíduo — é UMA linha, com os valores da mutação mais recente");
-
-        bool primeiraVersaoAindaExiste = await readContext.Set<ConfiguracaoDivulgacao>()
-            .AnyAsync(c => c.Id == idPrimeiraVersao, CancellationToken.None);
-        primeiraVersaoAindaExiste.Should().BeFalse("a primeira versão não pode sobreviver à substituição");
+        await ConferirSubstituicaoAsync(processoId, idPrimeiraVersao);
     }
 
     [Fact(DisplayName = "Divulgacao_Removida_SomeDaTabela — DefinirConfiguracaoDivulgacao(null) remove a linha, sem resíduo")]
@@ -117,44 +82,16 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
         Guid idConfiguracao = processo.ConfiguracaoDivulgacao!.Id;
 
         Guid processoId = processo.Id;
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processo, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        await PersistirAsync(processo);
 
-        await using (UniPlusDbContext sessao = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(sessao);
-            ProcessoSeletivo tracked = (await repository.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
-            tracked.ConfiguracaoDivulgacao.Should().NotBeNull("pré-condição: a configuração persistiu na sessão anterior");
-            tracked.DefinirConfiguracaoDivulgacao(null).IsSuccess.Should().BeTrue();
-            await sessao.SaveChangesAsync(CancellationToken.None);
-        }
+        await SubstituirConfiguracaoAsync(processoId, configuracao: null);
 
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository leitura = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
-        ProcessoSeletivo relido = (await leitura.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
-
-        relido.ConfiguracaoDivulgacao.Should().BeNull(
-            "DefinirConfiguracaoDivulgacao(null) remove a configuração — o toggle 'sem configuração explícita' é a própria ausência da entidade");
-
-        bool aindaExiste = await readContext.Set<ConfiguracaoDivulgacao>()
-            .AnyAsync(c => c.Id == idConfiguracao, CancellationToken.None);
-        aindaExiste.Should().BeFalse("a linha não pode sobrar em configuracoes_divulgacao");
+        await ConferirRemocaoAsync(processoId, idConfiguracao);
     }
 
     [Fact(DisplayName = "Duas requisições equivalentes em ordem diferente persistem os campos públicos na MESMA ordem canônica")]
     public async Task Divulgacao_RequisicoesEquivalentes_PersistemNaMesmaOrdem()
     {
-        // DefinirConfiguracaoDivulgacao substitui a entidade inteira a cada chamada (mesmo molde
-        // de DefinirBonusRegional/DefinirCascataRemanejamento: Id novo por Criar, nunca mutação
-        // em local da mesma linha) — então duas chamadas nunca geram um UPDATE na MESMA linha, e
-        // sim delete-e-insere. O que a ordem canônica garante aqui não é evitar um UPDATE
-        // espúrio (não há UPDATE possível neste desenho), e sim que os BYTES persistidos nunca
-        // divirjam do que o envelope emitiria para o mesmo conjunto — não importa em que ordem o
-        // cliente o enviou.
         ProcessoSeletivo processoA = NovoProcesso($"{nameof(Divulgacao_RequisicoesEquivalentes_PersistemNaMesmaOrdem)}-A");
         processoA.DefinirConfiguracaoDivulgacao(
             ConfiguracaoDivulgacao.Criar(["nome_abreviado", "numero_inscricao"], null).Value!).IsSuccess.Should().BeTrue();
@@ -163,21 +100,9 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
         processoB.DefinirConfiguracaoDivulgacao(
             ConfiguracaoDivulgacao.Criar(["numero_inscricao", "nome_abreviado"], null).Value!).IsSuccess.Should().BeTrue();
 
-        await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(writeContext);
-            await repository.AdicionarAsync(processoA, CancellationToken.None);
-            await repository.AdicionarAsync(processoB, CancellationToken.None);
-            await writeContext.SaveChangesAsync(CancellationToken.None);
-        }
+        await PersistirAsync(processoA, processoB);
 
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        ProcessoSeletivoRepository leitura = ProcessoSeletivoRepositoryDeTeste.Criar(readContext);
-        ProcessoSeletivo relidoA = (await leitura.ObterComConfiguracaoAsync(processoA.Id, CancellationToken.None))!;
-        ProcessoSeletivo relidoB = (await leitura.ObterComConfiguracaoAsync(processoB.Id, CancellationToken.None))!;
-
-        relidoA.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal(relidoB.ConfiguracaoDivulgacao!.CamposPublicos);
-        relidoA.ConfiguracaoDivulgacao.CamposPublicos.Should().Equal("nome_abreviado", "numero_inscricao");
+        await ConferirCamposEquivalentesAsync(processoA.Id, processoB.Id);
     }
 
     // ── D5 — o colapso "linha explícita igual ao default" → ausência precisa de teste de
@@ -194,42 +119,21 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(resultado: "RESULTADO_FINAL"),
         bancasRequeridas: []).Value!;
 
     private static ProcessoSeletivo NovoProcessoConforme(string nome)
     {
         ProcessoSeletivo processo = NovoProcesso(nome);
 
-        processo.DefinirCronogramaFases([FaseDeResultadoFinal()],
-            []).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ]).IsSuccess.Should().BeTrue();
+        DefinirCronogramaEEtapas(processo);
         processo.DefinirAtendimentoEspecializado(
             AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
 
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
-        processo.DefinirDistribuicaoVagas([ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
-            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+        DefinirOfertaDeAmplaConcorrencia(processo);
+        DefinirClassificacaoImportada(processo);
 
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
-            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
-        }).Value!).IsSuccess.Should().BeTrue();
-
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
-
-        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
+        DefinirInscricaoSemCobranca(processo);
 
         return processo;
     }
@@ -261,4 +165,118 @@ public sealed class ConfiguracaoDivulgacaoPersistenciaTests : IClassFixture<Proc
         await repository.AdicionarVersaoConfiguracaoAsync(versaoAbertura, CancellationToken.None);
         await writeContext.SaveChangesAsync(CancellationToken.None);
     }
+
+    private async Task PersistirAsync(params ProcessoSeletivo[] processos)
+    {
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivoRepository repositorio = ProcessoSeletivoRepositoryDeTeste.Criar(db);
+        foreach (ProcessoSeletivo processo in processos)
+        {
+            await repositorio.AdicionarAsync(processo, CancellationToken.None);
+        }
+        await db.SaveChangesAsync(CancellationToken.None);
+    }
+
+    private static async Task<ProcessoSeletivo> RelerAsync(UniPlusDbContext db, Guid processoId)
+    {
+        ProcessoSeletivoRepository repositorio = ProcessoSeletivoRepositoryDeTeste.Criar(db);
+        return (await repositorio.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
+    }
+
+    private async Task SubstituirConfiguracaoAsync(Guid processoId, ConfiguracaoDivulgacao? configuracao)
+    {
+        await using UniPlusDbContext db = _fixture.CreateDbContext();
+        ProcessoSeletivo processo = await RelerAsync(db, processoId);
+        processo.DefinirConfiguracaoDivulgacao(configuracao).IsSuccess.Should().BeTrue();
+        await db.SaveChangesAsync(CancellationToken.None);
+    }
+
+
+    private async Task ConferirSubstituicaoAsync(Guid processoId, Guid idPrimeiraVersao)
+    {
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivo relido = await RelerAsync(readContext, processoId);
+
+        relido.ConfiguracaoDivulgacao.Should().NotBeNull();
+        relido.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal("nome", "numero_inscricao");
+        relido.ConfiguracaoDivulgacao.Justificativa.Should().Be("Justificativa da segunda versão.");
+
+        int linhas = await readContext.Set<ConfiguracaoDivulgacao>()
+            .CountAsync(c => c.ProcessoSeletivoId == processoId, CancellationToken.None);
+        linhas.Should().Be(1, "substituir a configuração inteira via DefinirConfiguracaoDivulgacao não pode deixar a primeira versão como resíduo — é UMA linha, com os valores da mutação mais recente");
+
+        bool primeiraVersaoAindaExiste = await readContext.Set<ConfiguracaoDivulgacao>()
+            .AnyAsync(c => c.Id == idPrimeiraVersao, CancellationToken.None);
+        primeiraVersaoAindaExiste.Should().BeFalse("a primeira versão não pode sobreviver à substituição");
+    }
+
+
+    private async Task ConferirRemocaoAsync(Guid processoId, Guid idConfiguracao)
+    {
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivo relido = await RelerAsync(readContext, processoId);
+
+        relido.ConfiguracaoDivulgacao.Should().BeNull(
+            "DefinirConfiguracaoDivulgacao(null) remove a configuração — o toggle 'sem configuração explícita' é a própria ausência da entidade");
+
+        bool aindaExiste = await readContext.Set<ConfiguracaoDivulgacao>()
+            .AnyAsync(c => c.Id == idConfiguracao, CancellationToken.None);
+        aindaExiste.Should().BeFalse("a linha não pode sobrar em configuracoes_divulgacao");
+    }
+
+
+    private async Task ConferirCamposEquivalentesAsync(Guid processoAId, Guid processoBId)
+    {
+        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
+        ProcessoSeletivo relidoA = await RelerAsync(readContext, processoAId);
+        ProcessoSeletivo relidoB = await RelerAsync(readContext, processoBId);
+
+        relidoA.ConfiguracaoDivulgacao!.CamposPublicos.Should().Equal(relidoB.ConfiguracaoDivulgacao!.CamposPublicos);
+        relidoA.ConfiguracaoDivulgacao.CamposPublicos.Should().Equal("nome_abreviado", "numero_inscricao");
+    }
+
+
+    private static void DefinirCronogramaEEtapas(ProcessoSeletivo processo)
+    {
+        processo.DefinirCronogramaFases([FaseDeResultadoFinal()],
+            []).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([
+            EtapaProcesso.Criar(
+                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
+                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
+        ]).IsSuccess.Should().BeTrue();
+    }
+
+
+    private static void DefinirOfertaDeAmplaConcorrencia(ProcessoSeletivo processo)
+    {
+        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
+            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
+            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021", quantidadeDeclarada: 40).Value!;
+        processo.DefinirDistribuicaoVagas([ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = ReferenciaRegra.De(RegraDistribuicaoVagasCodigo.Institucional, "v1", HashFixo), Modalidades = [modalidade] },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
+    }
+
+
+    private static void DefinirClassificacaoImportada(ProcessoSeletivo processo)
+    {
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.ClassificacaoImportada, "v1", HashFixo),
+            RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", HashFixo),
+        }).Value!).IsSuccess.Should().BeTrue();
+    }
+
+
+    private static void DefinirInscricaoSemCobranca(ProcessoSeletivo processo)
+    {
+        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
+
+        // Issue #1112: publicar sem declarar cobrança de taxa é recusado (CA-01).
+        processo.DefinirTaxaInscricao(
+            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
+        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
+    }
+
 }

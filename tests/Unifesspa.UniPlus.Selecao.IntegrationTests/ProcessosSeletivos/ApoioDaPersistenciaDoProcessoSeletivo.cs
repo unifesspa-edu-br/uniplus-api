@@ -110,7 +110,7 @@ internal sealed class ApoioDaPersistenciaDoProcessoSeletivo
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 3, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
                 UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
             bancasRequeridas: [BancaRequerida.Criar(Guid.CreateVersion7(), "BANCA_ANALISE_DOCUMENTAL", "Banca de teste", [])]).Value!;
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
     }

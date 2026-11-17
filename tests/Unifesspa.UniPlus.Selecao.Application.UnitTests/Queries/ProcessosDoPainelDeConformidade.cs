@@ -161,7 +161,7 @@ internal static class ProcessosDoPainelDeConformidade
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
                 UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_FINAL", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(resultado: "RESULTADO_FINAL"),
             bancasRequeridas: []).Value!;
 
     private static FaseCronograma FaseConforme() =>
@@ -172,7 +172,7 @@ internal static class ProcessosDoPainelDeConformidade
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
                 UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
             bancasRequeridas: []).Value!;
 
     private static FaseCronograma FaseDoResultadoDaClassificacao(int ordem, string codigo) =>
@@ -180,7 +180,7 @@ internal static class ProcessosDoPainelDeConformidade
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(ordem, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
             bancasRequeridas: []).Value!;
 
     // Publicar sem declarar a cobrança de taxa é recusado; declarada, ela isola a pendência que o teste observa.

@@ -56,7 +56,8 @@ public sealed class GateDoAlgoritmoDeContagemTests
                 AdmiteInstanciaSuperior: false,
                 SuspensividadeSegundaInstanciaValor: null,
                 SuspensividadeSegundaInstanciaUnidade: null),
-            ProcessoConformeFactory.ProdutoPreliminarId).Value!;
+            ProcessoConformeFactory.ProdutoPreliminarId,
+            HomologacaoDasInscricoesDeTeste.ProcedimentosDaHomologacao()).Value!;
 
     /// <summary>
     /// Calendário vigente mínimo. Este arquivo prova o gate da <b>convenção de contagem</b>; sem

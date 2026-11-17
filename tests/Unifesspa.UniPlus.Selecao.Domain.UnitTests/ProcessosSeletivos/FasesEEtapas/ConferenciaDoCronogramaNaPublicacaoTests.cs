@@ -85,9 +85,10 @@ public sealed class ConferenciaDoCronogramaNaPublicacaoTests
     public void Publicacao_FasesSemUnidade_RecusaAPrimeira()
     {
         ProcessoSeletivo processo = ProcessoComCronograma(
-            new ModeloDeFase("RESULTADO", 1).Criar(),
+            HomologacaoDasInscricoesDeTeste.FaseQueHomologaComRecurso(1, "RESULTADO"),
             new ModeloDeFase("MATRICULA", 2) { ComUnidade = false }.Criar(),
             new ModeloDeFase("RECURSO", 3) { ComUnidade = false }.Criar());
+        ContagemDePrazosDeTeste.DeclararConvencao(processo);
 
         DomainError? pendencia = Pendencia(processo);
 

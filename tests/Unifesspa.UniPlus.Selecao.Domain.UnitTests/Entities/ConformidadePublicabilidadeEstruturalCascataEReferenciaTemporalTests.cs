@@ -32,28 +32,14 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
     [Fact(DisplayName = "Cascata: modalidade SegueCascata fora do regime federal — item vermelho e Publicar recusa com CascataForaDoRegimeFederal")]
     public void Cascata_ForaDoRegimeFederal()
     {
-        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada
-            {
-                VagasOfertadasBase = 10,
-                PercentualDaReservaLegal = 1m,
-                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
-                Modalidades = [
-                Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, 8),
-                Modalidade("LB_PPI", NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, 2),
-            ]
-            },
-            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
+        ConfiguracaoDistribuicaoVagas oferta = OfertaComCascataForaDoRegimeFederal();
         ProcessoSeletivo processo = ProcessoConforme([oferta]);
 
         // A cascata (item agregado, comportamento pré-existente) TAMBÉM vai a vermelho —
         // ela já cobria este código antes da issue #1092; o item NOVO é o detalhamento.
         SoEstesItensVermelhos(
             processo, "cascata_pendente", "cascata_modalidade_fora_do_regime_federal");
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.CascataForaDoRegimeFederal");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.CascataForaDoRegimeFederal");
     }
 
     [Fact(DisplayName = "Cascata: oferta federal SegueCascata sem cascata configurada — item vermelho e Publicar recusa com CascataOrigemAusente")]
@@ -65,9 +51,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
         SoEstesItensVermelhos(
             processo, "cascata_pendente", "cascata_origem_ausente");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.CascataOrigemAusente");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.CascataOrigemAusente");
     }
 
     [Fact(DisplayName = "Cascata: fallback fora das modalidades da oferta — item vermelho e Publicar recusa com CascataFallbackNaoSelecionadoNaOferta")]
@@ -83,9 +67,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
         SoEstesItensVermelhos(
             processo, "cascata_pendente", "cascata_fallback_nao_ofertado");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.CascataFallbackNaoSelecionadoNaOferta");
     }
 
     [Fact(DisplayName = "Cascata: origem declarada que nenhuma oferta marca SegueCascata — item vermelho e Publicar recusa com CascataOrigemNaoSegueCascata")]
@@ -104,21 +86,14 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
         SoEstesItensVermelhos(
             processo, "cascata_pendente", "cascata_origem_nao_segue_cascata");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.CascataOrigemNaoSegueCascata");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.CascataOrigemNaoSegueCascata");
     }
 
     [Fact(DisplayName = "Cascata: destino declarado que não é modalidade de nenhuma oferta — item vermelho e Publicar recusa com CascataDestinoDesconhecido")]
     public void Cascata_DestinoDesconhecido()
     {
         ProcessoSeletivo processo = ProcessoConforme([OfertaFederalCompleta()]);
-        // A matriz legal completa resolve todas as origens dentro da oferta (o loop por oferta
-        // não recusa nada); LB_PPI ganha um OITAVO destino (ordem contígua) apontando para um
-        // código que não é modalidade de nenhuma oferta — só a checagem GLOBAL, que roda depois
-        // do loop por oferta, alcança esse destino sobressalente. LB_Q perde um destino legal
-        // (fica com 6, ainda contíguo a partir de 1 — os 6 restantes continuam todos resolvíveis
-        // nesta oferta) para abrir espaço sob o teto de 56 destinos (7×7 + 6 + 1 = 56).
+        // Outra origem cede um destino para manter o limite de 56 ao acrescentar o destino desconhecido.
         List<DestinoRemanejamento> destinos =
         [
             .. CascataCompleta().Destinos.Where(d => !(d.ModalidadeOrigemCodigo == ModalidadesFederaisLei12711.LbQ && d.Ordem == 7)),
@@ -129,10 +104,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
 
         SoEstesItensVermelhos(
             processo, "cascata_pendente", "cascata_destino_desconhecido");
-
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be("ProcessoSeletivo.CascataDestinoDesconhecido");
+        ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.CascataDestinoDesconhecido");
     }
 
     // ══════════════════════════════════════════════════════════════════════════════════════
@@ -156,7 +128,7 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
         processo.DefinirCronogramaFases([FaseBase(coletaSolicitacaoIsencao: true, faseCanonicaOrigemId: origem)], [])
             .IsSuccess.Should().BeTrue();
         ExigirFolhas(processo, DocumentoGeral(processo.CronogramaFases.Single().Id, obrigatorio: false, consequencia: null, finalidade: FinalidadeFormulario.IsencaoTaxa));
-        processo.DefinirCronogramaFases([FaseBase(faseCanonicaOrigemId: origem)], []).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([FaseBaseDaImportacao(origem)], []).IsSuccess.Should().BeTrue();
 
         SoEstesItensVermelhos(processo, "exigencia_finalidade_incoerente_com_a_fase");
         ExigirPublicacaoRecusada(processo, DocumentoExigidoErrorCodes.FaseIncoerenteComFinalidade);
@@ -208,4 +180,22 @@ public sealed class ConformidadePublicabilidadeEstruturalCascataEReferenciaTempo
 
         AfirmarPendenciaUnicaERecusa(processo, "referencia_temporal_ausente_com_gatilho_etario", "ProcessoSeletivo.ReferenciaTemporalFatosAusente");
     }
+
+    private static ConfiguracaoDistribuicaoVagas OfertaComCascataForaDoRegimeFederal()
+    {
+        ConfiguracaoDistribuicaoVagas oferta = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
+            new DistribuicaoDeVagasDeclarada
+            {
+                VagasOfertadasBase = 10,
+                PercentualDaReservaLegal = 1m,
+                RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'),
+                Modalidades = [
+                Modalidade("AC", NaturezaLegalModalidade.Ampla, RegraRemanejamentoModalidade.Nenhuma, 8),
+                Modalidade("LB_PPI", NaturezaLegalModalidade.CotaReservada, RegraRemanejamentoModalidade.SegueCascata, 2),
+            ]
+            },
+            new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
+        return oferta;
+    }
+
 }

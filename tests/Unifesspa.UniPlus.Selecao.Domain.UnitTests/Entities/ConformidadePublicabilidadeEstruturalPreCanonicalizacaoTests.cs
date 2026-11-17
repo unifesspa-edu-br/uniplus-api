@@ -56,23 +56,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     [Fact(DisplayName = "Pré-canonicalização: referência temporal aponta para fase removida depois — item vermelho e Publicar recusa com ReferenciaTemporalFatosFaseInexistente")]
     public void PreCanon_ReferenciaTemporalFatosFaseInexistente()
     {
-        ProcessoSeletivo processo = ProcessoConforme();
-        // Duas fases: a que fica com a exigência (sobrevive) e a que ancora a referência
-        // temporal (será removida DEPOIS, deixando a referência órfã — §3.5-like, mas para
-        // ReferenciaTemporalFatos, que DefinirCronogramaFases não guarda contra remoção).
-        FaseCronograma faseComExigencia = FaseBase();
-        FaseCronograma faseAncora = FaseDeHomologacao();
-        processo.DefinirCronogramaFases([faseComExigencia, faseAncora], [])
-            .IsSuccess.Should().BeTrue();
-
-        ExigirDeclaracaoDeMaioridade(processo, faseComExigencia.Id);
-
-        ReferenciarOFimDaFase(processo, faseAncora);
-
-        // Remove a fase-âncora do cronograma — só faseComExigencia sobrevive (mesma
-        // FaseCanonicaOrigemId, então DefinirDocumentosExigidos.ExigidoNaFaseId não fica órfão).
-        processo.DefinirCronogramaFases([faseComExigencia], [])
-            .IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = ProcessoComReferenciaAFaseRemovida();
 
         SoEstesItensVermelhos(processo, "referencia_temporal_fase_fora_do_cronograma");
 
@@ -91,7 +75,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         FaseCronograma faseSemExtremo = FaseDeHomologacaoNaOrdem2();
-        processo.DefinirCronogramaFases([FaseBase(), faseSemExtremo], [])
+        processo.DefinirCronogramaFases([FaseBaseDaImportacao(), faseSemExtremo], [])
             .IsSuccess.Should().BeTrue();
 
         Guid faseComExigenciaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
@@ -109,13 +93,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     {
         ProcessoSeletivo processo = ProcessoConforme();
         Guid faseId = processo.CronogramaFases.Single(static f => !f.ColetaInscricao).Id;
-        DocumentoExigido exigencia = DocumentoExigido.Criar(
-            faseId, Guid.CreateVersion7(), "DECLARACAO_MAIORIDADE", "Declaração de maioridade", "PESSOAL", ProtecaoDoDocumentoDeTeste.Pessoal,
-            Aplicabilidade.Condicional, obrigatorio: true, consequenciaIndeferimento: null,
-            condicoes: [GatilhoFaixaEtaria()], basesLegais: [BaseLegalResolvida()], idadeMaximaEmissao: null,
-            formatosPermitidos: FormatosPermitidos.Criar(true, null).Value!, tamanhoMaximoBytes: null).Value!;
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(exigencia, 0).Value!])
-            .IsSuccess.Should().BeTrue();
+        ExigirDeclaracaoDeMaioridade(processo, faseId);
         // FaseBase() não coleta inscrição — nenhuma fase resolve FIM_INSCRICAO.
         processo.DefinirReferenciaTemporalFatos(
             ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!)
@@ -139,9 +117,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
 
         SoEstesItensVermelhos(processo, "derivacao_fatos_citados_inexistentes");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
+        ExigirPublicacaoRecusada(processo, FatoColetadoErrorCodes.PrecondicaoCitaFatoNaoColetado);
     }
 
     [Fact(DisplayName = "Pré-canonicalização: fato coletável CONDICAO_ATENDIMENTO sem nenhuma condição ofertada — item vermelho e Publicar recusa com FatoColetadoSemValoresOfertados (cenário da issue)")]
@@ -214,12 +190,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
     public void FatoColetadoRecursoAcessibilidade_OpcoesSaoOsRecursosOfertados()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar(
-                [],
-                [RecursoOfertado.Criar(Guid.CreateVersion7(), "SALA_AMAMENTACAO", "Sala para amamentação"),
-                 RecursoOfertado.Criar(Guid.CreateVersion7(), "LEDOR", "Ledor")],
-                []).Value!).IsSuccess.Should().BeTrue();
+        OfertarSalaDeAmamentacaoELedor(processo);
         processo.DefinirItensComFaseDeInscricao([CampoRecursoAcessibilidade()]).IsSuccess.Should().BeTrue();
 
         processo.OpcoesDoProcesso(AtendimentoEspecializado.FatoRecursoAcessibilidade)
@@ -238,9 +209,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
 
         SoEstesItensVermelhos(processo, "modalidade_cotas_da_lei_diferentes_entre_ofertas");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.CotasDaLeiDiferentesEntreOfertas);
+        ExigirPublicacaoRecusada(processo, ProcessoSeletivoErrorCodes.CotasDaLeiDiferentesEntreOfertas);
     }
 
     private static ConfiguracaoDistribuicaoVagas OfertaComReservaDePcd(bool comCotaPcd) => ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
@@ -280,9 +249,7 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
 
         SoEstesItensVermelhos(processo, "modalidade_regra_incoerente_com_a_natureza", "derivacao_cota_e_acao_afirmativa_juntas");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo);
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(ProcessoSeletivoErrorCodes.RegraIncoerenteComANatureza);
+        ExigirPublicacaoRecusada(processo, ProcessoSeletivoErrorCodes.RegraIncoerenteComANatureza);
     }
 
     /// <summary>
@@ -300,4 +267,34 @@ public sealed class ConformidadePublicabilidadeEstruturalPreCanonicalizacaoTests
 
         ItemDaExclusividadeOk(processo).Should().BeFalse();
     }
+
+    private static void OfertarSalaDeAmamentacaoELedor(ProcessoSeletivo processo)
+    {
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar(
+                [],
+                [RecursoOfertado.Criar(Guid.CreateVersion7(), "SALA_AMAMENTACAO", "Sala para amamentação"),
+                 RecursoOfertado.Criar(Guid.CreateVersion7(), "LEDOR", "Ledor")],
+                []).Value!).IsSuccess.Should().BeTrue();
+    }
+
+
+    private static ProcessoSeletivo ProcessoComReferenciaAFaseRemovida()
+    {
+        ProcessoSeletivo processo = ProcessoConforme();
+        FaseCronograma faseComExigencia = FaseBaseDaImportacao();
+        FaseCronograma faseAncora = FaseDeHomologacao();
+        processo.DefinirCronogramaFases([faseComExigencia, faseAncora], [])
+            .IsSuccess.Should().BeTrue();
+
+        ExigirDeclaracaoDeMaioridade(processo, faseComExigencia.Id);
+
+        ReferenciarOFimDaFase(processo, faseAncora);
+
+        processo.DefinirCronogramaFases([faseComExigencia], [])
+            .IsSuccess.Should().BeTrue();
+
+        return processo;
+    }
+
 }

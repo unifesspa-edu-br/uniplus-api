@@ -60,6 +60,8 @@
     <Compile Include="../Shared/ArquivosDeModeloDeTeste.cs" Link="ArquivosDeModeloDeTeste.cs" />
     <Compile Include="../Shared/TiposDeProcessoDeTeste.cs" Link="TiposDeProcessoDeTeste.cs" />
     <Compile Include="../Shared/BancasDeTeste.cs" Link="BancasDeTeste.cs" />
+    <Compile Include="../Shared/HomologacaoDasInscricoesDeTeste.cs" Link="HomologacaoDasInscricoesDeTeste.cs" />
+    <Compile Include="../Shared/ContagemDePrazosDeTeste.cs" Link="ContagemDePrazosDeTeste.cs" />
     <Compile Include="../Shared/CorretoresDeTeste.cs" Link="CorretoresDeTeste.cs" />
     <Compile Include="../Shared/FatosDeModalidadeDeTeste.cs" Link="FatosDeModalidadeDeTeste.cs" />
     <Compile Include="../Shared/ProtecaoDoDocumentoDeTeste.cs" Link="ProtecaoDoDocumentoDeTeste.cs" />

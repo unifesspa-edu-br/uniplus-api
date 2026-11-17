@@ -263,7 +263,9 @@ internal sealed class CenarioDeCongelamentoPorAssunto
                 ProdutoDaFase.Criar(AtoSemPapel, null),
             ],
             EmiteParecerIndividual: false,
-            RegraRecurso: null),
+            RegraRecurso: null,
+            HomologacaoDasInscricoesDeTeste.TiposDeDecisao,
+            HomologacaoDasInscricoesDeTeste.Regra(ResultadoClassificacao)),
         bancasRequeridas: []).Value!;
 
     private static DocumentoExigido ExigenciaGeral(Guid faseId) => DocumentoExigido.Criar(

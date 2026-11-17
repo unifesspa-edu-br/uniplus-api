@@ -289,7 +289,7 @@ public sealed class ObterConformidadeProcessoSeletivoQueryHandlerTests
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "CLASSIFICACAO", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: produtos, EmiteParecerIndividual: false, RegraRecurso: null),
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(produtos, resultado: produtos[0].AtoCodigo),
         bancasRequeridas: []).Value!;
 
     /// <summary>

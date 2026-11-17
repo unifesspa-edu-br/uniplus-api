@@ -162,30 +162,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     [Fact(DisplayName = "B-03: FIM_INSCRICAO com mais de uma fase de coleta resolve pela menor Ordem, não pela ordem de inserção — achado de revisão da PR #903")]
     public void ResolverDataReferenciaFatos_FimInscricaoComDuasFasesDeColeta_ResolvePelaMenorOrdem()
     {
-        ProcessoSeletivo processo = NovoProcessoConforme();
-
-        FaseCronograma coletaOrdem1 = FaseCronograma.Criar(
-            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO_AC", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
-            bancasRequeridas: []).Value!;
-        FaseCronograma coletaOrdem2 = FaseCronograma.Criar(
-            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO_REMANEJAMENTO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 20, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 25, 12, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
-            bancasRequeridas: []).Value!;
-
-        // Insere a fase de Ordem 2 ANTES da de Ordem 1 — _cronogramaFases preserva a ordem
-        // de ENTRADA de DefinirCronogramaFases, diferente do envelope (sempre ordenado por
-        // Ordem). Se a resolução dependesse dessa ordem de inserção, pegaria a fase errada.
-        FormularioDeTeste.TrocarCronograma(processo, [coletaOrdem2, coletaOrdem1]).IsSuccess.Should().BeTrue();
-        Guid faseOrdem1Id = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
-
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseOrdem1Id), 0).Value!])
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!)
-            .IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = ProcessoComDuasFasesDeColeta();
 
         ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(processo.Declaracao(), TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)).Should().Be(new DateOnly(2026, 1, 15),
             "a fase de Ordem 1 (Fim 2026-01-15) precisa vencer a de Ordem 2 (Fim 2026-01-25) por Ordem — se a " +
@@ -196,30 +173,7 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
     [Fact(DisplayName = "B-03: ResolverDataReferenciaFatos converte para o fuso institucional — um Fim de madrugada em UTC cai no dia anterior local")]
     public void ResolverDataReferenciaFatos_FimDeMadrugadaEmUtc_ResolveODiaAnteriorNoFusoInstitucional()
     {
-        ProcessoSeletivo processo = NovoProcessoConforme();
-
-        // 2026-03-02T01:30:00Z, subtraídas 3h de fuso (America/Belem, sem horário de
-        // verão), cai em 2026-03-01T22:30 local — dia DIFERENTE do dia UTC. Uma resolução
-        // que apenas truncasse a data (sem converter o fuso) devolveria 02/03, um dia
-        // inteiro adiantado em relação ao que o administrador viu na tela.
-        FaseCronograma faseComVirada = FaseCronograma.Criar(
-            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-            new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 2, 1, 30, 0, TimeSpan.Zero), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
-            bancasRequeridas: []).Value!;
-        // A segunda fase precisa entrar ANTES de configurar a exigência: uma vez que a
-        // exigência referencia a fase 1 (ExigidoNaFaseId), redefinir o cronograma depois
-        // recriaria a fase 1 com outra FaseCanonicaOrigemId e o guard
-        // FaseCronograma.ReferenciadaPorExigenciaViva recusaria a redefinição.
-        FormularioDeTeste.TrocarCronograma(processo, [FaseConforme(), faseComVirada]).IsSuccess.Should().BeTrue();
-        Guid faseComEtapaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
-        Guid faseComViradaId = processo.CronogramaFases.Single(f => f.Ordem == 2).Id;
-
-        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId), 0).Value!])
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirReferenciaTemporalFatos(
-            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseComViradaId).Value!)
-            .IsSuccess.Should().BeTrue();
+        ProcessoSeletivo processo = ProcessoComReferenciaAoFimDeMadrugada();
 
         ReferenciaTemporalDosFatos.ResolverDataReferenciaFatos(processo.Declaracao(), TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId)).Should().Be(new DateOnly(2026, 3, 1),
             "o Fim (2026-03-02T01:30:00Z) convertido para o fuso institucional (America/Belem, UTC-3, sem DST) é 2026-03-01T22:30 — o dia LOCAL, não o dia UTC");
@@ -274,9 +228,80 @@ public sealed class ProcessoSeletivoPublicarReferenciaTemporalDosFatosTests
         FaseCronograma resultado = FaseCronograma.Criar(
             new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
-            bancasRequeridas: []).Value!;
+            HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(),
+            bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
         FormularioDeTeste.TrocarCronograma(processo, [resultado]).IsSuccess.Should().BeTrue();
+        ContagemDePrazosDeTeste.DeclararConvencao(processo);
         return resultado.Id;
     }
+
+    private static FaseCronograma ColetaNaPrimeiraQuinzena()
+    {
+        FaseCronograma coletaOrdem1 = FaseCronograma.Criar(
+            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO_AC", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 15, 12, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
+        return coletaOrdem1;
+    }
+
+
+    private static FaseCronograma ColetaNaSegundaQuinzena()
+    {
+        FaseCronograma coletaOrdem2 = FaseCronograma.Criar(
+            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "INSCRICAO_REMANEJAMENTO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 1, 20, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 25, 12, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
+            bancasRequeridas: []).Value!;
+        return coletaOrdem2;
+    }
+
+
+    private static FaseCronograma FaseComFimDeMadrugadaEmUtc()
+    {
+        FaseCronograma faseComVirada = FaseCronograma.Criar(
+            new OrigemCanonicaDaFase(OrigemId: Guid.CreateVersion7(), Codigo: "RESULTADO_PRELIMINAR", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
+            new DecisoesDeCronogramaDaFase(Ordem: 2, Inicio: new DateTimeOffset(2026, 3, 1, 12, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 2, 1, 30, 0, TimeSpan.Zero), FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [], EmiteParecerIndividual: false, RegraRecurso: null),
+            bancasRequeridas: []).Value!;
+        return faseComVirada;
+    }
+
+
+    private static ProcessoSeletivo ProcessoComDuasFasesDeColeta()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+        // Insere a fase de Ordem 2 ANTES da de Ordem 1 — _cronogramaFases preserva a ordem
+        // de ENTRADA de DefinirCronogramaFases, diferente do envelope (sempre ordenado por
+        // Ordem). Se a resolução dependesse dessa ordem de inserção, pegaria a fase errada.
+        FormularioDeTeste.TrocarCronograma(processo, [ColetaNaSegundaQuinzena(), ColetaNaPrimeiraQuinzena()]).IsSuccess.Should().BeTrue();
+        Guid faseOrdem1Id = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
+
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseOrdem1Id), 0).Value!])
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimInscricao, null, null).Value!)
+            .IsSuccess.Should().BeTrue();
+        return processo;
+    }
+
+
+    private static ProcessoSeletivo ProcessoComReferenciaAoFimDeMadrugada()
+    {
+        ProcessoSeletivo processo = NovoProcessoConforme();
+
+        FaseCronograma faseComVirada = FaseComFimDeMadrugadaEmUtc();
+        // O cronograma precede a exigência que referencia suas fases.
+        FormularioDeTeste.TrocarCronograma(processo, [FaseConforme(), faseComVirada]).IsSuccess.Should().BeTrue();
+        Guid faseComEtapaId = processo.CronogramaFases.Single(f => f.Ordem == 1).Id;
+        Guid faseComViradaId = processo.CronogramaFases.Single(f => f.Ordem == 2).Id;
+
+        processo.DefinirDocumentosExigidos([NoExigencia.CriarFolha(ExigenciaCondicionalComGatilhoPorFaixaEtaria(faseComEtapaId), 0).Value!])
+            .IsSuccess.Should().BeTrue();
+        processo.DefinirReferenciaTemporalFatos(
+            ReferenciaTemporalFatos.Criar(ReferenciaTipo.FimFase, null, faseComViradaId).Value!)
+            .IsSuccess.Should().BeTrue();
+        return processo;
+    }
+
 }

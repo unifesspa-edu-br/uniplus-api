@@ -12,14 +12,29 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public sealed record EtapasDoProcesso
 {
-    public EtapasDoProcesso(IReadOnlyList<EtapaDeclarada> etapas)
+    private const string ListaDasEtapas = "etapas";
+
+    public EtapasDoProcesso(IReadOnlyList<EtapaDeclarada> etapas, bool leituraRecusouEtapa = false)
     {
         ArgumentNullException.ThrowIfNull(etapas);
 
         Etapas = etapas;
+        LeituraRecusouEtapa = leituraRecusouEtapa;
     }
 
     public IReadOnlyList<EtapaDeclarada> Etapas { get; }
+
+    /// <summary>
+    /// Se a leitura do documento recusou alguma etapa inteira: a etapa recusada não está em <see cref="Etapas"/>, e a regra que conclui
+    /// que nenhuma etapa tem algo não o conclui.
+    /// </summary>
+    public bool LeituraRecusouEtapa { get; }
+
+    /// <summary>Se alguma etapa declarada tem a nota importada do ENEM.</summary>
+    public bool UsaNotaDoEnem => Etapas.Any(static etapa => etapa.NotaVemDoEnem);
+
+    /// <summary>Se o uso da nota do ENEM não se sabe: nenhuma etapa declarada o usa, e a leitura recusou etapa que poderia usá-lo.</summary>
+    public bool UsoDaNotaDoEnemIndeterminado => LeituraRecusouEtapa && !UsaNotaDoEnem;
 
     /// <summary>As etapas do processo vivo, cada uma lida como declarou: as recusas do estado carregado do banco ficam à vista.</summary>
     public static EtapasDoProcesso Das(IEnumerable<EtapaProcesso> etapas) => Das(etapas, OrigemNoDocumento.Identidade);
@@ -33,7 +48,9 @@ public sealed record EtapasDoProcesso
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(origem);
 
-        return new([.. etapas.Select((etapa, posicao) => etapa.Declaracao(origem.PartesRecusadasDe($"etapas[{posicao}]")))]);
+        return new(
+            [.. etapas.Select((etapa, posicao) => etapa.Declaracao(origem.PartesRecusadasDe($"etapas[{posicao}]")))],
+            origem.TemParteRecusadaEm(ListaDasEtapas));
     }
 
     /// <summary>A etapa de nota do ENEM, quando o processo declara uma só; com duas, nenhuma é a designada.</summary>

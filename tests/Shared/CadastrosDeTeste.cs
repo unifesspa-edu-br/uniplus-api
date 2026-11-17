@@ -17,7 +17,7 @@ internal static class CadastrosDeTeste
 
     private static readonly MotivosEscolhidos SemMotivosEscolhidos = new([], numeroDaVersaoQueNasce: 1);
 
-    /// <summary>Sem calendário, com os fatos de modalidade do catálogo, sem tipo de ato único, sem consolidação, sem proteção vigente e sem motivo escolhido.</summary>
+    /// <summary>Com calendário vigente, com os fatos de modalidade do catálogo, sem tipo de ato único, sem consolidação, sem proteção vigente e sem motivo escolhido.</summary>
     public static CadastrosDaConfiguracao Padrao { get; } = Com();
 
     /// <summary>Os cadastros padrão, trocando só o que o cenário declara.</summary>
@@ -29,7 +29,7 @@ internal static class CadastrosDeTeste
         ProtecaoVigenteDasExigencias? protecao = null,
         MotivosEscolhidos? motivosEscolhidos = null,
         FatosDasVersoesPublicadas? fatosDasVersoesPublicadas = null) => new(
-            contagemDePrazos ?? ContextoDeContagemDePrazos.SemCalendario,
+            contagemDePrazos ?? ContagemDePrazosDeTeste.ComCalendarioVigente,
             fatosDeModalidade ?? FatosDeModalidadeDeTeste.DoCatalogo,
             tiposDeAtoUnicos ?? TiposDeAtoUnicosDeTeste.Nenhum,
             corretores ?? CorretoresDeTeste.SemConsolidacao,

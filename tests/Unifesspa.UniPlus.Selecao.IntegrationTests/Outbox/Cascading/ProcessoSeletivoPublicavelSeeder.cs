@@ -46,7 +46,12 @@ internal static class ProcessoSeletivoPublicavelSeeder
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: fimDasInscricoes ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
             UnidadeResponsavel: unidadeResponsavel ?? UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: produtosDaFase ?? [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: TiposDeDecisaoDaFaseUnica),
+        new PublicacoesDaFase(
+            Produtos: produtosDaFase ?? [ProdutoDaFase.Criar(HomologacaoDasInscricoesDeTeste.ResultadoDaFase, PapelProdutoFase.Definitivo)],
+            EmiteParecerIndividual: false,
+            RegraRecurso: null,
+            TiposDeDecisao: TiposDeDecisaoDaFaseUnica,
+            RegraDeHomologacao: HomologacaoDasInscricoesDeTeste.Regra(produtosDaFase is { Count: > 0 } ? produtosDaFase[0].AtoCodigo : HomologacaoDasInscricoesDeTeste.ResultadoDaFase)),
         bancasRequeridas: []).Value!;
 
     public static async Task<(ProcessoSeletivo Processo, DocumentoAPublicar Documento)> SemearAsync(

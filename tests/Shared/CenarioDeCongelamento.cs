@@ -20,7 +20,7 @@ internal sealed record CenarioDeCongelamento
 
     public TimeProvider Relogio { get; init; } = TimeProvider.System;
 
-    public ContextoDeContagemDePrazos Contagem { get; init; } = ContextoDeContagemDePrazos.SemCalendario;
+    public ContextoDeContagemDePrazos Contagem { get; init; } = ContagemDePrazosDeTeste.ComCalendarioVigente;
 
     public FatosDeModalidade FatosDeModalidade { get; init; } = FatosDeModalidadeDeTeste.DoCatalogo;
 

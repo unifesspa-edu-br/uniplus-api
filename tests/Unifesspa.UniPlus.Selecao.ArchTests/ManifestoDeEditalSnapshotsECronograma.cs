@@ -94,6 +94,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             ["ResultadoAtoCodigo", "Alternativas"],
             [
                 ("HomologaTodaInscricaoEnviada", "Derivada de Alternativas."),
+                ("TemConfirmacaoDoInep", "Derivada de Alternativas."),
             ]),
         [typeof(AlternativaDeCondicoes)] = (["Condicoes"], []),
         [typeof(CondicaoDeHomologacao)] = (

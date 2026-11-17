@@ -45,12 +45,12 @@ internal static class ProcessoSeletivoPublicacaoSeeder
     /// preenchidas (etapas, atendimento, distribuição de vagas, classificação)
     /// — o mínimo que <c>AvaliarConformidade</c> exige para publicar.
     /// </summary>
-    public static ProcessoSeletivo NovoProcessoConforme(string nome, DateTimeOffset? inicioDaFase = null)
+    public static ProcessoSeletivo NovoProcessoConforme(string nome, DateTimeOffset? inicioDaFase = null, FaseCronograma? fase = null)
     {
         ProcessoSeletivo processo = ProcessoVazio(nome);
         DefinirAtendimentoEspecializadoVazio(processo);
         processo.DefinirDistribuicaoVagas([DistribuicaoDaModalidadeAmpla()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
-        DefinirClassificacaoImportadaEFaseDeResultadoFinal(processo, inicioDaFase);
+        DefinirClassificacaoImportadaEFaseDeResultadoFinal(processo, inicioDaFase, fase);
 
         DefinirTaxaEFormularioDeInscricao(processo);
         return processo;
@@ -93,10 +93,10 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [ModalidadeAmplaDeTeste()] },
         new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
 
-    private static void DefinirClassificacaoImportadaEFaseDeResultadoFinal(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null)
+    private static void DefinirClassificacaoImportadaEFaseDeResultadoFinal(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null, FaseCronograma? fase = null)
     {
         DefinirClassificacaoImportada(processo);
-        DefinirFaseDeResultadoFinalComProvaObjetiva(processo, inicioDaFase);
+        DefinirFaseDeResultadoFinalComProvaObjetiva(processo, inicioDaFase, fase);
     }
 
     private static void DefinirClassificacaoImportada(ProcessoSeletivo processo)
@@ -109,9 +109,9 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
     }
 
-    private static void DefinirFaseDeResultadoFinalComProvaObjetiva(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null)
+    private static void DefinirFaseDeResultadoFinalComProvaObjetiva(ProcessoSeletivo processo, DateTimeOffset? inicioDaFase = null, FaseCronograma? fase = null)
     {
-        processo.DefinirCronogramaFases([FaseDeResultadoFinal(inicioDaFase)], []).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([fase ?? FaseDeResultadoFinal(inicioDaFase)], []).IsSuccess.Should().BeTrue();
         processo.DefinirEtapas([ProvaObjetivaDoResultadoFinal()]).IsSuccess.Should().BeTrue();
     }
 
@@ -122,7 +122,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: inicioDaFase ?? new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: inicioDaFase?.AddDays(30) ?? new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero),
             FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
         bancasRequeridas: []).Value!;
 
     private static EtapaProcesso ProvaObjetivaDoResultadoFinal() => EtapaProcesso.Criar(
@@ -179,25 +179,7 @@ internal static class ProcessoSeletivoPublicacaoSeeder
 
     private static ConfiguracaoDistribuicaoVagas OfertaFederalCompleta()
     {
-        List<ModalidadeSelecionada> modalidades =
-        [
-            ModalidadeSelecionada.Criar(
-                Guid.CreateVersion7(), "AC", "Ampla concorrência",
-                NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
-                RegraRemanejamentoModalidade.Nenhuma, null, null, null,
-                regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
-                baseLegal: "Lei 12.711/2012 art. 1º").Value!,
-        ];
-
-        foreach (string codigo in ModalidadesFederaisLei12711.Codigos)
-        {
-            modalidades.Add(ModalidadeSelecionada.Criar(
-                Guid.CreateVersion7(), codigo, $"Reserva {codigo}",
-                NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, null,
-                RegraRemanejamentoModalidade.SegueCascata, null, null, null,
-                regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: "RECLASSIFICAR_AC",
-                baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!);
-        }
+        IReadOnlyList<ModalidadeSelecionada> modalidades = ModalidadesDaOfertaFederal();
 
         return ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
             new DistribuicaoDeVagasDeclarada
@@ -288,4 +270,27 @@ internal static class ProcessoSeletivoPublicacaoSeeder
         await repository.AdicionarVersaoConfiguracaoAsync(versao, CancellationToken.None);
         await context.SaveChangesAsync(CancellationToken.None);
     }
+
+    private static ModalidadeSelecionada AmplaDaOfertaFederal() => ModalidadeSelecionada.Criar(
+                Guid.CreateVersion7(), "AC", "Ampla concorrência",
+                NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas, null,
+                RegraRemanejamentoModalidade.Nenhuma, null, null, null,
+                regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), acaoQuandoIndeferido: null,
+                baseLegal: "Lei 12.711/2012 art. 1º").Value!;
+
+
+    private static ModalidadeSelecionada CotaDaOfertaFederal(string codigo) => ModalidadeSelecionada.Criar(
+                Guid.CreateVersion7(), codigo, $"Reserva {codigo}",
+                NaturezaLegalModalidade.CotaReservada, ComposicaoVagasModalidade.DentroDaReservaLegal, null,
+                RegraRemanejamentoModalidade.SegueCascata, null, null, null,
+                regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.CotaReservada), acaoQuandoIndeferido: "RECLASSIFICAR_AC",
+                baseLegal: "Lei 12.711/2012, alterada pela Lei 14.723/2023").Value!;
+
+
+    private static IReadOnlyList<ModalidadeSelecionada> ModalidadesDaOfertaFederal() =>
+    [
+        AmplaDaOfertaFederal(),
+        .. ModalidadesFederaisLei12711.Codigos.Select(CotaDaOfertaFederal),
+    ];
+
 }

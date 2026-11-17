@@ -5882,6 +5882,11 @@
       "titulo": "A condição de homologação ainda não é apurada pelo sistema"
     },
     {
+      "codigo": "uniplus.selecao.homologacao_das_inscricoes.confirmacao_do_inep_ausente",
+      "status": 422,
+      "titulo": "A confirmação do INEP não está entre as condições da homologação"
+    },
+    {
       "codigo": "uniplus.selecao.homologacao_das_inscricoes.edicao_do_exame_invalida",
       "status": 422,
       "titulo": "A edição do exame da condição é inválida (de 1998 a 2100)"
@@ -7352,9 +7357,29 @@
       "titulo": "O identificador legível deve ter entre 3 e 64 caracteres"
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.importacao_de_exame_sem_homologacao_das_inscricoes",
+      "status": 422,
+      "titulo": "O processo que usa a nota do ENEM não tem fase que homologa as inscrições"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.importacao_externa_sem_homologacao_das_inscricoes",
+      "status": 422,
+      "titulo": "O processo de importação externa não tem fase que homologa as inscrições"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.importacao_externa_sem_janela_de_recurso",
+      "status": 422,
+      "titulo": "A homologação da importação externa não tem preliminar, período de recurso e definitivo"
+    },
+    {
       "codigo": "uniplus.selecao.processo_seletivo.inscricao_propria_sem_fase_de_coleta",
       "status": 422,
       "titulo": "A origem dos candidatos é inscrição própria, e nenhuma fase coleta inscrição"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.inscricao_propria_sem_homologacao_das_inscricoes",
+      "status": 422,
+      "titulo": "O processo com inscrição própria não tem fase que homologa as inscrições"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.inscricao_sem_conjunto_basico",

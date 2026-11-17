@@ -11,8 +11,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using Xunit;
 
 /// <summary>
-/// A regra de homologação das inscrições é declaração da fase: entra pelas publicações, é reposta ao atualizar
-/// e, com o tipo de decisão da homologação, dá à fase a capacidade de homologar as inscrições.
+/// A regra de homologação das inscrições é declaração da fase: entra pelas publicações e é reposta ao atualizar.
 /// </summary>
 public sealed class FaseCronogramaRegraDeHomologacaoTests
 {
@@ -35,18 +34,6 @@ public sealed class FaseCronogramaRegraDeHomologacaoTests
         FaseCom(Regra, Homologacao).RegraDeHomologacao.Should().BeSameAs(Regra);
         FaseCom(regra: null, Homologacao).RegraDeHomologacao.Should().BeNull();
     }
-
-    [Fact(DisplayName = "A fase homologa as inscrições quando declara o tipo de decisão e tem a regra")]
-    public void HomologaAsInscricoes_ComTipoERegra_EVerdadeiro() =>
-        FaseCom(Regra, Homologacao).HomologaAsInscricoes.Should().BeTrue();
-
-    [Fact(DisplayName = "Só o tipo, sem a regra, não faz a fase homologar as inscrições")]
-    public void HomologaAsInscricoes_SoComTipo_EFalso() =>
-        FaseCom(regra: null, Homologacao).HomologaAsInscricoes.Should().BeFalse();
-
-    [Fact(DisplayName = "Só a regra, sem o tipo de decisão, não faz a fase homologar as inscrições")]
-    public void HomologaAsInscricoes_SoComRegra_EFalso() =>
-        FaseCom(Regra, TipoMotivoDeDecisaoCodigo.Classificacao).HomologaAsInscricoes.Should().BeFalse();
 
     [Fact(DisplayName = "Atualizar a fase repõe a regra da fase de origem, inclusive a ausência dela")]
     public void AtualizarDe_ReporARegraDaOrigem()

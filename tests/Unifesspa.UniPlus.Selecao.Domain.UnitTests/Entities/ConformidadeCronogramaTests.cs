@@ -68,9 +68,9 @@ public sealed class ConformidadeCronogramaTests
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!);
         processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo);
         processo.DefinirClassificacao(ClassificacaoImportada());
-        processo.DefinirCronogramaFases(
-            [Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], []);
+        processo.DefinirCronogramaFases([HomologacaoDasInscricoesDeTeste.FaseQueHomologaComRecurso(1, "RESULTADO_FINAL")], []);
         DeclararNaoCobra(processo);
+        ContagemDePrazosDeTeste.DeclararConvencao(processo);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
 
@@ -127,8 +127,9 @@ public sealed class ConformidadeCronogramaTests
         processo.DefinirAtendimentoEspecializado(AtendimentoEspecializado.Criar([], [], []).Value!);
         processo.DefinirDistribuicaoVagas([Distribuicao(40)], FatosDeModalidadeDeTeste.DoCatalogo);
         processo.DefinirClassificacao(ClassificacaoImportada());
-        processo.DefinirCronogramaFases([Fase(1, "RESULTADO_FINAL", produzResultado: true).Value!], []);
+        processo.DefinirCronogramaFases([HomologacaoDasInscricoesDeTeste.FaseQueHomologaComRecurso(1, "RESULTADO_FINAL")], []);
         DeclararNaoCobra(processo);
+        ContagemDePrazosDeTeste.DeclararConvencao(processo);
 
         Result<VersaoConfiguracao> resultado = Publicar(processo);
 

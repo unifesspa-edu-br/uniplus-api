@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.UnitTests.ProcessosSeletivos.Cronogra
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscricoes;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
@@ -35,10 +36,18 @@ internal sealed record ModeloDeFase(string Codigo, int Ordem)
 
     internal IReadOnlyList<BancaRequerida> Bancas { get; init; } = [];
 
+    internal IReadOnlyList<string?>? TiposDeDecisao { get; init; }
+
+    internal RegraDeHomologacaoDasInscricoes? RegraDeHomologacao { get; init; }
+
     internal ModeloDeFase Janela(int diaDeAbertura, int diaDeEncerramento) =>
         this with { Inicio = Abertura.AddDays(diaDeAbertura), Fim = Abertura.AddDays(diaDeEncerramento) };
 
     internal ModeloDeFase Publicando(params ProdutoDaFase[] produtos) => this with { Produtos = produtos };
+
+    /// <summary>A fase que declara o tipo de decisão da homologação das inscrições e a regra dada.</summary>
+    internal ModeloDeFase Homologando(RegraDeHomologacaoDasInscricoes regra) =>
+        this with { RegraDeHomologacao = regra, TiposDeDecisao = HomologacaoDasInscricoesDeTeste.TiposDeDecisao };
 
     internal FaseDeclarada Declarar() => FaseDeclarada.Declarar(Guid.CreateVersion7(), Origem(), Decisoes(), Publicacoes(), Bancas);
 
@@ -50,7 +59,7 @@ internal sealed record ModeloDeFase(string Codigo, int Ordem)
     internal DecisoesDeCronogramaDaFase Decisoes() =>
         new(Ordem, Inicio, Fim, FaseConcluinteCodigo, ComUnidade ? UnidadesDeTeste.Ceps : null);
 
-    internal PublicacoesDaFase Publicacoes() => new(Produtos, EmiteParecerIndividual, RegraRecurso);
+    internal PublicacoesDaFase Publicacoes() => new(Produtos, EmiteParecerIndividual, RegraRecurso, TiposDeDecisao, RegraDeHomologacao);
 
     internal static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar);
 

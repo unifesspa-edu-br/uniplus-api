@@ -80,7 +80,7 @@ internal static class ProcessoBaseDeEnvelope
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
                 UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar(produtoCodigo, PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(resultado: produtoCodigo),
             bancasRequeridas: []).Value!;
 
     private static void DefinirEtapaDeProvaObjetiva(ProcessoSeletivo processo, string faseCodigo) =>

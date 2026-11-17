@@ -661,7 +661,11 @@ definir_cronograma_fases() {
             \"inicio\": \"$inicio_resultado\", \"fim\": \"$fim_resultado\",
             \"produtos\": [{\"atoCodigo\": \"RESULTADO_CLASSIFICACAO\", \"papel\": \"DEFINITIVO\"}],
             \"faseConcluinteCodigo\": null, \"emiteParecerIndividual\": false,
-            \"bancasRequeridas\": [], \"regraRecurso\": null
+            \"bancasRequeridas\": [], \"regraRecurso\": null,
+            \"regraDeHomologacao\": {
+                \"resultadoAtoCodigo\": \"RESULTADO_CLASSIFICACAO\",
+                \"alternativas\": [{\"condicoes\": [{\"tipo\": \"RESULTADO_NO_RETORNO_DO_INEP\", \"edicaoDoExame\": 2026}]}]
+            }
         },
         {
             \"ordem\": 3, \"faseCanonicaId\": \"$FASE_HABILITACAO_ID\",

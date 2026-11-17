@@ -38,21 +38,7 @@ internal static class ProcessoConformeFactory
                 PercentualDaReservaLegal = 1m,
                 RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, "a"),
                 Modalidades = [
-                ModalidadeSelecionada.Criar(
-                    modalidadeOrigemId: Guid.CreateVersion7(),
-                    codigo: "AC",
-                    descricao: null,
-                    naturezaLegal: NaturezaLegalModalidade.Ampla,
-                    composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-                    composicaoOrigemCodigo: null,
-                    regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
-                    remanejamentoDestino: null,
-                    remanejamentoPar: null,
-                    remanejamentoFallback: null,
-                    regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
-                    acaoQuandoIndeferido: null,
-                    baseLegal: "Res. Unifesspa 532/2021",
-                    quantidadeDeclarada: 40).Value!,
+                AmplaConcorrencia(),
             ]
             },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
@@ -77,29 +63,10 @@ internal static class ProcessoConformeFactory
             "PS Gate", TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
             UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
             LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
-
-        FaseCronograma faseDoProcesso = fase ?? FaseConforme();
-        processo.DefinirCronogramaFases([faseDoProcesso], []).IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([EtapaDaProvaObjetiva(faseDoProcesso.Codigo)]).IsSuccess.Should().BeTrue();
-
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
-
+        DefinirFaseEtapaEAtendimento(processo, fase);
         processo.DefinirDistribuicaoVagas([Oferta()], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
-
-        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-        }).Value!).IsSuccess.Should().BeTrue();
-
-
-        if (declararTaxa)
-        {
-            processo.DefinirTaxaInscricao(
-                ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
-        }
-
+        DefinirClassificacaoImportada(processo);
+        DefinirTaxa(processo, declararTaxa);
         DeclaracoesObrigatoriasDeTeste.Declarar(processo, bonus: declararBonus, desempate: comDesempate, opcoesDeCurso: declararOpcoesDeCurso);
 
         FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
@@ -113,8 +80,8 @@ internal static class ProcessoConformeFactory
     internal static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000001");
 
     /// <summary>
-    /// Fase mínima e conforme: agrupa etapas (há uma), produz resultado e coleta inscrição (há
-    /// vagas e a origem é inscrição própria). A asserção de sucesso impede que uma fase recusada
+    /// Fase mínima e conforme: agrupa etapas (há uma), produz resultado, coleta inscrição (há
+    /// vagas e a origem é inscrição própria) e homologa as inscrições, com a regra que aponta o resultado dela. A asserção de sucesso impede que uma fase recusada
     /// vire null e o teste siga com um cronograma vazio, passando por não exercitar nada.
     /// </summary>
     internal static FaseCronograma FaseConforme(
@@ -127,7 +94,7 @@ internal static class ProcessoConformeFactory
             new DecisoesDeCronogramaDaFase(
                 Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
                 UnidadeResponsavel: semUnidadeResponsavel ? null : UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: ProdutosDaFaseConforme(comRecurso: regraRecurso is not null), EmiteParecerIndividual: false, RegraRecurso: regraRecurso),
+            HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(ProdutosDaFaseConforme(comRecurso: regraRecurso is not null), regraRecurso),
             bancasRequeridas: bancas ?? (regraRecurso is null ? [] : [BancasDeTeste.DeRecursosDaFase()]));
 
         fase.IsSuccess.Should().BeTrue(fase.Error?.Message);
@@ -152,4 +119,50 @@ internal static class ProcessoConformeFactory
         periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
         periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
         documentoEditalId: Guid.CreateVersion7()).Value!;
+
+    private static ModalidadeSelecionada AmplaConcorrencia() => ModalidadeSelecionada.Criar(
+        modalidadeOrigemId: Guid.CreateVersion7(),
+        codigo: "AC",
+        descricao: null,
+        naturezaLegal: NaturezaLegalModalidade.Ampla,
+        composicaoVagas: ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
+        composicaoOrigemCodigo: null,
+        regraRemanejamento: RegraRemanejamentoModalidade.Nenhuma,
+        remanejamentoDestino: null, remanejamentoPar: null, remanejamentoFallback: null,
+        regraDeAplicabilidade: RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla),
+        acaoQuandoIndeferido: null,
+        baseLegal: "Res. Unifesspa 532/2021",
+        quantidadeDeclarada: 40).Value!;
+
+
+    private static void DefinirClassificacaoImportada(ProcessoSeletivo processo)
+    {
+        processo.DefinirClassificacao(ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        {
+            RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, "b"),
+            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+        }).Value!).IsSuccess.Should().BeTrue();
+    }
+
+
+    private static void DefinirTaxa(ProcessoSeletivo processo, bool declararTaxa)
+    {
+        if (declararTaxa)
+        {
+            processo.DefinirTaxaInscricao(
+                ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
+        }
+    }
+
+
+    private static void DefinirFaseEtapaEAtendimento(ProcessoSeletivo processo, FaseCronograma? fase)
+    {
+        FaseCronograma faseDoProcesso = fase ?? FaseConforme();
+        processo.DefinirCronogramaFases([faseDoProcesso], []).IsSuccess.Should().BeTrue();
+        processo.DefinirEtapas([EtapaDaProvaObjetiva(faseDoProcesso.Codigo)]).IsSuccess.Should().BeTrue();
+
+        processo.DefinirAtendimentoEspecializado(
+            AtendimentoEspecializado.Criar([], [], []).Value!).IsSuccess.Should().BeTrue();
+    }
+
 }

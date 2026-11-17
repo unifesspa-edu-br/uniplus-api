@@ -105,7 +105,7 @@ internal static class ProcessoComDuasExigenciasDeTeste
             new OrigemCanonicaDaFase(
                 Guid.CreateVersion7(), "INSCRICAO", OrigemDataFase.NoEdital, AgrupaEtapas: true, PermiteComplementacao: true, ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
             new DecisoesDeCronogramaDaFase(1, Inicio: InicioDaFase, Fim: FimDaFase, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-            new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("INSCRICAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+            HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(resultado: "INSCRICAO"),
             bancasRequeridas: []).Value!;
         processo.DefinirCronogramaFases([fase], []).IsSuccess.Should().BeTrue();
 

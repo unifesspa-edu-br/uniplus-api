@@ -110,44 +110,8 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
     {
         await using UniPlusDbContext db = _fixture.CreateDbContext();
 
-        ProcessoSeletivo processo = ProcessoSeletivo.Criar(
-            nome, TiposDeProcessoDeTeste.SiSU, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(),
-            UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!,
-            LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, identificadorLegivel: IdentificadoresDeTeste.Novo());
+        ProcessoSeletivo processo = ProcessoSeletivoPublicacaoSeeder.NovoProcessoConforme(nome);
 
-        processo.DefinirCronogramaFases([FaseConforme()], [])
-            .IsSuccess.Should().BeTrue();
-        processo.DefinirEtapas([
-            EtapaProcesso.Criar(
-                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: 10m, PassoDoLancamento: null, FormaDeAvaliacao: FormaDeAvaliacao.Objetiva, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!,
-        ]).IsSuccess.Should().BeTrue();
-
-        processo.DefinirAtendimentoEspecializado(
-            AtendimentoEspecializado.Criar([], [], []).Value!)
-            .IsSuccess.Should().BeTrue();
-
-        ModalidadeSelecionada modalidade = ModalidadeSelecionada.Criar(
-            Guid.CreateVersion7(), "AC", null, NaturezaLegalModalidade.Ampla, ComposicaoVagasModalidade.RestanteDasVagasOfertadas,
-            null, RegraRemanejamentoModalidade.Nenhuma, null, null, null, RegrasDeAplicabilidadeDeTeste.DaNatureza(NaturezaLegalModalidade.Ampla), null, "Res. Unifesspa 532/2021",
-            quantidadeDeclarada: 40).Value!;
-        processo.DefinirDistribuicaoVagas(
-            [ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-                new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = Regra(RegraDistribuicaoVagasCodigo.Institucional, 'a'), Modalidades = [modalidade] },
-                new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!], FatosDeModalidadeDeTeste.DoCatalogo).IsSuccess.Should().BeTrue();
-
-        processo.DefinirClassificacao(
-            ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-            {
-                RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
-                RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            }).Value!).IsSuccess.Should().BeTrue();
-
-        processo.DefinirTaxaInscricao(
-            ConfiguracaoTaxaInscricao.Criar(cobra: false, valor: null, fundamentosCodigos: null).Value!).IsSuccess.Should().BeTrue();
-        DeclaracoesObrigatoriasDeTeste.Declarar(processo);
-
-        FormularioDeTeste.GarantirFormularioDeInscricaoPropria(processo);
         await db.ProcessosSeletivos.AddAsync(processo);
         await db.SaveChangesAsync();
 
@@ -160,13 +124,7 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
         await conexao.OpenAsync();
 
         await using NpgsqlCommand comando = new(
-            """
-            UPDATE selecao.produtos_da_fase p
-               SET papel = @preliminar
-              FROM selecao.fases_cronograma f
-             WHERE p.fase_cronograma_id = f.id
-               AND f.processo_seletivo_id = @processo
-            """,
+AtualizacaoDoPapelDoProduto,
             conexao);
         comando.Parameters.AddWithValue("preliminar", (int)PapelProdutoFase.Preliminar);
         comando.Parameters.AddWithValue("processo", processoId);
@@ -199,6 +157,16 @@ public sealed class ConclusaoDoCicloRecursalPersistenciaTests : IClassFixture<Pr
         new DecisoesDeCronogramaDaFase(
             Ordem: 1, Inicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 1, 31, 0, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologa(),
         bancasRequeridas: []).Value!;
+
+    private const string AtualizacaoDoPapelDoProduto =
+            """
+            UPDATE selecao.produtos_da_fase p
+               SET papel = @preliminar
+              FROM selecao.fases_cronograma f
+             WHERE p.fase_cronograma_id = f.id
+               AND f.processo_seletivo_id = @processo
+            """;
+
 }

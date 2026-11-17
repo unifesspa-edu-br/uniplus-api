@@ -50,8 +50,8 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), "RESULTADO_FINAL", OrigemDataFase.NaExecucao, AgrupaEtapas: true, PermiteComplementacao: false, ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: null, UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: [ProdutoDaFase.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)], EmiteParecerIndividual: false, RegraRecurso: null),
-        bancasRequeridas: []).Value!;
+        HomologacaoDasInscricoesDeTeste.PublicacoesDaFaseQueHomologaComRecurso(),
+        bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
 
     private static void DefinirEDepoisRemoverAEtapaPontuada(ProcessoSeletivo processo)
     {
@@ -155,7 +155,7 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
         FaseCronograma habilitacao = FaseDeHabilitacao();
 
         // O rascunho aceita a fase ainda sem unidade; só a publicação a exige.
-        processo.DefinirCronogramaFases([FaseBase(), habilitacao], [])
+        processo.DefinirCronogramaFases([FaseBaseDaImportacao(), habilitacao], [])
             .IsSuccess.Should().BeTrue();
 
         VermelhosForaDoFormulario(processo).Should().ContainSingle()
@@ -182,8 +182,9 @@ public sealed class ConformidadePublicabilidadeEstruturalTests
             [FaseDeMatricula()],
             []).IsSuccess.Should().BeTrue();
 
-        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Should().ContainSingle(i => !i.Ok)
-            .Which.Codigo.Should().Be("cronograma_vagas_sem_fase_que_produz_resultado");
+        // A fase que homologa as inscrições publica o resultado, então sem resultado também falta a homologação: o item da falta de resultado é um dos vermelhos.
+        ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Padrao).Where(static i => !i.Ok).Select(static i => i.Codigo)
+            .Should().Contain("cronograma_vagas_sem_fase_que_produz_resultado");
 
         ExigirPublicacaoRecusada(processo, "ProcessoSeletivo.VagasSemFaseQueProduzResultado");
     }

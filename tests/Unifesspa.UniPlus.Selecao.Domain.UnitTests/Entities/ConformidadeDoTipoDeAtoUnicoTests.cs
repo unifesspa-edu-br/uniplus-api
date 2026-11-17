@@ -60,8 +60,9 @@ public sealed class ConformidadeDoTipoDeAtoUnicoTests
             RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, 'b'),
             RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
         }).Value!);
-        processo.DefinirCronogramaFases(fases, []).IsSuccess.Should().BeTrue();
+        processo.DefinirCronogramaFases([.. fases, HomologacaoDasInscricoesDeTeste.FaseQueHomologaComRecurso(ordem: 99)], []).IsSuccess.Should().BeTrue();
         DeclararNaoCobra(processo);
+        ContagemDePrazosDeTeste.DeclararConvencao(processo);
         return processo;
     }
 

@@ -101,47 +101,6 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     // Conferências que a raiz aplica antes do agregador — localidade e convenção de contagem
     // ══════════════════════════════════════════════════════════════════════════════════════
 
-    /// <summary>
-    /// Calendário vigente mínimo — um feriado nacional basta para a conferência passar. Existe para que
-    /// um teste sobre a convenção de contagem isole a convenção: sem ele, o processo com recurso
-    /// teria duas pendências, e a asserção não distinguiria qual das duas o teste prova.
-    /// </summary>
-    private static ContextoDeContagemDePrazos ComCalendario() => new(
-        CalendarioDiasUteisCongelado.Criar(
-            Guid.CreateVersion7(),
-            "2026",
-            [DiaNaoUtilCongelado.Criar(new DateOnly(2026, 1, 1), "NACIONAL", null, null, null).Value!]).Value,
-        FusoInstitucional: TimeZoneInfo.FindSystemTimeZoneById(FusoInstitucional.ZoneId));
-
-    private static ReferenciaRegra RegraDeRecursoAncorada() =>
-        ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64));
-
-    /// <summary>Produto preliminar de <see cref="FaseComRecurso"/> — a âncora do prazo.</summary>
-    private static readonly Guid ProdutoPreliminarId = new("77770000-0000-4000-8000-000000000004");
-
-    private static RegraRecursoFase RecursoEmHoras() => RegraRecursoFase.Criar(
-        RegraDeRecursoAncorada(),
-        new ParametrosRegraPrazoRecurso(
-            PrazoValor: 48m,
-            PrazoUnidade: UnidadePrazo.Horas,
-            SuspensividadePrimeiraInstanciaValor: null,
-            SuspensividadePrimeiraInstanciaUnidade: null,
-            AdmiteInstanciaSuperior: false,
-            SuspensividadeSegundaInstanciaValor: null,
-            SuspensividadeSegundaInstanciaUnidade: null),
-        ProdutoPreliminarId).Value!;
-
-    /// <summary>Fase preliminar que publica o ato âncora e aceita recurso sobre ele.</summary>
-    private static FaseCronograma FaseComRecurso() => FaseCronograma.Criar(
-        new OrigemCanonicaDaFase(
-            Guid.CreateVersion7(), "RESULTADO_PRELIMINAR", OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
-            ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
-        new DecisoesDeCronogramaDaFase(1, Inicio: null, Fim: null, FaseConcluinteCodigo: "RESULTADO_FINAL", UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(
-            Produtos: [ProdutoDaFase.Reidratar(ProdutoPreliminarId, "RESULTADO_CLASSIFICACAO", PapelProdutoFase.Preliminar)],
-            EmiteParecerIndividual: false, RegraRecurso: RecursoEmHoras()),
-        bancasRequeridas: [BancasDeTeste.DeRecursosDaFase()]).Value!;
-
     private static FaseCronograma FaseFinal(int ordem, string codigo = "RESULTADO_FINAL") => FaseCronograma.Criar(
         new OrigemCanonicaDaFase(
             Guid.CreateVersion7(), codigo, OrigemDataFase.NaExecucao, AgrupaEtapas: false, PermiteComplementacao: false,
@@ -156,12 +115,11 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     public void ContagemDePrazos_AlgoritmoNaoDeclarado()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirCronogramaFases([FaseComRecurso(), FaseFinal(2)], [])
-            .IsSuccess.Should().BeTrue();
+        ContagemDePrazosDeTeste.RetirarConvencao(processo);
 
-        SoEstesItensVermelhos(processo, ComCalendario(), "algoritmo_contagem_prazo_nao_declarado");
+        SoEstesItensVermelhos(processo, ContagemDePrazosDeTeste.ComCalendarioVigente, "algoritmo_contagem_prazo_nao_declarado");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo, ComCalendario());
+        Result<VersaoConfiguracao> resultado = Publicar(processo, ContagemDePrazosDeTeste.ComCalendarioVigente);
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado");
     }
@@ -223,8 +181,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     private static ProcessoSeletivo ProcessoComContagemETaxaPendentes()
     {
         ProcessoSeletivo processo = ProcessoConforme();
-        processo.DefinirCronogramaFases([FaseComRecurso(), FaseFinal(2)], [])
-            .IsSuccess.Should().BeTrue();
+        ContagemDePrazosDeTeste.RetirarConvencao(processo);
         processo.DefinirTaxaInscricao(null!);
         DeclaracoesObrigatoriasDeTeste.Declarar(processo);
 
@@ -236,7 +193,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
     {
         ProcessoSeletivo processo = ProcessoComContagemETaxaPendentes();
 
-        string[] vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(ComCalendario())).Where(static i => !i.Ok).Select(static i => i.Codigo)];
+        string[] vermelhos = [.. ChecklistDeConformidade.AvaliarConformidade(processo.Declaracao(), CadastrosDeTeste.Com(ContagemDePrazosDeTeste.ComCalendarioVigente)).Where(static i => !i.Ok).Select(static i => i.Codigo)];
 
         // Equal, não BeEquivalentTo: aqui a ORDEM é o que está sendo provado.
         vermelhos.Should().Equal(
@@ -244,7 +201,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
             "a convenção de contagem é conferência anterior ao agregador de itens estruturais, e o " +
             "checklist reproduz a precedência de Publicar()");
 
-        Result<VersaoConfiguracao> resultado = Publicar(processo, ComCalendario());
+        Result<VersaoConfiguracao> resultado = Publicar(processo, ContagemDePrazosDeTeste.ComCalendarioVigente);
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("ProcessoSeletivo.AlgoritmoContagemPrazoNaoDeclarado",
             "a publicação recusa pela primeira causa da mesma precedência");
