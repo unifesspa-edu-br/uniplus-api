@@ -213,6 +213,34 @@ public sealed class ReclassificacaoDaPermissaoTests
     private static string Recusa(ReclassificacaoDaPermissao reclassificacao, PedidoDeDecisaoDaReclassificacao pedido) =>
         reclassificacao.Decidir(pedido).Error!.Code;
 
+    [Fact(DisplayName = "Registrar guarda a mudança de cada eixo, o instante e o ordinal")]
+    public void Registrar_GuardaAMudancaDeCadaEixo()
+    {
+        Guid implantacao = Guid.CreateVersion7();
+        Guid perfil = Guid.CreateVersion7();
+
+        ReclassificacaoDaPermissao registrada = ReclassificacaoDaPermissao.Registrar(
+            implantacao, perfil, Codigo, new MudancaDaPermissao(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Pessoal, false, true), Agora, 3);
+
+        registrada.ImplantacaoId.Should().Be(implantacao);
+        registrada.PerfilId.Should().Be(perfil);
+        registrada.Codigo.Should().Be(Codigo);
+        (registrada.ClassificacaoAnterior, registrada.ClassificacaoNova).Should().Be((ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Pessoal));
+        (registrada.DeUnidadeAnterior, registrada.DeUnidadeNovo).Should().Be((false, true));
+        (registrada.Instante, registrada.OrdinalLocal).Should().Be((Agora, 3));
+    }
+
+    [Theory(DisplayName = "Registrar recusa o código em branco")]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void Registrar_CodigoEmBranco_Recusa(string codigo)
+    {
+        Action registrar = () => ReclassificacaoDaPermissao.Registrar(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), codigo, new MudancaDaPermissao(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Pessoal, false, false), Agora, 0);
+
+        registrar.Should().Throw<ArgumentException>();
+    }
+
     private static ReclassificacaoDaPermissao Subida(bool deUnidade) =>
         Mudanca(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Pessoal, deUnidade, deUnidade);
 

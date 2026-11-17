@@ -17,6 +17,9 @@ internal sealed class ReclassificacoesNaMemoria : IReclassificacaoRepository
 
     public List<LiberacaoDaReclassificacao> Liberacoes { get; } = [];
 
+    /// <summary>As liberações e as bases adicionadas, na ordem em que o repositório as recebeu.</summary>
+    public List<object> Adicionadas { get; } = [];
+
     public List<BaseDaPermissaoNaConcessao> Bases { get; } = [];
 
     public List<AvisoDaReclassificacao> Avisos { get; } = [];
@@ -24,6 +27,10 @@ internal sealed class ReclassificacoesNaMemoria : IReclassificacaoRepository
     public List<DivergenciaDaGovernanca> Divergencias { get; } = [];
 
     public Dictionary<Guid, string> NomesDosPerfis { get; } = [];
+
+    public List<ConcessaoComAPermissao> ConcessoesComAPermissao { get; } = [];
+
+    public HashSet<Guid> VersoesComDocumentoLido { get; } = [];
 
     public Task<string?> ObterImpressaoAtualAsync(CancellationToken cancellationToken = default) => Task.FromResult(Impressao);
 
@@ -53,14 +60,14 @@ internal sealed class ReclassificacoesNaMemoria : IReclassificacaoRepository
 
     public Task<IReadOnlyList<ConcessaoComAPermissao>> ListarConcessoesComAPermissaoAsync(
         Guid perfilId, string codigo, DateTimeOffset agora, bool travar, CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlyList<ConcessaoComAPermissao>>([]);
+        Task.FromResult<IReadOnlyList<ConcessaoComAPermissao>>([.. ConcessoesComAPermissao]);
 
     public Task<IReadOnlyList<Guid>> ListarVersoesEmUsoAsync(Guid perfilId, CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<Guid>>([]);
 
     public Task<IReadOnlySet<Guid>> ListarVersoesComDocumentoLidoAsync(
         Identidade leitor, IReadOnlyCollection<VersaoDoPerfil> versoes, CancellationToken cancellationToken = default) =>
-        Task.FromResult<IReadOnlySet<Guid>>(new HashSet<Guid>());
+        Task.FromResult<IReadOnlySet<Guid>>(versoes.Select(v => v.Id).Where(VersoesComDocumentoLido.Contains).ToHashSet());
 
     public Task<IReadOnlyList<DivergenciaDaGovernanca>> ListarDivergenciasAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult<IReadOnlyList<DivergenciaDaGovernanca>>(Divergencias);
@@ -79,7 +86,15 @@ internal sealed class ReclassificacoesNaMemoria : IReclassificacaoRepository
 
     public void Adicionar(AvisoDaReclassificacao aviso) => Avisos.Add(aviso);
 
-    public void Adicionar(LiberacaoDaReclassificacao liberacao) => Liberacoes.Add(liberacao);
+    public void Adicionar(LiberacaoDaReclassificacao liberacao)
+    {
+        Liberacoes.Add(liberacao);
+        Adicionadas.Add(liberacao);
+    }
 
-    public void Adicionar(BaseDaPermissaoNaConcessao baseNova) => Bases.Add(baseNova);
+    public void Adicionar(BaseDaPermissaoNaConcessao baseNova)
+    {
+        Bases.Add(baseNova);
+        Adicionadas.Add(baseNova);
+    }
 }
