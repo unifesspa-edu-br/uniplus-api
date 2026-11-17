@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 
 using Unifesspa.UniPlus.Infrastructure.Core.HealthChecks;
 using Unifesspa.UniPlus.Infrastructure.Core.Messaging;
@@ -16,16 +17,20 @@ public static class HealthChecksServiceCollectionExtensions
 {
     /// <summary>
     /// Tag canônica usada para filtrar checks que respondem ao readiness probe. Endpoints
-    /// devem usar <c>Predicate = h => h.Tags.Contains(<see cref="ReadyTag"/>)</c> em
+    /// devem usar <c>Predicate = verificacao => verificacao.Tags.Contains(<see cref="ReadyTag"/>)</c> em
     /// <see cref="Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions"/>.
     /// </summary>
     public const string ReadyTag = "ready";
 
+    private const string ChaveDoRedis = $"{Caching.RedisOptions.SectionName}:{nameof(Caching.RedisOptions.ConnectionString)}";
+    private const string ChaveDoMinio = $"{Storage.StorageOptions.SectionName}:{nameof(Storage.StorageOptions.Endpoint)}";
+    private const string ChaveDoKafka = $"{KafkaSettings.SectionName}:{nameof(KafkaSettings.BootstrapServers)}";
+
     /// <summary>
-    /// Registra checks para as dependências infra das APIs Uni+ no
-    /// <see cref="IHealthChecksBuilder"/> existente. Cada check é ativado condicionalmente
-    /// pela presença da config correspondente — em Development sem alguma dep, o check é
-    /// simplesmente não registrado em vez de reportar Unhealthy permanente.
+    /// Registra verificações para as dependências de infraestrutura das APIs Uni+ no
+    /// <see cref="IHealthChecksBuilder"/> existente. Cada verificação é ativada condicionalmente
+    /// pela presença da configuração correspondente — em Development sem alguma dependência, ela
+    /// simplesmente não é registrada, em vez de reportar Unhealthy permanente.
     /// </summary>
     /// <param name="services">A coleção de serviços.</param>
     /// <param name="configuration">Configuração da aplicação.</param>
@@ -59,38 +64,36 @@ public static class HealthChecksServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(configuration);
         ArgumentException.ThrowIfNullOrWhiteSpace(connectionStringName);
 
-        IHealthChecksBuilder hc = services.AddHealthChecks();
+        IHealthChecksBuilder healthChecks = services.AddHealthChecks();
 
-        string? pgConn = configuration.GetConnectionString(connectionStringName);
-        if (!string.IsNullOrWhiteSpace(pgConn))
-        {
-            hc.AddCheck(
-                name: "postgres",
-                instance: new PostgresHealthCheck(pgConn),
-                tags: [ReadyTag, "db"]);
-        }
-
-        if (!string.IsNullOrWhiteSpace(configuration[$"{Caching.RedisOptions.SectionName}:{nameof(Caching.RedisOptions.ConnectionString)}"]))
-        {
-            hc.AddCheck<RedisHealthCheck>(
-                name: "redis",
-                tags: [ReadyTag, "cache"]);
-        }
-
-        if (!string.IsNullOrWhiteSpace(configuration[$"{Storage.StorageOptions.SectionName}:{nameof(Storage.StorageOptions.Endpoint)}"]))
-        {
-            hc.AddCheck<MinioHealthCheck>(
-                name: "minio",
-                tags: [ReadyTag, "storage"]);
-        }
-
-        if (!string.IsNullOrWhiteSpace(configuration[$"{KafkaSettings.SectionName}:{nameof(KafkaSettings.BootstrapServers)}"]))
-        {
-            hc.AddCheck<KafkaHealthCheck>(
-                name: "kafka",
-                tags: [ReadyTag, "messaging"]);
-        }
+        AddPostgresIfConfigured(healthChecks, configuration, connectionStringName);
+        AddIfConfigured<RedisHealthCheck>(healthChecks, configuration, ChaveDoRedis, "redis", "cache");
+        AddIfConfigured<MinioHealthCheck>(healthChecks, configuration, ChaveDoMinio, "minio", "storage");
+        AddIfConfigured<KafkaHealthCheck>(healthChecks, configuration, ChaveDoKafka, "kafka", "messaging");
 
         return services;
+    }
+
+    private static void AddPostgresIfConfigured(
+        IHealthChecksBuilder healthChecks, IConfiguration configuration, string connectionStringName)
+    {
+        string? conexao = configuration.GetConnectionString(connectionStringName);
+        if (!string.IsNullOrWhiteSpace(conexao))
+        {
+            healthChecks.AddCheck(
+                name: "postgres",
+                instance: new PostgresHealthCheck(conexao),
+                tags: [ReadyTag, "db"]);
+        }
+    }
+
+    private static void AddIfConfigured<THealthCheck>(
+        IHealthChecksBuilder healthChecks, IConfiguration configuration, string chave, string nome, string tag)
+        where THealthCheck : class, IHealthCheck
+    {
+        if (!string.IsNullOrWhiteSpace(configuration[chave]))
+        {
+            healthChecks.AddCheck<THealthCheck>(name: nome, tags: [ReadyTag, tag]);
+        }
     }
 }
