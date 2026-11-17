@@ -13,6 +13,26 @@ public sealed class AuthorizationSubjectTests
     private const string Emissor = "https://sso.gov.br";
     private const string Permissao = "selecao.editais.publicar";
 
+    private static readonly Guid UnidadeAdministrada = Guid.CreateVersion7();
+
+    private static readonly EscopoAuditoriaVigente EscopoDeAuditoria =
+        EscopoAuditoriaVigente.From(Guid.CreateVersion7(), DateTimeOffset.UtcNow.AddDays(1)).Value!;
+
+    private static readonly AtuacaoVigente Atuacao = AtuacaoVigente.From(UnidadeAdministrada, DateTimeOffset.UtcNow.AddHours(2)).Value!;
+
+    private static EffectiveGrant[] GrantsDeTodasAsFontes()
+    {
+        DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(1);
+        EscopoDaPermissaoEfetiva daUnidade = EscopoDaPermissaoEfetiva.DaUnidade(Guid.CreateVersion7()).Value!;
+
+        return
+        [
+            EffectiveGrant.DaConcessaoDePerfil(Permissao, EscopoDaPermissaoEfetiva.Instituicao).Value!,
+            EffectiveGrant.DoVinculoDeGrupo(Permissao, EscopoDaPermissaoEfetiva.Instituicao, validade).Value!,
+            EffectiveGrant.Excepcional(Permissao, daUnidade, validade).Value!,
+        ];
+    }
+
     private static UsuarioRef Usuario() => UsuarioRef.From(Emissor, "conta-123").Value!;
 
     // ─── CA-03: grants de fontes distintas convivem numa única lista ───────
@@ -20,19 +40,12 @@ public sealed class AuthorizationSubjectTests
     [Fact]
     public void AuthorizationSubject_GrantsDeFontesDistintas_ConvivemNaLista()
     {
-        DateTimeOffset validade = DateTimeOffset.UtcNow.AddHours(1);
-
-        EffectiveGrant daConcessao = EffectiveGrant.From(Permissao, FonteGrant.Concessao, escopoInstitucional: true).Value!;
-        EffectiveGrant doGrupo = EffectiveGrant.From(Permissao, FonteGrant.OidcGroupBinding, escopoInstitucional: true, validoAte: validade).Value!;
-        EffectiveGrant excepcional = EffectiveGrant.From(
-            Permissao, FonteGrant.PermissaoExcecional, escopoUnidadeId: Guid.CreateVersion7(), validoAte: validade).Value!;
-
         Result<AuthorizationSubject> resultado = AuthorizationSubject.From(
-            Usuario(), "jti-abc", concessoesEfetivas: [daConcessao, doGrupo, excepcional]);
+            Usuario(), "jti-abc", concessoesEfetivas: GrantsDeTodasAsFontes());
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.ConcessoesEfetivas
-            .Select(g => g.Fonte)
+            .Select(grant => grant.Fonte)
             .Should().BeEquivalentTo([FonteGrant.Concessao, FonteGrant.OidcGroupBinding, FonteGrant.PermissaoExcecional],
                 "as três fontes rastreáveis convivem na mesma lista somente-leitura");
     }
@@ -41,40 +54,27 @@ public sealed class AuthorizationSubjectTests
     public void AuthorizationSubject_CamposCanonicos_SaoPreservados()
     {
         UsuarioRef usuario = Usuario();
-        Guid unidade = Guid.CreateVersion7();
-        EscopoAuditoriaVigente escopo = EscopoAuditoriaVigente.From(
-            Guid.CreateVersion7(), DateTimeOffset.UtcNow.AddDays(1)).Value!;
-        AtuacaoVigente atuacao = AtuacaoVigente.From(unidade, DateTimeOffset.UtcNow.AddHours(2)).Value!;
 
-        Result<AuthorizationSubject> resultado = AuthorizationSubject.From(
-            usuario,
-            "jti-xyz",
-            mfaSatisfeito: true,
-            gruposOidc: ["ceps-admin", "ceps-admin"],
-            unidadesAdministradas: [unidade],
-            escoposAuditoria: [escopo],
-            atuacaoAtiva: atuacao);
+        AuthorizationSubject subject = AuthorizationSubject.From(
+            usuario, "jti-xyz", mfaSatisfeito: true, gruposOidc: ["ceps-admin", "ceps-admin"],
+            unidadesAdministradas: [UnidadeAdministrada], escoposAuditoria: [EscopoDeAuditoria], atuacaoAtiva: Atuacao).Value!;
 
-        resultado.IsSuccess.Should().BeTrue();
-        AuthorizationSubject subject = resultado.Value!;
-        subject.Usuario.Should().Be(usuario);
-        subject.Jti.Should().Be("jti-xyz");
-        subject.MfaSatisfeito.Should().BeTrue();
+        (subject.Usuario, subject.Jti, subject.MfaSatisfeito).Should().Be((usuario, "jti-xyz", true));
         subject.GruposOidc.Should().ContainSingle("o conjunto remove a duplicata").Which.Should().Be("ceps-admin");
-        subject.UnidadesAdministradas.Should().ContainSingle().Which.Should().Be(unidade);
-        subject.EscoposAuditoria.Should().ContainSingle().Which.Should().Be(escopo);
-        subject.AtuacaoAtiva.Should().Be(atuacao);
+        subject.UnidadesAdministradas.Should().ContainSingle().Which.Should().Be(UnidadeAdministrada);
+        subject.EscoposAuditoria.Should().ContainSingle().Which.Should().Be(EscopoDeAuditoria);
+        subject.AtuacaoAtiva.Should().Be(Atuacao);
     }
 
     [Fact]
     public void AuthorizationSubject_CopiaDefensivaDeColecoes_NaoRefleteMutacaoExterna()
     {
-        var concessoes = new List<EffectiveGrant> { EffectiveGrant.From(Permissao, FonteGrant.Concessao, escopoInstitucional: true).Value! };
+        var concessoes = new List<EffectiveGrant> { EffectiveGrant.DaConcessaoDePerfil(Permissao, EscopoDaPermissaoEfetiva.Instituicao).Value! };
 
         Result<AuthorizationSubject> resultado = AuthorizationSubject.From(
             Usuario(), "jti-abc", concessoesEfetivas: concessoes);
 
-        concessoes.Add(EffectiveGrant.From("outra.permissao", FonteGrant.Concessao, escopoInstitucional: true).Value!); // muta a origem
+        concessoes.Add(EffectiveGrant.DaConcessaoDePerfil("outra.permissao", EscopoDaPermissaoEfetiva.Instituicao).Value!); // muta a origem
 
         resultado.Value!.ConcessoesEfetivas.Should().ContainSingle("a cópia é defensiva e imutável");
     }

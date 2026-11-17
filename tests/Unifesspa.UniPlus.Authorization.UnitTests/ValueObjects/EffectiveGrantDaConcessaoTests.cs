@@ -20,6 +20,9 @@ public sealed class EffectiveGrantDaConcessaoTests
     private static ConcessaoAtiva Gravada(Guid? versaoId, Guid? unidadeId = null) =>
         new(Guid.CreateVersion7(), Guid.CreateVersion7(), versaoId, "Perfil", unidadeId, unidadeId is null, null, [Permissao]);
 
+    private static ConcessaoAtiva GravadaComEscopo(Guid? unidadeId, bool institucional, Guid? concessaoId = null) =>
+        new(concessaoId ?? Guid.CreateVersion7(), Guid.CreateVersion7(), VersaoId, "Perfil", unidadeId, institucional, null, [Permissao]);
+
     [Fact(DisplayName = "A concessão efetiva leva a concessão, o perfil, o escopo e a versão da concessão gravada")]
     public void DaConcessao_LevaAOrigemEAVersao()
     {
@@ -31,7 +34,7 @@ public sealed class EffectiveGrantDaConcessaoTests
         grant.GrantId.Should().Be(gravada.ConcessaoId);
         grant.PerfilId.Should().Be(gravada.PerfilId);
         grant.Fonte.Should().Be(FonteGrant.Concessao);
-        grant.EscopoInstitucional.Should().BeTrue();
+        grant.Escopo.Institucional.Should().BeTrue();
     }
 
     [Fact(DisplayName = "A concessão sem versão, como a de governança, fica sem versão")]
@@ -53,6 +56,16 @@ public sealed class EffectiveGrantDaConcessaoTests
         EffectiveGrant.DaConcessao(Permissao, Gravada(VersaoId, Guid.Empty)).Error!.Code
             .Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoInvalido);
 
+    [Fact(DisplayName = "A concessão sem unidade nem instituição é recusada")]
+    public void DaConcessao_SemEscopo_Recusa() =>
+        EffectiveGrant.DaConcessao(Permissao, GravadaComEscopo(null, institucional: false)).Error!.Code
+            .Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoObrigatorio);
+
+    [Fact(DisplayName = "A concessão da unidade e da instituição juntas é recusada")]
+    public void DaConcessao_UnidadeEInstituicao_Recusa() =>
+        EffectiveGrant.DaConcessao(Permissao, GravadaComEscopo(Guid.CreateVersion7(), institucional: true)).Error!.Code
+            .Should().Be(AuthorizationErrorCodes.EffectiveGrantEscopoAmbiguo);
+
     [Fact(DisplayName = "O registro da decisão leva a versão da concessão usada e vai nulo sem ela")]
     public void Registro_LevaAVersaoDaConcessaoUsada()
     {
@@ -63,7 +76,7 @@ public sealed class EffectiveGrantDaConcessaoTests
         RegistroDecisaoAcesso comVersao = RegistroDecisaoAcesso.De(
             Sujeito(concessoes: presa), Requisito(resource.Sensibilidade), resource, requisicao, AuthorizationDecision.Permitir(presa));
         RegistroDecisaoAcesso semVersao = RegistroDecisaoAcesso.De(
-            Sujeito(concessoes: Concessao()), Requisito(resource.Sensibilidade), resource, requisicao, AuthorizationDecision.Permitir(Concessao()));
+            Sujeito(concessoes: ConcessaoInstitucional()), Requisito(resource.Sensibilidade), resource, requisicao, AuthorizationDecision.Permitir(ConcessaoInstitucional()));
 
         comVersao.VersaoId.Should().Be(VersaoId);
         semVersao.VersaoId.Should().BeNull();

@@ -41,7 +41,7 @@ public sealed class LoteDoRegistroDeAcessoTests
     {
         AuthorizationSubject sujeito = AuthorizationSubject.From(
             UsuarioRef.From($"https://idp.exemplo/realms/unifesspa/{new string('r', 200)}", new string('s', 128)).Value!, "jti-teste").Value!;
-        EffectiveGrant concessao = EffectiveGrant.From("selecao:dados-pessoais:consultar", FonteGrant.Concessao, escopoInstitucional: true).Value!;
+        EffectiveGrant concessao = EffectiveGrant.DaConcessaoDePerfil("selecao:dados-pessoais:consultar", EscopoDaPermissaoEfetiva.Instituicao).Value!;
 
         return RegistroDecisaoAcesso.De(
             sujeito,

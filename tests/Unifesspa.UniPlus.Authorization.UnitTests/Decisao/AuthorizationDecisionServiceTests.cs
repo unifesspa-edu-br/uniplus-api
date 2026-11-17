@@ -22,7 +22,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_ComConcessaoGravada_Concede()
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito());
 
         decisao.Allowed.Should().BeTrue();
@@ -35,7 +35,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_SemConcessao_NegaPorSemConcessaoAplicavel()
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao("configuracao:outra-coisa:manter")),
+            Sujeito(concessoes: ConcessaoInstitucional("configuracao:outra-coisa:manter")),
             Requisito());
 
         decisao.Allowed.Should().BeFalse();
@@ -56,7 +56,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_ConcessaoVencida_NegaPorConcessaoExpirada()
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao(validoAte: Agora.AddSeconds(-1))),
+            Sujeito(concessoes: ConcessaoInstitucional(validoAte: Agora.AddSeconds(-1))),
             Requisito());
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ConcessaoExpirada,
@@ -67,7 +67,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_EscopoExigidoAusente_NegaPorContextoObrigatorio()
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito(escopoContextoObrigatorio: ["processoId"]),
             Resource(processoId: null));
 
@@ -78,7 +78,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_EscopoExigidoPresente_Concede()
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito(escopoContextoObrigatorio: ["processoId"]),
             Resource(processoId: Guid.CreateVersion7()));
 
@@ -89,7 +89,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_CampoDeContextoDesconhecido_Nega()
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito(escopoContextoObrigatorio: ["bancaId"]));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ContextoObrigatorioAusente,
@@ -102,7 +102,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_PermissaoExigeMfa_Nega(bool mfaSatisfeito)
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(mfaSatisfeito, Concessao()),
+            Sujeito(mfaSatisfeito, ConcessaoInstitucional()),
             Requisito(requerMfa: true));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.MultifatorNaoSatisfeito,
@@ -114,7 +114,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_PermissaoExigeDuplaAprovacao_Nega()
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(mfaSatisfeito: true, concessoes: Concessao()),
+            Sujeito(mfaSatisfeito: true, concessoes: ConcessaoInstitucional()),
             Requisito(requerDuplaAprovacao: true));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.DuplaAprovacaoInvalida,
@@ -127,7 +127,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_DadoPessoalSemBaseLegal_Nega(ClassificacaoDeProtecao sensibilidade)
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito(sensibilidade, baseLegalPadrao: null),
             Resource(sensibilidade));
 
@@ -138,7 +138,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_PermissaoSensivelComResourceInterno_Nega()
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito(ClassificacaoDeProtecao.Sensivel, baseLegalPadrao: null),
             Resource(ClassificacaoDeProtecao.Interno));
 
@@ -151,7 +151,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_ResourcePessoalComPermissaoInterna_Nega()
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito(ClassificacaoDeProtecao.Interno, baseLegalPadrao: null),
             Resource(ClassificacaoDeProtecao.Pessoal));
 
@@ -162,7 +162,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_DadoPessoalComBaseLegal_Concede()
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito(ClassificacaoDeProtecao.Pessoal, baseLegalPadrao: "LGPD art. 7º, II"),
             Resource(ClassificacaoDeProtecao.Pessoal));
 
@@ -173,7 +173,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_ContextoAusenteEMfaAusente_NegaPeloContexto()
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(mfaSatisfeito: false, concessoes: Concessao()),
+            Sujeito(mfaSatisfeito: false, concessoes: ConcessaoInstitucional()),
             Requisito(requerMfa: true, escopoContextoObrigatorio: ["processoId"]));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ContextoObrigatorioAusente,
@@ -211,7 +211,7 @@ public sealed class AuthorizationDecisionServiceTests
         CheckDuplo check = new("fase-aberta", CheckResult.Reprovado(MotivoNegativa.FaseFechada));
 
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito(ClassificacaoDeProtecao.Pessoal, verificacoesDeContexto: ["fase-aberta"]),
             Resource(ClassificacaoDeProtecao.Pessoal),
             checks: [check]);
@@ -225,7 +225,7 @@ public sealed class AuthorizationDecisionServiceTests
         CheckDuplo check = new("fase-aberta", CheckResult.Aprovado());
 
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito(verificacoesDeContexto: ["fase-aberta"]),
             checks: [check]);
 
@@ -237,7 +237,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_CheckDeclaradoNaoRegistrado_Lanca()
     {
         Func<Task> acao = () => Decidir(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito(verificacoesDeContexto: ["verificacao-inexistente"]));
 
         await acao.Should().ThrowAsync<InvalidOperationException>(
@@ -247,7 +247,7 @@ public sealed class AuthorizationDecisionServiceTests
     [Fact(DisplayName = "Registra a decisão permitida com ator, permissão, resultado e fonte da concessão")]
     public async Task Decide_Permitida_RegistraDecisao()
     {
-        RegistroDecisaoAcesso registro = await RegistroDe(Sujeito(concessoes: Concessao(grantId: Guid.CreateVersion7())), RequisitoPessoal());
+        RegistroDecisaoAcesso registro = await RegistroDe(Sujeito(concessoes: ConcessaoInstitucional(grantId: Guid.CreateVersion7())), RequisitoPessoal());
         registro.Permitido.Should().BeTrue();
         registro.Permissao.Should().Be(Permissao);
         registro.RequestId.Should().Be("req-1244");
@@ -264,7 +264,7 @@ public sealed class AuthorizationDecisionServiceTests
         Guid perfil = Guid.CreateVersion7();
 
         RegistroDecisaoAcesso registro = await RegistroDe(
-            Sujeito(concessoes: Concessao(grantId: concessao, escopoUnidadeId: unidade, perfilId: perfil)),
+            Sujeito(concessoes: ConcessaoDaUnidade(unidade, grantId: concessao, perfilId: perfil)),
             RequisitoPessoal(),
             Resource(unidadeProprietariaId: unidade));
         registro.GrantId.Should().Be(concessao);
@@ -277,7 +277,7 @@ public sealed class AuthorizationDecisionServiceTests
     {
         Guid alvo = Guid.CreateVersion7();
 
-        RegistroDecisaoAcesso permitida = await RegistroDe(Sujeito(concessoes: Concessao()), RequisitoPessoal(), Resource(resourceId: alvo));
+        RegistroDecisaoAcesso permitida = await RegistroDe(Sujeito(concessoes: ConcessaoInstitucional()), RequisitoPessoal(), Resource(resourceId: alvo));
         RegistroDecisaoAcesso negada = await RegistroDe(Sujeito(), RequisitoPessoal(), Resource(resourceId: alvo));
 
         new[] { permitida, negada }.Should().OnlyContain(r => r.ResourceId == alvo,
@@ -289,7 +289,7 @@ public sealed class AuthorizationDecisionServiceTests
     {
         Guid unidadeA = Guid.CreateVersion7();
         Guid unidadeB = Guid.CreateVersion7();
-        AuthorizationSubject sujeito = Sujeito(concessoes: Concessao(escopoUnidadeId: unidadeA));
+        AuthorizationSubject sujeito = Sujeito(concessoes: ConcessaoDaUnidade(unidadeA));
 
         (await Decidir(sujeito, Requisito(), Resource(unidadeProprietariaId: unidadeA))).Allowed.Should().BeTrue();
 
@@ -304,9 +304,9 @@ public sealed class AuthorizationDecisionServiceTests
         Guid unidade = Guid.CreateVersion7();
 
         AuthorizationDecision institucionalEmUnidade = await Decidir(
-            Sujeito(concessoes: Concessao()), Requisito(), Resource(unidadeProprietariaId: unidade));
+            Sujeito(concessoes: ConcessaoInstitucional()), Requisito(), Resource(unidadeProprietariaId: unidade));
         AuthorizationDecision unidadeEmInstitucional = await Decidir(
-            Sujeito(concessoes: Concessao(escopoUnidadeId: unidade)), Requisito(), Resource());
+            Sujeito(concessoes: ConcessaoDaUnidade(unidade)), Requisito(), Resource());
 
         institucionalEmUnidade.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
         unidadeEmInstitucional.DenyReason!.Codigo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
@@ -325,7 +325,7 @@ public sealed class AuthorizationDecisionServiceTests
     [Fact(DisplayName = "O registro identifica o ator por emissor e identificador da conta, e nunca pelo identificador do token")]
     public async Task Decide_Registro_IdentificaOAtorSemJti()
     {
-        RegistroDecisaoAcesso registro = await RegistroDe(Sujeito(concessoes: Concessao()), RequisitoPessoal());
+        RegistroDecisaoAcesso registro = await RegistroDe(Sujeito(concessoes: ConcessaoInstitucional()), RequisitoPessoal());
         registro.AtorEmissor.Should().Be("https://idp.exemplo/realms/unifesspa");
         registro.AtorContaId.Should().Be("conta-opaco-123");
         typeof(RegistroDecisaoAcesso).GetProperties().Select(static p => p.Name)
@@ -336,7 +336,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_SensibilidadesDivergentes_RegistraAMaisRestritiva()
     {
         RegistroDecisaoAcesso registro = await RegistroDe(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito(ClassificacaoDeProtecao.Sensivel, baseLegalPadrao: "LGPD art. 11, II"),
             Resource(ClassificacaoDeProtecao.Interno));
 
@@ -353,7 +353,7 @@ public sealed class AuthorizationDecisionServiceTests
         InscricoesEmMemoria inscricoes = new(processo);
 
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()), RequisitoPessoal(), Resource(processoId: processo), inscricoes: inscricoes);
+            Sujeito(concessoes: ConcessaoInstitucional()), RequisitoPessoal(), Resource(processoId: processo), inscricoes: inscricoes);
 
         decisao.Allowed.Should().BeFalse();
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ImpedidoPorInscricaoNoProcesso);
@@ -366,7 +366,7 @@ public sealed class AuthorizationDecisionServiceTests
         Guid processo = Guid.CreateVersion7();
 
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao(escopoProcessoId: processo, escopoUnidadeId: null)),
+            Sujeito(concessoes: ConcessaoDoProcesso(processo)),
             Requisito(),
             Resource(processoId: processo),
             inscricoes: new InscricoesEmMemoria(processo));
@@ -389,7 +389,7 @@ public sealed class AuthorizationDecisionServiceTests
     public async Task Decide_InscritoEmOutroProcesso_Permite()
     {
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito(),
             Resource(processoId: Guid.CreateVersion7()),
             inscricoes: new InscricoesEmMemoria(Guid.CreateVersion7()));
@@ -403,7 +403,7 @@ public sealed class AuthorizationDecisionServiceTests
         InscricoesEmMemoria inscricoes = new(Guid.CreateVersion7());
 
         AuthorizationDecision decisao = await Decidir(
-            Sujeito(concessoes: Concessao()), Requisito(), Resource(), inscricoes: inscricoes);
+            Sujeito(concessoes: ConcessaoInstitucional()), Requisito(), Resource(), inscricoes: inscricoes);
 
         decisao.Allowed.Should().BeTrue();
         inscricoes.Consultas.Should().Be(0);

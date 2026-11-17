@@ -114,7 +114,7 @@ public sealed class DesignacaoNaBancaCheckTests
     {
         DesignacoesEmMemoria porta = new DesignacoesEmMemoria().Designar(Processo, Vinculos);
 
-        AuthorizationDecision decisao = await Decidir(porta, Sujeito(concessoes: Concessao()), ResourceDaBanca(), new InscricoesEmMemoria(Processo));
+        AuthorizationDecision decisao = await Decidir(porta, Sujeito(concessoes: ConcessaoInstitucional()), ResourceDaBanca(), new InscricoesEmMemoria(Processo));
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ImpedidoPorInscricaoNoProcesso);
         porta.Consultas.Should().Be(0);
@@ -123,7 +123,7 @@ public sealed class DesignacaoNaBancaCheckTests
     [Fact(DisplayName = "O motor concede a quem tem a concessão e a designação, e recusa quem só tem a concessão")]
     public async Task Motor_ConcessaoEDesignacao()
     {
-        AuthorizationSubject sujeito = Sujeito(concessoes: Concessao());
+        AuthorizationSubject sujeito = Sujeito(concessoes: ConcessaoInstitucional());
 
         (await Decidir(new DesignacoesEmMemoria().Designar(Processo, Vinculos), sujeito, ResourceDaBanca())).Allowed.Should().BeTrue();
         (await Decidir(new DesignacoesEmMemoria(), sujeito, ResourceDaBanca())).DenyReason!.Codigo
@@ -140,7 +140,7 @@ public sealed class DesignacaoNaBancaCheckTests
         ResourceContext semEtapa = Resource(processoId: Processo, resourceId: null)
             .ComVinculosDaBanca(VinculosDaBanca.From(Fase, Banca).Value!);
 
-        AuthorizationDecision decisao = await Decidir(porta, Sujeito(concessoes: Concessao()), semEtapa, requisito: requisito);
+        AuthorizationDecision decisao = await Decidir(porta, Sujeito(concessoes: ConcessaoInstitucional()), semEtapa, requisito: requisito);
 
         decisao.DenyReason!.Codigo.Should().Be(MotivoNegativa.ContextoObrigatorioAusente);
         porta.Consultas.Should().Be(0);

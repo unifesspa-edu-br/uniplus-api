@@ -37,7 +37,7 @@ internal static class RegistroDeAcessoDeTeste
         PermissionRequirement operacao = PermissionRequirement.From(LeituraPorTitularidade, ClassificacaoDeProtecao.Pessoal).Value!;
         ResourceContext alvo = ResourceContext.From("pedido", ClassificacaoDeProtecao.Pessoal, resourceId: pedido).Value!;
         AuthorizationRequestContext requisicao = AuthorizationRequestContext.From("req-1", Instante, OrigemRequisicao.Api, execucaoId: Execucao).Value!;
-        AuthorizationDecision titularidade = AuthorizationDecision.Permitir(EffectiveGrant.From(LeituraPorTitularidade, FonteGrant.Titularidade).Value!);
+        AuthorizationDecision titularidade = AuthorizationDecision.Permitir(EffectiveGrant.PorTitularidade(LeituraPorTitularidade).Value!);
 
         return RegistroDecisaoAcesso.De(Sujeito("leandro.viana"), operacao, alvo, requisicao, titularidade);
     }
@@ -50,7 +50,7 @@ internal static class RegistroDeAcessoDeTeste
     private static AuthorizationDecision Decisao(PermissionRequirement requisito, ResultadoDoAcesso resultado) => resultado switch
     {
         ResultadoDoAcesso.Permitido => AuthorizationDecision.Permitir(
-            EffectiveGrant.From(requisito.Permissao, FonteGrant.Concessao, escopoInstitucional: true).Value!),
+            EffectiveGrant.DaConcessaoDePerfil(requisito.Permissao, EscopoDaPermissaoEfetiva.Instituicao).Value!),
         ResultadoDoAcesso.Impedido => AuthorizationDecision.Negar(MotivoNegativa.ImpedidoPorInscricaoNoProcesso),
         _ => AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel),
     };

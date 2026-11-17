@@ -32,25 +32,25 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 public sealed record RegistroDecisaoAcesso
 {
     /// <summary>Instante do acesso, em UTC — o mesmo do contexto da requisição.</summary>
-    public DateTimeOffset Instante { get; }
+    public DateTimeOffset Instante { get; private init; }
 
     /// <summary>Emissor do token de quem acessou.</summary>
-    public string AtorEmissor { get; }
+    public string AtorEmissor { get; private init; } = string.Empty;
 
     /// <summary>Identificador da conta, opaco e atribuído pelo emissor da identidade, de quem acessou.</summary>
-    public string AtorContaId { get; }
+    public string AtorContaId { get; private init; } = string.Empty;
 
     /// <summary>Correlação da requisição, para cruzar com logs e mensagens. Vem do cliente e não identifica o acesso.</summary>
-    public string RequestId { get; }
+    public string RequestId { get; private init; } = string.Empty;
 
     /// <summary>Execução do servidor que originou o acesso — a mesma para todo acesso da mesma requisição.</summary>
-    public Guid ExecucaoId { get; }
+    public Guid ExecucaoId { get; private init; }
 
     /// <summary>Código da permissão exigida.</summary>
-    public string Permissao { get; }
+    public string Permissao { get; private init; } = string.Empty;
 
     /// <summary>Tipo do resource alvo.</summary>
-    public string ResourceTipo { get; private init; }
+    public string ResourceTipo { get; private init; } = string.Empty;
 
     /// <summary>
     /// Sensibilidade efetiva do dado alcançado, em valor canônico: a maior entre
@@ -59,16 +59,16 @@ public sealed record RegistroDecisaoAcesso
     /// faria uma operação sensível constar como interna, e consultas de
     /// conformidade sobre o registro deixariam de encontrá-la.
     /// </summary>
-    public string Sensibilidade { get; }
+    public string Sensibilidade { get; private init; } = string.Empty;
 
     /// <summary>Unidade proprietária do resource, quando o escopo se aplica.</summary>
-    public Guid? UnidadeProprietariaId { get; }
+    public Guid? UnidadeProprietariaId { get; private init; }
 
     /// <summary>Processo seletivo do resource, quando o escopo se aplica.</summary>
-    public Guid? ProcessoId { get; }
+    public Guid? ProcessoId { get; private init; }
 
     /// <summary>Chamada do resource, quando o escopo se aplica.</summary>
-    public Guid? ChamadaId { get; }
+    public Guid? ChamadaId { get; private init; }
 
     /// <summary>Registro alvo da operação (por exemplo, a inscrição), quando a decisão recai sobre um único registro.</summary>
     public Guid? ResourceId { get; private init; }
@@ -80,96 +80,50 @@ public sealed record RegistroDecisaoAcesso
     /// Código do fato revelado, quando o acesso recai sobre um único campo. É o código do catálogo, que não é dado
     /// pessoal (ADR-0019).
     /// </summary>
-    public string? FatoCodigo { get; }
+    public string? FatoCodigo { get; private init; }
 
     /// <summary>Ocorrência do fato revelado, quando o campo está num grupo que se repete.</summary>
-    public string? Ocorrencia { get; }
+    public string? Ocorrencia { get; private init; }
 
     /// <summary>Canal pelo qual a requisição chegou, em valor canônico.</summary>
-    public string Origem { get; }
+    public string Origem { get; private init; } = string.Empty;
 
     /// <summary>
     /// Client OIDC que obteve o token do acesso (claim <c>azp</c>, assinado pelo provedor de identidade), e assim a
     /// aplicação que o fez: a tela da Seleção, a da Configuração ou um token de serviço. Nulo quando o token não o traz.
     /// </summary>
-    public string? ClienteOidc { get; }
+    public string? ClienteOidc { get; private init; }
 
     /// <summary>
     /// Desfecho da decisão, gravado no valor canônico: <c>permitido</c>, <c>negado</c> ou <c>impedido</c>. O impedido é
     /// uma negativa com motivo próprio, e quem lê o registro não deve ter de reconhecê-lo pelo texto do motivo.
     /// </summary>
     [JsonConverter(typeof(ResultadoDoAcessoCanonicoConverter))]
-    public ResultadoDoAcesso Resultado { get; }
+    public ResultadoDoAcesso Resultado { get; private init; }
 
     /// <summary>Veredito da decisão, derivado do <see cref="Resultado"/>.</summary>
     public bool Permitido => Resultado == ResultadoDoAcesso.Permitido;
 
     /// <summary>Motivo canônico da negativa — presente se, e somente se, negada.</summary>
-    public string? MotivoNegativa { get; }
+    public string? MotivoNegativa { get; private init; }
 
     /// <summary>Fonte canônica da concessão usada — presente se, e somente se, permitida.</summary>
-    public string? FonteGrant { get; }
+    public string? FonteGrant { get; private init; }
 
     /// <summary>Identificador da concessão usada, quando ela o possui.</summary>
-    public Guid? GrantId { get; }
+    public Guid? GrantId { get; private init; }
 
     /// <summary>Perfil de acesso da concessão usada, quando ela é de perfil.</summary>
-    public Guid? PerfilId { get; }
+    public Guid? PerfilId { get; private init; }
 
     /// <summary>Versão do perfil a que a concessão usada está presa; nula quando a concessão não é de perfil comum.</summary>
     public Guid? VersaoId { get; private init; }
 
     /// <summary>Unidade do escopo da concessão usada; nula quando o escopo é a instituição.</summary>
-    public Guid? EscopoUnidadeId { get; }
+    public Guid? EscopoUnidadeId { get; private init; }
 
-    private RegistroDecisaoAcesso(
-        string atorEmissor,
-        string atorContaId,
-        DateTimeOffset instante,
-        string requestId,
-        Guid execucaoId,
-        string permissao,
-        string resourceTipo,
-        string sensibilidade,
-        Guid? unidadeProprietariaId,
-        Guid? processoId,
-        Guid? chamadaId,
-        Guid? resourceId,
-        Guid? inscricaoId,
-        string? fatoCodigo,
-        string? ocorrencia,
-        string origem,
-        string? clienteOidc,
-        ResultadoDoAcesso resultado,
-        string? motivoNegativa,
-        string? fonteGrant,
-        Guid? grantId,
-        Guid? perfilId,
-        Guid? escopoUnidadeId)
+    private RegistroDecisaoAcesso()
     {
-        AtorEmissor = atorEmissor;
-        AtorContaId = atorContaId;
-        Instante = instante;
-        RequestId = requestId;
-        ExecucaoId = execucaoId;
-        Permissao = permissao;
-        ResourceTipo = resourceTipo;
-        Sensibilidade = sensibilidade;
-        UnidadeProprietariaId = unidadeProprietariaId;
-        ProcessoId = processoId;
-        ChamadaId = chamadaId;
-        ResourceId = resourceId;
-        InscricaoId = inscricaoId;
-        FatoCodigo = fatoCodigo;
-        Ocorrencia = ocorrencia;
-        Origem = origem;
-        ClienteOidc = clienteOidc;
-        Resultado = resultado;
-        MotivoNegativa = motivoNegativa;
-        FonteGrant = fonteGrant;
-        GrantId = grantId;
-        PerfilId = perfilId;
-        EscopoUnidadeId = escopoUnidadeId;
     }
 
     /// <summary>
@@ -191,35 +145,60 @@ public sealed record RegistroDecisaoAcesso
         ArgumentNullException.ThrowIfNull(request);
         ArgumentNullException.ThrowIfNull(decision);
 
-        EffectiveGrant? grant = decision.GrantUsed;
-
-        return new RegistroDecisaoAcesso(
-            subject.Usuario.Emissor,
-            subject.Usuario.ContaId,
-            request.DataAcesso,
-            request.RequestId,
-            request.ExecucaoId,
-            requirement.Permissao,
-            resource.ResourceTipo,
-            ValoresCanonicos.De(SensibilidadeEfetiva(requirement, resource)),
-            resource.UnidadeProprietariaId,
-            resource.ProcessoId,
-            resource.ChamadaId,
-            resource.ResourceId,
-            resource.InscricaoId,
-            resource.FatoCodigo,
-            resource.Ocorrencia,
-            ValoresCanonicos.De(request.Origem),
-            request.ClienteOidc,
-            decision.Resultado,
-            decision.DenyReason is { } motivo ? ValoresCanonicos.De(motivo.Codigo) : null,
-            grant is not null ? ValoresCanonicos.De(grant.Fonte) : null,
-            grant?.GrantId,
-            grant?.PerfilId,
-            grant?.EscopoUnidadeId).ComVersaoDe(grant);
+        return new RegistroDecisaoAcesso()
+            .DoAtor(subject)
+            .DaRequisicao(request)
+            .DoResource(requirement, resource)
+            .DaDecisao(decision);
     }
 
-    private RegistroDecisaoAcesso ComVersaoDe(EffectiveGrant? grant) => this with { VersaoId = grant?.VersaoId };
+    private RegistroDecisaoAcesso DoAtor(AuthorizationSubject subject) =>
+        this with
+        {
+            AtorEmissor = subject.Usuario.Emissor,
+            AtorContaId = subject.Usuario.ContaId,
+        };
+
+    private RegistroDecisaoAcesso DaRequisicao(AuthorizationRequestContext request) =>
+        this with
+        {
+            Instante = request.DataAcesso,
+            RequestId = request.RequestId,
+            ExecucaoId = request.ExecucaoId,
+            Origem = ValoresCanonicos.De(request.Origem),
+            ClienteOidc = request.ClienteOidc,
+        };
+
+    private RegistroDecisaoAcesso DoResource(PermissionRequirement requirement, ResourceContext resource) =>
+        this with
+        {
+            Permissao = requirement.Permissao,
+            ResourceTipo = resource.ResourceTipo,
+            Sensibilidade = ValoresCanonicos.De(SensibilidadeEfetiva(requirement, resource)),
+            UnidadeProprietariaId = resource.UnidadeProprietariaId,
+            ProcessoId = resource.ProcessoId,
+            ChamadaId = resource.ChamadaId,
+            ResourceId = resource.ResourceId,
+            InscricaoId = resource.InscricaoId,
+            FatoCodigo = resource.FatoCodigo,
+            Ocorrencia = resource.Ocorrencia,
+        };
+
+    private RegistroDecisaoAcesso DaDecisao(AuthorizationDecision decision)
+    {
+        EffectiveGrant? grant = decision.GrantUsed;
+
+        return this with
+        {
+            Resultado = decision.Resultado,
+            MotivoNegativa = decision.DenyReason is { } motivo ? ValoresCanonicos.De(motivo.Codigo) : null,
+            FonteGrant = grant is not null ? ValoresCanonicos.De(grant.Fonte) : null,
+            GrantId = grant?.GrantId,
+            PerfilId = grant?.PerfilId,
+            VersaoId = grant?.VersaoId,
+            EscopoUnidadeId = grant?.Escopo.UnidadeId,
+        };
+    }
 
     /// <summary>
     /// Um registro por id de resource, a partir do registro de uma decisão <b>permitida</b>: cada
@@ -233,7 +212,20 @@ public sealed record RegistroDecisaoAcesso
         string resourceTipo, IEnumerable<Guid> resourceIds, bool resourceEhInscricao = false)
     {
         ArgumentNullException.ThrowIfNull(resourceIds);
+        ConferirQuePodeGerarPorResource();
 
+        if (!ResourceTipos.SegueAConvencao(resourceTipo))
+        {
+            throw new ArgumentException(
+                $"O tipo de resource '{resourceTipo}' está fora da convenção kebab-case.", nameof(resourceTipo));
+        }
+
+        return [.. resourceIds.Distinct().Select(resourceId => ParaOResource(resourceTipo, resourceId, resourceEhInscricao))];
+    }
+
+    // Só a decisão permitida, e que não é a revelação de um campo, gera registro por resource.
+    private void ConferirQuePodeGerarPorResource()
+    {
         if (!Permitido)
         {
             throw new InvalidOperationException("Só a decisão permitida gera registro por resource.");
@@ -243,20 +235,15 @@ public sealed record RegistroDecisaoAcesso
         {
             throw new InvalidOperationException("A revelação de um campo é sempre de um resource só.");
         }
+    }
 
-        if (!ResourceTipos.SegueAConvencao(resourceTipo))
-        {
-            throw new ArgumentException(
-                $"O tipo de resource '{resourceTipo}' está fora da convenção kebab-case.", nameof(resourceTipo));
-        }
-
-        return [.. resourceIds.Distinct().Select(id => this with
+    private RegistroDecisaoAcesso ParaOResource(string resourceTipo, Guid resourceId, bool resourceEhInscricao) =>
+        this with
         {
             ResourceTipo = resourceTipo,
-            ResourceId = id,
-            InscricaoId = resourceEhInscricao ? id : InscricaoId,
-        })];
-    }
+            ResourceId = resourceId,
+            InscricaoId = resourceEhInscricao ? resourceId : InscricaoId,
+        };
 
     /// <summary>
     /// Identifica o acesso dentro da execução do servidor: quem acessou, o que e onde. Repetir o mesmo acesso na mesma

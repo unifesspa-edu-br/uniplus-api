@@ -34,32 +34,27 @@ public sealed class HttpAuthorizationSubjectResolverTests
     [Fact]
     public async Task Resolve_ComTokenCompleto_MontaSujeitoComAsConcessoesGravadas()
     {
-        Guid concessaoId = Guid.CreateVersion7();
-        Guid perfilId = Guid.CreateVersion7();
-        DateTimeOffset validade = DateTimeOffset.UnixEpoch.AddDays(30);
+        ConcessaoAtiva gravada = new(
+            Guid.CreateVersion7(), Guid.CreateVersion7(), null, "Perfil", Unidade, false,
+            DateTimeOffset.UnixEpoch.AddDays(30), [Permissao, "selecao:outra-coisa:ler"]);
 
         Result<AuthorizationSubject> resultado = await Resolver(
-            [
-                new ConcessaoAtiva(concessaoId, perfilId, null, "Perfil", Unidade, false, validade, [Permissao, "selecao:outra-coisa:ler"]),
-            ],
-            new Claim("iss", Emissor),
-            new Claim("sub", "conta-opaco-1"),
-            new Claim("jti", "jti-1"));
+            [gravada], new Claim("iss", Emissor), new Claim("sub", "conta-opaco-1"), new Claim("jti", "jti-1"));
 
         AuthorizationSubject sujeito = resultado.Value!;
-        sujeito.Usuario.Emissor.Should().Be(Emissor);
-        sujeito.Usuario.ContaId.Should().Be("conta-opaco-1");
-        sujeito.Jti.Should().Be("jti-1");
-        sujeito.ConcessoesEfetivas.Select(c => c.PermissaoCodigo).Should().Equal(Permissao, "selecao:outra-coisa:ler");
-        sujeito.ConcessoesEfetivas.Should().AllSatisfy(concessao =>
-        {
-            concessao.Fonte.Should().Be(FonteGrant.Concessao);
-            concessao.GrantId.Should().Be(concessaoId);
-            concessao.PerfilId.Should().Be(perfilId);
-            concessao.EscopoUnidadeId.Should().Be(Unidade);
-            concessao.EscopoInstitucional.Should().BeFalse();
-            concessao.ValidoAte.Should().Be(validade);
-        });
+        (sujeito.Usuario.Emissor, sujeito.Usuario.ContaId, sujeito.Jti).Should().Be((Emissor, "conta-opaco-1", "jti-1"));
+        sujeito.ConcessoesEfetivas.Select(concessao => concessao.PermissaoCodigo).Should().Equal(Permissao, "selecao:outra-coisa:ler");
+        sujeito.ConcessoesEfetivas.Should().AllSatisfy(concessao => ConferirOrigem(concessao, gravada));
+    }
+
+    private static void ConferirOrigem(EffectiveGrant concessao, ConcessaoAtiva gravada)
+    {
+        concessao.Fonte.Should().Be(FonteGrant.Concessao);
+        concessao.GrantId.Should().Be(gravada.ConcessaoId);
+        concessao.PerfilId.Should().Be(gravada.PerfilId);
+        concessao.Escopo.UnidadeId.Should().Be(gravada.UnidadeId);
+        concessao.Escopo.Institucional.Should().BeFalse();
+        concessao.ValidoAte.Should().Be(gravada.ValidaAte);
     }
 
     [Fact]
@@ -72,8 +67,8 @@ public sealed class HttpAuthorizationSubjectResolverTests
             new Claim("jti", "jti-1"));
 
         EffectiveGrant concessao = resultado.Value!.ConcessoesEfetivas.Should().ContainSingle().Subject;
-        concessao.EscopoInstitucional.Should().BeTrue();
-        concessao.EscopoUnidadeId.Should().BeNull();
+        concessao.Escopo.Institucional.Should().BeTrue();
+        concessao.Escopo.UnidadeId.Should().BeNull();
         concessao.ValidoAte.Should().BeNull();
     }
 

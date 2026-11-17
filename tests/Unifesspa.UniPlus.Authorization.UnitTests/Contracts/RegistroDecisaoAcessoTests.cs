@@ -16,21 +16,16 @@ public sealed class RegistroDecisaoAcessoTests
     [Fact(DisplayName = "Uma decisão permitida gera um registro por inscrição, com a permissão e a sensibilidade da origem")]
     public void ParaCadaResource_GeraUmRegistroPorId()
     {
-        Guid fernanda = Guid.CreateVersion7();
-        Guid caroline = Guid.CreateVersion7();
-        Guid isabella = Guid.CreateVersion7();
+        Guid[] inscricoes = [Guid.CreateVersion7(), Guid.CreateVersion7(), Guid.CreateVersion7()];
         Guid processo = Guid.CreateVersion7();
         RegistroDecisaoAcesso origem = Permitido(Resource(ClassificacaoDeProtecao.Pessoal, processoId: processo));
 
-        IReadOnlyList<RegistroDecisaoAcesso> registros = origem.ParaCadaResource("inscricao", [fernanda, caroline, isabella]);
+        IReadOnlyList<RegistroDecisaoAcesso> registros = origem.ParaCadaResource("inscricao", inscricoes);
 
-        registros.Select(static r => r.ResourceId).Should().BeEquivalentTo([fernanda, caroline, isabella]);
-        registros.Should().OnlyContain(r =>
-            r.ResourceTipo == "inscricao"
-            && r.Permissao == Permissao
-            && r.Sensibilidade == "pessoal"
-            && r.ProcessoId == processo
-            && r.AtorContaId == "conta-opaco-123");
+        registros.Select(static registro => registro.ResourceId).Should().BeEquivalentTo(inscricoes);
+        registros.Should().OnlyContain(registro =>
+            registro.ResourceTipo == "inscricao" && registro.Permissao == Permissao && registro.Sensibilidade == "pessoal"
+            && registro.ProcessoId == processo && registro.AtorContaId == "conta-opaco-123");
     }
 
     [Theory(DisplayName = "O registro leva o client OIDC do contexto; sem ele, ou em branco, vai nulo e a decisão não muda")]
@@ -44,8 +39,8 @@ public sealed class RegistroDecisaoAcessoTests
             "req-1244", Agora, Authorization.Enums.OrigemRequisicao.Api, clienteOidc: azp).Value!;
 
         RegistroDecisaoAcesso registro = RegistroDecisaoAcesso.De(
-            Sujeito(concessoes: Concessao()), Requisito(resource.Sensibilidade), resource, requisicao,
-            AuthorizationDecision.Permitir(Concessao()));
+            Sujeito(concessoes: ConcessaoInstitucional()), Requisito(resource.Sensibilidade), resource, requisicao,
+            AuthorizationDecision.Permitir(ConcessaoInstitucional()));
 
         registro.ClienteOidc.Should().Be(esperado);
         registro.Permitido.Should().BeTrue();
@@ -127,7 +122,7 @@ public sealed class RegistroDecisaoAcessoTests
     {
         AuthorizationDecision decisao = motivo is { } negativa
             ? AuthorizationDecision.Negar(negativa)
-            : AuthorizationDecision.Permitir(Concessao());
+            : AuthorizationDecision.Permitir(ConcessaoInstitucional());
 
         RegistroDecisaoAcesso registro = RegistroDecisaoAcesso.De(Sujeito(), Requisito(), Resource(), Requisicao(), decisao);
 
@@ -176,14 +171,14 @@ public sealed class RegistroDecisaoAcessoTests
             Requisito(resource.Sensibilidade),
             resource,
             AuthorizationRequestContext.From("req-1244", Agora, Authorization.Enums.OrigemRequisicao.Api, execucaoId: execucao).Value!,
-            AuthorizationDecision.Permitir(Concessao())).Identidade;
+            AuthorizationDecision.Permitir(ConcessaoInstitucional())).Identidade;
     }
 
     private static RegistroDecisaoAcesso Permitido(ResourceContext resource) =>
         RegistroDecisaoAcesso.De(
-            Sujeito(concessoes: Concessao()),
+            Sujeito(concessoes: ConcessaoInstitucional()),
             Requisito(resource.Sensibilidade),
             resource,
             Requisicao(),
-            AuthorizationDecision.Permitir(Concessao()));
+            AuthorizationDecision.Permitir(ConcessaoInstitucional()));
 }

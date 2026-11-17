@@ -28,7 +28,7 @@ using Unifesspa.UniPlus.Authorization.ValueObjects;
 /// (ADR-0079): a concessão de unidade alcança só o resource daquela unidade, e a
 /// institucional, só o resource sem unidade proprietária. Não há concessão sem
 /// escopo, e portanto nenhuma que alcance qualquer resource. A titularidade (<see cref="FonteGrant.Titularidade"/>) nunca
-/// autoriza: não é concessão, e é recusada qualquer que seja o escopo.
+/// autoriza: não é concessão e nasce sem escopo, de modo que nenhum resource a alcança.
 /// </para>
 /// </remarks>
 public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
@@ -59,12 +59,8 @@ public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
         return Task.FromResult(selecionada is not null ? CheckResult.Aprovado(selecionada) : CheckResult.Reprovado(MotivoDaNegativa(aplicaveis)));
     }
 
-    // A titularidade não é concessão: só existe no registro da leitura que a parte faz do que é seu (ADR-0166). Se chegar
-    // às concessões efetivas do sujeito por engano, não autoriza nada, e a falha é fechada aqui, sem depender de quem
-    // monta o sujeito.
     private static bool Aplicavel(EffectiveGrant grant, PermissionRequirement requirement, ResourceContext resource) =>
-        grant.Fonte != FonteGrant.Titularidade
-        && string.Equals(grant.PermissaoCodigo, requirement.Permissao, StringComparison.Ordinal)
+        string.Equals(grant.PermissaoCodigo, requirement.Permissao, StringComparison.Ordinal)
         && EscopoAlcancaResource(grant, resource);
 
     // A validade é comparada com o instante do acesso que veio no contexto, e não com uma leitura nova do relógio: a
@@ -89,14 +85,14 @@ public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
     // ausência não relaxa a restrição.
     private static bool EscopoAlcancaResource(EffectiveGrant grant, ResourceContext resource) =>
         UnidadeAlcanca(grant, resource.UnidadeProprietariaId)
-        && EscopoAlcanca(grant.EscopoProcessoId, resource.ProcessoId)
-        && EscopoAlcanca(grant.EscopoChamadaId, resource.ChamadaId)
-        && TipoAlcanca(grant.ResourceTipoRestricao, resource.ResourceTipo);
+        && EscopoAlcanca(grant.Escopo.ProcessoId, resource.ProcessoId)
+        && EscopoAlcanca(grant.Escopo.ChamadaId, resource.ChamadaId)
+        && TipoAlcanca(grant.Escopo.ResourceTipoRestricao, resource.ResourceTipo);
 
     private static bool UnidadeAlcanca(EffectiveGrant grant, Guid? unidadeDoResource) =>
-        grant.EscopoInstitucional
+        grant.Escopo.Institucional
             ? unidadeDoResource is null
-            : grant.EscopoUnidadeId is { } unidade && unidade == unidadeDoResource;
+            : grant.Escopo.UnidadeId is { } unidade && unidade == unidadeDoResource;
 
     private static bool EscopoAlcanca(Guid? escopoDaConcessao, Guid? escopoDoResource) =>
         escopoDaConcessao is null || escopoDaConcessao == escopoDoResource;
@@ -107,7 +103,7 @@ public sealed class GrantEfetivoAplicavelCheck : IPermissaoCheck
 
     private static int Especificidade(EffectiveGrant grant) =>
         1
-        + (grant.EscopoProcessoId is null ? 0 : 1)
-        + (grant.EscopoChamadaId is null ? 0 : 1)
-        + (string.IsNullOrWhiteSpace(grant.ResourceTipoRestricao) ? 0 : 1);
+        + (grant.Escopo.ProcessoId is null ? 0 : 1)
+        + (grant.Escopo.ChamadaId is null ? 0 : 1)
+        + (string.IsNullOrWhiteSpace(grant.Escopo.ResourceTipoRestricao) ? 0 : 1);
 }

@@ -39,7 +39,7 @@ public sealed class VerificadorDeAcessoHttpTests
 
     private readonly IAuthorizationDecisionService _decisao = Substitute.For<IAuthorizationDecisionService>();
     private readonly IRegistroOperacionalRestrito _registro = Substitute.For<IRegistroOperacionalRestrito>();
-    private readonly EffectiveGrant _concessao = EffectiveGrant.From(Permissao, FonteGrant.Concessao, escopoUnidadeId: Unidade).Value!;
+    private readonly EffectiveGrant _concessao = EffectiveGrant.DaConcessaoDePerfil(Permissao, EscopoDaPermissaoEfetiva.DaUnidade(Unidade).Value!).Value!;
     private readonly VerificadorDeAcessoHttp _verificador;
 
     public VerificadorDeAcessoHttpTests()
@@ -188,8 +188,7 @@ public sealed class VerificadorDeAcessoHttpTests
     [Fact(DisplayName = "Filtro com alternativa e só concessão global na alternativa: 403, e as negativas da principal e da alternativa são gravadas")]
     public async Task Filtro_AlternativaComSoConcessaoGlobal_Responde403EGravaAsDuasNegativas()
     {
-        EffectiveGrant global = EffectiveGrant.From(
-            "autorizacao:pedidos:aprovar-funcional", FonteGrant.Concessao, escopoInstitucional: true).Value!;
+        EffectiveGrant global = EffectiveGrant.DaConcessaoDePerfil("autorizacao:pedidos:aprovar-funcional", EscopoDaPermissaoEfetiva.Instituicao).Value!;
         PermitirSo(global);
 
         AuthorizationFilterContext contexto = await FiltrarAsync(
@@ -357,7 +356,7 @@ public sealed class VerificadorDeAcessoHttpTests
             concessoesEfetivas: [concessao]).Value!;
 
     private static EffectiveGrant ConcessaoGlobal() =>
-        EffectiveGrant.From(Permissao, FonteGrant.Concessao, escopoInstitucional: true).Value!;
+        EffectiveGrant.DaConcessaoDePerfil(Permissao, EscopoDaPermissaoEfetiva.Instituicao).Value!;
 
     private static PermissionRequirement RequisitoPessoal() => Requisito(ClassificacaoDeProtecao.Pessoal);
 

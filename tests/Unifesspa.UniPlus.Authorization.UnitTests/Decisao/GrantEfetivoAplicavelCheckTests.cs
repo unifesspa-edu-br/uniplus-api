@@ -23,7 +23,7 @@ public sealed class GrantEfetivoAplicavelCheckTests
     [Fact(DisplayName = "Concessão institucional alcança resource sem unidade proprietária")]
     public async Task Check_InstitucionalEmResourceSemUnidade_Alcanca()
     {
-        CheckResult resultado = await Verificar(Concessao(), Resource(processoId: Processo));
+        CheckResult resultado = await Verificar(ConcessaoInstitucional(), Resource(processoId: Processo));
 
         resultado.Passou.Should().BeTrue();
     }
@@ -31,7 +31,7 @@ public sealed class GrantEfetivoAplicavelCheckTests
     [Fact(DisplayName = "Concessão institucional não alcança resource de uma unidade, sem herança")]
     public async Task Check_InstitucionalEmResourceDeUnidade_NaoAlcanca()
     {
-        CheckResult resultado = await Verificar(Concessao(), Resource(unidadeProprietariaId: Unidade));
+        CheckResult resultado = await Verificar(ConcessaoInstitucional(), Resource(unidadeProprietariaId: Unidade));
 
         resultado.Passou.Should().BeFalse();
         resultado.Motivo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
@@ -40,7 +40,7 @@ public sealed class GrantEfetivoAplicavelCheckTests
     [Fact(DisplayName = "Concessão de unidade não alcança resource institucional")]
     public async Task Check_UnidadeEmResourceSemUnidade_NaoAlcanca()
     {
-        CheckResult resultado = await Verificar(Concessao(escopoUnidadeId: Unidade), Resource());
+        CheckResult resultado = await Verificar(ConcessaoDaUnidade(Unidade), Resource());
 
         resultado.Passou.Should().BeFalse();
         resultado.Motivo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
@@ -49,10 +49,10 @@ public sealed class GrantEfetivoAplicavelCheckTests
     [Fact(DisplayName = "Concessão expirada na unidade A não encobre a vigente na unidade B")]
     public async Task Check_ExpiradaEmOutraUnidade_NaoEncobreAVigente()
     {
-        EffectiveGrant vigente = Concessao(grantId: Guid.CreateVersion7(), escopoUnidadeId: OutraUnidade);
+        EffectiveGrant vigente = ConcessaoDaUnidade(OutraUnidade, grantId: Guid.CreateVersion7());
 
         CheckResult resultado = await Verificar(
-            [Concessao(escopoUnidadeId: Unidade, validoAte: Agora.AddDays(-1)), vigente],
+            [ConcessaoDaUnidade(Unidade, validoAte: Agora.AddDays(-1)), vigente],
             Resource(unidadeProprietariaId: OutraUnidade));
 
         resultado.GrantSelecionado.Should().Be(vigente);
@@ -62,7 +62,7 @@ public sealed class GrantEfetivoAplicavelCheckTests
     public async Task Check_VencidaNaUnidadeDoResource_NegaPorExpiracao()
     {
         CheckResult resultado = await Verificar(
-            Concessao(escopoUnidadeId: Unidade, validoAte: Agora.AddDays(-1)),
+            ConcessaoDaUnidade(Unidade, validoAte: Agora.AddDays(-1)),
             Resource(unidadeProprietariaId: Unidade));
 
         resultado.Motivo.Should().Be(MotivoNegativa.ConcessaoExpirada);
@@ -72,7 +72,7 @@ public sealed class GrantEfetivoAplicavelCheckTests
     public async Task Check_EscopoDeUnidadeIgual_Alcanca()
     {
         CheckResult resultado = await Verificar(
-            Concessao(escopoUnidadeId: Unidade),
+            ConcessaoDaUnidade(Unidade),
             Resource(unidadeProprietariaId: Unidade));
 
         resultado.Passou.Should().BeTrue();
@@ -82,7 +82,7 @@ public sealed class GrantEfetivoAplicavelCheckTests
     public async Task Check_EscopoDeUnidadeDiferente_NaoAlcanca()
     {
         CheckResult resultado = await Verificar(
-            Concessao(escopoUnidadeId: Unidade),
+            ConcessaoDaUnidade(Unidade),
             Resource(unidadeProprietariaId: OutraUnidade));
 
         resultado.Passou.Should().BeFalse();
@@ -93,7 +93,7 @@ public sealed class GrantEfetivoAplicavelCheckTests
     public async Task Check_ResourceSemEscopoQueAConcessaoRestringe_NaoAlcanca()
     {
         CheckResult resultado = await Verificar(
-            Concessao(escopoProcessoId: Processo),
+            ConcessaoDoProcesso(Processo),
             Resource(processoId: null));
 
         resultado.Passou.Should().BeFalse(
@@ -103,17 +103,17 @@ public sealed class GrantEfetivoAplicavelCheckTests
     [Fact(DisplayName = "Restrição por tipo de resource alcança apenas o tipo restrito")]
     public async Task Check_RestricaoDeTipo_AlcancaSomenteOTipo()
     {
-        (await Verificar(Concessao(resourceTipoRestricao: ResourceTipo), Resource()))
+        (await Verificar(ConcessaoDoTipoDeResource(ResourceTipo), Resource()))
             .Passou.Should().BeTrue();
 
-        (await Verificar(Concessao(resourceTipoRestricao: "outro-tipo"), Resource()))
+        (await Verificar(ConcessaoDoTipoDeResource("outro-tipo"), Resource()))
             .Passou.Should().BeFalse();
     }
 
     [Fact(DisplayName = "Concessão sem fim de vigência permanece aplicável")]
     public async Task Check_ConcessaoSemValidade_Aplicavel()
     {
-        CheckResult resultado = await Verificar(Concessao(validoAte: null), Resource());
+        CheckResult resultado = await Verificar(ConcessaoInstitucional(validoAte: null), Resource());
 
         resultado.Passou.Should().BeTrue("a concessão sem prazo vale até ser revogada");
     }
@@ -121,7 +121,7 @@ public sealed class GrantEfetivoAplicavelCheckTests
     [Fact(DisplayName = "Concessão cujo fim de vigência é o instante do acesso já expirou, como em Concessao.EstaAtiva")]
     public async Task Check_ValidadeNoInstanteDoAcesso_Expirada()
     {
-        CheckResult resultado = await Verificar(Concessao(validoAte: Agora), Resource());
+        CheckResult resultado = await Verificar(ConcessaoInstitucional(validoAte: Agora), Resource());
 
         resultado.Motivo.Should().Be(MotivoNegativa.ConcessaoExpirada);
     }
@@ -129,7 +129,7 @@ public sealed class GrantEfetivoAplicavelCheckTests
     [Fact(DisplayName = "Concessão válida até um instante depois do acesso ainda vale")]
     public async Task Check_ValidadeLogoDepoisDoAcesso_Aplicavel()
     {
-        CheckResult resultado = await Verificar(Concessao(validoAte: Agora.AddTicks(1)), Resource());
+        CheckResult resultado = await Verificar(ConcessaoInstitucional(validoAte: Agora.AddTicks(1)), Resource());
 
         resultado.Passou.Should().BeTrue();
     }
@@ -138,7 +138,7 @@ public sealed class GrantEfetivoAplicavelCheckTests
     public async Task Check_ConcessaoExpirada_NegaPorExpiracao()
     {
         CheckResult resultado = await Verificar(
-            Concessao(validoAte: Agora.AddTicks(-1)),
+            ConcessaoInstitucional(validoAte: Agora.AddTicks(-1)),
             Resource());
 
         resultado.Motivo.Should().Be(MotivoNegativa.ConcessaoExpirada);
@@ -149,8 +149,8 @@ public sealed class GrantEfetivoAplicavelCheckTests
     {
         CheckResult resultado = await Verificar(
             [
-                Concessao(validoAte: Agora.AddDays(-1)),
-                Concessao(),
+                ConcessaoInstitucional(validoAte: Agora.AddDays(-1)),
+                ConcessaoInstitucional(),
             ],
             Resource());
 
@@ -161,8 +161,8 @@ public sealed class GrantEfetivoAplicavelCheckTests
     [Fact(DisplayName = "Entre concessões aplicáveis vence a mais específica")]
     public async Task Check_VariasAplicaveis_SelecionaAMaisEspecifica()
     {
-        EffectiveGrant geral = Concessao(grantId: Guid.CreateVersion7());
-        EffectiveGrant porProcesso = Concessao(grantId: Guid.CreateVersion7(), escopoProcessoId: Processo);
+        EffectiveGrant geral = ConcessaoInstitucional(grantId: Guid.CreateVersion7());
+        EffectiveGrant porProcesso = ConcessaoDoProcesso(Processo, grantId: Guid.CreateVersion7());
 
         CheckResult resultado = await Verificar(
             [geral, porProcesso],
@@ -175,8 +175,8 @@ public sealed class GrantEfetivoAplicavelCheckTests
     [Fact(DisplayName = "Empate de especificidade resolve pela primeira concessão da lista")]
     public async Task Check_EmpateDeEspecificidade_SelecionaAPrimeira()
     {
-        EffectiveGrant primeira = Concessao(grantId: Guid.CreateVersion7());
-        EffectiveGrant segunda = Concessao(grantId: Guid.CreateVersion7());
+        EffectiveGrant primeira = ConcessaoInstitucional(grantId: Guid.CreateVersion7());
+        EffectiveGrant segunda = ConcessaoInstitucional(grantId: Guid.CreateVersion7());
 
         CheckResult resultado = await Verificar([primeira, segunda], Resource());
 
@@ -187,7 +187,7 @@ public sealed class GrantEfetivoAplicavelCheckTests
     public async Task Check_CodigoComGrafiaDiferente_NaoAlcanca()
     {
         CheckResult resultado = await Verificar(
-            Concessao("Configuracao:Motivos-Decisao-Recursal:Manter"),
+            ConcessaoInstitucional("Configuracao:Motivos-Decisao-Recursal:Manter"),
             Resource());
 
         resultado.Passou.Should().BeFalse(
@@ -195,14 +195,38 @@ public sealed class GrantEfetivoAplicavelCheckTests
             + "dependente da grafia com que alguém a digitou no provedor de identidade");
     }
 
-    [Fact(DisplayName = "A titularidade com escopo institucional e a permissão pedida é recusada: não é concessão e nunca autoriza")]
-    public async Task Check_Titularidade_RecusaComFalhaFechada()
+    [Fact(DisplayName = "A titularidade entre as concessões efetivas não autoriza: o escopo nenhum não alcança resource algum")]
+    public async Task Check_Titularidade_NaoAutoriza()
     {
-        CheckResult resultado = await Verificar(Concessao(fonte: FonteGrant.Titularidade), Resource());
+        EffectiveGrant titularidade = ConcessaoDeTitularidade();
 
-        resultado.Passou.Should().BeFalse("a titularidade só existe no registro da leitura da parte (ADR-0166)");
-        resultado.Motivo.Should().Be(MotivoNegativa.SemConcessaoAplicavel);
-        resultado.GrantSelecionado.Should().BeNull();
+        CheckResult comUnidade = await Verificar(titularidade, Resource(unidadeProprietariaId: Unidade));
+        CheckResult semUnidade = await Verificar(titularidade, Resource());
+
+        (comUnidade.Passou, semUnidade.Passou).Should().Be((false, false));
+        (comUnidade.Motivo, semUnidade.Motivo).Should().Be((MotivoNegativa.SemConcessaoAplicavel, MotivoNegativa.SemConcessaoAplicavel));
+        (comUnidade.GrantSelecionado, semUnidade.GrantSelecionado).Should().Be(((EffectiveGrant?)null, (EffectiveGrant?)null));
+    }
+
+    [Fact(DisplayName = "A permissão com espaços nas extremidades é guardada aparada e alcança a decisão")]
+    public async Task Check_PermissaoComEspacosNasExtremidades_Alcanca()
+    {
+        EffectiveGrant concessao = ConcessaoInstitucional($"  {Permissao}  ");
+
+        CheckResult resultado = await Verificar(concessao, Resource());
+
+        concessao.PermissaoCodigo.Should().Be(Permissao);
+        resultado.Passou.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A concessão excepcional da unidade alcança o resource da unidade")]
+    public async Task Check_ExcepcionalNaUnidade_AlcancaResourceDaUnidade()
+    {
+        EffectiveGrant excepcional = ConcessaoExcepcional(EscopoDaPermissaoEfetiva.DaUnidade(Unidade).Value!, Agora.AddDays(1));
+
+        CheckResult resultado = await Verificar(excepcional, Resource(unidadeProprietariaId: Unidade));
+
+        resultado.GrantSelecionado.Should().Be(excepcional);
     }
 
     private Task<CheckResult> Verificar(EffectiveGrant concessao, ResourceContext resource)

@@ -78,8 +78,8 @@ public sealed class AvaliacoesConsultarNoMotorTests
 
     private AuthorizationSubject Sujeito()
     {
-        EffectiveGrant concessao = EffectiveGrant.From(
-            PermissaoSelecao.AvaliacoesConsultar.Codigo, FonteGrant.Concessao, escopoUnidadeId: _fase.UnidadeId).Value!;
+        EffectiveGrant concessao = EffectiveGrant.DaConcessaoDePerfil(
+            PermissaoSelecao.AvaliacoesConsultar.Codigo, EscopoDaPermissaoEfetiva.DaUnidade(_fase.UnidadeId).Value!).Value!;
 
         return AuthorizationSubject.From(
             UsuarioRef.From("https://idp.exemplo/realms/unifesspa", "sub-banca").Value!, "jti", concessoesEfetivas: [concessao]).Value!;

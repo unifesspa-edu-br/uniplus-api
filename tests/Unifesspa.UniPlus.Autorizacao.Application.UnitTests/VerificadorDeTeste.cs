@@ -18,7 +18,7 @@ internal sealed class VerificadorDeTeste(string contaId, string[] permitidas) : 
     {
         ResourceContext alvo = resource ?? DaOperacao(requisito);
         AuthorizationDecision decisao = permitidas.Contains(requisito.Permissao)
-            ? AuthorizationDecision.Permitir(EffectiveGrant.From(requisito.Permissao, FonteGrant.Concessao, escopoInstitucional: true).Value!)
+            ? AuthorizationDecision.Permitir(EffectiveGrant.DaConcessaoDePerfil(requisito.Permissao, EscopoDaPermissaoEfetiva.Instituicao).Value!)
             : AuthorizationDecision.Negar(MotivoNegativa.SemConcessaoAplicavel);
 
         return Task.FromResult(DecisaoDeAcesso.Tomada(requisito, alvo, Registro(requisito, alvo, decisao)));
@@ -31,7 +31,7 @@ internal sealed class VerificadorDeTeste(string contaId, string[] permitidas) : 
     {
         ResourceContext alvo = DaOperacao(operacaoDoTitular);
         AuthorizationDecision titularidade = AuthorizationDecision.Permitir(
-            EffectiveGrant.From(operacaoDoTitular.Permissao, FonteGrant.Titularidade).Value!);
+            EffectiveGrant.PorTitularidade(operacaoDoTitular.Permissao).Value!);
         DecisaoPermitida permitida = new(operacaoDoTitular, alvo, Registro(operacaoDoTitular, alvo, titularidade));
 
         await RegistrarParaCadaAsync(permitida, resourceTipo, resourceIds, cancellationToken: cancellationToken);
