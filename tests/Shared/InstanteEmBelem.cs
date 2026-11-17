@@ -45,22 +45,33 @@ internal static class InstanteEmBelem
     {
         DateTime local = new(ano, mes, dia, hora, minuto, segundo, DateTimeKind.Unspecified);
 
-        if (Zona.IsInvalidTime(local))
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(hora),
-                local,
-                $"{local:yyyy-MM-dd HH:mm:ss} não existe em {FusoInstitucional.ZoneId}: o relógio salta sobre essa hora.");
-        }
-
-        if (Zona.IsAmbiguousTime(local))
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(hora),
-                local,
-                $"{local:yyyy-MM-dd HH:mm:ss} ocorre duas vezes em {FusoInstitucional.ZoneId}: declare o offset pretendido no teste.");
-        }
+        ExigirQueAHoraExista(local);
+        ExigirQueAHoraSejaUnica(local);
 
         return new DateTimeOffset(local, Zona.GetUtcOffset(local));
+    }
+
+    /// <exception cref="ArgumentOutOfRangeException">Quando a hora local não existe na zona (salto de horário de verão).</exception>
+    private static void ExigirQueAHoraExista(DateTime hora)
+    {
+        if (Zona.IsInvalidTime(hora))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(hora),
+                hora,
+                $"{hora:yyyy-MM-dd HH:mm:ss} não existe em {FusoInstitucional.ZoneId}: o relógio salta sobre essa hora.");
+        }
+    }
+
+    /// <exception cref="ArgumentOutOfRangeException">Quando a hora local ocorre duas vezes na zona (recuo do horário de verão).</exception>
+    private static void ExigirQueAHoraSejaUnica(DateTime hora)
+    {
+        if (Zona.IsAmbiguousTime(hora))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(hora),
+                hora,
+                $"{hora:yyyy-MM-dd HH:mm:ss} ocorre duas vezes em {FusoInstitucional.ZoneId}: declare o offset pretendido no teste.");
+        }
     }
 }
