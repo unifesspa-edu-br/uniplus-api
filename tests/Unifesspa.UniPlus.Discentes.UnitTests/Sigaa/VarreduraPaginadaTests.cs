@@ -1,5 +1,7 @@
 namespace Unifesspa.UniPlus.Discentes.UnitTests.Sigaa;
 
+using System.Globalization;
+
 using AwesomeAssertions;
 
 using Microsoft.Extensions.Options;
@@ -95,16 +97,11 @@ public sealed class VarreduraPaginadaTests
         ISigaaVinculoDiscenteApi api,
         int itensPorPagina)
     {
-        SigaaVinculoDiscenteClient cliente = new(
-            api,
-            Options.Create(new SigaaOptions
-            {
-                BaseUrl = "https://sigaa.exemplo.test",
-                Usuario = "servico",
-                Senha = "segredo",
-                ItensPorPagina = itensPorPagina,
-                GrauDeParalelismo = 2,
-            }));
+        SigaaOptions opcoes = OpcoesDoSigaa.Com(
+            (nameof(SigaaOptions.ItensPorPagina), itensPorPagina.ToString(CultureInfo.InvariantCulture)),
+            (nameof(SigaaOptions.GrauDeParalelismo), "2"));
+
+        SigaaVinculoDiscenteClient cliente = new(api, Options.Create(opcoes));
 
         List<PaginaDeVinculos> paginas = [];
         await foreach (PaginaDeVinculos pagina in cliente.PercorrerAsync(new FiltroDeVinculos("G")))

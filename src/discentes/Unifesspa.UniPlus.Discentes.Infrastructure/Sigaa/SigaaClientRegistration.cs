@@ -169,7 +169,7 @@ public static class SigaaClientRegistration
     {
         SigaaOptions opcoes = provedor.GetRequiredService<IOptions<SigaaOptions>>().Value;
 
-        cliente.BaseAddress = new Uri(opcoes.BaseUrl, UriKind.Absolute);
+        cliente.BaseAddress = opcoes.BaseUrl;
         cliente.Timeout = TimeSpan.FromSeconds(opcoes.TimeoutTotalEmSegundos * 2);
     }
 

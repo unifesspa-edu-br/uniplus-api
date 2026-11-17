@@ -1,6 +1,6 @@
 namespace Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa;
 
-using System.Diagnostics.CodeAnalysis;
+using System;
 
 /// <summary>
 /// Configuração de acesso à API do SIGAA, de onde vêm os vínculos de discentes.
@@ -12,10 +12,6 @@ using System.Diagnostics.CodeAnalysis;
 /// variável de ambiente <c>Sigaa__Senha</c>, populada a partir do cofre pelo operador de
 /// segredos do cluster; em máquina de desenvolvimento, por <c>dotnet user-secrets</c>.
 /// </remarks>
-[SuppressMessage(
-    "Design",
-    "CA1056:URI-like properties should not be strings",
-    Justification = "Opção vinda de IConfiguration — texto é a forma que o binder lê. O formato é validado em SigaaOptionsValidator.")]
 public sealed class SigaaOptions
 {
     public const string SectionName = "Sigaa";
@@ -29,7 +25,7 @@ public sealed class SigaaOptions
     /// Endereço base da API, sem o caminho do recurso
     /// (ex.: <c>https://api-sigaa-v2.unifesspa.edu.br</c>).
     /// </summary>
-    public string BaseUrl { get; init; } = string.Empty;
+    public Uri? BaseUrl { get; init; }
 
     /// <summary>
     /// Usuário de serviço que autentica a sincronização.
