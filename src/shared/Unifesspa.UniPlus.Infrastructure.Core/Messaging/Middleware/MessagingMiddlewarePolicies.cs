@@ -27,35 +27,30 @@ public static class MessagingMiddlewarePolicies
     /// do callback de <see cref="WolverineOutboxConfiguration.UseWolverineOutboxCascading"/>,
     /// antes do roteamento específico do módulo.
     /// </summary>
+    /// <remarks>
+    /// <para>A ordem das três instalações é contrato.</para>
+    /// <para><strong>Logging.</strong> Usa a sobrecarga não genérica de <c>AddMiddleware</c>, porque a classe é
+    /// estática e não serve de argumento de tipo; o Wolverine descobre os métodos
+    /// <c>[WolverineBefore]</c>/<c>[WolverineFinally]</c> por reflexão sobre o <see cref="Type"/>. Vem antes da
+    /// validação para que "Processando {RequestName}" saia antes de uma <c>ValidationException</c> interromper a chain.</para>
+    /// <para><strong>Ação de falha da validação.</strong> Lança <c>ValidationException</c> só com as falhas de regra,
+    /// sem serializar o command na mensagem. Precisa ser registrada antes de <c>UseFluentValidation</c>, que usa
+    /// <c>TryAddSingleton</c> para o <c>FailureAction&lt;T&gt;</c> padrão — e o <c>ToString()</c> de um record no
+    /// <c>{message}</c> dessa ação padrão vazaria dado pessoal no log pelo <c>GlobalExceptionMiddleware</c>.
+    /// Ver <see cref="PiiSafeValidationFailureAction{T}"/>.</para>
+    /// <para><strong>Validação.</strong> O Wolverine gera middleware tipado por mensagem (<c>IValidator&lt;T&gt;</c>
+    /// injetado pelo codegen, sem service location), compatível com a <c>ServiceLocationPolicy.NotAllowed</c> que
+    /// vira padrão no Wolverine 6.0. Lança a mesma <c>ValidationException</c>, mapeada como 422 pelo
+    /// <c>GlobalExceptionMiddleware</c>. Com <c>ExplicitRegistration</c>, os validators continuam vindo dos
+    /// <c>AddValidatorsFromAssembly</c> de cada módulo. Aplica-se só a chains com validator, que no Uni+ são
+    /// exclusivamente commands e queries.</para>
+    /// </remarks>
     public static void AddCommandQueryMiddleware(this WolverineOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        // Logging estruturado do pipeline CQRS. Sobrecarga não-genérica: a classe é
-        // static (não pode servir de argumento de tipo) — Wolverine descobre os
-        // métodos [WolverineBefore]/[WolverineFinally] via reflection sobre o Type.
-        // Registrado ANTES da validação para que "Processando {RequestName}" saia
-        // antes de uma eventual ValidationException curto-circuitar a chain.
         options.Policies.AddMiddleware(typeof(WolverineLoggingMiddleware), IsCommandOrQueryChain);
-
-        // Failure action PII-safe: lança ValidationException SÓ com as falhas de
-        // regra, sem serializar o command na mensagem. Registrado ANTES de
-        // UseFluentValidation (que usa TryAddSingleton para o default
-        // FailureAction<T> — `new ValidationException($"Validation failure on:
-        // {message}", failures)`, cujo {message}.ToString() de um record vazaria
-        // PII no log via GlobalExceptionMiddleware). Preserva o comportamento do
-        // antigo WolverineValidationMiddleware. Ver PiiSafeValidationFailureAction.
         options.Services.TryAddSingleton(typeof(IFailureAction<>), typeof(PiiSafeValidationFailureAction<>));
-
-        // Validação FluentValidation idiomática do Wolverine: gera middleware
-        // tipado por mensagem (IValidator<T> / IEnumerable<IValidator<T>> injetados
-        // pelo codegen, sem service location de IServiceProvider) — forward-compat
-        // com a ServiceLocationPolicy.NotAllowed que vira default no Wolverine 6.0.
-        // Lança a mesma FluentValidation.ValidationException, mapeada como 422 pelo
-        // GlobalExceptionMiddleware. ExplicitRegistration: os validators continuam
-        // vindo dos AddValidatorsFromAssembly de cada módulo (o pacote não
-        // redescobre nem re-registra). Aplica-se só a chains com validator — no
-        // UniPlus, exclusivamente commands/queries.
         options.UseFluentValidation(RegistrationBehavior.ExplicitRegistration);
     }
 
@@ -97,6 +92,8 @@ public static class MessagingMiddlewarePolicies
     }
 
     private static bool ImplementsOpenGeneric(Type type, Type openGeneric)
-        => Array.Exists(type.GetInterfaces(),
-            i => i.IsGenericType && i.GetGenericTypeDefinition() == openGeneric);
+        => Array.Exists(
+            type.GetInterfaces(),
+            interfaceImplementada => interfaceImplementada.IsGenericType
+                && interfaceImplementada.GetGenericTypeDefinition() == openGeneric);
 }
