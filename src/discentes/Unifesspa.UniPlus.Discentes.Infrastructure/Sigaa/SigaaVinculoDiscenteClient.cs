@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa.Contracts;
 /// Busca vínculos de discentes na API do SIGAA.
 /// </summary>
 /// <remarks>
-/// Traduz o recorte pedido para os parâmetros que a origem aceita e devolve a página
+/// Traduz o filtro pedido para os parâmetros que a origem aceita e devolve a página
 /// junto com o que se sabe sobre a continuação — sem interpretar o conteúdo dos
 /// vínculos, que é assunto de quem os converte para o domínio.
 /// </remarks>

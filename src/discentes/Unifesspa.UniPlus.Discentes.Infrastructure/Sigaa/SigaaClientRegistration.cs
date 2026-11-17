@@ -75,8 +75,8 @@ public static class SigaaClientRegistration
     /// <summary>
     /// O endereço de autenticação tem cliente próprio, sem o carimbo de token — carimbar
     /// a própria autenticação seria circular — e com política de resiliência separada da
-    /// consulta. Compartilhar a política faria o circuito aberto por instabilidade da
-    /// consulta bloquear também a renovação do token, e nada mais destravaria.
+    /// consulta. Compartilhar a política faria a interrupção por falhas da consulta
+    /// bloquear também a renovação do token, e nada mais a liberaria.
     /// </summary>
     /// <remarks>
     /// O guardião do token é registrado como instância única: é ele que mantém o token
@@ -188,20 +188,20 @@ public static class SigaaClientRegistration
         opcoes.AttemptTimeout.Timeout = TimeSpan.FromSeconds(sigaa.TimeoutPorTentativaEmSegundos);
         opcoes.TotalRequestTimeout.Timeout = TimeSpan.FromSeconds(sigaa.TimeoutTotalEmSegundos);
         opcoes.CircuitBreaker.SamplingDuration =
-            TimeSpan.FromSeconds(sigaa.JanelaDeAmostragemDoCorteEmSegundos);
-        opcoes.CircuitBreaker.MinimumThroughput = sigaa.ChamadasMinimasParaAvaliarCorte;
+            TimeSpan.FromSeconds(sigaa.JanelaDeAmostragemDaInterrupcaoEmSegundos);
+        opcoes.CircuitBreaker.MinimumThroughput = sigaa.ChamadasMinimasParaAvaliarInterrupcao;
     }
 
     /// <summary>
     /// Monta a política das consultas na ordem canônica da biblioteca: limite total por
-    /// fora, retentativa em seguida, corte de circuito dentro dela e limite por tentativa
+    /// fora, retentativa em seguida, interrupção por falhas dentro dela e limite por tentativa
     /// no miolo.
     /// </summary>
     /// <remarks>
-    /// O corte de circuito fica <b>dentro</b> da retentativa de propósito. Assim, quando
-    /// ele abre, a tentativa seguinte falha na hora com um erro que a retentativa não
+    /// A interrupção por falhas fica <b>dentro</b> da retentativa de propósito. Assim, quando
+    /// ela abre, a tentativa seguinte falha na hora com um erro que a retentativa não
     /// considera repetível — e o laço termina, em vez de continuar batendo numa origem
-    /// que já se declarou indisponível. Do lado de fora, ele só contaria desfechos finais
+    /// que já se declarou indisponível. Do lado de fora, ela só contaria desfechos finais
     /// e demoraria muito mais para reagir.
     ///
     /// A retentativa já respeita, por padrão da biblioteca, o intervalo que a origem pede
@@ -219,7 +219,7 @@ public static class SigaaClientRegistration
         construtor
             .AddTimeout(TimeSpan.FromSeconds(sigaa.TimeoutTotalEmSegundos))
             .AddRetry(Retentativa(sigaa))
-            .AddCircuitBreaker(CorteDeCircuito(sigaa))
+            .AddCircuitBreaker(InterrupcaoPorFalhas(sigaa))
             .AddTimeout(TimeSpan.FromSeconds(sigaa.TimeoutPorTentativaEmSegundos));
     }
 
@@ -233,13 +233,13 @@ public static class SigaaClientRegistration
             ShouldRetryAfterHeader = true,
         };
 
-    private static HttpCircuitBreakerStrategyOptions CorteDeCircuito(SigaaOptions sigaa) =>
+    private static HttpCircuitBreakerStrategyOptions InterrupcaoPorFalhas(SigaaOptions sigaa) =>
         new()
         {
-            SamplingDuration = TimeSpan.FromSeconds(sigaa.JanelaDeAmostragemDoCorteEmSegundos),
-            MinimumThroughput = sigaa.ChamadasMinimasParaAvaliarCorte,
-            FailureRatio = sigaa.ProporcaoDeFalhaParaAbrirCorte,
-            BreakDuration = TimeSpan.FromSeconds(sigaa.DuracaoDoCorteEmSegundos),
+            SamplingDuration = TimeSpan.FromSeconds(sigaa.JanelaDeAmostragemDaInterrupcaoEmSegundos),
+            MinimumThroughput = sigaa.ChamadasMinimasParaAvaliarInterrupcao,
+            FailureRatio = sigaa.ProporcaoDeFalhaParaInterromper,
+            BreakDuration = TimeSpan.FromSeconds(sigaa.DuracaoDaInterrupcaoEmSegundos),
         };
 
     private static SigaaOptions LerOpcoes(ResilienceHandlerContext contexto) =>

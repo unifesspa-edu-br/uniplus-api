@@ -43,7 +43,7 @@ internal sealed partial class SigaaTokenProvider : IDisposable
     private readonly SigaaOptions _opcoes;
     private readonly ILogger<SigaaTokenProvider> _logger;
     private readonly TimeProvider _relogio;
-    private readonly SemaphoreSlim _trava = new(initialCount: 1, maxCount: 1);
+    private readonly SemaphoreSlim _acessoExclusivo = new(initialCount: 1, maxCount: 1);
 
     private string? _token;
     private DateTimeOffset _expiraEm;
@@ -76,14 +76,14 @@ internal sealed partial class SigaaTokenProvider : IDisposable
             return vigente;
         }
 
-        await _trava.WaitAsync(cancellationToken).ConfigureAwait(false);
+        await _acessoExclusivo.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
             return await ReaproveitarOuRenovarAsync(cancellationToken).ConfigureAwait(false);
         }
         finally
         {
-            _trava.Release();
+            _acessoExclusivo.Release();
         }
     }
 
@@ -98,7 +98,7 @@ internal sealed partial class SigaaTokenProvider : IDisposable
     /// </remarks>
     public void Descartar(string tokenRecusado)
     {
-        _trava.Wait();
+        _acessoExclusivo.Wait();
         try
         {
             if (string.Equals(_token, tokenRecusado, StringComparison.Ordinal))
@@ -109,12 +109,12 @@ internal sealed partial class SigaaTokenProvider : IDisposable
         }
         finally
         {
-            _trava.Release();
+            _acessoExclusivo.Release();
         }
     }
 
     /// <summary>
-    /// Outra requisição pode ter renovado enquanto esta esperava pela trava; só se o token
+    /// Outra requisição pode ter renovado enquanto esta esperava o acesso exclusivo; só se o token
     /// guardado ainda não serve é que se autentica de novo.
     /// </summary>
     private async Task<string> ReaproveitarOuRenovarAsync(CancellationToken cancellationToken)
@@ -221,7 +221,7 @@ internal sealed partial class SigaaTokenProvider : IDisposable
     /// relógio e o desta máquina. Só quando a emissão não está declarada é que a expiração
     /// é comparada com o relógio local, aí sim sujeita a essa diferença. Sem nenhum dos
     /// dois, vale a validade assumida na configuração. O resultado é sempre limitado pelo
-    /// teto configurado.
+    /// limite configurado.
     /// </remarks>
     private TimeSpan CalcularValidade(string token)
     {
@@ -321,7 +321,7 @@ internal sealed partial class SigaaTokenProvider : IDisposable
             return;
         }
 
-        _trava.Dispose();
+        _acessoExclusivo.Dispose();
         _descartado = true;
     }
 

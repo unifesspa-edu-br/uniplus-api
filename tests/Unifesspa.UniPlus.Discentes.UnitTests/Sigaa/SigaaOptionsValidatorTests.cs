@@ -29,12 +29,12 @@ public sealed class SigaaOptionsValidatorTests
         { nameof(SigaaOptions.ValidadeMaximaDoTokenEmSegundos), "0" },
         { nameof(SigaaOptions.MargemDeRenovacaoDoTokenEmSegundos), "86400" },
         { nameof(SigaaOptions.MargemDeRenovacaoDoTokenEmSegundos), "3600" },
-        { nameof(SigaaOptions.ChamadasMinimasParaAvaliarCorte), "0" },
-        { nameof(SigaaOptions.JanelaDeAmostragemDoCorteEmSegundos), "0" },
-        { nameof(SigaaOptions.JanelaDeAmostragemDoCorteEmSegundos), "59" },
-        { nameof(SigaaOptions.ProporcaoDeFalhaParaAbrirCorte), "0" },
-        { nameof(SigaaOptions.ProporcaoDeFalhaParaAbrirCorte), "1.5" },
-        { nameof(SigaaOptions.DuracaoDoCorteEmSegundos), "0" },
+        { nameof(SigaaOptions.ChamadasMinimasParaAvaliarInterrupcao), "0" },
+        { nameof(SigaaOptions.JanelaDeAmostragemDaInterrupcaoEmSegundos), "0" },
+        { nameof(SigaaOptions.JanelaDeAmostragemDaInterrupcaoEmSegundos), "59" },
+        { nameof(SigaaOptions.ProporcaoDeFalhaParaInterromper), "0" },
+        { nameof(SigaaOptions.ProporcaoDeFalhaParaInterromper), "1.5" },
+        { nameof(SigaaOptions.DuracaoDaInterrupcaoEmSegundos), "0" },
     };
 
     public static readonly TheoryData<string, string> ValoresNoLimite = new()
@@ -46,10 +46,10 @@ public sealed class SigaaOptionsValidatorTests
         { nameof(SigaaOptions.EsperaBaseEntreTentativasEmMilissegundos), "0" },
         { nameof(SigaaOptions.TimeoutTotalEmSegundos), "30" },
         { nameof(SigaaOptions.MargemDeRenovacaoDoTokenEmSegundos), "0" },
-        { nameof(SigaaOptions.ChamadasMinimasParaAvaliarCorte), "1" },
-        { nameof(SigaaOptions.JanelaDeAmostragemDoCorteEmSegundos), "60" },
-        { nameof(SigaaOptions.ProporcaoDeFalhaParaAbrirCorte), "1" },
-        { nameof(SigaaOptions.DuracaoDoCorteEmSegundos), "1" },
+        { nameof(SigaaOptions.ChamadasMinimasParaAvaliarInterrupcao), "1" },
+        { nameof(SigaaOptions.JanelaDeAmostragemDaInterrupcaoEmSegundos), "60" },
+        { nameof(SigaaOptions.ProporcaoDeFalhaParaInterromper), "1" },
+        { nameof(SigaaOptions.DuracaoDaInterrupcaoEmSegundos), "1" },
     };
 
     [Fact]
@@ -118,7 +118,7 @@ public sealed class SigaaOptionsValidatorTests
     {
         ValidateOptionsResult resultado = Validar(OpcoesDoSigaa.Com(
             (nameof(SigaaOptions.TimeoutPorTentativaEmSegundos), "30"),
-            (nameof(SigaaOptions.JanelaDeAmostragemDoCorteEmSegundos), "45")));
+            (nameof(SigaaOptions.JanelaDeAmostragemDaInterrupcaoEmSegundos), "45")));
 
         resultado.FailureMessage.Should().Contain("dobro");
     }

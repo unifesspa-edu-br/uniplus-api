@@ -17,7 +17,7 @@ public sealed class SigaaOptions
     public const string SectionName = "Sigaa";
 
     /// <summary>
-    /// Teto que a origem impõe ao tamanho de página. Pedir mais que isso é recusado por ela.
+    /// Limite que a origem impõe ao tamanho de página. Pedir mais que isso é recusado por ela.
     /// </summary>
     public const int MaximoItensPorPagina = 200;
 
@@ -54,7 +54,7 @@ public sealed class SigaaOptions
     public int ValidadeAssumidaDoTokenEmSegundos { get; init; } = 3600;
 
     /// <summary>
-    /// Teto da validade aceita para um token, qualquer que seja a que ele declare. Protege
+    /// Limite da validade aceita para um token, qualquer que seja a que ele declare. Protege
     /// contra uma expiração absurda vinda da origem fixar um token morto indefinidamente.
     /// </summary>
     public int ValidadeMaximaDoTokenEmSegundos { get; init; } = 86_400;
@@ -90,26 +90,26 @@ public sealed class SigaaOptions
     public int EsperaBaseEntreTentativasEmMilissegundos { get; init; } = 500;
 
     /// <summary>
-    /// Quantas chamadas precisam ocorrer na janela de amostragem antes de o corte de
-    /// circuito considerar abrir. O padrão da biblioteca pressupõe tráfego de API pública
+    /// Quantas chamadas precisam ocorrer na janela de amostragem antes de a interrupção por
+    /// falhas considerar abrir. O padrão da biblioteca pressupõe tráfego de API pública
     /// e nunca seria alcançado por uma sincronização diária de poucas dezenas de páginas.
     /// </summary>
-    public int ChamadasMinimasParaAvaliarCorte { get; init; } = 10;
+    public int ChamadasMinimasParaAvaliarInterrupcao { get; init; } = 10;
 
     /// <summary>
-    /// Janela em que as falhas são contadas para decidir o corte de circuito. Precisa ser
+    /// Janela em que as falhas são contadas para decidir a interrupção por falhas. Precisa ser
     /// pelo menos o dobro do limite de uma tentativa: uma janela que mal comporta uma
-    /// tentativa não chega a formar amostra, e o corte nunca teria como reagir.
+    /// tentativa não chega a formar amostra, e a interrupção nunca teria como reagir.
     /// </summary>
-    public int JanelaDeAmostragemDoCorteEmSegundos { get; init; } = 120;
+    public int JanelaDeAmostragemDaInterrupcaoEmSegundos { get; init; } = 120;
 
     /// <summary>
-    /// Proporção de falhas na janela a partir da qual o circuito abre.
+    /// Proporção de falhas na janela a partir da qual a interrupção por falhas é acionada.
     /// </summary>
-    public double ProporcaoDeFalhaParaAbrirCorte { get; init; } = 0.5;
+    public double ProporcaoDeFalhaParaInterromper { get; init; } = 0.5;
 
     /// <summary>
-    /// Quanto tempo o circuito permanece aberto antes de deixar passar uma chamada de prova.
+    /// Quanto tempo a interrupção por falhas dura antes de deixar passar uma chamada de prova.
     /// </summary>
-    public int DuracaoDoCorteEmSegundos { get; init; } = 15;
+    public int DuracaoDaInterrupcaoEmSegundos { get; init; } = 15;
 }
