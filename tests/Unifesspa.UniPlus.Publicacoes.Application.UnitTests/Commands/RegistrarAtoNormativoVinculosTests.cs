@@ -272,8 +272,7 @@ public sealed class RegistrarAtoNormativoVinculosTests
 
     private void SemConflitoDeNumero() =>
         _atos.ListarIdsComMesmaNumeracaoAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<string>(),
-            Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            Arg.Any<NumeracaoDoAto>(), Arg.Any<CancellationToken>())
             .Returns([]);
 
     private void SemConflitoNoObjeto() =>

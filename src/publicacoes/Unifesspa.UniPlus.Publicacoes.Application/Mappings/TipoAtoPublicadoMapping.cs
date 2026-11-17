@@ -3,11 +3,10 @@ namespace Unifesspa.UniPlus.Publicacoes.Application.Mappings;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 
-public static class TipoAtoPublicadoMapping
+internal static class TipoAtoPublicadoMapping
 {
-    public static TipoAtoPublicadoDto ToDto(this TipoAtoPublicado tipo)
+    internal static TipoAtoPublicadoDto ToDto(this TipoAtoPublicado tipo)
     {
-        ArgumentNullException.ThrowIfNull(tipo);
         return new TipoAtoPublicadoDto(
             tipo.Id,
             tipo.Codigo,

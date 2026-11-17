@@ -39,18 +39,14 @@ public interface IAtoNormativoRepository
 
     /// <summary>
     /// Devolve os identificadores dos atos que compartilham a mesma numeração
-    /// <c>(orgao, serie, ano, numero)</c>, excluindo <paramref name="excluirId"/>
-    /// quando informado (o próprio ato, na recomputação do aviso durante a leitura).
+    /// (órgão, série, ano e número) de <paramref name="numeracao"/>, inclusive o do próprio
+    /// ato, se ele já estiver gravado: quem tira do diagnóstico a linhagem é quem chama.
     /// Base do aviso de número duplicado — diagnóstico do estado atual, não
     /// prova imutável: entre esta consulta e um insert concorrente cabe uma corrida,
     /// tolerada porque o aviso não bloqueia o registro.
     /// </summary>
     Task<IReadOnlyList<Guid>> ListarIdsComMesmaNumeracaoAsync(
-        string orgao,
-        string serie,
-        int ano,
-        string numero,
-        Guid? excluirId,
+        NumeracaoDoAto numeracao,
         CancellationToken cancellationToken);
 
     /// <summary>

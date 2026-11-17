@@ -49,7 +49,7 @@ public static class RegistrarAtoNormativoCommandHandler
         IUnitOfWork unitOfWork,
         CancellationToken cancellationToken)
     {
-        IReadOnlyList<AvisoNumeracao> avisos = await AvisoNumeracaoCalculator
+        IReadOnlyList<AvisoNumeracao> avisos = await AvisosDaNumeracao
             .CalcularAsync(atosRepository, montado.Ato, montado.IdsDaPropriaCadeia, cancellationToken)
             .ConfigureAwait(false);
         await atosRepository.AdicionarAsync(montado.Ato, cancellationToken).ConfigureAwait(false);

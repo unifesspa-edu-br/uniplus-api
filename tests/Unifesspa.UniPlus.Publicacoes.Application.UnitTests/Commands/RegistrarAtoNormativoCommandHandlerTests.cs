@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 [SuppressMessage(
@@ -88,7 +89,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
         VigenteComConsequencia(congela: false, efeito: false);
         Guid outro = Guid.CreateVersion7();
         _atos.ListarIdsComMesmaNumeracaoAsync(
-            "CEPS", "EDITAL", 2026, "13", null, Arg.Any<CancellationToken>())
+            new NumeracaoDoAto("CEPS", "EDITAL", 2026, "13"), Arg.Any<CancellationToken>())
             .Returns([outro]);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(Comando());
@@ -262,7 +263,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
         AtoNormativo retificado = AtoExistente(congela: false);
         _atos.ComoRetificavel(retificado);
         _atos.ListarIdsDaCadeiaAsync(retificado.Id, Arg.Any<CancellationToken>()).Returns([retificado.Id]);
-        _atos.ListarIdsComMesmaNumeracaoAsync("CEPS", "EDITAL", 2026, "13", null, Arg.Any<CancellationToken>())
+        _atos.ListarIdsComMesmaNumeracaoAsync(new NumeracaoDoAto("CEPS", "EDITAL", 2026, "13"), Arg.Any<CancellationToken>())
             .Returns([retificado.Id]);
 
         Result<RegistrarAtoNormativoResult> resultado = await Executar(
@@ -353,8 +354,7 @@ public sealed class RegistrarAtoNormativoCommandHandlerTests
 
     private void SemConflitoDeNumero() =>
         _atos.ListarIdsComMesmaNumeracaoAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<string>(),
-            Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            Arg.Any<NumeracaoDoAto>(), Arg.Any<CancellationToken>())
             .Returns([]);
 
     private static RegistrarAtoNormativoCommand Comando() =>
