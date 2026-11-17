@@ -69,40 +69,46 @@ public sealed partial class VerificarArquivoHandler
     {
         ArgumentNullException.ThrowIfNull(pedido);
 
-        ResultadoDaVerificacaoDeArquivo resultado;
-        try
-        {
-            resultado = await VerificarAsync(pedido, cancellationToken).ConfigureAwait(false);
-        }
-        catch (ClamdErroPermanenteException ex)
-        {
-            // Reprocessar não muda a resposta do clamd, e sem resultado o arquivo ficaria em verificação.
-            _metricas.RegistrarErro(OrigemDoErro.Clamd);
-            LogFalhaPermanente(_logger, pedido.ArquivoId, ex);
-            resultado = Recusa(pedido, MotivoDaRecusa.NaoPassouNaVerificacaoDeSeguranca);
-        }
-        catch (DefinitivoSemHashException ex)
-        {
-            _metricas.RegistrarErro(OrigemDoErro.Minio);
-            LogFalhaPermanente(_logger, pedido.ArquivoId, ex);
-            resultado = Recusa(pedido, MotivoDaRecusa.NaoPassouNaVerificacaoDeSeguranca);
-        }
-        catch (ArmazenamentoException ex)
-        {
-            _metricas.RegistrarErro(OrigemDoErro.Minio);
-            LogFalhaNoArmazenamento(_logger, pedido.ArquivoId, ex);
-            throw;
-        }
-        catch (ClamdException ex)
-        {
-            _metricas.RegistrarErro(OrigemDoErro.Clamd);
-            LogFalhaNoClamd(_logger, pedido.ArquivoId, ex);
-            throw;
-        }
-
+        ResultadoDaVerificacaoDeArquivo resultado = await VerificarRecusandoFalhaPermanenteAsync(pedido, cancellationToken).ConfigureAwait(false);
         _metricas.RegistrarVeredicto(resultado.Veredicto, resultado.Motivo);
         LogVeredicto(_logger, pedido.ArquivoId, resultado.Veredicto, resultado.Motivo);
         return resultado;
+    }
+
+    // Falha permanente recusa o arquivo; falha transitória propaga para a política de erro tentar de novo. O erro
+    // permanente do clamd é um ClamdException, por isso o filtro dele vem antes do genérico.
+    private async Task<ResultadoDaVerificacaoDeArquivo> VerificarRecusandoFalhaPermanenteAsync(PedidoDeVerificacaoDeArquivo pedido, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await VerificarAsync(pedido, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is ClamdErroPermanenteException or DefinitivoSemHashException)
+        {
+            return RecusarPorFalhaPermanente(pedido, OrigemDe(ex), ex);
+        }
+        catch (Exception ex) when (ex is ArmazenamentoException or ClamdException)
+        {
+            RegistrarFalhaTransitoria(pedido, OrigemDe(ex), ex);
+            throw;
+        }
+    }
+
+    private static OrigemDoErro OrigemDe(Exception falha) =>
+        falha is ArmazenamentoException or DefinitivoSemHashException ? OrigemDoErro.Minio : OrigemDoErro.Clamd;
+
+    // Reprocessar não muda a resposta do clamd, e sem resultado o arquivo ficaria em verificação.
+    private ResultadoDaVerificacaoDeArquivo RecusarPorFalhaPermanente(PedidoDeVerificacaoDeArquivo pedido, OrigemDoErro origem, Exception falha)
+    {
+        _metricas.RegistrarErro(origem);
+        LogFalhaPermanente(_logger, pedido.ArquivoId, falha);
+        return Recusa(pedido, MotivoDaRecusa.NaoPassouNaVerificacaoDeSeguranca);
+    }
+
+    private void RegistrarFalhaTransitoria(PedidoDeVerificacaoDeArquivo pedido, OrigemDoErro origem, Exception falha)
+    {
+        _metricas.RegistrarErro(origem);
+        LogFalhaTransitoria(_logger, pedido.ArquivoId, origem, falha);
     }
 
     private async Task<ResultadoDaVerificacaoDeArquivo> VerificarAsync(PedidoDeVerificacaoDeArquivo pedido, CancellationToken cancellationToken)
@@ -113,71 +119,104 @@ public sealed partial class VerificarArquivoHandler
         }
 
         ObjetoArmazenado? envio = await _armazenamento.ConsultarEnvioAsync(pedido.ChaveDeEnvio, cancellationToken).ConfigureAwait(false);
-        if (envio is null || !ArmazenamentoMinio.MesmoETag(envio.ETag, pedido.ETag))
-        {
-            return await PromovidoOuReenvioAsync(pedido, cancellationToken).ConfigureAwait(false);
-        }
+        return envio is null || !ArmazenamentoMinio.MesmoETag(envio.ETag, pedido.ETag)
+            ? await PromovidoOuReenvioAsync(pedido, cancellationToken).ConfigureAwait(false)
+            : await VerificarEnvioAsync(pedido, envio, cancellationToken).ConfigureAwait(false);
+    }
 
-        long limite = Math.Min(pedido.TamanhoMaximoBytes, _options.TamanhoMaximoBytes);
-        if (envio.TamanhoBytes > limite)
+    private async Task<ResultadoDaVerificacaoDeArquivo> VerificarEnvioAsync(
+        PedidoDeVerificacaoDeArquivo pedido,
+        ObjetoArmazenado envio,
+        CancellationToken cancellationToken)
+    {
+        if (envio.TamanhoBytes > Math.Min(pedido.TamanhoMaximoBytes, _options.TamanhoMaximoBytes))
         {
             return Recusa(pedido, MotivoDaRecusa.TamanhoExcedido);
         }
 
-        string diretorio = string.IsNullOrWhiteSpace(_options.DiretorioTemporario) ? Path.GetTempPath() : _options.DiretorioTemporario;
-        string caminho = Path.Join(diretorio, $"verificacao-{Guid.NewGuid():N}.tmp");
+        FileStream temporario = AbrirTemporario();
+        await using (temporario.ConfigureAwait(false))
+        {
+            return await _armazenamento.LerEnvioAsync(pedido.ChaveDeEnvio, pedido.ETag, temporario, cancellationToken).ConfigureAwait(false)
+                ? await VerificarConteudoAsync(pedido, temporario, cancellationToken).ConfigureAwait(false)
+                : await PromovidoOuReenvioAsync(pedido, cancellationToken).ConfigureAwait(false);
+        }
+    }
 
-        // O arquivo temporário vive só durante esta verificação: DeleteOnClose o apaga ao fim, mesmo na falha.
-        FileStream temporario = new(
-            caminho,
+    // O arquivo temporário vive só durante esta verificação: DeleteOnClose o apaga ao fim, mesmo na falha.
+    private FileStream AbrirTemporario()
+    {
+        string diretorio = string.IsNullOrWhiteSpace(_options.DiretorioTemporario) ? Path.GetTempPath() : _options.DiretorioTemporario;
+        return new FileStream(
+            Path.Join(diretorio, $"verificacao-{Guid.NewGuid():N}.tmp"),
             FileMode.CreateNew,
             FileAccess.ReadWrite,
             FileShare.None,
             bufferSize: 81920,
             FileOptions.Asynchronous | FileOptions.DeleteOnClose);
-
-        await using (temporario.ConfigureAwait(false))
-        {
-            if (!await _armazenamento.LerEnvioAsync(pedido.ChaveDeEnvio, pedido.ETag, temporario, cancellationToken).ConfigureAwait(false))
-            {
-                return await PromovidoOuReenvioAsync(pedido, cancellationToken).ConfigureAwait(false);
-            }
-
-            return await VerificarConteudoAsync(pedido, envio, temporario, cancellationToken).ConfigureAwait(false);
-        }
     }
 
     private async Task<ResultadoDaVerificacaoDeArquivo> VerificarConteudoAsync(
         PedidoDeVerificacaoDeArquivo pedido,
-        ObjetoArmazenado envio,
         FileStream conteudo,
         CancellationToken cancellationToken)
+    {
+        MotivoDaRecusa? motivo = await MotivoDeRecusaDoConteudoAsync(pedido, conteudo, cancellationToken).ConfigureAwait(false);
+        return motivo is { } recusa
+            ? Recusa(pedido, recusa)
+            : await PromoverAsync(pedido, conteudo, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<MotivoDaRecusa?> MotivoDeRecusaDoConteudoAsync(PedidoDeVerificacaoDeArquivo pedido, FileStream conteudo, CancellationToken cancellationToken)
+    {
+        if (!await FormatoCorrespondeAsync(pedido, conteudo, cancellationToken).ConfigureAwait(false))
+        {
+            return MotivoDaRecusa.FormatoNaoCorresponde;
+        }
+
+        if (ExigeSenhaParaAbrir(pedido, conteudo))
+        {
+            return MotivoDaRecusa.PdfComSenha;
+        }
+
+        return await PassouNoAntivirusAsync(pedido, conteudo, cancellationToken).ConfigureAwait(false)
+            ? null
+            : MotivoDaRecusa.NaoPassouNaVerificacaoDeSeguranca;
+    }
+
+    private static async Task<bool> FormatoCorrespondeAsync(PedidoDeVerificacaoDeArquivo pedido, FileStream conteudo, CancellationToken cancellationToken)
     {
         conteudo.Position = 0;
         byte[] inicio = new byte[ConferenciaDoArquivo.BytesDeAssinatura];
         int lidos = await conteudo.ReadAtLeastAsync(inicio, inicio.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-        if (!ConferenciaDoArquivo.FormatoCorresponde(pedido.FormatoDeclarado, inicio.AsSpan(0, lidos)))
+        return ConferenciaDoArquivo.FormatoCorresponde(pedido.FormatoDeclarado, inicio.AsSpan(0, lidos));
+    }
+
+    private static bool ExigeSenhaParaAbrir(PedidoDeVerificacaoDeArquivo pedido, FileStream conteudo)
+    {
+        if (pedido.FormatoDeclarado != FormatoDoArquivo.Pdf)
         {
-            return Recusa(pedido, MotivoDaRecusa.FormatoNaoCorresponde);
+            return false;
         }
 
-        if (pedido.FormatoDeclarado == FormatoDoArquivo.Pdf)
-        {
-            conteudo.Position = 0;
-            if (ConferenciaDoArquivo.PdfExigeSenhaParaAbrir(conteudo))
-            {
-                return Recusa(pedido, MotivoDaRecusa.PdfComSenha);
-            }
-        }
+        conteudo.Position = 0;
+        return ConferenciaDoArquivo.PdfExigeSenhaParaAbrir(conteudo);
+    }
 
+    private async Task<bool> PassouNoAntivirusAsync(PedidoDeVerificacaoDeArquivo pedido, FileStream conteudo, CancellationToken cancellationToken)
+    {
         conteudo.Position = 0;
         ResultadoDoClamd analise = await _clamd.VerificarAsync(conteudo, cancellationToken).ConfigureAwait(false);
         if (analise.Infectado)
         {
             LogAmeaca(_logger, pedido.ArquivoId, analise.Assinatura);
-            return Recusa(pedido, MotivoDaRecusa.NaoPassouNaVerificacaoDeSeguranca);
         }
 
+        return !analise.Infectado;
+    }
+
+    private async Task<ResultadoDaVerificacaoDeArquivo> PromoverAsync(PedidoDeVerificacaoDeArquivo pedido, FileStream conteudo, CancellationToken cancellationToken)
+    {
         conteudo.Position = 0;
         string sha256 = Convert.ToHexStringLower(await SHA256.HashDataAsync(conteudo, cancellationToken).ConfigureAwait(false));
 
@@ -185,9 +224,7 @@ public sealed partial class VerificarArquivoHandler
             pedido.ChaveDeEnvio, pedido.ETag, pedido.ChaveDefinitiva, ContentTypeDe(pedido.FormatoDeclarado), sha256, cancellationToken).ConfigureAwait(false);
 
         await LimparEnvioAsync(pedido, cancellationToken).ConfigureAwait(false);
-
-        return new ResultadoDaVerificacaoDeArquivo(
-            pedido.ArquivoId, VeredictoDaVerificacao.Verificado, MotivoDaRecusa.NaoSeAplica, sha256, conteudo.Length, pedido.FormatoDeclarado);
+        return Verificado(pedido, sha256, conteudo.Length);
     }
 
     // O que o candidato mandou no PUT não é confiável: um PDF poliglota com text/html abriria como página.
@@ -221,11 +258,16 @@ public sealed partial class VerificarArquivoHandler
     private async Task<ResultadoDaVerificacaoDeArquivo?> ResultadoJaPromovidoAsync(PedidoDeVerificacaoDeArquivo pedido, CancellationToken cancellationToken)
     {
         ObjetoArmazenado? definitivo = await _armazenamento.ConsultarDefinitivoAsync(pedido.ChaveDefinitiva, cancellationToken).ConfigureAwait(false);
-        if (definitivo is null)
-        {
-            return null;
-        }
+        return definitivo is null
+            ? null
+            : await ResultadoDoDefinitivoAsync(pedido, definitivo, cancellationToken).ConfigureAwait(false);
+    }
 
+    private async Task<ResultadoDaVerificacaoDeArquivo> ResultadoDoDefinitivoAsync(
+        PedidoDeVerificacaoDeArquivo pedido,
+        ObjetoArmazenado definitivo,
+        CancellationToken cancellationToken)
+    {
         // O definitivo nunca é sobrescrito: se não é desta versão, esta versão não existe mais.
         if (!ArmazenamentoMinio.MesmoETag(definitivo.ETagDoEnvio, pedido.ETag))
         {
@@ -239,9 +281,11 @@ public sealed partial class VerificarArquivoHandler
 
         // A entrega anterior pode ter caído antes de remover o envio.
         await LimparEnvioAsync(pedido, cancellationToken).ConfigureAwait(false);
-        return new ResultadoDaVerificacaoDeArquivo(
-            pedido.ArquivoId, VeredictoDaVerificacao.Verificado, MotivoDaRecusa.NaoSeAplica, definitivo.Sha256, definitivo.TamanhoBytes, pedido.FormatoDeclarado);
+        return Verificado(pedido, definitivo.Sha256, definitivo.TamanhoBytes);
     }
+
+    private static ResultadoDaVerificacaoDeArquivo Verificado(PedidoDeVerificacaoDeArquivo pedido, string sha256, long tamanhoBytes) =>
+        new(pedido.ArquivoId, VeredictoDaVerificacao.Verificado, MotivoDaRecusa.NaoSeAplica, sha256, tamanhoBytes, pedido.FormatoDeclarado);
 
     private static ResultadoDaVerificacaoDeArquivo Recusa(PedidoDeVerificacaoDeArquivo pedido, MotivoDaRecusa motivo) =>
         new(pedido.ArquivoId, VeredictoDaVerificacao.Recusado, motivo, null, null, null);
@@ -255,14 +299,11 @@ public sealed partial class VerificarArquivoHandler
     [LoggerMessage(Level = LogLevel.Warning, Message = "Arquivo {ArquivoId} recusado pelo antivírus: assinatura {Assinatura}")]
     private static partial void LogAmeaca(ILogger logger, Guid arquivoId, string? assinatura);
 
-    [LoggerMessage(Level = LogLevel.Error, Message = "Arquivo {ArquivoId} não verificado: falha no armazenamento")]
-    private static partial void LogFalhaNoArmazenamento(ILogger logger, Guid arquivoId, Exception exception);
+    [LoggerMessage(Level = LogLevel.Error, Message = "Arquivo {ArquivoId} não verificado: falha transitória ({Origem})")]
+    private static partial void LogFalhaTransitoria(ILogger logger, Guid arquivoId, OrigemDoErro origem, Exception exception);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "Arquivo {ArquivoId} recusado por falha permanente da verificação")]
     private static partial void LogFalhaPermanente(ILogger logger, Guid arquivoId, Exception exception);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "Arquivo {ArquivoId} não verificado: falha no clamd")]
-    private static partial void LogFalhaNoClamd(ILogger logger, Guid arquivoId, Exception exception);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Arquivo {ArquivoId} promovido, mas o envio não foi removido da quarentena")]
     private static partial void LogFalhaNaLimpezaDoEnvio(ILogger logger, Guid arquivoId, Exception exception);

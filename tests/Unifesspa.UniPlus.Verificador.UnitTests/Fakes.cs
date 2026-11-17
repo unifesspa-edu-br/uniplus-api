@@ -28,6 +28,12 @@ internal sealed class ArmazenamentoFalso : IArmazenamentoDeArquivos
 
     public string? ContentTypePromovido { get; private set; }
 
+    public string? Sha256Promovido { get; private set; }
+
+    public byte[] ConteudoPromovido { get; private set; } = [];
+
+    private Stream? _origemLida;
+
     public int Remocoes { get; private set; }
 
     public Task<ObjetoArmazenado?> ConsultarDefinitivoAsync(string chave, CancellationToken cancellationToken) => Task.FromResult(Definitivo);
@@ -48,6 +54,7 @@ internal sealed class ArmazenamentoFalso : IArmazenamentoDeArquivos
         }
 
         await destino.WriteAsync(Conteudo, cancellationToken);
+        _origemLida = destino;
         return true;
     }
 
@@ -55,7 +62,17 @@ internal sealed class ArmazenamentoFalso : IArmazenamentoDeArquivos
     {
         Promocoes++;
         ContentTypePromovido = contentType;
+        Sha256Promovido = sha256;
+        ConteudoPromovido = LerOrigemInteira();
         return Task.CompletedTask;
+    }
+
+    private byte[] LerOrigemInteira()
+    {
+        using MemoryStream copia = new();
+        _origemLida!.Position = 0;
+        _origemLida.CopyTo(copia);
+        return copia.ToArray();
     }
 
     public Task RemoverEnvioAsync(string chave, string etag, CancellationToken cancellationToken)
@@ -73,9 +90,13 @@ internal sealed class ClamdFalso : IClamd
 
     public int Verificacoes { get; private set; }
 
+    public int PrimeiroByteLido { get; private set; }
+
     public Task<ResultadoDoClamd> VerificarAsync(Stream conteudo, CancellationToken cancellationToken)
     {
         Verificacoes++;
+        PrimeiroByteLido = conteudo.ReadByte();
+        conteudo.CopyTo(Stream.Null);
         return Falha is null ? Task.FromResult(Resposta) : Task.FromException<ResultadoDoClamd>(Falha);
     }
 
@@ -94,10 +115,12 @@ internal static class Cenario
     public static byte[] Fixture(string nome) => File.ReadAllBytes(Path.Join(AppContext.BaseDirectory, "Fixtures", nome));
 
     public static VerificarArquivoHandler Handler(IArmazenamentoDeArquivos armazenamento, ClamdFalso clamd) =>
-        new(
-            armazenamento,
-            clamd,
-            new MetricasDoVerificador(TimeProvider.System),
-            Options.Create(new VerificadorOptions()),
-            NullLogger<VerificarArquivoHandler>.Instance);
+        Handler(armazenamento, clamd, new MetricasDoVerificador(TimeProvider.System), new VerificadorOptions());
+
+    public static VerificarArquivoHandler Handler(
+        IArmazenamentoDeArquivos armazenamento,
+        ClamdFalso clamd,
+        MetricasDoVerificador metricas,
+        VerificadorOptions opcoes) =>
+        new(armazenamento, clamd, metricas, Options.Create(opcoes), NullLogger<VerificarArquivoHandler>.Instance);
 }
