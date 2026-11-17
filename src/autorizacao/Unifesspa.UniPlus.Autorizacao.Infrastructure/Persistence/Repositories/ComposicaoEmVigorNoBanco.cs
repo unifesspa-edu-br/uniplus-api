@@ -89,7 +89,7 @@ internal static class ComposicaoEmVigorNoBanco
     public static IQueryable<CodigoDaConcessao> CodigosDasConcessoesDoPerfil(
         this UniPlusDbContext context, Guid perfilId, DateTimeOffset agora) =>
         context.CodigosDasConcessoes(
-            context.Concessoes.Where(c => c.PerfilId == perfilId && c.RevogadaEm == null && (c.ValidaAte == null || c.ValidaAte > agora)),
+            context.Concessoes.Where(c => c.PerfilId == perfilId).Vigentes(agora),
             agora);
 
     /// <summary>Os códigos que o catálogo atual suspendeu nas concessões não revogadas: a reclassificação ainda sem a liberação das etapas.</summary>

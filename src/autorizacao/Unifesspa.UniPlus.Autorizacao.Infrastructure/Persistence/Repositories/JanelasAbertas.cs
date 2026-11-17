@@ -15,6 +15,5 @@ internal static class JanelasAbertas
     public static IQueryable<JanelaDeMigracao> EfetivamenteAbertas(this UniPlusDbContext context, DateTimeOffset agora) =>
         context.JanelasDeMigracao.AsNoTracking()
             .Where(j => j.EncerradaEm == null && j.Prazo > agora
-                && context.Set<Concessao>().Any(c => c.PerfilId == j.PerfilId && c.RevogadaEm == null
-                    && (c.ValidaAte == null || c.ValidaAte > agora) && c.VersaoId != j.VersaoAlvoId));
+                && context.Set<Concessao>().Vigentes(agora).Any(c => c.PerfilId == j.PerfilId && c.VersaoId != j.VersaoAlvoId));
 }

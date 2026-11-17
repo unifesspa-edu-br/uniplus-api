@@ -132,7 +132,7 @@ public sealed class ProvidenciaRepository : IProvidenciaRepository
 
     private IQueryable<Guid> ConcessoesAtivas(DateTimeOffset agora) =>
         _context.Concessoes.AsNoTracking()
-            .Where(c => c.RevogadaEm == null && (c.ValidaAte == null || c.ValidaAte > agora))
+            .Vigentes(agora)
             .Select(c => c.Id);
 
     private async Task<IReadOnlyList<ProvidenciaComConcessao>> ComAlvosAsync(IReadOnlyList<Providencia> providencias, CancellationToken cancellationToken)
