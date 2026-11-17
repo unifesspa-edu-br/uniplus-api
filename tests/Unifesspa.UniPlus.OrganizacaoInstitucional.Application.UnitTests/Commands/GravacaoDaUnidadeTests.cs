@@ -2,10 +2,14 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.UnitTests.Comma
 
 using AwesomeAssertions;
 
+using Microsoft.EntityFrameworkCore;
+
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
@@ -21,6 +25,37 @@ public sealed class GravacaoDaUnidadeTests
     private void SalvarFalha() =>
         _cadastro.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .Returns(Task.FromException<int>(new InvalidOperationException("falha ao salvar")));
+
+    /// <summary>A gravação recusada pelo índice único como o provedor a reporta, com a restrição dada.</summary>
+    private void GravacaoRecusadaPelaRestricao(string restricao) =>
+        _cadastro.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
+            .ThrowsAsync(new DbUpdateException("violação sintética", new ViolacaoDeUnicidadeDeTeste(restricao)));
+
+    private Task<Result<Guid>> GravarNovaAsync() =>
+        _cadastro.Gravacao.GravarNovaAsync(UnidadeDeTeste.Criar().Value!, CancellationToken.None);
+
+    private Task<Result> GravarAtualizacaoAsync() =>
+        GravarAtualizacaoAsync(UnidadeDeTeste.Criar().Value!);
+
+    private Task<Result> GravarAtualizacaoAsync(Unidade unidade) =>
+        _cadastro.Gravacao.GravarAtualizacaoAsync(
+            unidade, CadastroDeUnidadeSimulado.AtualizacaoSemMudancaDeIdentificador(unidade.Id), Agora, CancellationToken.None);
+
+    private async Task ConferirQueDescartouSemInvalidarOCacheAsync()
+    {
+        Received.InOrder(() =>
+        {
+            _ = _cadastro.UnitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+            _cadastro.UnitOfWork.DescartarAlteracoesNaoSalvas();
+        });
+        await _cadastro.Cache.DidNotReceive().InvalidarAsync(Arg.Any<CancellationToken>());
+    }
+
+    private async Task ConferirQueNaoDescartouNemInvalidouOCacheAsync()
+    {
+        _cadastro.UnitOfWork.DidNotReceive().DescartarAlteracoesNaoSalvas();
+        await _cadastro.Cache.DidNotReceive().InvalidarAsync(Arg.Any<CancellationToken>());
+    }
 
     [Fact(DisplayName = "Gravar a nova Unidade adiciona, salva e invalida o cache, nesta ordem, e devolve o Id")]
     public async Task GravarNova_AdicionaSalvaEInvalidaEmOrdem()
@@ -47,6 +82,33 @@ public sealed class GravacaoDaUnidadeTests
 
         await act.Should().ThrowAsync<InvalidOperationException>();
         await _cadastro.Cache.DidNotReceive().InvalidarAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory(DisplayName = "Corrida no índice único na criação vira a recusa do identificador, descarta o rastreamento e não invalida o cache")]
+    [InlineData(RestricoesDoBanco.UnidadeSlugVivo, UnidadeErrorCodes.SlugJaExiste, "'ceps'")]
+    [InlineData(RestricoesDoBanco.UnidadeSiglaVivo, UnidadeErrorCodes.SiglaJaExiste, "'CEPS'")]
+    [InlineData(RestricoesDoBanco.UnidadeCodigoVivo, UnidadeErrorCodes.CodigoJaExiste, "'0001'")]
+    public async Task GravarNova_ConflitoDoIndiceDoIdentificador_DevolveARecusaDescartandoSemInvalidarCache(
+        string restricao, string codigoEsperado, string valorCitado)
+    {
+        GravacaoRecusadaPelaRestricao(restricao);
+
+        Result<Guid> resultado = await GravarNovaAsync();
+
+        resultado.Error!.Code.Should().Be(codigoEsperado);
+        resultado.Error.Message.Should().Contain(valorCitado);
+        await ConferirQueDescartouSemInvalidarOCacheAsync();
+    }
+
+    [Fact(DisplayName = "Violação de outra restrição única na criação propaga, sem descartar nem invalidar o cache")]
+    public async Task GravarNova_ConflitoDeOutraRestricao_Propaga()
+    {
+        GravacaoRecusadaPelaRestricao("ix_outra_restricao");
+
+        Func<Task> act = () => GravarNovaAsync();
+
+        await act.Should().ThrowAsync<DbUpdateException>();
+        await ConferirQueNaoDescartouNemInvalidouOCacheAsync();
     }
 
     [Fact(DisplayName = "Gravar a atualização aplica o nome, salva e invalida o cache, nesta ordem")]
@@ -108,6 +170,33 @@ public sealed class GravacaoDaUnidadeTests
 
         await act.Should().ThrowAsync<InvalidOperationException>();
         await _cadastro.Cache.DidNotReceive().InvalidarAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Theory(DisplayName = "Corrida no índice único na atualização vira a recusa do identificador, descarta o rastreamento e não invalida o cache")]
+    [InlineData(RestricoesDoBanco.UnidadeSlugVivo, UnidadeErrorCodes.SlugJaExiste, "'ceps'")]
+    [InlineData(RestricoesDoBanco.UnidadeSiglaVivo, UnidadeErrorCodes.SiglaJaExiste, "'CEPS'")]
+    [InlineData(RestricoesDoBanco.UnidadeCodigoVivo, UnidadeErrorCodes.CodigoJaExiste, "'0001'")]
+    public async Task GravarAtualizacao_ConflitoDoIndiceDoIdentificador_DevolveARecusaDescartandoSemInvalidarCache(
+        string restricao, string codigoEsperado, string valorCitado)
+    {
+        GravacaoRecusadaPelaRestricao(restricao);
+
+        Result resultado = await GravarAtualizacaoAsync();
+
+        resultado.Error!.Code.Should().Be(codigoEsperado);
+        resultado.Error.Message.Should().Contain(valorCitado);
+        await ConferirQueDescartouSemInvalidarOCacheAsync();
+    }
+
+    [Fact(DisplayName = "Violação de outra restrição única na atualização propaga, sem descartar nem invalidar o cache")]
+    public async Task GravarAtualizacao_ConflitoDeOutraRestricao_Propaga()
+    {
+        GravacaoRecusadaPelaRestricao("ix_outra_restricao");
+
+        Func<Task> act = () => GravarAtualizacaoAsync();
+
+        await act.Should().ThrowAsync<DbUpdateException>();
+        await ConferirQueNaoDescartouNemInvalidouOCacheAsync();
     }
 
     [Fact(DisplayName = "Gravar a remoção remove, salva e invalida o cache, nesta ordem")]
