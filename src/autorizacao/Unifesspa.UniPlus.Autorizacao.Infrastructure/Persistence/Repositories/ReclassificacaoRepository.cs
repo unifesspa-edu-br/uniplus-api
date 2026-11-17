@@ -165,22 +165,29 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
 
     public async Task<IReadOnlyList<FatoSemAviso>> ListarFatosSemAvisoAsync(int limite, CancellationToken cancellationToken = default)
     {
-        IQueryable<FatoSemAviso> reclassificacoes = _context.Reclassificacoes.AsNoTracking()
-            .Where(r => (FuncoesDoBanco.OrdemDaClassificacao(r.ClassificacaoNova) > FuncoesDoBanco.OrdemDaClassificacao(r.ClassificacaoAnterior) || r.DeUnidadeNovo != r.DeUnidadeAnterior)
-                && !_context.Set<AvisoDaReclassificacao>().Any(a => a.Origem == OrigemDoAviso.Reclassificacao && a.OrigemId == r.Id))
-            .OrderBy(r => r.OrdemNaTrilha)
-            .Take(limite)
-            .Select(r => new FatoSemAviso(OrigemDoAviso.Reclassificacao, r.Id));
-        IQueryable<FatoSemAviso> divergencias = _context.DivergenciasDaGovernanca.AsNoTracking()
-            .Where(d => !_context.Set<AvisoDaReclassificacao>().Any(a => a.Origem == OrigemDoAviso.Divergencia && a.OrigemId == d.Id))
-            .OrderBy(d => d.OrdemNaTrilha)
-            .Take(limite)
-            .Select(d => new FatoSemAviso(OrigemDoAviso.Divergencia, d.Id));
+        IQueryable<FatoSemAviso> reclassificacoes = ReclassificacoesSemAviso(limite);
+        IQueryable<FatoSemAviso> divergencias = DivergenciasSemAviso(limite);
 
         return [.. (await reclassificacoes.ToListAsync(cancellationToken).ConfigureAwait(false))
             .Concat(await divergencias.ToListAsync(cancellationToken).ConfigureAwait(false))
             .Take(limite)];
     }
+
+    // As que sobem a classe ou mudam o escopo e ainda não têm linha de aviso, da mais antiga para a mais nova.
+    private IQueryable<FatoSemAviso> ReclassificacoesSemAviso(int limite) =>
+        _context.Reclassificacoes.AsNoTracking()
+            .Where(r => (FuncoesDoBanco.OrdemDaClassificacao(r.ClassificacaoNova) > FuncoesDoBanco.OrdemDaClassificacao(r.ClassificacaoAnterior) || r.DeUnidadeNovo != r.DeUnidadeAnterior)
+                && !_context.Set<AvisoDaReclassificacao>().Any(a => a.Origem == OrigemDoAviso.Reclassificacao && a.OrigemId == r.Id))
+            .OrderBy(r => r.OrdemNaTrilha)
+            .Take(limite)
+            .Select(r => new FatoSemAviso(OrigemDoAviso.Reclassificacao, r.Id));
+
+    private IQueryable<FatoSemAviso> DivergenciasSemAviso(int limite) =>
+        _context.DivergenciasDaGovernanca.AsNoTracking()
+            .Where(d => !_context.Set<AvisoDaReclassificacao>().Any(a => a.Origem == OrigemDoAviso.Divergencia && a.OrigemId == d.Id))
+            .OrderBy(d => d.OrdemNaTrilha)
+            .Take(limite)
+            .Select(d => new FatoSemAviso(OrigemDoAviso.Divergencia, d.Id));
 
     public async Task<DivergenciaDaGovernanca?> ObterDivergenciaAsync(Guid id, CancellationToken cancellationToken = default) =>
         await _context.DivergenciasDaGovernanca.AsNoTracking().FirstOrDefaultAsync(d => d.Id == id, cancellationToken).ConfigureAwait(false);
@@ -212,12 +219,9 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
     private async Task<IReadOnlyList<ConcessaoComAPermissao>> ComAsBasesAsync(
         string codigo, List<Guid> ids, DateTimeOffset agora, Guid perfilId, CancellationToken cancellationToken)
     {
-        List<Concessao> concessoes = await _context.Concessoes.AsNoTracking()
-            .Where(c => ids.Contains(c.Id)).OrderBy(c => c.Id).ToListAsync(cancellationToken).ConfigureAwait(false);
-        Dictionary<Guid, CodigoDaConcessao> retratos = (await _context.CodigosDasConcessoesDoPerfil(perfilId, agora)
-            .Where(k => k.Codigo == codigo).ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(static k => k.ConcessaoId);
-        Dictionary<Guid, BaseViva> vivas = (await _context.BasesVivas().Where(b => b.Codigo == codigo && ids.Contains(b.ConcessaoId))
-            .ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(static b => b.ConcessaoId);
+        List<Concessao> concessoes = await ConcessoesDoPerfilAsync(ids, cancellationToken).ConfigureAwait(false);
+        Dictionary<Guid, CodigoDaConcessao> retratos = await RetratosDasConcessoesAsync(perfilId, codigo, agora, cancellationToken).ConfigureAwait(false);
+        Dictionary<Guid, BaseViva> vivas = await BasesVivasDasConcessoesAsync(codigo, ids, cancellationToken).ConfigureAwait(false);
 
         return
         [.. concessoes
@@ -228,4 +232,17 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
                     ? new BaseDaConcessao(viva.Classificacao, viva.DeUnidade)
                     : new BaseDaConcessao(retratos[c.Id].RetratoDaClassificacao!.Value, retratos[c.Id].RetratoDeUnidade)))];
     }
+
+    private Task<List<Concessao>> ConcessoesDoPerfilAsync(List<Guid> ids, CancellationToken cancellationToken) =>
+        _context.Concessoes.AsNoTracking()
+            .Where(c => ids.Contains(c.Id)).OrderBy(c => c.Id).ToListAsync(cancellationToken);
+
+    private async Task<Dictionary<Guid, CodigoDaConcessao>> RetratosDasConcessoesAsync(
+        Guid perfilId, string codigo, DateTimeOffset agora, CancellationToken cancellationToken) =>
+        (await _context.CodigosDasConcessoesDoPerfil(perfilId, agora)
+            .Where(k => k.Codigo == codigo).ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(static k => k.ConcessaoId);
+
+    private async Task<Dictionary<Guid, BaseViva>> BasesVivasDasConcessoesAsync(string codigo, List<Guid> ids, CancellationToken cancellationToken) =>
+        (await _context.BasesVivas().Where(b => b.Codigo == codigo && ids.Contains(b.ConcessaoId))
+            .ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(static b => b.ConcessaoId);
 }
