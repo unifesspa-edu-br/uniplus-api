@@ -102,9 +102,7 @@ public sealed class RevisaoDeAcessosRepository : IRevisaoDeAcessosRepository
         await _context.Perfis
             .AsNoTracking()
             .ComComposicao()
-            .Where(p => _context.Set<Concessao>().Any(c => c.PerfilId == p.Id
-                && c.RevogadaEm == null
-                && (c.ValidaAte == null || c.ValidaAte > agora)))
+            .Where(p => _context.Set<Concessao>().Vigentes(agora).Any(c => c.PerfilId == p.Id))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
@@ -115,9 +113,8 @@ public sealed class RevisaoDeAcessosRepository : IRevisaoDeAcessosRepository
 
         var concessoes = await _context.Concessoes
             .AsNoTracking()
-            .Where(c => perfilIds.Contains(c.PerfilId)
-                && c.RevogadaEm == null
-                && (c.ValidaAte == null || c.ValidaAte > agora))
+            .Where(c => perfilIds.Contains(c.PerfilId))
+            .Vigentes(agora)
             .OrderBy(c => c.Id)
             .Select(c => new { ConcessaoId = c.Id, c.PerfilId, c.BeneficiarioEmissor, c.BeneficiarioContaId })
             .ToListAsync(cancellationToken)
@@ -153,8 +150,8 @@ public sealed class RevisaoDeAcessosRepository : IRevisaoDeAcessosRepository
     /// <summary>Os itens sem decisão sobre concessão ainda ativa no instante.</summary>
     private IQueryable<ItemDaRevisao> ItensPendentes(DateTimeOffset agora) =>
         from i in _context.ItensDasRevisoes.AsNoTracking()
-        join c in _context.Concessoes.AsNoTracking() on i.ConcessaoId equals c.Id
-        where i.Resultado == null && c.RevogadaEm == null && (c.ValidaAte == null || c.ValidaAte > agora)
+        join c in _context.Concessoes.AsNoTracking().Vigentes(agora) on i.ConcessaoId equals c.Id
+        where i.Resultado == null
         select i;
 
     private async Task<Dictionary<Guid, (int Total, int Pendentes)>> ContarItensAsync(Guid[] ids, DateTimeOffset agora, CancellationToken cancellationToken)
