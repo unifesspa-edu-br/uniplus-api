@@ -38,28 +38,35 @@ public sealed partial class EmissorDeAvisos
         Dictionary<Guid, Email> porId = Destinatarios(pedido);
         if (porId.Count == 0)
         {
-            LogSemDestinatario(_logger, tipo, pedido.FatoId);
-            _metricas.AvisoSemDestinatario(tipo);
-
-            return [];
+            return SemDestinatario(pedido, tipo);
         }
 
         IReadOnlyCollection<Guid> novos = await _registro
             .RegistrarAsync(tipo, pedido.FatoId, [.. porId.Keys.Order()], cancellationToken)
             .ConfigureAwait(false);
 
-        return [.. novos.Select(id => Montar(pedido.Modelo, id, porId[id]))];
+        return [.. novos.Select(mensagemId => Montar(pedido.Modelo, mensagemId, porId[mensagemId]))];
+    }
+
+    private IReadOnlyList<EnviarEmail> SemDestinatario(PedidoDeAviso pedido, string tipo)
+    {
+        LogSemDestinatario(_logger, tipo, pedido.FatoId);
+        _metricas.AvisoSemDestinatario(tipo);
+
+        return [];
     }
 
     // Um por identidade e por endereço, sem quem praticou o ato e sem endereço inválido.
     private static Dictionary<Guid, Email> Destinatarios(PedidoDeAviso pedido) =>
         pedido.Destinatarios
-            .Where(d => !pedido.Excluidos.Contains(d.Pessoa))
-            .DistinctBy(static d => d.Pessoa)
-            .Select(d => (d.Pessoa, Email: Email.Criar(d.Email)))
-            .Where(static d => d.Email.IsSuccess)
-            .DistinctBy(static d => d.Email.Value!.Valor)
-            .ToDictionary(d => IdDoAviso.De(new ChaveDoAviso(pedido.Modelo.Tipo, pedido.FatoId, pedido.Marco, d.Pessoa)), static d => d.Email.Value!);
+            .Where(destinatario => !pedido.Excluidos.Contains(destinatario.Pessoa))
+            .DistinctBy(static destinatario => destinatario.Pessoa)
+            .Select(destinatario => (destinatario.Pessoa, Email: Email.Criar(destinatario.Email)))
+            .Where(static valido => valido.Email.IsSuccess)
+            .DistinctBy(static valido => valido.Email.Value!.Valor)
+            .ToDictionary(
+                valido => IdDoAviso.De(new ChaveDoAviso(pedido.Modelo.Tipo, pedido.FatoId, pedido.Marco, valido.Pessoa)),
+                static valido => valido.Email.Value!);
 
     private static EnviarEmail Montar(ModeloDeAviso modelo, Guid mensagemId, Email destinatario) =>
         EnviarEmail.Para(
