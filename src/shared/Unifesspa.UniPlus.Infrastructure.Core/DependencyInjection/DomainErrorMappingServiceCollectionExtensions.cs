@@ -24,6 +24,21 @@ public static class DomainErrorMappingServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
+        AddProblemTypeOptions(services, configuration);
+        AddErrorRegistrations(services);
+        // O código que cada violação do FluentValidation publica em errors[].code. Instalado aqui,
+        // junto do registro que o resolve, porque todo host que responde o 422 de validação passa
+        // por este ponto — e é configuração global do FluentValidation, não algo que o container
+        // possa injetar nos validators.
+        ValidationErrorCodes.InstallGlobalResolver();
+        InstallInvalidRequestResponse(services);
+        WrapReadBindersAndFormatters(services);
+
+        return services;
+    }
+
+    private static void AddProblemTypeOptions(IServiceCollection services, IConfiguration configuration)
+    {
         services
             .AddOptions<ProblemTypeOptions>()
             .Bind(configuration.GetSection(ProblemTypeOptions.SectionName))
@@ -33,78 +48,80 @@ public static class DomainErrorMappingServiceCollectionExtensions
             .ValidateOnStart();
         services.TryAddSingleton<IValidateOptions<ProblemTypeOptions>, ProblemTypeOptionsValidator>();
         services.TryAddSingleton<IProblemTypeUriFactory, ProblemTypeUriFactory>();
+    }
 
+    private static void AddErrorRegistrations(IServiceCollection services)
+    {
         services.AddSingleton<IDomainErrorRegistration, KernelDomainErrorRegistration>();
         services.AddSingleton<IDomainErrorRegistration, RegrasDomainErrorRegistration>();
         services.AddSingleton<IDomainErrorRegistration, ErrosDaFronteiraHttpDomainErrorRegistration>();
-        services.AddSingleton<IDomainErrorMapper>(sp =>
-        {
-            IEnumerable<IDomainErrorRegistration> registrations = sp.GetServices<IDomainErrorRegistration>();
-            return new DomainErrorMappingRegistry(
-                registrations,
-                sp.GetRequiredService<IProblemTypeUriFactory>());
-        });
+        services.AddSingleton<IDomainErrorMapper>(provider => new DomainErrorMappingRegistry(
+            provider.GetServices<IDomainErrorRegistration>(),
+            provider.GetRequiredService<IProblemTypeUriFactory>()));
+    }
 
-        // O código que cada violação do FluentValidation publica em errors[].code. Instalado
-        // aqui, junto do registro que o resolve, porque todo host que responde o 422 de
-        // validação passa por este ponto — e é a configuração global do FluentValidation, não
-        // algo que o container possa injetar nos validators.
-        ValidationErrorCodes.InstallGlobalResolver();
-        // O envelope das recusas de LEITURA da requisição, que o MVC responde antes de
-        // qualquer código nosso rodar. Sem isto elas saem no formato do framework — sem `code`,
-        // sem `traceId`, título em inglês e, o que é grave, com o nome completo do tipo CLR que
-        // falhou a desserialização dentro do corpo.
-        //
-        // Compõe, não substitui: o factory devolve `null` para tudo que não seja leitura da
-        // requisição, e a cadeia segue. É o que preserva a mensagem de um `[RegularExpression]` num
-        // parâmetro de rota — escrita por nós, dizendo ao cliente qual é o formato esperado —,
-        // que acontece DEPOIS de o binding ter dado certo e não tem nada a ver com corpo
-        // ilegível.
-        //
-        // Registrado AQUI, e não junto de quem compõe depois, porque este é o mais genérico da
-        // cadeia: cada `PostConfigure` seguinte captura o factory corrente como `previous` e o
-        // chama quando a falha não é dele. Instalar o genérico no primeiro registro do pipeline
-        // de erro é o que o mantém no FIM da cadeia, e não na frente dela.
+    /// <summary>
+    /// Instala o envelope das recusas de LEITURA da requisição, que o MVC responde antes de
+    /// qualquer código nosso rodar: com <c>code</c>, <c>traceId</c> e título em português, e sem
+    /// o nome do tipo CLR que falhou a desserialização. Fica AQUI, e não junto de quem compõe
+    /// depois, porque é a resposta mais genérica da cadeia: cada <c>PostConfigure</c> seguinte
+    /// guarda a fábrica corrente e a chama quando a falha não é dele, e instalar a genérica no
+    /// primeiro registro do pipeline de erro é o que a mantém no FIM da cadeia.
+    /// </summary>
+    /// <remarks>
+    /// Compõe, não substitui: a fábrica devolve <c>null</c> para tudo que não seja leitura da
+    /// requisição, e a fábrica anterior responde. É o que preserva a mensagem de um
+    /// <c>[RegularExpression]</c> num parâmetro de rota — escrita por nós, dizendo ao cliente qual
+    /// é o formato esperado —, que acontece DEPOIS de o binding ter dado certo e não tem nada a
+    /// ver com corpo ilegível.
+    /// </remarks>
+    private static void InstallInvalidRequestResponse(IServiceCollection services) =>
         services.PostConfigure<ApiBehaviorOptions>(options =>
         {
-            Func<ActionContext, IActionResult> previous = options.InvalidModelStateResponseFactory;
-            options.InvalidModelStateResponseFactory = context =>
-                InvalidRequestProblemFactory.TryBuild(context) ?? previous(context);
+            Func<ActionContext, IActionResult> anterior = options.InvalidModelStateResponseFactory;
+            options.InvalidModelStateResponseFactory = contexto =>
+                InvalidRequestProblemFactory.TryBuild(contexto) ?? anterior(contexto);
         });
 
-        // O sinal de que o factory acima precisa para responder também pelo valor de rota ou
-        // query que não converte. Sem ele aquela recusa é indistinguível de uma validação
-        // reprovada, e é a única razão por que ela continuava saindo no envelope do framework.
-        //
-        // Envolve os providers já registrados em vez de acrescentar mais um: um provider novo
-        // teria de disputar precedência com os existentes, e quem ganha a disputa depende da
-        // ordem da lista. Envolver preserva a resolução que o MVC já faz e só observa o
-        // resultado dela.
+    /// <summary>
+    /// Dá à fábrica instalada por <see cref="InstallInvalidRequestResponse"/> o sinal de que
+    /// precisa para responder também pelo valor de rota ou query que não converte, e converte em
+    /// recusa de leitura a união polimórfica cujo documento não declara o discriminador.
+    /// </summary>
+    /// <remarks>
+    /// Envolve os providers e os formatters já registrados em vez de acrescentar mais um: um novo
+    /// teria de disputar precedência com os existentes, e quem ganha a disputa depende da ordem
+    /// da lista. Envolver preserva a resolução que o MVC já faz e só observa o resultado dela.
+    /// </remarks>
+    private static void WrapReadBindersAndFormatters(IServiceCollection services) =>
         services.PostConfigure<MvcOptions>(options =>
         {
-            for (int i = 0; i < options.ModelBinderProviders.Count; i++)
-            {
-                options.ModelBinderProviders[i] =
-                    new ValueConversionTrackingModelBinderProvider(options.ModelBinderProviders[i]);
-            }
-
-            // A única recusa de leitura do corpo que ainda escapava como 5xx: a união polimórfica
-            // cujo documento não declara o discriminador de tipo. O formatter do framework trata
-            // JsonException e deixa NotSupportedException passar, e é só essa que falta — errar o
-            // `$` do discriminator devolvia "erro interno do servidor" para um defeito do cliente
-            // que a API sabe descrever (issue #1410).
-            //
-            // Envolve o formatter existente em vez de acrescentar um: um formatter novo teria de
-            // disputar precedência com o que já lê JSON, e quem ganha depende da ordem da lista.
-            for (int i = 0; i < options.InputFormatters.Count; i++)
-            {
-                if (options.InputFormatters[i] is SystemTextJsonInputFormatter json)
-                {
-                    options.InputFormatters[i] = new PolymorphicDeserializationInputFormatter(json);
-                }
-            }
+            WrapBindersToTrackConversionFailure(options);
+            WrapJsonFormatterForPolymorphicUnion(options);
         });
 
-        return services;
+    private static void WrapBindersToTrackConversionFailure(MvcOptions options)
+    {
+        for (int index = 0; index < options.ModelBinderProviders.Count; index++)
+        {
+            options.ModelBinderProviders[index] =
+                new ValueConversionTrackingModelBinderProvider(options.ModelBinderProviders[index]);
+        }
+    }
+
+    /// <remarks>
+    /// A união polimórfica cujo documento não declara o discriminador de tipo é tratada pelo
+    /// formatter do framework como <c>NotSupportedException</c>, que ele deixa passar como erro
+    /// interno do servidor. O envoltório a anota como defeito do cliente, que a API sabe descrever.
+    /// </remarks>
+    private static void WrapJsonFormatterForPolymorphicUnion(MvcOptions options)
+    {
+        for (int index = 0; index < options.InputFormatters.Count; index++)
+        {
+            if (options.InputFormatters[index] is SystemTextJsonInputFormatter formatterJson)
+            {
+                options.InputFormatters[index] = new PolymorphicDeserializationInputFormatter(formatterJson);
+            }
+        }
     }
 }
