@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>Unifesspa.UniPlus.Verificador.Sintetico.Intermediario</AssemblyName>
+    <RootNamespace>Unifesspa.UniPlus.Verificador.Sintetico.Intermediario</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../AlvoCarregado/AlvoCarregado.csproj" />
+    <ProjectReference Include="../AlvoAusente/AlvoAusente.csproj" Private="false" />
+  </ItemGroup>
+
+</Project>

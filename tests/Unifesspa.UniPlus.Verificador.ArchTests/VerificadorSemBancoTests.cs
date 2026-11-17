@@ -1,17 +1,18 @@
 namespace Unifesspa.UniPlus.Verificador.ArchTests;
 
-using System.Reflection;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Verificador.Configuracao;
 
 /// <summary>
 /// O verificador manipula conteúdo sensível e não tem credencial nem conexão no banco da API
-/// (ADR-0146). Percorre os assemblies que ele referencia, direta e transitivamente.
+/// (ADR-0146). Percorre os assemblies que ele referencia, direta e transitivamente, pelos nomes: uma referência
+/// proibida conta mesmo quando o assembly dela não chega ao diretório de saída.
 /// </summary>
 public sealed class VerificadorSemBancoTests
 {
+    private const string Contratos = "Unifesspa.UniPlus.Verificador.Contratos";
+
     private static readonly string[] Proibidos =
     [
         "Unifesspa.UniPlus.Selecao",
@@ -22,39 +23,30 @@ public sealed class VerificadorSemBancoTests
     [Fact(DisplayName = "O verificador não referencia Seleção, EF Core nem Npgsql, nem transitivamente")]
     public void Verificador_NaoReferenciaModuloDeNegocioNemBanco()
     {
-        Assembly verificador = typeof(VerificadorOptions).Assembly;
+        HashSet<string> alcancados = AssembliesAlcancados.DoAssembly(typeof(VerificadorOptions).Assembly);
 
-        IReadOnlyCollection<string> alcancados = AssembliesAlcancados(verificador);
-
-        alcancados.Where(nome => Proibidos.Any(p => nome.StartsWith(p, StringComparison.Ordinal)))
-            .Should().BeEmpty();
-        alcancados.Should().Contain("Unifesspa.UniPlus.Verificador.Contratos", "o percurso precisa alcançar o que o verificador realmente referencia");
+        ProibidosEm(alcancados).Should().BeEmpty();
+        alcancados.Should().Contain(Contratos, "o percurso precisa alcançar o que o verificador realmente referencia");
     }
 
-    private static HashSet<string> AssembliesAlcancados(Assembly raiz)
+    [Fact(DisplayName = "A regra reprova a referência proibida de um assembly intermediário cujo alvo está carregado")]
+    public void Regra_AlvoProibidoCarregadoNoIntermediario_ReprovaPeloNome()
     {
-        HashSet<string> vistos = new(StringComparer.Ordinal);
-        Queue<Assembly> fila = new([raiz]);
-        while (fila.TryDequeue(out Assembly? atual))
-        {
-            foreach (AssemblyName referencia in atual.GetReferencedAssemblies())
-            {
-                if (referencia.Name is null || !vistos.Add(referencia.Name))
-                {
-                    continue;
-                }
+        HashSet<string> alcancados = AssembliesAlcancados.DoAssembly(AssembliesAlcancados.DoDiretorioDeSaida("Unifesspa.UniPlus.Verificador.Sintetico"));
 
-                try
-                {
-                    fila.Enqueue(Assembly.Load(referencia));
-                }
-                catch (FileNotFoundException)
-                {
-                    // Assembly de plataforma que não chega ao diretório de saída: não é dependência do pacote.
-                }
-            }
-        }
-
-        return vistos;
+        ProibidosEm(alcancados).Should().Contain("Npgsql.Sintetico");
     }
+
+    [Fact(DisplayName = "A regra reprova a referência proibida de um assembly intermediário cujo alvo não chega ao diretório de saída")]
+    public void Regra_AlvoProibidoAusenteDoDiretorio_ReprovaPeloNome()
+    {
+        File.Exists(Path.Join(AppContext.BaseDirectory, "Microsoft.EntityFrameworkCore.Sintetico.dll")).Should().BeFalse();
+
+        HashSet<string> alcancados = AssembliesAlcancados.DoAssembly(AssembliesAlcancados.DoDiretorioDeSaida("Unifesspa.UniPlus.Verificador.Sintetico"));
+
+        ProibidosEm(alcancados).Should().Contain("Microsoft.EntityFrameworkCore.Sintetico");
+    }
+
+    private static string[] ProibidosEm(IEnumerable<string> nomes) =>
+        [.. nomes.Where(nome => Proibidos.Any(proibido => nome.StartsWith(proibido, StringComparison.Ordinal)))];
 }
