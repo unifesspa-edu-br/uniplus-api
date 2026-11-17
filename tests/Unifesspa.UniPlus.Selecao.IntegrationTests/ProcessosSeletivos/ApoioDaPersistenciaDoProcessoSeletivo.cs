@@ -88,7 +88,7 @@ internal sealed class ApoioDaPersistenciaDoProcessoSeletivo
     {
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
             ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", HashFixoTeste),
-            new ArgsElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
+            new ParametrosElimNotaMinimaEtapa(etapa.Id, 4m)).Value!;
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = ReferenciaRegra.De(RegraCalculoCodigo.FormulaMediaPonderada, "v1", HashFixoTeste),

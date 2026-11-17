@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 
 /// <summary>
 /// Coleta os códigos de outras modalidades que uma <see cref="Modalidade"/> cita —
-/// <c>ComposicaoOrigem</c> e os argumentos de remanejamento (destino/par/fallback)
+/// <c>ComposicaoOrigem</c> e os parâmetros de remanejamento (destino/par/fallback)
 /// — para a checagem de integridade referencial no handler (invariante 7). Lê os
 /// valores já normalizados pelo agregado.
 /// </summary>
@@ -17,9 +17,9 @@ internal static class ReferenciasDeModalidade
         var referencias = new HashSet<string>(StringComparer.Ordinal);
 
         Adicionar(referencias, modalidade.ComposicaoOrigem);
-        Adicionar(referencias, modalidade.RemanejamentoArgs.Destino);
-        Adicionar(referencias, modalidade.RemanejamentoArgs.Par);
-        Adicionar(referencias, modalidade.RemanejamentoArgs.Fallback);
+        Adicionar(referencias, modalidade.RemanejamentoParametros.Destino);
+        Adicionar(referencias, modalidade.RemanejamentoParametros.Par);
+        Adicionar(referencias, modalidade.RemanejamentoParametros.Fallback);
 
         return referencias;
     }

@@ -166,7 +166,7 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
     [Fact(DisplayName = "A Lei de Cotas com motor de redução declarado é recusada")]
     public void LeiDeCotas_ComMotorDeReducao_Recusa() =>
         DeveRecusarSo(
-            Conferir(DaLeiDeCotas() with { AjusteDoQuadro = new Selecao.Domain.ValueObjects.ArgsReduzirDe("AC") }),
+            Conferir(DaLeiDeCotas() with { AjusteDoQuadro = new Selecao.Domain.ValueObjects.ParametrosReduzirDe("AC") }),
             "ajusteDoQuadro", DistribuicaoDeVagasErrorCodes.MotorDeAjusteVedadoNaLeiDeCotas);
 
     [Fact(DisplayName = "O quadro fixado no edital com referência demográfica é recusado")]
@@ -236,7 +236,7 @@ public sealed class ConferenciaDaDistribuicaoDeVagasTests
         {
             ReferenciaDemografica = null,
             RegraDeAjuste = null,
-            AjusteDoQuadro = new Selecao.Domain.ValueObjects.ArgsReduzirDe("AC"),
+            AjusteDoQuadro = new Selecao.Domain.ValueObjects.ParametrosReduzirDe("AC"),
             Modalidades = [.. AsOitoFederaisMaisAmplaConcorrencia().Skip(1)],
         };
 

@@ -77,7 +77,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Apoio
 /// conteúdo, ADR-0109 D9 — a camada que este arquivo não repete): <c>classificacao.regrasEliminacao</c>
 /// (<see cref="EnvelopeCanonicoGoldenTests.Envelope_IndependeDaOrdemDeCriacao"/>) e os seis conjuntos
 /// da issue #1067 — <c>ocorrenciasEsperadas</c>,
-/// <c>formatosPermitidos.lista</c>, <c>obrigatoriedades</c>, os dois <c>predicado.args</c> e
+/// <c>formatosPermitidos.lista</c>, <c>obrigatoriedades</c>, os dois <c>predicado.parametros</c> e
 /// <c>valoresDominio</c> — todos em <c>OrdenacaoDeConjuntosCanonicosTests</c>. Repetir esses oráculos
 /// aqui duplicaria a fonte da política sem acrescentar cobertura (achado 7.2 do parecer da issue).
 /// </para>
@@ -195,8 +195,8 @@ public sealed class PoliticaDeOrdenacaoTests
     [Fact(DisplayName = "criteriosDesempate: Ordem governa sobre o conteúdo da regra — oráculo de sequência exata")]
     public void CriteriosDesempate_OrdemGovernaSobreConteudo()
     {
-        CriterioDesempate criterioIdoso = CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.Idoso, 'd'), new ArgsDesempateIdoso(60)).Value!;
-        CriterioDesempate criterioMaiorIdade = CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, 'a'), new ArgsDesempateMaiorIdade()).Value!;
+        CriterioDesempate criterioIdoso = CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.Idoso, 'd'), new ParametrosDesempateIdoso(60)).Value!;
+        CriterioDesempate criterioMaiorIdade = CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, 'a'), new ParametrosDesempateMaiorIdade()).Value!;
 
         new[] { criterioIdoso, criterioMaiorIdade }.OrderBy(static c => c.Regra.Codigo, StringComparer.Ordinal).Select(static c => c.Regra.Codigo)
             .Should().Equal(

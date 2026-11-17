@@ -36,7 +36,7 @@ public sealed class RecursoDaEtapa : EntityBase
     public ReferenciaRegra Regra { get; private set; } = null!;
 
     /// <summary>Prazo de interposição e suspensividade, como o catálogo os tipa.</summary>
-    public ArgsRegraPrazoRecurso Args { get; private set; } = null!;
+    public ParametrosRegraPrazoRecurso Parametros { get; private set; } = null!;
 
     /// <summary>
     /// O produto preliminar em que o prazo ancora — obrigatório na âncora de ato publicado,
@@ -57,12 +57,12 @@ public sealed class RecursoDaEtapa : EntityBase
     public static Result<RecursoDaEtapa> Criar(
         AncoraDoRecurso ancora,
         ReferenciaRegra regra,
-        ArgsRegraPrazoRecurso args,
+        ParametrosRegraPrazoRecurso parametros,
         Guid produtoAncoraId,
         ProcedimentosDeRecurso? procedimentos = null)
     {
         ArgumentNullException.ThrowIfNull(regra);
-        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(parametros);
 
         if (!Enum.IsDefined(ancora) || ancora == AncoraDoRecurso.Nenhuma)
         {
@@ -84,20 +84,20 @@ public sealed class RecursoDaEtapa : EntityBase
                 $"A janela recursal da etapa só referencia a regra {RegraPrazoRecursoCodigo.AncoradoEmAto} — recebido '{regra.Codigo}'."));
         }
 
-        // As mesmas invariantes que a regra da fase prova sobre os args — prazo estritamente
+        // As mesmas invariantes que a regra da fase prova sobre os parâmetros — prazo estritamente
         // positivo, em dia útil ou hora, sem fração de dia útil, e cada par de suspensividade
         // inteiro ou inteiramente ausente. A janela da etapa recorre nas mesmas condições; o
         // que muda entre as duas é a ÂNCORA, e ela não alcança estas regras.
-        if (ValidacaoDosArgumentosDoRecurso.Validar(args) is { } recusa)
+        if (ValidacaoDosParametrosDoRecurso.Validar(parametros) is { } recusa)
         {
-            return Result<RecursoDaEtapa>.Failure(ErroDosArgumentos(recusa));
+            return Result<RecursoDaEtapa>.Failure(ErroDosParametros(recusa));
         }
 
         return Result<RecursoDaEtapa>.Success(new RecursoDaEtapa
         {
             Ancora = ancora,
             Regra = regra,
-            Args = args,
+            Parametros = parametros,
             ProdutoAncoraId = produtoAncoraId,
             Procedimentos = procedimentos ?? ProcedimentosDeRecurso.Nenhum,
         });
@@ -107,16 +107,16 @@ public sealed class RecursoDaEtapa : EntityBase
     /// Traduz o motivo da recusa no código de erro desta entidade — literal, para que a
     /// cobertura do registro de erros o alcance.
     /// </summary>
-    private static DomainError ErroDosArgumentos(RecusaDosArgumentosDoRecurso recusa) => recusa.Motivo switch
+    private static DomainError ErroDosParametros(RecusaDosParametrosDoRecurso recusa) => recusa.Motivo switch
     {
-        MotivoDaRecusaDosArgumentos.PrazoNaoPositivo => new("RecursoDaEtapa.PrazoNaoPositivo", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.PrazoEmDiasCorridos => new("RecursoDaEtapa.PrazoEmDiasCorridos", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.PrazoSemUnidadeDeclaravel => new("RecursoDaEtapa.PrazoSemUnidadeDeclaravel", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.PrazoEmFracaoDeDiaUtil => new("RecursoDaEtapa.PrazoEmFracaoDeDiaUtil", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.SuspensividadeNaoPositiva => new("RecursoDaEtapa.SuspensividadeNaoPositiva", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.SuspensividadeUnidadeNaoDeclaravel => new("RecursoDaEtapa.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.SuspensividadeIncompleta => new("RecursoDaEtapa.SuspensividadeIncompleta", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.SuspensividadeSuperiorSemInstanciaSuperior => new("RecursoDaEtapa.SuspensividadeSuperiorSemInstanciaSuperior", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.PrazoNaoPositivo => new("RecursoDaEtapa.PrazoNaoPositivo", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.PrazoEmDiasCorridos => new("RecursoDaEtapa.PrazoEmDiasCorridos", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.PrazoSemUnidadeDeclaravel => new("RecursoDaEtapa.PrazoSemUnidadeDeclaravel", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.PrazoEmFracaoDeDiaUtil => new("RecursoDaEtapa.PrazoEmFracaoDeDiaUtil", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.SuspensividadeNaoPositiva => new("RecursoDaEtapa.SuspensividadeNaoPositiva", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.SuspensividadeUnidadeNaoDeclaravel => new("RecursoDaEtapa.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.SuspensividadeIncompleta => new("RecursoDaEtapa.SuspensividadeIncompleta", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.SuspensividadeSuperiorSemInstanciaSuperior => new("RecursoDaEtapa.SuspensividadeSuperiorSemInstanciaSuperior", recusa.Mensagem),
         _ => throw new ArgumentOutOfRangeException(nameof(recusa), recusa.Motivo, "Motivo de recusa desconhecido."),
     };
 
@@ -144,19 +144,19 @@ public sealed class RecursoDaEtapa : EntityBase
         Guid id,
         AncoraDoRecurso ancora,
         ReferenciaRegra regra,
-        ArgsRegraPrazoRecurso args,
+        ParametrosRegraPrazoRecurso parametros,
         Guid produtoAncoraId,
         ProcedimentosDeRecurso procedimentos)
     {
         ArgumentNullException.ThrowIfNull(regra);
-        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(parametros);
         ArgumentNullException.ThrowIfNull(procedimentos);
         if (id == Guid.Empty)
         {
             throw new ArgumentException("O recurso reidratado deve declarar o Id congelado no envelope.", nameof(id));
         }
 
-        Result<RecursoDaEtapa> validada = Criar(ancora, regra, args, produtoAncoraId, procedimentos);
+        Result<RecursoDaEtapa> validada = Criar(ancora, regra, parametros, produtoAncoraId, procedimentos);
         if (validada.IsFailure)
         {
             return validada;
@@ -167,7 +167,7 @@ public sealed class RecursoDaEtapa : EntityBase
             Id = id,
             Ancora = ancora,
             Regra = regra,
-            Args = args,
+            Parametros = parametros,
             ProdutoAncoraId = produtoAncoraId,
             Procedimentos = procedimentos,
         });

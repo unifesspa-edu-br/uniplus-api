@@ -129,7 +129,7 @@ internal static class SerializacaoDasEtapas
             {
                 ["ancora"] = r.Ancora.ToString(),
                 ["regra"] = EscritaCanonica.SerializarReferenciaRegra(r.Regra),
-                ["args"] = SerializacaoDoCronograma.SerializarArgsRegraPrazoRecurso(r.Args),
+                ["parametros"] = SerializacaoDoCronograma.SerializarParametrosRegraPrazoRecurso(r.Parametros),
                 ["produtoAncoraId"] = r.ProdutoAncoraId == Guid.Empty ? null : JsonValue.Create(r.ProdutoAncoraId),
                 ["procedimentos"] = SerializacaoDosProcedimentosDeRecurso.Serializar(r.Procedimentos),
             })]);

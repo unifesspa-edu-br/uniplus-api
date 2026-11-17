@@ -58,7 +58,7 @@ public static class RegrasDoDesempate
     /// </summary>
     /// <param name="criterios">
     /// Na posição que cada critério ocupa no comando, inclusive a do critério que o próprio
-    /// <see cref="CriterioDesempate"/> recusou: a ordem vem sempre do comando, e os args, quando
+    /// <see cref="CriterioDesempate"/> recusou: a ordem vem sempre do comando, e os parâmetros, quando
     /// foi possível montá-los. Assim a ordem duplicada e a área fora do quadro saem junto com a
     /// recusa do item, e não só na tentativa seguinte.
     /// </param>
@@ -203,12 +203,12 @@ public static class RegrasDoDesempate
         List<ViolacaoDoDesempatePorArea> violacoes = [];
         for (int indice = 0; indice < criterios.Count; indice++)
         {
-            if (criterios[indice] is not { Args: ArgsDesempateMaiorNotaAreaEnem args } criterio)
+            if (criterios[indice] is not { Parametros: ParametrosDesempateMaiorNotaAreaEnem parametros } criterio)
             {
                 continue;
             }
 
-            violacoes.AddRange(CriterioDesempate.ConferirAreas(args.Areas).Erros.Select(erro => new ViolacaoDoDesempatePorArea(
+            violacoes.AddRange(CriterioDesempate.ConferirAreas(parametros.Areas).Erros.Select(erro => new ViolacaoDoDesempatePorArea(
                 indice, criterio.Ordem, null, null,
                 erro.Error with { Message = $"{erro.Error.Message} Critério de desempate na ordem {criterio.Ordem}." })));
         }

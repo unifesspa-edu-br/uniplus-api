@@ -214,7 +214,7 @@ public sealed class JanelaDeSolicitacaoDeIsencaoTests
 
     private static RegraRecursoFase RecursoEmDiasUteis(decimal prazo) => RegraRecursoFase.Criar(
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('d', 64)),
-        new ArgsRegraPrazoRecurso(
+        new ParametrosRegraPrazoRecurso(
             PrazoValor: prazo,
             PrazoUnidade: UnidadePrazo.DiasUteis,
             SuspensividadePrimeiraInstanciaValor: null,

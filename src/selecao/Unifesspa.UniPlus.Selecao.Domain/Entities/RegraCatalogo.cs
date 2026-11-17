@@ -42,8 +42,8 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </para>
 /// <para>
 /// <strong>Fronteira.</strong> A entrada descreve a regra e o
-/// <c>esquema_args</c> (o <em>schema</em> dos argumentos que o admin preenche e os dados que a
-/// versão declara de si); os <em>args aplicados</em> são tipados na dimensão que consome a regra
+/// <c>esquema_args</c> (o <em>schema</em> dos parâmetros que o admin preenche e os dados que a
+/// versão declara de si); os <em>parâmetros aplicados</em> são tipados na dimensão que consome a regra
 /// (<see cref="ReferenciaRegra"/> + payload próprio) e validados contra este
 /// esquema. O <em>motor</em> que executa a regra (algoritmo de distribuição,
 /// cálculo da nota) é incremento — consome a definição congelada, não é
@@ -57,7 +57,7 @@ public sealed class RegraCatalogo : EntityBase
     public TipoRegra Tipo { get; private set; }
 
     /// <summary>
-    /// Schema (jsonb, objeto) dos argumentos que o admin preenche ao aplicar a regra, e o que a própria
+    /// Schema (jsonb, objeto) dos parâmetros que o admin preenche ao aplicar a regra, e o que a própria
     /// versão declara de si, como as naturezas de conceito a que uma regra de consolidação se aplica.
     /// </summary>
     public JsonElement EsquemaArgs { get; private set; }

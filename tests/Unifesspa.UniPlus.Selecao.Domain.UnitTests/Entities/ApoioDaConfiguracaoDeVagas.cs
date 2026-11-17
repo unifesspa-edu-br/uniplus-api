@@ -83,7 +83,7 @@ internal static class ApoioDaConfiguracaoDeVagas
         ];
 
         return ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),
-            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = RegraComAcPcd(), RegraDeAjuste = RegraAjuste(), AjusteDoQuadro = new ArgsReduzirDe("AC"), Modalidades = modalidades },
+            new DistribuicaoDeVagasDeclarada { VagasOfertadasBase = 40, PercentualDaReservaLegal = 1m, RegraDeDistribuicao = RegraComAcPcd(), RegraDeAjuste = RegraAjuste(), AjusteDoQuadro = new ParametrosReduzirDe("AC"), Modalidades = modalidades },
             new FatosDaOfertaNoCadastro { OfertaCurso = OfertaCursoDeTeste.Medicina }).Value!;
     }
 }

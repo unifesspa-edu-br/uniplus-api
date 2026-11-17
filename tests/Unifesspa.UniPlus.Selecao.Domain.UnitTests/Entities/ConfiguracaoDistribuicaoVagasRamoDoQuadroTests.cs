@@ -59,7 +59,7 @@ public sealed class ConfiguracaoDistribuicaoVagasRamoDoQuadroTests
         configuracao.ReservaLegalEfetiva.Should().BeNull();
         configuracao.ExcedenteSobreReservaLegal.Should().BeNull();
         configuracao.VagasCortadasPorEscassez.Should().BeNull();
-        configuracao.AjusteDoQuadro.Should().Be(new ArgsReduzirDe("AC"));
+        configuracao.AjusteDoQuadro.Should().Be(new ParametrosReduzirDe("AC"));
         configuracao.VagasRetiradasNoAjuste.Should().BeEquivalentTo([new VagasDaModalidade("AC", 4)]);
     }
 

@@ -54,7 +54,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
             RegraOrdemAlocacao = ProcessoConformeFactory.Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
             RegrasEliminacao = [RegraEliminacao.Criar(
                 ProcessoConformeFactory.Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "e"),
-                new ArgsElimNotaMinimaEtapa(etapaRef, notaMinima)).Value!],
+                new ParametrosElimNotaMinimaEtapa(etapaRef, notaMinima)).Value!],
             EscalaNotaFinal = 100m,
         }).Value!;
 
@@ -91,7 +91,7 @@ public sealed class ConformidadeEscalaDasEtapasTests
             [CriterioDesempate.Criar(
                 1,
                 ProcessoConformeFactory.Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "f"),
-                new ArgsDesempateMaiorNotaEtapa(etapaId)).Value!]).IsSuccess.Should().BeTrue();
+                new ParametrosDesempateMaiorNotaEtapa(etapaId)).Value!]).IsSuccess.Should().BeTrue();
     }
 
     private static Result<VersaoConfiguracao> Publicar(ProcessoSeletivo processo) => processo.Publicar(

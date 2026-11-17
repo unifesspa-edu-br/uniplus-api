@@ -314,7 +314,7 @@ public sealed class AncoraDoRecursoPersistenciaTests : IClassFixture<ProcessoSel
     private static RegraRecursoFase RegraDeRecurso(Guid produtoPreliminarId) =>
         RegraRecursoFase.Criar(
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, 'e'),
-            new ArgsRegraPrazoRecurso(
+            new ParametrosRegraPrazoRecurso(
                 PrazoValor: 48m,
                 PrazoUnidade: UnidadePrazo.Horas,
                 SuspensividadePrimeiraInstanciaValor: null,

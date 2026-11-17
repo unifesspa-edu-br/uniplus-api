@@ -107,7 +107,7 @@ public enum PermissaoSelecao
     [Permissao(
         "selecao:regras-catalogo:consultar",
         "Consultar catálogo de regras",
-        "Consulta o catálogo institucional de regras e o esquema de argumentos de cada uma, usado para montar a configuração do processo.",
+        "Consulta o catálogo institucional de regras e o esquema de parâmetros de cada uma, usado para montar a configuração do processo.",
         ClassificacaoDeProtecao.Interno)]
     RegrasCatalogoConsultar = 10,
 

@@ -183,7 +183,7 @@ public sealed class EnvelopeCodecRecusaClassificacaoEnemTests
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, CorpusEnvelope.Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!]).IsSuccess.Should().BeTrue();
+            [CriterioDesempate.Criar(1, CorpusEnvelope.Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ParametrosDesempateMaiorIdade()).Value!]).IsSuccess.Should().BeTrue();
         Result definir = processo.DefinirClassificacao(ClassificacaoSemEnem());
         definir.IsSuccess.Should().BeTrue(string.Join("; ", definir.Errors.Select(static e => e.Error.Message)) + definir.Error?.Message);
 

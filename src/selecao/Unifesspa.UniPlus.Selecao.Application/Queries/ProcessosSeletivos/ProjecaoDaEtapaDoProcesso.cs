@@ -69,7 +69,7 @@ internal static class ProjecaoDaEtapaDoProcesso
         recurso.Id,
         recurso.Ancora,
         ProjecaoDoProcessoSeletivo.Referencia(recurso.Regra),
-        ProjecaoDoProcessoSeletivo.ProjetarArgumentosDoPrazo(recurso.Args),
+        ProjecaoDoProcessoSeletivo.ProjetarParametrosDoPrazo(recurso.Parametros),
         recurso.ProdutoAncoraId,
         etapa.Produtos.FirstOrDefault(pr => pr.Id == recurso.ProdutoAncoraId)?.AtoCodigo,
         ProjecaoDosProcedimentosDeRecurso.De(recurso.Procedimentos, new(etapa.FormaDeAvaliacao, etapa.DeclaraNotaDoEnem)));

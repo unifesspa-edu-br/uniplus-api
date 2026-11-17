@@ -126,22 +126,22 @@ internal static class SerializacaoDoCronograma
     {
         ["regra"] = EscritaCanonica.SerializarReferenciaRegra(regraRecurso.Regra),
         ["produtoAncoraId"] = regraRecurso.ProdutoAncoraId,
-        ["args"] = SerializarArgsRegraPrazoRecurso(regraRecurso.Args),
+        ["parametros"] = SerializarParametrosRegraPrazoRecurso(regraRecurso.Parametros),
         ["procedimentos"] = SerializacaoDosProcedimentosDeRecurso.Serializar(regraRecurso.Procedimentos),
     };
 
-    internal static JsonObject SerializarArgsRegraPrazoRecurso(ArgsRegraPrazoRecurso args) => new()
+    internal static JsonObject SerializarParametrosRegraPrazoRecurso(ParametrosRegraPrazoRecurso parametros) => new()
     {
-        ["prazoValor"] = HashCanonicalComputer.SerializeDecimalCanonical(args.PrazoValor, EscritaCanonica.EscalaPadrao),
-        ["prazoUnidade"] = args.PrazoUnidade.ToString(),
-        ["suspensividadePrimeiraInstanciaValor"] = args.SuspensividadePrimeiraInstanciaValor is { } v1
+        ["prazoValor"] = HashCanonicalComputer.SerializeDecimalCanonical(parametros.PrazoValor, EscritaCanonica.EscalaPadrao),
+        ["prazoUnidade"] = parametros.PrazoUnidade.ToString(),
+        ["suspensividadePrimeiraInstanciaValor"] = parametros.SuspensividadePrimeiraInstanciaValor is { } v1
             ? HashCanonicalComputer.SerializeDecimalCanonical(v1, EscritaCanonica.EscalaPadrao)
             : null,
-        ["suspensividadePrimeiraInstanciaUnidade"] = args.SuspensividadePrimeiraInstanciaUnidade?.ToString(),
-        ["admiteInstanciaSuperior"] = args.AdmiteInstanciaSuperior,
-        ["suspensividadeSegundaInstanciaValor"] = args.SuspensividadeSegundaInstanciaValor is { } v2
+        ["suspensividadePrimeiraInstanciaUnidade"] = parametros.SuspensividadePrimeiraInstanciaUnidade?.ToString(),
+        ["admiteInstanciaSuperior"] = parametros.AdmiteInstanciaSuperior,
+        ["suspensividadeSegundaInstanciaValor"] = parametros.SuspensividadeSegundaInstanciaValor is { } v2
             ? HashCanonicalComputer.SerializeDecimalCanonical(v2, EscritaCanonica.EscalaPadrao)
             : null,
-        ["suspensividadeSegundaInstanciaUnidade"] = args.SuspensividadeSegundaInstanciaUnidade?.ToString(),
+        ["suspensividadeSegundaInstanciaUnidade"] = parametros.SuspensividadeSegundaInstanciaUnidade?.ToString(),
     };
 }

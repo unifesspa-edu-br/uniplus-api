@@ -108,7 +108,7 @@ public sealed record RecursoDaEtapaDto(
     Guid Id,
     AncoraDoRecurso Ancora,
     ReferenciaRegraDto Regra,
-    ArgsRegraPrazoRecursoDto Args,
+    ParametrosRegraPrazoRecursoDto Parametros,
     Guid ProdutoAncoraId,
     string? AtoAncoraCodigo,
     IReadOnlyList<ProcedimentoDeRecursoDto> Procedimentos);

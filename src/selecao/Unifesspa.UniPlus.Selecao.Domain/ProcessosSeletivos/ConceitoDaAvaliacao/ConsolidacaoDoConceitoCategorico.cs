@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// </summary>
 /// <remarks>
 /// Quando chegam mais atribuições que as exigidas, a apuração conta todas. A apuração só identifica o
-/// estado; o tratamento do empate e da falta de unanimidade é argumento da regra escolhida.
+/// estado; o tratamento do empate e da falta de unanimidade é parâmetro da regra escolhida.
 /// </remarks>
 public static class ConsolidacaoDoConceitoCategorico
 {

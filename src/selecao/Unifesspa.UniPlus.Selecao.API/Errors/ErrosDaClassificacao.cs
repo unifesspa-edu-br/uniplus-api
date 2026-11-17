@@ -74,10 +74,10 @@ internal static class ErrosDaClassificacao
         new("GrupoPesoAreaEnemCongelado.SemAreas", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.grupo_peso_area_enem_congelado.sem_areas", "Cada grupo do quadro de pesos por área precisa de ao menos uma área")),
     ];
 
-    /// <summary>Argumentos e regra de cada eliminação.</summary>
+    /// <summary>Parâmetros e regra de cada eliminação.</summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DaDefinicaoDaRegraDeEliminacao() =>
     [
-        new("RegraEliminacao.ArgsIncompativeisComRegra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.args_incompativeis_com_regra", "Os args informados não correspondem à regra referenciada")),
+        new("RegraEliminacao.ParametrosIncompativeisComRegra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.parametros_incompativeis_com_regra", "Os parâmetros informados não correspondem à regra referenciada")),
         new("RegraEliminacao.NotaMinimaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.nota_minima_invalida", "A nota mínima da eliminação deve ser não negativa")),
         new("RegraEliminacao.MinimoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.minimo_invalido", "O mínimo do corte em área deve ser não negativo")),
         new("RegraEliminacao.AreaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_eliminacao.area_invalida", "A área do corte não é um código de área do ENEM bem formado")),

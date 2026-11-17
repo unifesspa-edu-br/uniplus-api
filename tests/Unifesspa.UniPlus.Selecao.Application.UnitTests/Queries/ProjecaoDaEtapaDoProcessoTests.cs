@@ -49,7 +49,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
         etapa.DefinirTiposDeDecisao([TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa, TipoMotivoDeDecisaoCodigo.Classificacao]).IsSuccess.Should().BeTrue();
         etapa.DefinirProdutos([ProdutoDaEtapa.Reidratar(ProdutoDoResultadoId, "RESULTADO_PRELIMINAR", PapelProdutoFase.Preliminar)]).IsSuccess.Should().BeTrue();
         etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaId, "BANCA_GERAL", "Banca geral")]).IsSuccess.Should().BeTrue();
-        etapa.DefinirRecursos([RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, RegraDoPrazo(), ArgumentosDoPrazo(), ProdutoDoResultadoId).Value!])
+        etapa.DefinirRecursos([RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, RegraDoPrazo(), ParametrosDoPrazo(), ProdutoDoResultadoId).Value!])
             .IsSuccess.Should().BeTrue();
         return etapa;
     }
@@ -70,7 +70,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
 
     private static ReferenciaRegra RegraDoPrazo() => ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", HashDaRegra);
 
-    private static ArgsRegraPrazoRecurso ArgumentosDoPrazo() => new(
+    private static ParametrosRegraPrazoRecurso ParametrosDoPrazo() => new(
         PrazoValor: 2m,
         PrazoUnidade: UnidadePrazo.DiasUteis,
         SuspensividadePrimeiraInstanciaValor: null,
@@ -168,7 +168,7 @@ public sealed class ProjecaoDaEtapaDoProcessoTests
                 recurso.Id,
                 AncoraDoRecurso.AtoPublicado,
                 new ReferenciaRegraDto(RegraPrazoRecursoCodigo.AncoradoEmAto, "1", HashDaRegra),
-                new ArgsRegraPrazoRecursoDto(2m, UnidadePrazo.DiasUteis, null, null, true, null, null),
+                new ParametrosRegraPrazoRecursoDto(2m, UnidadePrazo.DiasUteis, null, null, true, null, null),
                 ProdutoDoResultadoId,
                 "RESULTADO_PRELIMINAR",
                 []),

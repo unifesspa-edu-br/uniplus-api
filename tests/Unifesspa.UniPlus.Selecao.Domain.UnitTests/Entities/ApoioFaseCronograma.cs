@@ -21,7 +21,7 @@ internal static class ApoioFaseCronograma
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
 
     internal static RegraRecursoFase Recurso(Guid produtoAncoraId) =>
-        RegraRecursoFase.Criar(RegraAncorada(), ArgsValidos(), produtoAncoraId).Value!;
+        RegraRecursoFase.Criar(RegraAncorada(), ParametrosValidos(), produtoAncoraId).Value!;
 
     internal static FaseCronograma Reidratar(
         IReadOnlyList<ProdutoDaFase> produtos,
@@ -36,7 +36,7 @@ internal static class ApoioFaseCronograma
             new PublicacoesDaFase(produtos, EmiteParecerIndividual: false, regraRecurso),
             bancasRequeridas ?? []);
 
-    internal static ArgsRegraPrazoRecurso ArgsValidos() => new(
+    internal static ParametrosRegraPrazoRecurso ParametrosValidos() => new(
         PrazoValor: 48m,
         PrazoUnidade: UnidadePrazo.Horas,
         SuspensividadePrimeiraInstanciaValor: null,

@@ -84,7 +84,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         PropertyInfo propriedadeClassificacao = typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Classificacao))!;
         propriedadeClassificacao.SetValue(processo, null);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(3, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]).IsSuccess.Should().BeTrue();
+            [CriterioDesempate.Criar(3, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]).IsSuccess.Should().BeTrue();
         propriedadeClassificacao.SetValue(processo, classificacao);
 
         SoEstesItensVermelhos(processo, "desempate_area_enem_sem_quadro");
@@ -102,7 +102,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         // Direto na lista: a gravação e a restauração recusam acima do teto, e a conferência cobre o
         // rascunho que chega por outro caminho.
         CriteriosDesempateDe(processo).AddRange(Enumerable.Range(1, RegrasDoDesempate.CriteriosDesempateMaximo + 1).Select(static ordem =>
-            CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!));
+            CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ParametrosDesempateMaiorIdade()).Value!));
 
         SoEstesItensVermelhos(processo, "criterios_desempate_em_excesso");
 
@@ -131,11 +131,11 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         }).Value!);
         processo.DefinirOpcoesDeclaradas("EDICAO_ENEM", [OpcaoDeclaradaFato.Criar("EDICAO_ENEM", "2026", "2026", 0).Value!])
             .IsSuccess.Should().BeTrue();
-        // A ordem mal formada não passa por CriterioDesempate.Criar: os args são trocados depois,
+        // A ordem mal formada não passa por CriterioDesempate.Criar: os parâmetros são trocados depois,
         // como num critério que chega ao agregado por outro caminho.
         CriterioDesempate criterio = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!;
-        typeof(CriterioDesempate).GetProperty(nameof(CriterioDesempate.Args))!.SetValue(criterio, new ArgsDesempateMaiorNotaAreaEnem(areas));
+            1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!;
+        typeof(CriterioDesempate).GetProperty(nameof(CriterioDesempate.Parametros))!.SetValue(criterio, new ParametrosDesempateMaiorNotaAreaEnem(areas));
         CriteriosDesempateDe(processo).Add(criterio);
 
         SoEstesItensVermelhos(processo, "desempate_area_enem_areas_mal_formadas");
@@ -181,8 +181,8 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
 
     private static void AdicionarCriteriosComAreaRepetida(ProcessoSeletivo processo) =>
         CriteriosDesempateDe(processo).AddRange(
-            CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!,
-            CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["MATEMATICA", "REDACAO"])).Value!);
+            CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!,
+            CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["MATEMATICA", "REDACAO"])).Value!);
 
     private static ConfiguracaoClassificacao ClassificacaoEnemPelaMediaPonderada() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
     {
@@ -253,7 +253,7 @@ public sealed class ConformidadePublicabilidadeEstruturalDerivacaoEContraprovaTe
         PropertyInfo propriedadeClassificacao = typeof(ProcessoSeletivo).GetProperty(nameof(ProcessoSeletivo.Classificacao))!;
         propriedadeClassificacao.SetValue(processo, null);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["FISICA"])).Value!]).IsSuccess.Should().BeTrue();
+            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["FISICA"])).Value!]).IsSuccess.Should().BeTrue();
         propriedadeClassificacao.SetValue(processo, ClassificacaoEnemPelaMediaPonderada());
         DeclararEdicaoDoEnem(processo);
 

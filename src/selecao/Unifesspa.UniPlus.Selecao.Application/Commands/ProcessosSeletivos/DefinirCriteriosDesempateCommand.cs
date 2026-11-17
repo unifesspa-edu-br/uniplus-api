@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Regras.Enums;
 /// Item de entrada de um critério de desempate, usado por
 /// <see cref="DefinirCriteriosDesempateCommand"/>. Os campos além de
 /// <see cref="Ordem"/>/<see cref="RegraCodigo"/>/<see cref="RegraVersao"/> são
-/// os args aplicados — apenas o(s) relevante(s) para o código da regra
+/// os parâmetros aplicados — apenas o(s) relevante(s) para o código da regra
 /// referenciada é(são) preenchido(s):
 /// <list type="bullet">
 ///   <item><description><c>DESEMPATE-MAIOR-NOTA-ETAPA</c>: <see cref="EtapaRef"/> (deve existir no processo).</description></item>

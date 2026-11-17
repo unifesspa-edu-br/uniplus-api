@@ -34,22 +34,22 @@ internal static class SerializacaoDoQuadroDeVagas
         ["ajusteDoQuadroFixado"] = configuracao.Quadro is QuadroDeVagasFixadoNoEdital fixado ? SerializarRetiradas(fixado) : null,
     };
 
-    internal static JsonObject? SerializarAjusteDoQuadro(ArgsRegraAjusteDistribuicao? ajuste) => ajuste switch
+    internal static JsonObject? SerializarAjusteDoQuadro(ParametrosRegraAjusteDistribuicao? ajuste) => ajuste switch
     {
         null => null,
-        ArgsReduzirDe reduzirDe => SerializarReduzirDe(reduzirDe),
-        ArgsReduzirProporcionalEm proporcional => SerializarReduzirProporcionalEm(proporcional),
+        ParametrosReduzirDe reduzirDe => SerializarReduzirDe(reduzirDe),
+        ParametrosReduzirProporcionalEm proporcional => SerializarReduzirProporcionalEm(proporcional),
         _ => throw new InvalidOperationException($"Ajuste do quadro sem projeção no envelope: {ajuste.GetType().Name}."),
     };
 
-    private static JsonObject SerializarReduzirDe(ArgsReduzirDe ajuste) => new()
+    private static JsonObject SerializarReduzirDe(ParametrosReduzirDe ajuste) => new()
     {
         ["$tipo"] = TiposDeAjusteDoQuadro.ReduzirDe,
         ["modalidadeCodigo"] = HashCanonicalComputer.NormalizeNfc(ajuste.ModalidadeCodigo),
     };
 
     // O conjunto de modalidades não tem ordem que importe ao ajuste: o desempate do maior resto é pela posição no quadro.
-    private static JsonObject SerializarReduzirProporcionalEm(ArgsReduzirProporcionalEm ajuste) => new()
+    private static JsonObject SerializarReduzirProporcionalEm(ParametrosReduzirProporcionalEm ajuste) => new()
     {
         ["$tipo"] = TiposDeAjusteDoQuadro.ReduzirProporcionalEm,
         ["modalidadeCodigos"] = new JsonArray([.. ajuste.ModalidadeCodigos

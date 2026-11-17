@@ -49,14 +49,14 @@ public sealed class RegraCatalogoSubstituicaoRecursoTests
 
         raiz.ValueKind.Should().Be(JsonValueKind.Object);
         raiz.TryGetProperty("ato_ancora_codigo", out _).Should().BeFalse(
-            "a âncora deixou de ser argumento declarado por código: ela é a identidade do produto " +
-            "preliminar da própria fase, irmã de regra e args no envelope");
+            "a âncora deixou de ser parâmetro declarado por código: ela é a identidade do produto " +
+            "preliminar da própria fase, irmã de regra e parâmetros no envelope");
         raiz.TryGetProperty("suspensividade_primeira_instancia", out _).Should().BeTrue();
         raiz.TryGetProperty("suspensividade_segunda_instancia", out _).Should().BeTrue();
         raiz.TryGetProperty("instancias", out _).Should().BeFalse(
             "a lista de instâncias geridas pelo sistema foi descartada");
 
-        // A âncora sai do esquema de argumentos, não do enunciado da regra: o que ela é e de
+        // A âncora sai do esquema de parâmetros, não do enunciado da regra: o que ela é e de
         // onde o prazo conta continua declarado nas invariantes.
         nova.InvariantesJson.Should().Contain("ancorado no instante de publicação do ato âncora");
         nova.InvariantesJson.Should().Contain("produto PRELIMINAR publicado pela própria fase");

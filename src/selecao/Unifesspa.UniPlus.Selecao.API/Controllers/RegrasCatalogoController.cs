@@ -43,7 +43,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 /// ao menos uma unidade: o editor do processo consome o catálogo, e quem configura na sua unidade
 /// não recebe por isso a permissão institucional. Não é sobre sigilo — a definição de uma regra acaba no edital —, é
 /// sobre alcance: quem descobre o catálogo é quem monta uma configuração, e um perfil de
-/// candidato autenticado não tem o que fazer com o esquema de argumentos de uma regra de
+/// candidato autenticado não tem o que fazer com o esquema de parâmetros de uma regra de
 /// distribuição de vagas. Autenticação sozinha alcançaria justamente esse perfil.
 /// </para>
 /// </remarks>

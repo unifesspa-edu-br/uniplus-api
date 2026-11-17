@@ -40,9 +40,9 @@ public sealed class DefinirCriteriosDesempatePredicadoDeFatoCommandHandlerTests
         Result result = await cenario.DefinirAsync(Comando(processo.Id, PredicadoDoFato("PROFESSOR_RURAL", "IGUAL", "true")));
 
         result.IsSuccess.Should().BeTrue();
-        ArgsDesempatePredicadoFato args = (ArgsDesempatePredicadoFato)processo.CriteriosDesempate.Single().Args;
-        args.Condicao.Fato.Should().Be("PROFESSOR_RURAL");
-        args.Condicao.Valor.GetBoolean().Should().BeTrue();
+        ParametrosDesempatePredicadoFato parametros = (ParametrosDesempatePredicadoFato)processo.CriteriosDesempate.Single().Parametros;
+        parametros.Condicao.Fato.Should().Be("PROFESSOR_RURAL");
+        parametros.Condicao.Valor.GetBoolean().Should().BeTrue();
     }
 
     [Fact(DisplayName = "Handle com DESEMPATE-PREDICADO-FATO sobre fato fora do vocabulário fechado recusa")]

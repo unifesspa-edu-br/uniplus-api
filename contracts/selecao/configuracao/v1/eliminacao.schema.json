@@ -14,10 +14,11 @@
       "description": "Regra de eliminação no catálogo de regras.",
       "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
     },
-    "args": {
+    "parametros": {
       "title": "Parâmetros",
-      "description": "Parâmetros da regra, conforme o código dela.",
-      "type": "object"
+      "description": "Parâmetros da regra. A forma de cada código está nas definições de parâmetros deste esquema, aplicadas conforme o código da regra.",
+      "type": "object",
+      "additionalProperties": true
     }
   },
   "allOf": [
@@ -41,7 +42,7 @@
       },
       "then": {
         "properties": {
-          "args": {
+          "parametros": {
             "$ref": "#/$defs/parametrosNotaMinimaEtapa"
           }
         }
@@ -67,7 +68,7 @@
       },
       "then": {
         "properties": {
-          "args": {
+          "parametros": {
             "$ref": "#/$defs/parametrosCorteEmArea"
           }
         }
@@ -93,7 +94,7 @@
       },
       "then": {
         "properties": {
-          "args": {
+          "parametros": {
             "$ref": "comuns.schema.json#/$defs/semParametros"
           }
         }
@@ -119,7 +120,7 @@
       },
       "then": {
         "properties": {
-          "args": {
+          "parametros": {
             "$ref": "comuns.schema.json#/$defs/semParametros"
           }
         }
@@ -145,7 +146,7 @@
       },
       "then": {
         "properties": {
-          "args": {
+          "parametros": {
             "$ref": "#/$defs/parametrosAusenciaNaEtapa"
           }
         }

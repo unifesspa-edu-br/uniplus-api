@@ -22,7 +22,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 /// Cobertura de integração (Postgres real via Testcontainers) do bônus
 /// regional (Fator de Atenuação das Desigualdades de Acesso, UNI-REQ-0015) e dos critérios de desempate (Story #774): persiste e
 /// recarrega as 5 variantes de
-/// <c>ArgsCriterioDesempate</c> (jsonb polimórfico) e o owned type
+/// <c>ParametrosCriterioDesempate</c> (jsonb polimórfico) e o owned type
 /// <c>ReferenciaRegra</c>, e prova a reconfiguração sobre o agregado tracked
 /// (a mesma proteção <c>ValueGeneratedNever</c> dos demais filhos do agregado).
 /// </summary>
@@ -41,7 +41,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
     private static CondicaoDnf CondicaoProfessorRural() =>
         CondicaoDnf.Criar("PROFESSOR_RURAL", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!;
 
-    [Fact(DisplayName = "Persiste e recarrega os 5 critérios de desempate (args polimórficos) e o bônus regional")]
+    [Fact(DisplayName = "Persiste e recarrega os 5 critérios de desempate (parâmetros polimórficos) e o bônus regional")]
     public async Task PersisteERecarrega_DesempateEBonus()
     {
         ProcessoSeletivo processo = ProcessoSeletivo.Criar("PS Convênios 2026", TiposDeProcessoDeTeste.PSVR, OrigemCandidatos.InscricaoPropria, Guid.NewGuid(), Unifesspa.UniPlus.Selecao.Domain.ValueObjects.UnidadeAdministradoraSnapshot.Criar("CEPS", "CEPS", "ceps", "Centro de Processos Seletivos", "ADMINISTRATIVA").Value!, LocalidadeRegente.Criar("1504208", "Marabá", "PA").Value!, IdentificadoresDeTeste.Novo());
@@ -51,15 +51,15 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         processo.DefinirEtapas([etapa]);
 
         CriterioDesempate maiorNotaEtapa = CriterioDesempate.Criar(
-            1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!;
+            1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ParametrosDesempateMaiorNotaEtapa(etapa.Id)).Value!;
         CriterioDesempate idoso = CriterioDesempate.Criar(
-            2, Regra(CriterioDesempateCodigo.Idoso, "b"), new ArgsDesempateIdoso(60)).Value!;
+            2, Regra(CriterioDesempateCodigo.Idoso, "b"), new ParametrosDesempateIdoso(60)).Value!;
         CriterioDesempate maiorIdade = CriterioDesempate.Criar(
-            3, Regra(CriterioDesempateCodigo.MaiorIdade, "c"), new ArgsDesempateMaiorIdade()).Value!;
+            3, Regra(CriterioDesempateCodigo.MaiorIdade, "c"), new ParametrosDesempateMaiorIdade()).Value!;
         CriterioDesempate predicadoFato = CriterioDesempate.Criar(
-            4, Regra(CriterioDesempateCodigo.PredicadoFato, "d"), new ArgsDesempatePredicadoFato(CondicaoProfessorRural())).Value!;
+            4, Regra(CriterioDesempateCodigo.PredicadoFato, "d"), new ParametrosDesempatePredicadoFato(CondicaoProfessorRural())).Value!;
         CriterioDesempate maiorNotaAreaEnem = CriterioDesempate.Criar(
-            5, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, "f"), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!;
+            5, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, "f"), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!;
 
         Result desempateResult = processo.DefinirCriteriosDesempate([maiorNotaEtapa, idoso, maiorIdade, predicadoFato, maiorNotaAreaEnem]);
         desempateResult.IsSuccess.Should().BeTrue();
@@ -86,23 +86,23 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
 
         CriterioDesempate maiorNotaEtapaRecarregado = recarregado.CriteriosDesempate.Single(c => c.Ordem == 1);
         maiorNotaEtapaRecarregado.Regra.Codigo.Should().Be(CriterioDesempateCodigo.MaiorNotaEtapa);
-        ((ArgsDesempateMaiorNotaEtapa)maiorNotaEtapaRecarregado.Args).EtapaRef.Should().Be(etapa.Id);
+        ((ParametrosDesempateMaiorNotaEtapa)maiorNotaEtapaRecarregado.Parametros).EtapaRef.Should().Be(etapa.Id);
 
         CriterioDesempate idosoRecarregado = recarregado.CriteriosDesempate.Single(c => c.Ordem == 2);
-        ((ArgsDesempateIdoso)idosoRecarregado.Args).IdadeMinima.Should().Be(60);
+        ((ParametrosDesempateIdoso)idosoRecarregado.Parametros).IdadeMinima.Should().Be(60);
 
         CriterioDesempate maiorIdadeRecarregado = recarregado.CriteriosDesempate.Single(c => c.Ordem == 3);
-        maiorIdadeRecarregado.Args.Should().BeOfType<ArgsDesempateMaiorIdade>();
+        maiorIdadeRecarregado.Parametros.Should().BeOfType<ParametrosDesempateMaiorIdade>();
 
         CriterioDesempate predicadoFatoRecarregado = recarregado.CriteriosDesempate.Single(c => c.Ordem == 4);
-        ArgsDesempatePredicadoFato predicadoArgs = (ArgsDesempatePredicadoFato)predicadoFatoRecarregado.Args;
-        predicadoArgs.Condicao.Fato.Should().Be("PROFESSOR_RURAL");
-        predicadoArgs.Condicao.Operador.Should().Be(Operador.Igual);
-        predicadoArgs.Condicao.Valor.GetBoolean().Should().BeTrue();
+        ParametrosDesempatePredicadoFato predicadoParametros = (ParametrosDesempatePredicadoFato)predicadoFatoRecarregado.Parametros;
+        predicadoParametros.Condicao.Fato.Should().Be("PROFESSOR_RURAL");
+        predicadoParametros.Condicao.Operador.Should().Be(Operador.Igual);
+        predicadoParametros.Condicao.Valor.GetBoolean().Should().BeTrue();
 
         // A ordem das áreas é a prioridade do desempate e sobrevive ao round-trip do json.
         CriterioDesempate areaEnemRecarregado = recarregado.CriteriosDesempate.Single(c => c.Ordem == 5);
-        ((ArgsDesempateMaiorNotaAreaEnem)areaEnemRecarregado.Args).Areas.Should().Equal("REDACAO", "MATEMATICA", "LINGUAGENS");
+        ((ParametrosDesempateMaiorNotaAreaEnem)areaEnemRecarregado.Parametros).Areas.Should().Equal("REDACAO", "MATEMATICA", "LINGUAGENS");
 
         recarregado.BonusRegional.Should().NotBeNull();
         recarregado.BonusRegional!.Regra.Codigo.Should().Be(RegraBonusCodigo.Multiplicativo);
@@ -121,7 +121,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             new IdentificacaoDaEtapa(Nome: "Entrevista", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoEtapaSnapshot.Criar(Guid.CreateVersion7(), "PROVA_OBJETIVA", "Prova Objetiva", admitePontuacao: true, admiteEliminacao: true, notaDeOrigemNoEnem: false).Value!, Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, "a"), new ArgsDesempateMaiorIdade()).Value!]);
+            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorIdade, "a"), new ParametrosDesempateMaiorIdade()).Value!]);
         processo.DefinirBonusRegional(
             aplica: true, bonus: ConfiguracaoBonusRegional.Criar(Regra(RegraBonusCodigo.Multiplicativo, "b"), 1.10m, null, null, new BaseLegalCongelada(Guid.CreateVersion7(), "PORTARIA_UNIFESSPA_NO_2514_2023", "PORTARIA", "Portaria Unifesspa nº 2514/2023", "Institui inclusão regional", [("1504208", "Marabá", "PA")])).Value!);
 
@@ -139,8 +139,8 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
 
             Result desempateResult = carregado.DefinirCriteriosDesempate(
             [
-                CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.Idoso, "c"), new ArgsDesempateIdoso(65)).Value!,
-                CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorIdade, "d"), new ArgsDesempateMaiorIdade()).Value!,
+                CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.Idoso, "c"), new ParametrosDesempateIdoso(65)).Value!,
+                CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorIdade, "d"), new ParametrosDesempateMaiorIdade()).Value!,
             ]);
             desempateResult.IsSuccess.Should().BeTrue();
 
@@ -172,7 +172,7 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
             new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
         processo.DefinirEtapas([etapa]);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ArgsDesempateMaiorNotaEtapa(etapa.Id)).Value!]);
+            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, "a"), new ParametrosDesempateMaiorNotaEtapa(etapa.Id)).Value!]);
 
         await using (UniPlusDbContext writeContext = _fixture.CreateDbContext())
         {
@@ -214,6 +214,6 @@ public sealed class DesempateBonusPersistenciaTests : IClassFixture<ProcessoSele
         etapaAtualizada.Peso.Should().Be(2m);
 
         CriterioDesempate criterio = recarregado.CriteriosDesempate.Single();
-        ((ArgsDesempateMaiorNotaEtapa)criterio.Args).EtapaRef.Should().Be(etapa.Id);
+        ((ParametrosDesempateMaiorNotaEtapa)criterio.Parametros).EtapaRef.Should().Be(etapa.Id);
     }
 }

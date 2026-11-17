@@ -137,7 +137,7 @@ public sealed class DefinirEtapasCommandValidator : AbstractValidator<DefinirEta
 
             // O prazo de interposição e os dois pares de suspensividade são persistidos como
             // numeric(18,4), e o que sobra de escala o banco ARREDONDA em silêncio: um prazo
-            // de 0,00001 hora é estritamente positivo para ValidacaoDosArgumentosDoRecurso, vira
+            // de 0,00001 hora é estritamente positivo para ValidacaoDosParametrosDoRecurso, vira
             // 0,0000 na coluna, e a janela recursal passa a fechar no mesmo instante em que
             // abre — exatamente o que aquela validação existe para impedir. Acima de catorze
             // dígitos inteiros o banco nem arredonda: estoura 22003 como 500 no meio do PUT.

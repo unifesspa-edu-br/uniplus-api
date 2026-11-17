@@ -21,8 +21,8 @@ public sealed class OrdemDasRecusasDoDesempateTests
         Guid etapaInexistente = Guid.CreateVersion7();
         CriterioDesempateInformado[] criterios =
         [
-            new(2, new ArgsDesempateMaiorNotaEtapa(etapaInexistente)),
-            new(2, new ArgsDesempateMaiorIdade()),
+            new(2, new ParametrosDesempateMaiorNotaEtapa(etapaInexistente)),
+            new(2, new ParametrosDesempateMaiorIdade()),
         ];
 
         List<FieldError> recusas = RegrasDoDesempate.ConferirCriteriosDesempate(configuracao, criterios);

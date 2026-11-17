@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.HomologacaoDasInscrico
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Vagas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-/// <summary>As entradas do manifesto do edital, dos snapshots, dos argumentos de regra e do cronograma de fases.</summary>
+/// <summary>As entradas do manifesto do edital, dos snapshots, dos parâmetros de regra e do cronograma de fases.</summary>
 internal static class ManifestoDeEditalSnapshotsECronograma
 {
     internal static readonly Dictionary<Type, (string[] Congeladas, (string Propriedade, string Motivo)[] Excluidas)> Entradas = new()
@@ -56,20 +56,20 @@ internal static class ManifestoDeEditalSnapshotsECronograma
         // ZERO-EM-AREA serializam como `{}`). Uma propriedade nova aqui, esquecida nos dois
         // switches, é invisível: o envelope não muda, a fixture não muda, o round-trip fica
         // verde — e o campo some no primeiro descarte.
-        [typeof(ArgsDesempateMaiorNotaEtapa)] = (["EtapaRef"], []),
-        [typeof(ArgsDesempateMaiorIdade)] = ([], []),
-        [typeof(ArgsDesempateIdoso)] = (["IdadeMinima"], []),
-        [typeof(ArgsDesempatePredicadoFato)] = (["Condicao"], []),
-        [typeof(ArgsDesempateMaiorNotaAreaEnem)] = (["Areas"], []),
+        [typeof(ParametrosDesempateMaiorNotaEtapa)] = (["EtapaRef"], []),
+        [typeof(ParametrosDesempateMaiorIdade)] = ([], []),
+        [typeof(ParametrosDesempateIdoso)] = (["IdadeMinima"], []),
+        [typeof(ParametrosDesempatePredicadoFato)] = (["Condicao"], []),
+        [typeof(ParametrosDesempateMaiorNotaAreaEnem)] = (["Areas"], []),
         // CondicaoDnf (ADR-0111, Story #847): átomo tipado { Fato, Operador, Valor }
         // reusado literalmente pela variante acima — mesmo cuidado de propriedade
         // esquecida se aplica aqui.
         [typeof(CondicaoDnf)] = (["Fato", "Operador", "Valor"], []),
-        [typeof(ArgsElimNotaMinimaEtapa)] = (["EtapaRef", "NotaMinima"], []),
-        [typeof(ArgsElimCorteEmArea)] = (["AreaCodigo", "Minimo"], []),
-        [typeof(ArgsElimZeroEmArea)] = ([], []),
-        [typeof(ArgsElimFaltaEmDiaDeProvaEnem)] = ([], []),
-        [typeof(ArgsElimAusenciaNaEtapa)] = (["EtapaRef"], []),
+        [typeof(ParametrosElimNotaMinimaEtapa)] = (["EtapaRef", "NotaMinima"], []),
+        [typeof(ParametrosElimCorteEmArea)] = (["AreaCodigo", "Minimo"], []),
+        [typeof(ParametrosElimZeroEmArea)] = ([], []),
+        [typeof(ParametrosElimFaltaEmDiaDeProvaEnem)] = ([], []),
+        [typeof(ParametrosElimAusenciaNaEtapa)] = (["EtapaRef"], []),
 
         // Cronograma de fases (Story #851) — o eixo temporal do certame.
         [typeof(FaseCronograma)] = (
@@ -134,14 +134,14 @@ internal static class ManifestoDeEditalSnapshotsECronograma
             ["CategoriaDocumentoOrigemId", "Codigo"],
             [("BancaRequeridaId", "FK interna.")]),
 
-        // RegraRecursoFase.Args NÃO é polimórfico (única variante — CA-02 recusa
+        // RegraRecursoFase.Parametros NÃO é polimórfico (única variante — CA-02 recusa
         // qualquer regra que não seja RECURSO-PRAZO-ANCORADO-EM-ATO), por isso não
-        // entra em UnioesDiscriminadas: é alcançado diretamente como ArgsRegraPrazoRecurso.
+        // entra em UnioesDiscriminadas: é alcançado diretamente como ParametrosRegraPrazoRecurso.
         [typeof(RegraRecursoFase)] = (
-            ["Regra", "ProdutoAncoraId", "Args", "Procedimentos"],
+            ["Regra", "ProdutoAncoraId", "Parametros", "Procedimentos"],
             [("FaseCronogramaId", "FK interna.")]),
 
-        [typeof(ArgsRegraPrazoRecurso)] = (
+        [typeof(ParametrosRegraPrazoRecurso)] = (
             [
                 "PrazoValor", "PrazoUnidade",
                 "SuspensividadePrimeiraInstanciaValor", "SuspensividadePrimeiraInstanciaUnidade",
@@ -170,7 +170,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
 
         // As 7 variantes de PredicadoObrigatoriedade (ADR-0058, ADR-0114) — união discriminada
         // pelo campo `tipo` no envelope (o próprio predicado já é a forma que o domínio
-        // serializa, ao contrário de ArgsCriterioDesempate/ArgsRegraEliminacao, cuja variante
+        // serializa, ao contrário de ParametrosCriterioDesempate/ParametrosRegraEliminacao, cuja variante
         // vem do código da regra externa). BonusObrigatorio, oitava variante original, foi
         // descartada (ADR-0114, executado pela #853): ConfiguracaoBonusRegional é global ao
         // processo, sem lista de modalidades.

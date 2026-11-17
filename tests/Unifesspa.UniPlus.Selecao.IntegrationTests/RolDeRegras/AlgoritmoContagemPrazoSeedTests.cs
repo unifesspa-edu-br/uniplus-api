@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 /// convenções nomeadas de contagem do prazo de interposição que o UNI-REQ-0112
 /// tornou decláraveis por edital. Prova o conteúdo do seed (as quatro
 /// resoluções declaradas, com exemplos nas âncoras canônicas; esquema de
-/// argumentos vazio; base legal com placeholder honesto de pendência), os
+/// parâmetros vazio; base legal com placeholder honesto de pendência), os
 /// hashes dourados que amarram o seed ao hash gravado, e o reader por tipo.
 /// </summary>
 public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalogoDbFixture>
@@ -163,7 +163,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
         }
     }
 
-    [Fact(DisplayName = "O esquema de argumentos é vazio: o algoritmo é escolhido, não parametrizado")]
+    [Fact(DisplayName = "O esquema de parâmetros é vazio: o algoritmo é escolhido, não parametrizado")]
     public void Seed_EsquemaArgsVazio()
     {
         foreach (string codigo in CodigosDeContagem)
@@ -172,7 +172,7 @@ public sealed class AlgoritmoContagemPrazoSeedTests : IClassFixture<RegraCatalog
 
             esquema.RootElement.ValueKind.Should().Be(JsonValueKind.Object);
             esquema.RootElement.EnumerateObject().Should().BeEmpty(
-                $"a entrada {codigo} não recebe argumentos do administrador — ela é escolhida, não parametrizada");
+                $"a entrada {codigo} não recebe parâmetros do administrador — ela é escolhida, não parametrizada");
         }
     }
 

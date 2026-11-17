@@ -14,6 +14,6 @@ internal static class RecursoModelo
     private static RecursoDaEtapa Janela(AncoraDoRecurso ancora, Guid produtoAncoraId) => RecursoDaEtapa.Criar(
         ancora,
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
-        new ArgsRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
+        new ParametrosRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
         produtoAncoraId).Value!;
 }

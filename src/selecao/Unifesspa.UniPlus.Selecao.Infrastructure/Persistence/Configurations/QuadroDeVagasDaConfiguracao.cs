@@ -34,10 +34,10 @@ internal static class QuadroDeVagasDaConfiguracao
     };
 
     // O EF não chama o conversor para nulo: a coluna nula é a ausência do motor e das retiradas.
-    private static readonly ValueConverter<ArgsRegraAjusteDistribuicao?, string?> ConversorDoAjuste =
-        new(ajuste => Serializar(ajuste!), json => Ler<ArgsRegraAjusteDistribuicao>(json!));
+    private static readonly ValueConverter<ParametrosRegraAjusteDistribuicao?, string?> ConversorDoAjuste =
+        new(ajuste => Serializar(ajuste!), json => Ler<ParametrosRegraAjusteDistribuicao>(json!));
 
-    private static readonly ValueComparer<ArgsRegraAjusteDistribuicao?> ComparadorDoAjuste =
+    private static readonly ValueComparer<ParametrosRegraAjusteDistribuicao?> ComparadorDoAjuste =
         new((a, b) => SerializarOuNulo(a) == SerializarOuNulo(b), a => SerializarOuNulo(a)!.GetHashCode(StringComparison.Ordinal), a => a);
 
     private static readonly ValueConverter<IReadOnlyList<VagasDaModalidade>?, string?> ConversorDasRetiradas =

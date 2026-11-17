@@ -114,7 +114,7 @@ internal sealed record ViolacaoDeRegra(
     private static CriterioDesempate CriterioMaiorIdade(int ordem) => CriterioDesempate.Criar(
         ordem,
         ReferenciaRegra.De(CriterioDesempateCodigo.MaiorIdade, "v1", new string('f', 64)),
-        new ArgsDesempateMaiorIdade()).Value!;
+        new ParametrosDesempateMaiorIdade()).Value!;
 
     // A regra de eliminação cita uma etapa que o processo não tem.
     private static ConfiguracaoClassificacao ClassificacaoQueEliminaPorEtapaInexistente() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
@@ -126,7 +126,7 @@ internal sealed record ViolacaoDeRegra(
         RegrasEliminacao = [
             RegraEliminacao.Criar(
                 ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)),
-                new ArgsElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m)).Value!,
+                new ParametrosElimNotaMinimaEtapa(Guid.CreateVersion7(), 4m)).Value!,
         ],
         EscalaNotaFinal = 100m,
     }).Value!;

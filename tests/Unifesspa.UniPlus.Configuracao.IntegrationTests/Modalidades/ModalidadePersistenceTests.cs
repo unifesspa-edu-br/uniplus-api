@@ -200,7 +200,7 @@ public sealed class ModalidadePersistenceTests
     }
 
     [Fact(DisplayName = "Remoção é bloqueada por referência via remanejamento_args jsonb (repo)")]
-    public async Task EhReferenciada_PorRemanejamentoArgs_True()
+    public async Task EhReferenciada_PorRemanejamentoParametros_True()
     {
         string destino = CodigoUnico();
         string dependente = CodigoUnico();
@@ -335,7 +335,7 @@ public sealed class ModalidadePersistenceTests
         acPcd.ComposicaoVagas.Should().Be(ComposicaoVagas.RetiradaDeOutraModalidade);
         acPcd.ComposicaoOrigem.Should().Be("AC", "AC_PCD retira suas vagas da ampla concorrência, não do total");
         acPcd.RegraRemanejamento.Should().Be(RegraRemanejamento.DestinoUnico);
-        acPcd.RemanejamentoArgs.Destino.Should().Be("AC", "a vaga ociosa de AC_PCD retorna à ampla concorrência");
+        acPcd.RemanejamentoParametros.Destino.Should().Be("AC", "a vaga ociosa de AC_PCD retorna à ampla concorrência");
         acPcd.Descricao.Should().Contain("(V)", "o rótulo V dos editais vive na descrição, nunca no código");
 
         Modalidade ac = semeadas.Single(m => m.Codigo.Valor == "AC");
@@ -372,16 +372,16 @@ public sealed class ModalidadePersistenceTests
             m.ComposicaoVagas.Should().Be(ComposicaoVagas.SuplementarAoTotal);
             m.ComposicaoOrigem.Should().BeNull("vaga suplementar não é retirada de outra modalidade");
             m.RegraRemanejamento.Should().Be(RegraRemanejamento.Cruzado);
-            m.RemanejamentoArgs.Destino.Should().BeNull("destino é argumento de DESTINO_UNICO");
-            m.RemanejamentoArgs.Fallback.Should().BeNull(
+            m.RemanejamentoParametros.Destino.Should().BeNull("destino é parâmetro de DESTINO_UNICO");
+            m.RemanejamentoParametros.Fallback.Should().BeNull(
                 "o PSIQ não oferta ampla concorrência — a vaga que nenhum dos dois grupos preencher "
                 + "permanece ociosa, e é a ausência de fallback que declara isso");
         }
 
         // O cruzamento tem de ser mútuo: um par unilateral deixaria a vaga de um grupo migrar
         // para o outro sem volta.
-        acI.RemanejamentoArgs.Par.Should().Be("AC_Q");
-        acQ.RemanejamentoArgs.Par.Should().Be("AC_I");
+        acI.RemanejamentoParametros.Par.Should().Be("AC_Q");
+        acQ.RemanejamentoParametros.Par.Should().Be("AC_I");
 
         acI.BaseLegal.Should().NotBeNullOrWhiteSpace().And.NotContain("12.711",
             "as vagas por acréscimo nascem de resolução institucional, não da Lei de Cotas");
@@ -421,7 +421,7 @@ public sealed class ModalidadePersistenceTests
             + "deixaria o catálogo legal incoerente");
     }
 
-    [Fact(DisplayName = "Seed: cada item satisfaz as invariantes de Modalidade.Criar (natureza × composição × remanejamento × args)")]
+    [Fact(DisplayName = "Seed: cada item satisfaz as invariantes de Modalidade.Criar (natureza × composição × remanejamento × parâmetros)")]
     public void Seed_CadaItem_SatisfazInvariantesDoAgregado()
     {
         foreach (ModalidadeSeedItem item in ModalidadeSeed.Itens)
@@ -433,9 +433,9 @@ public sealed class ModalidadePersistenceTests
                 ComposicoesVagas.ParaTokenCanonico(item.Composicao),
                 item.ComposicaoOrigem,
                 item.Regra is { } regra ? RegrasRemanejamento.ParaTokenCanonico(regra) : null,
-                item.RemanejamentoArgs.Destino,
-                item.RemanejamentoArgs.Par,
-                item.RemanejamentoArgs.Fallback,
+                item.RemanejamentoParametros.Destino,
+                item.RemanejamentoParametros.Par,
+                item.RemanejamentoParametros.Fallback,
                 item.RegraDeAplicabilidade,
                 acaoQuandoIndeferido: null,
                 item.BaseLegal);

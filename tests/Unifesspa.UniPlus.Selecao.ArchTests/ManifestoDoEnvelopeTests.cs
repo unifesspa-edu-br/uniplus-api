@@ -43,7 +43,7 @@ public sealed class ManifestoDoEnvelopeTests
     /// variante uma chance a mais de o codec silenciosamente não conhecê-la.
     /// </summary>
     private static readonly Type[] UnioesDiscriminadas =
-        [typeof(ArgsCriterioDesempate), typeof(ArgsRegraEliminacao), typeof(PredicadoObrigatoriedade), typeof(ArgsRegraAjusteDistribuicao)];
+        [typeof(ParametrosCriterioDesempate), typeof(ParametrosRegraEliminacao), typeof(PredicadoObrigatoriedade), typeof(ParametrosRegraAjusteDistribuicao)];
 
     private const string OrientacaoDePropriedadeNaoDeclarada =
         "uma propriedade de negócio que não está no manifesto é uma que ninguém decidiu se entra no documento " +
@@ -54,7 +54,7 @@ public sealed class ManifestoDoEnvelopeTests
 
     private const string OrientacaoDeTipoNaoDeclarado =
         "todo tipo que o envelope congela tem de estar no manifesto — inclusive cada VARIANTE de " +
-        "ArgsCriterioDesempate e ArgsRegraEliminacao, que são persistidas inteiras como JSON e lidas por dois " +
+        "ParametrosCriterioDesempate e ParametrosRegraEliminacao, que são persistidas inteiras como JSON e lidas por dois " +
         "`switch` sobre o código da regra. Uma variante nova, ou uma propriedade nova numa existente, esquecida " +
         "nos dois switches, não muda o envelope, não muda a fixture, e o round-trip fica verde: o campo some no " +
         "primeiro descarte. ";
@@ -117,11 +117,11 @@ public sealed class ManifestoDoEnvelopeTests
     /// </summary>
     /// <remarks>
     /// Sem isto, o manifesto teria o mesmo ponto cego que ele existe para fechar — uma
-    /// entidade nova no grafo (ou uma <b>variante nova</b> de <c>Args</c>) simplesmente não
+    /// entidade nova no grafo (ou uma <b>variante nova</b> de <c>Parametros</c>) simplesmente não
     /// seria percorrida, e a propriedade dela nunca precisaria ser declarada. A prova de
     /// completude tem de vir do compilador, não da memória de quem editou o teste.
     /// </remarks>
-    [Fact(DisplayName = "Todo tipo alcançável a partir do grafo está no manifesto — inclusive cada variante de Args")]
+    [Fact(DisplayName = "Todo tipo alcançável a partir do grafo está no manifesto — inclusive cada variante de Parâmetros")]
     public void TodoTipoDoGrafo_EstaNoManifesto()
     {
         HashSet<Type> alcancados = [];

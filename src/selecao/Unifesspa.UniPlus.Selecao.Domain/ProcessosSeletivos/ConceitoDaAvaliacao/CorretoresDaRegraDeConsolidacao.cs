@@ -7,7 +7,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// O número de corretores distintos que cada versão de regra de consolidação exige, lido do <c>esquema_args</c> da
-/// própria versão (ADR-0150, emendas 1 e 2). É valor fixo da versão, e não argumento que o edital preenche: o número
+/// própria versão (ADR-0150, emendas 1 e 2). É valor fixo da versão, e não parâmetro que o edital preenche: o número
 /// congelado é o da versão que a etapa referencia.
 /// </summary>
 public static class CorretoresDaRegraDeConsolidacao

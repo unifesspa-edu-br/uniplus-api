@@ -25,7 +25,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <b>quebra o build</b> — que é o único jeito de esta lista não envelhecer em silêncio.
 /// </para>
 /// <para>
-/// Os campos que vivem dentro de um <c>json</c>/<c>jsonb</c> (os <c>args</c> dos critérios
+/// Os campos que vivem dentro de um <c>json</c>/<c>jsonb</c> (os <c>parametros</c> dos critérios
 /// e das regras de eliminação, a regra de aplicabilidade da modalidade) <b>não</b> têm limite
 /// de coluna — e por isso não aparecem aqui.
 /// </para>
@@ -174,7 +174,7 @@ public static class LimitesDoEnvelope
     /// </summary>
     public const int PrecisaoCorteAreaEnem = 8;
 
-    /// <summary>Precisão de <c>ArgsRegraPrazoRecurso.PrazoValor</c> e dos dois pares de suspensividade — <c>numeric(18,4)</c>.</summary>
+    /// <summary>Precisão de <c>ParametrosRegraPrazoRecurso.PrazoValor</c> e dos dois pares de suspensividade — <c>numeric(18,4)</c>.</summary>
     public const int PrecisaoPrazo = 18;
 
     /// <summary>Precisão de <c>ConfiguracaoTaxaInscricao.Valor</c> — <c>numeric(12,2)</c>, monetário.</summary>

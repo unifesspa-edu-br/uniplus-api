@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// Os campos editáveis de uma modalidade como chegam de quem a cadastra, antes de qualquer normalização:
-/// os enums como tokens textuais, e a origem e os argumentos de remanejamento como códigos soltos.
+/// os enums como tokens textuais, e a origem e os parâmetros de remanejamento como códigos soltos.
 /// </summary>
 internal sealed record DeclaracaoDaModalidade(
     string? Descricao,

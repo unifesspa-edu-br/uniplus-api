@@ -100,7 +100,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemClassificacaoTests
             RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, 'b'),
             CasasArredondamento = 2,
             RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, 'c'),
-            RegrasEliminacao = [RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, 'd'), new ArgsElimNotaMinimaEtapa(Guid.CreateVersion7(), 50m)).Value!],
+            RegrasEliminacao = [RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, 'd'), new ParametrosElimNotaMinimaEtapa(Guid.CreateVersion7(), 50m)).Value!],
             EscalaNotaFinal = 100m,
         }).Value!;
 

@@ -94,11 +94,11 @@ internal static class ModalidadeErrorMappings
                 "uniplus.configuracao.modalidade.origem_apenas_para_retirada_de_outra_modalidade",
                 "Somente a composição 'retira de' admite modalidade de origem")),
 
-        new(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
+        new(ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio,
             new DomainErrorMapping(
                 StatusCodes.Status422UnprocessableEntity,
-                "uniplus.configuracao.modalidade.argumento_remanejamento_obrigatorio",
-                "Argumentos de remanejamento incompatíveis com a regra declarada")),
+                "uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio",
+                "Parâmetros de remanejamento incompatíveis com a regra declarada")),
 
         new(ModalidadeErrorCodes.AcaoIndeferimentoInvalida,
             new DomainErrorMapping(

@@ -41,7 +41,7 @@ public sealed class DefinirCriteriosDesempateAreasDoEnemCommandHandlerTests
         Result result = await cenario.DefinirAsync(Comando(processo.Id, CriterioDeAreas(1, " REDACAO ", "MATEMATICA")));
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
-        ((ArgsDesempateMaiorNotaAreaEnem)processo.CriteriosDesempate.Single().Args).Areas.Should().Equal("REDACAO", "MATEMATICA");
+        ((ParametrosDesempateMaiorNotaAreaEnem)processo.CriteriosDesempate.Single().Parametros).Areas.Should().Equal("REDACAO", "MATEMATICA");
         await cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 

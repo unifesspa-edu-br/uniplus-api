@@ -78,7 +78,7 @@ public sealed class EnvelopeCodecInsumosDeRecomputacaoTests
         originais.Should().NotBeEmpty("pré-condição: a etapa do corpus abre janela recursal");
 
         objetiva.DefinirRecursos([.. originais.Select(r => RecursoDaEtapa.Reidratar(
-            Guid.CreateVersion7(), r.Ancora, r.Regra, r.Args, r.ProdutoAncoraId, r.Procedimentos).Value!)])
+            Guid.CreateVersion7(), r.Ancora, r.Regra, r.Parametros, r.ProdutoAncoraId, r.Procedimentos).Value!)])
             .IsSuccess.Should().BeTrue();
         objetiva.Recursos.Select(r => r.Id)
             .Should().NotIntersectWith(originais.Select(r => r.Id),

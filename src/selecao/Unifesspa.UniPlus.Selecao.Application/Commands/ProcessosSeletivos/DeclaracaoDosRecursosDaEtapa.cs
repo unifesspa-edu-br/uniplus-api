@@ -102,7 +102,7 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
             .ConfigureAwait(false);
         return procedimentos.IsFailure
             ? Result<RecursoDaEtapa>.ValidationFailure(procedimentos.Errors)
-            : RecursoDaEtapa.Criar(declarado.Ancora, regra, ArgumentosDoPrazo(declarado), produtoAncora?.Id ?? Guid.Empty, procedimentos.Value);
+            : RecursoDaEtapa.Criar(declarado.Ancora, regra, ParametrosDoPrazo(declarado), produtoAncora?.Id ?? Guid.Empty, procedimentos.Value);
     }
 
     // O lugar da janela é a própria etapa: ela declara os tipos de decisão que produz e os itens de avaliação que o alvo
@@ -136,7 +136,7 @@ internal sealed class DeclaracaoDosRecursosDaEtapa(
             : Result<ReferenciaRegra>.Success(regra.Referencia());
     }
 
-    private static ArgsRegraPrazoRecurso ArgumentosDoPrazo(RecursoDaEtapaInput declarado) =>
+    private static ParametrosRegraPrazoRecurso ParametrosDoPrazo(RecursoDaEtapaInput declarado) =>
         new(
             declarado.PrazoValor,
             declarado.PrazoUnidade,

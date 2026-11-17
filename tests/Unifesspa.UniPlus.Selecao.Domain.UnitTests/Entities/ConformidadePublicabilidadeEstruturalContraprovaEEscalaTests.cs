@@ -121,7 +121,7 @@ public sealed class ConformidadePublicabilidadeEstruturalContraprovaEEscalaTests
 
     private static RegraRecursoFase RecursoEmHoras() => RegraRecursoFase.Criar(
         RegraDeRecursoAncorada(),
-        new ArgsRegraPrazoRecurso(
+        new ParametrosRegraPrazoRecurso(
             PrazoValor: 48m,
             PrazoUnidade: UnidadePrazo.Horas,
             SuspensividadePrimeiraInstanciaValor: null,

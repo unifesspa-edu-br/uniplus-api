@@ -22,7 +22,7 @@ public sealed class AncoraDoRecursoDaFaseTests
 
     private static RegraRecursoFase Recurso(Guid produtoAncoraId) => RegraRecursoFase.Criar(
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
-        new ArgsRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
+        new ParametrosRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
         produtoAncoraId).Value!;
 
     private static ProdutoDaFase Preliminar(string ato) => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar);

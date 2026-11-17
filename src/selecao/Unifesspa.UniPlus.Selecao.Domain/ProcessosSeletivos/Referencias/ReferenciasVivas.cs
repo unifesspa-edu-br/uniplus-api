@@ -40,7 +40,7 @@ public static class ReferenciasVivas
             .Concat(configuracao.Coleta.GruposColetados.SelectMany(static g => g.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)))
             .Concat(configuracao.DerivacoesEfetivas().SelectMany(static r => r.Regras).SelectMany(static r => r.Condicoes)
                 .Select(static c => (c.Fato, c.Operador, c.Valor)))
-            .Concat(configuracao.Avaliacao.CriteriosDesempate.Select(static c => c.Args).OfType<ArgsDesempatePredicadoFato>()
+            .Concat(configuracao.Avaliacao.CriteriosDesempate.Select(static c => c.Parametros).OfType<ParametrosDesempatePredicadoFato>()
                 .Select(static a => (a.Condicao.Fato, a.Condicao.Operador, a.Condicao.Valor)))
             .Concat(configuracao.Coleta.TermosExigidos.SelectMany(static t => t.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)))
             .Concat(configuracao.Coleta.Formularios.SelectMany(static f => f.Etapas).SelectMany(static e => e.Condicoes).Select(static c => (c.Fato, c.Operador, c.Valor)));

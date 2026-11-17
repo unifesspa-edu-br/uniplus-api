@@ -106,9 +106,9 @@ internal static class RegrasDaClassificacao
     ];
 
     private static DomainError? RecusaDaEtapaDaRegra(RegraEliminacao regra, ConfiguracaoDeclarada configuracao) =>
-        regra.Args.EtapaReferenciada() is { } etapaRef && !configuracao.Avaliacao.Etapas.Any(e => e.Id == etapaRef)
+        regra.Parametros.EtapaReferenciada() is { } etapaRef && !configuracao.Avaliacao.Etapas.Any(e => e.Id == etapaRef)
             ? ReferenciaAEtapaInexistente.PelaEliminacao(etapaRef)
-            : RegrasDasEtapas.AusenciaNaEtapaDoEnem(regra.Args, configuracao.Avaliacao.Etapas)
+            : RegrasDasEtapas.AusenciaNaEtapaDoEnem(regra.Parametros, configuracao.Avaliacao.Etapas)
                 ? RegrasDasEtapas.AusenciaNaEtapaDoEnemRecusada()
                 : null;
 

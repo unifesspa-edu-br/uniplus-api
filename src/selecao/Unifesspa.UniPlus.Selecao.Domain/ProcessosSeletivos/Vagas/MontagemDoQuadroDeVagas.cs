@@ -14,7 +14,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 public static class MontagemDoQuadroDeVagas
 {
     /// <summary>Motor inerte: sem excesso a reduzir, o reconciliador devolve o quadro intacto.</summary>
-    private static readonly ArgsReduzirDe SemAjuste = new(string.Empty);
+    private static readonly ParametrosReduzirDe SemAjuste = new(string.Empty);
 
     /// <exception cref="ArgumentException">
     /// A regra de distribuição não é de nenhum dos dois ramos: a partição dos códigos é fechada, e a

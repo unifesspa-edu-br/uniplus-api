@@ -45,7 +45,7 @@ public sealed class ProcessoSeletivoEliminacaoPorAusenciaTests
             RegraOrdemAlocacao = ReferenciaRegra.De(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "v1", new string('c', 64)),
             RegrasEliminacao = [RegraEliminacao.Criar(
                 ReferenciaRegra.De(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", new string('d', 64)),
-                new ArgsElimAusenciaNaEtapa(etapaId)).Value!],
+                new ParametrosElimAusenciaNaEtapa(etapaId)).Value!],
             BaseadoEmEnem = baseadoEmEnem,
             ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
             QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],

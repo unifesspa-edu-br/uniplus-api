@@ -33,7 +33,7 @@ internal static class DeclaracoesObrigatoriasDeTeste
         if (desempate && processo.OrigemCandidatos == OrigemCandidatos.InscricaoPropria && processo.CriteriosDesempate.Count == 0)
         {
             ReferenciaRegra regra = ReferenciaRegra.De(CriterioDesempateCodigo.MaiorIdade, "v1", new string('f', 64));
-            CriterioDesempate criterio = CriterioDesempate.Criar(1, regra, new ArgsDesempateMaiorIdade()).Value!;
+            CriterioDesempate criterio = CriterioDesempate.Criar(1, regra, new ParametrosDesempateMaiorIdade()).Value!;
             ExigirSucesso(processo.DefinirCriteriosDesempate([criterio]));
         }
     }

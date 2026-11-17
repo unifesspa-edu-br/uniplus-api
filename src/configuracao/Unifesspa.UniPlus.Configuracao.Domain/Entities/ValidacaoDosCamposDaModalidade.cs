@@ -52,7 +52,7 @@ public static class ValidacaoDosCamposDaModalidade
     /// <summary>
     /// Valida os campos editáveis por completo, acumulando toda violação
     /// independente — os campos que não cruzam entre si (<see cref="ValidarCamposIndependentes"/>)
-    /// e as três invariantes cruzadas (RetiradaDeOutraModalidade⟺origem, natureza↔regra, args por
+    /// e as três invariantes cruzadas (RetiradaDeOutraModalidade⟺origem, natureza↔regra, parâmetros por
     /// regra), cada uma só avaliada quando os tokens de que ela depende já foram
     /// reconhecidos (senão o erro reportado seria derivado de um token inválido,
     /// não uma incoerência independente — ex.: reportar "SEGUE_CASCATA exigido"
@@ -125,7 +125,7 @@ public static class ValidacaoDosCamposDaModalidade
             tokens.Composicao,
             origem,
             tokens.Regra,
-            RemanejamentoArgs.Criar(declaracao.RemanejamentoDestino, declaracao.RemanejamentoPar, declaracao.RemanejamentoFallback),
+            RemanejamentoParametros.Criar(declaracao.RemanejamentoDestino, declaracao.RemanejamentoPar, declaracao.RemanejamentoFallback),
             declaracao.RegraDeAplicabilidade,
             tokens.Acao,
             baseLegal);

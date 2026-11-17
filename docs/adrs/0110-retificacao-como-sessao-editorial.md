@@ -102,7 +102,7 @@ codec **quebra o build**.
 
 | Campo | No envelope? | Decisão |
 |---|---|---|
-| `etapa.Id` | **Sim** (`:149`) — `criteriosDesempate.args.etapaRef` e `regrasEliminacao.args.etapaRef` apontam para ele | **Preservado.** `EtapaProcesso.Criar` não aceita `Id` → **factory de reidratação** |
+| `etapa.Id` | **Sim** (`:149`) — `criteriosDesempate.parametros.etapaRef` e `regrasEliminacao.parametros.etapaRef` apontam para ele | **Preservado.** `EtapaProcesso.Criar` não aceita `Id` → **factory de reidratação** |
 | `Id` das demais filhas | **Não** | **Regenerados.** Precisão: *nenhuma referência de **negócio** exige estabilidade deles*; as **FKs internas** (ex.: `ModalidadeSelecionada.ConfiguracaoDistribuicaoVagasId`) são **reconstruídas junto com o grafo**. São expostos no DTO público, e o ADR declara que **o contrato não promete estabilidade** |
 | `CreatedAt` / `UpdatedAt` (todas herdam de `EntityBase`) | **Não** | **Parcialmente perdidos, com precisão:** as filhas **recriadas** recebem `CreatedAt` = instante do **descarte** e `UpdatedAt` = `null`; as **etapas reconciliadas** por `Id` **preservam** o `CreatedAt` original (são a mesma instância *tracked*). É perda de informação — **declarada**, não silenciosa. A auditoria com peso jurídico vive na `VersaoConfiguracao` (append-only, `IForensicEntity`), que **não** é tocada |
 

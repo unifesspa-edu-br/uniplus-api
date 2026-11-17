@@ -65,7 +65,7 @@ internal static class EntradaDoPreliminarDaEtapa
         [
             Linha(campo, true),
             .. DaReferencia($"{campo}.regra", recurso.Regra),
-            .. DosArgumentosDoRecurso($"{campo}.args", recurso.Args),
+            .. DosParametrosDoRecurso($"{campo}.parametros", recurso.Parametros),
             .. DosProcedimentos(campo, recurso.Procedimentos),
         ];
     }

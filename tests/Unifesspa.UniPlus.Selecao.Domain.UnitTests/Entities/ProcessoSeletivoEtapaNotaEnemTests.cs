@@ -39,7 +39,7 @@ public sealed class ProcessoSeletivoEtapaNotaEnemTests
     private static ReferenciaRegra RegraDoRecurso =>
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64));
 
-    private static ArgsRegraPrazoRecurso PrazoDoRecurso => new(
+    private static ParametrosRegraPrazoRecurso PrazoDoRecurso => new(
         PrazoValor: 48m, PrazoUnidade: UnidadePrazo.Horas,
         SuspensividadePrimeiraInstanciaValor: null, SuspensividadePrimeiraInstanciaUnidade: null,
         AdmiteInstanciaSuperior: false,

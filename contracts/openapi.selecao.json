@@ -12062,120 +12062,6 @@
           }
         }
       },
-      "ArgsRegraAjusteDistribuicao": {
-        "required": [
-          "$tipo"
-        ],
-        "type": "object",
-        "anyOf": [
-          {
-            "$ref": "#/components/schemas/ArgsRegraAjusteDistribuicaoArgsReduzirDe"
-          },
-          {
-            "$ref": "#/components/schemas/ArgsRegraAjusteDistribuicaoArgsReduzirProporcionalEm"
-          }
-        ],
-        "discriminator": {
-          "propertyName": "$tipo",
-          "mapping": {
-            "reduzirDe": "#/components/schemas/ArgsRegraAjusteDistribuicaoArgsReduzirDe",
-            "reduzirProporcionalEm": "#/components/schemas/ArgsRegraAjusteDistribuicaoArgsReduzirProporcionalEm"
-          }
-        }
-      },
-      "ArgsRegraAjusteDistribuicaoArgsReduzirDe": {
-        "required": [
-          "modalidadeCodigo"
-        ],
-        "properties": {
-          "$tipo": {
-            "enum": [
-              "reduzirDe"
-            ],
-            "type": "string"
-          },
-          "modalidadeCodigo": {
-            "type": "string"
-          }
-        }
-      },
-      "ArgsRegraAjusteDistribuicaoArgsReduzirProporcionalEm": {
-        "required": [
-          "modalidadeCodigos"
-        ],
-        "properties": {
-          "$tipo": {
-            "enum": [
-              "reduzirProporcionalEm"
-            ],
-            "type": "string"
-          },
-          "modalidadeCodigos": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        }
-      },
-      "ArgsRegraPrazoRecursoDto": {
-        "required": [
-          "prazoValor",
-          "prazoUnidade",
-          "suspensividadePrimeiraInstanciaValor",
-          "suspensividadePrimeiraInstanciaUnidade",
-          "admiteInstanciaSuperior",
-          "suspensividadeSegundaInstanciaValor",
-          "suspensividadeSegundaInstanciaUnidade"
-        ],
-        "type": "object",
-        "properties": {
-          "prazoValor": {
-            "type": "number",
-            "format": "double"
-          },
-          "prazoUnidade": {
-            "$ref": "#/components/schemas/UnidadePrazo"
-          },
-          "suspensividadePrimeiraInstanciaValor": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "suspensividadePrimeiraInstanciaUnidade": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/UnidadePrazo"
-              }
-            ]
-          },
-          "admiteInstanciaSuperior": {
-            "type": "boolean"
-          },
-          "suspensividadeSegundaInstanciaValor": {
-            "type": [
-              "null",
-              "number"
-            ],
-            "format": "double"
-          },
-          "suspensividadeSegundaInstanciaUnidade": {
-            "oneOf": [
-              {
-                "type": "null"
-              },
-              {
-                "$ref": "#/components/schemas/UnidadePrazo"
-              }
-            ]
-          }
-        }
-      },
       "ArquivoAdministrativoDto": {
         "required": [
           "arquivoId",
@@ -13962,7 +13848,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/ArgsRegraAjusteDistribuicao"
+                "$ref": "#/components/schemas/ParametrosRegraAjusteDistribuicao"
               }
             ]
           },
@@ -14098,7 +13984,7 @@
                 "type": "null"
               },
               {
-                "$ref": "#/components/schemas/ArgsRegraAjusteDistribuicao"
+                "$ref": "#/components/schemas/ParametrosRegraAjusteDistribuicao"
               }
             ]
           }
@@ -16540,10 +16426,11 @@
             "description": "Regra de desempate no cat\u00E1logo de regras.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
           },
-          "args": {
+          "parametros": {
             "title": "Par\u00E2metros",
-            "description": "Par\u00E2metros da regra, conforme o c\u00F3digo dela.",
-            "type": "object"
+            "description": "Par\u00E2metros da regra. A forma de cada c\u00F3digo est\u00E1 nas defini\u00E7\u00F5es de par\u00E2metros deste esquema, aplicadas conforme o c\u00F3digo da regra.",
+            "type": "object",
+            "additionalProperties": true
           }
         },
         "allOf": [
@@ -16567,7 +16454,7 @@
             },
             "then": {
               "properties": {
-                "args": {
+                "parametros": {
                   "$ref": "#/components/schemas/DocumentoDaConfiguracaoDesempateParametrosMaiorNotaEtapa"
                 }
               }
@@ -16593,7 +16480,7 @@
             },
             "then": {
               "properties": {
-                "args": {
+                "parametros": {
                   "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsSemParametros"
                 }
               }
@@ -16619,7 +16506,7 @@
             },
             "then": {
               "properties": {
-                "args": {
+                "parametros": {
                   "$ref": "#/components/schemas/DocumentoDaConfiguracaoDesempateParametrosIdoso"
                 }
               }
@@ -16645,7 +16532,7 @@
             },
             "then": {
               "properties": {
-                "args": {
+                "parametros": {
                   "$ref": "#/components/schemas/DocumentoDaConfiguracaoDesempateCondicaoDoDesempate"
                 }
               }
@@ -16671,7 +16558,7 @@
             },
             "then": {
               "properties": {
-                "args": {
+                "parametros": {
                   "$ref": "#/components/schemas/DocumentoDaConfiguracaoDesempateParametrosMaiorNotaAreaEnem"
                 }
               }
@@ -16765,7 +16652,7 @@
           },
           "percentualDaReservaLegal": {
             "title": "Percentual da reserva legal",
-            "description": "Fra\u00E7\u00E3o das vagas reservada pela Lei de Cotas, de 0,5 a 1, com at\u00E9 quatro casas decimais. S\u00F3 nas regras do ramo federal.",
+            "description": "Fra\u00E7\u00E3o das vagas reservada pela Lei de Cotas, de 0,5 a 1, com at\u00E9 quatro casas decimais. Obrigat\u00F3rio nas regras do ramo federal.",
             "type": [
               "number",
               "null"
@@ -16805,7 +16692,7 @@
           },
           "referenciaDemograficaCodigo": {
             "title": "Refer\u00EAncia demogr\u00E1fica",
-            "description": "C\u00F3digo do censo de refer\u00EAncia da reserva demogr\u00E1fica no cadastro, de at\u00E9 20 caracteres. \u00C9 o \u0060censoReferencia\u0060 do cadastro de refer\u00EAncias demogr\u00E1ficas. S\u00F3 nas regras do ramo federal.",
+            "description": "C\u00F3digo do censo de refer\u00EAncia da reserva demogr\u00E1fica no cadastro, de at\u00E9 20 caracteres. \u00C9 o \u0060censoReferencia\u0060 do cadastro de refer\u00EAncias demogr\u00E1ficas. S\u00F3 nas regras do ramo federal. Nula ou ausente quando a distribui\u00E7\u00E3o n\u00E3o cita refer\u00EAncia demogr\u00E1fica.",
             "type": [
               "string",
               "null"
@@ -17043,10 +16930,11 @@
             "description": "Regra de elimina\u00E7\u00E3o no cat\u00E1logo de regras.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsReferenciaDeRegra"
           },
-          "args": {
+          "parametros": {
             "title": "Par\u00E2metros",
-            "description": "Par\u00E2metros da regra, conforme o c\u00F3digo dela.",
-            "type": "object"
+            "description": "Par\u00E2metros da regra. A forma de cada c\u00F3digo est\u00E1 nas defini\u00E7\u00F5es de par\u00E2metros deste esquema, aplicadas conforme o c\u00F3digo da regra.",
+            "type": "object",
+            "additionalProperties": true
           }
         },
         "allOf": [
@@ -17070,7 +16958,7 @@
             },
             "then": {
               "properties": {
-                "args": {
+                "parametros": {
                   "$ref": "#/components/schemas/DocumentoDaConfiguracaoEliminacaoParametrosNotaMinimaEtapa"
                 }
               }
@@ -17096,7 +16984,7 @@
             },
             "then": {
               "properties": {
-                "args": {
+                "parametros": {
                   "$ref": "#/components/schemas/DocumentoDaConfiguracaoEliminacaoParametrosCorteEmArea"
                 }
               }
@@ -17122,7 +17010,7 @@
             },
             "then": {
               "properties": {
-                "args": {
+                "parametros": {
                   "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsSemParametros"
                 }
               }
@@ -17148,7 +17036,7 @@
             },
             "then": {
               "properties": {
-                "args": {
+                "parametros": {
                   "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsSemParametros"
                 }
               }
@@ -17174,7 +17062,7 @@
             },
             "then": {
               "properties": {
-                "args": {
+                "parametros": {
                   "$ref": "#/components/schemas/DocumentoDaConfiguracaoEliminacaoParametrosAusenciaNaEtapa"
                 }
               }
@@ -23862,6 +23750,120 @@
         ],
         "type": "string"
       },
+      "ParametrosRegraAjusteDistribuicao": {
+        "required": [
+          "$tipo"
+        ],
+        "type": "object",
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/ParametrosRegraAjusteDistribuicaoParametrosReduzirDe"
+          },
+          {
+            "$ref": "#/components/schemas/ParametrosRegraAjusteDistribuicaoParametrosReduzirProporcionalEm"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "$tipo",
+          "mapping": {
+            "reduzirDe": "#/components/schemas/ParametrosRegraAjusteDistribuicaoParametrosReduzirDe",
+            "reduzirProporcionalEm": "#/components/schemas/ParametrosRegraAjusteDistribuicaoParametrosReduzirProporcionalEm"
+          }
+        }
+      },
+      "ParametrosRegraAjusteDistribuicaoParametrosReduzirDe": {
+        "required": [
+          "modalidadeCodigo"
+        ],
+        "properties": {
+          "$tipo": {
+            "enum": [
+              "reduzirDe"
+            ],
+            "type": "string"
+          },
+          "modalidadeCodigo": {
+            "type": "string"
+          }
+        }
+      },
+      "ParametrosRegraAjusteDistribuicaoParametrosReduzirProporcionalEm": {
+        "required": [
+          "modalidadeCodigos"
+        ],
+        "properties": {
+          "$tipo": {
+            "enum": [
+              "reduzirProporcionalEm"
+            ],
+            "type": "string"
+          },
+          "modalidadeCodigos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "ParametrosRegraPrazoRecursoDto": {
+        "required": [
+          "prazoValor",
+          "prazoUnidade",
+          "suspensividadePrimeiraInstanciaValor",
+          "suspensividadePrimeiraInstanciaUnidade",
+          "admiteInstanciaSuperior",
+          "suspensividadeSegundaInstanciaValor",
+          "suspensividadeSegundaInstanciaUnidade"
+        ],
+        "type": "object",
+        "properties": {
+          "prazoValor": {
+            "type": "number",
+            "format": "double"
+          },
+          "prazoUnidade": {
+            "$ref": "#/components/schemas/UnidadePrazo"
+          },
+          "suspensividadePrimeiraInstanciaValor": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "suspensividadePrimeiraInstanciaUnidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadePrazo"
+              }
+            ]
+          },
+          "admiteInstanciaSuperior": {
+            "type": "boolean"
+          },
+          "suspensividadeSegundaInstanciaValor": {
+            "type": [
+              "null",
+              "number"
+            ],
+            "format": "double"
+          },
+          "suspensividadeSegundaInstanciaUnidade": {
+            "oneOf": [
+              {
+                "type": "null"
+              },
+              {
+                "$ref": "#/components/schemas/UnidadePrazo"
+              }
+            ]
+          }
+        }
+      },
       "ParteDescartadaDto": {
         "required": [
           "parte",
@@ -25181,7 +25183,7 @@
           "id",
           "ancora",
           "regra",
-          "args",
+          "parametros",
           "produtoAncoraId",
           "atoAncoraCodigo",
           "procedimentos"
@@ -25198,8 +25200,8 @@
           "regra": {
             "$ref": "#/components/schemas/ReferenciaRegraDto"
           },
-          "args": {
-            "$ref": "#/components/schemas/ArgsRegraPrazoRecursoDto"
+          "parametros": {
+            "$ref": "#/components/schemas/ParametrosRegraPrazoRecursoDto"
           },
           "produtoAncoraId": {
             "type": "string",
@@ -25877,7 +25879,7 @@
           "id",
           "produtoAncoraId",
           "regra",
-          "args",
+          "parametros",
           "procedimentos"
         ],
         "type": "object",
@@ -25893,8 +25895,8 @@
           "regra": {
             "$ref": "#/components/schemas/ReferenciaRegraDto"
           },
-          "args": {
-            "$ref": "#/components/schemas/ArgsRegraPrazoRecursoDto"
+          "parametros": {
+            "$ref": "#/components/schemas/ParametrosRegraPrazoRecursoDto"
           },
           "procedimentos": {
             "type": "array",

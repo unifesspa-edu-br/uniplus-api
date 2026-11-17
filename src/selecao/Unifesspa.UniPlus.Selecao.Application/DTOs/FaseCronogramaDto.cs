@@ -24,8 +24,8 @@ public sealed record BancaRequeridaDto(
     RegraDeDeliberacaoDto? RegraDeDeliberacao,
     IReadOnlyList<CategoriaJulgadaDto> RecorteDeCompetencia);
 
-/// <summary>Projeção de leitura de <c>ArgsRegraPrazoRecurso</c> (Story #851).</summary>
-public sealed record ArgsRegraPrazoRecursoDto(
+/// <summary>Projeção de leitura de <c>ParametrosRegraPrazoRecurso</c> (Story #851).</summary>
+public sealed record ParametrosRegraPrazoRecursoDto(
     decimal PrazoValor,
     UnidadePrazo PrazoUnidade,
     decimal? SuspensividadePrimeiraInstanciaValor,
@@ -43,7 +43,7 @@ public sealed record RegraRecursoFaseDto(
     Guid Id,
     Guid ProdutoAncoraId,
     ReferenciaRegraDto Regra,
-    ArgsRegraPrazoRecursoDto Args,
+    ParametrosRegraPrazoRecursoDto Parametros,
     IReadOnlyList<ProcedimentoDeRecursoDto> Procedimentos);
 
 /// <summary>Projeção de leitura da unidade que responde por uma fase — a cópia congelada ao definir o cronograma.</summary>

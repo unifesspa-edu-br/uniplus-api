@@ -63,7 +63,7 @@ public sealed class ModalidadeTests
         m.NaturezaLegal.Should().Be(NaturezaLegal.Ampla);
         m.ComposicaoVagas.Should().Be(ComposicaoVagas.RestanteDasVagasOfertadas);
         m.RegraRemanejamento.Should().BeNull();
-        m.RemanejamentoArgs.TemAlgum.Should().BeFalse();
+        m.RemanejamentoParametros.TemAlgum.Should().BeFalse();
         m.IsDeleted.Should().BeFalse();
     }
 
@@ -244,7 +244,7 @@ public sealed class ModalidadeTests
         m.ComposicaoOrigem.Should().Be("AC");
     }
 
-    // ── Argumentos por regra (invariante 5) ────────────────────────────────────
+    // ── Parâmetros por regra (invariante 5) ────────────────────────────────────
 
     [Fact(DisplayName = "DESTINO_UNICO sem destino é rejeitado")]
     public void Criar_DestinoUnicoSemDestino_Falha()
@@ -253,7 +253,7 @@ public sealed class ModalidadeTests
             natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL", regra: "DESTINO_UNICO");
 
         r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio);
+        r.Error!.Code.Should().Be(ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio);
     }
 
     [Fact(DisplayName = "CRUZADO sem par é rejeitado — o par é o que define o cruzamento")]
@@ -264,7 +264,7 @@ public sealed class ModalidadeTests
             regra: "CRUZADO", fallback: "AC");
 
         r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio);
+        r.Error!.Code.Should().Be(ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio);
     }
 
     [Fact(DisplayName = "CRUZADO com par e sem fallback é aceito — o par sem destino final deixa a vaga ociosa")]
@@ -274,11 +274,11 @@ public sealed class ModalidadeTests
             natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
             regra: "CRUZADO", par: "AC_Q").Value!;
 
-        m.RemanejamentoArgs.Par.Should().Be("AC_Q");
-        m.RemanejamentoArgs.Fallback.Should().BeNull(
+        m.RemanejamentoParametros.Par.Should().Be("AC_Q");
+        m.RemanejamentoParametros.Fallback.Should().BeNull(
             "no certame isolado não há ampla concorrência para receber a vaga que nenhuma "
             + "das duas modalidades preencheu — a ausência de fallback declara isso");
-        m.RemanejamentoArgs.Destino.Should().BeNull();
+        m.RemanejamentoParametros.Destino.Should().BeNull();
     }
 
     [Fact(DisplayName = "Contraprova: CRUZADO com par e fallback é aceito")]
@@ -288,20 +288,20 @@ public sealed class ModalidadeTests
             codigo: "AC_I", natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
             regra: "CRUZADO", par: "AC", fallback: "LB_PPI").Value!;
 
-        m.RemanejamentoArgs.Par.Should().Be("AC");
-        m.RemanejamentoArgs.Fallback.Should().Be("LB_PPI");
-        m.RemanejamentoArgs.Destino.Should().BeNull();
+        m.RemanejamentoParametros.Par.Should().Be("AC");
+        m.RemanejamentoParametros.Fallback.Should().Be("LB_PPI");
+        m.RemanejamentoParametros.Destino.Should().BeNull();
     }
 
-    [Fact(DisplayName = "SEGUE_CASCATA com argumentos preenchidos é rejeitado (nenhum arg admitido)")]
-    public void Criar_CascataComArgs_Falha()
+    [Fact(DisplayName = "SEGUE_CASCATA com parâmetros preenchidos é rejeitado (nenhum arg admitido)")]
+    public void Criar_CascataComParametros_Falha()
     {
         Result<Modalidade> r = Criar(
             natureza: "COTA_RESERVADA", composicao: "DENTRO_DA_RESERVA_LEGAL",
             regra: "SEGUE_CASCATA", destino: "AC");
 
         r.IsFailure.Should().BeTrue();
-        r.Error!.Code.Should().Be(ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio);
+        r.Error!.Code.Should().Be(ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio);
     }
 
     // ── Ação quando indeferido (invariante 6) ──────────────────────────────────
@@ -453,7 +453,7 @@ public sealed class ModalidadeTests
             composicao: "DENTRO_DA_RESERVA_LEGAL", regra: "SEGUE_CASCATA", aplicabilidade: aplicabilidade,
             baseLegal: "Lei 12.711/2012").Value!;
 
-    /// <summary>Pessoa com deficiência na ampla concorrência: única fixa com argumento de remanejamento.</summary>
+    /// <summary>Pessoa com deficiência na ampla concorrência: única fixa com parâmetro de remanejamento.</summary>
     private static Modalidade AcPcd() =>
         Criar(codigo: "AC_PCD", natureza: "ACAO_AFIRMATIVA", composicao: "RETIRADA_DE_OUTRA_MODALIDADE",
             origem: "AC", regra: "DESTINO_UNICO", destino: "AC").Value!;
@@ -557,11 +557,11 @@ public sealed class ModalidadeTests
         m.AcaoQuandoIndeferido.Should().BeNull();
     }
 
-    [Theory(DisplayName = "Legal fixa recusa alteração de cada argumento de remanejamento")]
+    [Theory(DisplayName = "Legal fixa recusa alteração de cada parâmetro de remanejamento")]
     [InlineData("LB_PPI", null, null)]
     [InlineData("AC", "AC", null)]
     [InlineData("AC", null, "AC")]
-    public void Atualizar_LegalFixaArgumentos_Recusa(string? destino, string? par, string? fallback)
+    public void Atualizar_LegalFixaParametros_Recusa(string? destino, string? par, string? fallback)
     {
         Modalidade m = AcPcd();
 
@@ -573,9 +573,9 @@ public sealed class ModalidadeTests
 
         r.IsFailure.Should().BeTrue();
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.EstruturaProtegidaNaoEditavel);
-        m.RemanejamentoArgs.Destino.Should().Be("AC");
-        m.RemanejamentoArgs.Par.Should().BeNull();
-        m.RemanejamentoArgs.Fallback.Should().BeNull();
+        m.RemanejamentoParametros.Destino.Should().Be("AC");
+        m.RemanejamentoParametros.Par.Should().BeNull();
+        m.RemanejamentoParametros.Fallback.Should().BeNull();
     }
 
     [Fact(DisplayName = "Legal fixa aceita alteração de descrição e base legal com a estrutura reenviada idêntica")]
@@ -656,8 +656,8 @@ public sealed class ModalidadeTests
         r.Errors[2].Field.Should().Be("naturezaLegal");
     }
 
-    [Fact(DisplayName = "Regra fora do domínio com argumento presente reporta só o token inválido, não a incoerência derivada")]
-    public void Criar_RegraInvalidaComArgumento_NaoDerivaIncoerenciaDeArgumento()
+    [Fact(DisplayName = "Regra fora do domínio com parâmetro presente reporta só o token inválido, não a incoerência derivada")]
+    public void Criar_RegraInvalidaComParametro_NaoDerivaIncoerenciaDeParametro()
     {
         Result<Modalidade> r = Criar(
             codigo: "AC_I", natureza: "ACAO_AFIRMATIVA", composicao: "SUPLEMENTAR_AO_TOTAL",
@@ -665,7 +665,7 @@ public sealed class ModalidadeTests
 
         r.IsFailure.Should().BeTrue();
         r.Errors.Should().HaveCount(1,
-            "a invariante de argumentos por regra depende de RegraRemanejamento já reconhecida — " +
+            "a invariante de parâmetros por regra depende de RegraRemanejamento já reconhecida — " +
             "reportá-la sobre um token que nem chegou a resolver seria um erro derivado, não independente");
         r.Error!.Code.Should().Be(ModalidadeErrorCodes.RegraRemanejamentoInvalida);
     }

@@ -27,7 +27,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
         processo.CriteriosDesempate.Should().ContainSingle()
-            .Which.Args.Should().BeOfType<ArgsDesempateMaiorNotaAreaEnem>()
+            .Which.Parametros.Should().BeOfType<ParametrosDesempateMaiorNotaAreaEnem>()
             .Which.Areas.Should().Equal("REDACAO", "MATEMATICA");
     }
 
@@ -156,7 +156,7 @@ public sealed class ProcessoSeletivoDesempatePorAreaEnemTests
         ProcessoSeletivo processo = NovoProcesso();
         processo.DefinirClassificacao(ClassificacaoEnem()).IsSuccess.Should().BeTrue();
         CriterioDesempate porEtapa = CriterioDesempate.Criar(
-            2, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ArgsDesempateMaiorNotaEtapa(Guid.CreateVersion7())).Value!;
+            2, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ParametrosDesempateMaiorNotaEtapa(Guid.CreateVersion7())).Value!;
 
         Result result = processo.DefinirCriteriosDesempate([PorArea(1, "FISICA"), porEtapa, MaiorIdade(1)]);
 

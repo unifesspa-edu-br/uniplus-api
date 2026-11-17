@@ -31,8 +31,8 @@ internal static class RegrasDasEtapas
     /// A ausência à etapa do ENEM já é a falta em dia de prova do ENEM: a regra por etapa só
     /// vale para as demais.
     /// </summary>
-    internal static bool AusenciaNaEtapaDoEnem(ArgsRegraEliminacao args, IEnumerable<EtapaProcesso> etapas) =>
-        args is ArgsElimAusenciaNaEtapa ausencia
+    internal static bool AusenciaNaEtapaDoEnem(ParametrosRegraEliminacao parametros, IEnumerable<EtapaProcesso> etapas) =>
+        parametros is ParametrosElimAusenciaNaEtapa ausencia
         && etapas.Any(e => e.Id == ausencia.EtapaRef && e.DeclaraNotaDoEnem);
 
     internal static DomainError AusenciaNaEtapaDoEnemRecusada() => new(
@@ -88,11 +88,11 @@ internal static class RegrasDasEtapas
     {
         foreach (CriterioDesempate criterio in configuracao.Avaliacao.CriteriosDesempate)
         {
-            if (criterio.Args is ArgsDesempateMaiorNotaEtapa args && !novosIds.Contains(args.EtapaRef))
+            if (criterio.Parametros is ParametrosDesempateMaiorNotaEtapa parametros && !novosIds.Contains(parametros.EtapaRef))
             {
                 return new DomainError(
                     "ProcessoSeletivo.EtapaReferenciadaPorDesempate",
-                    $"A etapa {args.EtapaRef} é referenciada por um critério de desempate (ordem {criterio.Ordem}) e não pode ser removida sem antes reconfigurar o desempate.");
+                    $"A etapa {parametros.EtapaRef} é referenciada por um critério de desempate (ordem {criterio.Ordem}) e não pode ser removida sem antes reconfigurar o desempate.");
             }
         }
 
@@ -107,7 +107,7 @@ internal static class RegrasDasEtapas
 
     private static DomainError? EtapaOrfaDeRegraDeEliminacao(ConfiguracaoClassificacao classificacao, List<Guid> novosIds) =>
         classificacao.RegrasEliminacao
-            .Select(static r => r.Args.EtapaReferenciada())
+            .Select(static r => r.Parametros.EtapaReferenciada())
             .FirstOrDefault(etapaRef => etapaRef is { } id && !novosIds.Contains(id)) is { } etapaOrfa
             ? new DomainError(
                 "ProcessoSeletivo.EtapaReferenciadaPorClassificacao",
@@ -116,7 +116,7 @@ internal static class RegrasDasEtapas
 
     // A etapa que continua pode passar a ser a do ENEM, onde a ausência já é a falta em dia de prova.
     private static DomainError? AusenciaQueTocaAEtapaDoEnem(ConfiguracaoClassificacao classificacao, IReadOnlyList<EtapaProcesso> etapas) =>
-        classificacao.RegrasEliminacao.Any(r => AusenciaNaEtapaDoEnem(r.Args, etapas))
+        classificacao.RegrasEliminacao.Any(r => AusenciaNaEtapaDoEnem(r.Parametros, etapas))
             ? AusenciaNaEtapaDoEnemRecusada()
             : null;
 
@@ -207,20 +207,20 @@ internal static class RegrasDasEtapas
     /// </summary>
     internal static bool EtapaReferenciadaPorClassificacaoOuDesempate(ConfiguracaoDeclarada configuracao, Guid etapaId) =>
         EtapaReferenciadaPorDesempate(configuracao, etapaId)
-        || (configuracao.Avaliacao.Classificacao?.RegrasEliminacao ?? []).Any(regra => regra.Args.EtapaReferenciada() == etapaId);
+        || (configuracao.Avaliacao.Classificacao?.RegrasEliminacao ?? []).Any(regra => regra.Parametros.EtapaReferenciada() == etapaId);
 
     /// <summary>Como a configuração do processo cita a nota das etapas: pelo desempate e pela eliminação por nota mínima.</summary>
     internal static CitacoesDeNota CitacoesDeNotaDaConfiguracao(ConfiguracaoDeclarada configuracao) => new(
         [.. configuracao.Avaliacao.Etapas.Select(static e => e.Id).Where(id => EtapaReferenciadaPorDesempate(configuracao, id))],
-        [.. configuracao.Avaliacao.Etapas.SelectMany(etapa => EliminacoesPorNotaMinimaDaEtapa(configuracao, etapa.Id).Select(args => (etapa.Id, args.NotaMinima)))]);
+        [.. configuracao.Avaliacao.Etapas.SelectMany(etapa => EliminacoesPorNotaMinimaDaEtapa(configuracao, etapa.Id).Select(parametros => (etapa.Id, parametros.NotaMinima)))]);
 
     internal static bool EtapaReferenciadaPorDesempate(ConfiguracaoDeclarada configuracao, Guid etapaId) =>
-        configuracao.Avaliacao.CriteriosDesempate.Any(c => c.Args is ArgsDesempateMaiorNotaEtapa args && args.EtapaRef == etapaId);
+        configuracao.Avaliacao.CriteriosDesempate.Any(c => c.Parametros is ParametrosDesempateMaiorNotaEtapa parametros && parametros.EtapaRef == etapaId);
 
     /// <summary>As regras de eliminação por nota mínima que citam a etapa.</summary>
-    internal static IEnumerable<ArgsElimNotaMinimaEtapa> EliminacoesPorNotaMinimaDaEtapa(ConfiguracaoDeclarada configuracao, Guid etapaId) =>
+    internal static IEnumerable<ParametrosElimNotaMinimaEtapa> EliminacoesPorNotaMinimaDaEtapa(ConfiguracaoDeclarada configuracao, Guid etapaId) =>
         (configuracao.Avaliacao.Classificacao?.RegrasEliminacao ?? [])
-            .Select(static regra => regra.Args)
-            .OfType<ArgsElimNotaMinimaEtapa>()
-            .Where(args => args.EtapaRef == etapaId);
+            .Select(static regra => regra.Parametros)
+            .OfType<ParametrosElimNotaMinimaEtapa>()
+            .Where(parametros => parametros.EtapaRef == etapaId);
 }

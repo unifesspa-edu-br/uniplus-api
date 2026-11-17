@@ -25,11 +25,11 @@ internal static class ErrosDoDesempate
         new("ProcessoSeletivo.EtapaReferenciadaPorDesempate", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.etapa_referenciada_por_desempate", "A etapa é referenciada por um critério de desempate e não pode ser removida sem antes reconfigurar o desempate")),
     ];
 
-    /// <summary>Argumentos de cada critério de desempate e a regra que ele referencia.</summary>
+    /// <summary>Parâmetros de cada critério de desempate e a regra que ele referencia.</summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DaDefinicaoDoCriterio() =>
     [
         new("CriterioDesempate.OrdemInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.ordem_invalida", "A ordem do critério de desempate deve ser maior que zero")),
-        new("CriterioDesempate.ArgsIncompativeisComRegra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.args_incompativeis_com_regra", "Os args informados não correspondem à regra referenciada")),
+        new("CriterioDesempate.ParametrosIncompativeisComRegra", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.parametros_incompativeis_com_regra", "Os parâmetros informados não correspondem à regra referenciada")),
         new("CriterioDesempate.IdadeMinimaInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.idade_minima_invalida", "A idade mínima do critério IDOSO deve ser maior que zero")),
         new("CriterioDesempate.RegraNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.regra_nao_encontrada", "Regra de desempate não encontrada no catálogo de regras")),
         new("CriterioDesempate.RegraTipoInvalido", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.criterio_desempate.regra_tipo_invalido", "A regra referenciada não é do tipo criterio_desempate")),

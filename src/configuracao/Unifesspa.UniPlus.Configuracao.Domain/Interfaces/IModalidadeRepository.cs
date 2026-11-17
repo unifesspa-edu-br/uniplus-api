@@ -51,7 +51,7 @@ public interface IModalidadeRepository
     /// <summary>
     /// Indica se <b>todos</b> os <paramref name="codigos"/> informados correspondem
     /// a modalidades vivas — integridade referencial dos códigos citados em
-    /// <c>ComposicaoOrigem</c> e <c>RemanejamentoArgs</c>. Coleção vazia retorna
+    /// <c>ComposicaoOrigem</c> e <c>RemanejamentoParametros</c>. Coleção vazia retorna
     /// <see langword="true"/> (nada a validar).
     /// </summary>
     Task<bool> CodigosVivosExistemAsync(

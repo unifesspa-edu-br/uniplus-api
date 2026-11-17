@@ -309,20 +309,20 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         }
 
         // Story #851 — as precisões do prazo de interposição e das duas suspensividades.
-        IEntityType argsPrazoRecurso = contexto.Model
+        IEntityType parametrosPrazoRecurso = contexto.Model
             .FindEntityType(typeof(RegraRecursoFase))!
             .GetNavigations()
-            .Single(n => n.Name == nameof(RegraRecursoFase.Args))
+            .Single(n => n.Name == nameof(RegraRecursoFase.Parametros))
             .TargetEntityType;
 
         foreach (string campoPrazo in new[]
         {
-            nameof(ArgsRegraPrazoRecurso.PrazoValor),
-            nameof(ArgsRegraPrazoRecurso.SuspensividadePrimeiraInstanciaValor),
-            nameof(ArgsRegraPrazoRecurso.SuspensividadeSegundaInstanciaValor),
+            nameof(ParametrosRegraPrazoRecurso.PrazoValor),
+            nameof(ParametrosRegraPrazoRecurso.SuspensividadePrimeiraInstanciaValor),
+            nameof(ParametrosRegraPrazoRecurso.SuspensividadeSegundaInstanciaValor),
         })
         {
-            IProperty coluna = argsPrazoRecurso.FindProperty(campoPrazo)!;
+            IProperty coluna = parametrosPrazoRecurso.FindProperty(campoPrazo)!;
             coluna.GetPrecision()
                 .Should().Be(LimitesDoEnvelope.PrecisaoPrazo, $"LimitesDoEnvelope.PrecisaoPrazo espelha a coluna de {campoPrazo}");
             coluna.GetScale().Should().Be(EscalaDoPrazo);
@@ -333,19 +333,19 @@ public sealed class LimitesDoEnvelopeBatemComOSchemaTests
         // mais estreita aqui produz envelope que ele aprova e o INSERT recusa.
         IEntityType recursoDaEtapa = contexto.Model.FindEntityType(typeof(RecursoDaEtapa))!;
 
-        IEntityType argsDoRecursoDaEtapa = recursoDaEtapa
+        IEntityType parametrosDoRecursoDaEtapa = recursoDaEtapa
             .GetNavigations()
-            .Single(n => n.Name == nameof(RecursoDaEtapa.Args))
+            .Single(n => n.Name == nameof(RecursoDaEtapa.Parametros))
             .TargetEntityType;
 
         foreach (string campoPrazo in new[]
         {
-            nameof(ArgsRegraPrazoRecurso.PrazoValor),
-            nameof(ArgsRegraPrazoRecurso.SuspensividadePrimeiraInstanciaValor),
-            nameof(ArgsRegraPrazoRecurso.SuspensividadeSegundaInstanciaValor),
+            nameof(ParametrosRegraPrazoRecurso.PrazoValor),
+            nameof(ParametrosRegraPrazoRecurso.SuspensividadePrimeiraInstanciaValor),
+            nameof(ParametrosRegraPrazoRecurso.SuspensividadeSegundaInstanciaValor),
         })
         {
-            IProperty coluna = argsDoRecursoDaEtapa.FindProperty(campoPrazo)!;
+            IProperty coluna = parametrosDoRecursoDaEtapa.FindProperty(campoPrazo)!;
             coluna.GetPrecision()
                 .Should().Be(LimitesDoEnvelope.PrecisaoPrazo, $"LimitesDoEnvelope.PrecisaoPrazo espelha a coluna de {campoPrazo} em recursos_da_etapa");
             coluna.GetScale().Should().Be(EscalaDoPrazo,

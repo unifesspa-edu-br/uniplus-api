@@ -104,7 +104,7 @@ public sealed class MontagemDoQuadroDeVagasTests
     [Fact(DisplayName = "O quadro fixado com excesso reduzido de uma modalidade registra as vagas retiradas dela")]
     public void Fixado_ReduzirDe_RegistraAsRetiradas()
     {
-        DistribuicaoDeVagasDeclarada declarada = FixadaNoEdital(Fixada("IND", 40), Fixada("QUI", 20)) with { AjusteDoQuadro = new ArgsReduzirDe("IND") };
+        DistribuicaoDeVagasDeclarada declarada = FixadaNoEdital(Fixada("IND", 40), Fixada("QUI", 20)) with { AjusteDoQuadro = new ParametrosReduzirDe("IND") };
 
         QuadroDeVagasFixadoNoEdital quadro = (QuadroDeVagasFixadoNoEdital)Montar(declarada);
 
@@ -116,7 +116,7 @@ public sealed class MontagemDoQuadroDeVagasTests
     [Fact(DisplayName = "O quadro fixado com excesso repartido entre modalidades registra a retirada de cada uma")]
     public void Fixado_ReduzirProporcionalEm_RegistraAsRetiradas()
     {
-        DistribuicaoDeVagasDeclarada declarada = FixadaNoEdital(Fixada("IND", 30), Fixada("QUI", 30)) with { AjusteDoQuadro = new ArgsReduzirProporcionalEm(["IND", "QUI"]) };
+        DistribuicaoDeVagasDeclarada declarada = FixadaNoEdital(Fixada("IND", 30), Fixada("QUI", 30)) with { AjusteDoQuadro = new ParametrosReduzirProporcionalEm(["IND", "QUI"]) };
 
         QuadroDeVagasFixadoNoEdital quadro = (QuadroDeVagasFixadoNoEdital)Montar(declarada);
 
@@ -127,7 +127,7 @@ public sealed class MontagemDoQuadroDeVagasTests
     [Fact(DisplayName = "O quadro fixado reduzido por maior resto não depende da ordem em que as modalidades foram declaradas")]
     public void Fixado_ReduzirProporcionalEm_ComRestosIguais_IndependeDaOrdemDeDeclaracao()
     {
-        ArgsRegraAjusteDistribuicao ajuste = new ArgsReduzirProporcionalEm(["AC", "IND", "QUI"]);
+        ParametrosRegraAjusteDistribuicao ajuste = new ParametrosReduzirProporcionalEm(["AC", "IND", "QUI"]);
         DistribuicaoDeVagasDeclarada emOrdemAlfabetica = FixadaNoEdital(Fixada("AC", 20), Fixada("IND", 20), Fixada("QUI", 20)) with { AjusteDoQuadro = ajuste };
         DistribuicaoDeVagasDeclarada emOutraOrdem = FixadaNoEdital(Fixada("QUI", 20), Fixada("AC", 20), Fixada("IND", 20)) with { AjusteDoQuadro = ajuste };
 
@@ -174,7 +174,7 @@ public sealed class MontagemDoQuadroDeVagasTests
     [Fact(DisplayName = "A declaração fixada com ajuste reproduz o quadro que a entidade monta")]
     public void Fixado_ReproduzOQuadroDaEntidade()
     {
-        DistribuicaoDeVagasDeclarada declarada = FixadaNoEdital(Fixada("IND", 40), Fixada("QUI", 25)) with { AjusteDoQuadro = new ArgsReduzirDe("IND") };
+        DistribuicaoDeVagasDeclarada declarada = FixadaNoEdital(Fixada("IND", 40), Fixada("QUI", 25)) with { AjusteDoQuadro = new ParametrosReduzirDe("IND") };
         ConfiguracaoDistribuicaoVagas entidade = DaEntidade(declarada);
 
         QuadroDeVagasFixadoNoEdital quadro = (QuadroDeVagasFixadoNoEdital)Montar(declarada);

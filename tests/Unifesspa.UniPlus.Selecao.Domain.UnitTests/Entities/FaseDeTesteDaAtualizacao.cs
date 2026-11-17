@@ -50,7 +50,7 @@ internal static class FaseDeTesteDaAtualizacao
 
     internal static RegraRecursoFase Recurso(Guid produtoAncoraId) => RegraRecursoFase.Criar(
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('a', 64)),
-        new ArgsRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
+        new ParametrosRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
         produtoAncoraId).Value!;
 
     internal static BancaRequerida Banca(string codigo, params string[] categorias) =>

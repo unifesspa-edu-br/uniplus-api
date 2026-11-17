@@ -135,11 +135,11 @@ public sealed class ProcessoSeletivoBonusEDesempateTests
         ReferenciaRegra.De(codigo, "v1", new string('a', 64));
 
     private static CriterioDesempate CriterioIdoso(int ordem) =>
-        CriterioDesempate.Criar(ordem, RegraDesempate(CriterioDesempateCodigo.Idoso), new ArgsDesempateIdoso(60)).Value!;
+        CriterioDesempate.Criar(ordem, RegraDesempate(CriterioDesempateCodigo.Idoso), new ParametrosDesempateIdoso(60)).Value!;
 
     private static CriterioDesempate CriterioMaiorIdade(int ordem) =>
-        CriterioDesempate.Criar(ordem, RegraDesempate(CriterioDesempateCodigo.MaiorIdade), new ArgsDesempateMaiorIdade()).Value!;
+        CriterioDesempate.Criar(ordem, RegraDesempate(CriterioDesempateCodigo.MaiorIdade), new ParametrosDesempateMaiorIdade()).Value!;
 
     private static CriterioDesempate CriterioDeMaiorNotaDaEtapa(Guid etapaId) =>
-        CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ArgsDesempateMaiorNotaEtapa(etapaId)).Value!;
+        CriterioDesempate.Criar(1, RegraDesempate(CriterioDesempateCodigo.MaiorNotaEtapa), new ParametrosDesempateMaiorNotaEtapa(etapaId)).Value!;
 }

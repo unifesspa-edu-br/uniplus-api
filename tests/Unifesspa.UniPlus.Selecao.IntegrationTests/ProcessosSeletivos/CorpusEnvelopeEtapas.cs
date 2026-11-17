@@ -102,7 +102,7 @@ internal static class CorpusEnvelopeEtapas
             RecursoDaObjetivaId(1, variante),
             AncoraDoRecurso.AtoPublicado,
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
-            new ArgsRegraPrazoRecurso(
+            new ParametrosRegraPrazoRecurso(
                 3.0000m, UnidadePrazo.DiasUteis,
                 2.0000m, UnidadePrazo.DiasUteis,
                 true,
@@ -122,7 +122,7 @@ internal static class CorpusEnvelopeEtapas
             // Dia útil, e não dia corrido: `UnidadePrazo.Dias` é recusado pelo domínio, e um
             // corpus que o carregue congela no envelope uma configuração que o caminho de
             // escrita nunca produziria.
-            new ArgsRegraPrazoRecurso(
+            new ParametrosRegraPrazoRecurso(
                 5.0000m, UnidadePrazo.DiasUteis,
                 null, null, false, null, null),
             ProdutoDaObjetivaId(3, variante),
@@ -151,7 +151,7 @@ internal static class CorpusEnvelopeEtapas
             RecursoDaObjetivaId(3, variante),
             AncoraDoRecurso.CienciaIndividual,
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
-            new ArgsRegraPrazoRecurso(48.0000m, UnidadePrazo.Horas, null, null, false, null, null),
+            new ParametrosRegraPrazoRecurso(48.0000m, UnidadePrazo.Horas, null, null, false, null, null),
             Guid.Empty,
             ProcedimentosDoCorpusSemAlvo()).Value!;
 

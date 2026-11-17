@@ -295,7 +295,7 @@ public sealed class DefinirEtapasAncoraDoRecursoTests
             regraCatalogoReader: regraCatalogoReader, tipoAtoPublicadoReader: tipoAtoPublicadoReader);
 
         result.IsSuccess.Should().BeTrue(result.Error?.Message);
-        processo.Etapas.Single().Recursos.Single().Args.AdmiteInstanciaSuperior.Should().BeTrue();
+        processo.Etapas.Single().Recursos.Single().Parametros.AdmiteInstanciaSuperior.Should().BeTrue();
     }
 
     /// <summary>

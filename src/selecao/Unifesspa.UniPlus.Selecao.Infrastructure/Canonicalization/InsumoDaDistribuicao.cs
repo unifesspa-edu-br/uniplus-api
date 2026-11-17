@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal readonly record struct RegrasDaDistribuicao(
     ReferenciaRegra Distribuicao,
     ReferenciaRegra? Ajuste,
-    ArgsRegraAjusteDistribuicao? AjusteDoQuadro);
+    ParametrosRegraAjusteDistribuicao? AjusteDoQuadro);
 
 /// <summary>O que o envelope congela da declaração de uma oferta, lido antes de a configuração ser remontada.</summary>
 internal readonly record struct InsumoDaDistribuicao(

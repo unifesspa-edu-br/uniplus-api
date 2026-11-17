@@ -3,12 +3,12 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using System.Text.Json.Serialization;
 
 /// <summary>
-/// Args aplicados de uma <see cref="Entities.RegraEliminacao"/> — os
+/// Parâmetros aplicados de uma <see cref="Entities.RegraEliminacao"/> — os
 /// parâmetros que o admin preenche ao aplicar uma regra do
 /// <c>regras_do_catalogo</c> (<c>tipo=regra_eliminacao</c>), tipados por variante
 /// conforme o <c>esquema_args</c> de cada código.
 /// Discriminated union no molde de <c>PredicadoObrigatoriedade</c> (ADR-0058)
-/// e de <c>ArgsCriterioDesempate</c> (Story #774).
+/// e de <c>ParametrosCriterioDesempate</c> (Story #774).
 /// </summary>
 /// <remarks>
 /// Forma fechada por design: as variantes espelham as regras de eliminação semeadas em
@@ -17,12 +17,12 @@ using System.Text.Json.Serialization;
 /// <c>ELIM-AUSENCIA-NA-ETAPA</c>.
 /// </remarks>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$tipo")]
-[JsonDerivedType(typeof(ArgsElimNotaMinimaEtapa), "notaMinimaEtapa")]
-[JsonDerivedType(typeof(ArgsElimCorteEmArea), "corteEmArea")]
-[JsonDerivedType(typeof(ArgsElimZeroEmArea), "zeroEmArea")]
-[JsonDerivedType(typeof(ArgsElimFaltaEmDiaDeProvaEnem), "faltaEmDiaDeProvaEnem")]
-[JsonDerivedType(typeof(ArgsElimAusenciaNaEtapa), "ausenciaNaEtapa")]
-public abstract record ArgsRegraEliminacao
+[JsonDerivedType(typeof(ParametrosElimNotaMinimaEtapa), "notaMinimaEtapa")]
+[JsonDerivedType(typeof(ParametrosElimCorteEmArea), "corteEmArea")]
+[JsonDerivedType(typeof(ParametrosElimZeroEmArea), "zeroEmArea")]
+[JsonDerivedType(typeof(ParametrosElimFaltaEmDiaDeProvaEnem), "faltaEmDiaDeProvaEnem")]
+[JsonDerivedType(typeof(ParametrosElimAusenciaNaEtapa), "ausenciaNaEtapa")]
+public abstract record ParametrosRegraEliminacao
 {
     /// <summary>
     /// A regra só se aplica a classificação baseada em ENEM, porque só tem sentido sobre os
@@ -41,7 +41,7 @@ public abstract record ArgsRegraEliminacao
 }
 
 /// <summary>Elimina quando a nota da etapa referenciada é menor que <see cref="NotaMinima"/>. A etapa deve existir no mesmo processo.</summary>
-public sealed record ArgsElimNotaMinimaEtapa(Guid EtapaRef, decimal NotaMinima) : ArgsRegraEliminacao
+public sealed record ParametrosElimNotaMinimaEtapa(Guid EtapaRef, decimal NotaMinima) : ParametrosRegraEliminacao
 {
     public override bool ExigeEnem() => false;
 
@@ -51,9 +51,9 @@ public sealed record ArgsElimNotaMinimaEtapa(Guid EtapaRef, decimal NotaMinima) 
 /// <summary>
 /// Elimina quem faltou à etapa referenciada, tenha ela nota ou não. A etapa deve existir no
 /// mesmo processo e não pode ser a do ENEM, cuja ausência é a
-/// <see cref="ArgsElimFaltaEmDiaDeProvaEnem"/>.
+/// <see cref="ParametrosElimFaltaEmDiaDeProvaEnem"/>.
 /// </summary>
-public sealed record ArgsElimAusenciaNaEtapa(Guid EtapaRef) : ArgsRegraEliminacao
+public sealed record ParametrosElimAusenciaNaEtapa(Guid EtapaRef) : ParametrosRegraEliminacao
 {
     public override bool ExigeEnem() => false;
 
@@ -65,23 +65,23 @@ public sealed record ArgsElimAusenciaNaEtapa(Guid EtapaRef) : ArgsRegraEliminaca
 /// <see cref="Minimo"/> (ex.: Redação 400 — Res. 805 Anexo I). A área é citada pelo código do
 /// quadro de pesos por área.
 /// </summary>
-public sealed record ArgsElimCorteEmArea(string AreaCodigo, decimal Minimo) : ArgsRegraEliminacao
+public sealed record ParametrosElimCorteEmArea(string AreaCodigo, decimal Minimo) : ParametrosRegraEliminacao
 {
     public override bool ExigeEnem() => true;
 }
 
-/// <summary>Elimina quando há nota zero em qualquer área do ENEM (Res. 805 art. 5º). Sem args.</summary>
-public sealed record ArgsElimZeroEmArea : ArgsRegraEliminacao
+/// <summary>Elimina quando há nota zero em qualquer área do ENEM (Res. 805 art. 5º). Sem parâmetros.</summary>
+public sealed record ParametrosElimZeroEmArea : ParametrosRegraEliminacao
 {
     public override bool ExigeEnem() => true;
 }
 
 /// <summary>
 /// Elimina quem faltou a pelo menos um dia de prova da edição do ENEM usada no processo. Sem
-/// args. Ficar sem nota por falta é diferente de tirar zero, que é <see cref="ArgsElimZeroEmArea"/>:
+/// parâmetros. Ficar sem nota por falta é diferente de tirar zero, que é <see cref="ParametrosElimZeroEmArea"/>:
 /// quem tira zero compareceu.
 /// </summary>
-public sealed record ArgsElimFaltaEmDiaDeProvaEnem : ArgsRegraEliminacao
+public sealed record ParametrosElimFaltaEmDiaDeProvaEnem : ParametrosRegraEliminacao
 {
     public override bool ExigeEnem() => true;
 }

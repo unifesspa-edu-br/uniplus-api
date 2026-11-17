@@ -8,7 +8,7 @@ using Enums;
 
 /// <summary>
 /// A forma canônica das linhas de <see cref="EntradaDoPreliminar"/> que a fase e a etapa escrevem do mesmo
-/// jeito: o par campo e valor, a referência de regra, os argumentos do prazo de recurso, a regra de
+/// jeito: o par campo e valor, a referência de regra, os parâmetros do prazo de recurso, a regra de
 /// deliberação da banca, os tipos de decisão declarados e o produto em que o recurso ancora.
 /// </summary>
 internal static class LinhasDaEntradaDoPreliminar
@@ -33,15 +33,15 @@ internal static class LinhasDaEntradaDoPreliminar
             ? []
             : [Linha($"{campo}.codigo", regra.Codigo), Linha($"{campo}.versao", regra.Versao), Linha($"{campo}.hash", regra.Hash)];
 
-    internal static IEnumerable<string> DosArgumentosDoRecurso(string campo, ArgsRegraPrazoRecurso args) =>
+    internal static IEnumerable<string> DosParametrosDoRecurso(string campo, ParametrosRegraPrazoRecurso parametros) =>
     [
-        Linha($"{campo}.prazoValor", args.PrazoValor),
-        Linha($"{campo}.prazoUnidade", args.PrazoUnidade),
-        Linha($"{campo}.suspensividadePrimeiraInstanciaValor", args.SuspensividadePrimeiraInstanciaValor),
-        Linha($"{campo}.suspensividadePrimeiraInstanciaUnidade", args.SuspensividadePrimeiraInstanciaUnidade),
-        Linha($"{campo}.admiteInstanciaSuperior", args.AdmiteInstanciaSuperior),
-        Linha($"{campo}.suspensividadeSegundaInstanciaValor", args.SuspensividadeSegundaInstanciaValor),
-        Linha($"{campo}.suspensividadeSegundaInstanciaUnidade", args.SuspensividadeSegundaInstanciaUnidade),
+        Linha($"{campo}.prazoValor", parametros.PrazoValor),
+        Linha($"{campo}.prazoUnidade", parametros.PrazoUnidade),
+        Linha($"{campo}.suspensividadePrimeiraInstanciaValor", parametros.SuspensividadePrimeiraInstanciaValor),
+        Linha($"{campo}.suspensividadePrimeiraInstanciaUnidade", parametros.SuspensividadePrimeiraInstanciaUnidade),
+        Linha($"{campo}.admiteInstanciaSuperior", parametros.AdmiteInstanciaSuperior),
+        Linha($"{campo}.suspensividadeSegundaInstanciaValor", parametros.SuspensividadeSegundaInstanciaValor),
+        Linha($"{campo}.suspensividadeSegundaInstanciaUnidade", parametros.SuspensividadeSegundaInstanciaUnidade),
     ];
 
     /// <summary>Os procedimentos declarados da janela: o tipo de decisão e o alvo identificam, e a regra congelada vale.</summary>

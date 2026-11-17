@@ -54,7 +54,7 @@ public sealed class ConfiguracaoDistribuicaoVagas : EntityBase, IParteDoProcesso
     /// O motor que reduz o quadro fixado cuja soma passou das vagas ofertadas base, como o edital o declarou;
     /// <see langword="null"/> quando não declarou motor e na Lei de Cotas, que não aceita motor.
     /// </summary>
-    public ArgsRegraAjusteDistribuicao? AjusteDoQuadro { get; private set; }
+    public ParametrosRegraAjusteDistribuicao? AjusteDoQuadro { get; private set; }
 
     /// <summary>
     /// Grupo de área do ENEM do curso da oferta, copiado por valor do cadastro na definição (ADR-0061); nulo

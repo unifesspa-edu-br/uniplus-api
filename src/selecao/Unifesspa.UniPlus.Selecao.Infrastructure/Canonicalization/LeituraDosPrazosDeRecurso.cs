@@ -59,8 +59,8 @@ internal static class LeituraDosPrazosDeRecurso
     /// <see cref="RegraRecursoFase"/> admite.
     /// </summary>
     /// <remarks>
-    /// O <c>produtoAncoraId</c> é irmão de <c>regra</c> e <c>args</c>, e não campo de
-    /// <c>args</c>: ele não é parâmetro que alguém preencha, e sim a referência que a fase
+    /// O <c>produtoAncoraId</c> é irmão de <c>regra</c> e <c>parametros</c>, e não campo de
+    /// <c>parametros</c>: ele não é parâmetro que alguém preencha, e sim a referência que a fase
     /// deriva do próprio produto preliminar. A reidratação o repõe como estava congelado —
     /// é ele que o ato já publicado resolve de volta para achar o prazo que lhe corresponde
     /// (UNI-REQ-0093).
@@ -74,18 +74,18 @@ internal static class LeituraDosPrazosDeRecurso
         }
 
         string path = $"{pathPai}.regraRecurso";
-        leitor.ExigirChaves(bloco, path, "regra", "produtoAncoraId", "args", "procedimentos");
+        leitor.ExigirChaves(bloco, path, "regra", "produtoAncoraId", "parametros", "procedimentos");
 
         ReferenciaRegra regra = leitor.Regra(bloco, "regra", path, RegraPrazoRecursoCodigo.AncoradoEmAto);
         Guid produtoAncoraId = leitor.Identificador(bloco, "produtoAncoraId", path);
-        JsonObject argsObjeto = leitor.Objeto(bloco, "args", path);
+        JsonObject parametrosObjeto = leitor.Objeto(bloco, "parametros", path);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        ArgsRegraPrazoRecurso? args = LerArgsDePrazoDeRecurso(leitor, argsObjeto, $"{path}.args");
-        if (leitor.Falhou || args is null)
+        ParametrosRegraPrazoRecurso? parametros = LerParametrosDePrazoDeRecurso(leitor, parametrosObjeto, $"{path}.parametros");
+        if (leitor.Falhou || parametros is null)
         {
             return null;
         }
@@ -96,45 +96,45 @@ internal static class LeituraDosPrazosDeRecurso
             return null;
         }
 
-        Result<RegraRecursoFase> regraRecurso = RegraRecursoFase.Reidratar(regra, args, produtoAncoraId, procedimentos);
+        Result<RegraRecursoFase> regraRecurso = RegraRecursoFase.Reidratar(regra, parametros, produtoAncoraId, procedimentos);
         return regraRecurso.IsFailure ? leitor.Propagar<RegraRecursoFase>(regraRecurso.Error!) : regraRecurso.Value;
     }
 
     /// <summary>
-    /// Lê os args do prazo de recurso — prazo, os dois pares de suspensividade e a declaração de instância superior.
+    /// Lê os parâmetros do prazo de recurso — prazo, os dois pares de suspensividade e a declaração de instância superior.
     /// </summary>
     /// <remarks>
     /// Um lugar só porque fase e etapa carregam o mesmo value object: lê-lo em dois lugares deixaria um deles
-    /// reconstruir os args com as suspensividades nulas, e o que o edital prometeu ao candidato voltaria vazio
+    /// reconstruir os parâmetros com as suspensividades nulas, e o que o edital prometeu ao candidato voltaria vazio
     /// do envelope sem que nada acusasse.
     /// </remarks>
-    internal static ArgsRegraPrazoRecurso? LerArgsDePrazoDeRecurso(
+    internal static ParametrosRegraPrazoRecurso? LerParametrosDePrazoDeRecurso(
         LeitorEnvelope leitor,
-        JsonObject argsObjeto,
-        string argsPath)
+        JsonObject parametrosObjeto,
+        string parametrosPath)
     {
         leitor.ExigirChaves(
-            argsObjeto, argsPath,
+            parametrosObjeto, parametrosPath,
             "prazoValor", "prazoUnidade",
             "suspensividadePrimeiraInstanciaValor", "suspensividadePrimeiraInstanciaUnidade",
             "admiteInstanciaSuperior",
             "suspensividadeSegundaInstanciaValor", "suspensividadeSegundaInstanciaUnidade");
 
-        decimal prazoValor = leitor.Decimal(argsObjeto, "prazoValor", EscritaCanonica.EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
-        UnidadePrazo prazoUnidade = leitor.Enumeracao<UnidadePrazo>(argsObjeto, "prazoUnidade", argsPath);
+        decimal prazoValor = leitor.Decimal(parametrosObjeto, "prazoValor", EscritaCanonica.EscalaPadrao, parametrosPath, LimitesDoEnvelope.PrecisaoPrazo);
+        UnidadePrazo prazoUnidade = leitor.Enumeracao<UnidadePrazo>(parametrosObjeto, "prazoUnidade", parametrosPath);
         decimal? suspensividade1Valor = leitor.DecimalOpcional(
-            argsObjeto, "suspensividadePrimeiraInstanciaValor", EscritaCanonica.EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
+            parametrosObjeto, "suspensividadePrimeiraInstanciaValor", EscritaCanonica.EscalaPadrao, parametrosPath, LimitesDoEnvelope.PrecisaoPrazo);
         UnidadePrazo? suspensividade1Unidade = leitor.EnumeracaoOpcional<UnidadePrazo>(
-            argsObjeto, "suspensividadePrimeiraInstanciaUnidade", argsPath);
-        bool admiteInstanciaSuperior = leitor.Booleano(argsObjeto, "admiteInstanciaSuperior", argsPath);
+            parametrosObjeto, "suspensividadePrimeiraInstanciaUnidade", parametrosPath);
+        bool admiteInstanciaSuperior = leitor.Booleano(parametrosObjeto, "admiteInstanciaSuperior", parametrosPath);
         decimal? suspensividade2Valor = leitor.DecimalOpcional(
-            argsObjeto, "suspensividadeSegundaInstanciaValor", EscritaCanonica.EscalaPadrao, argsPath, LimitesDoEnvelope.PrecisaoPrazo);
+            parametrosObjeto, "suspensividadeSegundaInstanciaValor", EscritaCanonica.EscalaPadrao, parametrosPath, LimitesDoEnvelope.PrecisaoPrazo);
         UnidadePrazo? suspensividade2Unidade = leitor.EnumeracaoOpcional<UnidadePrazo>(
-            argsObjeto, "suspensividadeSegundaInstanciaUnidade", argsPath);
+            parametrosObjeto, "suspensividadeSegundaInstanciaUnidade", parametrosPath);
 
         return leitor.Falhou
             ? null
-            : new ArgsRegraPrazoRecurso(
+            : new ParametrosRegraPrazoRecurso(
                 prazoValor, prazoUnidade,
                 suspensividade1Valor, suspensividade1Unidade,
                 admiteInstanciaSuperior,

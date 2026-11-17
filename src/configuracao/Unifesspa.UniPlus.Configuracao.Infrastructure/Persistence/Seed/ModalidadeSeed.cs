@@ -78,53 +78,53 @@ public static class ModalidadeSeed
     [
         new(SeedId(1), "AC", "Ampla concorrência",
             NaturezaLegal.Ampla, ComposicaoVagas.RestanteDasVagasOfertadas, ComposicaoOrigem: null,
-            Regra: null, RemanejamentoArgs.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.AmplaConcorrencia),
+            Regra: null, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.AmplaConcorrencia),
 
         new(SeedId(2), "LB_PPI", "Cota — baixa renda, preto/pardo/indígena",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbPpi),
+            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbPpi),
 
         new(SeedId(3), "LB_Q", "Cota — baixa renda, quilombola",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbQ),
+            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbQ),
 
         new(SeedId(4), "LB_PCD", "Cota — baixa renda, pessoa com deficiência",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbPcd),
+            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbPcd),
 
         new(SeedId(5), "LB_EP", "Cota — baixa renda, egresso de escola pública",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbEp),
+            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LbEp),
 
         new(SeedId(6), "LI_PPI", "Cota — independente de renda, preto/pardo/indígena",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiPpi),
+            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiPpi),
 
         new(SeedId(7), "LI_Q", "Cota — independente de renda, quilombola",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiQ),
+            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiQ),
 
         new(SeedId(8), "LI_PCD", "Cota — independente de renda, pessoa com deficiência",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiPcd),
+            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiPcd),
 
         new(SeedId(9), "LI_EP", "Cota — independente de renda, egresso de escola pública",
             NaturezaLegal.CotaReservada, ComposicaoVagas.DentroDaReservaLegal, ComposicaoOrigem: null,
-            RegraRemanejamento.SegueCascata, RemanejamentoArgs.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiEp),
+            RegraRemanejamento.SegueCascata, RemanejamentoParametros.Vazio, BaseLegalLei12711, SementeDeAplicabilidadeLegal.LiEp),
 
         new(SeedId(10), "AC_PCD", "Ampla Concorrência – Pessoa com Deficiência (V)",
             NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.RetiradaDeOutraModalidade, ComposicaoOrigem: "AC",
-            RegraRemanejamento.DestinoUnico, RemanejamentoArgs.Criar("AC", par: null, fallback: null),
+            RegraRemanejamento.DestinoUnico, RemanejamentoParametros.Criar("AC", par: null, fallback: null),
             BaseLegalReservaPcdNaAmplaConcorrencia, SementeDeAplicabilidadeLegal.AcPcd),
 
         new(SeedId(12), "AC_I", "Vaga por acréscimo — candidato indígena (PSIQ)",
             NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.SuplementarAoTotal, ComposicaoOrigem: null,
-            RegraRemanejamento.Cruzado, RemanejamentoArgs.Criar(destino: null, par: "AC_Q", fallback: null),
+            RegraRemanejamento.Cruzado, RemanejamentoParametros.Criar(destino: null, par: "AC_Q", fallback: null),
             BaseLegalVagasPorAcrescimo, SementeDeAplicabilidadeLegal.AcI),
 
         new(SeedId(13), "AC_Q", "Vaga por acréscimo — candidato quilombola (PSIQ)",
             NaturezaLegal.AcaoAfirmativa, ComposicaoVagas.SuplementarAoTotal, ComposicaoOrigem: null,
-            RegraRemanejamento.Cruzado, RemanejamentoArgs.Criar(destino: null, par: "AC_I", fallback: null),
+            RegraRemanejamento.Cruzado, RemanejamentoParametros.Criar(destino: null, par: "AC_I", fallback: null),
             BaseLegalVagasPorAcrescimo, SementeDeAplicabilidadeLegal.AcQ),
     ];
 }
@@ -138,6 +138,6 @@ public sealed record ModalidadeSeedItem(
     ComposicaoVagas Composicao,
     string? ComposicaoOrigem,
     RegraRemanejamento? Regra,
-    RemanejamentoArgs RemanejamentoArgs,
+    RemanejamentoParametros RemanejamentoParametros,
     string? BaseLegal,
     PredicadoDnf RegraDeAplicabilidade);

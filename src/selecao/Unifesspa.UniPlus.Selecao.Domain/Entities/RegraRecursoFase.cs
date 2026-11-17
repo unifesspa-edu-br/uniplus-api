@@ -39,7 +39,7 @@ public sealed class RegraRecursoFase : EntityBase
 
     public ReferenciaRegra Regra { get; private set; } = null!;
 
-    public ArgsRegraPrazoRecurso Args { get; private set; } = null!;
+    public ParametrosRegraPrazoRecurso Parametros { get; private set; } = null!;
 
     /// <summary>
     /// O <c>ProdutoDaFase</c> em que o prazo de interposição ancora: sempre o resultado
@@ -86,12 +86,12 @@ public sealed class RegraRecursoFase : EntityBase
     /// </remarks>
     public static Result<RegraRecursoFase> Criar(
         ReferenciaRegra regra,
-        ArgsRegraPrazoRecurso args,
+        ParametrosRegraPrazoRecurso parametros,
         Guid produtoAncoraId,
         ProcedimentosDeRecurso? procedimentos = null)
     {
         ArgumentNullException.ThrowIfNull(regra);
-        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(parametros);
 
         // CA-01/CA-02: a regra referenciada só pode ser RECURSO-PRAZO-ANCORADO-EM-ATO —
         // qualquer outra (inclusive de outro TipoRegra) é recusada. A checagem completa
@@ -106,19 +106,19 @@ public sealed class RegraRecursoFase : EntityBase
                 $"RegraRecursoFase só referencia a regra {RegraPrazoRecursoCodigo.AncoradoEmAto} — recebido '{regra.Codigo}'."));
         }
 
-        // As invariantes puras sobre os args — prazo e os dois pares de suspensividade — são
+        // As invariantes puras sobre os parâmetros — prazo e os dois pares de suspensividade — são
         // do próprio value object: ele é o mesmo que a janela recursal da etapa carrega, e
         // enquanto elas viviam aqui a etapa aceitava prazo zero e par pela metade.
-        if (ValidacaoDosArgumentosDoRecurso.Validar(args) is { } recusa)
+        if (ValidacaoDosParametrosDoRecurso.Validar(parametros) is { } recusa)
         {
-            return Result<RegraRecursoFase>.Failure(ErroDosArgumentos(recusa));
+            return Result<RegraRecursoFase>.Failure(ErroDosParametros(recusa));
         }
 
         return Result<RegraRecursoFase>.Success(
             new RegraRecursoFase
             {
                 Regra = regra,
-                Args = args,
+                Parametros = parametros,
                 ProdutoAncoraId = produtoAncoraId,
                 Procedimentos = procedimentos ?? ProcedimentosDeRecurso.Nenhum,
             });
@@ -131,16 +131,16 @@ public sealed class RegraRecursoFase : EntityBase
     /// registro de erros consegue enxergá-los — um código interpolado nunca apareceria na
     /// varredura, e um erro sem registro vira 500 em vez de 422.
     /// </summary>
-    private static DomainError ErroDosArgumentos(RecusaDosArgumentosDoRecurso recusa) => recusa.Motivo switch
+    private static DomainError ErroDosParametros(RecusaDosParametrosDoRecurso recusa) => recusa.Motivo switch
     {
-        MotivoDaRecusaDosArgumentos.PrazoNaoPositivo => new("RegraRecursoFase.PrazoNaoPositivo", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.PrazoEmDiasCorridos => new("RegraRecursoFase.PrazoEmDiasCorridos", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.PrazoSemUnidadeDeclaravel => new("RegraRecursoFase.PrazoSemUnidadeDeclaravel", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.PrazoEmFracaoDeDiaUtil => new("RegraRecursoFase.PrazoEmFracaoDeDiaUtil", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.SuspensividadeNaoPositiva => new("RegraRecursoFase.SuspensividadeNaoPositiva", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.SuspensividadeUnidadeNaoDeclaravel => new("RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.SuspensividadeIncompleta => new("RegraRecursoFase.SuspensividadeIncompleta", recusa.Mensagem),
-        MotivoDaRecusaDosArgumentos.SuspensividadeSuperiorSemInstanciaSuperior => new("RegraRecursoFase.SuspensividadeSuperiorSemInstanciaSuperior", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.PrazoNaoPositivo => new("RegraRecursoFase.PrazoNaoPositivo", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.PrazoEmDiasCorridos => new("RegraRecursoFase.PrazoEmDiasCorridos", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.PrazoSemUnidadeDeclaravel => new("RegraRecursoFase.PrazoSemUnidadeDeclaravel", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.PrazoEmFracaoDeDiaUtil => new("RegraRecursoFase.PrazoEmFracaoDeDiaUtil", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.SuspensividadeNaoPositiva => new("RegraRecursoFase.SuspensividadeNaoPositiva", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.SuspensividadeUnidadeNaoDeclaravel => new("RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.SuspensividadeIncompleta => new("RegraRecursoFase.SuspensividadeIncompleta", recusa.Mensagem),
+        MotivoDaRecusaDosParametros.SuspensividadeSuperiorSemInstanciaSuperior => new("RegraRecursoFase.SuspensividadeSuperiorSemInstanciaSuperior", recusa.Mensagem),
         _ => throw new ArgumentOutOfRangeException(nameof(recusa), recusa.Motivo, "Motivo de recusa desconhecido."),
     };
 
@@ -158,7 +158,7 @@ public sealed class RegraRecursoFase : EntityBase
     /// </remarks>
     public static Result<RegraRecursoFase> Reidratar(
         ReferenciaRegra regra,
-        ArgsRegraPrazoRecurso args,
+        ParametrosRegraPrazoRecurso parametros,
         Guid produtoAncoraId,
         ProcedimentosDeRecurso procedimentos)
     {
@@ -170,7 +170,7 @@ public sealed class RegraRecursoFase : EntityBase
                 nameof(produtoAncoraId));
         }
 
-        return Criar(regra, args, produtoAncoraId, procedimentos);
+        return Criar(regra, parametros, produtoAncoraId, procedimentos);
     }
 
     internal void VincularFase(Guid faseCronogramaId) => FaseCronogramaId = faseCronogramaId;

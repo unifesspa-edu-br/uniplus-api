@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Enums;
 
 /// <summary>
 /// O resultado da consolidação das atribuições dos corretores num conceito categórico. Só identifica o
-/// estado: o que fazer no empate ou sem unanimidade é argumento da regra de consolidação escolhida pelo
+/// estado: o que fazer no empate ou sem unanimidade é parâmetro da regra de consolidação escolhida pelo
 /// edital.
 /// </summary>
 public sealed record ResultadoDaConsolidacaoDoConceito

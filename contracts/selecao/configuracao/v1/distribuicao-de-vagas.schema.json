@@ -25,7 +25,7 @@
     },
     "percentualDaReservaLegal": {
       "title": "Percentual da reserva legal",
-      "description": "Fração das vagas reservada pela Lei de Cotas, de 0,5 a 1, com até quatro casas decimais. Só nas regras do ramo federal.",
+      "description": "Fração das vagas reservada pela Lei de Cotas, de 0,5 a 1, com até quatro casas decimais. Obrigatório nas regras do ramo federal.",
       "type": [
         "number",
         "null"
@@ -65,7 +65,7 @@
     },
     "referenciaDemograficaCodigo": {
       "title": "Referência demográfica",
-      "description": "Código do censo de referência da reserva demográfica no cadastro, de até 20 caracteres. É o `censoReferencia` do cadastro de referências demográficas. Só nas regras do ramo federal.",
+      "description": "Código do censo de referência da reserva demográfica no cadastro, de até 20 caracteres. É o `censoReferencia` do cadastro de referências demográficas. Só nas regras do ramo federal. Nula ou ausente quando a distribuição não cita referência demográfica.",
       "type": [
         "string",
         "null"

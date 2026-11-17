@@ -69,7 +69,7 @@ public sealed class DefinirCronogramaFasesAncoraDoRecursoTests
 
         resultado.IsSuccess.Should().BeTrue(resultado.Error?.Message);
         cenario.Processo.CronogramaFases.Should().ContainSingle().Which.Produtos.Should().HaveCount(2);
-        cenario.Processo.CronogramaFases.Single().RegraRecurso!.Args.AdmiteInstanciaSuperior.Should().BeTrue(
+        cenario.Processo.CronogramaFases.Single().RegraRecurso!.Parametros.AdmiteInstanciaSuperior.Should().BeTrue(
             "a declaração é da janela, e o handler a leva do payload, não a fixa");
     }
 

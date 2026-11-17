@@ -181,7 +181,7 @@ public sealed class HashEstavelEntreGravacoesTests
         RecursoDaEtapa.Criar(
             AncoraDoRecurso.AtoPublicado,
             ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", HashFixo),
-            new ArgsRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
+            new ParametrosRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
             etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar
                 && string.Equals(p.AtoCodigo, atoCodigo, StringComparison.Ordinal)).Id).Value!;
 

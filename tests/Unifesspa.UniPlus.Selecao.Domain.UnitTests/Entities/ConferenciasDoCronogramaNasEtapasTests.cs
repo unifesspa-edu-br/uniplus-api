@@ -48,7 +48,7 @@ public sealed class ConferenciasDoCronogramaNasEtapasTests
     private static RecursoDaEtapa Janela(Guid produtoAncoraId) => RecursoDaEtapa.Criar(
         AncoraDoRecurso.AtoPublicado,
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
-        new ArgsRegraPrazoRecurso(2m, UnidadePrazo.DiasUteis, null, null, false, null, null),
+        new ParametrosRegraPrazoRecurso(2m, UnidadePrazo.DiasUteis, null, null, false, null, null),
         produtoAncoraId).Value!;
 
     /// <summary>

@@ -47,7 +47,7 @@ public sealed class EnvelopeCodecFormatosTests
     [InlineData("atendimento.condicoes.0.condicaoOrigemId")]
     [InlineData("hashesEdital.documentoEditalId")]
     [InlineData("distribuicao.0.referenciaDemografica.origemId")]
-    [InlineData("criteriosDesempate.1.args.etapaRef")]
+    [InlineData("criteriosDesempate.1.parametros.etapaRef")]
     public void GuidVazio_Recusa(string caminho)
     {
         Result<EnvelopeReidratado> resultado = Reidratar(envelope =>

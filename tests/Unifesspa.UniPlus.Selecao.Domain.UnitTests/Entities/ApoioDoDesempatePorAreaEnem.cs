@@ -18,10 +18,10 @@ internal static class ApoioDoDesempatePorAreaEnem
         ReferenciaRegra.De(codigo, "v1", new string(semente, 64));
 
     internal static CriterioDesempate PorArea(int ordem, params string[] areas) =>
-        CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(areas)).Value!;
+        CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(areas)).Value!;
 
     internal static CriterioDesempate MaiorIdade(int ordem) =>
-        CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!;
+        CriterioDesempate.Criar(ordem, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ParametrosDesempateMaiorIdade()).Value!;
 
     internal static ConfiguracaoClassificacao ClassificacaoEnem(IReadOnlyList<GrupoPesoAreaEnemCongelado>? quadro = null) =>
         ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao

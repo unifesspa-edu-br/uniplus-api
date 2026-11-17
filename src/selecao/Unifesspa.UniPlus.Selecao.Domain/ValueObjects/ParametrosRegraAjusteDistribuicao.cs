@@ -3,10 +3,10 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using System.Text.Json.Serialization;
 
 /// <summary>
-/// Args aplicados de uma regra do <c>regras_do_catalogo</c>
+/// Parâmetros aplicados de uma regra do <c>regras_do_catalogo</c>
 /// (<c>tipo=regra_ajuste_distribuicao_vagas</c>) — os motores que reconciliam um quadro
 /// fixado pelo edital cuja soma passa das vagas ofertadas base. Discriminated union no molde de
-/// <c>PredicadoObrigatoriedade</c> (ADR-0058) e de <see cref="ArgsRegraEliminacao"/>.
+/// <c>PredicadoObrigatoriedade</c> (ADR-0058) e de <see cref="ParametrosRegraEliminacao"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -22,17 +22,17 @@ using System.Text.Json.Serialization;
 /// </para>
 /// </remarks>
 [JsonPolymorphic(TypeDiscriminatorPropertyName = "$tipo")]
-[JsonDerivedType(typeof(ArgsReduzirDe), "reduzirDe")]
-[JsonDerivedType(typeof(ArgsReduzirProporcionalEm), "reduzirProporcionalEm")]
-public abstract record ArgsRegraAjusteDistribuicao;
+[JsonDerivedType(typeof(ParametrosReduzirDe), "reduzirDe")]
+[JsonDerivedType(typeof(ParametrosReduzirProporcionalEm), "reduzirProporcionalEm")]
+public abstract record ParametrosRegraAjusteDistribuicao;
 
 /// <summary>
 /// Tira o excesso inteiro de uma única modalidade, que precisa estar entre as selecionadas.
 /// </summary>
-public sealed record ArgsReduzirDe(string ModalidadeCodigo) : ArgsRegraAjusteDistribuicao;
+public sealed record ParametrosReduzirDe(string ModalidadeCodigo) : ParametrosRegraAjusteDistribuicao;
 
 /// <summary>
 /// Reparte o excesso entre as modalidades nomeadas, proporcionalmente ao que cada uma
 /// declarou.
 /// </summary>
-public sealed record ArgsReduzirProporcionalEm(IReadOnlyList<string> ModalidadeCodigos) : ArgsRegraAjusteDistribuicao;
+public sealed record ParametrosReduzirProporcionalEm(IReadOnlyList<string> ModalidadeCodigos) : ParametrosRegraAjusteDistribuicao;

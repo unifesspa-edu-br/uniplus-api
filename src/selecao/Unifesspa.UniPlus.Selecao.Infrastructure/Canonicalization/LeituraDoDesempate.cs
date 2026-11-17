@@ -15,7 +15,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Services;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Leitura dos critérios de desempate e de seus argumentos.
+/// Leitura dos critérios de desempate e de seus parâmetros.
 /// </summary>
 internal static class LeituraDoDesempate
 {
@@ -44,7 +44,7 @@ internal static class LeituraDoDesempate
 
     private static CriterioDesempate? LerCriterio(LeitorEnvelope leitor, JsonObject item, string path)
     {
-        leitor.ExigirChaves(item, path, "ordem", "regra", "args");
+        leitor.ExigirChaves(item, path, "ordem", "regra", "parametros");
 
         int ordem = leitor.Inteiro(item, "ordem", path);
         ReferenciaRegra regra = leitor.Regra(
@@ -56,74 +56,74 @@ internal static class LeituraDoDesempate
             CriterioDesempateCodigo.Idoso,
             CriterioDesempateCodigo.PredicadoFato,
             CriterioDesempateCodigo.MaiorNotaAreaEnem);
-        JsonObject args = leitor.Objeto(item, "args", path);
+        JsonObject parametros = leitor.Objeto(item, "parametros", path);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        ArgsCriterioDesempate? argumentos = LerArgsDesempate(leitor, regra.Codigo, args, $"{path}.args");
+        ParametrosCriterioDesempate? parametrosTipados = LerParametrosDesempate(leitor, regra.Codigo, parametros, $"{path}.parametros");
         if (leitor.Falhou)
         {
             return null;
         }
 
-        Result<CriterioDesempate> criterio = CriterioDesempate.Criar(ordem, regra, argumentos!);
+        Result<CriterioDesempate> criterio = CriterioDesempate.Criar(ordem, regra, parametrosTipados!);
         return criterio.IsFailure ? leitor.Propagar<CriterioDesempate?>(criterio.Error!) : criterio.Value;
     }
 
     /// <summary>
     /// A variante vem do <b>código da regra</b> — o envelope não carrega discriminador, e
     /// duas variantes distintas (<c>MAIOR-IDADE</c>, <c>ZERO-EM-AREA</c>) serializam ambas
-    /// como <c>{}</c>. Exigir o objeto vazio <b>exatamente</b> é o que impede que args de
+    /// como <c>{}</c>. Exigir o objeto vazio <b>exatamente</b> é o que impede que parâmetros de
     /// uma variante entrem em outra sem que ninguém veja.
     /// </summary>
-    internal static ArgsCriterioDesempate? LerArgsDesempate(
+    internal static ParametrosCriterioDesempate? LerParametrosDesempate(
         LeitorEnvelope leitor,
         string codigo,
-        JsonObject args,
+        JsonObject parametros,
         string path) => codigo switch
         {
-            CriterioDesempateCodigo.MaiorNotaEtapa => LerMaiorNotaEtapa(leitor, args, path),
-            CriterioDesempateCodigo.MaiorIdade => LerMaiorIdade(leitor, args, path),
-            CriterioDesempateCodigo.Idoso => LerIdoso(leitor, args, path),
-            CriterioDesempateCodigo.PredicadoFato => LerPredicadoFato(leitor, args, path),
-            CriterioDesempateCodigo.MaiorNotaAreaEnem => LerMaiorNotaAreaEnem(leitor, args, path),
-            _ => leitor.Propagar<ArgsCriterioDesempate>(new DomainError(
+            CriterioDesempateCodigo.MaiorNotaEtapa => LerMaiorNotaEtapa(leitor, parametros, path),
+            CriterioDesempateCodigo.MaiorIdade => LerMaiorIdade(leitor, parametros, path),
+            CriterioDesempateCodigo.Idoso => LerIdoso(leitor, parametros, path),
+            CriterioDesempateCodigo.PredicadoFato => LerPredicadoFato(leitor, parametros, path),
+            CriterioDesempateCodigo.MaiorNotaAreaEnem => LerMaiorNotaAreaEnem(leitor, parametros, path),
+            _ => leitor.Propagar<ParametrosCriterioDesempate>(new DomainError(
                 ErrosCodecEnvelope.RegraDesconhecida,
-                $"Não há variante de args conhecida para o critério de desempate '{codigo}' em '{path}'.")),
+                $"Não há variante de parâmetros conhecida para o critério de desempate '{codigo}' em '{path}'.")),
         };
 
-    private static ArgsDesempateMaiorNotaEtapa? LerMaiorNotaEtapa(LeitorEnvelope leitor, JsonObject args, string path)
+    private static ParametrosDesempateMaiorNotaEtapa? LerMaiorNotaEtapa(LeitorEnvelope leitor, JsonObject parametros, string path)
     {
-        leitor.ExigirChaves(args, path, "etapaRef");
-        Guid etapaRef = leitor.Identificador(args, "etapaRef", path);
-        return leitor.Falhou ? null : new ArgsDesempateMaiorNotaEtapa(etapaRef);
+        leitor.ExigirChaves(parametros, path, "etapaRef");
+        Guid etapaRef = leitor.Identificador(parametros, "etapaRef", path);
+        return leitor.Falhou ? null : new ParametrosDesempateMaiorNotaEtapa(etapaRef);
     }
 
-    private static ArgsDesempateMaiorIdade? LerMaiorIdade(LeitorEnvelope leitor, JsonObject args, string path)
+    private static ParametrosDesempateMaiorIdade? LerMaiorIdade(LeitorEnvelope leitor, JsonObject parametros, string path)
     {
-        leitor.ExigirChaves(args, path);
-        return leitor.Falhou ? null : new ArgsDesempateMaiorIdade();
+        leitor.ExigirChaves(parametros, path);
+        return leitor.Falhou ? null : new ParametrosDesempateMaiorIdade();
     }
 
-    private static ArgsDesempateIdoso? LerIdoso(LeitorEnvelope leitor, JsonObject args, string path)
+    private static ParametrosDesempateIdoso? LerIdoso(LeitorEnvelope leitor, JsonObject parametros, string path)
     {
-        leitor.ExigirChaves(args, path, "idadeMinima");
-        int idadeMinima = leitor.Inteiro(args, "idadeMinima", path);
-        return leitor.Falhou ? null : new ArgsDesempateIdoso(idadeMinima);
+        leitor.ExigirChaves(parametros, path, "idadeMinima");
+        int idadeMinima = leitor.Inteiro(parametros, "idadeMinima", path);
+        return leitor.Falhou ? null : new ParametrosDesempateIdoso(idadeMinima);
     }
 
     // A forma (fato não vazio, operador reconhecido, valor coerente com o operador) é conferida pela mesma
     // factory que o caminho de comando usa. O decoder não revalida a semântica, porque o congelamento dos
     // parâmetros na publicação proíbe reinterpretar um predicado já congelado contra um catálogo que
     // pode ter mudado.
-    private static ArgsCriterioDesempate? LerPredicadoFato(LeitorEnvelope leitor, JsonObject args, string path)
+    private static ParametrosCriterioDesempate? LerPredicadoFato(LeitorEnvelope leitor, JsonObject parametros, string path)
     {
-        leitor.ExigirChaves(args, path, "fato", "operador", "valor");
-        string fato = leitor.TextoNaoVazio(args, "fato", path);
-        string operadorCodigo = leitor.TextoNaoVazio(args, "operador", path);
-        System.Text.Json.JsonElement valor = leitor.Valor(args, "valor", path);
+        leitor.ExigirChaves(parametros, path, "fato", "operador", "valor");
+        string fato = leitor.TextoNaoVazio(parametros, "fato", path);
+        string operadorCodigo = leitor.TextoNaoVazio(parametros, "operador", path);
+        System.Text.Json.JsonElement valor = leitor.Valor(parametros, "valor", path);
         if (leitor.Falhou)
         {
             return null;
@@ -131,16 +131,16 @@ internal static class LeituraDoDesempate
 
         Result<CondicaoDnf> condicao = CondicaoDnf.Criar(fato, OperadorCodigo.FromCodigo(operadorCodigo), valor);
         return condicao.IsFailure
-            ? leitor.Propagar<ArgsCriterioDesempate>(condicao.Error!)
-            : new ArgsDesempatePredicadoFato(condicao.Value!);
+            ? leitor.Propagar<ParametrosCriterioDesempate>(condicao.Error!)
+            : new ParametrosDesempatePredicadoFato(condicao.Value!);
     }
 
     // A forma (ao menos uma área, código válido, sem repetição) é conferida por CriterioDesempate.Criar; a
     // existência de cada área no quadro congelado, pela reidratação do grafo.
-    private static ArgsDesempateMaiorNotaAreaEnem? LerMaiorNotaAreaEnem(LeitorEnvelope leitor, JsonObject args, string path)
+    private static ParametrosDesempateMaiorNotaAreaEnem? LerMaiorNotaAreaEnem(LeitorEnvelope leitor, JsonObject parametros, string path)
     {
-        leitor.ExigirChaves(args, path, "areas");
-        IReadOnlyList<string> areas = leitor.Textos(args, "areas", path);
-        return leitor.Falhou ? null : new ArgsDesempateMaiorNotaAreaEnem(areas);
+        leitor.ExigirChaves(parametros, path, "areas");
+        IReadOnlyList<string> areas = leitor.Textos(parametros, "areas", path);
+        return leitor.Falhou ? null : new ParametrosDesempateMaiorNotaAreaEnem(areas);
     }
 }

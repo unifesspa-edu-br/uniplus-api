@@ -160,7 +160,7 @@ public sealed class RegraCatalogoSeedTests : IClassFixture<RegraCatalogoDbFixtur
         desempates.Should().Contain(r => r.Codigo == CriterioDesempateCodigo.MaiorNotaAreaEnem && r.Versao == "v1");
     }
 
-    [Fact(DisplayName = "A eliminação por falta em dia de prova do ENEM é semeada sem args, com as duas invariantes")]
+    [Fact(DisplayName = "A eliminação por falta em dia de prova do ENEM é semeada sem parâmetros, com as duas invariantes")]
     public async Task Seed_EliminacaoPorFaltaEmDiaDeProvaEnem()
     {
         await using UniPlusDbContext context = _fixture.CreateDbContext();

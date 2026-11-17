@@ -532,7 +532,7 @@
           "codigo": "ELIM-NOTA-MINIMA-ETAPA",
           "versao": "v1"
         },
-        "args": {
+        "parametros": {
           "etapaChave": "prova-objetiva",
           "notaMinima": 30
         }
@@ -542,7 +542,7 @@
           "codigo": "ELIM-AUSENCIA-NA-ETAPA",
           "versao": "v1"
         },
-        "args": {
+        "parametros": {
           "etapaChave": "prova-objetiva"
         }
       }
@@ -554,7 +554,7 @@
           "codigo": "DESEMPATE-MAIOR-NOTA-ETAPA",
           "versao": "v1"
         },
-        "args": {
+        "parametros": {
           "etapaChave": "prova-objetiva"
         }
       },
@@ -564,7 +564,7 @@
           "codigo": "DESEMPATE-MAIOR-IDADE",
           "versao": "v1"
         },
-        "args": {}
+        "parametros": {}
       }
     ]
   },

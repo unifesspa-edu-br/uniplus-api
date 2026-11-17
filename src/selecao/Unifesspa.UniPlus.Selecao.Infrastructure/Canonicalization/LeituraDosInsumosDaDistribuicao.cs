@@ -61,34 +61,34 @@ internal static class LeituraDosInsumosDaDistribuicao
     /// O motor de ajuste que o edital declarou — <see langword="null"/> quando a distribuição não declara
     /// nenhum. A variante vem do discriminador <c>$tipo</c>, e a que o envelope não conhece é malformada.
     /// </summary>
-    private static ArgsRegraAjusteDistribuicao? LerAjusteDoQuadro(LeitorEnvelope leitor, JsonObject item, string pathPai)
+    private static ParametrosRegraAjusteDistribuicao? LerAjusteDoQuadro(LeitorEnvelope leitor, JsonObject item, string pathPai)
     {
         JsonObject? ajuste = leitor.ObjetoOpcional(item, "ajusteDoQuadro", pathPai);
         return leitor.Falhou || ajuste is null ? null : LerVarianteDoAjuste(leitor, ajuste, $"{pathPai}.ajusteDoQuadro");
     }
 
-    private static ArgsRegraAjusteDistribuicao? LerVarianteDoAjuste(LeitorEnvelope leitor, JsonObject ajuste, string path)
+    private static ParametrosRegraAjusteDistribuicao? LerVarianteDoAjuste(LeitorEnvelope leitor, JsonObject ajuste, string path)
     {
         string tipo = leitor.TextoNaoVazio(ajuste, "$tipo", path);
         return tipo switch
         {
             TiposDeAjusteDoQuadro.ReduzirDe => LerReduzirDe(leitor, ajuste, path),
             TiposDeAjusteDoQuadro.ReduzirProporcionalEm => LerReduzirProporcionalEm(leitor, ajuste, path),
-            _ => leitor.Falhou ? null : leitor.Malformado<ArgsRegraAjusteDistribuicao?>(path, $"o tipo de ajuste '{tipo}' não pertence a esta versão do envelope."),
+            _ => leitor.Falhou ? null : leitor.Malformado<ParametrosRegraAjusteDistribuicao?>(path, $"o tipo de ajuste '{tipo}' não pertence a esta versão do envelope."),
         };
     }
 
-    private static ArgsReduzirDe? LerReduzirDe(LeitorEnvelope leitor, JsonObject ajuste, string path)
+    private static ParametrosReduzirDe? LerReduzirDe(LeitorEnvelope leitor, JsonObject ajuste, string path)
     {
         leitor.ExigirChaves(ajuste, path, "$tipo", "modalidadeCodigo");
         string modalidade = leitor.TextoNaoVazio(ajuste, "modalidadeCodigo", path, LimitesDoEnvelope.ModalidadeCodigo);
-        return leitor.Falhou ? null : new ArgsReduzirDe(modalidade);
+        return leitor.Falhou ? null : new ParametrosReduzirDe(modalidade);
     }
 
-    private static ArgsReduzirProporcionalEm? LerReduzirProporcionalEm(LeitorEnvelope leitor, JsonObject ajuste, string path)
+    private static ParametrosReduzirProporcionalEm? LerReduzirProporcionalEm(LeitorEnvelope leitor, JsonObject ajuste, string path)
     {
         leitor.ExigirChaves(ajuste, path, "$tipo", "modalidadeCodigos");
         IReadOnlyList<string> modalidades = leitor.Textos(ajuste, "modalidadeCodigos", path);
-        return leitor.Falhou ? null : new ArgsReduzirProporcionalEm(modalidades);
+        return leitor.Falhou ? null : new ParametrosReduzirProporcionalEm(modalidades);
     }
 }

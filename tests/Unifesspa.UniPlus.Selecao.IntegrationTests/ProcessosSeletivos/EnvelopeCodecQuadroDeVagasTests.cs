@@ -23,7 +23,7 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
     [Fact(DisplayName = "O envelope descreve cada ramo só com os campos dele: o quadro fixado não tem conferência da reserva legal")]
     public void Envelope_QuadroFixado_NaoTemConferenciaDaReservaLegal()
     {
-        ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ArgsReduzirDe("AC"));
+        ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ParametrosReduzirDe("AC"));
 
         JsonObject envelope = Envelope(CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)));
 
@@ -45,7 +45,7 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
     {
         ArgumentNullException.ThrowIfNull(caminho);
 
-        ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ArgsReduzirDe("AC"));
+        ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ParametrosReduzirDe("AC"));
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
         JsonObject adulterado = Envelope(congelado);
@@ -61,7 +61,7 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
     [Fact(DisplayName = "Envelope com quantidade negativa declarada em uma modalidade é recusado na restauração")]
     public void Reidratar_QuantidadeDeclaradaNegativa_Recusa()
     {
-        ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ArgsReduzirDe("AC"));
+        ProcessoSeletivo processo = ProcessoComQuadroFixadoReduzido(new ParametrosReduzirDe("AC"));
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
         JsonObject adulterado = Envelope(congelado);
@@ -74,7 +74,7 @@ public sealed class EnvelopeCodecQuadroDeVagasTests
         reidratado.Error!.Code.Should().Be(DistribuicaoDeVagasErrorCodes.QuantidadeVagaNegativa);
     }
 
-    private static ProcessoSeletivo ProcessoComQuadroFixadoReduzido(ArgsRegraAjusteDistribuicao ajuste)
+    private static ProcessoSeletivo ProcessoComQuadroFixadoReduzido(ParametrosRegraAjusteDistribuicao ajuste)
     {
         (ProcessoSeletivo processo, FaseCronograma _) = ProcessoDeInscricao("PS Quadro Fixado Reduzido");
         ConfiguracaoDistribuicaoVagas distribuicao = ConfiguracaoDistribuicaoVagas.Criar(Guid.CreateVersion7(),

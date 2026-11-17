@@ -148,19 +148,19 @@ internal static class CorpusEnvelopeProcessoRico
                     ("1501402", "Belém", "PA"),
                 ])).Value!).IsSuccess.Should().BeTrue();
 
-    // As CINCO variantes de args — e DUAS do mesmo código (MAIOR-NOTA-ETAPA em
+    // As CINCO variantes de parâmetros — e DUAS do mesmo código (MAIOR-NOTA-ETAPA em
     // ordens distintas), que um decoder indexado por código colapsaria em uma. A ordem
     // das áreas do desempate por área do ENEM não é a alfabética, para que uma
     // canonicalização que as reordenasse mudasse o envelope.
     internal static void DefinirCriteriosDeDesempate(ProcessoSeletivo processo, int variante, bool permutar) =>
         processo.DefinirCriteriosDesempate(Ordem([
-            CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.Idoso, 'c'), new ArgsDesempateIdoso(60)).Value!,
-            CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ArgsDesempateMaiorNotaEtapa(EtapaId(1, variante))).Value!,
-            CriterioDesempate.Criar(3, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ArgsDesempateMaiorNotaEtapa(EtapaId(2, variante))).Value!,
-            CriterioDesempate.Criar(4, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), new ArgsDesempatePredicadoFato(
+            CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.Idoso, 'c'), new ParametrosDesempateIdoso(60)).Value!,
+            CriterioDesempate.Criar(2, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ParametrosDesempateMaiorNotaEtapa(EtapaId(1, variante))).Value!,
+            CriterioDesempate.Criar(3, Regra(CriterioDesempateCodigo.MaiorNotaEtapa, 'd'), new ParametrosDesempateMaiorNotaEtapa(EtapaId(2, variante))).Value!,
+            CriterioDesempate.Criar(4, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), new ParametrosDesempatePredicadoFato(
                 CondicaoDnf.Criar("escola_publica", Operador.Igual, JsonSerializer.SerializeToElement(true)).Value!)).Value!,
-            CriterioDesempate.Criar(5, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ArgsDesempateMaiorIdade()).Value!,
-            CriterioDesempate.Criar(6, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, '8'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!,
+            CriterioDesempate.Criar(5, Regra(CriterioDesempateCodigo.MaiorIdade, 'f'), new ParametrosDesempateMaiorIdade()).Value!,
+            CriterioDesempate.Criar(6, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, '8'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO", "MATEMATICA", "LINGUAGENS"])).Value!,
         ], permutar)).IsSuccess.Should().BeTrue();
 
     internal static void DefinirClassificacao(ProcessoSeletivo processo, int variante, bool permutar) =>
@@ -179,13 +179,13 @@ internal static class CorpusEnvelopeProcessoRico
 
     internal static List<RegraEliminacao> RegrasDeEliminacao(int variante) =>
     [
-        // DUAS do mesmo código, args distintos — o PS Convênios exige exatamente isso.
-        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, '4'), new ArgsElimNotaMinimaEtapa(EtapaId(1, variante), 45.0000m)).Value!,
-        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, '4'), new ArgsElimNotaMinimaEtapa(EtapaId(2, variante), 30.5000m)).Value!,
-        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteEmArea, '5'), new ArgsElimCorteEmArea("REDACAO", 400.0000m)).Value!,
-        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, '6'), new ArgsElimZeroEmArea()).Value!,
-        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, '0'), new ArgsElimFaltaEmDiaDeProvaEnem()).Value!,
-        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, '7'), new ArgsElimAusenciaNaEtapa(EtapaId(3, variante))).Value!,
+        // DUAS do mesmo código, parâmetros distintos — o PS Convênios exige exatamente isso.
+        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, '4'), new ParametrosElimNotaMinimaEtapa(EtapaId(1, variante), 45.0000m)).Value!,
+        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, '4'), new ParametrosElimNotaMinimaEtapa(EtapaId(2, variante), 30.5000m)).Value!,
+        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteEmArea, '5'), new ParametrosElimCorteEmArea("REDACAO", 400.0000m)).Value!,
+        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, '6'), new ParametrosElimZeroEmArea()).Value!,
+        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, '0'), new ParametrosElimFaltaEmDiaDeProvaEnem()).Value!,
+        RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, '7'), new ParametrosElimAusenciaNaEtapa(EtapaId(3, variante))).Value!,
     ];
 
     internal static void DefinirFormularioDeInscricao(ProcessoSeletivo processo, bool permutar)

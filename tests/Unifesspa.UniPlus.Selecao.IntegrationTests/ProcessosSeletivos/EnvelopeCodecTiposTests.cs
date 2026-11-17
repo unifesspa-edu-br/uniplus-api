@@ -170,8 +170,8 @@ public sealed class EnvelopeCodecTiposTests
     // As duas primeiras do predicado de fato (fato/operador) passam por leitor.TextoNaoVazio,
     // que recusa em branco ANTES de chegar a CondicaoDnf.Criar — mesma família de erro
     // (EnvelopeMalformado) dos demais campos deste teorema.
-    [InlineData("criteriosDesempate.3.args.fato")]
-    [InlineData("criteriosDesempate.3.args.operador")]
+    [InlineData("criteriosDesempate.3.parametros.fato")]
+    [InlineData("criteriosDesempate.3.parametros.operador")]
     public void TextoVazio_Recusa(string caminho)
     {
         Result<EnvelopeReidratado> resultado = Reidratar(envelope => Definir(envelope, caminho, "   "));

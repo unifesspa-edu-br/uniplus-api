@@ -13,7 +13,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Um critério de desempate ordenado do <see cref="ProcessoSeletivo"/> (Story
 /// #774): referencia uma regra tipada do
-/// <c>regras_do_catalogo</c> (<c>tipo=criterio_desempate</c>) e seus args
+/// <c>regras_do_catalogo</c> (<c>tipo=criterio_desempate</c>) e seus parâmetros
 /// aplicados. A <see cref="Ordem"/> carrega a semântica de refinamento
 /// sequencial — cada critério desempata só o subgrupo ainda empatado; o
 /// seguinte resolve o resíduo.
@@ -28,12 +28,12 @@ public sealed class CriterioDesempate : EntityBase, IParteDoProcesso
     public Guid ProcessoSeletivoId { get; private set; }
     public int Ordem { get; private set; }
     public ReferenciaRegra Regra { get; private set; } = null!;
-    public ArgsCriterioDesempate Args { get; private set; } = null!;
+    public ParametrosCriterioDesempate Parametros { get; private set; } = null!;
 
     private CriterioDesempate() { }
 
     /// <summary>
-    /// Cria o critério validando que <paramref name="args"/> é a variante
+    /// Cria o critério validando que <paramref name="parametros"/> é a variante
     /// correta para o <see cref="ReferenciaRegra.Codigo"/> referenciado — a
     /// única invariante que esta entidade consegue garantir sozinha; a
     /// existência do <c>etapa_ref</c> no processo é validada pela
@@ -43,8 +43,8 @@ public sealed class CriterioDesempate : EntityBase, IParteDoProcesso
     /// <param name="vocabularioFatos">
     /// O vocabulário fechado de fatos do candidato (ADR-0111, Story #847),
     /// já resolvido por quem chama (Application, via o leitor cross-módulo
-    /// do #846). Só é consultado quando <paramref name="args"/> é
-    /// <see cref="ArgsDesempatePredicadoFato"/>. Omitido (<see langword="null"/>)
+    /// do #846). Só é consultado quando <paramref name="parametros"/> é
+    /// <see cref="ParametrosDesempatePredicadoFato"/>. Omitido (<see langword="null"/>)
     /// no caminho de <b>reidratação</b> do envelope congelado — o congelamento dos parâmetros na publicação (UNI-REQ-0019) proíbe
     /// revalidar um predicado já publicado contra o vocabulário vivo.
     /// </param>
@@ -55,50 +55,50 @@ public sealed class CriterioDesempate : EntityBase, IParteDoProcesso
     /// </param>
     /// <summary>
     /// Acumula toda violação independente em vez de retornar na primeira (ADR-0125) — ordem,
-    /// compatibilidade de args, idade mínima e a forma da ordem de áreas do ENEM não dependem
+    /// compatibilidade de parâmetros, idade mínima e a forma da ordem de áreas do ENEM não dependem
     /// umas das outras.
     /// </summary>
     public static Result<CriterioDesempate> Criar(
         int ordem,
         ReferenciaRegra regra,
-        ArgsCriterioDesempate args,
+        ParametrosCriterioDesempate parametros,
         IReadOnlyDictionary<string, DescritorFatoCandidato>? vocabularioFatos = null,
         IReadOnlySet<string>? fatosColetadosPeloProcesso = null)
     {
         ArgumentNullException.ThrowIfNull(regra);
-        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(parametros);
 
         List<FieldError> erros = ValidarOrdem(ordem);
 
-        bool argsCompativeis = regra.Codigo switch
+        bool parametrosCompativeis = regra.Codigo switch
         {
-            CriterioDesempateCodigo.MaiorNotaEtapa => args is ArgsDesempateMaiorNotaEtapa,
-            CriterioDesempateCodigo.MaiorIdade => args is ArgsDesempateMaiorIdade,
-            CriterioDesempateCodigo.Idoso => args is ArgsDesempateIdoso,
-            CriterioDesempateCodigo.PredicadoFato => args is ArgsDesempatePredicadoFato,
-            CriterioDesempateCodigo.MaiorNotaAreaEnem => args is ArgsDesempateMaiorNotaAreaEnem,
+            CriterioDesempateCodigo.MaiorNotaEtapa => parametros is ParametrosDesempateMaiorNotaEtapa,
+            CriterioDesempateCodigo.MaiorIdade => parametros is ParametrosDesempateMaiorIdade,
+            CriterioDesempateCodigo.Idoso => parametros is ParametrosDesempateIdoso,
+            CriterioDesempateCodigo.PredicadoFato => parametros is ParametrosDesempatePredicadoFato,
+            CriterioDesempateCodigo.MaiorNotaAreaEnem => parametros is ParametrosDesempateMaiorNotaAreaEnem,
             _ => false,
         };
 
-        if (!argsCompativeis)
+        if (!parametrosCompativeis)
         {
             erros.Add(new("regraCodigo", new DomainError(
-                "CriterioDesempate.ArgsIncompativeisComRegra",
-                "Os args informados não correspondem à regra referenciada.")));
+                "CriterioDesempate.ParametrosIncompativeisComRegra",
+                "Os parâmetros informados não correspondem à regra referenciada.")));
         }
 
-        if (args is ArgsDesempateIdoso { IdadeMinima: <= 0 })
+        if (parametros is ParametrosDesempateIdoso { IdadeMinima: <= 0 })
         {
             erros.Add(new("idadeMinima", new DomainError(
                 "CriterioDesempate.IdadeMinimaInvalida", "A idade mínima do critério IDOSO deve ser maior que zero.")));
         }
 
-        if (args is ArgsDesempateMaiorNotaAreaEnem areaEnem)
+        if (parametros is ParametrosDesempateMaiorNotaAreaEnem areaEnem)
         {
             erros.AddRange(ConferirAreas(areaEnem.Areas).Erros);
         }
 
-        if (args is ArgsDesempatePredicadoFato predicadoFato && vocabularioFatos is not null)
+        if (parametros is ParametrosDesempatePredicadoFato predicadoFato && vocabularioFatos is not null)
         {
             Result<PredicadoDnf> predicadoResult = PredicadoDnf.CriarDeCondicoesAgrupadas([(0, predicadoFato.Condicao)]);
             if (predicadoResult.IsFailure)
@@ -124,15 +124,15 @@ public sealed class CriterioDesempate : EntityBase, IParteDoProcesso
         {
             Ordem = ordem,
             Regra = regra,
-            Args = args,
+            Parametros = parametros,
         });
     }
 
     /// <summary>
     /// A ordem não depende do catálogo de regras nem do vocabulário de fatos — ao contrário das
-    /// demais checagens de <see cref="Criar"/>, que só fazem sentido depois de a regra e os args
+    /// demais checagens de <see cref="Criar"/>, que só fazem sentido depois de a regra e os parâmetros
     /// terem sido resolvidos. Existe separada para o handler, que recusa o critério cuja regra
-    /// ou cujos args não se resolvem antes de chegar a <see cref="Criar"/>, ainda acusar a ordem
+    /// ou cujos parâmetros não se resolvem antes de chegar a <see cref="Criar"/>, ainda acusar a ordem
     /// junto (ADR-0125).
     /// </summary>
     public static List<FieldError> ValidarOrdem(int ordem)

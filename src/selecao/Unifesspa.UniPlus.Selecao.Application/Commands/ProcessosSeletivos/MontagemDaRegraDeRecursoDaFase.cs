@@ -56,7 +56,7 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
             return Result<RegraRecursoFase>.ValidationFailure(procedimentos.Errors);
         }
 
-        Result<RegraRecursoFase> regra = RegraRecursoFase.Criar(referencia.Value!, ArgumentosDoPrazo(declarada), ancora?.Id ?? Guid.Empty, procedimentos.Value);
+        Result<RegraRecursoFase> regra = RegraRecursoFase.Criar(referencia.Value!, ParametrosDoPrazo(declarada), ancora?.Id ?? Guid.Empty, procedimentos.Value);
         if (regra.IsFailure)
         {
             return InterrupcaoDaFase.Com<RegraRecursoFase>(campo, regra.Error!);
@@ -108,7 +108,7 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
         produtos.FirstOrDefault(p => p.Papel == PapelProdutoFase.Preliminar
             && string.Equals(p.AtoCodigo, atoAncoraCodigo, StringComparison.Ordinal));
 
-    private static ArgsRegraPrazoRecurso ArgumentosDoPrazo(RegraRecursoFaseInput declarada) =>
+    private static ParametrosRegraPrazoRecurso ParametrosDoPrazo(RegraRecursoFaseInput declarada) =>
         new(
             declarada.PrazoValor,
             declarada.PrazoUnidade,

@@ -211,7 +211,7 @@ public sealed class EnvelopeCanonicoGoldenTests
         return processo;
     }
 
-    // As duas regras (ELIM-CORTE-REDACAO e ELIM-ZERO-EM-AREA) não referenciam etapa nos seus args:
+    // As duas regras (ELIM-CORTE-REDACAO e ELIM-ZERO-EM-AREA) não referenciam etapa nos seus parâmetros:
     // o teste isola a única variável que quer variar, a ordem de criação. O cálculo local exige
     // regra de precisão declarada.
     private static Result<ConfiguracaoClassificacao> ClassificacaoComEliminacoes(bool corteRedacaoPrimeiro) =>
@@ -232,9 +232,9 @@ public sealed class EnvelopeCanonicoGoldenTests
 
     private static RegraEliminacao CriarCorteNaRedacao() => RegraEliminacao.Criar(
         Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "e"),
-        new ArgsElimCorteEmArea("REDACAO", 400m)).Value!;
+        new ParametrosElimCorteEmArea("REDACAO", 400m)).Value!;
 
     private static RegraEliminacao CriarZeroEmArea() => RegraEliminacao.Criar(
         Regra(RegraEliminacaoCodigo.ElimZeroEmArea, "f"),
-        new ArgsElimZeroEmArea()).Value!;
+        new ParametrosElimZeroEmArea()).Value!;
 }

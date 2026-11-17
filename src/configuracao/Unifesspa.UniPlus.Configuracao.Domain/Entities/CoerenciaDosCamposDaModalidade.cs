@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 
 /// <summary>
 /// As invariantes de <see cref="Modalidade"/> que cruzam campos já resolvidos: origem × composição,
-/// natureza × remanejamento, argumentos por regra, regra de aplicabilidade pela natureza e autorreferência.
+/// natureza × remanejamento, parâmetros por regra, regra de aplicabilidade pela natureza e autorreferência.
 /// </summary>
 internal static class CoerenciaDosCamposDaModalidade
 {
@@ -19,9 +19,9 @@ internal static class CoerenciaDosCamposDaModalidade
     private static readonly (Func<CamposResolvidosDaModalidade, string?> Ler, string Field, string Code, string Rotulo)[] ReferenciasAOutraModalidade =
     [
         (static c => c.ComposicaoOrigem, "composicaoOrigem", ModalidadeErrorCodes.ComposicaoOrigemCircular, "origem da composição"),
-        (static c => c.RemanejamentoArgs.Destino, "remanejamentoDestino", ModalidadeErrorCodes.RemanejamentoDestinoCircular, "destino de remanejamento"),
-        (static c => c.RemanejamentoArgs.Par, "remanejamentoPar", ModalidadeErrorCodes.RemanejamentoParCircular, "par de remanejamento"),
-        (static c => c.RemanejamentoArgs.Fallback, "remanejamentoFallback", ModalidadeErrorCodes.RemanejamentoFallbackCircular, "fallback de remanejamento"),
+        (static c => c.RemanejamentoParametros.Destino, "remanejamentoDestino", ModalidadeErrorCodes.RemanejamentoDestinoCircular, "destino de remanejamento"),
+        (static c => c.RemanejamentoParametros.Par, "remanejamentoPar", ModalidadeErrorCodes.RemanejamentoParCircular, "par de remanejamento"),
+        (static c => c.RemanejamentoParametros.Fallback, "remanejamentoFallback", ModalidadeErrorCodes.RemanejamentoFallbackCircular, "fallback de remanejamento"),
     ];
 
     /// <remarks>
@@ -44,7 +44,7 @@ internal static class CoerenciaDosCamposDaModalidade
 
     /// <summary>
     /// As invariantes que cruzam campos entre si — origem × composição, natureza ×
-    /// remanejamento e argumentos por regra.
+    /// remanejamento e parâmetros por regra.
     /// </summary>
     /// <remarks>
     /// Cada checagem só roda quando o token de que depende foi reconhecido: sobre um token
@@ -61,7 +61,7 @@ internal static class CoerenciaDosCamposDaModalidade
             reconhecidos.Natureza && reconhecidos.Regra
                 ? ValidarCoerenciaNaturezaRemanejamento(campos.NaturezaLegal, campos.RegraRemanejamento)
                 : null,
-            reconhecidos.Regra ? ValidarArgumentosPorRegra(campos.RegraRemanejamento, campos.RemanejamentoArgs) : null,
+            reconhecidos.Regra ? ValidarParametrosPorRegra(campos.RegraRemanejamento, campos.RemanejamentoParametros) : null,
             reconhecidos.Natureza && campos.RegraDeAplicabilidade is { } regra
                 ? ValidarRegraPelaNatureza(campos.NaturezaLegal, regra)
                 : null,
@@ -113,56 +113,56 @@ internal static class CoerenciaDosCamposDaModalidade
         }
     }
 
-    private static FieldError? ValidarArgumentosPorRegra(
+    private static FieldError? ValidarParametrosPorRegra(
         RegraRemanejamento? regra,
-        RemanejamentoArgs args)
+        RemanejamentoParametros parametros)
     {
         switch (regra)
         {
             case Enums.RegraRemanejamento.DestinoUnico:
-                if (args.Destino is null)
+                if (parametros.Destino is null)
                 {
                     return new("regraRemanejamento", new DomainError(
-                        ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
-                        "Regra DESTINO_UNICO exige o argumento 'destino'."));
+                        ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio,
+                        "Regra DESTINO_UNICO exige o parâmetro 'destino'."));
                 }
 
-                if (args.Par is not null || args.Fallback is not null)
+                if (parametros.Par is not null || parametros.Fallback is not null)
                 {
                     return new("regraRemanejamento", new DomainError(
-                        ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
-                        "Regra DESTINO_UNICO não admite os argumentos 'par' e 'fallback'."));
+                        ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio,
+                        "Regra DESTINO_UNICO não admite os parâmetros 'par' e 'fallback'."));
                 }
 
                 return null;
 
             case Enums.RegraRemanejamento.Cruzado:
-                if (args.Par is null)
+                if (parametros.Par is null)
                 {
                     return new("regraRemanejamento", new DomainError(
-                        ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
-                        "Regra CRUZADO exige o argumento 'par'."));
+                        ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio,
+                        "Regra CRUZADO exige o parâmetro 'par'."));
                 }
 
                 // 'fallback' é opcional, e a ausência dele é uma declaração, não uma omissão:
                 // significa que o par não tem destino final — a vaga que nenhuma das duas
                 // modalidades preencher permanece ociosa. É o caso do certame isolado, que não
                 // oferta ampla concorrência para receber a sobra (UNI-REQ-0096).
-                if (args.Destino is not null)
+                if (parametros.Destino is not null)
                 {
                     return new("regraRemanejamento", new DomainError(
-                        ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
-                        "Regra CRUZADO não admite o argumento 'destino'."));
+                        ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio,
+                        "Regra CRUZADO não admite o parâmetro 'destino'."));
                 }
 
                 return null;
 
-            // SegueCascata ou sem regra: nenhum argumento é permitido.
+            // SegueCascata ou sem regra: nenhum parâmetro é permitido.
             default:
-                return args.TemAlgum
+                return parametros.TemAlgum
                     ? new("regraRemanejamento", new DomainError(
-                        ModalidadeErrorCodes.ArgumentoRemanejamentoObrigatorio,
-                        "Nenhum argumento de remanejamento é admitido para esta regra."))
+                        ModalidadeErrorCodes.ParametrosRemanejamentoObrigatorio,
+                        "Nenhum parâmetro de remanejamento é admitido para esta regra."))
                     : null;
         }
     }

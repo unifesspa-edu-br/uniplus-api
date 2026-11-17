@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 /// <summary>
 /// DTO de resposta HTTP para <c>Modalidade</c> de concorrência. Suporta HATEOAS
 /// Level 1 via <c>_links</c> (ADR-0029). Os enums são expostos como tokens
-/// canônicos UPPER_SNAKE; os argumentos de remanejamento como campos planos. A regra de
+/// canônicos UPPER_SNAKE; os parâmetros de remanejamento como campos planos. A regra de
 /// aplicabilidade sai como OU de cláusulas, cada uma o E de condições; vazia na incondicional.
 /// <c>LegalFixa</c> diz se a modalidade é do catálogo legal fixo, cuja estrutura e regra vêm da
 /// norma e só aceitam editar a descrição e a base legal.

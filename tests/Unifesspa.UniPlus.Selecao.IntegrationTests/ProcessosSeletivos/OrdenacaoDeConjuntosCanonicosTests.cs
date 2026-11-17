@@ -81,7 +81,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
     /// Um processo mínimo, válido para <see cref="SnapshotPublicacaoCanonicalizer.Canonicalizar"/>,
     /// com os dois knobs que os testes de <c>ocorrenciasEsperadas</c> e
     /// <c>formatosPermitidos.lista</c> precisam variar — os outros quatro arrays da issue
-    /// (<c>obrigatoriedades</c>, os dois <c>predicado.args</c> e <c>valoresDominio</c>) entram
+    /// (<c>obrigatoriedades</c>, os dois <c>predicado.parametros</c> e <c>valoresDominio</c>) entram
     /// pela <see cref="EntradaCanonicalizacao"/>, não pelo agregado, e não precisam deste builder.
     /// </summary>
     private static ProcessoSeletivo MontarProcesso(
@@ -267,9 +267,9 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
             "duas entradas com o MESMO conjunto de regras em ordens DIFERENTES produzem o mesmo array canônico");
     }
 
-    // ── documentosExigidos.obrigatoriedades[].predicado.args.codigos (ModalidadesMinimas) ──
+    // ── documentosExigidos.obrigatoriedades[].predicado.parametros.codigos (ModalidadesMinimas) ──
 
-    [Fact(DisplayName = "predicado.args.codigos (ModalidadesMinimas) ordena pela chave de conteúdo — oráculo escrito à mão")]
+    [Fact(DisplayName = "predicado.parametros.codigos (ModalidadesMinimas) ordena pela chave de conteúdo — oráculo escrito à mão")]
     public void PredicadoModalidadesMinimas_Codigos_OrdenaPelaChaveDeConteudo()
     {
         RegraAvaliada regraUm = RegraDeConformidade("REGRA-MM", Guid.CreateVersion7()) with
@@ -281,7 +281,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         SnapshotCanonico snapshotUm = Canonicalizador.Canonicalizar(
             Entrada(processoUm, conformidade: new ResultadoConformidade([regraUm], [])));
         JsonArray codigosUm = ApoioDoEnvelopeCodec.Envelope(snapshotUm)
-            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["args"]!["codigos"]!.AsArray();
+            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["parametros"]!["codigos"]!.AsArray();
 
         codigosUm.Select(static c => c!.GetValue<string>()).Should().Equal(
             ["AC", "LB_PPI", "QUI"],
@@ -296,15 +296,15 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         SnapshotCanonico snapshotDois = Canonicalizador.Canonicalizar(
             Entrada(processoDois, conformidade: new ResultadoConformidade([regraDois], [])));
         JsonArray codigosDois = ApoioDoEnvelopeCodec.Envelope(snapshotDois)
-            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["args"]!["codigos"]!.AsArray();
+            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["parametros"]!["codigos"]!.AsArray();
 
         BytesDoFragmento(codigosDois).Should().Equal(BytesDoFragmento(codigosUm),
             "duas entradas com o MESMO conteúdo em ordens DIFERENTES produzem o mesmo array canônico");
     }
 
-    // ── documentosExigidos.obrigatoriedades[].predicado.args.necessidades (AtendimentoDisponivel) ──
+    // ── documentosExigidos.obrigatoriedades[].predicado.parametros.necessidades (AtendimentoDisponivel) ──
 
-    [Fact(DisplayName = "predicado.args.necessidades (AtendimentoDisponivel) ordena pela chave de conteúdo — oráculo escrito à mão")]
+    [Fact(DisplayName = "predicado.parametros.necessidades (AtendimentoDisponivel) ordena pela chave de conteúdo — oráculo escrito à mão")]
     public void PredicadoAtendimentoDisponivel_Necessidades_OrdenaPelaChaveDeConteudo()
     {
         RegraAvaliada regraUm = RegraDeConformidade("REGRA-AD", Guid.CreateVersion7()) with
@@ -316,7 +316,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         SnapshotCanonico snapshotUm = Canonicalizador.Canonicalizar(
             Entrada(processoUm, conformidade: new ResultadoConformidade([regraUm], [])));
         JsonArray necessidadesUm = ApoioDoEnvelopeCodec.Envelope(snapshotUm)
-            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["args"]!["necessidades"]!.AsArray();
+            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["parametros"]!["necessidades"]!.AsArray();
 
         necessidadesUm.Select(static n => n!.GetValue<string>()).Should().Equal(
             ["AUDITIVA", "FISICA", "VISUAL"],
@@ -331,7 +331,7 @@ public sealed class OrdenacaoDeConjuntosCanonicosTests
         SnapshotCanonico snapshotDois = Canonicalizador.Canonicalizar(
             Entrada(processoDois, conformidade: new ResultadoConformidade([regraDois], [])));
         JsonArray necessidadesDois = ApoioDoEnvelopeCodec.Envelope(snapshotDois)
-            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["args"]!["necessidades"]!.AsArray();
+            ["documentosExigidos"]!["obrigatoriedades"]![0]!["predicado"]!["parametros"]!["necessidades"]!.AsArray();
 
         BytesDoFragmento(necessidadesDois).Should().Equal(BytesDoFragmento(necessidadesUm),
             "duas entradas com o MESMO conteúdo em ordens DIFERENTES produzem o mesmo array canônico");

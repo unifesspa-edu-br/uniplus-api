@@ -20,10 +20,11 @@
       "description": "Regra de desempate no catálogo de regras.",
       "$ref": "comuns.schema.json#/$defs/referenciaDeRegra"
     },
-    "args": {
+    "parametros": {
       "title": "Parâmetros",
-      "description": "Parâmetros da regra, conforme o código dela.",
-      "type": "object"
+      "description": "Parâmetros da regra. A forma de cada código está nas definições de parâmetros deste esquema, aplicadas conforme o código da regra.",
+      "type": "object",
+      "additionalProperties": true
     }
   },
   "allOf": [
@@ -47,7 +48,7 @@
       },
       "then": {
         "properties": {
-          "args": {
+          "parametros": {
             "$ref": "#/$defs/parametrosMaiorNotaEtapa"
           }
         }
@@ -73,7 +74,7 @@
       },
       "then": {
         "properties": {
-          "args": {
+          "parametros": {
             "$ref": "comuns.schema.json#/$defs/semParametros"
           }
         }
@@ -99,7 +100,7 @@
       },
       "then": {
         "properties": {
-          "args": {
+          "parametros": {
             "$ref": "#/$defs/parametrosIdoso"
           }
         }
@@ -125,7 +126,7 @@
       },
       "then": {
         "properties": {
-          "args": {
+          "parametros": {
             "$ref": "#/$defs/condicaoDoDesempate"
           }
         }
@@ -151,7 +152,7 @@
       },
       "then": {
         "properties": {
-          "args": {
+          "parametros": {
             "$ref": "#/$defs/parametrosMaiorNotaAreaEnem"
           }
         }

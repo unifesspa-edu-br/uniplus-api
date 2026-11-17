@@ -11,7 +11,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 /// <remarks>
 /// <para>
-/// A referência carrega apenas a <em>identidade</em> da regra. Os <em>args
+/// A referência carrega apenas a <em>identidade</em> da regra. Os <em>parâmetros
 /// aplicados</em> (ex.: <c>fator=1,20</c> de um <c>BONUS-MULTIPLICATIVO</c>,
 /// <c>etapa_ref</c> de um <c>DESEMPATE-MAIOR-NOTA-ETAPA</c>) são tipados junto
 /// da dimensão que consome a regra e validados contra o <c>esquema_args</c> da

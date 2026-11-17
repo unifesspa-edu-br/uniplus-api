@@ -67,18 +67,18 @@ public sealed class EnvelopeCodecTiposRegrasEColunasTests
     }
 
     /// <summary>
-    /// <c>criteriosDesempate[].args.valor</c> (ADR-0111, Story #847) não passa por
+    /// <c>criteriosDesempate[].parametros.valor</c> (ADR-0111, Story #847) não passa por
     /// <c>leitor.TextoNaoVazio</c> — <c>Valor</c> é polimórfico (escalar ou array, via
     /// <c>leitor.Valor</c>) — mas <c>CondicaoDnf.Criar</c> recusa uma string em branco como
     /// forma incoerente com o operador, com o código de domínio (não o genérico
     /// <c>EnvelopeMalformado</c>): é a mesma família de recusa nomeada (nunca 500), só que
     /// mais específica, propagada pelo mesmo caminho (<see cref="LeitorEnvelope.Propagar{T}"/>).
     /// </summary>
-    [Fact(DisplayName = "Texto vazio em criteriosDesempate.args.valor é recusado pelo código de domínio de CondicaoDnf")]
+    [Fact(DisplayName = "Texto vazio em criteriosDesempate.parametros.valor é recusado pelo código de domínio de CondicaoDnf")]
     public void TextoVazio_NoValorDoPredicado_RecusaComCodigoDeDominio()
     {
         Result<EnvelopeReidratado> resultado = Reidratar(envelope =>
-            Definir(envelope, "criteriosDesempate.3.args.valor", "   "));
+            Definir(envelope, "criteriosDesempate.3.parametros.valor", "   "));
 
         resultado.IsFailure.Should().BeTrue(
             "um valor em branco no predicado de fato faria round-trip PERFEITO e restauraria um desempate que não decide nada");

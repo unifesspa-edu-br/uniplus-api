@@ -33,7 +33,7 @@ using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Seed;
 /// outras tabelas do módulo, como <c>versoes_configuracao</c>, que têm os seus).
 /// </para>
 /// <para>
-/// <c>esquema_args</c> (schema dos argumentos) e <c>invariantes</c> são
+/// <c>esquema_args</c> (schema dos parâmetros) e <c>invariantes</c> são
 /// colunas <c>jsonb</c>; o <c>hash</c> content-addressable da definição é
 /// computado no domínio (<c>HashCanonicalComputer.ComputeRegraCatalogo</c>).
 /// </para>

@@ -23,52 +23,52 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
     /// O critério de desempate por área do ENEM é o sexto da ordem no processo rico: é o
     /// índice 5 do array canônico, ordenado pela ordem do critério.
     /// </summary>
-    private static JsonObject ArgsDoDesempatePorArea(JsonObject envelope)
+    private static JsonObject ParametrosDoDesempatePorArea(JsonObject envelope)
     {
         JsonObject criterio = envelope["criteriosDesempate"]!.AsArray()[5]!.AsObject();
         criterio["regra"]!["codigo"]!.GetValue<string>().Should().Be(
             CriterioDesempateCodigo.MaiorNotaAreaEnem, "pré-condição: o índice 5 é o desempate por área do ENEM");
-        return criterio["args"]!.AsObject();
+        return criterio["parametros"]!.AsObject();
     }
 
-    [Fact(DisplayName = "criteriosDesempate[].args.areas que não é lista é recusado")]
+    [Fact(DisplayName = "criteriosDesempate[].parametros.areas que não é lista é recusado")]
     public void DesempatePorArea_AreasForaDeLista_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            ArgsDoDesempatePorArea(envelope)["areas"] = "REDACAO");
+            ParametrosDoDesempatePorArea(envelope)["areas"] = "REDACAO");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain("criteriosDesempate[5].args");
+        resultado.Error.Message.Should().Contain("criteriosDesempate[5].parametros");
     }
 
-    [Fact(DisplayName = "criteriosDesempate[].args.areas com item que não é texto é recusado")]
+    [Fact(DisplayName = "criteriosDesempate[].parametros.areas com item que não é texto é recusado")]
     public void DesempatePorArea_AreaQueNaoETexto_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            ArgsDoDesempatePorArea(envelope)["areas"]!.AsArray().Add(7));
+            ParametrosDoDesempatePorArea(envelope)["areas"]!.AsArray().Add(7));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain("criteriosDesempate[5].args.areas[3]");
+        resultado.Error.Message.Should().Contain("criteriosDesempate[5].parametros.areas[3]");
     }
 
-    [Fact(DisplayName = "criteriosDesempate[].args.areas vazia é recusada pela mesma regra da gravação")]
+    [Fact(DisplayName = "criteriosDesempate[].parametros.areas vazia é recusada pela mesma regra da gravação")]
     public void DesempatePorArea_SemAreas_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            ArgsDoDesempatePorArea(envelope)["areas"] = new JsonArray());
+            ParametrosDoDesempatePorArea(envelope)["areas"] = new JsonArray());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("CriterioDesempate.AreasObrigatorias");
     }
 
-    [Fact(DisplayName = "criteriosDesempate[].args.areas com área repetida é recusada pela mesma regra da gravação")]
+    [Fact(DisplayName = "criteriosDesempate[].parametros.areas com área repetida é recusada pela mesma regra da gravação")]
     public void DesempatePorArea_AreaRepetida_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
-            JsonArray areas = ArgsDoDesempatePorArea(envelope)["areas"]!.AsArray();
+            JsonArray areas = ParametrosDoDesempatePorArea(envelope)["areas"]!.AsArray();
             areas.Add(areas[0]!.DeepClone());
         });
 
@@ -76,30 +76,30 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
         resultado.Error!.Code.Should().Be("CriterioDesempate.AreaRepetida");
     }
 
-    [Fact(DisplayName = "criteriosDesempate[].args.areas com código fora da forma do cadastro é recusado")]
+    [Fact(DisplayName = "criteriosDesempate[].parametros.areas com código fora da forma do cadastro é recusado")]
     public void DesempatePorArea_CodigoForaDaForma_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            ArgsDoDesempatePorArea(envelope)["areas"]!.AsArray()[0] = "redacao");
+            ParametrosDoDesempatePorArea(envelope)["areas"]!.AsArray()[0] = "redacao");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be("CriterioDesempate.AreaInvalida");
     }
 
-    [Fact(DisplayName = "classificacao.regrasEliminacao[].args da falta em dia de prova do ENEM com chave intrusa é recusado")]
-    public void EliminacaoPorFaltaEmDiaDeProvaEnem_ChaveIntrusaNosArgs_Recusa()
+    [Fact(DisplayName = "classificacao.regrasEliminacao[].parametros da falta em dia de prova do ENEM com chave intrusa é recusado")]
+    public void EliminacaoPorFaltaEmDiaDeProvaEnem_ChaveIntrusaNosParametros_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
         {
             JsonObject falta = Navegar(envelope, "classificacao.regrasEliminacao.4");
             falta["regra"]!["codigo"]!.GetValue<string>().Should().Be(
                 RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "pré-condição: o índice 4 é a eliminação por falta em dia de prova");
-            falta["args"]!.AsObject()["chaveIntrusa"] = "x";
+            falta["parametros"]!.AsObject()["chaveIntrusa"] = "x";
         });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain("classificacao.regrasEliminacao[4].args");
+        resultado.Error.Message.Should().Contain("classificacao.regrasEliminacao[4].parametros");
     }
 
     [Fact(DisplayName = "classificacao.regrasEliminacao[] com a falta em dia de prova do ENEM repetida é recusada pela mesma regra da gravação")]
@@ -122,15 +122,15 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
         Navegar(envelope, "classificacao")["regrasEliminacao"]!.AsArray()
             .Single(regra => regra!["regra"]!["codigo"]!.GetValue<string>() == RegraEliminacaoCodigo.ElimAusenciaNaEtapa)!;
 
-    [Fact(DisplayName = "classificacao.regrasEliminacao[].args da ausência na etapa com chave intrusa é recusado")]
-    public void EliminacaoPorAusenciaNaEtapa_ChaveIntrusaNosArgs_Recusa()
+    [Fact(DisplayName = "classificacao.regrasEliminacao[].parametros da ausência na etapa com chave intrusa é recusado")]
+    public void EliminacaoPorAusenciaNaEtapa_ChaveIntrusaNosParametros_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
-            AusenciaNaEtapaDoEnvelope(envelope)["args"]!.AsObject()["chaveIntrusa"] = "x");
+            AusenciaNaEtapaDoEnvelope(envelope)["parametros"]!.AsObject()["chaveIntrusa"] = "x");
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain(".args");
+        resultado.Error.Message.Should().Contain(".parametros");
     }
 
     [Fact(DisplayName = "classificacao.regrasEliminacao[] com a ausência na mesma etapa repetida é recusada pela mesma regra da gravação")]
@@ -154,7 +154,7 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
             JsonObject corte = Navegar(envelope, "classificacao.regrasEliminacao.0");
             corte["regra"]!["codigo"]!.GetValue<string>().Should().Be(
                 RegraEliminacaoCodigo.ElimCorteEmArea, "pré-condição: o índice 0 é o corte em área");
-            corte["args"]!["areaCodigo"] = "FISICA";
+            corte["parametros"]!["areaCodigo"] = "FISICA";
         });
 
         resultado.IsFailure.Should().BeTrue();
@@ -171,7 +171,7 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
             corte["regra"]!["codigo"]!.GetValue<string>().Should().Be(
                 RegraEliminacaoCodigo.ElimCorteEmArea, "pré-condição: o índice 0 é o corte em área");
             JsonNode outro = corte.DeepClone();
-            outro["args"]!["minimo"] = "500.0000";
+            outro["parametros"]!["minimo"] = "500.0000";
             regras.Insert(1, outro);
         });
 
@@ -179,7 +179,7 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
         resultado.Error!.Code.Should().Be("ConfiguracaoClassificacao.CorteEmAreaRepetido");
     }
 
-    [Fact(DisplayName = "classificacao.regrasEliminacao[].args do corte em área sem a área é recusado")]
+    [Fact(DisplayName = "classificacao.regrasEliminacao[].parametros do corte em área sem a área é recusado")]
     public void CorteEmArea_SemArea_Recusa()
     {
         Result<EnvelopeReidratado> resultado = ReidratarComEnvelopeAdulterado(envelope =>
@@ -187,11 +187,11 @@ public sealed class EnvelopeCodecRecusaDesempateEEliminacaoTests
             JsonObject corte = Navegar(envelope, "classificacao.regrasEliminacao.0");
             corte["regra"]!["codigo"]!.GetValue<string>().Should().Be(
                 RegraEliminacaoCodigo.ElimCorteEmArea, "pré-condição: o índice 0 é o corte em área");
-            corte["args"]!.AsObject().Remove("areaCodigo");
+            corte["parametros"]!.AsObject().Remove("areaCodigo");
         });
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(ErrosCodecEnvelope.EnvelopeMalformado);
-        resultado.Error.Message.Should().Contain("classificacao.regrasEliminacao[0].args");
+        resultado.Error.Message.Should().Contain("classificacao.regrasEliminacao[0].parametros");
     }
 }

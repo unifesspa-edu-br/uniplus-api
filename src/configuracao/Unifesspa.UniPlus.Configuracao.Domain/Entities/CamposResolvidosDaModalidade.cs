@@ -11,7 +11,7 @@ public sealed record CamposResolvidosDaModalidade(
     ComposicaoVagas ComposicaoVagas,
     string? ComposicaoOrigem,
     RegraRemanejamento? RegraRemanejamento,
-    RemanejamentoArgs RemanejamentoArgs,
+    RemanejamentoParametros RemanejamentoParametros,
     PredicadoDnf? RegraDeAplicabilidade,
     AcaoQuandoIndeferido? AcaoQuandoIndeferido,
     string? BaseLegal);

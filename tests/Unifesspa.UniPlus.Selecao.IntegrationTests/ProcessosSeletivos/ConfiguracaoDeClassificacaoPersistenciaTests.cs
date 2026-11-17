@@ -21,7 +21,7 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Cenar
 /// classificação (Story #775, bloco 15º): persiste e recarrega
 /// <c>ConfiguracaoClassificacao</c> + <c>RegraEliminacao</c>, provando o
 /// mapeamento EF (owned types de <c>ReferenciaRegra</c>, coluna <c>json</c>
-/// — não <c>jsonb</c> — da união polimórfica <c>ArgsRegraEliminacao</c> para
+/// — não <c>jsonb</c> — da união polimórfica <c>ParametrosRegraEliminacao</c> para
 /// as 4 variantes) contra Postgres real, e a reconfiguração sobre o agregado
 /// tracked (mesma regressão de <c>ValueGeneratedNever</c> validada na F0).
 /// </summary>
@@ -61,19 +61,19 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
 
         RegraEliminacao notaMinima = RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"),
-            new ArgsElimNotaMinimaEtapa(etapa.Id, 3m)).Value!;
+            new ParametrosElimNotaMinimaEtapa(etapa.Id, 3m)).Value!;
         RegraEliminacao corteRedacao = RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "b"),
-            new ArgsElimCorteEmArea("REDACAO", 400m)).Value!;
+            new ParametrosElimCorteEmArea("REDACAO", 400m)).Value!;
         RegraEliminacao zeroEmArea = RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimZeroEmArea, "c"),
-            new ArgsElimZeroEmArea()).Value!;
+            new ParametrosElimZeroEmArea()).Value!;
         RegraEliminacao faltaEmDiaDeProva = RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "0"),
-            new ArgsElimFaltaEmDiaDeProvaEnem()).Value!;
+            new ParametrosElimFaltaEmDiaDeProvaEnem()).Value!;
         RegraEliminacao ausenciaNaEtapa = RegraEliminacao.Criar(
             Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "7"),
-            new ArgsElimAusenciaNaEtapa(etapa.Id)).Value!;
+            new ParametrosElimAusenciaNaEtapa(etapa.Id)).Value!;
 
         Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
@@ -105,27 +105,27 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
         classificacao.RegraOrdemAlocacao.Codigo.Should().Be(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria);
         classificacao.RegrasEliminacao.Should().HaveCount(5);
 
-        ArgsElimNotaMinimaEtapa argsNotaMinima = (ArgsElimNotaMinimaEtapa)classificacao.RegrasEliminacao
-            .Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimNotaMinimaEtapa).Args;
-        argsNotaMinima.EtapaRef.Should().Be(etapa.Id);
-        argsNotaMinima.NotaMinima.Should().Be(3m);
+        ParametrosElimNotaMinimaEtapa parametrosNotaMinima = (ParametrosElimNotaMinimaEtapa)classificacao.RegrasEliminacao
+            .Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimNotaMinimaEtapa).Parametros;
+        parametrosNotaMinima.EtapaRef.Should().Be(etapa.Id);
+        parametrosNotaMinima.NotaMinima.Should().Be(3m);
 
-        ArgsElimCorteEmArea argsCorteRedacao = (ArgsElimCorteEmArea)classificacao.RegrasEliminacao
-            .Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimCorteEmArea).Args;
-        argsCorteRedacao.Minimo.Should().Be(400m);
+        ParametrosElimCorteEmArea parametrosCorteRedacao = (ParametrosElimCorteEmArea)classificacao.RegrasEliminacao
+            .Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimCorteEmArea).Parametros;
+        parametrosCorteRedacao.Minimo.Should().Be(400m);
 
         classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimZeroEmArea)
-            .Args.Should().BeOfType<ArgsElimZeroEmArea>();
+            .Parametros.Should().BeOfType<ParametrosElimZeroEmArea>();
         classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem)
-            .Args.Should().BeOfType<ArgsElimFaltaEmDiaDeProvaEnem>();
+            .Parametros.Should().BeOfType<ParametrosElimFaltaEmDiaDeProvaEnem>();
 
         classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimAusenciaNaEtapa)
-            .Args.Should().Be(new ArgsElimAusenciaNaEtapa(etapa.Id));
+            .Parametros.Should().Be(new ParametrosElimAusenciaNaEtapa(etapa.Id));
 
-        string argsGravados = await readContext.Database.SqlQuery<string>($"""
-            SELECT args::text AS "Value" FROM selecao.regras_eliminacao WHERE id = {faltaEmDiaDeProva.Id}
+        string parametrosGravados = await readContext.Database.SqlQuery<string>($"""
+            SELECT parametros::text AS "Value" FROM selecao.regras_eliminacao WHERE id = {faltaEmDiaDeProva.Id}
             """).SingleAsync();
-        argsGravados.Should().Contain("\"$tipo\":\"faltaEmDiaDeProvaEnem\"",
+        parametrosGravados.Should().Contain("\"$tipo\":\"faltaEmDiaDeProvaEnem\"",
             "o discriminador gravado é o que a leitura usa para voltar à variante certa");
     }
 
@@ -189,7 +189,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
 
             RegraEliminacao eliminacao = RegraEliminacao.Criar(
                 Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "d"),
-                new ArgsElimCorteEmArea("REDACAO", 350m)).Value!;
+                new ParametrosElimCorteEmArea("REDACAO", 350m)).Value!;
             ConfiguracaoClassificacao nova = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
             {
                 RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
@@ -230,7 +230,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
         processo.DefinirEtapas([etapa]);
 
         RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"), new ArgsElimNotaMinimaEtapa(etapa.Id, 3m)).Value!;
+            Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"), new ParametrosElimNotaMinimaEtapa(etapa.Id, 3m)).Value!;
         ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
         {
             RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
@@ -276,7 +276,7 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
         etapaAtualizada.Nome.Should().Be("Prova Objetiva (revisada)");
 
         RegraEliminacao eliminacaoRecarregada = recarregado.Classificacao!.RegrasEliminacao.Single();
-        ((ArgsElimNotaMinimaEtapa)eliminacaoRecarregada.Args).EtapaRef.Should().Be(etapa.Id);
+        ((ParametrosElimNotaMinimaEtapa)eliminacaoRecarregada.Parametros).EtapaRef.Should().Be(etapa.Id);
     }
 
     [Theory(DisplayName = "Persiste e recarrega BaseadoEmEnem — true e false (#850)")]

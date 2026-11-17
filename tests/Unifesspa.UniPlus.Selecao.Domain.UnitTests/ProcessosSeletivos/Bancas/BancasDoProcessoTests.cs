@@ -29,7 +29,7 @@ public sealed class BancasDoProcessoTests
 
     private static RegraRecursoFase RegraDeRecurso() => RegraRecursoFase.Criar(
         ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
-        new ArgsRegraPrazoRecurso(2m, UnidadePrazo.DiasUteis, null, null, false, null, null),
+        new ParametrosRegraPrazoRecurso(2m, UnidadePrazo.DiasUteis, null, null, false, null, null),
         ProcessoConformeFactory.ProdutoPreliminarId).Value!;
 
     private static readonly ReferenciaRegra CorrecaoIndependente =
@@ -55,7 +55,7 @@ public sealed class BancasDoProcessoTests
         ]).IsSuccess.Should().BeTrue();
         Guid preliminar = etapa.Produtos.Single(p => p.Papel == PapelProdutoFase.Preliminar).Id;
         etapa.DefinirRecursos([RecursoDaEtapa.Criar(
-            AncoraDoRecurso.AtoPublicado, RegraDeRecurso().Regra, RegraDeRecurso().Args, preliminar).Value!]).IsSuccess.Should().BeTrue();
+            AncoraDoRecurso.AtoPublicado, RegraDeRecurso().Regra, RegraDeRecurso().Parametros, preliminar).Value!]).IsSuccess.Should().BeTrue();
         return etapa;
     }
 

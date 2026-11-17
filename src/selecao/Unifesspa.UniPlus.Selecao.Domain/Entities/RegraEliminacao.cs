@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Uma regra de eliminação por cálculo da <see cref="ConfiguracaoClassificacao"/>
 /// (Story #775): referencia uma regra tipada do
-/// <c>regras_do_catalogo</c> (<c>tipo=regra_eliminacao</c>) e seus args aplicados.
+/// <c>regras_do_catalogo</c> (<c>tipo=regra_eliminacao</c>) e seus parâmetros aplicados.
 /// Cardinalidade múltipla — ex.: o PS Convênios exige duas
 /// <c>ELIM-NOTA-MINIMA-ETAPA</c> independentes (Objetiva e Redação).
 /// </summary>
@@ -23,45 +23,45 @@ public sealed class RegraEliminacao : EntityBase
 {
     public Guid ConfiguracaoClassificacaoId { get; private set; }
     public ReferenciaRegra Regra { get; private set; } = null!;
-    public ArgsRegraEliminacao Args { get; private set; } = null!;
+    public ParametrosRegraEliminacao Parametros { get; private set; } = null!;
 
     private RegraEliminacao() { }
 
     /// <summary>
-    /// Cria a regra de eliminação validando que <paramref name="args"/> é a
+    /// Cria a regra de eliminação validando que <paramref name="parametros"/> é a
     /// variante correta para o <see cref="ReferenciaRegra.Codigo"/>
     /// referenciado — a existência do <c>etapa_ref</c> no processo é
     /// validada pela raiz, que tem acesso às etapas.
     /// </summary>
-    public static Result<RegraEliminacao> Criar(ReferenciaRegra regra, ArgsRegraEliminacao args)
+    public static Result<RegraEliminacao> Criar(ReferenciaRegra regra, ParametrosRegraEliminacao parametros)
     {
         ArgumentNullException.ThrowIfNull(regra);
-        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(parametros);
 
-        bool argsCompativeis = regra.Codigo switch
+        bool parametrosCompativeis = regra.Codigo switch
         {
-            RegraEliminacaoCodigo.ElimNotaMinimaEtapa => args is ArgsElimNotaMinimaEtapa,
-            RegraEliminacaoCodigo.ElimCorteEmArea => args is ArgsElimCorteEmArea,
-            RegraEliminacaoCodigo.ElimZeroEmArea => args is ArgsElimZeroEmArea,
-            RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => args is ArgsElimFaltaEmDiaDeProvaEnem,
-            RegraEliminacaoCodigo.ElimAusenciaNaEtapa => args is ArgsElimAusenciaNaEtapa,
+            RegraEliminacaoCodigo.ElimNotaMinimaEtapa => parametros is ParametrosElimNotaMinimaEtapa,
+            RegraEliminacaoCodigo.ElimCorteEmArea => parametros is ParametrosElimCorteEmArea,
+            RegraEliminacaoCodigo.ElimZeroEmArea => parametros is ParametrosElimZeroEmArea,
+            RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => parametros is ParametrosElimFaltaEmDiaDeProvaEnem,
+            RegraEliminacaoCodigo.ElimAusenciaNaEtapa => parametros is ParametrosElimAusenciaNaEtapa,
             _ => false,
         };
 
-        if (!argsCompativeis)
+        if (!parametrosCompativeis)
         {
             return Result<RegraEliminacao>.Failure(new DomainError(
-                "RegraEliminacao.ArgsIncompativeisComRegra",
-                $"Os args informados não correspondem à regra {regra.Codigo}."));
+                "RegraEliminacao.ParametrosIncompativeisComRegra",
+                $"Os parâmetros informados não correspondem à regra {regra.Codigo}."));
         }
 
-        if (args is ArgsElimNotaMinimaEtapa { NotaMinima: < 0 })
+        if (parametros is ParametrosElimNotaMinimaEtapa { NotaMinima: < 0 })
         {
             return Result<RegraEliminacao>.Failure(new DomainError(
                 "RegraEliminacao.NotaMinimaInvalida", "A nota mínima da eliminação deve ser não negativa."));
         }
 
-        if (args is ArgsElimCorteEmArea corte)
+        if (parametros is ParametrosElimCorteEmArea corte)
         {
             if (!CriterioDesempate.CodigoDeAreaValido(corte.AreaCodigo))
             {
@@ -77,7 +77,7 @@ public sealed class RegraEliminacao : EntityBase
             }
         }
 
-        return Result<RegraEliminacao>.Success(new RegraEliminacao { Regra = regra, Args = args });
+        return Result<RegraEliminacao>.Success(new RegraEliminacao { Regra = regra, Parametros = parametros });
     }
 
     internal void VincularConfiguracao(Guid configuracaoClassificacaoId) =>

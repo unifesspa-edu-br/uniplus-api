@@ -39,7 +39,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         result.Error!.Code.Should().Be("ProcessoSeletivo.NaoEncontrado");
     }
 
-    [Fact(DisplayName = "Handle com DESEMPATE-MAIOR-NOTA-ETAPA resolve args e persiste")]
+    [Fact(DisplayName = "Handle com DESEMPATE-MAIOR-NOTA-ETAPA resolve parâmetros e persiste")]
     public async Task Handle_MaiorNotaEtapa_Persiste()
     {
         ProcessoSeletivo processo = NovoProcesso("PSIQ 2026", TiposDeProcessoDeTeste.PSIQ);
@@ -52,7 +52,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
 
         result.IsSuccess.Should().BeTrue();
         processo.CriteriosDesempate.Should().ContainSingle();
-        ((ArgsDesempateMaiorNotaEtapa)processo.CriteriosDesempate.Single().Args).EtapaRef.Should().Be(etapa.Id);
+        ((ParametrosDesempateMaiorNotaEtapa)processo.CriteriosDesempate.Single().Parametros).EtapaRef.Should().Be(etapa.Id);
         await cenario.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
@@ -68,7 +68,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         result.Error!.Code.Should().Be("CriterioDesempate.EtapaRefObrigatorio");
     }
 
-    [Fact(DisplayName = "Handle com DESEMPATE-IDOSO resolve args e persiste")]
+    [Fact(DisplayName = "Handle com DESEMPATE-IDOSO resolve parâmetros e persiste")]
     public async Task Handle_Idoso_Persiste()
     {
         ProcessoSeletivo processo = NovoProcesso("PSE 2026", TiposDeProcessoDeTeste.PSECampo);
@@ -78,7 +78,7 @@ public sealed class DefinirCriteriosDesempateCommandHandlerTests
         Result result = await cenario.DefinirAsync(Comando(processo.Id, criterio));
 
         result.IsSuccess.Should().BeTrue();
-        ((ArgsDesempateIdoso)processo.CriteriosDesempate.Single().Args).IdadeMinima.Should().Be(60);
+        ((ParametrosDesempateIdoso)processo.CriteriosDesempate.Single().Parametros).IdadeMinima.Should().Be(60);
     }
 
     [Fact(DisplayName = "Lista vazia remove os critérios sem consultar o catálogo")]

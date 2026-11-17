@@ -39,7 +39,7 @@ internal sealed class CriterioDesempateConfiguration : IEntityTypeConfiguration<
         builder.OwnsOne(c => c.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(c => c.Regra).IsRequired();
 
-        // Args polimórficos (união fechada de 5 variantes, ADR-0058 §"Discriminated
+        // Parâmetros polimórficos (união fechada de 5 variantes, ADR-0058 §"Discriminated
         // union" — mesmo molde de PredicadoObrigatoriedade): serializados via
         // System.Text.Json com o discriminador "$tipo".
         //
@@ -48,13 +48,14 @@ internal sealed class CriterioDesempateConfiguration : IEntityTypeConfiguration<
         // propriedade do objeto. O tipo "jsonb" do Postgres normaliza/reordena as
         // chaves (por tamanho, depois alfabeticamente) na escrita — uma variante
         // com uma propriedade mais curta que "$tipo" (5 chars), como
-        // ArgsDesempatePredicadoFato.Fato (4 chars), reordenaria "fato" para antes
+        // ParametrosDesempatePredicadoFato.Fato (4 chars), reordenaria "fato" para antes
         // de "$tipo", quebrando a leitura com NotSupportedException. O tipo "json"
         // preserva o texto exatamente como escrito (sem reordenar), evitando o
         // problema — sem custo aqui, já que esta coluna nunca é consultada via
         // operadores jsonb (containment/GIN).
-        builder.Property(c => c.Args)
-            .HasConversion(ArgsConverter, ArgsComparer)
+        builder.Property(c => c.Parametros)
+            .HasColumnName("args")
+            .HasConversion(ParametrosConverter, ParametrosComparer)
             .HasColumnType("json")
             .IsRequired();
 
@@ -76,20 +77,20 @@ internal sealed class CriterioDesempateConfiguration : IEntityTypeConfiguration<
         WriteIndented = false,
     };
 
-    private static readonly ValueConverter<ArgsCriterioDesempate, string> ArgsConverter =
+    private static readonly ValueConverter<ParametrosCriterioDesempate, string> ParametrosConverter =
         new(
-            args => JsonSerializer.Serialize(args, JsonOptions),
-            json => JsonSerializer.Deserialize<ArgsCriterioDesempate>(json, JsonOptions)!);
+            parametros => JsonSerializer.Serialize(parametros, JsonOptions),
+            json => JsonSerializer.Deserialize<ParametrosCriterioDesempate>(json, JsonOptions)!);
 
-    private static readonly ValueComparer<ArgsCriterioDesempate> ArgsComparer =
+    private static readonly ValueComparer<ParametrosCriterioDesempate> ParametrosComparer =
         new(
             (a, b) => Serialize(a) == Serialize(b),
             v => v == null ? 0 : Serialize(v).GetHashCode(StringComparison.Ordinal),
             v => Deserialize(Serialize(v)));
 
-    private static string Serialize(ArgsCriterioDesempate? v) =>
+    private static string Serialize(ParametrosCriterioDesempate? v) =>
         v is null ? string.Empty : JsonSerializer.Serialize(v, JsonOptions);
 
-    private static ArgsCriterioDesempate Deserialize(string json) =>
-        JsonSerializer.Deserialize<ArgsCriterioDesempate>(json, JsonOptions)!;
+    private static ParametrosCriterioDesempate Deserialize(string json) =>
+        JsonSerializer.Deserialize<ParametrosCriterioDesempate>(json, JsonOptions)!;
 }

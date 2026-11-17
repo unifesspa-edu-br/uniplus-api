@@ -16,7 +16,7 @@ internal static class ManifestoDeEtapasVagasEClassificacao
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
 
         [typeof(RecursoDaEtapa)] = (
-            ["Ancora", "Regra", "Args", "ProdutoAncoraId", "Procedimentos"],
+            ["Ancora", "Regra", "Parametros", "ProdutoAncoraId", "Procedimentos"],
             [("EtapaProcessoId", "FK interna — reconstruída junto com o grafo.")]),
 
         // Os procedimentos de recurso da janela, iguais na etapa e na fase. A coleção guarda a ordem canônica e cada
@@ -82,8 +82,8 @@ internal static class ManifestoDeEtapasVagasEClassificacao
                 ("Quadro", "Derivada das vagas ofertadas e das colunas do ramo — recomputada, nunca persistida."),
             ]),
 
-        [typeof(ArgsReduzirDe)] = (["ModalidadeCodigo"], []),
-        [typeof(ArgsReduzirProporcionalEm)] = (["ModalidadeCodigos"], []),
+        [typeof(ParametrosReduzirDe)] = (["ModalidadeCodigo"], []),
+        [typeof(ParametrosReduzirProporcionalEm)] = (["ModalidadeCodigos"], []),
 
         [typeof(VagasDaModalidade)] = (["ModalidadeCodigo", "Quantidade"], []),
 
@@ -154,7 +154,7 @@ internal static class ManifestoDeEtapasVagasEClassificacao
             [("ConfiguracaoCascataRemanejamentoId", "FK interna.")]),
 
         [typeof(CriterioDesempate)] = (
-            ["Ordem", "Regra", "Args"],
+            ["Ordem", "Regra", "Parametros"],
             [("ProcessoSeletivoId", "FK interna.")]),
 
         [typeof(ConfiguracaoClassificacao)] = (
@@ -166,7 +166,7 @@ internal static class ManifestoDeEtapasVagasEClassificacao
             [("ProcessoSeletivoId", "FK interna.")]),
 
         [typeof(RegraEliminacao)] = (
-            ["Regra", "Args"],
+            ["Regra", "Parametros"],
             [("ConfiguracaoClassificacaoId", "FK interna.")]),
 
         // Quadro de pesos por área do ENEM congelado na classificação: a cópia por valor da

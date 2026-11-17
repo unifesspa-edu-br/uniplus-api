@@ -157,7 +157,7 @@ public sealed class EntradaDoPreliminarDaFaseTests
         List<ProdutoDaFase> produtos = [.. atos.Select(static ato => ProdutoDaFase.Criar(ato, PapelProdutoFase.Preliminar))];
         RegraRecursoFase regra = RegraRecursoFase.Criar(
             ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
-            new ArgsRegraPrazoRecurso(prazo, UnidadePrazo.DiasUteis, null, null, false, null, null),
+            new ParametrosRegraPrazoRecurso(prazo, UnidadePrazo.DiasUteis, null, null, false, null, null),
             produtos[ancora].Id,
             procedimentos).Value!;
 

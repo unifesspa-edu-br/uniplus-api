@@ -41,7 +41,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     }
 
     private static Result DefinirODesempatePorAreaEnem(ProcessoSeletivo processo) => processo.DefinirCriteriosDesempate(
-        [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]);
+        [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]);
 
     private static ConfiguracaoClassificacao ClassificacaoLocalSemEnem() => ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
     {
@@ -190,7 +190,7 @@ public sealed class ConformidadePublicabilidadeEstruturalEnemEOpcoesTests
     {
         ProcessoSeletivo processo = ProcessoEnemLocal([OfertaAmpla(10, GrupoTecnologica)]);
         processo.DefinirCriteriosDesempate(
-            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ArgsDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]).IsSuccess.Should().BeTrue();
+            [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.MaiorNotaAreaEnem, 'e'), new ParametrosDesempateMaiorNotaAreaEnem(["REDACAO"])).Value!]).IsSuccess.Should().BeTrue();
 
         ConfiguracaoClassificacao semQuadro = ClassificacaoEnemLocal(QuadroPesoAreaEnemDeTeste.Completo());
         EsvaziarQuadro(semQuadro);

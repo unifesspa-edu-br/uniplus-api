@@ -12,7 +12,7 @@ using Unifesspa.UniPlus.Configuracao.Contracts;
 
 /// <summary>
 /// Handler do <see cref="DefinirClassificacaoCommand"/> (Story #775): resolve cada regra no catálogo
-/// <c>regras_do_catalogo</c> (<see cref="IRegraCatalogoReader"/>, Story #772), monta os args
+/// <c>regras_do_catalogo</c> (<see cref="IRegraCatalogoReader"/>, Story #772), monta os parâmetros
 /// tipados de cada regra de eliminação conforme o código, repassa <c>BaseadoEmEnem</c> e
 /// congela as referências — a invariante ENEM×eliminação e a coerência de arredondamento são
 /// validadas por <see cref="ConfiguracaoClassificacao.Criar"/>, que depende da regra de
@@ -284,49 +284,49 @@ public static class DefinirClassificacaoCommandHandler
                 $"A regra {input.RegraCodigo}/{input.RegraVersao} não é do tipo regra_eliminacao."));
         }
 
-        Result<ArgsRegraEliminacao> argsResult = MontarArgs(input);
-        if (argsResult.IsFailure)
+        Result<ParametrosRegraEliminacao> parametrosResult = MontarParametros(input);
+        if (parametrosResult.IsFailure)
         {
-            return Result<RegraEliminacao>.Failure(argsResult.Error!);
+            return Result<RegraEliminacao>.Failure(parametrosResult.Error!);
         }
 
-        return RegraEliminacao.Criar(regra.Referencia(), argsResult.Value!);
+        return RegraEliminacao.Criar(regra.Referencia(), parametrosResult.Value!);
     }
 
-    private static Result<ArgsRegraEliminacao> MontarArgs(RegraEliminacaoInput input) =>
+    private static Result<ParametrosRegraEliminacao> MontarParametros(RegraEliminacaoInput input) =>
         input.RegraCodigo switch
         {
             RegraEliminacaoCodigo.ElimNotaMinimaEtapa => input.EtapaRef is { } etapaRef && input.NotaMinima is { } notaMinima && input.Minimo is null && input.AreaCodigo is null
-                ? Result<ArgsRegraEliminacao>.Success(new ArgsElimNotaMinimaEtapa(etapaRef, notaMinima))
-                : Result<ArgsRegraEliminacao>.Failure(new DomainError(
+                ? Result<ParametrosRegraEliminacao>.Success(new ParametrosElimNotaMinimaEtapa(etapaRef, notaMinima))
+                : Result<ParametrosRegraEliminacao>.Failure(new DomainError(
                     "RegraEliminacao.EtapaRefENotaMinimaObrigatorios",
                     $"EtapaRef e NotaMinima são obrigatórios (e Minimo/AreaCodigo não se aplicam) para a regra {RegraEliminacaoCodigo.ElimNotaMinimaEtapa}.")),
 
             RegraEliminacaoCodigo.ElimCorteEmArea => input.AreaCodigo is { } areaCodigo && input.Minimo is { } minimo && input.EtapaRef is null && input.NotaMinima is null
-                ? Result<ArgsRegraEliminacao>.Success(new ArgsElimCorteEmArea(areaCodigo, minimo))
-                : Result<ArgsRegraEliminacao>.Failure(new DomainError(
+                ? Result<ParametrosRegraEliminacao>.Success(new ParametrosElimCorteEmArea(areaCodigo, minimo))
+                : Result<ParametrosRegraEliminacao>.Failure(new DomainError(
                     "RegraEliminacao.AreaEMinimoObrigatorios",
                     $"AreaCodigo e Minimo são obrigatórios (e EtapaRef/NotaMinima não se aplicam) para a regra {RegraEliminacaoCodigo.ElimCorteEmArea}.")),
 
-            RegraEliminacaoCodigo.ElimZeroEmArea => SemArgs(input, new ArgsElimZeroEmArea()),
+            RegraEliminacaoCodigo.ElimZeroEmArea => SemParametros(input, new ParametrosElimZeroEmArea()),
 
-            RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => SemArgs(input, new ArgsElimFaltaEmDiaDeProvaEnem()),
+            RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => SemParametros(input, new ParametrosElimFaltaEmDiaDeProvaEnem()),
 
             RegraEliminacaoCodigo.ElimAusenciaNaEtapa => input.EtapaRef is { } etapaRefAusencia && input.NotaMinima is null && input.Minimo is null && input.AreaCodigo is null
-                ? Result<ArgsRegraEliminacao>.Success(new ArgsElimAusenciaNaEtapa(etapaRefAusencia))
-                : Result<ArgsRegraEliminacao>.Failure(new DomainError(
+                ? Result<ParametrosRegraEliminacao>.Success(new ParametrosElimAusenciaNaEtapa(etapaRefAusencia))
+                : Result<ParametrosRegraEliminacao>.Failure(new DomainError(
                     "RegraEliminacao.EtapaRefObrigatorio",
                     $"EtapaRef é obrigatório (e NotaMinima/Minimo/AreaCodigo não se aplicam) para a regra {RegraEliminacaoCodigo.ElimAusenciaNaEtapa}.")),
 
-            _ => Result<ArgsRegraEliminacao>.Failure(new DomainError(
+            _ => Result<ParametrosRegraEliminacao>.Failure(new DomainError(
                 "RegraEliminacao.RegraTipoInvalido",
                 $"Código de regra de eliminação desconhecido: {input.RegraCodigo}.")),
         };
 
-    private static Result<ArgsRegraEliminacao> SemArgs(RegraEliminacaoInput input, ArgsRegraEliminacao args) =>
+    private static Result<ParametrosRegraEliminacao> SemParametros(RegraEliminacaoInput input, ParametrosRegraEliminacao parametros) =>
         input.EtapaRef is null && input.NotaMinima is null && input.Minimo is null && input.AreaCodigo is null
-            ? Result<ArgsRegraEliminacao>.Success(args)
-            : Result<ArgsRegraEliminacao>.Failure(new DomainError(
-                "RegraEliminacao.ArgsIncompativeisComRegra",
-                $"A regra {input.RegraCodigo} não aceita args (EtapaRef/NotaMinima/Minimo/AreaCodigo)."));
+            ? Result<ParametrosRegraEliminacao>.Success(parametros)
+            : Result<ParametrosRegraEliminacao>.Failure(new DomainError(
+                "RegraEliminacao.ParametrosIncompativeisComRegra",
+                $"A regra {input.RegraCodigo} não aceita parâmetros (EtapaRef/NotaMinima/Minimo/AreaCodigo)."));
 }

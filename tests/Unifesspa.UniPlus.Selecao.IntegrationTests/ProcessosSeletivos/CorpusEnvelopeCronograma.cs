@@ -132,7 +132,7 @@ internal static class CorpusEnvelopeCronograma
     internal static RegraRecursoFase RegraDeRecursoDaFase(int variante) =>
         RegraRecursoFase.Criar(
             Regra(RegraPrazoRecursoCodigo.AncoradoEmAto, '9'),
-            new ArgsRegraPrazoRecurso(
+            new ParametrosRegraPrazoRecurso(
                 PrazoValor: 48.0000m,
                 PrazoUnidade: UnidadePrazo.Horas,
                 SuspensividadePrimeiraInstanciaValor: 5.0000m,

@@ -48,7 +48,7 @@ public sealed class GateDoAlgoritmoDeContagemTests
         decimal prazoValor = 2m,
         UnidadePrazo? suspensividadeUnidade = null) => RegraRecursoFase.Criar(
             ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", new string('c', 64)),
-            new ArgsRegraPrazoRecurso(
+            new ParametrosRegraPrazoRecurso(
                 PrazoValor: prazoValor,
                 PrazoUnidade: prazoUnidade,
                 SuspensividadePrimeiraInstanciaValor: suspensividadeUnidade is null ? null : 5m,

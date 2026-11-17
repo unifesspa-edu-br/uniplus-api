@@ -156,9 +156,9 @@ internal static class ProcessoComCorrecaoIndependente
         Guid preliminar = etapa.Produtos.Single(produto => produto.Papel == PapelProdutoFase.Preliminar).Id;
         RegraRecursoFase prazo = RegraRecursoFase.Criar(
             ReferenciaRegra.De(RegraPrazoRecursoCodigo.AncoradoEmAto, "v1", ProcessoSeletivoConformeBuilder.HashFixo),
-            new ArgsRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
+            new ParametrosRegraPrazoRecurso(48m, UnidadePrazo.Horas, null, null, false, null, null),
             preliminar).Value!;
-        etapa.DefinirRecursos([RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, prazo.Regra, prazo.Args, preliminar).Value!])
+        etapa.DefinirRecursos([RecursoDaEtapa.Criar(AncoraDoRecurso.AtoPublicado, prazo.Regra, prazo.Parametros, preliminar).Value!])
             .IsSuccess.Should().BeTrue();
     }
 }

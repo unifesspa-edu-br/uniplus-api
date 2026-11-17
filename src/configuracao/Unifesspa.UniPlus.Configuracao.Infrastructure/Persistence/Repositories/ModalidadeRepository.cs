@@ -143,7 +143,7 @@ public sealed class ModalidadeRepository : IModalidadeRepository
 
         // Consulta jsonb: composicao_origem OU qualquer campo de remanejamento_args
         // (destino/par/fallback, extraídos por ->>). SQL cru é necessário porque
-        // RemanejamentoArgs é serializado como jsonb via value converter e o EF não
+        // RemanejamentoParametros é serializado como jsonb via value converter e o EF não
         // traduz acesso aos campos internos em LINQ. O query filter global de
         // soft-delete é aplicado por composição sobre o FromSql.
         FormattableString sql = $@"

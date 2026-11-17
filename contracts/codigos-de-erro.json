@@ -1687,11 +1687,6 @@
       "titulo": "A ampla concorrência vale para todo candidato e não admite condição"
     },
     {
-      "codigo": "uniplus.configuracao.modalidade.argumento_remanejamento_obrigatorio",
-      "status": 422,
-      "titulo": "Argumentos de remanejamento incompatíveis com a regra declarada"
-    },
-    {
       "codigo": "uniplus.configuracao.modalidade.base_legal_tamanho",
       "status": 422,
       "titulo": "Tamanho da base legal da modalidade inválido"
@@ -1765,6 +1760,11 @@
       "codigo": "uniplus.configuracao.modalidade.origem_obrigatoria_para_retirada_de_outra_modalidade",
       "status": 422,
       "titulo": "A modalidade com composição 'retira de' exige a modalidade de origem"
+    },
+    {
+      "codigo": "uniplus.configuracao.modalidade.parametros_remanejamento_obrigatorio",
+      "status": 422,
+      "titulo": "Parâmetros de remanejamento incompatíveis com a regra declarada"
     },
     {
       "codigo": "uniplus.configuracao.modalidade.referencia_inexistente_ou_inativa",
@@ -5077,11 +5077,6 @@
       "titulo": "O critério de desempate por área do ENEM exige ao menos uma área"
     },
     {
-      "codigo": "uniplus.selecao.criterio_desempate.args_incompativeis_com_regra",
-      "status": 422,
-      "titulo": "Os args informados não correspondem à regra referenciada"
-    },
-    {
       "codigo": "uniplus.selecao.criterio_desempate.etapa_ref_obrigatorio",
       "status": 422,
       "titulo": "EtapaRef é obrigatório para a regra DESEMPATE-MAIOR-NOTA-ETAPA"
@@ -5100,6 +5095,11 @@
       "codigo": "uniplus.selecao.criterio_desempate.ordem_invalida",
       "status": 422,
       "titulo": "A ordem do critério de desempate deve ser maior que zero"
+    },
+    {
+      "codigo": "uniplus.selecao.criterio_desempate.parametros_incompativeis_com_regra",
+      "status": 422,
+      "titulo": "Os parâmetros informados não correspondem à regra referenciada"
     },
     {
       "codigo": "uniplus.selecao.criterio_desempate.predicado_fato_incompleto",
@@ -7822,11 +7822,6 @@
       "titulo": "A área do corte não é um código de área do ENEM bem formado"
     },
     {
-      "codigo": "uniplus.selecao.regra_eliminacao.args_incompativeis_com_regra",
-      "status": 422,
-      "titulo": "Os args informados não correspondem à regra referenciada"
-    },
-    {
       "codigo": "uniplus.selecao.regra_eliminacao.etapa_ref_e_nota_minima_obrigatorios",
       "status": 422,
       "titulo": "EtapaRef e NotaMinima são obrigatórios para a regra ELIM-NOTA-MINIMA-ETAPA"
@@ -7845,6 +7840,11 @@
       "codigo": "uniplus.selecao.regra_eliminacao.nota_minima_invalida",
       "status": 422,
       "titulo": "A nota mínima da eliminação deve ser não negativa"
+    },
+    {
+      "codigo": "uniplus.selecao.regra_eliminacao.parametros_incompativeis_com_regra",
+      "status": 422,
+      "titulo": "Os parâmetros informados não correspondem à regra referenciada"
     },
     {
       "codigo": "uniplus.selecao.regra_eliminacao.regra_nao_encontrada",

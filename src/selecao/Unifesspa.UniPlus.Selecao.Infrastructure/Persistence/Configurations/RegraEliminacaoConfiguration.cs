@@ -38,13 +38,14 @@ internal sealed class RegraEliminacaoConfiguration : IEntityTypeConfiguration<Re
         builder.OwnsOne(r => r.Regra, regra => regra.ConfigurarReferenciaRegra("regra"));
         builder.Navigation(r => r.Regra).IsRequired();
 
-        // Args polimórficos (união fechada, uma variante por regra de eliminação) — mesmo padrão de
+        // Parâmetros polimórficos (união fechada, uma variante por regra de eliminação) — mesmo padrão de
         // CriterioDesempateConfiguration (Story #774): coluna "json" (NÃO
         // "jsonb"), porque o desserializador polimórfico do System.Text.Json
         // exige o discriminador "$tipo" como primeira propriedade, e o
         // "jsonb" do Postgres reordena chaves por tamanho na escrita.
-        builder.Property(r => r.Args)
-            .HasConversion(ArgsConverter, ArgsComparer)
+        builder.Property(r => r.Parametros)
+            .HasColumnName("args")
+            .HasConversion(ParametrosConverter, ParametrosComparer)
             .HasColumnType("json")
             .IsRequired();
     }
@@ -56,20 +57,20 @@ internal sealed class RegraEliminacaoConfiguration : IEntityTypeConfiguration<Re
         WriteIndented = false,
     };
 
-    private static readonly ValueConverter<ArgsRegraEliminacao, string> ArgsConverter =
+    private static readonly ValueConverter<ParametrosRegraEliminacao, string> ParametrosConverter =
         new(
-            args => JsonSerializer.Serialize(args, JsonOptions),
-            json => JsonSerializer.Deserialize<ArgsRegraEliminacao>(json, JsonOptions)!);
+            parametros => JsonSerializer.Serialize(parametros, JsonOptions),
+            json => JsonSerializer.Deserialize<ParametrosRegraEliminacao>(json, JsonOptions)!);
 
-    private static readonly ValueComparer<ArgsRegraEliminacao> ArgsComparer =
+    private static readonly ValueComparer<ParametrosRegraEliminacao> ParametrosComparer =
         new(
             (a, b) => Serialize(a) == Serialize(b),
             v => v == null ? 0 : Serialize(v).GetHashCode(StringComparison.Ordinal),
             v => Deserialize(Serialize(v)));
 
-    private static string Serialize(ArgsRegraEliminacao? v) =>
+    private static string Serialize(ParametrosRegraEliminacao? v) =>
         v is null ? string.Empty : JsonSerializer.Serialize(v, JsonOptions);
 
-    private static ArgsRegraEliminacao Deserialize(string json) =>
-        JsonSerializer.Deserialize<ArgsRegraEliminacao>(json, JsonOptions)!;
+    private static ParametrosRegraEliminacao Deserialize(string json) =>
+        JsonSerializer.Deserialize<ParametrosRegraEliminacao>(json, JsonOptions)!;
 }

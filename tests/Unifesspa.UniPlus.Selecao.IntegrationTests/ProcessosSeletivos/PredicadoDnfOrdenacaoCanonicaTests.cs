@@ -310,7 +310,7 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
     }
 
     /// <summary>
-    /// Ponto 2 — o consumidor de DESEMPATE (<see cref="ArgsDesempatePredicadoFato"/>). Os testes
+    /// Ponto 2 — o consumidor de DESEMPATE (<see cref="ParametrosDesempatePredicadoFato"/>). Os testes
     /// do ponto 1 provam a consolidação de D1 (<c>SerializarDnf</c>), mas NÃO cobrem este segundo
     /// ponto de serialização de valor: uma implementação que aplicasse o auxiliar só no método
     /// consolidado passaria em todos eles e deixaria o desempate emitindo <c>["PRETA","PARDA"]</c>
@@ -326,22 +326,22 @@ public sealed class PredicadoDnfOrdenacaoCanonicaTests
         ProcessoSeletivo MontarComDesempate(JsonElement valor)
         {
             ProcessoSeletivo processo = MontarProcessoComGatilho([]);
-            ArgsDesempatePredicadoFato args = new(CondicaoDnf.Criar("COR_RACA", operador, valor).Value!);
+            ParametrosDesempatePredicadoFato parametros = new(CondicaoDnf.Criar("COR_RACA", operador, valor).Value!);
             processo.DefinirCriteriosDesempate(
-                [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), args).Value!]).IsSuccess.Should().BeTrue();
+                [CriterioDesempate.Criar(1, Regra(CriterioDesempateCodigo.PredicadoFato, 'e'), parametros).Value!]).IsSuccess.Should().BeTrue();
             return processo;
         }
 
-        JsonNode ArgsDoEnvelope(SnapshotCanonico snapshot) =>
-            ApoioDoEnvelopeCodec.Envelope(snapshot)["criteriosDesempate"]![0]!["args"]!["valor"]!;
+        JsonNode ParametrosDoEnvelope(SnapshotCanonico snapshot) =>
+            ApoioDoEnvelopeCodec.Envelope(snapshot)["criteriosDesempate"]![0]!["parametros"]!["valor"]!;
 
-        JsonNode valorUm = ArgsDoEnvelope(
+        JsonNode valorUm = ParametrosDoEnvelope(
             Canonicalizador.Canonicalizar(Entrada(MontarComDesempate(Alternativas("PRETA", "PARDA")))));
 
         valorUm.AsArray().Select(static v => v!.GetValue<string>()).Should().Equal(
             ["PARDA", "PRETA"], "'PA' (0x50 0x41) < 'PR' (0x50 0x52) — ordem alfabética ASCII simples");
 
-        JsonNode valorDois = ArgsDoEnvelope(
+        JsonNode valorDois = ParametrosDoEnvelope(
             Canonicalizador.Canonicalizar(Entrada(MontarComDesempate(Alternativas("PARDA", "PRETA")))));
 
         OrdenacaoDeConjuntosCanonicosTests.BytesDoFragmento(valorDois).Should().Equal(

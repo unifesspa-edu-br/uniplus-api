@@ -81,7 +81,7 @@ public sealed record ConfiguracaoDistribuicaoVagasDto(
     ReferenciaRegraDto RegraDistribuicao,
     string? RamoDaDistribuicao,
     ReferenciaRegraDto? RegraAjuste,
-    ArgsRegraAjusteDistribuicao? AjusteDoQuadro,
+    ParametrosRegraAjusteDistribuicao? AjusteDoQuadro,
     ReferenciaReservaDemograficaSnapshotDto? ReferenciaDemografica,
     GrupoAreaEnemSnapshotDto? GrupoAreaEnem,
     IReadOnlyList<ModalidadeSelecionadaDto> Modalidades,

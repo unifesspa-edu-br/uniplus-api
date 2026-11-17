@@ -57,14 +57,14 @@ internal static class ProjecaoDoProcessoSeletivo
     /// <summary>A referência a uma regra versionada, no formato do contrato.</summary>
     internal static ReferenciaRegraDto Referencia(ReferenciaRegra regra) => new(regra.Codigo, regra.Versao, regra.Hash);
 
-    internal static ArgsRegraPrazoRecursoDto ProjetarArgumentosDoPrazo(ArgsRegraPrazoRecurso args) => new(
-        args.PrazoValor,
-        args.PrazoUnidade,
-        args.SuspensividadePrimeiraInstanciaValor,
-        args.SuspensividadePrimeiraInstanciaUnidade,
-        args.AdmiteInstanciaSuperior,
-        args.SuspensividadeSegundaInstanciaValor,
-        args.SuspensividadeSegundaInstanciaUnidade);
+    internal static ParametrosRegraPrazoRecursoDto ProjetarParametrosDoPrazo(ParametrosRegraPrazoRecurso parametros) => new(
+        parametros.PrazoValor,
+        parametros.PrazoUnidade,
+        parametros.SuspensividadePrimeiraInstanciaValor,
+        parametros.SuspensividadePrimeiraInstanciaUnidade,
+        parametros.AdmiteInstanciaSuperior,
+        parametros.SuspensividadeSegundaInstanciaValor,
+        parametros.SuspensividadeSegundaInstanciaUnidade);
 
     private static UnidadeAdministradoraSnapshotDto ProjetarUnidadeAdministradora(ProcessoSeletivo processo) => new(
         processo.UnidadeAdministradoraOrigemId,
@@ -91,20 +91,20 @@ internal static class ProjecaoDoProcessoSeletivo
     {
         ReferenciaRegraDto regra = Referencia(criterio.Regra);
 
-        return criterio.Args switch
+        return criterio.Parametros switch
         {
-            ArgsDesempateMaiorNotaEtapa args => new CriterioDesempateDto(
-                criterio.Id, criterio.Ordem, regra, args.EtapaRef, null, null, null, null, null),
-            ArgsDesempateIdoso args => new CriterioDesempateDto(
-                criterio.Id, criterio.Ordem, regra, null, args.IdadeMinima, null, null, null, null),
-            ArgsDesempatePredicadoFato args => new CriterioDesempateDto(
+            ParametrosDesempateMaiorNotaEtapa parametros => new CriterioDesempateDto(
+                criterio.Id, criterio.Ordem, regra, parametros.EtapaRef, null, null, null, null, null),
+            ParametrosDesempateIdoso parametros => new CriterioDesempateDto(
+                criterio.Id, criterio.Ordem, regra, null, parametros.IdadeMinima, null, null, null, null),
+            ParametrosDesempatePredicadoFato parametros => new CriterioDesempateDto(
                 criterio.Id, criterio.Ordem, regra, null, null,
-                args.Condicao.Fato,
-                args.Condicao.Operador.ToCodigo(),
-                ProjetarValorDaCondicao(args.Condicao.Valor),
+                parametros.Condicao.Fato,
+                parametros.Condicao.Operador.ToCodigo(),
+                ProjetarValorDaCondicao(parametros.Condicao.Valor),
                 null),
-            ArgsDesempateMaiorNotaAreaEnem args => new CriterioDesempateDto(
-                criterio.Id, criterio.Ordem, regra, null, null, null, null, null, [.. args.Areas]),
+            ParametrosDesempateMaiorNotaAreaEnem parametros => new CriterioDesempateDto(
+                criterio.Id, criterio.Ordem, regra, null, null, null, null, null, [.. parametros.Areas]),
             _ => new CriterioDesempateDto(criterio.Id, criterio.Ordem, regra, null, null, null, null, null, null),
         };
     }
@@ -157,11 +157,11 @@ internal static class ProjecaoDoProcessoSeletivo
     {
         ReferenciaRegraDto referenciaRegra = Referencia(regra.Regra);
 
-        return regra.Args switch
+        return regra.Parametros switch
         {
-            ArgsElimNotaMinimaEtapa args => new RegraEliminacaoDto(regra.Id, referenciaRegra, args.EtapaRef, args.NotaMinima, null, null),
-            ArgsElimAusenciaNaEtapa args => new RegraEliminacaoDto(regra.Id, referenciaRegra, args.EtapaRef, null, null, null),
-            ArgsElimCorteEmArea args => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, args.Minimo, args.AreaCodigo),
+            ParametrosElimNotaMinimaEtapa parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, parametros.EtapaRef, parametros.NotaMinima, null, null),
+            ParametrosElimAusenciaNaEtapa parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, parametros.EtapaRef, null, null, null),
+            ParametrosElimCorteEmArea parametros => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, parametros.Minimo, parametros.AreaCodigo),
             _ => new RegraEliminacaoDto(regra.Id, referenciaRegra, null, null, null, null),
         };
     }

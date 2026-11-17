@@ -26,7 +26,7 @@ public sealed record DistribuicaoDeVagasDeclarada
 
     public ReferenciaRegra? RegraDeAjuste { get; init; }
 
-    public ArgsRegraAjusteDistribuicao? AjusteDoQuadro { get; init; }
+    public ParametrosRegraAjusteDistribuicao? AjusteDoQuadro { get; init; }
 
     /// <summary>As modalidades que o cadastro aceitou; as recusadas não constam.</summary>
     public required IReadOnlyList<ModalidadeSelecionada> Modalidades { get; init; }

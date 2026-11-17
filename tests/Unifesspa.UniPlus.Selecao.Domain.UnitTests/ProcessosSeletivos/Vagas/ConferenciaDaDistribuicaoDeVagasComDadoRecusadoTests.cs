@@ -50,7 +50,7 @@ public sealed class ConferenciaDaDistribuicaoDeVagasComDadoRecusadoTests
             "IND", NaturezaLegalModalidade.AcaoAfirmativa, ComposicaoVagasModalidade.SuplementarAoTotal);
         DistribuicaoDeVagasDeclarada declarada = FixadaNoEdital(semQuantidade) with
         {
-            AjusteDoQuadro = new Selecao.Domain.ValueObjects.ArgsReduzirDe("AC"),
+            AjusteDoQuadro = new Selecao.Domain.ValueObjects.ParametrosReduzirDe("AC"),
         };
 
         Conferir(ComRegraRecusada(declarada)).Should().BeEmpty();

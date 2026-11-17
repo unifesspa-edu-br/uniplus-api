@@ -108,7 +108,7 @@ public sealed class PrazoInterposicaoInvariantesSemanticaTests
             "é essa a razão da independência, e ela precisa estar escrita, não subentendida");
     }
 
-    [Fact(DisplayName = "O esquema de args declara DIAS_UTEIS e HORAS na interposição, e diz que dia corrido não é declarável ali")]
+    [Fact(DisplayName = "O esquema de parâmetros declara DIAS_UTEIS e HORAS na interposição, e diz que dia corrido não é declarável ali")]
     public void EsquemaArgs_DeclaraAsUnidadesDaInterposicao()
     {
         string prazoUnidade = EsquemaDoPrazoUnidade();

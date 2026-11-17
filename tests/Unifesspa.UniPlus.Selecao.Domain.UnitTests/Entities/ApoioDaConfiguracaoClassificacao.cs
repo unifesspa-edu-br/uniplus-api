@@ -45,30 +45,30 @@ internal static class ApoioDaConfiguracaoClassificacao
     internal static RegraEliminacao Eliminacao(string codigoRegra) =>
         RegraEliminacao.Criar(
             ReferenciaRegra.De(codigoRegra, "v1", new string('a', 64)),
-            ArgsDaRegra(codigoRegra)).Value!;
+            ParametrosDaRegra(codigoRegra)).Value!;
 
     internal static RegraEliminacao[] Eliminacoes(params string[] codigosDeRegra) =>
         [.. codigosDeRegra.Select(Eliminacao)];
 
-    internal static ArgsRegraEliminacao ArgsDaRegra(string codigoRegra) => codigoRegra switch
+    internal static ParametrosRegraEliminacao ParametrosDaRegra(string codigoRegra) => codigoRegra switch
     {
-        RegraEliminacaoCodigo.ElimCorteEmArea => new ArgsElimCorteEmArea("REDACAO", 400m),
-        RegraEliminacaoCodigo.ElimZeroEmArea => new ArgsElimZeroEmArea(),
-        RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => new ArgsElimFaltaEmDiaDeProvaEnem(),
+        RegraEliminacaoCodigo.ElimCorteEmArea => new ParametrosElimCorteEmArea("REDACAO", 400m),
+        RegraEliminacaoCodigo.ElimZeroEmArea => new ParametrosElimZeroEmArea(),
+        RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem => new ParametrosElimFaltaEmDiaDeProvaEnem(),
         _ => throw new ArgumentOutOfRangeException(nameof(codigoRegra), codigoRegra, "Código de regra ENEM desconhecido no teste."),
     };
 
     internal static RegraEliminacao AusenciaNaEtapa(Guid etapaId) =>
         RegraEliminacao.Criar(
             ReferenciaRegra.De(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "v1", new string('a', 64)),
-            new ArgsElimAusenciaNaEtapa(etapaId)).Value!;
+            new ParametrosElimAusenciaNaEtapa(etapaId)).Value!;
 
     // ── Corte em área: no máximo um por área, e a área no quadro de pesos por área ──
 
     internal static RegraEliminacao CorteEm(string area, decimal minimo = 400m) =>
         RegraEliminacao.Criar(
             ReferenciaRegra.De(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", new string('a', 64)),
-            new ArgsElimCorteEmArea(area, minimo)).Value!;
+            new ParametrosElimCorteEmArea(area, minimo)).Value!;
 
     internal static Result<ConfiguracaoClassificacao> CriarEnemLocal(params RegraEliminacao[] eliminacoes) =>
         ConfiguracaoClassificacao.Criar(DeclaracaoEnemLocal() with { RegrasEliminacao = eliminacoes });

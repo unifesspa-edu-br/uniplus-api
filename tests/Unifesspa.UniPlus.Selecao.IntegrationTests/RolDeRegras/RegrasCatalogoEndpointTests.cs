@@ -93,7 +93,7 @@ public sealed class RegrasCatalogoEndpointTests : IAsyncLifetime
             _fixture.Factory.Services, Leandro, perfil, EscopoDaConcessao.DaUnidade(Guid.CreateVersion7()));
     }
 
-    [Fact(DisplayName = "GET /regras-catalogo devolve entradas com código, versão, tipo, esquema de argumentos, hash e _links")]
+    [Fact(DisplayName = "GET /regras-catalogo devolve entradas com código, versão, tipo, esquema de parâmetros, hash e _links")]
     public async Task Listar_DevolveARepresentacaoCompleta()
     {
         using HttpClient client = _fixture.Factory.CreateClient();

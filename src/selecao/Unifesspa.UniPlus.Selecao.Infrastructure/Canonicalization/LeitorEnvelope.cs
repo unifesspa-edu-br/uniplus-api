@@ -21,7 +21,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// completa. Um leitor que só olhasse <c>presente</c> leria
 /// <c>{"presente":false,"fator":"1.2000",…}</c> como “sem bônus” e <b>descartaria o
 /// bônus do certame</b> sem uma linha de log. Por isso: chave a mais é erro, chave a
-/// menos é erro, e um objeto sem args tem de ser exatamente <c>{}</c>.
+/// menos é erro, e um objeto sem parâmetros tem de ser exatamente <c>{}</c>.
 /// </para>
 /// <para>
 /// <b>Acumula o primeiro erro em vez de propagar <c>Result</c> a cada leitura.</b> A

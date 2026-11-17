@@ -35,7 +35,7 @@ internal static class ConferenciasDasEliminacoes
     // a regra que só tem sentido sobre os dados do ENEM do candidato exige a classificação
     // baseada em ENEM.
     private static List<FieldError> ConferirDependenciaDoEnem(IReadOnlyList<RegraEliminacao> regras, bool baseadoEmEnem) =>
-        regras.Any(static regra => regra.Args.ExigeEnem()) && !baseadoEmEnem
+        regras.Any(static regra => regra.Parametros.ExigeEnem()) && !baseadoEmEnem
             ? [new("regrasEliminacao", new DomainError(
                 "ProcessoSeletivo.EliminacaoEnemForaDeProcessoEnem",
                 "Uma ou mais regras de eliminação só se aplicam quando a classificação está configurada como baseada em ENEM."))]
@@ -47,14 +47,14 @@ internal static class ConferenciasDasEliminacoes
         IReadOnlyList<GrupoPesoAreaEnemCongelado> quadro) =>
         ConferenciasDoQuadroDePesosPorArea.Exige(regraCalculo, baseadoEmEnem) && quadro.Count > 0 ? quadro : null;
 
-    // Sem args, uma segunda declaração da falta em dia de prova repete a primeira e não elimina
+    // Sem parâmetros, uma segunda declaração da falta em dia de prova repete a primeira e não elimina
     // ninguém a mais: cada repetição é recusada no próprio item. A recusa do ENEM desmarcado não
     // suprime: o operador pode corrigi-la marcando o ENEM, e a repetição continua sendo violação
     // independente (ADR-0125).
     private static List<FieldError> ConferirFaltaEmDiaDeProvaRepetida(IReadOnlyList<RegraEliminacao> regras) =>
         regras
             .Select(static (regra, indice) => (regra, indice))
-            .Where(static item => item.regra.Args is ArgsElimFaltaEmDiaDeProvaEnem)
+            .Where(static item => item.regra.Parametros is ParametrosElimFaltaEmDiaDeProvaEnem)
             .Skip(1)
             .Select(static item => new FieldError($"regrasEliminacao[{item.indice}]", new DomainError(
                 "ConfiguracaoClassificacao.FaltaEmDiaDeProvaEnemRepetida",
@@ -69,7 +69,7 @@ internal static class ConferenciasDasEliminacoes
         HashSet<Guid> etapasComAusenciaDeclarada = [];
         for (int indice = 0; indice < regras.Count; indice++)
         {
-            if (regras[indice].Args is ArgsElimAusenciaNaEtapa ausencia
+            if (regras[indice].Parametros is ParametrosElimAusenciaNaEtapa ausencia
                 && !etapasComAusenciaDeclarada.Add(ausencia.EtapaRef))
             {
                 erros.Add(new($"regrasEliminacao[{indice}]", new DomainError(
@@ -96,7 +96,7 @@ internal static class ConferenciasDasEliminacoes
         HashSet<string> comCorte = new(StringComparer.Ordinal);
         for (int indice = 0; indice < regras.Count; indice++)
         {
-            if (regras[indice].Args is ArgsElimCorteEmArea corte
+            if (regras[indice].Parametros is ParametrosElimCorteEmArea corte
                 && RecusaDoCorte(indice, corte, comCorte, quadro, aceitas) is { } recusa)
             {
                 erros.Add(recusa);
@@ -108,7 +108,7 @@ internal static class ConferenciasDasEliminacoes
 
     private static FieldError? RecusaDoCorte(
         int indice,
-        ArgsElimCorteEmArea corte,
+        ParametrosElimCorteEmArea corte,
         HashSet<string> comCorte,
         IReadOnlyList<GrupoPesoAreaEnemCongelado>? quadro,
         HashSet<string>? aceitas) =>
@@ -120,7 +120,7 @@ internal static class ConferenciasDasEliminacoes
 
     private static FieldError? RecusaDaAreaForaDoQuadro(
         int indice,
-        ArgsElimCorteEmArea corte,
+        ParametrosElimCorteEmArea corte,
         IReadOnlyList<GrupoPesoAreaEnemCongelado>? quadro,
         HashSet<string>? aceitas) =>
         aceitas is null || aceitas.Contains(corte.AreaCodigo)

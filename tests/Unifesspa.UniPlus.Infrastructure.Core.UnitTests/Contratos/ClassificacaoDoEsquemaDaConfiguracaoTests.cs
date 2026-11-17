@@ -20,13 +20,17 @@ public sealed class ClassificacaoDoEsquemaDaConfiguracaoTests
           "regraArredondamento": { "codigo": "PRECISAO-ARREDONDAR-CIMA", "versao": "v1" }, "casasArredondamento": 2,
           "escalaNotaFinal": 1000, "regraOrdemAlocacao": { "codigo": "ORDEM-POR-NOTA", "versao": "v1" }, "baseadoEmEnem": false,
           "regrasEliminacao": [
-            { "regra": { "codigo": "ELIM-NOTA-MINIMA-ETAPA", "versao": "v1" }, "args": { "etapaChave": "prova-objetiva", "notaMinima": 30.5 } },
-            { "regra": { "codigo": "ELIM-ZERO-EM-AREA", "versao": "v1" }, "args": {} } ],
+            { "regra": { "codigo": "ELIM-NOTA-MINIMA-ETAPA", "versao": "v1" }, "parametros": { "etapaChave": "prova-objetiva", "notaMinima": 30.5 } },
+            { "regra": { "codigo": "ELIM-CORTE-EM-AREA", "versao": "v1" }, "parametros": { "areaCodigo": "REDACAO", "minimo": 400 } },
+            { "regra": { "codigo": "ELIM-AUSENCIA-NA-ETAPA", "versao": "v1" }, "parametros": { "etapaChave": "prova-objetiva" } },
+            { "regra": { "codigo": "ELIM-ZERO-EM-AREA", "versao": "v1" }, "parametros": {} },
+            { "regra": { "codigo": "ELIM-FALTA-EM-DIA-DE-PROVA-ENEM", "versao": "v1" }, "parametros": {} } ],
           "criteriosDeDesempate": [
-            { "ordem": 1, "regra": { "codigo": "DESEMPATE-MAIOR-NOTA-ETAPA", "versao": "v1" }, "args": { "etapaChave": "prova-objetiva" } },
-            { "ordem": 2, "regra": { "codigo": "DESEMPATE-IDOSO", "versao": "v1" }, "args": { "idadeMinima": 60 } },
-            { "ordem": 3, "regra": { "codigo": "DESEMPATE-PREDICADO-FATO", "versao": "v1" }, "args": { "fato": "UF", "operador": "EM", "valor": ["PA"] } },
-            { "ordem": 4, "regra": { "codigo": "DESEMPATE-MAIOR-IDADE", "versao": "v1" }, "args": {} } ],
+            { "ordem": 1, "regra": { "codigo": "DESEMPATE-MAIOR-NOTA-ETAPA", "versao": "v1" }, "parametros": { "etapaChave": "prova-objetiva" } },
+            { "ordem": 2, "regra": { "codigo": "DESEMPATE-IDOSO", "versao": "v1" }, "parametros": { "idadeMinima": 60 } },
+            { "ordem": 3, "regra": { "codigo": "DESEMPATE-PREDICADO-FATO", "versao": "v1" }, "parametros": { "fato": "UF", "operador": "EM", "valor": ["PA"] } },
+            { "ordem": 4, "regra": { "codigo": "DESEMPATE-MAIOR-NOTA-AREA-ENEM", "versao": "v1" }, "parametros": { "areas": [ "MATEMATICA", "REDACAO" ] } },
+            { "ordem": 5, "regra": { "codigo": "DESEMPATE-MAIOR-IDADE", "versao": "v1" }, "parametros": {} } ],
           "resolucaoPesoAreaEnem": "RES-2026-01" }
         """;
 
@@ -43,40 +47,48 @@ public sealed class ClassificacaoDoEsquemaDaConfiguracaoTests
             .Should().Contain("/regraCalculo/id");
 
     [Theory(DisplayName = "O parâmetro de desempate que não é o da regra é recusado com o caminho")]
-    [InlineData("DESEMPATE-MAIOR-NOTA-ETAPA", "{}", "/args")]
-    [InlineData("DESEMPATE-MAIOR-NOTA-ETAPA", "{ \"etapaChave\": \"Prova Objetiva\" }", "/args/etapaChave")]
-    [InlineData("DESEMPATE-IDOSO", "{ \"idadeMinima\": 0 }", "/args/idadeMinima")]
-    [InlineData("DESEMPATE-MAIOR-NOTA-AREA-ENEM", "{ \"areas\": [] }", "/args/areas")]
-    [InlineData("DESEMPATE-MAIOR-IDADE", "{ \"idadeMinima\": 60 }", "/args/idadeMinima")]
-    [InlineData("DESEMPATE-PREDICADO-FATO", "{ \"fato\": \"UF\", \"operador\": \"EM\", \"valor\": \"PA\" }", "/args/valor")]
-    public void Desempate_ParametroIncoerenteComARegra_Recusa(string codigo, string args, string caminho)
+    [InlineData("DESEMPATE-MAIOR-NOTA-ETAPA", "{}", "/parametros")]
+    [InlineData("DESEMPATE-MAIOR-NOTA-ETAPA", "{ \"etapaChave\": \"Prova Objetiva\" }", "/parametros/etapaChave")]
+    [InlineData("DESEMPATE-IDOSO", "{ \"idadeMinima\": 0 }", "/parametros/idadeMinima")]
+    [InlineData("DESEMPATE-MAIOR-NOTA-AREA-ENEM", "{ \"areas\": [] }", "/parametros/areas")]
+    [InlineData("DESEMPATE-MAIOR-IDADE", "{ \"idadeMinima\": 60 }", "/parametros/idadeMinima")]
+    [InlineData("DESEMPATE-PREDICADO-FATO", "{ \"fato\": \"UF\", \"operador\": \"EM\", \"valor\": \"PA\" }", "/parametros/valor")]
+    [InlineData("DESEMPATE-MAIOR-NOTA-ETAPA", "{ \"etapaChave\": \"prova\", \"invento\": 1 }", "/parametros/invento")]
+    [InlineData("DESEMPATE-IDOSO", "{ \"idadeMinima\": 60, \"invento\": 1 }", "/parametros/invento")]
+    [InlineData("DESEMPATE-MAIOR-NOTA-AREA-ENEM", "{ \"areas\": [ \"MAT\" ], \"invento\": 1 }", "/parametros/invento")]
+    [InlineData("DESEMPATE-PREDICADO-FATO", "{ \"fato\": \"UF\", \"operador\": \"EM\", \"valor\": [ \"PA\" ], \"invento\": 1 }", "/parametros/invento")]
+    public void Desempate_ParametroIncoerenteComARegra_Recusa(string codigo, string parametros, string caminho)
     {
         ArgumentNullException.ThrowIfNull(codigo);
-        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(parametros);
         ArgumentNullException.ThrowIfNull(caminho);
-        JsonNode classificacao = Documento($$"""{ "criteriosDeDesempate": [ { "ordem": 1, "regra": { "codigo": "{{codigo}}", "versao": "v1" }, "args": {{args}} } ] }""");
+        JsonNode classificacao = Documento($$"""{ "criteriosDeDesempate": [ { "ordem": 1, "regra": { "codigo": "{{codigo}}", "versao": "v1" }, "parametros": {{parametros}} } ] }""");
 
         CaminhosComErro(classificacao, Classificacao).Should().Contain($"/criteriosDeDesempate/0{caminho}");
     }
 
     [Theory(DisplayName = "O parâmetro de eliminação que não é o da regra é recusado com o caminho")]
-    [InlineData("ELIM-NOTA-MINIMA-ETAPA", "{ \"etapaChave\": \"prova\" }", "/args")]
-    [InlineData("ELIM-CORTE-EM-AREA", "{ \"areaCodigo\": \"MAT\", \"minimo\": -1 }", "/args/minimo")]
-    [InlineData("ELIM-AUSENCIA-NA-ETAPA", "{ \"etapaChave\": \"prova\", \"notaMinima\": 5 }", "/args/notaMinima")]
-    [InlineData("ELIM-ZERO-EM-AREA", "{ \"areaCodigo\": \"MAT\" }", "/args/areaCodigo")]
-    public void Eliminacao_ParametroIncoerenteComARegra_Recusa(string codigo, string args, string caminho)
+    [InlineData("ELIM-NOTA-MINIMA-ETAPA", "{ \"etapaChave\": \"prova\" }", "/parametros")]
+    [InlineData("ELIM-CORTE-EM-AREA", "{ \"areaCodigo\": \"MAT\", \"minimo\": -1 }", "/parametros/minimo")]
+    [InlineData("ELIM-AUSENCIA-NA-ETAPA", "{ \"etapaChave\": \"prova\", \"notaMinima\": 5 }", "/parametros/notaMinima")]
+    [InlineData("ELIM-ZERO-EM-AREA", "{ \"areaCodigo\": \"MAT\" }", "/parametros/areaCodigo")]
+    [InlineData("ELIM-NOTA-MINIMA-ETAPA", "{ \"etapaChave\": \"prova\", \"notaMinima\": 5, \"invento\": 1 }", "/parametros/invento")]
+    [InlineData("ELIM-CORTE-EM-AREA", "{ \"areaCodigo\": \"MAT\", \"minimo\": 5, \"invento\": 1 }", "/parametros/invento")]
+    [InlineData("ELIM-AUSENCIA-NA-ETAPA", "{ \"etapaChave\": \"prova\", \"invento\": 1 }", "/parametros/invento")]
+    [InlineData("ELIM-FALTA-EM-DIA-DE-PROVA-ENEM", "{ \"invento\": 1 }", "/parametros/invento")]
+    public void Eliminacao_ParametroIncoerenteComARegra_Recusa(string codigo, string parametros, string caminho)
     {
         ArgumentNullException.ThrowIfNull(codigo);
-        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(parametros);
         ArgumentNullException.ThrowIfNull(caminho);
-        JsonNode classificacao = Documento($$"""{ "regrasEliminacao": [ { "regra": { "codigo": "{{codigo}}", "versao": "v1" }, "args": {{args}} } ] }""");
+        JsonNode classificacao = Documento($$"""{ "regrasEliminacao": [ { "regra": { "codigo": "{{codigo}}", "versao": "v1" }, "parametros": {{parametros}} } ] }""");
 
         CaminhosComErro(classificacao, Classificacao).Should().Contain($"/regrasEliminacao/0{caminho}");
     }
 
     [Fact(DisplayName = "A regra de código desconhecido aceita parâmetros livres, porque a variante nova nasce no catálogo")]
     public void Regra_DeCodigoDesconhecido_AceitaParametros() =>
-        CaminhosComErro(Documento("""{ "regrasEliminacao": [ { "regra": { "codigo": "ELIM-NOVA", "versao": "v1" }, "args": { "x": 1 } } ] }"""), Classificacao)
+        CaminhosComErro(Documento("""{ "regrasEliminacao": [ { "regra": { "codigo": "ELIM-NOVA", "versao": "v1" }, "parametros": { "x": 1 } } ] }"""), Classificacao)
             .Should().BeEmpty();
 
     [Theory(DisplayName = "A escala da nota final fora do intervalo ou com casas demais é recusada")]
@@ -103,10 +115,10 @@ public sealed class ClassificacaoDoEsquemaDaConfiguracaoTests
     public void Classificacao_LimitesDoDominio_Recusa()
     {
         CaminhosComErro(Documento("""{ "casasArredondamento": 0 }"""), Classificacao).Should().Contain("/casasArredondamento");
-        CaminhosComErro(Documento("""{ "regrasEliminacao": [ { "regra": { "codigo": "ELIM-CORTE-EM-AREA" }, "args": { "areaCodigo": "mat", "minimo": 1 } } ] }"""), Classificacao)
-            .Should().Contain("/regrasEliminacao/0/args/areaCodigo");
-        CaminhosComErro(Documento("""{ "criteriosDeDesempate": [ { "regra": { "codigo": "DESEMPATE-MAIOR-NOTA-AREA-ENEM" }, "args": { "areas": [ "MAT-1" ] } } ] }"""), Classificacao)
-            .Should().Contain("/criteriosDeDesempate/0/args/areas/0");
+        CaminhosComErro(Documento("""{ "regrasEliminacao": [ { "regra": { "codigo": "ELIM-CORTE-EM-AREA" }, "parametros": { "areaCodigo": "mat", "minimo": 1 } } ] }"""), Classificacao)
+            .Should().Contain("/regrasEliminacao/0/parametros/areaCodigo");
+        CaminhosComErro(Documento("""{ "criteriosDeDesempate": [ { "regra": { "codigo": "DESEMPATE-MAIOR-NOTA-AREA-ENEM" }, "parametros": { "areas": [ "MAT-1" ] } } ] }"""), Classificacao)
+            .Should().Contain("/criteriosDeDesempate/0/parametros/areas/0");
         CaminhosComErro(Documento("""{ "quadroPesoAreaEnem": [ { "areas": [ { "codigo": "MAT", "corte": 1001 } ] } ] }"""), Classificacao)
             .Should().Contain("/quadroPesoAreaEnem/0/areas/0/corte");
     }

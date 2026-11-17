@@ -21,7 +21,7 @@ public sealed class ProcessoSeletivoRemocaoDeFaseComConfiguracaoDependenteTests
         CriterioDesempate.Criar(
             1,
             ReferenciaRegra.De(CriterioDesempateCodigo.MaiorNotaEtapa, "v1", new string('a', 64)),
-            new ArgsDesempateMaiorNotaEtapa(etapaId)).Value!;
+            new ParametrosDesempateMaiorNotaEtapa(etapaId)).Value!;
 
     private static NoExigencia GrupoAninhadoDaFase(FaseCronograma fase)
     {

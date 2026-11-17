@@ -25,51 +25,51 @@ public static class ReconciliadorQuadroInstitucional
     /// entregar como reconciliado o que não fecha.
     /// </remarks>
     public static Result<QuadroReconciliado> Reduzir(
-        IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ArgsRegraAjusteDistribuicao args)
+        IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ParametrosRegraAjusteDistribuicao parametros)
     {
         ArgumentNullException.ThrowIfNull(codigos);
         ArgumentNullException.ThrowIfNull(quantidades);
-        ArgumentNullException.ThrowIfNull(args);
+        ArgumentNullException.ThrowIfNull(parametros);
 
         return excesso <= 0
             ? Result<QuadroReconciliado>.Success(new QuadroReconciliado(quantidades, Reduzido: 0))
-            : ReduzirConformeOMotor(codigos, quantidades, excesso, args);
+            : ReduzirConformeOMotor(codigos, quantidades, excesso, parametros);
     }
 
     private static Result<QuadroReconciliado> ReduzirConformeOMotor(
-        IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ArgsRegraAjusteDistribuicao args) =>
-        args switch
+        IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ParametrosRegraAjusteDistribuicao parametros) =>
+        parametros switch
         {
-            ArgsReduzirDe reduzirDe => ReduzirDeUmaModalidade(codigos, quantidades, excesso, reduzirDe),
-            ArgsReduzirProporcionalEm proporcional => ReduzirProporcionalmente(codigos, quantidades, excesso, proporcional),
+            ParametrosReduzirDe reduzirDe => ReduzirDeUmaModalidade(codigos, quantidades, excesso, reduzirDe),
+            ParametrosReduzirProporcionalEm proporcional => ReduzirProporcionalmente(codigos, quantidades, excesso, proporcional),
             _ => throw new UnreachableException(
-                $"O motor {args.GetType().Name} não é uma das variantes de {nameof(ArgsRegraAjusteDistribuicao)}."),
+                $"O motor {parametros.GetType().Name} não é uma das variantes de {nameof(ParametrosRegraAjusteDistribuicao)}."),
         };
 
     private static Result<QuadroReconciliado> ReduzirDeUmaModalidade(
-        IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ArgsReduzirDe args)
+        IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ParametrosReduzirDe parametros)
     {
-        int indice = IndiceDe(codigos, args.ModalidadeCodigo);
+        int indice = IndiceDe(codigos, parametros.ModalidadeCodigo);
         if (indice < 0)
         {
-            return ModalidadeForaDoQuadro(args.ModalidadeCodigo);
+            return ModalidadeForaDoQuadro(parametros.ModalidadeCodigo);
         }
 
         return quantidades[indice] < excesso
-            ? ExcessoNaoAbsorvido($"A modalidade {args.ModalidadeCodigo} tem {quantidades[indice]} vaga(s) e o excesso é de {excesso}.")
+            ? ExcessoNaoAbsorvido($"A modalidade {parametros.ModalidadeCodigo} tem {quantidades[indice]} vaga(s) e o excesso é de {excesso}.")
             : Retirar(quantidades, [indice], [excesso], excesso);
     }
 
     private static Result<QuadroReconciliado> ReduzirProporcionalmente(
-        IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ArgsReduzirProporcionalEm args)
+        IReadOnlyList<string> codigos, IReadOnlyList<int> quantidades, int excesso, ParametrosReduzirProporcionalEm parametros)
     {
-        string? ausente = args.ModalidadeCodigos.FirstOrDefault(codigo => IndiceDe(codigos, codigo) < 0);
+        string? ausente = parametros.ModalidadeCodigos.FirstOrDefault(codigo => IndiceDe(codigos, codigo) < 0);
         if (ausente is not null)
         {
             return ModalidadeForaDoQuadro(ausente);
         }
 
-        int[] alvos = [.. args.ModalidadeCodigos.Select(codigo => IndiceDe(codigos, codigo))];
+        int[] alvos = [.. parametros.ModalidadeCodigos.Select(codigo => IndiceDe(codigos, codigo))];
         int disponivel = alvos.Sum(indice => quantidades[indice]);
         return disponivel < excesso
             ? ExcessoNaoAbsorvido($"As modalidades do ajuste somam {disponivel} vaga(s) e o excesso é de {excesso}.")

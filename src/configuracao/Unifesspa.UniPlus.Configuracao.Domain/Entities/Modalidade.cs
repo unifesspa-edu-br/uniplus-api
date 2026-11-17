@@ -26,7 +26,7 @@ using Unifesspa.UniPlus.Regras.ValueObjects;
 /// referencial intra-banco. A unicidade é checada pelo handler (com proteção de
 /// corrida via índice).</para>
 /// <para>As invariantes de coerência (natureza↔remanejamento, composição
-/// RetiradaDeOutraModalidade⟺origem, args por regra, ação de indeferimento) moram na factory
+/// RetiradaDeOutraModalidade⟺origem, parâmetros por regra, ação de indeferimento) moram na factory
 /// <see cref="Criar"/>/<see cref="Atualizar"/>. A integridade referencial (todos
 /// os códigos referenciados existem vivos; bloqueio de remoção quando referenciada)
 /// exige consulta ao banco e mora no handler via repositório.</para>
@@ -51,7 +51,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     public ComposicaoVagas ComposicaoVagas { get; private set; }
     public string? ComposicaoOrigem { get; private set; }
     public RegraRemanejamento? RegraRemanejamento { get; private set; }
-    public RemanejamentoArgs RemanejamentoArgs { get; private set; } = RemanejamentoArgs.Vazio;
+    public RemanejamentoParametros RemanejamentoParametros { get; private set; } = RemanejamentoParametros.Vazio;
     /// <summary>
     /// Quem concorre à modalidade: o predicado sobre os fatos do candidato que o enquadra nela
     /// (ADR-0144). A ampla concorrência é incondicional, sem cláusula; a cota da lei exige a opção
@@ -78,7 +78,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
     /// <summary>
     /// Cria uma nova Modalidade, acumulando toda violação independente em vez de
     /// parar na primeira. Valida o código (formato) e todas as invariantes de
-    /// coerência de domínio (natureza↔remanejamento, RetiradaDeOutraModalidade⟺origem, args por
+    /// coerência de domínio (natureza↔remanejamento, RetiradaDeOutraModalidade⟺origem, parâmetros por
     /// regra, ação de indeferimento). Os enums chegam como tokens textuais
     /// (UPPER_SNAKE): <paramref name="naturezaLegal"/> e <paramref name="composicaoVagas"/>
     /// aplicam default quando ausentes (AMPLA / RESTANTE_DAS_VAGAS_OFERTADAS);
@@ -205,7 +205,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         || campos.ComposicaoVagas != ComposicaoVagas
         || !string.Equals(campos.ComposicaoOrigem, ComposicaoOrigem, StringComparison.Ordinal)
         || campos.RegraRemanejamento != RegraRemanejamento
-        || campos.RemanejamentoArgs != RemanejamentoArgs
+        || campos.RemanejamentoParametros != RemanejamentoParametros
         || !campos.RegraDeAplicabilidade!.MesmoConteudo(RegraDeAplicabilidade)
         || campos.AcaoQuandoIndeferido != AcaoQuandoIndeferido;
 
@@ -216,7 +216,7 @@ public sealed class Modalidade : SoftDeletableEntity, IAuditableEntity
         ComposicaoVagas = campos.ComposicaoVagas;
         ComposicaoOrigem = campos.ComposicaoOrigem;
         RegraRemanejamento = campos.RegraRemanejamento;
-        RemanejamentoArgs = campos.RemanejamentoArgs;
+        RemanejamentoParametros = campos.RemanejamentoParametros;
         RegraDeAplicabilidade = campos.RegraDeAplicabilidade!;
         AcaoQuandoIndeferido = campos.AcaoQuandoIndeferido;
         BaseLegal = campos.BaseLegal;

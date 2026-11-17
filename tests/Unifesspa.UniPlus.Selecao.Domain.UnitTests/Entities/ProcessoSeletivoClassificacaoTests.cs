@@ -112,14 +112,14 @@ public sealed class ProcessoSeletivoClassificacaoTests
     private static RegraEliminacao EliminacaoPorNotaMinimaNaEtapa(Guid etapaId) =>
         RegraEliminacao.Criar(
             ReferenciaRegra.De(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "v1", new string('d', 64)),
-            new ArgsElimNotaMinimaEtapa(etapaId, 4m)).Value!;
+            new ParametrosElimNotaMinimaEtapa(etapaId, 4m)).Value!;
 
     private static ConfiguracaoClassificacao ClassificacaoEnemComCorteEmArea() =>
         NovaClassificacao(
             [
                 RegraEliminacao.Criar(
                     ReferenciaRegra.De(RegraEliminacaoCodigo.ElimCorteEmArea, "v1", new string('e', 64)),
-                    new ArgsElimCorteEmArea("REDACAO", 400m)).Value!,
+                    new ParametrosElimCorteEmArea("REDACAO", 400m)).Value!,
             ],
             baseadoEmEnem: true);
 
