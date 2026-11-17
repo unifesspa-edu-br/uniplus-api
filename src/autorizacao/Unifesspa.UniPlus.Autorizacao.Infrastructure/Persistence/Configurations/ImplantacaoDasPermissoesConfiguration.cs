@@ -21,7 +21,6 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 internal sealed class ImplantacaoDasPermissoesConfiguration : IEntityTypeConfiguration<ImplantacaoDasPermissoes>, IEntityTypeConfiguration<PermissaoImplantada>
 {
     private const int CodigoMaxLength = 120;
-    private const int ModuloMaxLength = 60;
     private const int ClassificacaoMaxLength = 20;
     private const int ImpressaoLength = ResumoSha256.Comprimento;
 
@@ -61,7 +60,6 @@ internal sealed class ImplantacaoDasPermissoesConfiguration : IEntityTypeConfigu
         builder.HasKey(p => new { p.ImplantacaoId, p.Codigo });
 
         builder.Property(p => p.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
-        builder.Property(p => p.Modulo).HasMaxLength(ModuloMaxLength).IsRequired();
         builder.Property(p => p.Classificacao).HasConversion(ConversoresDoCatalogo.Classificacao).HasMaxLength(ClassificacaoMaxLength).IsRequired();
         builder.Property(p => p.DeUnidade).IsRequired();
         builder.Property(p => p.Reservada).IsRequired();

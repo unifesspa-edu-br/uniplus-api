@@ -36,7 +36,7 @@ public sealed class ImplantacaoDasPermissoes
 
         ImplantacaoDasPermissoes catalogo = new() { Impressao = impressao, ImplantadaEm = instante };
         catalogo._permissoes.AddRange(linhas.Select(l =>
-            new PermissaoImplantada(catalogo.Id, l.Codigo.Valor, l.Codigo.Modulo, l.Classificacao, l.DeUnidade, l.Reservada)));
+            new PermissaoImplantada(catalogo.Id, l.Codigo.Valor, l.Classificacao, l.DeUnidade, l.Reservada)));
 
         return catalogo;
     }
