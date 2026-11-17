@@ -117,13 +117,11 @@ public sealed class ConcessaoRepository : IConcessaoRepository
 
         return await _context.Concessoes
             .AsNoTracking()
+            .VigentesDaInstituicao(agora)
             .AnyAsync(
                 c => c.BeneficiarioEmissor == pessoa.Emissor
                     && c.BeneficiarioContaId == pessoa.ContaId
-                    && c.PerfilId == perfilId
-                    && c.EscopoTipo == TipoDeEscopo.Instituicao
-                    && c.RevogadaEm == null
-                    && (c.ValidaAte == null || c.ValidaAte > agora),
+                    && c.PerfilId == perfilId,
                 cancellationToken)
             .ConfigureAwait(false);
     }
