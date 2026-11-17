@@ -33,7 +33,7 @@ public sealed record FiltroDePedidos(
     string? EmailVerificado);
 
 /// <summary>Pedido com o nome do perfil pedido e o número da versão que ele segue (nulo na governança), para a resposta.</summary>
-public sealed record PedidoComPerfil(PedidoDeConcessao Pedido, string PerfilNome, int? Versao) : IIdentificavel
+public sealed record PedidoComPerfil(PedidoDeConcessao Pedido, NomeDoPerfil PerfilNome, int? Versao) : IIdentificavel
 {
     /// <summary>Id do pedido, exposto para a paginação keyset operar sobre a projeção.</summary>
     public Guid Id { get; init; } = Pedido.Id;

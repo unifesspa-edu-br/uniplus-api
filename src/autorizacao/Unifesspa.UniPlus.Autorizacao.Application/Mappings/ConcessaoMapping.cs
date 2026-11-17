@@ -13,7 +13,7 @@ public static class ConcessaoMapping
     {
         ArgumentNullException.ThrowIfNull(item);
 
-        return ToDto(item.Concessao, item.PerfilNome, item.Versao, agora);
+        return ToDto(item.Concessao, item.PerfilNome.Valor, item.Versao, agora);
     }
 
     private static ConcessaoDto ToDto(Concessao c, string perfilNome, int? versao, DateTimeOffset agora) =>

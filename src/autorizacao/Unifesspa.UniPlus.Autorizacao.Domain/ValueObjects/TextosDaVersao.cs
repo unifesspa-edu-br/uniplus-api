@@ -7,10 +7,8 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// Os três textos de uma versão do perfil, já normalizados: nome, descrição e protocolo do documento instituidor. O texto
 /// que não cabe nos limites fica nulo, e cada texto nulo dá o seu erro, na ordem em que o conteúdo da versão os acumula.
 /// </summary>
-internal sealed record TextosDaVersao(string? Nome, string? Descricao, string? Protocolo)
+internal sealed record TextosDaVersao(NomeDoPerfil? Nome, string? Descricao, string? Protocolo)
 {
-    private const int NomeMinLength = 3;
-    private const int NomeMaxLength = 120;
     private const int DescricaoMinLength = 3;
     private const int DescricaoMaxLength = 500;
     private const int ProtocoloMinLength = 1;
@@ -18,7 +16,7 @@ internal sealed record TextosDaVersao(string? Nome, string? Descricao, string? P
 
     public static TextosDaVersao Normalizar(string? nome, string? descricao, string? protocolo) =>
         new(
-            TextoLivre.Normalizar(nome, NomeMinLength, NomeMaxLength),
+            NomeDoPerfil.Normalizar(nome),
             TextoLivre.Normalizar(descricao, DescricaoMinLength, DescricaoMaxLength),
             TextoLivre.Normalizar(protocolo, ProtocoloMinLength, ProtocoloMaxLength));
 
@@ -27,7 +25,7 @@ internal sealed record TextosDaVersao(string? Nome, string? Descricao, string? P
         new[]
         {
             Nome is null
-                ? ConteudoDaVersao.Erro("nome", PerfilErrorCodes.NomeInvalido, $"O nome do perfil é obrigatório e deve ter entre {NomeMinLength} e {NomeMaxLength} caracteres.")
+                ? ConteudoDaVersao.Erro("nome", PerfilErrorCodes.NomeInvalido, $"O nome do perfil é obrigatório e deve ter entre {NomeDoPerfil.MinimoDeCaracteres} e {NomeDoPerfil.MaximoDeCaracteres} caracteres.")
                 : null,
             Descricao is null
                 ? ConteudoDaVersao.Erro("descricao", PerfilErrorCodes.DescricaoInvalida, $"A descrição do perfil é obrigatória e deve ter entre {DescricaoMinLength} e {DescricaoMaxLength} caracteres.")

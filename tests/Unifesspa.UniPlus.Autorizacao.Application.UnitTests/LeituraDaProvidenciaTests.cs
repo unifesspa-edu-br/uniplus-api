@@ -11,6 +11,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Pagination;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -26,7 +27,7 @@ public sealed class LeituraDaProvidenciaTests
     public LeituraDaProvidenciaTests()
     {
         ProvidenciaBuilder construtor = new();
-        _item = new(construtor.Aberta(), new ConcessaoDaProvidencia(construtor.Concessao, CenarioDaProvidencia.PerfilNome));
+        _item = new(construtor.Aberta(), new ConcessaoDaProvidencia(construtor.Concessao, NomeDoPerfil.Reidratar(CenarioDaProvidencia.PerfilNome)));
         _cenario.Providencias.ObterComConcessaoAsync(_item.Id, Arg.Any<CancellationToken>()).Returns(_item);
         _cenario.Providencias.ListarPaginadoAsync(default!, default, default, default, default, default).ReturnsForAnyArgs(([_item], null, null));
     }

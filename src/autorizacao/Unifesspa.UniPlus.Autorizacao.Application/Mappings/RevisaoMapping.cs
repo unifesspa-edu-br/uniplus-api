@@ -72,7 +72,7 @@ public static class RevisaoMapping
             i.Id,
             c.Id,
             new IdentidadeDto(c.BeneficiarioEmissor, c.BeneficiarioContaId, c.BeneficiarioNome),
-            new PerfilResumoDto(c.PerfilId, item.PerfilNome),
+            new PerfilResumoDto(c.PerfilId, item.PerfilNome.Valor),
             new EscopoDto(c.EscopoTipo.ToCodigo(), c.UnidadeId),
             c.ValidaAte,
             QuemDecide(i, c, representantes).ToCodigo(),

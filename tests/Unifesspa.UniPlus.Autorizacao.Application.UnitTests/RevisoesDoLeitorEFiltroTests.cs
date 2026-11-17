@@ -66,6 +66,6 @@ public sealed class RevisoesDoLeitorEFiltroTests
             .Para(beneficiario, "leandro-viana84@uniplus-test.local").ConcedidaPor(Marlene).Em(DateTimeOffset.UtcNow).Construir();
         RevisaoDeAcessos revisao = RevisaoDeAcessos.Abrir(Marlene, [concessao.Id], DateTimeOffset.UtcNow);
 
-        return new RevisaoDetalhada(revisao, [new ItemDaRevisaoComConcessao(revisao.Itens[0], concessao, perfil.Nome, ConcessaoAtiva: true)]);
+        return new RevisaoDetalhada(revisao, [new ItemDaRevisaoComConcessao(revisao.Itens[0], concessao, NomeDoPerfil.Reidratar(perfil.Nome), ConcessaoAtiva: true)]);
     }
 }

@@ -58,7 +58,7 @@ public static class ProvidenciaMapping
         Concessao c = alvo.Concessao;
 
         return new(
-            c.Id, Pessoa(c.Beneficiario), new PerfilResumoDto(c.PerfilId, alvo.PerfilNome), new EscopoDto(c.EscopoTipo.ToCodigo(), c.UnidadeId),
+            c.Id, Pessoa(c.Beneficiario), new PerfilResumoDto(c.PerfilId, alvo.PerfilNome.Valor), new EscopoDto(c.EscopoTipo.ToCodigo(), c.UnidadeId),
             c.ValidaAte, c.EstaAtiva(agora));
     }
 

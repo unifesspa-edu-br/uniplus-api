@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Kernel.Pagination;
 
 /// <summary>Item da revisão com a concessão e o nome do perfil que ele revê, para a resposta.</summary>
 /// <param name="ConcessaoAtiva">A concessão está ativa no instante da leitura.</param>
-public sealed record ItemDaRevisaoComConcessao(ItemDaRevisao Item, Concessao Concessao, string PerfilNome, bool ConcessaoAtiva);
+public sealed record ItemDaRevisaoComConcessao(ItemDaRevisao Item, Concessao Concessao, NomeDoPerfil PerfilNome, bool ConcessaoAtiva);
 
 /// <summary>Revisão com seus itens lidos junto das concessões.</summary>
 public sealed record RevisaoDetalhada(RevisaoDeAcessos Revisao, IReadOnlyList<ItemDaRevisaoComConcessao> Itens);

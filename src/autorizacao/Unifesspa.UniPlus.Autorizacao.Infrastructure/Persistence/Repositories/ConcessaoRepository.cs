@@ -198,5 +198,5 @@ public sealed class ConcessaoRepository : IConcessaoRepository
         join p in _context.Perfis.AsNoTracking() on c.PerfilId equals p.Id
         join v in _context.VersoesDosPerfis.AsNoTracking() on c.VersaoId equals v.Id into versoes
         from v in versoes.DefaultIfEmpty()
-        select new ConcessaoComPerfil(c, p.Nome, v == null ? null : v.Numero) { Id = c.Id };
+        select new ConcessaoComPerfil(c, NomeDoPerfil.Reidratar(p.Nome), v == null ? null : v.Numero) { Id = c.Id };
 }

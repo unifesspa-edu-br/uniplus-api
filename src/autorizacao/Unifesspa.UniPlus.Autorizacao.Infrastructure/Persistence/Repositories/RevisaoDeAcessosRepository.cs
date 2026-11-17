@@ -181,6 +181,6 @@ public sealed class RevisaoDeAcessosRepository : IRevisaoDeAcessosRepository
             .ConfigureAwait(false);
 
         return [.. revisao.Itens.OrderBy(i => i.Id).Select(i => new ItemDaRevisaoComConcessao(
-            i, concessoes[i.ConcessaoId].Concessao, concessoes[i.ConcessaoId].PerfilNome, concessoes[i.ConcessaoId].Concessao.EstaAtiva(agora)))];
+            i, concessoes[i.ConcessaoId].Concessao, NomeDoPerfil.Reidratar(concessoes[i.ConcessaoId].PerfilNome), concessoes[i.ConcessaoId].Concessao.EstaAtiva(agora)))];
     }
 }
