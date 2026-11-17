@@ -15,12 +15,8 @@ public static class PerfilMapping
     /// <param name="perfil">O perfil.</param>
     /// <param name="catalogo">O catálogo de permissões.</param>
     /// <param name="leitor">Quem lê, para dizer se a versão pendente é dele; nulo quando a resposta não é de uma leitura.</param>
-    public static PerfilDto ToDto(Perfil perfil, CatalogoDaAplicacao catalogo, Identidade? leitor = null)
-    {
-        ArgumentNullException.ThrowIfNull(perfil);
-        ArgumentNullException.ThrowIfNull(catalogo);
-
-        return new PerfilDto(
+    internal static PerfilDto ToDto(Perfil perfil, CatalogoDaAplicacao catalogo, Identidade? leitor = null) =>
+        new(
             perfil.Id,
             perfil.Nome,
             perfil.Descricao,
@@ -32,14 +28,9 @@ public static class PerfilMapping
             VersaoMapping.UltimaEncerradaSemVigorDe(perfil),
             SuspensaoDe(perfil, catalogo),
             perfil.DesativacaoAberta?.DesativadaEm);
-    }
 
-    public static PerfilListadoDto ToListadoDto(Perfil perfil, CatalogoDaAplicacao catalogo)
-    {
-        ArgumentNullException.ThrowIfNull(perfil);
-        ArgumentNullException.ThrowIfNull(catalogo);
-
-        return new PerfilListadoDto(
+    internal static PerfilListadoDto ToListadoDto(Perfil perfil, CatalogoDaAplicacao catalogo) =>
+        new(
             perfil.Id,
             perfil.Nome,
             perfil.Descricao,
@@ -50,7 +41,6 @@ public static class PerfilMapping
             perfil.VersaoPendente is not null,
             SuspensaoDe(perfil, catalogo),
             perfil.DesativacaoAberta?.DesativadaEm);
-    }
 
     /// <summary>
     /// O perfil como o aprovador o avalia agora: as permissões da composição em vigor e a sensibilidade que o catálogo
