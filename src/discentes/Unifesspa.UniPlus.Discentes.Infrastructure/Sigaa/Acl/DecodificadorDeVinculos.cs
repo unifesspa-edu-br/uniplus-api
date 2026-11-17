@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa.Acl;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 
@@ -10,6 +11,7 @@ using Unifesspa.UniPlus.Discentes.Domain.Entities;
 using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Sigaa.Contracts;
 using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// Traduz o que a API do SIGAA entrega para o domínio do módulo, sem deixar nenhum tipo
@@ -55,82 +57,42 @@ public static class DecodificadorDeVinculos
     }
 
     /// <summary>
-    /// Traduz um vínculo, ou devolve nulo depois de anotar por que ele fica de fora.
+    /// O vínculo que entrou sem nenhum registro: a própria entrada da página veio nula.
     /// </summary>
-    private static VinculoDecodificado? Traduzir(
-        VinculoDiscentePayload item,
-        List<VinculoDescartado> descartados)
-    {
-        if (item is null)
-        {
-            descartados.Add(new VinculoDescartado(null, MotivoDeDescarte.ForaDoContrato, "vínculo"));
-            return null;
-        }
-
-        // O que o contrato declara obrigatório. Ausência aqui é entrega fora do combinado.
-        long? identificador = item.IdDiscente > 0 ? item.IdDiscente : null;
-
-        if (CampoObrigatorioAusente(item) is { } faltando)
-        {
-            descartados.Add(new VinculoDescartado(
-                identificador, MotivoDeDescarte.ForaDoContrato, faltando));
-            return null;
-        }
-
-        // O formato do CPF é conferido junto das demais exigências do contrato, e não
-        // depois dos descartes por registro incompleto. Adiante, o primeiro descarte
-        // encerraria a tradução deste vínculo e a conferência nunca aconteceria: um CPF
-        // corrompido seria anotado como registro incompleto sempre que viesse acompanhado
-        // de um curso sem unidade — confundindo entrega fora do combinado com rotina,
-        // justamente no caso mais frequente da origem.
-        Cpf? cpf = Cpf.Criar(item.Cpf).Match<Cpf?>(valido => valido, _ => null);
-        if (cpf is null)
-        {
-            descartados.Add(new VinculoDescartado(
-                identificador, MotivoDeDescarte.ForaDoContrato, "cpf"));
-            return null;
-        }
-
-        if (TextoAlemDoPermitido(item) is { } excedente)
-        {
-            descartados.Add(new VinculoDescartado(
-                identificador, excedente.Motivo, excedente.Campo));
-            return null;
-        }
-
-        if (item.Curso!.Unidade is not { } unidade)
-        {
-            descartados.Add(new VinculoDescartado(
-                identificador, MotivoDeDescarte.CursoSemUnidadeAcademica));
-            return null;
-        }
-
-        if (item.AnoIngresso is not { } ano || item.PeriodoIngresso is not { } periodo)
-        {
-            descartados.Add(new VinculoDescartado(
-                identificador, MotivoDeDescarte.SemPeriodoDeIngresso));
-            return null;
-        }
-
-        return Montar(item, cpf, unidade, ano, periodo, descartados, identificador);
-    }
+    private static readonly VinculoDescartado ItemAusente =
+        new(null, MotivoDeDescarte.ForaDoContrato, "vínculo");
 
     /// <summary>
-    /// Um campo de texto e os dois tetos que ele precisa respeitar.
+    /// O que o contrato declara obrigatório, na ordem em que é conferido: o primeiro que
+    /// faltar dá nome ao descarte. Ausência aqui é entrega fora do combinado.
     /// </summary>
-    /// <param name="NoContrato">
-    /// Nulo quando o contrato não declara limite para o campo; então só o da réplica vale.
-    /// </param>
-    private readonly record struct TetoDeTexto(
-        string Campo,
-        Func<VinculoDiscentePayload, string?> Ler,
-        int? NoContrato,
-        int NaReplica);
+    private static readonly ObrigatorioDoContrato[] Obrigatorios =
+    [
+        new("idDiscente", i => i.IdDiscente <= 0),
+
+        // A origem promete matrícula composta só por dígitos. Letra ou pontuação aqui é
+        // entrega fora do combinado, não valor que a réplica não comporta.
+        new("matricula", i => string.IsNullOrWhiteSpace(i.Matricula) || !IdentificacaoDoDiscente.ApenasDigitos(i.Matricula)),
+        new("nome", i => string.IsNullOrWhiteSpace(i.Nome)),
+        new("nivel", i => string.IsNullOrWhiteSpace(i.Nivel)),
+        new("cpf", i => string.IsNullOrWhiteSpace(i.Cpf)),
+        new("curso", i => i.Curso is null),
+        new("curso.id", i => i.Curso is { Id: <= 0 }),
+        new("curso.nome", i => string.IsNullOrWhiteSpace(i.Curso?.Nome)),
+        new("situacao", i => i.Situacao is null),
+
+        // O contrato declara a situação como conjunto fechado, então aqui não basta ser
+        // positiva: um identificador que a origem não declara é um estado que ela própria
+        // não trata como vínculo, e guardá-lo faria a réplica afirmar algo que a origem não
+        // afirma — com o CPF cifrado junto e contado como sucesso.
+        new("situacao.id", i => i.Situacao is { } s && !SituacoesDoContrato.Declarada(s.Id)),
+        new("situacao.descricao", i => string.IsNullOrWhiteSpace(i.Situacao?.Descricao)),
+    ];
 
     /// <summary>
-    /// Os dois tetos de cada campo de texto, na ordem em que são conferidos.
+    /// Os dois limites de cada campo de texto, na ordem em que são conferidos.
     /// </summary>
-    private static readonly TetoDeTexto[] TetosDeTexto =
+    private static readonly LimiteDeTexto[] LimitesDeTexto =
     [
         new("matricula", i => i.Matricula, null, LimitesDaReplica.Matricula),
         new("nivel", i => i.Nivel, null, LimitesDaReplica.Nivel),
@@ -147,36 +109,83 @@ public static class DecodificadorDeVinculos
     ];
 
     /// <summary>
-    /// Devolve o primeiro campo de texto que estoura algum dos dois tetos, junto do motivo,
-    /// ou nulo quando todos cabem.
+    /// Traduz um vínculo, ou devolve nulo depois de anotar por que ele fica de fora.
     /// </summary>
     /// <remarks>
-    /// Os dois tetos dizem coisas diferentes e não podem ser confundidos. Passar do que o
+    /// O formato do CPF é conferido junto das demais exigências do contrato, e não depois
+    /// dos descartes por registro incompleto. Adiante, o primeiro descarte encerraria a
+    /// tradução deste vínculo e a conferência nunca aconteceria: um CPF corrompido seria
+    /// anotado como registro incompleto sempre que viesse acompanhado de um curso sem
+    /// unidade — confundindo entrega fora do combinado com rotina, justamente no caso mais
+    /// frequente da origem.
+    /// </remarks>
+    private static VinculoDecodificado? Traduzir(
+        VinculoDiscentePayload item,
+        List<VinculoDescartado> descartados)
+    {
+        if (item is null)
+        {
+            return Descartar(descartados, ItemAusente);
+        }
+
+        if (CampoObrigatorioAusente(item) is { } faltando)
+        {
+            return Descartar(descartados, Descarte(item, MotivoDeDescarte.ForaDoContrato, faltando));
+        }
+
+        return Cpf.Criar(item.Cpf).Match(
+            cpf => TraduzirComCpf(item, cpf, descartados),
+            _ => Descartar(descartados, Descarte(item, MotivoDeDescarte.ForaDoContrato, "cpf")));
+    }
+
+    /// <summary>
+    /// Segue a tradução de um vínculo cujo CPF já foi aceito: confere os textos, a unidade
+    /// do curso e o período de ingresso, nessa ordem, e monta o vínculo.
+    /// </summary>
+    /// <remarks>
+    /// O contrato já exigiu o curso e a situação (<see cref="CampoObrigatorioAusente"/>);
+    /// o padrão abaixo apenas os captura, junto da unidade, que ele permite faltar.
+    /// </remarks>
+    private static VinculoDecodificado? TraduzirComCpf(
+        VinculoDiscentePayload item,
+        Cpf cpf,
+        List<VinculoDescartado> descartados)
+    {
+        if (TextoAlemDoPermitido(item) is { } excedente)
+        {
+            return Descartar(descartados, excedente);
+        }
+
+        if (item is not { Curso: { Unidade: { } unidade } curso, Situacao: { } situacao })
+        {
+            return Descartar(descartados, Descarte(item, MotivoDeDescarte.CursoSemUnidadeAcademica));
+        }
+
+        return item is { AnoIngresso: { } ano, PeriodoIngresso: { } periodo }
+            ? Montar(item, cpf, new PartesDoVinculo(curso, unidade, situacao, ano, periodo), descartados)
+            : Descartar(descartados, Descarte(item, MotivoDeDescarte.SemPeriodoDeIngresso));
+    }
+
+    /// <summary>
+    /// Devolve o primeiro campo de texto que estoura algum dos dois limites, já como
+    /// descarte, ou nulo quando todos cabem.
+    /// </summary>
+    /// <remarks>
+    /// Os dois limites dizem coisas diferentes e não podem ser confundidos. Passar do que o
     /// contrato declara é a origem entregando além do que promete, e precisa aparecer como
     /// tal — as colunas são mais largas do que o contrato em quase todo campo, então um
-    /// teto só pela coluna deixaria a origem divergir por uma faixa larga sem que nada
+    /// limite só pela coluna deixaria a origem divergir por uma faixa larga sem que nada
     /// apontasse a divergência. Passar do que a coluna comporta, aí sim, é o registro que a
     /// réplica não guarda; sem esta conferência ele só seria recusado na gravação,
     /// derrubando o lote inteiro e levando junto os vínculos válidos que o acompanhassem.
     /// </remarks>
-    private static (string Campo, MotivoDeDescarte Motivo)? TextoAlemDoPermitido(
-        VinculoDiscentePayload item)
+    private static VinculoDescartado? TextoAlemDoPermitido(VinculoDiscentePayload item)
     {
-        foreach (TetoDeTexto teto in TetosDeTexto)
+        foreach (LimiteDeTexto limite in LimitesDeTexto)
         {
-            if (teto.Ler(item) is not { } valor)
+            if (limite.MotivoDoExcesso(item) is { } motivo)
             {
-                continue;
-            }
-
-            if (teto.NoContrato is { } declarado && valor.Length > declarado)
-            {
-                return (teto.Campo, MotivoDeDescarte.ForaDoContrato);
-            }
-
-            if (valor.Length > teto.NaReplica)
-            {
-                return (teto.Campo, MotivoDeDescarte.NaoCabeNaReplica);
+                return Descarte(item, motivo, limite.Campo);
             }
         }
 
@@ -187,118 +196,49 @@ public static class DecodificadorDeVinculos
     /// Devolve o nome do primeiro campo obrigatório que a origem não entregou, ou nulo
     /// quando todos vieram.
     /// </summary>
-    private static string? CampoObrigatorioAusente(VinculoDiscentePayload item)
-    {
-        if (item.IdDiscente <= 0)
-        {
-            return "idDiscente";
-        }
+    private static string? CampoObrigatorioAusente(VinculoDiscentePayload item) =>
+        Obrigatorios.FirstOrDefault(obrigatorio => obrigatorio.Ausente(item)).Campo;
 
-        if (string.IsNullOrWhiteSpace(item.Matricula))
-        {
-            return "matricula";
-        }
-
-        // A origem promete matrícula composta só por dígitos. Letra ou pontuação aqui é
-        // entrega fora do combinado, não valor que a réplica não comporta.
-        if (!IdentificacaoDoDiscente.ApenasDigitos(item.Matricula))
-        {
-            return "matricula";
-        }
-
-        if (string.IsNullOrWhiteSpace(item.Nome))
-        {
-            return "nome";
-        }
-
-        if (string.IsNullOrWhiteSpace(item.Nivel))
-        {
-            return "nivel";
-        }
-
-        if (string.IsNullOrWhiteSpace(item.Cpf))
-        {
-            return "cpf";
-        }
-
-        if (item.Curso is null)
-        {
-            return "curso";
-        }
-
-        if (item.Curso.Id <= 0)
-        {
-            return "curso.id";
-        }
-
-        if (string.IsNullOrWhiteSpace(item.Curso.Nome))
-        {
-            return "curso.nome";
-        }
-
-        if (item.Situacao is null)
-        {
-            return "situacao";
-        }
-
-        // O contrato declara a situação como conjunto fechado, então aqui não basta ser
-        // positiva: um identificador que a origem não declara é um estado que ela própria
-        // não trata como vínculo, e guardá-lo faria a réplica afirmar algo que a origem não
-        // afirma — com o CPF cifrado junto e contado como sucesso.
-        if (!SituacoesDoContrato.Declarada(item.Situacao.Id))
-        {
-            return "situacao.id";
-        }
-
-        return string.IsNullOrWhiteSpace(item.Situacao.Descricao) ? "situacao.descricao" : null;
-    }
-
+    /// <summary>
+    /// Constrói o vínculo a partir das partes que o contrato permite faltar e que a réplica
+    /// exige, ou anota qual delas a réplica não aceitou.
+    /// </summary>
     private static VinculoDecodificado? Montar(
         VinculoDiscentePayload item,
         Cpf cpf,
-        UnidadePayload unidade,
-        int ano,
-        int periodo,
-        List<VinculoDescartado> descartados,
-        long? identificador)
+        PartesDoVinculo partes,
+        List<VinculoDescartado> descartados)
     {
-        CursoSigaaSnapshot? curso = CursoSigaaSnapshot
-            .Criar(item.Curso!.Id, item.Curso.Nome, item.Curso.CodigoEmec, unidade.Id, unidade.Nome)
-            .Match<CursoSigaaSnapshot?>(c => c, _ => null);
-
-        SituacaoAcademicaSnapshot? situacao = SituacaoAcademicaSnapshot
-            .Criar(item.Situacao!.Id, item.Situacao.Descricao, item.Situacao.SituacaoVinculo)
-            .Match<SituacaoAcademicaSnapshot?>(s => s, _ => null);
-
-        PeriodoIngresso? ingresso = PeriodoIngresso
-            .Criar(ano, periodo)
-            .Match<PeriodoIngresso?>(p => p, _ => null);
+        CursoSigaaSnapshot? curso = ValorOuNulo(partes.CriarCurso());
+        SituacaoAcademicaSnapshot? situacao = ValorOuNulo(partes.CriarSituacao());
+        PeriodoIngresso? ingresso = ValorOuNulo(partes.CriarIngresso());
 
         if (curso is null || situacao is null || ingresso is null)
         {
-            descartados.Add(new VinculoDescartado(
-                identificador, MotivoDeDescarte.ForaDoContrato, DescreverParteInvalida(curso, situacao)));
-            return null;
+            return Descartar(
+                descartados,
+                Descarte(item, MotivoDeDescarte.ForaDoContrato, DescreverParteInvalida(curso, situacao)));
         }
 
-        IdentificacaoDoDiscente? identificacao = IdentificacaoDoDiscente
-            .Criar(item.IdDiscente, item.Matricula, cpf, item.Nome)
-            .Match<IdentificacaoDoDiscente?>(i => i, _ => null);
+        return CriarVinculo(item, cpf, curso, situacao, ingresso, descartados);
+    }
 
-        VinculoDiscenteSnapshot? snapshot = identificacao is null
-            ? null
-            : VinculoDiscenteSnapshot
-                .Criar(identificacao, item.Nivel, curso, situacao, ingresso)
-                .Match<VinculoDiscenteSnapshot?>(s => s, _ => null);
+    private static VinculoDecodificado? CriarVinculo(
+        VinculoDiscentePayload item,
+        Cpf cpf,
+        CursoSigaaSnapshot curso,
+        SituacaoAcademicaSnapshot situacao,
+        PeriodoIngresso ingresso,
+        List<VinculoDescartado> descartados)
+    {
+        VinculoDiscenteSnapshot? snapshot =
+            ValorOuNulo(IdentificacaoDoDiscente.Criar(item.IdDiscente, item.Matricula, cpf, item.Nome)) is { } identificacao
+                ? ValorOuNulo(VinculoDiscenteSnapshot.Criar(identificacao, item.Nivel, curso, situacao, ingresso))
+                : null;
 
-        if (snapshot is null)
-        {
-            descartados.Add(new VinculoDescartado(
-                identificador, MotivoDeDescarte.ForaDoContrato, "vínculo"));
-            return null;
-        }
-
-        return new VinculoDecodificado(VinculoDiscente.Criar(snapshot), ResumirConteudo(snapshot));
+        return snapshot is null
+            ? Descartar(descartados, Descarte(item, MotivoDeDescarte.ForaDoContrato, "vínculo"))
+            : new VinculoDecodificado(VinculoDiscente.Criar(snapshot), ResumirConteudo(snapshot));
     }
 
     private static string DescreverParteInvalida(
@@ -312,6 +252,28 @@ public static class DecodificadorDeVinculos
 
         return situacao is null ? "situacao" : "ingresso";
     }
+
+    /// <summary>
+    /// Anota o descarte e devolve nulo, que é o que a tradução devolve quando um vínculo
+    /// fica de fora.
+    /// </summary>
+    private static VinculoDecodificado? Descartar(
+        List<VinculoDescartado> descartados,
+        VinculoDescartado descarte)
+    {
+        descartados.Add(descarte);
+        return null;
+    }
+
+    private static VinculoDescartado Descarte(
+        VinculoDiscentePayload item,
+        MotivoDeDescarte motivo,
+        string? detalhe = null) =>
+        new(item.IdDiscente > 0 ? item.IdDiscente : null, motivo, detalhe);
+
+    private static T? ValorOuNulo<T>(Result<T> resultado)
+        where T : class =>
+        resultado.Match<T?>(valor => valor, _ => null);
 
     /// <summary>
     /// Resume, num valor curto, o que veio da origem para este vínculo.
@@ -342,24 +304,46 @@ public static class DecodificadorDeVinculos
     {
         StringBuilder canonico = new();
 
-        Acrescentar(canonico, snapshot.Identificacao.IdDiscenteSigaa.ToString(CultureInfo.InvariantCulture));
-        Acrescentar(canonico, snapshot.Identificacao.Matricula);
-        Acrescentar(canonico, snapshot.Identificacao.Nome);
-        Acrescentar(canonico, snapshot.Nivel);
-        Acrescentar(canonico, snapshot.Curso.Id.ToString(CultureInfo.InvariantCulture));
-        Acrescentar(canonico, snapshot.Curso.Nome);
-        Acrescentar(canonico, snapshot.Curso.CodigoEmec);
-        Acrescentar(canonico, snapshot.Curso.UnidadeId.ToString(CultureInfo.InvariantCulture));
-        Acrescentar(canonico, snapshot.Curso.UnidadeNome);
-        Acrescentar(canonico, snapshot.Situacao.Id.ToString(CultureInfo.InvariantCulture));
-        Acrescentar(canonico, snapshot.Situacao.Descricao);
-        Acrescentar(canonico, snapshot.Situacao.Vinculo);
-        Acrescentar(canonico, snapshot.Ingresso.Ano.ToString(CultureInfo.InvariantCulture));
-        Acrescentar(canonico, snapshot.Ingresso.Periodo.ToString(CultureInfo.InvariantCulture));
+        foreach (string? campo in CamposDoResumo(snapshot))
+        {
+            Acrescentar(canonico, campo);
+        }
 
         byte[] resumo = SHA256.HashData(Encoding.UTF8.GetBytes(canonico.ToString()));
         return Convert.ToHexStringLower(resumo);
     }
+
+    /// <summary>
+    /// Os campos que entram no resumo, na ordem fixa em que são acrescentados. Mudar a
+    /// ordem muda o resumo de todos os vínculos já guardados.
+    /// </summary>
+    private static IEnumerable<string?> CamposDoResumo(VinculoDiscenteSnapshot snapshot) =>
+    [
+        snapshot.Identificacao.IdDiscenteSigaa.ToString(CultureInfo.InvariantCulture),
+        snapshot.Identificacao.Matricula,
+        snapshot.Identificacao.Nome,
+        snapshot.Nivel,
+        .. CamposDoCurso(snapshot.Curso),
+        .. CamposDaSituacao(snapshot.Situacao),
+        snapshot.Ingresso.Ano.ToString(CultureInfo.InvariantCulture),
+        snapshot.Ingresso.Periodo.ToString(CultureInfo.InvariantCulture),
+    ];
+
+    private static IEnumerable<string?> CamposDoCurso(CursoSigaaSnapshot curso) =>
+    [
+        curso.Id.ToString(CultureInfo.InvariantCulture),
+        curso.Nome,
+        curso.CodigoEmec,
+        curso.UnidadeId.ToString(CultureInfo.InvariantCulture),
+        curso.UnidadeNome,
+    ];
+
+    private static IEnumerable<string?> CamposDaSituacao(SituacaoAcademicaSnapshot situacao) =>
+    [
+        situacao.Id.ToString(CultureInfo.InvariantCulture),
+        situacao.Descricao,
+        situacao.Vinculo,
+    ];
 
     /// <summary>
     /// Acrescenta um campo à forma canônica, precedido do próprio tamanho.
@@ -389,5 +373,63 @@ public static class DecodificadorDeVinculos
         canonico.Append(valor.Length.ToString(CultureInfo.InvariantCulture))
             .Append(':')
             .Append(valor);
+    }
+
+    /// <summary>
+    /// Um campo obrigatório pelo contrato e o que o faz faltar.
+    /// </summary>
+    private readonly record struct ObrigatorioDoContrato(
+        string Campo,
+        Func<VinculoDiscentePayload, bool> Ausente);
+
+    /// <summary>
+    /// Um campo de texto e os dois limites que ele precisa respeitar.
+    /// </summary>
+    /// <param name="NoContrato">
+    /// Nulo quando o contrato não declara limite para o campo; então só o da réplica vale.
+    /// </param>
+    private readonly record struct LimiteDeTexto(
+        string Campo,
+        Func<VinculoDiscentePayload, string?> Ler,
+        int? NoContrato,
+        int NaReplica)
+    {
+        /// <summary>
+        /// O motivo pelo qual o texto do vínculo estoura o limite, ou nulo quando cabe.
+        /// </summary>
+        public MotivoDeDescarte? MotivoDoExcesso(VinculoDiscentePayload item)
+        {
+            if (Ler(item) is not { } valor)
+            {
+                return null;
+            }
+
+            if (NoContrato is { } declarado && valor.Length > declarado)
+            {
+                return MotivoDeDescarte.ForaDoContrato;
+            }
+
+            return valor.Length > NaReplica ? MotivoDeDescarte.NaoCabeNaReplica : null;
+        }
+    }
+
+    /// <summary>
+    /// As partes do vínculo que o contrato permite faltar e que a réplica exige, já
+    /// conferidas como presentes.
+    /// </summary>
+    private sealed record PartesDoVinculo(
+        CursoPayload Curso,
+        UnidadePayload Unidade,
+        SituacaoPayload Situacao,
+        int Ano,
+        int Periodo)
+    {
+        public Result<CursoSigaaSnapshot> CriarCurso() =>
+            CursoSigaaSnapshot.Criar(Curso.Id, Curso.Nome, Curso.CodigoEmec, Unidade.Id, Unidade.Nome);
+
+        public Result<SituacaoAcademicaSnapshot> CriarSituacao() =>
+            SituacaoAcademicaSnapshot.Criar(Situacao.Id, Situacao.Descricao, Situacao.SituacaoVinculo);
+
+        public Result<PeriodoIngresso> CriarIngresso() => PeriodoIngresso.Criar(Ano, Periodo);
     }
 }
