@@ -58,62 +58,70 @@ public sealed class RegistroDeAcessoKafkaOptions
             ClientId = "uniplus-registro-de-acesso",
         };
 
-        KafkaSecurity.Apply(produtor, new KafkaSettings
-        {
-            SecurityProtocol = SecurityProtocol,
-            SaslMechanism = SaslMechanism,
-            SaslUsername = Usuario,
-            SaslPassword = Senha,
-            SslCaLocation = CaminhoDoCertificadoCa,
-        });
+        KafkaSecurity.Apply(produtor, ToKafkaSettings());
 
         return produtor;
     }
+
+    private KafkaSettings ToKafkaSettings() => new()
+    {
+        SecurityProtocol = SecurityProtocol,
+        SaslMechanism = SaslMechanism,
+        SaslUsername = Usuario,
+        SaslPassword = Senha,
+        SslCaLocation = CaminhoDoCertificadoCa,
+    };
 }
 
 internal sealed class RegistroDeAcessoKafkaOptionsValidator : IValidateOptions<RegistroDeAcessoKafkaOptions>
 {
+    private const string Section = RegistroDeAcessoKafkaOptions.SectionName;
+
+    private static readonly KafkaSecurityFields Fields = new(
+        Section,
+        nameof(RegistroDeAcessoKafkaOptions.SecurityProtocol),
+        nameof(RegistroDeAcessoKafkaOptions.SaslMechanism),
+        nameof(RegistroDeAcessoKafkaOptions.Usuario),
+        nameof(RegistroDeAcessoKafkaOptions.Senha),
+        nameof(RegistroDeAcessoKafkaOptions.CaminhoDoCertificadoCa),
+        CaPem: null);
+
     public ValidateOptionsResult Validate(string? name, RegistroDeAcessoKafkaOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
 
-        string secao = RegistroDeAcessoKafkaOptions.SectionName;
-        List<string> falhas = [];
+        List<string> falhas =
+        [
+            .. new[] { FalhaDoBootstrap(options), FalhaDoTopico(options), FalhaDoPrazo(options) }.OfType<string>(),
+            .. FalhasDeSeguranca(options),
+        ];
 
-        if (string.IsNullOrWhiteSpace(options.BootstrapServers))
-        {
-            falhas.Add($"{secao}:BootstrapServers é obrigatório: o registro de acesso a dado pessoal é publicado no Kafka, e sem ele a aplicação não entrega dado protegido.");
-        }
+        return falhas.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(falhas);
+    }
 
-        if (string.IsNullOrWhiteSpace(options.Topico))
-        {
-            falhas.Add($"{secao}:Topico não pode ser vazio.");
-        }
+    private static string? FalhaDoBootstrap(RegistroDeAcessoKafkaOptions options) =>
+        string.IsNullOrWhiteSpace(options.BootstrapServers)
+            ? $"{Section}:BootstrapServers é obrigatório: o registro de acesso a dado pessoal é publicado no Kafka, e sem ele a aplicação não entrega dado protegido."
+            : null;
 
-        // Zero é prazo infinito no cliente Kafka, e o prazo precisa superar o tempo de agrupamento do produtor
-        // (5 ms por padrão) e caber em milissegundos inteiros.
-        if (options.PrazoDeConfirmacao < RegistroDeAcessoKafkaOptions.PrazoMinimo
-            || options.PrazoDeConfirmacao > TimeSpan.FromMilliseconds(int.MaxValue))
-        {
-            falhas.Add($"{secao}:PrazoDeConfirmacao deve estar entre {RegistroDeAcessoKafkaOptions.PrazoMinimo.TotalMilliseconds} ms e {int.MaxValue} ms.");
-        }
+    private static string? FalhaDoTopico(RegistroDeAcessoKafkaOptions options) =>
+        string.IsNullOrWhiteSpace(options.Topico) ? $"{Section}:Topico não pode ser vazio." : null;
 
-        falhas.AddRange(KafkaSecurityValidation.Validar(
-            new CamposDeSegurancaKafka(
-                secao,
-                nameof(RegistroDeAcessoKafkaOptions.SecurityProtocol),
-                nameof(RegistroDeAcessoKafkaOptions.SaslMechanism),
-                nameof(RegistroDeAcessoKafkaOptions.Usuario),
-                nameof(RegistroDeAcessoKafkaOptions.Senha),
-                nameof(RegistroDeAcessoKafkaOptions.CaminhoDoCertificadoCa),
-                CaPem: null),
+    // Zero é prazo infinito no cliente Kafka, e o prazo precisa superar o tempo de agrupamento do produtor
+    // (5 ms por padrão) e caber em milissegundos inteiros.
+    private static string? FalhaDoPrazo(RegistroDeAcessoKafkaOptions options) =>
+        options.PrazoDeConfirmacao < RegistroDeAcessoKafkaOptions.PrazoMinimo
+            || options.PrazoDeConfirmacao > TimeSpan.FromMilliseconds(int.MaxValue)
+            ? $"{Section}:PrazoDeConfirmacao deve estar entre {RegistroDeAcessoKafkaOptions.PrazoMinimo.TotalMilliseconds} ms e {int.MaxValue} ms."
+            : null;
+
+    private static List<string> FalhasDeSeguranca(RegistroDeAcessoKafkaOptions options) =>
+        KafkaSecurityValidation.Validar(
+            Fields,
             options.SecurityProtocol,
             options.SaslMechanism,
             options.Usuario,
             options.Senha,
             options.CaminhoDoCertificadoCa,
-            caPem: null));
-
-        return falhas.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(falhas);
-    }
+            caPem: null);
 }

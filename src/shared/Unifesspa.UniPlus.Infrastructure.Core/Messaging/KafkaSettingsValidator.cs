@@ -14,6 +14,15 @@ using Microsoft.Extensions.Options;
 /// </remarks>
 public sealed class KafkaSettingsValidator : IValidateOptions<KafkaSettings>
 {
+    private static readonly KafkaSecurityFields Fields = new(
+        KafkaSettings.SectionName,
+        nameof(KafkaSettings.SecurityProtocol),
+        nameof(KafkaSettings.SaslMechanism),
+        nameof(KafkaSettings.SaslUsername),
+        nameof(KafkaSettings.SaslPassword),
+        nameof(KafkaSettings.SslCaLocation),
+        nameof(KafkaSettings.SslCaPem));
+
     public ValidateOptionsResult Validate(string? name, KafkaSettings options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -24,24 +33,20 @@ public sealed class KafkaSettingsValidator : IValidateOptions<KafkaSettings>
             return ValidateOptionsResult.Success;
         }
 
-        List<string> failures = KafkaSecurityValidation.Validar(
-            new CamposDeSegurancaKafka(
-                KafkaSettings.SectionName,
-                nameof(KafkaSettings.SecurityProtocol),
-                nameof(KafkaSettings.SaslMechanism),
-                nameof(KafkaSettings.SaslUsername),
-                nameof(KafkaSettings.SaslPassword),
-                nameof(KafkaSettings.SslCaLocation),
-                nameof(KafkaSettings.SslCaPem)),
+        List<string> failures = FalhasDeSeguranca(options);
+
+        return failures.Count == 0
+            ? ValidateOptionsResult.Success
+            : ValidateOptionsResult.Fail(failures);
+    }
+
+    private static List<string> FalhasDeSeguranca(KafkaSettings options) =>
+        KafkaSecurityValidation.Validar(
+            Fields,
             options.SecurityProtocol,
             options.SaslMechanism,
             options.SaslUsername,
             options.SaslPassword,
             options.SslCaLocation,
             options.SslCaPem);
-
-        return failures.Count == 0
-            ? ValidateOptionsResult.Success
-            : ValidateOptionsResult.Fail(failures);
-    }
 }
