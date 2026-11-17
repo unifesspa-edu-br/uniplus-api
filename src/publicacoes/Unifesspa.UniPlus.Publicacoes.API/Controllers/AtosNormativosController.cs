@@ -180,20 +180,18 @@ public sealed partial class AtosNormativosController : ControllerBase
     [AllowAnonymous]
     [VendorMediaType(Resource = "ato-normativo", Versions = [1])]
     [ProducesResponseType(typeof(AtoNormativoDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound,
+        Description = "O ato não existe (uniplus.publicacoes.ato_normativo.nao_encontrado).")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        AtoNormativoDto? ato = await _queryBus
+        Result<AtoNormativoDto> resultado = await _queryBus
             .Send(new ObterAtoNormativoPorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (ato is null)
-        {
-            return NotFound();
-        }
-
-        return Ok(ato with { Links = _linksBuilder.Build(ato) });
+        return resultado.IsSuccess
+            ? Ok(resultado.Value! with { Links = _linksBuilder.Build(resultado.Value!) })
+            : resultado.ToActionResult(_mapper);
     }
 
     /// <summary>

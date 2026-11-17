@@ -53,8 +53,55 @@ public sealed class PublicacoesHandlersNoBusTests
         ICommandBus commandBus = scope.ServiceProvider.GetRequiredService<ICommandBus>();
         IQueryBus queryBus = scope.ServiceProvider.GetRequiredService<IQueryBus>();
 
-        var comando = new CriarTipoAtoPublicadoCommand(
-            Codigo: "BUS_TESTE",
+        Result<Guid> criado = await commandBus.Send(NovoTipoQueCongela("BUS_TESTE"), CancellationToken.None);
+
+        criado.IsSuccess.Should().BeTrue(
+            "o assembly Publicacoes.Application precisa estar no Discovery do Wolverine "
+            + "e a IUnitOfWork declarada no opt-in de codegen");
+        TipoAtoPublicadoDto? lido = await queryBus.Send(
+            new ObterTipoAtoPublicadoPorIdQuery(criado.Value), CancellationToken.None);
+        lido.Should().NotBeNull();
+        lido!.Codigo.Should().Be("BUS_TESTE");
+        lido.CongelaConfiguracao.Should().BeTrue();
+    }
+
+    [Fact(DisplayName = "A query de tipo vigente atravessa o bus e resolve a data de referência")]
+    public async Task QueryVigente_TipoComJanelaFechada_ResolveSoDentroDaJanela()
+    {
+        using IServiceScope scope = _fixture.Factory.Services.CreateScope();
+        ICommandBus commandBus = scope.ServiceProvider.GetRequiredService<ICommandBus>();
+        IQueryBus queryBus = scope.ServiceProvider.GetRequiredService<IQueryBus>();
+        await CriarTipoComJanelaDeUmAnoAsync(commandBus, "BUS_VIGENTE");
+
+        TipoAtoPublicadoDto? dentro = await ObterVigenteAsync(queryBus, "BUS_VIGENTE", Inicio.AddMonths(6));
+        TipoAtoPublicadoDto? noFim = await ObterVigenteAsync(queryBus, "BUS_VIGENTE", Inicio.AddYears(1));
+
+        dentro.Should().NotBeNull();
+        noFim.Should().BeNull("o fim é exclusivo: no dia em que a janela fecha, nenhuma versão vale");
+    }
+
+    [Fact(DisplayName = "O registro de ato atravessa o bus, resolve o tipo vigente e copia por valor")]
+    public async Task RegistrarAto_TipoVigente_CopiaConsequenciaPorValor()
+    {
+        using IServiceScope scope = _fixture.Factory.Services.CreateScope();
+        ICommandBus commandBus = scope.ServiceProvider.GetRequiredService<ICommandBus>();
+        IQueryBus queryBus = scope.ServiceProvider.GetRequiredService<IQueryBus>();
+        await CriarTipoQueCongelaAsync(commandBus, "BUS_ATO_TIPO");
+
+        Result<RegistrarAtoNormativoResult> registrado = await RegistrarAtoAsync(commandBus, "BUS_ATO_TIPO");
+
+        registrado.IsSuccess.Should().BeTrue(
+            "o handler de registro precisa resolver ITipoAtoPublicadoRepository, "
+            + "IAtoNormativoRepository e a IUnitOfWork encaminhada pelo codegen (ADR-0098)");
+        Result<AtoNormativoDto> leitura = await queryBus.Send(
+            new ObterAtoNormativoPorIdQuery(registrado.Value!.AtoId), CancellationToken.None);
+        leitura.IsSuccess.Should().BeTrue();
+        leitura.Value!.CongelaConfiguracao.Should().BeTrue();
+    }
+
+    private static CriarTipoAtoPublicadoCommand NovoTipoQueCongela(string codigo) =>
+        new(
+            Codigo: codigo,
             Nome: "Tipo de ato exercitado pelo bus",
             CongelaConfiguracao: true,
             UnicoPorObjeto: false,
@@ -64,81 +111,34 @@ public sealed class PublicacoesHandlersNoBusTests
             ExigeAtoCorrigido: false,
             VigenciaInicio: Inicio);
 
-        Result<Guid> criado = await commandBus.Send(comando, CancellationToken.None);
-
-        criado.IsSuccess.Should().BeTrue(
-            "o assembly Publicacoes.Application precisa estar no Discovery do Wolverine "
-            + "e a IUnitOfWork declarada no opt-in de codegen");
-
-        TipoAtoPublicadoDto? lido = await queryBus.Send(
-            new ObterTipoAtoPublicadoPorIdQuery(criado.Value), CancellationToken.None);
-
-        lido.Should().NotBeNull();
-        lido!.Codigo.Should().Be("BUS_TESTE");
-        lido.CongelaConfiguracao.Should().BeTrue();
+    private static async Task CriarTipoQueCongelaAsync(ICommandBus commandBus, string codigo)
+    {
+        Result<Guid> tipo = await commandBus.Send(NovoTipoQueCongela(codigo), CancellationToken.None);
+        tipo.IsSuccess.Should().BeTrue();
     }
 
-    [Fact(DisplayName = "A query de tipo vigente atravessa o bus e resolve a data de referência")]
-    public async Task QueryVigente_AtravessaOBus()
+    private static async Task CriarTipoComJanelaDeUmAnoAsync(ICommandBus commandBus, string codigo)
     {
-        using IServiceScope scope = _fixture.Factory.Services.CreateScope();
-        ICommandBus commandBus = scope.ServiceProvider.GetRequiredService<ICommandBus>();
-        IQueryBus queryBus = scope.ServiceProvider.GetRequiredService<IQueryBus>();
-
         Result<Guid> criado = await commandBus.Send(
-            new CriarTipoAtoPublicadoCommand(
-                "BUS_VIGENTE", "Tipo vigente", false, false, false, false, false, false, Inicio, Inicio.AddYears(1)),
+            NovoTipoQueCongela(codigo) with { CongelaConfiguracao = false, VigenciaFim = Inicio.AddYears(1) },
             CancellationToken.None);
         criado.IsSuccess.Should().BeTrue();
-
-        TipoAtoPublicadoDto? dentro = await queryBus.Send(
-            new ObterTipoAtoPublicadoVigenteQuery("BUS_VIGENTE", Inicio.AddMonths(6)),
-            CancellationToken.None);
-        dentro.Should().NotBeNull();
-
-        // O fim é exclusivo: no dia em que a janela fecha, nenhuma versão vale.
-        TipoAtoPublicadoDto? noFim = await queryBus.Send(
-            new ObterTipoAtoPublicadoVigenteQuery("BUS_VIGENTE", Inicio.AddYears(1)),
-            CancellationToken.None);
-        noFim.Should().BeNull();
     }
 
-    [Fact(DisplayName = "O registro de ato atravessa o bus, resolve o tipo vigente e copia por valor")]
-    public async Task RegistrarAto_AtravessaOBus()
-    {
-        using IServiceScope scope = _fixture.Factory.Services.CreateScope();
-        ICommandBus commandBus = scope.ServiceProvider.GetRequiredService<ICommandBus>();
-        IQueryBus queryBus = scope.ServiceProvider.GetRequiredService<IQueryBus>();
+    private static Task<TipoAtoPublicadoDto?> ObterVigenteAsync(IQueryBus queryBus, string codigo, DateOnly data) =>
+        queryBus.Send(new ObterTipoAtoPublicadoVigenteQuery(codigo, data), CancellationToken.None);
 
-        Result<Guid> tipo = await commandBus.Send(
-            new CriarTipoAtoPublicadoCommand(
-                "BUS_ATO_TIPO", "Tipo para ato exercitado pelo bus",
-                CongelaConfiguracao: true, UnicoPorObjeto: false, EfeitoIrreversivel: false,
-                EhResultado: false, PublicavelComoAvulso: false, ExigeAtoCorrigido: false, VigenciaInicio: Inicio),
-            CancellationToken.None);
-        tipo.IsSuccess.Should().BeTrue();
-
-        Result<RegistrarAtoNormativoResult> registrado = await commandBus.Send(
+    private static Task<Result<RegistrarAtoNormativoResult>> RegistrarAtoAsync(
+        ICommandBus commandBus, string tipoCodigo) =>
+        commandBus.Send(
             new RegistrarAtoNormativoCommand(
                 Orgao: "CEPS",
                 Serie: "BUS_EDITAL",
                 Ano: 2026,
                 Numero: "1",
-                TipoCodigo: "BUS_ATO_TIPO",
+                TipoCodigo: tipoCodigo,
                 DataDoAto: Inicio.AddMonths(2),
                 DocumentoHash: "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
                 Assinante: "Jairo Belchior"),
             CancellationToken.None);
-
-        registrado.IsSuccess.Should().BeTrue(
-            "o handler de registro precisa resolver ITipoAtoPublicadoRepository, "
-            + "IAtoNormativoRepository e a IUnitOfWork encaminhada pelo codegen (ADR-0098)");
-
-        AtoNormativoDto? lido = await queryBus.Send(
-            new ObterAtoNormativoPorIdQuery(registrado.Value!.AtoId), CancellationToken.None);
-
-        lido.Should().NotBeNull();
-        // O tipo vigente congela configuração — copiado por valor no ato.
-        lido!.CongelaConfiguracao.Should().BeTrue();
-    }
 }

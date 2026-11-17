@@ -1,10 +1,9 @@
 namespace Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
 /// <summary>
-/// Códigos de erro do value object <c>ReferenciaVersaoDoObjeto</c>. O
-/// agregado traduz a falha para <c>AtoNormativo.VersaoDoObjetoIncompleta</c>
-/// antes de devolvê-la, mas os códigos ficam registrados para que a propagação
-/// direta responda 422 em vez do 500 genérico do mapper.
+/// Códigos de erro do value object <c>ReferenciaVersaoDoObjeto</c>. A montagem do ato
+/// traduz a falha para <c>AtoNormativo.VersaoDoObjetoIncompleta</c>; estes códigos não
+/// chegam a uma resposta e por isso não têm mapeamento HTTP.
 /// </summary>
 public static class ReferenciaVersaoDoObjetoErrorCodes
 {
