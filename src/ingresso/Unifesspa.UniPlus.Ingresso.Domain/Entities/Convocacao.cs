@@ -21,30 +21,32 @@ public sealed class Convocacao : SoftDeletableEntity
 
     private Convocacao() { }
 
+    private Convocacao(
+        Guid chamadaId,
+        Guid inscricaoId,
+        Guid candidatoId,
+        ProtocoloConvocacao protocolo,
+        int posicao,
+        string codigoCurso,
+        DateTimeOffset convocadaEm)
+    {
+        ChamadaId = chamadaId;
+        InscricaoId = inscricaoId;
+        CandidatoId = candidatoId;
+        Protocolo = protocolo;
+        Status = StatusConvocacao.Pendente;
+        Posicao = posicao;
+        CodigoCurso = codigoCurso;
+
+        AddDomainEvent(new CandidatoConvocadoEvent(inscricaoId, candidatoId, chamadaId, protocolo.Valor, convocadaEm));
+    }
+
     public static Convocacao Criar(Guid chamadaId, Guid inscricaoId, Guid candidatoId, ProtocoloConvocacao protocolo, int posicao, string codigoCurso, TimeProvider clock)
     {
         ArgumentNullException.ThrowIfNull(protocolo);
         ArgumentNullException.ThrowIfNull(clock);
 
-        var convocacao = new Convocacao
-        {
-            ChamadaId = chamadaId,
-            InscricaoId = inscricaoId,
-            CandidatoId = candidatoId,
-            Protocolo = protocolo,
-            Status = StatusConvocacao.Pendente,
-            Posicao = posicao,
-            CodigoCurso = codigoCurso
-        };
-
-        convocacao.AddDomainEvent(new CandidatoConvocadoEvent(
-            inscricaoId,
-            candidatoId,
-            chamadaId,
-            protocolo.Valor,
-            clock.GetUtcNow()));
-
-        return convocacao;
+        return new Convocacao(chamadaId, inscricaoId, candidatoId, protocolo, posicao, codigoCurso, clock.GetUtcNow());
     }
 
     public void Aceitar(TimeProvider clock)
