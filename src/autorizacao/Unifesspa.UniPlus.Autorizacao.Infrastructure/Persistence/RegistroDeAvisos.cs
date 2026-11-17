@@ -46,15 +46,16 @@ public sealed class RegistroDeAvisos : IRegistroDeAvisos
             return [];
         }
 
-        IDbContextTransaction transacao = _context.Database.CurrentTransaction
-            ?? throw new InvalidOperationException("O registro de avisos exige a transação da operação que emite o aviso.");
-
-        DbCommand comando = ComandoDoRegistro(transacao, tipo, fatoId, mensagensIds);
+        DbCommand comando = ComandoDoRegistro(TransacaoDaOperacao(), tipo, fatoId, mensagensIds);
         await using (comando.ConfigureAwait(false))
         {
             return await LerAsync(comando, cancellationToken).ConfigureAwait(false);
         }
     }
+
+    private IDbContextTransaction TransacaoDaOperacao() =>
+        _context.Database.CurrentTransaction
+            ?? throw new InvalidOperationException("O registro de avisos exige a transação da operação que emite o aviso.");
 
     private DbCommand ComandoDoRegistro(IDbContextTransaction transacao, string tipo, Guid fatoId, IReadOnlyList<Guid> mensagensIds)
     {
