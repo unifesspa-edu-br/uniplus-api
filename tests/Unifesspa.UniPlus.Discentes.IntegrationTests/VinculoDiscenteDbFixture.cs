@@ -26,11 +26,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
     "Performance",
     "CA1515:Consider making public types internal",
     Justification = "xUnit IAsyncLifetime + IClassFixture<T> exigem tipo público.")]
-[SuppressMessage(
-    "Reliability",
-    "CA1001:Types that own disposable fields should be disposable",
-    Justification = "Disposable resources released by IAsyncLifetime.DisposeAsync — xUnit invoca deterministicamente.")]
-public sealed class VinculoDiscenteDbFixture : IAsyncLifetime
+public sealed class VinculoDiscenteDbFixture : IAsyncLifetime, IAsyncDisposable
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18-alpine")
         .WithDatabase("uniplus_discentes_tests")
@@ -72,10 +68,9 @@ public sealed class VinculoDiscenteDbFixture : IAsyncLifetime
         await context.PrepararOBancoAsync().ConfigureAwait(false);
     }
 
-    public async Task DisposeAsync()
-    {
-        await _postgres.DisposeAsync().ConfigureAwait(false);
-    }
+    public Task DisposeAsync() => _postgres.DisposeAsync().AsTask();
+
+    ValueTask IAsyncDisposable.DisposeAsync() => _postgres.DisposeAsync();
 
     public UniPlusDbContext CreateDbContext()
     {

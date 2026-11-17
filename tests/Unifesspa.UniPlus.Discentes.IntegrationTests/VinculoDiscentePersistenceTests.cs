@@ -9,11 +9,11 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 
 using Unifesspa.UniPlus.Discentes.Domain.Entities;
-using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Discentes.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
-using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+
+using static Unifesspa.UniPlus.Discentes.IntegrationTests.VinculoDeTeste;
 
 /// <summary>
 /// Prova, contra Postgres real (Testcontainers), os critérios de aceite arquiteturais
@@ -23,9 +23,6 @@ using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 [Trait("Category", "Integration")]
 public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDiscenteDbFixture>
 {
-    private const string CpfValido = "52998224725";
-    private const string OutroCpfValido = "11144477735";
-
     private readonly VinculoDiscenteDbFixture _fixture;
 
     public VinculoDiscentePersistenceTests(VinculoDiscenteDbFixture fixture)
@@ -33,46 +30,13 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
         _fixture = fixture;
     }
 
-    private static VinculoDiscente NovoVinculo(long idSigaa, string cpfValor) =>
-        VinculoDiscente.Criar(
-            VinculoDiscenteSnapshot.Criar(
-                IdentificacaoDoDiscente.Criar(
-                        idSigaa,
-                        idSigaa.ToString(System.Globalization.CultureInfo.InvariantCulture),
-                        Cpf.Criar(cpfValor).Match(cpf => cpf, erro => throw new InvalidOperationException(erro.Code)),
-                        "Discente de Teste")
-                    .Match(i => i, erro => throw new InvalidOperationException(erro.Code)),
-                nivel: "G",
-                curso: CursoSigaaSnapshot.Criar(
-                    id: 1,
-                    nome: "Ciência da Computação",
-                    codigoEmec: null,
-                    unidadeId: 1,
-                    unidadeNome: "Instituto de Ciências Exatas")
-                    .Match(c => c, erro => throw new InvalidOperationException(erro.Code)),
-                situacao: SituacaoAcademicaSnapshot.Criar(
-                    id: 1,
-                    descricao: "Matriculado",
-                    vinculo: null)
-                    .Match(s => s, erro => throw new InvalidOperationException(erro.Code)),
-                ingresso: PeriodoIngresso.Criar(ano: 2026, periodo: 1)
-                    .Match(p => p, erro => throw new InvalidOperationException(erro.Code)))
-                .Match(s => s, erro => throw new InvalidOperationException(erro.Code)));
-
     [Fact]
     public async Task Persistir_E_Ler_Faz_RoundTrip_Do_Cpf_Via_Repositorio()
     {
-        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
-        VinculoDiscenteRepository writeRepository = new(writeContext, _fixture.Encryption);
+        VinculoDiscente original = Novo(1001);
+        await AdicionarAsync(original);
 
-        VinculoDiscente original = NovoVinculo(idSigaa: 1001, CpfValido);
-        await writeRepository.AdicionarAsync(original);
-        await writeContext.SaveChangesAsync();
-
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        VinculoDiscenteRepository readRepository = new(readContext, _fixture.Encryption);
-
-        VinculoDiscente? lido = await readRepository.ObterPorIdSigaaAsync(1001);
+        VinculoDiscente? lido = await LerPorIdSigaaAsync(1001);
 
         lido.Should().NotBeNull();
         lido!.Id.Should().Be(original.Id);
@@ -83,50 +47,21 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
     [Fact]
     public async Task Coluna_Cifrada_Nunca_Contem_Cpf_Em_Texto_Claro()
     {
-        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
-        VinculoDiscenteRepository repository = new(writeContext, _fixture.Encryption);
+        await AdicionarAsync(Novo(1002));
 
-        await repository.AdicionarAsync(NovoVinculo(idSigaa: 1002, CpfValido));
-        await writeContext.SaveChangesAsync();
+        byte[] ciphertext = await LerColunaCifradaAsync(1002);
 
-        await using NpgsqlConnection connection = new(_fixture.ConnectionString);
-        await connection.OpenAsync();
-
-        await using NpgsqlCommand command = new(
-            "SELECT cpf_ciphertext FROM discentes.vinculos_de_discentes WHERE id_discente_sigaa = 1002",
-            connection);
-
-        await using NpgsqlDataReader reader = await command.ExecuteReaderAsync();
-        (await reader.ReadAsync()).Should().BeTrue();
-
-        byte[] ciphertext = (byte[])reader[0];
-        string ciphertextComoTexto = Convert.ToBase64String(ciphertext);
-
-        ciphertextComoTexto.Should().NotContain(CpfValido);
+        Convert.ToBase64String(ciphertext).Should().NotContain(CpfValido);
         Encoding.UTF8.GetString(ciphertext).Should().NotContain(CpfValido);
     }
 
     [Fact]
     public async Task Mesmo_Cpf_Em_Duas_Linhas_Produz_Envelopes_Diferentes()
     {
-        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
-        VinculoDiscenteRepository repository = new(writeContext, _fixture.Encryption);
+        await AdicionarAsync(Novo(1003), Novo(1004));
 
-        await repository.AdicionarAsync(NovoVinculo(idSigaa: 1003, CpfValido));
-        await repository.AdicionarAsync(NovoVinculo(idSigaa: 1004, CpfValido));
-        await writeContext.SaveChangesAsync();
-
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-
-        byte[] ciphertextA = await readContext.VinculosDiscentes
-            .Where(v => v.IdDiscenteSigaa == 1003)
-            .Select(v => v.CpfCiphertext)
-            .SingleAsync();
-
-        byte[] ciphertextB = await readContext.VinculosDiscentes
-            .Where(v => v.IdDiscenteSigaa == 1004)
-            .Select(v => v.CpfCiphertext)
-            .SingleAsync();
+        byte[] ciphertextA = await LerColunaCifradaAsync(1003);
+        byte[] ciphertextB = await LerColunaCifradaAsync(1004);
 
         ciphertextA.Should().NotBeEquivalentTo(ciphertextB);
     }
@@ -134,29 +69,104 @@ public sealed class VinculoDiscentePersistenceTests : IClassFixture<VinculoDisce
     [Fact]
     public async Task Update_Recifra_O_Cpf_Alterado()
     {
-        await using UniPlusDbContext writeContext = _fixture.CreateDbContext();
-        VinculoDiscenteRepository writeRepository = new(writeContext, _fixture.Encryption);
+        VinculoDiscente original = Novo(1005);
+        await AdicionarAsync(original);
 
-        VinculoDiscente original = NovoVinculo(idSigaa: 1005, CpfValido);
+        await AtualizarAsync(VinculoDiscente.Reidratar(original.Id, Novo(1005, OutroCpfValido).Snapshot));
 
-        await writeRepository.AdicionarAsync(original);
-        await writeContext.SaveChangesAsync();
-
-        await using UniPlusDbContext updateContext = _fixture.CreateDbContext();
-        VinculoDiscenteRepository updateRepository = new(updateContext, _fixture.Encryption);
-
-        VinculoDiscente atualizado = NovoVinculo(idSigaa: 1005, OutroCpfValido);
-        VinculoDiscente comIdOriginal = VinculoDiscente.Reidratar(original.Id, atualizado.Snapshot);
-
-        await updateRepository.AtualizarAsync(comIdOriginal);
-        await updateContext.SaveChangesAsync();
-
-        await using UniPlusDbContext readContext = _fixture.CreateDbContext();
-        VinculoDiscenteRepository readRepository = new(readContext, _fixture.Encryption);
-
-        VinculoDiscente? lido = await readRepository.ObterPorIdAsync(original.Id);
+        VinculoDiscente? lido = await LerPorIdAsync(original.Id);
 
         lido.Should().NotBeNull();
         lido!.Snapshot.Identificacao.Cpf.Valor.Should().Be(OutroCpfValido);
+    }
+
+    /// <summary>
+    /// Dado persistido que não passa mais pela regra de domínio falha alto, com a mensagem da
+    /// parte que acusou. Quando há mais de uma parte corrompida, vale a ordem: curso, situação,
+    /// período e, por último, o restante do vínculo (identificação e nível).
+    /// </summary>
+    [Theory]
+    [InlineData(2001, "nome = ''", "Snapshot corrompido")]
+    [InlineData(2002, "matricula = '12A'", "Snapshot corrompido")]
+    [InlineData(2003, "nivel = ''", "Snapshot corrompido")]
+    [InlineData(2004, "curso_nome = ''", "Curso corrompido")]
+    [InlineData(2005, "situacao_descricao = ''", "Situação corrompida")]
+    [InlineData(2006, "ano_ingresso = 0", "Período corrompido")]
+    [InlineData(2007, "nome = '', curso_nome = ''", "Curso corrompido")]
+    [InlineData(2008, "curso_nome = '', situacao_descricao = ''", "Curso corrompido")]
+    [InlineData(2009, "situacao_descricao = '', ano_ingresso = 0", "Situação corrompida")]
+    [InlineData(2010, "ano_ingresso = 0, nome = ''", "Período corrompido")]
+    public async Task Registro_corrompido_falha_alto_com_a_mensagem_da_primeira_parte(
+        long idSigaa,
+        string corrupcao,
+        string mensagem)
+    {
+        await AdicionarAsync(Novo(idSigaa));
+        await CorromperAsync(idSigaa, corrupcao);
+
+        Func<Task> leitura = () => LerPorIdSigaaAsync(idSigaa);
+
+        (await leitura.Should().ThrowAsync<InvalidOperationException>())
+            .Which.Message.Should().StartWith(mensagem);
+    }
+
+    private async Task CorromperAsync(long idSigaa, string atribuicoes)
+    {
+        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
+        await conexao.OpenAsync();
+
+        await using NpgsqlCommand comando = new(
+            $"UPDATE discentes.vinculos_de_discentes SET {atribuicoes} WHERE id_discente_sigaa = @id",
+            conexao);
+        comando.Parameters.AddWithValue("id", idSigaa);
+        await comando.ExecuteNonQueryAsync();
+    }
+
+    private async Task AdicionarAsync(params VinculoDiscente[] vinculos)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
+        VinculoDiscenteRepository repositorio = new(contexto, _fixture.Encryption);
+
+        foreach (VinculoDiscente vinculo in vinculos)
+        {
+            await repositorio.AdicionarAsync(vinculo);
+        }
+
+        await contexto.SaveChangesAsync();
+    }
+
+    private async Task AtualizarAsync(VinculoDiscente vinculo)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
+
+        await new VinculoDiscenteRepository(contexto, _fixture.Encryption).AtualizarAsync(vinculo);
+        await contexto.SaveChangesAsync();
+    }
+
+    private async Task<VinculoDiscente?> LerPorIdSigaaAsync(long idSigaa)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
+
+        return await new VinculoDiscenteRepository(contexto, _fixture.Encryption).ObterPorIdSigaaAsync(idSigaa);
+    }
+
+    private async Task<VinculoDiscente?> LerPorIdAsync(Guid id)
+    {
+        await using UniPlusDbContext contexto = _fixture.CreateDbContext();
+
+        return await new VinculoDiscenteRepository(contexto, _fixture.Encryption).ObterPorIdAsync(id);
+    }
+
+    private async Task<byte[]> LerColunaCifradaAsync(long idSigaa)
+    {
+        await using NpgsqlConnection conexao = new(_fixture.ConnectionString);
+        await conexao.OpenAsync();
+
+        await using NpgsqlCommand comando = new(
+            "SELECT cpf_ciphertext FROM discentes.vinculos_de_discentes WHERE id_discente_sigaa = @id",
+            conexao);
+        comando.Parameters.AddWithValue("id", idSigaa);
+
+        return (byte[])(await comando.ExecuteScalarAsync())!;
     }
 }
