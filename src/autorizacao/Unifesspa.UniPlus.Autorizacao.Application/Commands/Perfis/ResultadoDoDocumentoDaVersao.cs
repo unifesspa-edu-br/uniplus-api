@@ -26,7 +26,7 @@ public sealed record RegistroDoResultadoDaVersao(DesfechoDoResultadoDaVersao Des
 }
 
 /// <summary>
-/// Grava o veredicto da verificação de um arquivo no documento de uma versão do perfil. Roda na ordem de travas única
+/// Grava o veredicto da verificação de um arquivo no documento de uma versão do perfil. Roda na ordem única de acesso exclusivo
 /// das demais operações, que materializa o prazo vencido da pendente e o grava mesmo quando o veredicto é ignorado. O
 /// veredicto não decide a vigência: a versão só entra em vigor pela aprovação humana, que confere o documento verificado
 /// no momento da decisão.
@@ -59,8 +59,14 @@ public sealed class ResultadoDoDocumentoDaVersao
             return RegistroDoResultadoDaVersao.Sem(DesfechoDoResultadoDaVersao.Desconhecido);
         }
 
+        return await RegistrarComPerfilExclusivoAsync(perfilId.Value, resultado, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<RegistroDoResultadoDaVersao> RegistrarComPerfilExclusivoAsync(
+        Guid perfilId, ResultadoDaVerificacaoDeArquivo resultado, CancellationToken cancellationToken)
+    {
         GravacaoDaOperacao<RegistroDoResultadoDaVersao> gravacao = await _operacao.ExecutarComAvisosSemChaveAsync(
-            perfilId.Value, (perfil, contexto) => RegistrarNoPerfilAsync(perfil, resultado, contexto.Agora, cancellationToken), cancellationToken)
+            perfilId, (perfil, contexto) => RegistrarNoPerfilAsync(perfil, resultado, contexto.Agora, cancellationToken), cancellationToken)
             .ConfigureAwait(false);
 
         return gravacao.Resultado.IsSuccess
