@@ -29,24 +29,24 @@ public sealed record OrigemNoDocumento
     public IReadOnlyList<ParteRecusada> PartesRecusadas { get; }
 
     /// <summary>
-    /// As listas do item com parte recusada, pelo nome que o item lhe dá (<c>produtos</c>, <c>bancasRequeridas</c>): o item se
-    /// nomeia pelo caminho dele na lista da declaração, com a posição canônica (<c>fases[1]</c>).
+    /// As partes recusadas do item, pelo caminho que o item lhes dá (<c>produtos</c>, <c>bancasRequeridas</c>, <c>unidadeResponsavel</c>):
+    /// o item se nomeia pelo caminho dele na lista da declaração, com a posição canônica (<c>fases[1]</c>).
     /// </summary>
-    public IReadOnlySet<string> ColecoesRecusadasDe(string item)
+    public IReadOnlySet<string> PartesRecusadasDe(string item)
     {
         ArgumentException.ThrowIfNullOrEmpty(item);
 
         string prefixo = item + ".";
 
         return PartesRecusadas
-            .Where(parte => parte.Colecao.StartsWith(prefixo, StringComparison.Ordinal))
-            .Select(parte => parte.Colecao[prefixo.Length..])
+            .Where(parte => parte.Caminho.StartsWith(prefixo, StringComparison.Ordinal))
+            .Select(parte => parte.Caminho[prefixo.Length..])
             .ToHashSet(StringComparer.Ordinal);
     }
 
-    /// <summary>Se a leitura recusou alguma parte da lista, nomeada pelo caminho dela na declaração.</summary>
-    public bool TemParteRecusadaEm(string lista) =>
-        PartesRecusadas.Any(parte => string.Equals(parte.Colecao, lista, StringComparison.Ordinal));
+    /// <summary>Se a leitura recusou alguma parte no caminho dado: a lista (<c>fases</c>) ou o campo (<c>fases[1].unidadeResponsavel</c>).</summary>
+    public bool TemParteRecusadaEm(string caminho) =>
+        PartesRecusadas.Any(parte => string.Equals(parte.Caminho, caminho, StringComparison.Ordinal));
 
     /// <summary>
     /// A origem de uma lista do documento: <paramref name="doDocumento"/> traz os itens que a leitura aceitou, cada um com a posição
@@ -68,6 +68,10 @@ public sealed record OrigemNoDocumento
 
         return new(new Dictionary<string, IReadOnlyList<int>>(StringComparer.Ordinal) { [lista] = naOrdemCanonica }, partesRecusadas);
     }
+
+    /// <summary>A origem de um bloco que não tem lista: só as partes que a leitura recusou nele.</summary>
+    internal static OrigemNoDocumento SoComPartesRecusadas(IReadOnlyList<ParteRecusada> partesRecusadas) =>
+        new(new Dictionary<string, IReadOnlyList<int>>(StringComparer.Ordinal), partesRecusadas);
 
     /// <summary>A origem do documento inteiro: as listas e as partes recusadas de cada bloco, na ordem dos blocos.</summary>
     internal static OrigemNoDocumento Reunir(IEnumerable<OrigemNoDocumento> dosBlocos)

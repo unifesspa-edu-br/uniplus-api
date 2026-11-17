@@ -6,7 +6,8 @@
   "type": "object",
   "additionalProperties": false,
   "required": [
-    "chave"
+    "chave",
+    "tipoBancaCodigo"
   ],
   "properties": {
     "chave": {
@@ -16,7 +17,7 @@
     },
     "tipoBancaCodigo": {
       "title": "Tipo de banca",
-      "description": "Código do tipo de banca no catálogo, por exemplo BANCA_ANALISE_RECURSOS.",
+      "description": "Código do tipo de banca no catálogo, por exemplo BANCA_ANALISE_RECURSOS. É obrigatório: a banca sem tipo não diz que corpo julga.",
       "type": "string",
       "pattern": "^[A-Z_]+$",
       "minLength": 1,

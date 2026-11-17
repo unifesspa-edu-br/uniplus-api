@@ -230,7 +230,6 @@
       {
         "chave": "inscricao",
         "faseCanonicaCodigo": "INSCRICAO",
-        "ordem": 1,
         "inicio": "2027-01-10T03:00:00Z",
         "fim": "2027-01-20T02:59:59Z",
         "unidadeResponsavelCodigo": "CEPS",
@@ -240,7 +239,6 @@
       {
         "chave": "avaliacao",
         "faseCanonicaCodigo": "AVALIACAO",
-        "ordem": 2,
         "inicio": "2027-01-25T11:00:00Z",
         "fim": "2027-01-25T16:00:00Z",
         "unidadeResponsavelCodigo": "CEPS",
@@ -250,7 +248,6 @@
       {
         "chave": "resultado-preliminar",
         "faseCanonicaCodigo": "RESULTADO_PRELIMINAR",
-        "ordem": 3,
         "inicio": "2027-02-01T03:00:00Z",
         "fim": "2027-02-01T14:00:00Z",
         "unidadeResponsavelCodigo": "CEPS",
@@ -309,7 +306,6 @@
       {
         "chave": "resultado-final",
         "faseCanonicaCodigo": "RESULTADO_FINAL",
-        "ordem": 4,
         "inicio": "2027-02-15T03:00:00Z",
         "fim": "2027-02-15T14:00:00Z",
         "unidadeResponsavelCodigo": "CEPS",

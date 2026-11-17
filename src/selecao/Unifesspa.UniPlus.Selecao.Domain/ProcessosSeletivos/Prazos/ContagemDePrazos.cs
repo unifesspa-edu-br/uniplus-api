@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Regras.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
@@ -53,7 +54,7 @@ public static class ContagemDePrazos
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
-        return configuracao.Identidade.IdentificadorLegivel is null
+        return configuracao.Identidade.IdentificadorLegivel is null && !IdentificadorLegivelRecusado(configuracao)
             ? new DomainError(
                 ProcessoSeletivoErrorCodes.IdentificadorLegivelAusente,
                 "O identificador legível é obrigatório para gerar versão publicada.")
@@ -70,7 +71,7 @@ public static class ContagemDePrazos
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
-        return configuracao.Cronograma.Localidade is null
+        return configuracao.Cronograma.Localidade is null && !LocalidadeRecusada(configuracao)
             ? new DomainError(
                 "ProcessoSeletivo.LocalidadeAusente",
                 "A localidade que rege a contagem dos prazos é obrigatória para gerar versão publicada.")
@@ -81,7 +82,7 @@ public static class ContagemDePrazos
     {
         ArgumentNullException.ThrowIfNull(configuracao);
 
-        if (configuracao.Cronograma.AlgoritmoContagemPrazo is not null)
+        if (configuracao.Cronograma.AlgoritmoContagemPrazo is not null || AlgoritmoRecusado(configuracao))
         {
             return null;
         }
@@ -115,6 +116,31 @@ public static class ContagemDePrazos
                 "ProcessoSeletivo.CalendarioVigenteAusente",
                 "O processo tem prazo de recurso cuja contagem distingue dia útil, e não há calendário de dias úteis vigente cadastrado.");
     }
+
+    /// <summary>Se a leitura do documento recusou o identificador legível: a causa é a da leitura, e o item do painel fica pendente.</summary>
+    internal static bool IdentificadorLegivelRecusado(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Origem.TemParteRecusadaEm(IdentidadeDoProcessoDeclarada.CampoDoIdentificadorLegivel);
+
+    /// <summary>Se a leitura do documento recusou o município da localidade: a causa é a da leitura, e o item do painel fica pendente.</summary>
+    internal static bool LocalidadeRecusada(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Origem.TemParteRecusadaEm(IdentidadeDoProcessoDeclarada.CampoDaLocalidade);
+
+    /// <summary>Se a leitura do documento recusou a regra citada como convenção de contagem: a causa é a da leitura, e o item do painel fica pendente.</summary>
+    internal static bool AlgoritmoRecusado(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Origem.TemParteRecusadaEm(IdentidadeDoProcessoDeclarada.CampoDaConvencaoDeContagem);
+
+    /// <summary>
+    /// Se a contagem que distingue dia útil não se pode afirmar nem negar: nenhuma regra de recurso conhecida a distingue, e a leitura
+    /// recusou uma fase, ou a regra de recurso de uma fase, que podia distingui-la. A convenção e o calendário ficam sem julgar, e os
+    /// itens do painel, pendentes em vez de aprovados por omissão.
+    /// </summary>
+    internal static bool ContagemIndeterminadaPelaLeitura(ConfiguracaoDeclarada configuracao) =>
+        !AlgumaContagemDistingueDiaUtil(configuracao) && RegraDeRecursoRecusada(configuracao);
+
+    private static bool RegraDeRecursoRecusada(ConfiguracaoDeclarada configuracao) =>
+        configuracao.Origem.TemParteRecusadaEm(CronogramaDoProcesso.ListaDasFases)
+        || Enumerable.Range(0, configuracao.Cronograma.CronogramaFases.Count)
+            .Any(posicao => configuracao.Origem.TemParteRecusadaEm($"fases[{posicao}].{FaseDeclarada.CampoDaRegraDeRecurso}"));
 
     private static bool AlgumaContagemDistingueDiaUtil(ConfiguracaoDeclarada configuracao) =>
         ContagemDistingueDiaUtil(configuracao.Cronograma.CronogramaFases, configuracao.Avaliacao.Etapas);

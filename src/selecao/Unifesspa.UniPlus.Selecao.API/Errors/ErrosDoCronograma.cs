@@ -35,7 +35,7 @@ internal static class ErrosDoCronograma
         new("ProcessoSeletivo.OrdemFaseDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.ordem_fase_duplicada", "Cada fase deve ter uma ordem única dentro do cronograma")),
         new("ProcessoSeletivo.FaseCanonicaDuplicada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.fase_canonica_duplicada", "A mesma fase canônica não pode aparecer duas vezes no cronograma")),
         new("ProcessoSeletivo.PrecedenciaFaseViolada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.precedencia_fase_violada", "A ordem declarada viola a precedência entre fases do cadastro")),
-        new("ProcessoSeletivo.SobreposicaoDeJanelasNaoPermitida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.sobreposicao_de_janelas_nao_permitida", "As janelas de duas fases dependentes se sobrepõem, e o cadastro não permite sobreposição")),
+        new("ProcessoSeletivo.SobreposicaoDeJanelasNaoPermitida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.sobreposicao_de_janelas_nao_permitida", "Os períodos de duas fases coincidem em parte, e o cadastro não permite essa coincidência")),
         new("ProcessoSeletivo.InscricaoPropriaSemFaseDeColeta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.inscricao_propria_sem_fase_de_coleta", "A origem dos candidatos é inscrição própria, e nenhuma fase coleta inscrição")),
         new("ProcessoSeletivo.VagasSemFaseQueProduzResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.processo_seletivo.vagas_sem_fase_que_produz_resultado", "Há vagas ofertadas, e nenhuma fase do cronograma produz resultado")),
     ];
@@ -61,8 +61,8 @@ internal static class ErrosDoCronograma
     /// </summary>
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DeclaracaoDaFase() =>
     [
-        new("FaseCronograma.JanelaObrigatoriaEmDataNoEdital", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.janela_obrigatoria_em_data_no_edital", "Fase com a data fixada no edital exige início e fim da janela")),
-        new("FaseCronograma.JanelaInvertida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.janela_invertida", "O fim da janela da fase não pode anteceder o início")),
+        new("FaseCronograma.JanelaObrigatoriaEmDataNoEdital", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.janela_obrigatoria_em_data_no_edital", "Fase com data fixada no edital exige início e término do período")),
+        new("FaseCronograma.JanelaInvertida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.janela_invertida", "A data de término do período da fase é anterior à data de início")),
         new("FaseCronograma.AtoDuplicadoNaFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.ato_duplicado_na_fase", "A fase declara o mesmo tipo de ato com o mesmo papel mais de uma vez")),
         new("FaseCronograma.ParecerIndividualSemResultado", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.parecer_individual_sem_resultado", "A fase promete parecer individual e não publica nenhum resultado")),
         new("FaseCronograma.FaseCanonicaNaoEncontrada", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.fase_cronograma.fase_canonica_nao_encontrada", "Fase canônica não encontrada ou não está mais viva")),
@@ -88,7 +88,7 @@ internal static class ErrosDoCronograma
     private static IEnumerable<KeyValuePair<string, DomainErrorMapping>> DeclaracaoDaEtapa() =>
     [
         new("EtapaProcesso.BancaDuplicadaNaEtapa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.banca_duplicada_na_etapa", "O mesmo tipo de banca foi requerido duas vezes na etapa")),
-        new("EtapaProcesso.JanelaInvertida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.janela_invertida", "O fim da janela da etapa é anterior ao início")),
+        new("EtapaProcesso.JanelaInvertida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.janela_invertida", "A data de término do período da etapa é anterior à data de início")),
         new("EtapaProcesso.TipoBancaNaoEncontradoOuInativo", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.tipo_banca_nao_encontrado_ou_inativo", "O tipo de banca não existe ou está inativo no cadastro")),
         new("EtapaProcesso.AtoDuplicadoNaEtapa", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.etapa_processo.ato_duplicado_na_etapa", "A etapa declara o mesmo tipo de ato com o mesmo papel mais de uma vez")),
     ];
@@ -160,7 +160,7 @@ internal static class ErrosDoCronograma
         new("RecursoDaEtapa.SuspensividadeIncompleta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.suspensividade_incompleta", "A suspensividade exige valor e unidade juntos, ou nenhum dos dois")),
         new("RecursoDaEtapa.SuspensividadeUnidadeNaoDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.suspensividade_unidade_nao_declaravel", "A unidade da suspensividade não é declarável")),
         new("RecursoDaEtapa.SuspensividadeNaoPositiva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.suspensividade_nao_positiva", "O valor da suspensividade deve ser estritamente positivo")),
-        new("RecursoDaEtapa.SuspensividadeSuperiorSemInstanciaSuperior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.suspensividade_superior_sem_instancia_superior", "A janela que não admite instância superior não declara tempo de bloqueio superior")),
+        new("RecursoDaEtapa.SuspensividadeSuperiorSemInstanciaSuperior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.recurso_da_etapa.suspensividade_superior_sem_instancia_superior", "Sem recurso em instância superior, não há tempo de bloqueio para essa instância")),
     ];
 
     /// <summary>
@@ -176,7 +176,7 @@ internal static class ErrosDoCronograma
         new("RegraRecursoFase.AncoraNaoEhProdutoPreliminarDaFase", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_nao_eh_produto_preliminar_da_fase", "A âncora do recurso tem de ser um dos produtos preliminares publicados pela própria fase")),
         new("RegraRecursoFase.AncoraEmAtoCongelante", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_em_ato_congelante", "A âncora do recurso nunca é o ato que congela a configuração")),
         new("RegraRecursoFase.AncoraEmAtoIrreversivel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.ancora_em_ato_irreversivel", "Não cabe recurso contra ato de efeito irreversível")),
-        new("RegraRecursoFase.RegraCatalogoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.regra_catalogo_invalida", "A regra referenciada não é RECURSO-PRAZO-ANCORADO-EM-ATO, ou diverge do catálogo de regras")),
+        new("RegraRecursoFase.RegraCatalogoInvalida", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.regra_catalogo_invalida", "A regra indicada não permite contar o prazo de recurso a partir de uma publicação")),
     ];
 
     /// <summary>
@@ -193,6 +193,6 @@ internal static class ErrosDoCronograma
         new("RegraRecursoFase.SuspensividadeIncompleta", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_incompleta", "A suspensividade exige valor e unidade juntos, ou nenhum dos dois")),
         new("RegraRecursoFase.SuspensividadeUnidadeNaoDeclaravel", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_unidade_nao_declaravel", "A unidade da suspensividade não é declarável")),
         new("RegraRecursoFase.SuspensividadeNaoPositiva", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_nao_positiva", "O valor da suspensividade deve ser estritamente positivo")),
-        new("RegraRecursoFase.SuspensividadeSuperiorSemInstanciaSuperior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_superior_sem_instancia_superior", "A janela que não admite instância superior não declara tempo de bloqueio superior")),
+        new("RegraRecursoFase.SuspensividadeSuperiorSemInstanciaSuperior", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.selecao.regra_recurso_fase.suspensividade_superior_sem_instancia_superior", "Sem recurso em instância superior, não há tempo de bloqueio para essa instância")),
     ];
 }

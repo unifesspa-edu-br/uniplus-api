@@ -68,6 +68,20 @@ public static class ConferenciaDaDeclaracaoDaEtapa
         }
     }
 
+    internal static void ExigirDeclaracaoPresente(
+        IdentificacaoDaEtapa identificacao,
+        AvaliacaoDeclaradaDaEtapa avaliacao,
+        JanelaDeTempo janela,
+        PublicacoesDaEtapa publicacoes,
+        IReadOnlyList<BancaDaEtapa> bancas)
+    {
+        ArgumentNullException.ThrowIfNull(identificacao);
+        ArgumentNullException.ThrowIfNull(avaliacao);
+        ArgumentNullException.ThrowIfNull(janela);
+        ArgumentNullException.ThrowIfNull(publicacoes);
+        ArgumentNullException.ThrowIfNull(bancas);
+    }
+
     internal static void ExigirIdCongelado(Guid id)
     {
         if (id == Guid.Empty)
@@ -89,7 +103,7 @@ public static class ConferenciaDaDeclaracaoDaEtapa
 
     internal static DomainError? JanelaInvertida(JanelaDeTempo janela) =>
         janela.Invertida
-            ? new DomainError("EtapaProcesso.JanelaInvertida", "O fim da janela da etapa não pode ser anterior ao início.")
+            ? new DomainError("EtapaProcesso.JanelaInvertida", "A data de término do período da etapa é anterior à data de início.")
             : null;
 
     private static void ExigirTipoResolvido(TipoEtapaSnapshot tipoEtapa) => ArgumentNullException.ThrowIfNull(tipoEtapa);

@@ -60,11 +60,12 @@ public sealed class ConferenciaDaRegraDeHomologacaoTests
     {
         FaseCronograma fase = FaseComListaFechada();
 
-        IReadOnlyList<FieldError> faltas = Faltas(Regra("OUTRO_RESULTADO"), fase);
+        IReadOnlyList<FieldError> faltas = Faltas(Regra("ATO_SENTINELA"), fase);
 
         faltas.Should().ContainSingle();
         faltas[0].Field.Should().Be("regraDeHomologacao.resultadoAtoCodigo");
         faltas[0].Error.Code.Should().Be(HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado);
+        faltas[0].Error.Message.Should().Be("O resultado indicado pela regra deve ser publicado nesta fase, com resultado definitivo nela ou na fase que a conclui.");
     }
 
     [Fact(DisplayName = "Fase sem nenhum resultado publicado recusa a regra como resultado não declarado")]

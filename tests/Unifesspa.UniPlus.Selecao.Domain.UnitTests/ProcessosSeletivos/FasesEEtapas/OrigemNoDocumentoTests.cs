@@ -78,14 +78,14 @@ public sealed class OrigemNoDocumentoTests
     public void PosicaoDeOrigem_ListaSemNome_Lanca() =>
         Assert.Throws<ArgumentException>(() => OrigemNoDocumento.Identidade.PosicaoDeOrigem(string.Empty, 0));
 
-    [Fact(DisplayName = "A parte recusada guarda a lista, a chave, a posição de origem e a causa que a leitura deu")]
+    [Fact(DisplayName = "A parte recusada guarda o caminho, a chave, a posição de origem e a causa que a leitura deu")]
     public void ParteRecusada_GuardaOQueALeituraSabe()
     {
         FieldError causa = new("/cronograma/fases/3/bancasRequeridas/1", new DomainError("A.Leitura", "recusada"));
 
         ParteRecusada parte = new("fases[0].bancasRequeridas", "banca-a", 1, causa);
 
-        (parte.Colecao, parte.Chave, parte.PosicaoDeOrigem, parte.Causa).Should().Be(("fases[0].bancasRequeridas", "banca-a", 1, causa));
+        (parte.Caminho, parte.Chave, parte.PosicaoDeOrigem, parte.Causa).Should().Be(("fases[0].bancasRequeridas", "banca-a", 1, causa));
     }
 
     [Fact(DisplayName = "A parte recusada sem chave guarda a chave ausente, e a posição de origem não é negativa")]

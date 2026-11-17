@@ -15545,7 +15545,8 @@
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "chave"
+          "chave",
+          "tipoBancaCodigo"
         ],
         "properties": {
           "chave": {
@@ -15555,7 +15556,7 @@
           },
           "tipoBancaCodigo": {
             "title": "Tipo de banca",
-            "description": "C\u00F3digo do tipo de banca no cat\u00E1logo, por exemplo BANCA_ANALISE_RECURSOS.",
+            "description": "C\u00F3digo do tipo de banca no cat\u00E1logo, por exemplo BANCA_ANALISE_RECURSOS. \u00C9 obrigat\u00F3rio: a banca sem tipo n\u00E3o diz que corpo julga.",
             "type": "string",
             "pattern": "^[A-Z_]\u002B$",
             "minLength": 1,
@@ -16281,7 +16282,7 @@
         "properties": {
           "fases": {
             "title": "Fases",
-            "description": "Fases do cronograma. A chave de cada fase \u00E9 \u00FAnica no documento.",
+            "description": "Fases do cronograma, na ordem da linha do tempo do processo: a posi\u00E7\u00E3o na lista \u00E9 a ordem de cada fase. A chave de cada fase \u00E9 \u00FAnica no documento.",
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/DocumentoDaConfiguracaoCronogramaFase"
@@ -16291,11 +16292,12 @@
       },
       "DocumentoDaConfiguracaoCronogramaFase": {
         "title": "Fase do cronograma",
-        "description": "Uma fase do processo. S\u00F3 a chave local \u00E9 obrigat\u00F3ria: as datas, a unidade e o resto podem faltar num rascunho.",
+        "description": "Uma fase do processo. A chave local e a fase can\u00F4nica s\u00E3o obrigat\u00F3rias: as datas, a unidade e o resto podem faltar num rascunho.",
         "type": "object",
         "additionalProperties": false,
         "required": [
-          "chave"
+          "chave",
+          "faseCanonicaCodigo"
         ],
         "properties": {
           "chave": {
@@ -16307,12 +16309,6 @@
             "title": "Fase can\u00F4nica",
             "description": "C\u00F3digo da fase no cat\u00E1logo de fases can\u00F4nicas, por exemplo INSCRICAO ou RESULTADO_FINAL.",
             "$ref": "#/components/schemas/DocumentoDaConfiguracaoComunsCodigoDeCatalogo"
-          },
-          "ordem": {
-            "title": "Ordem",
-            "description": "Posi\u00E7\u00E3o da fase na linha do tempo do processo, a partir de 1. N\u00E3o se repete entre as fases.",
-            "type": "integer",
-            "minimum": 1
           },
           "inicio": {
             "title": "In\u00EDcio da fase",

@@ -17,29 +17,21 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.CenarioDeClassificacaoPersistida;
 
 /// <summary>
-/// Cobertura de integração (Postgres real via Testcontainers) da
-/// classificação (Story #775, bloco 15º): persiste e recarrega
-/// <c>ConfiguracaoClassificacao</c> + <c>RegraEliminacao</c>, provando o
-/// mapeamento EF (owned types de <c>ReferenciaRegra</c>, coluna <c>json</c>
-/// — não <c>jsonb</c> — da união polimórfica <c>ParametrosRegraEliminacao</c> para
-/// as 4 variantes) contra Postgres real, e a reconfiguração sobre o agregado
-/// tracked (mesma regressão de <c>ValueGeneratedNever</c> validada na F0).
+/// A classificação e as cinco variantes dos parâmetros de eliminação sobrevivem à gravação e à leitura
+/// no PostgreSQL, inclusive quando o agregado rastreado recebe novas regras ou atualiza a mesma etapa.
 /// </summary>
 [Collection(ClassificacaoPersistenciaColecao.Nome)]
 public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
 {
     private readonly CenarioDeClassificacaoPersistida _cenario;
 
-    public ConfiguracaoDeClassificacaoPersistenciaTests(ProcessoSeletivoDbFixture fixture)
-    {
+    public ConfiguracaoDeClassificacaoPersistenciaTests(ProcessoSeletivoDbFixture fixture) =>
         _cenario = new CenarioDeClassificacaoPersistida(fixture);
-    }
 
     [Fact(DisplayName = "O comentário de schema de baseado_em_enem não enumera as regras de eliminação")]
     public async Task ComentarioDeBaseadoEmEnem_NaoEnumeraAsRegras()
     {
         await using UniPlusDbContext context = _cenario.CriarDbContext();
-
         string? comentario = await context.Database.SqlQuery<string?>($"""
             SELECT col_description('selecao.configuracoes_classificacao'::regclass, a.attnum) AS "Value"
             FROM pg_attribute a
@@ -53,267 +45,201 @@ public sealed class ConfiguracaoDeClassificacaoPersistenciaTests
     [Fact(DisplayName = "Persiste e recarrega classificação com as 5 variantes de eliminação (prova a coluna json polimórfica)")]
     public async Task PersisteERecarrega_ComCincoVariantesDeEliminacao()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU);
-        EtapaProcesso etapa = EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
-
-        RegraEliminacao notaMinima = RegraEliminacao.Criar(
-            Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"),
-            new ParametrosElimNotaMinimaEtapa(etapa.Id, 3m)).Value!;
-        RegraEliminacao corteRedacao = RegraEliminacao.Criar(
-            Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "b"),
-            new ParametrosElimCorteEmArea("REDACAO", 400m)).Value!;
-        RegraEliminacao zeroEmArea = RegraEliminacao.Criar(
-            Regra(RegraEliminacaoCodigo.ElimZeroEmArea, "c"),
-            new ParametrosElimZeroEmArea()).Value!;
-        RegraEliminacao faltaEmDiaDeProva = RegraEliminacao.Criar(
-            Regra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "0"),
-            new ParametrosElimFaltaEmDiaDeProvaEnem()).Value!;
-        RegraEliminacao ausenciaNaEtapa = RegraEliminacao.Criar(
-            Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "7"),
-            new ParametrosElimAusenciaNaEtapa(etapa.Id)).Value!;
-
-        Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "d"),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "e"),
-            CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "f"),
-            RegrasEliminacao = [notaMinima, corteRedacao, zeroEmArea, faltaEmDiaDeProva, ausenciaNaEtapa],
-            BaseadoEmEnem = true,
-            ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
-            QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
-            EscalaNotaFinal = 100m,
-        });
-        configResult.IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(configResult.Value!).IsSuccess.Should().BeTrue();
-
+        ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU);
+        Guid etapaId = processo.Etapas.Single().Id;
+        ConfiguracaoClassificacao configuracao = ClassificacaoComCincoVariantes(etapaId);
+        processo.DefinirClassificacao(configuracao).IsSuccess.Should().BeTrue();
         await _cenario.PersistirAsync(processo);
 
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
-            .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
-            .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
-
-        recarregado.Should().NotBeNull();
-        ConfiguracaoClassificacao classificacao = recarregado!.Classificacao!;
-        classificacao.RegraCalculo.Codigo.Should().Be(RegraCalculoCodigo.FormulaMediaPonderada);
-        classificacao.RegraArredondamento!.Codigo.Should().Be(RegraArredondamentoCodigo.PrecisaoTruncar);
-        classificacao.CasasArredondamento.Should().Be(2);
-        classificacao.RegraOrdemAlocacao.Codigo.Should().Be(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria);
-        classificacao.RegrasEliminacao.Should().HaveCount(5);
-
-        ParametrosElimNotaMinimaEtapa parametrosNotaMinima = (ParametrosElimNotaMinimaEtapa)classificacao.RegrasEliminacao
-            .Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimNotaMinimaEtapa).Parametros;
-        parametrosNotaMinima.EtapaRef.Should().Be(etapa.Id);
-        parametrosNotaMinima.NotaMinima.Should().Be(3m);
-
-        ParametrosElimCorteEmArea parametrosCorteRedacao = (ParametrosElimCorteEmArea)classificacao.RegrasEliminacao
-            .Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimCorteEmArea).Parametros;
-        parametrosCorteRedacao.Minimo.Should().Be(400m);
-
-        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimZeroEmArea)
-            .Parametros.Should().BeOfType<ParametrosElimZeroEmArea>();
-        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem)
-            .Parametros.Should().BeOfType<ParametrosElimFaltaEmDiaDeProvaEnem>();
-
-        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimAusenciaNaEtapa)
-            .Parametros.Should().Be(new ParametrosElimAusenciaNaEtapa(etapa.Id));
-
-        string parametrosGravados = await readContext.Database.SqlQuery<string>($"""
-            SELECT parametros::text AS "Value" FROM selecao.regras_eliminacao WHERE id = {faltaEmDiaDeProva.Id}
-            """).SingleAsync();
-        parametrosGravados.Should().Contain("\"$tipo\":\"faltaEmDiaDeProvaEnem\"",
-            "o discriminador gravado é o que a leitura usa para voltar à variante certa");
+        await using UniPlusDbContext contexto = _cenario.CriarDbContext();
+        ProcessoSeletivo recarregado = await RecarregarAsync(contexto, processo.Id);
+        AfirmarRegrasDaClassificacao(recarregado.Classificacao!);
+        AfirmarParametrosDeEliminacao(recarregado.Classificacao!, etapaId);
+        Guid regraId = configuracao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem).Id;
+        await AfirmarDiscriminadorGravadoAsync(contexto, regraId);
     }
 
     [Fact(DisplayName = "Persiste e recarrega classificação CLASSIFICACAO-IMPORTADA sem arredondamento")]
     public async Task PersisteERecarrega_Importada_SemArredondamento()
     {
-        ProcessoSeletivo processo = NovoProcesso("PS 2026 — Transferência", TiposDeProcessoDeTeste.TransferenciaExterna);
-        processo.DefinirEtapas([EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: "Análise curricular", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!])
-            .IsSuccess.Should().BeTrue();
-
-        Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
+        ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — Transferência", TiposDeProcessoDeTeste.TransferenciaExterna);
+        ConfiguracaoClassificacao classificacao = CriarClassificacao(new DeclaracaoDaClassificacao
         {
             RegraCalculo = Regra(RegraCalculoCodigo.ClassificacaoImportada, "1"),
             RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "2"),
         });
-        configResult.IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(configResult.Value!).IsSuccess.Should().BeTrue();
-
+        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
         await _cenario.PersistirAsync(processo);
 
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
-            .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
-            .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
+        await using UniPlusDbContext contexto = _cenario.CriarDbContext();
+        ProcessoSeletivo recarregado = await RecarregarAsync(contexto, processo.Id);
+        AfirmarClassificacaoImportada(recarregado.Classificacao!);
+    }
 
-        recarregado.Should().NotBeNull();
-        ConfiguracaoClassificacao classificacao = recarregado!.Classificacao!;
+    [Fact(DisplayName = "Reconfigurar classificação sobre o agregado rastreado insere os filhos novos, sem falhar na atualização")]
+    public async Task ReconfigurarClassificacaoSobreAgregadoTracked_InsereFilhos()
+    {
+        ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — PSVR", TiposDeProcessoDeTeste.PSVR);
+        processo.DefinirClassificacao(CriarClassificacao(ClassificacaoPonderada())).IsSuccess.Should().BeTrue();
+        await _cenario.PersistirAsync(processo);
+        await ReconfigurarClassificacaoAsync(processo.Id);
+
+        await using UniPlusDbContext contexto = _cenario.CriarDbContext();
+        ProcessoSeletivo recarregado = await RecarregarAsync(contexto, processo.Id);
+        recarregado.Classificacao!.CasasArredondamento.Should().Be(4);
+        recarregado.Classificacao.RegrasEliminacao.Should().ContainSingle();
+    }
+
+    [Fact(DisplayName = "Atualizar dados da mesma etapa, preservando o identificador, mantém a eliminação referenciando-a")]
+    public async Task AtualizarEtapaMesmoId_MantemEliminacaoReferenciada()
+    {
+        ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU);
+        Guid etapaId = processo.Etapas.Single().Id;
+        processo.DefinirClassificacao(ClassificacaoComNotaMinima(etapaId)).IsSuccess.Should().BeTrue();
+        await _cenario.PersistirAsync(processo);
+        await AtualizarEtapaAsync(processo.Id);
+
+        await using UniPlusDbContext contexto = _cenario.CriarDbContext();
+        ProcessoSeletivo recarregado = await RecarregarAsync(contexto, processo.Id);
+        EtapaProcesso etapa = recarregado.Etapas.Single();
+        etapa.Id.Should().Be(etapaId);
+        etapa.Nome.Should().Be("Prova Objetiva (revisada)");
+        recarregado.Classificacao!.RegrasEliminacao.Single().Parametros.Should().Be(new ParametrosElimNotaMinimaEtapa(etapaId, 3m));
+    }
+
+    [Theory(DisplayName = "O valor de BaseadoEmEnem persiste e volta do banco independentemente do tipo de processo")]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task PersisteERecarrega_BaseadoEmEnem(bool baseadoEmEnem)
+    {
+        ProcessoSeletivo processo = ProcessoComEtapa("PS 2026 — BaseadoEmEnem", TiposDeProcessoDeTeste.PSIQ);
+        processo.DefinirClassificacao(CriarClassificacao(ClassificacaoPonderada(baseadoEmEnem))).IsSuccess.Should().BeTrue();
+        await _cenario.PersistirAsync(processo);
+
+        await using UniPlusDbContext contexto = _cenario.CriarDbContext();
+        ProcessoSeletivo recarregado = await RecarregarAsync(contexto, processo.Id);
+        recarregado.Classificacao!.BaseadoEmEnem.Should().Be(baseadoEmEnem,
+            "o tipo de processo não decide o valor declarado");
+    }
+
+    private static ProcessoSeletivo ProcessoComEtapa(string nome, TipoProcessoSnapshot tipo, string? faseCodigo = null)
+    {
+        ProcessoSeletivo processo = NovoProcesso(nome, tipo);
+        EtapaProcesso etapa = EtapaProcesso.Criar(IdentificacaoDaProva("Prova Objetiva", faseCodigo), AvaliacaoDaProva(1m)).Value!;
+        processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
+        return processo;
+    }
+
+    private static IdentificacaoDaEtapa IdentificacaoDaProva(string nome, string? faseCodigo = null) =>
+        new(Nome: nome, Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: faseCodigo);
+
+    private static DeclaracaoDaAvaliacaoDaEtapa AvaliacaoDaProva(decimal peso) =>
+        new(Peso: peso, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null);
+
+    private static DeclaracaoDaClassificacao ClassificacaoPonderada(bool baseadoEmEnem = false) => new()
+    {
+        RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
+        RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
+        CasasArredondamento = 2,
+        RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
+        BaseadoEmEnem = baseadoEmEnem,
+        ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
+        QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
+        EscalaNotaFinal = 100m,
+    };
+
+    private static ConfiguracaoClassificacao CriarClassificacao(DeclaracaoDaClassificacao declaracao)
+    {
+        Result<ConfiguracaoClassificacao> resultado = ConfiguracaoClassificacao.Criar(declaracao);
+        resultado.IsSuccess.Should().BeTrue();
+        return resultado.Value!;
+    }
+
+    private static ConfiguracaoClassificacao ClassificacaoComCincoVariantes(Guid etapaId) =>
+        CriarClassificacao(ClassificacaoPonderada(baseadoEmEnem: true) with
+        {
+            RegrasEliminacao =
+            [
+                RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"), new ParametrosElimNotaMinimaEtapa(etapaId, 3m)).Value!,
+                RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "b"), new ParametrosElimCorteEmArea("REDACAO", 400m)).Value!,
+                RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimZeroEmArea, "c"), new ParametrosElimZeroEmArea()).Value!,
+                RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem, "0"), new ParametrosElimFaltaEmDiaDeProvaEnem()).Value!,
+                RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimAusenciaNaEtapa, "7"), new ParametrosElimAusenciaNaEtapa(etapaId)).Value!,
+            ],
+        });
+
+    private static ConfiguracaoClassificacao ClassificacaoComNotaMinima(Guid etapaId) =>
+        CriarClassificacao(ClassificacaoPonderada() with
+        {
+            RegrasEliminacao = [RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"), new ParametrosElimNotaMinimaEtapa(etapaId, 3m)).Value!],
+        });
+
+    private async Task ReconfigurarClassificacaoAsync(Guid processoId)
+    {
+        await using UniPlusDbContext contexto = _cenario.CriarDbContext();
+        ProcessoSeletivoRepository repositorio = ProcessoSeletivoRepositoryDeTeste.Criar(contexto);
+        ProcessoSeletivo processo = (await repositorio.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
+        ConfiguracaoClassificacao nova = CriarClassificacao(ClassificacaoPonderada(baseadoEmEnem: true) with
+        {
+            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, "e"),
+            CasasArredondamento = 4,
+            RegrasEliminacao = [RegraEliminacao.Criar(Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "d"), new ParametrosElimCorteEmArea("REDACAO", 350m)).Value!],
+        });
+        processo.DefinirClassificacao(nova).IsSuccess.Should().BeTrue();
+        await contexto.SaveChangesAsync(CancellationToken.None);
+    }
+
+    // A atualização usa a instância rastreada para que a regra continue apontando a mesma etapa.
+    private async Task AtualizarEtapaAsync(Guid processoId)
+    {
+        await using UniPlusDbContext contexto = _cenario.CriarDbContext();
+        ProcessoSeletivoRepository repositorio = ProcessoSeletivoRepositoryDeTeste.Criar(contexto);
+        ProcessoSeletivo processo = (await repositorio.ObterComConfiguracaoAsync(processoId, CancellationToken.None))!;
+        EtapaProcesso etapa = processo.Etapas.Single();
+        etapa.AtualizarDados(IdentificacaoDaProva("Prova Objetiva (revisada)"), AvaliacaoDaProva(2m));
+        processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
+        await contexto.SaveChangesAsync(CancellationToken.None);
+    }
+
+    private static Task<ProcessoSeletivo> RecarregarAsync(UniPlusDbContext contexto, Guid processoId) =>
+        contexto.ProcessosSeletivos.Include(p => p.Etapas).Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
+            .SingleAsync(p => p.Id == processoId, CancellationToken.None);
+
+    private static void AfirmarRegrasDaClassificacao(ConfiguracaoClassificacao classificacao)
+    {
+        classificacao.RegraCalculo.Codigo.Should().Be(RegraCalculoCodigo.FormulaMediaPonderada);
+        classificacao.RegraArredondamento!.Codigo.Should().Be(RegraArredondamentoCodigo.PrecisaoTruncar);
+        classificacao.CasasArredondamento.Should().Be(2);
+        classificacao.RegraOrdemAlocacao.Codigo.Should().Be(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria);
+        classificacao.RegrasEliminacao.Should().HaveCount(5);
+    }
+
+    private static void AfirmarParametrosDeEliminacao(ConfiguracaoClassificacao classificacao, Guid etapaId)
+    {
+        ParametrosElimNotaMinimaEtapa nota = (ParametrosElimNotaMinimaEtapa)classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimNotaMinimaEtapa).Parametros;
+        nota.EtapaRef.Should().Be(etapaId);
+        nota.NotaMinima.Should().Be(3m);
+        ParametrosElimCorteEmArea redacao = (ParametrosElimCorteEmArea)classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimCorteEmArea).Parametros;
+        redacao.Minimo.Should().Be(400m);
+        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimZeroEmArea).Parametros.Should().BeOfType<ParametrosElimZeroEmArea>();
+        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimFaltaEmDiaDeProvaEnem).Parametros.Should().BeOfType<ParametrosElimFaltaEmDiaDeProvaEnem>();
+        classificacao.RegrasEliminacao.Single(r => r.Regra.Codigo == RegraEliminacaoCodigo.ElimAusenciaNaEtapa).Parametros.Should().Be(new ParametrosElimAusenciaNaEtapa(etapaId));
+    }
+
+    private static void AfirmarClassificacaoImportada(ConfiguracaoClassificacao classificacao)
+    {
         classificacao.RegraCalculo.Codigo.Should().Be(RegraCalculoCodigo.ClassificacaoImportada);
         classificacao.RegraArredondamento.Should().BeNull();
         classificacao.CasasArredondamento.Should().BeNull();
         classificacao.RegrasEliminacao.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Reconfigurar classificação sobre o agregado tracked insere os filhos novos, não falha em UPDATE")]
-    public async Task ReconfigurarClassificacaoSobreAgregadoTracked_InsereFilhos()
+    private static async Task AfirmarDiscriminadorGravadoAsync(UniPlusDbContext contexto, Guid regraId)
     {
-        ProcessoSeletivo processo = NovoProcesso("PS 2026 — PSVR", TiposDeProcessoDeTeste.PSVR);
-        EtapaProcesso etapa = EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapa]).IsSuccess.Should().BeTrue();
-
-        ConfiguracaoClassificacao original = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "b"),
-            CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-            EscalaNotaFinal = 100m,
-        }).Value!;
-        processo.DefinirClassificacao(original).IsSuccess.Should().BeTrue();
-
-        await _cenario.PersistirAsync(processo);
-
-        await using (UniPlusDbContext configureContext = _cenario.CriarDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
-            ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
-
-            RegraEliminacao eliminacao = RegraEliminacao.Criar(
-                Regra(RegraEliminacaoCodigo.ElimCorteEmArea, "d"),
-                new ParametrosElimCorteEmArea("REDACAO", 350m)).Value!;
-            ConfiguracaoClassificacao nova = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-            {
-                RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "a"),
-                RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoArredondarCima, "e"),
-                CasasArredondamento = 4,
-                RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "c"),
-                RegrasEliminacao = [eliminacao],
-                BaseadoEmEnem = true,
-                ResolucaoPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Resolucao,
-                QuadroPesoAreaEnem = QuadroPesoAreaEnemDeTeste.Completo(),
-                EscalaNotaFinal = 100m,
-            }).Value!;
-
-            Result result = carregado.DefinirClassificacao(nova);
-            result.IsSuccess.Should().BeTrue();
-
-            await configureContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
-            .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
-            .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
-
-        recarregado.Should().NotBeNull();
-        ConfiguracaoClassificacao classificacao = recarregado!.Classificacao!;
-        classificacao.CasasArredondamento.Should().Be(4);
-        classificacao.RegrasEliminacao.Should().ContainSingle();
-    }
-
-    [Fact(DisplayName = "Atualizar dados da MESMA etapa (Id preservado) mantém a eliminação referenciando-a (F3)")]
-    public async Task AtualizarEtapaMesmoId_MantemEliminacaoReferenciada()
-    {
-        ProcessoSeletivo processo = NovoProcesso("PS 2026 — SiSU", TiposDeProcessoDeTeste.SiSU);
-        EtapaProcesso etapa = EtapaProcesso.Criar(
-            new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
-            new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!;
-        processo.DefinirEtapas([etapa]);
-
-        RegraEliminacao eliminacao = RegraEliminacao.Criar(
-            Regra(RegraEliminacaoCodigo.ElimNotaMinimaEtapa, "a"), new ParametrosElimNotaMinimaEtapa(etapa.Id, 3m)).Value!;
-        ConfiguracaoClassificacao classificacao = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "b"),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "c"),
-            CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "d"),
-            RegrasEliminacao = [eliminacao],
-            EscalaNotaFinal = 100m,
-        }).Value!;
-        processo.DefinirClassificacao(classificacao).IsSuccess.Should().BeTrue();
-
-        await _cenario.PersistirAsync(processo);
-
-        await using (UniPlusDbContext configureContext = _cenario.CriarDbContext())
-        {
-            ProcessoSeletivoRepository repository = ProcessoSeletivoRepositoryDeTeste.Criar(configureContext);
-            ProcessoSeletivo carregado = (await repository.ObterComConfiguracaoAsync(processo.Id, CancellationToken.None))!;
-
-            // Reproduz a reconciliação do DefinirEtapasCommandHandler: o
-            // cliente ecoa o Id lido anteriormente, o handler ATUALIZA a
-            // mesma instância tracked em vez de recriá-la — sem isso, o
-            // etapa_ref da eliminação ficaria órfão a cada PUT /etapas.
-            EtapaProcesso etapaTracked = carregado.Etapas.Single();
-            etapaTracked.AtualizarDados(
-                new IdentificacaoDaEtapa(Nome: "Prova Objetiva (revisada)", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: null),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 2m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null));
-
-            Result result = carregado.DefinirEtapas([etapaTracked]);
-            result.IsSuccess.Should().BeTrue();
-
-            await configureContext.SaveChangesAsync(CancellationToken.None);
-        }
-
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
-            .Include(p => p.Etapas)
-            .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
-            .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
-
-        recarregado.Should().NotBeNull();
-        EtapaProcesso etapaAtualizada = recarregado!.Etapas.Single();
-        etapaAtualizada.Id.Should().Be(etapa.Id);
-        etapaAtualizada.Nome.Should().Be("Prova Objetiva (revisada)");
-
-        RegraEliminacao eliminacaoRecarregada = recarregado.Classificacao!.RegrasEliminacao.Single();
-        ((ParametrosElimNotaMinimaEtapa)eliminacaoRecarregada.Parametros).EtapaRef.Should().Be(etapa.Id);
-    }
-
-    [Theory(DisplayName = "Persiste e recarrega BaseadoEmEnem — true e false (#850)")]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task PersisteERecarrega_BaseadoEmEnem(bool baseadoEmEnem)
-    {
-        ProcessoSeletivo processo = NovoProcesso("PS 2026 — BaseadoEmEnem", TiposDeProcessoDeTeste.PSIQ);
-        processo.DefinirEtapas(
-            [EtapaProcesso.Criar(
-                new IdentificacaoDaEtapa(Nome: "Prova Objetiva", Carater: CaraterEtapa.Classificatoria, TipoEtapa: TipoDeEtapaProvaObjetiva(), Ordem: 1, FaseCodigo: "RESULTADO_FINAL"),
-                new DeclaracaoDaAvaliacaoDaEtapa(Peso: 1m, NotaMinima: null, NotaMaxima: null, PassoDoLancamento: null, FormaDeAvaliacao: null, RegraConsolidacao: null, EscalaDeAtendimento: null)).Value!]);
-
-        Result<ConfiguracaoClassificacao> configResult = ConfiguracaoClassificacao.Criar(new DeclaracaoDaClassificacao
-        {
-            RegraCalculo = Regra(RegraCalculoCodigo.FormulaMediaPonderada, "1"),
-            RegraArredondamento = Regra(RegraArredondamentoCodigo.PrecisaoTruncar, "2"),
-            CasasArredondamento = 2,
-            RegraOrdemAlocacao = Regra(RegraOrdemAlocacaoCodigo.AlocacaoPrimeiraOpcaoPrioritaria, "3"),
-            BaseadoEmEnem = baseadoEmEnem,
-            ResolucaoPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Resolucao : null,
-            QuadroPesoAreaEnem = baseadoEmEnem ? QuadroPesoAreaEnemDeTeste.Completo() : [],
-            EscalaNotaFinal = 100m,
-        });
-        configResult.IsSuccess.Should().BeTrue();
-        processo.DefinirClassificacao(configResult.Value!).IsSuccess.Should().BeTrue();
-
-        await _cenario.PersistirAsync(processo);
-
-        await using UniPlusDbContext readContext = _cenario.CriarDbContext();
-        ProcessoSeletivo? recarregado = await readContext.ProcessosSeletivos
-            .Include(p => p.Classificacao!).ThenInclude(c => c.RegrasEliminacao)
-            .FirstOrDefaultAsync(p => p.Id == processo.Id, CancellationToken.None);
-
-        recarregado.Should().NotBeNull();
-        recarregado!.Classificacao!.BaseadoEmEnem.Should().Be(baseadoEmEnem,
-            "o valor persistido e recarregado do banco precisa sobreviver ao ciclo EF — o rótulo TipoProcesso " +
-            "(PSIQ) não decide o valor");
+        string parametrosGravados = await contexto.Database.SqlQuery<string>($"""
+            SELECT args::text AS "Value" FROM selecao.regras_eliminacao WHERE id = {regraId}
+            """).SingleAsync();
+        parametrosGravados.Should().Contain("\"$tipo\":\"faltaEmDiaDeProvaEnem\"",
+            "o discriminador gravado é o que a leitura usa para voltar à variante certa");
     }
 }

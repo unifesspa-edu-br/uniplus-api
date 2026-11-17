@@ -83,6 +83,9 @@ internal static class ItensDoChecklistDoEnvelopeFechado
         "classificacao_grupo_area_enem_da_oferta_fora_do_quadro",
 
         // ── Conferências que a raiz aplica antes do agregador genérico ──
+        "tipo_processo_nao_declarado",
+        "unidade_administradora_nao_declarada",
+        "origem_candidatos_nao_declarada",
         "identificador_legivel_nao_declarado",
         "localidade_nao_declarada",
         "algoritmo_contagem_prazo_nao_declarado",

@@ -108,14 +108,14 @@ public sealed class AdocaoDoDocumentoLidoTests
         origem.PartesRecusadas.Should().Equal(recusada);
     }
 
-    [Fact(DisplayName = "A origem de um item com parte recusada em uma lista dele dá o nome da lista pelo caminho do item")]
-    public void Origem_ColecoesRecusadasDe_DaOsNomesDasListasDoItem()
+    [Fact(DisplayName = "A origem de um item com parte recusada dá o caminho de cada parte relativo ao item, seja lista ou campo")]
+    public void Origem_PartesRecusadasDe_DaOsCaminhosDasPartesDoItem()
     {
-        OrigemNoDocumento origem = ComPartesRecusadas("fases[0].produtos", "fases[0].bancasRequeridas", "fases[1].produtos", "etapas[0].bancas");
+        OrigemNoDocumento origem = ComPartesRecusadas("fases[0].produtos", "fases[0].bancasRequeridas", "fases[0].unidadeResponsavel", "fases[1].produtos", "etapas[0].bancas");
 
-        origem.ColecoesRecusadasDe("fases[0]").Should().BeEquivalentTo(FaseDeclarada.ListaDosProdutos, FaseDeclarada.ListaDasBancasRequeridas);
-        origem.ColecoesRecusadasDe("fases[1]").Should().BeEquivalentTo(FaseDeclarada.ListaDosProdutos);
-        origem.ColecoesRecusadasDe("fases[2]").Should().BeEmpty();
+        origem.PartesRecusadasDe("fases[0]").Should().BeEquivalentTo(FaseDeclarada.ListaDosProdutos, FaseDeclarada.ListaDasBancasRequeridas, FaseDeclarada.CampoDaUnidadeResponsavel);
+        origem.PartesRecusadasDe("fases[1]").Should().BeEquivalentTo(FaseDeclarada.ListaDosProdutos);
+        origem.PartesRecusadasDe("fases[2]").Should().BeEmpty();
         origem.TemParteRecusadaEm("etapas[0].bancas").Should().BeTrue();
         origem.TemParteRecusadaEm("etapas[0]").Should().BeFalse();
     }

@@ -40,6 +40,8 @@ public sealed class PrecedenciaPorArestaTests
 
         Precedencia(cronograma, Aresta("A", "B", permiteSobreposicao: false))
             .Should().Equal(("fases[1].inicio", "ProcessoSeletivo.SobreposicaoDeJanelasNaoPermitida"));
+        cronograma.ConferirPrecedencia([Aresta("A", "B", permiteSobreposicao: false)]).Single().Error.Message.Should()
+            .Be("O período desta fase coincide em parte com o da fase anterior, e o cadastro não permite essa coincidência.");
         Precedencia(cronograma, Aresta("A", "B", permiteSobreposicao: true)).Should().BeEmpty();
     }
 

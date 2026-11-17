@@ -47,7 +47,7 @@ internal static class ItensDoCronograma
         cronograma.ItemDaAncoraDoRecurso(),
         etapas.ItemDaAncoraDoRecurso(),
         cronograma.ItemDoRecorteDeCompetencia(),
-        Item("cronograma_procedimento_de_recurso", "Cronograma: cada janela de recurso declara o procedimento de revisão de toda decisão que o lugar produz", PendenciasDosProcedimentosDeRecurso.CausasDosProcedimentosDeRecurso(configuracao).Count == 0),
+        Item("cronograma_procedimento_de_recurso", "Cronograma: cada recurso tem procedimento de revisão para as decisões da fase ou etapa", PendenciasDosProcedimentosDeRecurso.CausasDosProcedimentosDeRecurso(configuracao).Count == 0 && !PendenciasDosProcedimentosDeRecurso.RecusadosPelaLeitura(configuracao)),
     ];
 
     private static ItemConformidade[] DasBancasEDaJanelaDasEtapas(

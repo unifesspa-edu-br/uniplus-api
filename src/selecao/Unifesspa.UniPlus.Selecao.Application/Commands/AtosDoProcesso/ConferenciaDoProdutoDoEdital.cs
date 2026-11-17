@@ -50,7 +50,7 @@ public sealed class ConferenciaDoProdutoDoEdital(
     IUserContext usuario)
 {
     internal async Task<Result<ProdutoConferido>> ConferirAsync(
-        PublicarProdutoDoEditalCommand command, InstanteDaPublicacao instante, CancellationToken cancellationToken)
+        PublicarProdutoDoEditalCommand command, InstanteDoComando instante, CancellationToken cancellationToken)
     {
         Result<GrafoVigente> vigente = await grafos.LerAsync(command.ProcessoSeletivoId, instante.Instante, cancellationToken).ConfigureAwait(false);
         if (vigente.IsFailure)
@@ -64,7 +64,7 @@ public sealed class ConferenciaDoProdutoDoEdital(
     }
 
     private async Task<Result<ProdutoConferido>> ConferirTipoECadeiaAsync(
-        PublicarProdutoDoEditalCommand command, InstanteDaPublicacao instante, GrafoVigente vigente,
+        PublicarProdutoDoEditalCommand command, InstanteDoComando instante, GrafoVigente vigente,
         ProjecaoDosProdutosPrevistos.Declarado produto, CancellationToken cancellationToken)
     {
         Result<TipoAtoPublicadoView> tipo = await TipoAsync(produto, vigente.TiposDeAto, instante.Dia, cancellationToken).ConfigureAwait(false);

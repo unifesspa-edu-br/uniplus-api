@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Text;
 
 using Unifesspa.UniPlus.Kernel.Results;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
 /// <summary>
 /// O ponteiro JSON (RFC 6901) que a causa entrega ao cliente do documento da configuração. As regras falam o nome do corpo do
@@ -25,13 +26,21 @@ public static class PonteiroNoDocumento
     // O nome do corpo do pedido, com os índices dos colchetes tirados, e o nome que o documento lhe dá.
     private static readonly Dictionary<string, string> Nomes = new(StringComparer.Ordinal)
     {
+        // A ordem da fase, que o documento não tem: a posição da fase na lista é a ordem dela, e a causa fica no trecho da fase.
+        ["fases[].ordem"] = "fases[]",
         ["fases[].faseCanonicaId"] = "fases[].faseCanonicaCodigo",
         ["fases[].faseConcluinteCodigo"] = "fases[].faseConcluinteChave",
         ["fases[].unidadeResponsavel"] = "fases[].unidadeResponsavelCodigo",
+        ["fases[].bancasRequeridas[].tipoBancaId"] = "fases[].bancasRequeridas[].tipoBancaCodigo",
         ["fases[].bancasRequeridas[].categoriasDocumentoIds"] = "fases[].bancasRequeridas[].categoriasDocumentoCodigos",
+        ["fases[].bancasRequeridas[].categoriasDocumentoIds[]"] = "fases[].bancasRequeridas[].categoriasDocumentoCodigos[]",
         ["etapas[].faseCodigo"] = "etapas[].faseChave",
         ["etapas[].id"] = "etapas[].chave",
     };
+
+    // A lista que o documento chama por outro nome: o nome do corpo do pedido vale para a lista e para tudo o que está dentro dela.
+    private const string ProcedimentosDaFase = "fases[]." + FaseDeclarada.ListaDosProcedimentosDeRecurso;
+    private const string ProcedimentosDaFaseNoDocumento = "fases[].regraRecurso.procedimentosDeRecurso";
 
     /// <summary>O ponteiro do campo, que fica nulo quando a causa não aponta o documento.</summary>
     public static string? Converter(string? campo, OrigemNoDocumento origem)
@@ -53,11 +62,17 @@ public static class PonteiroNoDocumento
     private static string NomeNoDocumento(string campo, OrigemNoDocumento origem)
     {
         (string semIndices, List<string> indices) = SemIndices(campo, origem);
-        string nome = NoConceitoDaEtapa(semIndices) ? "etapas[]" : Nomes.GetValueOrDefault(semIndices, semIndices);
+        string nome = NoConceitoDaEtapa(semIndices) ? "etapas[]" : Nomes.GetValueOrDefault(semIndices, NomeDaListaRenomeada(semIndices));
         string comIndices = ComIndices(nome, indices);
 
-        return semIndices.StartsWith("fases", StringComparison.Ordinal) ? BlocoDoCronograma + comIndices : comIndices;
+        return semIndices.StartsWith(CronogramaDoProcesso.ListaDasFases, StringComparison.Ordinal) ? BlocoDoCronograma + comIndices : comIndices;
     }
+
+    private static string NomeDaListaRenomeada(string semIndices) =>
+        semIndices.StartsWith(ProcedimentosDaFase, StringComparison.Ordinal)
+        && (semIndices.Length == ProcedimentosDaFase.Length || semIndices[ProcedimentosDaFase.Length] is '.' or '[')
+            ? ProcedimentosDaFaseNoDocumento + semIndices[ProcedimentosDaFase.Length..]
+            : semIndices;
 
     private static bool NoConceitoDaEtapa(string semIndices) =>
         semIndices.StartsWith(ConceitoDaEtapa, StringComparison.Ordinal)

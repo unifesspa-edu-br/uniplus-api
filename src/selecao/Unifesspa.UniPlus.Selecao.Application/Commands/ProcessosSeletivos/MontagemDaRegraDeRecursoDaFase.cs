@@ -43,11 +43,17 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
             return Result<RegraRecursoFase>.ValidationFailure(referencia.Errors);
         }
 
-        // A âncora é resolvida DENTRO dos produtos desta fase: o mesmo tipo de ato pode ser publicado por
-        // outra fase, e é a identidade da linha, não o código, que diz de qual publicação o prazo conta.
-        // Quando o código não corresponde a produto algum, a âncora fica vazia e o domínio recusa nomeando
-        // os preliminares disponíveis.
         ProdutoDaFase? ancora = ProdutoAncora(produtos, declarada.AtoAncoraCodigo);
+        Result<RegraRecursoFase> regra = await CriarAsync(declarada, campo, tiposDeDecisao, referencia.Value!, ancora, cancellationToken)
+            .ConfigureAwait(false);
+        return regra.IsFailure || ancora is null
+            ? regra
+            : await ConferirAncoraAsync(regra, ancora, campo, faseCodigo, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<Result<RegraRecursoFase>> CriarAsync(RegraRecursoFaseInput declarada, string campo,
+        IReadOnlyList<string?>? tiposDeDecisao, ReferenciaRegra referencia, ProdutoDaFase? ancora, CancellationToken cancellationToken)
+    {
         Result<ProcedimentosDeRecurso> procedimentos = await _procedimentos
             .DeclararAsync(declarada.Procedimentos, ContextoDosProcedimentos(tiposDeDecisao), $"{campo}.procedimentos", cancellationToken)
             .ConfigureAwait(false);
@@ -56,25 +62,21 @@ internal sealed class MontagemDaRegraDeRecursoDaFase(
             return Result<RegraRecursoFase>.ValidationFailure(procedimentos.Errors);
         }
 
-        Result<RegraRecursoFase> regra = RegraRecursoFase.Criar(referencia.Value!, ParametrosDoPrazo(declarada), ancora?.Id ?? Guid.Empty, procedimentos.Value);
-        if (regra.IsFailure)
-        {
-            return InterrupcaoDaFase.Com<RegraRecursoFase>(campo, regra.Error!);
-        }
+        Result<RegraRecursoFase> regra = RegraRecursoFase.Criar(referencia, ParametrosDoPrazo(declarada), ancora?.Id ?? Guid.Empty, procedimentos.Value);
+        return regra.IsFailure
+            ? Result<RegraRecursoFase>.ValidationFailure([.. regra.Errors.Select(erro => new FieldError(campo, erro.Error))])
+            : regra;
+    }
 
-        DomainError? recusaDaAncora = ancora is null
-            ? null
-            : await _conferenciaDaAncora
-                .ConferirAsync(
-                    ancora.AtoCodigo,
-                    RotuloDoDonoDaAncora.DaFase,
-                    atoCodigo => ancorasJaDeclaradas.Contains((faseCodigo, atoCodigo)),
-                    (atoCodigo, token) => atos.Congelados.AncoraDaFaseJaPublicadaAsync(faseCodigo, atoCodigo, token),
-                    cancellationToken)
-                .ConfigureAwait(false);
-        return recusaDaAncora is null
-            ? regra
-            : InterrupcaoDaFase.Com<RegraRecursoFase>($"{campo}.atoAncoraCodigo", recusaDaAncora);
+    private async Task<Result<RegraRecursoFase>> ConferirAncoraAsync(Result<RegraRecursoFase> regra,
+        ProdutoDaFase ancora, string campo, string faseCodigo, CancellationToken cancellationToken)
+    {
+        DomainError? recusa = await _conferenciaDaAncora.ConferirAsync(
+            ancora.AtoCodigo, RotuloDoDonoDaAncora.DaFase,
+            atoCodigo => ancorasJaDeclaradas.Contains((faseCodigo, atoCodigo)),
+            (atoCodigo, token) => atos.Congelados.AncoraDaFaseJaPublicadaAsync(faseCodigo, atoCodigo, token),
+            cancellationToken).ConfigureAwait(false);
+        return recusa is null ? regra : InterrupcaoDaFase.Com<RegraRecursoFase>($"{campo}.atoAncoraCodigo", recusa);
     }
 
     // O lugar da janela é a própria fase: ela declara os tipos de decisão que produz, e o produtor fase não tem itens de

@@ -84,7 +84,7 @@ internal static class ConferenciaDaDeclaracaoDaFase
         IReadOnlyList<BancaRequerida> bancasRequeridas,
         IReadOnlySet<string> colecoesComParteRecusada) =>
     [
-        .. JanelaDaFase.Violacoes(origem.Codigo, origem.OrigemData, cronograma),
+        .. JanelaDaFase.Violacoes(origem.OrigemData, cronograma),
         .. ViolacoesDasPublicacoes(origem.Codigo, publicacoes, colecoesComParteRecusada.Contains(FaseDeclarada.ListaDosProdutos)),
         .. TiposDeDecisaoDeclarados.Validar(publicacoes.TiposDeDecisao, TiposDeDecisaoDeclarados.Campo),
         .. RecorteDeCompetenciaDasBancas.Violacoes(origem.Codigo, bancasRequeridas),

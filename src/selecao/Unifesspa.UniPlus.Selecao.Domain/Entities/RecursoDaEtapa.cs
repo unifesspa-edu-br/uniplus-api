@@ -64,44 +64,52 @@ public sealed class RecursoDaEtapa : EntityBase
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentNullException.ThrowIfNull(parametros);
 
-        if (!Enum.IsDefined(ancora) || ancora == AncoraDoRecurso.Nenhuma)
+        List<FieldError> erros = Validar(ancora, regra, parametros);
+        if (erros.Count > 0)
         {
-            return Result<RecursoDaEtapa>.ValidationFailure([new("ancora", new DomainError(
-                "RecursoDaEtapa.AncoraObrigatoria",
-                "Declare de que instante o prazo corre: da publicação do ato ou da ciência do candidato."))]);
+            return Result<RecursoDaEtapa>.ValidationFailure(erros);
         }
 
-        // Só a regra de prazo ancorado em ato, como na fase — e não qualquer entrada do catálogo
-        // cujo tipo seja "regra de prazo de recurso", que é a checagem que o handler faz. O
-        // decodificador do envelope exige este código exato ao reidratar a janela recursal da
-        // etapa: aceitar outro aqui produziria um certame publicável cujo envelope não volta,
-        // e a retificação não conseguiria lê-lo. A defesa fica no domínio para
-        // valer também fora do caminho do handler, como a reidratação.
-        if (regra.Codigo != RegraPrazoRecursoCodigo.AncoradoEmAto)
-        {
-            return Result<RecursoDaEtapa>.Failure(new DomainError(
-                "RecursoDaEtapa.RegraCatalogoInvalida",
-                $"A janela recursal da etapa só referencia a regra {RegraPrazoRecursoCodigo.AncoradoEmAto} — recebido '{regra.Codigo}'."));
-        }
-
-        // As mesmas invariantes que a regra da fase prova sobre os parâmetros — prazo estritamente
-        // positivo, em dia útil ou hora, sem fração de dia útil, e cada par de suspensividade
-        // inteiro ou inteiramente ausente. A janela da etapa recorre nas mesmas condições; o
-        // que muda entre as duas é a ÂNCORA, e ela não alcança estas regras.
-        if (ValidacaoDosParametrosDoRecurso.Validar(parametros) is { } recusa)
-        {
-            return Result<RecursoDaEtapa>.Failure(ErroDosParametros(recusa));
-        }
-
-        return Result<RecursoDaEtapa>.Success(new RecursoDaEtapa
-        {
-            Ancora = ancora,
-            Regra = regra,
-            Parametros = parametros,
-            ProdutoAncoraId = produtoAncoraId,
-            Procedimentos = procedimentos ?? ProcedimentosDeRecurso.Nenhum,
-        });
+        return Result<RecursoDaEtapa>.Success(Novo(ancora, regra, parametros, produtoAncoraId, procedimentos));
     }
+
+    private static RecursoDaEtapa Novo(AncoraDoRecurso ancora, ReferenciaRegra regra,
+        ParametrosRegraPrazoRecurso parametros, Guid produtoAncoraId, ProcedimentosDeRecurso? procedimentos) => new()
+    {
+        Ancora = ancora,
+        Regra = regra,
+        Parametros = parametros,
+        ProdutoAncoraId = produtoAncoraId,
+        Procedimentos = procedimentos ?? ProcedimentosDeRecurso.Nenhum,
+    };
+
+    private static List<FieldError> Validar(AncoraDoRecurso ancora, ReferenciaRegra regra, ParametrosRegraPrazoRecurso parametros)
+    {
+        List<FieldError> erros = [];
+        AdicionarRecusa(erros, "ancora", ValidarAncora(ancora));
+        AdicionarRecusa(erros, null, ValidarRegra(regra));
+        erros.AddRange(ValidacaoDosParametrosDoRecurso.Validar(parametros)
+            .Select(static recusa => new FieldError(null, ErroDosParametros(recusa))));
+        return erros;
+    }
+
+    private static void AdicionarRecusa(List<FieldError> erros, string? campo, DomainError? recusa)
+    {
+        if (recusa is not null)
+        {
+            erros.Add(new(campo, recusa));
+        }
+    }
+
+    private static DomainError? ValidarAncora(AncoraDoRecurso ancora) =>
+        Enum.IsDefined(ancora) && ancora != AncoraDoRecurso.Nenhuma ? null : new DomainError(
+            "RecursoDaEtapa.AncoraObrigatoria",
+            "Declare de que instante o prazo corre: da publicação do ato ou da ciência do candidato.");
+
+    private static DomainError? ValidarRegra(ReferenciaRegra regra) =>
+        regra.Codigo == RegraPrazoRecursoCodigo.AncoradoEmAto ? null : new DomainError(
+            "RecursoDaEtapa.RegraCatalogoInvalida",
+            "A regra indicada não permite contar o prazo de recurso a partir de uma publicação.");
 
     /// <summary>
     /// Traduz o motivo da recusa no código de erro desta entidade — literal, para que a
@@ -151,27 +159,33 @@ public sealed class RecursoDaEtapa : EntityBase
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentNullException.ThrowIfNull(parametros);
         ArgumentNullException.ThrowIfNull(procedimentos);
-        if (id == Guid.Empty)
-        {
-            throw new ArgumentException("O recurso reidratado deve declarar o Id congelado no envelope.", nameof(id));
-        }
-
+        ExigirId(id);
         Result<RecursoDaEtapa> validada = Criar(ancora, regra, parametros, produtoAncoraId, procedimentos);
         if (validada.IsFailure)
         {
             return validada;
         }
 
-        return Result<RecursoDaEtapa>.Success(new RecursoDaEtapa
-        {
-            Id = id,
-            Ancora = ancora,
-            Regra = regra,
-            Parametros = parametros,
-            ProdutoAncoraId = produtoAncoraId,
-            Procedimentos = procedimentos,
-        });
+        return Result<RecursoDaEtapa>.Success(ComId(validada.Value!, id));
     }
+
+    private static void ExigirId(Guid id)
+    {
+        if (id == Guid.Empty)
+        {
+            throw new ArgumentException("O recurso reidratado deve declarar o Id congelado no envelope.", nameof(id));
+        }
+    }
+
+    private static RecursoDaEtapa ComId(RecursoDaEtapa recurso, Guid id) => new()
+    {
+        Id = id,
+        Ancora = recurso.Ancora,
+        Regra = recurso.Regra,
+        Parametros = recurso.Parametros,
+        ProdutoAncoraId = recurso.ProdutoAncoraId,
+        Procedimentos = recurso.Procedimentos,
+    };
 
     internal void VincularEtapa(Guid etapaProcessoId) => EtapaProcessoId = etapaProcessoId;
 }

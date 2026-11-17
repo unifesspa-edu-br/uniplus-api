@@ -71,6 +71,14 @@ public static class ProcessoSeletivoErrorCodes
     public const string ConclusaoDuplicada = "ProcessoSeletivo.ConclusaoDuplicada";
     public const string RetificacaoDesfazCicloRecursalAberto = "ProcessoSeletivo.RetificacaoDesfazCicloRecursalAberto";
     public const string EtapaComPreliminarSemDefinitivo = "ProcessoSeletivo.EtapaComPreliminarSemDefinitivo";
+    public const string TipoProcessoNaoEncontradoOuInativo = "ProcessoSeletivo.TipoProcessoNaoEncontradoOuInativo";
+    public const string UnidadeAdministradoraNaoEncontrada = "ProcessoSeletivo.UnidadeAdministradoraNaoEncontrada";
+    public const string AlgoritmoContagemPrazoNaoEncontrado = "ProcessoSeletivo.AlgoritmoContagemPrazoNaoEncontrado";
+
+    public const string TipoProcessoAusente = "ProcessoSeletivo.TipoProcessoAusente";
+    public const string UnidadeAdministradoraAusente = "ProcessoSeletivo.UnidadeAdministradoraAusente";
+    public const string OrigemCandidatosAusente = "ProcessoSeletivo.OrigemCandidatosAusente";
+
     public const string RemanejamentoIncoerenteComANatureza = "ProcessoSeletivo.RemanejamentoIncoerenteComANatureza";
 
     /// <summary>

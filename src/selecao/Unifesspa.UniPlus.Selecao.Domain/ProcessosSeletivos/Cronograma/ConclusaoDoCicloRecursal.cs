@@ -10,6 +10,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// inferência. Dentro de uma fase as conferências se encadeiam, porque não faz sentido conferir a ordem de uma concluinte
 /// que não está no cronograma; entre fases todas são percorridas. A fase cuja lista de produtos tem parte recusada pela leitura
 /// do documento não se julga (não se sabe o que ela publica), e a concluinte nessa situação só se julga pelo que não lê os produtos.
+/// A fase cuja concluinte a leitura recusou (chave que nenhuma fase tem) também não se julga, e a concluinte que a leitura
+/// recusou como fase não está fora do cronograma: a causa é a da leitura, e o ciclo fica indeterminado em vez de aprovado.
 /// </summary>
 internal static class ConclusaoDoCicloRecursal
 {
@@ -17,7 +19,7 @@ internal static class ConclusaoDoCicloRecursal
     [
         .. cronograma.Fases
             .Select((fase, posicao) => (fase, posicao))
-            .Where(static par => !par.fase.ParteRecusadaEm(FaseDeclarada.ListaDosProdutos))
+            .Where(static par => !par.fase.ParteRecusadaEm(FaseDeclarada.ListaDosProdutos) && !par.fase.ParteRecusadaEm(FaseDeclarada.CampoDaFaseConcluinte))
             .Select(par => Recusa(cronograma, par.fase) is { } erro
                 ? CronogramaDoProcesso.NaFase(par.posicao, "faseConcluinteCodigo", erro)
                 : null)
@@ -28,14 +30,17 @@ internal static class ConclusaoDoCicloRecursal
     internal static IReadOnlyList<FaseDeclarada> Indeterminadas(CronogramaDoProcesso cronograma) =>
     [
         .. cronograma.Fases.Where(fase => fase.Atos.PublicaResultadoPreliminar
-            && fase.FaseConcluinteCodigo is { } codigo
-            && !string.Equals(codigo, fase.Codigo, StringComparison.Ordinal)
-            && ConcluinteIndeterminada(cronograma, fase, codigo)),
+            && (fase.ParteRecusadaEm(FaseDeclarada.CampoDaFaseConcluinte) || DeclaraConcluinteIndeterminada(cronograma, fase))),
     ];
+
+    private static bool DeclaraConcluinteIndeterminada(CronogramaDoProcesso cronograma, FaseDeclarada fase) =>
+        fase.FaseConcluinteCodigo is { } codigo
+        && !string.Equals(codigo, fase.Codigo, StringComparison.Ordinal)
+        && ConcluinteIndeterminada(cronograma, fase, codigo);
 
     private static bool ConcluinteIndeterminada(CronogramaDoProcesso cronograma, FaseDeclarada fase, string codigo) =>
         cronograma.CodigoAmbiguo(codigo)
-        || (cronograma.FaseDeCodigo(codigo) is { } concluinte && InicioIncomparavelPelaInversao(fase, concluinte));
+        || (cronograma.FaseDeCodigo(codigo) is { } concluinte ? InicioIncomparavelPelaInversao(fase, concluinte) : cronograma.TemParteRecusadaNaListaDeFases);
 
     private static bool InicioIncomparavelPelaInversao(FaseDeclarada fase, FaseDeclarada concluinte) =>
         fase.Janela.Inicio is not null
@@ -73,10 +78,10 @@ internal static class ConclusaoDoCicloRecursal
                 $"A fase '{fase.Codigo}' declara a si mesma como concluinte — a fase que encerra o ciclo recursal de outra é sempre distinta dela; para concluir o próprio ciclo, a fase publica o resultado definitivo e não declara concluinte.")
             : RecusaDaConcluinteLocalizada(cronograma, fase, codigo);
 
-    // Código ambíguo suspende só esta fase: não há como saber qual das fases do código é a concluinte.
+    // Código ambíguo suspende só esta fase: não há como saber qual das fases do código é a concluinte; o código que a leitura recusou como fase também.
     private static DomainError? RecusaDaConcluinteLocalizada(CronogramaDoProcesso cronograma, FaseDeclarada fase, string codigo)
     {
-        if (cronograma.CodigoAmbiguo(codigo))
+        if (cronograma.CodigoAmbiguo(codigo) || (cronograma.TemParteRecusadaNaListaDeFases && cronograma.FaseDeCodigo(codigo) is null))
         {
             return null;
         }

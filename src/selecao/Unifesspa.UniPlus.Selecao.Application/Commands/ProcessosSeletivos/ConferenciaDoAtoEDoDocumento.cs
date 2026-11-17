@@ -20,7 +20,7 @@ internal readonly record struct AtoEDocumentoConferidos(
     DocumentoAPublicar Documento,
     TipoAtoPublicadoView TipoDoAto,
     IReadOnlyList<Guid> AtosDaLinhagem,
-    InstanteDaPublicacao Publicacao);
+    InstanteDoComando Publicacao);
 
 /// <summary>
 /// O que as três transições que congelam uma versão conferem antes de qualquer escrita: o documento
@@ -34,7 +34,7 @@ public sealed class ConferenciaDoAtoEDoDocumento(
     IDocumentoAPublicarRepository documentos,
     IProcessoSeletivoRepository processos,
     ConferenciaDoTipoDeAto tiposDeAto,
-    LeituraDoInstanteDaPublicacao instantes)
+    LeituraDoInstanteDoComando instantes)
 {
     internal async Task<Result<AtoEDocumentoConferidos>> ConferirAsync(
         Guid processoId, Guid documentoEditalId, DadosDoAto ato, string momento, CancellationToken cancellationToken)
@@ -51,7 +51,7 @@ public sealed class ConferenciaDoAtoEDoDocumento(
     private async Task<Result<AtoEDocumentoConferidos>> ConferirOTipoEAVagaAsync(
         Guid processoId, DadosDoAto ato, DocumentoAPublicar documento, CancellationToken cancellationToken)
     {
-        Result<InstanteDaPublicacao> instante = instantes.Ler();
+        Result<InstanteDoComando> instante = instantes.Ler();
 
         return instante.IsFailure
             ? Result<AtoEDocumentoConferidos>.Failure(instante.Error!)
@@ -59,7 +59,7 @@ public sealed class ConferenciaDoAtoEDoDocumento(
     }
 
     private async Task<Result<AtoEDocumentoConferidos>> ConferirOTipoNoDiaAsync(
-        Guid processoId, DadosDoAto ato, DocumentoAPublicar documento, InstanteDaPublicacao instante, CancellationToken cancellationToken)
+        Guid processoId, DadosDoAto ato, DocumentoAPublicar documento, InstanteDoComando instante, CancellationToken cancellationToken)
     {
         Result<TipoAtoPublicadoView> tipoDoAto = await tiposDeAto
             .CongelaConfiguracaoAsync(ato, instante.Dia, cancellationToken)

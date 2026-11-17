@@ -19,6 +19,16 @@ public interface ICategoriaDocumentoReader
         CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// As categorias vivas (não soft-deleted) dos <paramref name="codigos"/>, numa só
+    /// leitura, ordenadas por <c>Codigo</c> ascendente. O código sem categoria viva —
+    /// inexistente, fora do formato ou removida — não aparece no resultado, e um código
+    /// repetido no lote devolve a categoria uma só vez.
+    /// </summary>
+    Task<IReadOnlyList<CategoriaDocumentoView>> ListarVivasPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Obtém uma categoria pelo <paramref name="id"/>, ou <see langword="null"/> se
     /// inexistente / soft-deleted.
     /// </summary>

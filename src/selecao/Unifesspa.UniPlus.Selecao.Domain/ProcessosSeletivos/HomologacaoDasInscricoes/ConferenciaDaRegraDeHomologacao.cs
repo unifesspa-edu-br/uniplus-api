@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.Enums;
 using Unifesspa.UniPlus.Selecao.Domain.Errors;
+using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 
 /// <summary>
 /// A regra de homologação que a fase declara, conferida contra a própria fase e o cronograma. Nada aqui lê o
@@ -12,8 +13,6 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// </summary>
 internal static class ConferenciaDaRegraDeHomologacao
 {
-    private const string CampoDaRegra = "regraDeHomologacao";
-
     /// <summary>
     /// As faltas da regra, na ordem tipo de decisão declarado, resultado e confirmação do INEP; vazio quando
     /// a regra está em ordem. O enquadramento no vocabulário de fatos e os motivos de cada condição dependem
@@ -41,7 +40,7 @@ internal static class ConferenciaDaRegraDeHomologacao
     {
         if (!fase.TiposDeDecisao.Contains(TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes, StringComparer.Ordinal))
         {
-            yield return TipoNaoDeclarado(fase);
+            yield return TipoNaoDeclarado();
         }
     }
 
@@ -50,7 +49,7 @@ internal static class ConferenciaDaRegraDeHomologacao
     {
         if (!ResultadoTemDefinitivo(regra, fase, cronograma))
         {
-            yield return ResultadoNaoDeclarado(fase, regra.ResultadoAtoCodigo);
+            yield return ResultadoNaoDeclarado();
         }
     }
 
@@ -83,15 +82,15 @@ internal static class ConferenciaDaRegraDeHomologacao
         && cronograma.Any(outra => string.Equals(outra.Codigo, concluinte, StringComparison.Ordinal)
             && outra.PublicaResultadoDefinitivoDe(regra.ResultadoAtoCodigo));
 
-    private static FieldError TipoNaoDeclarado(FaseCronograma fase) => new(CampoDaRegra, new DomainError(
+    private static FieldError TipoNaoDeclarado() => new(FaseDeclarada.CampoDaRegraDeHomologacao, new DomainError(
         MotivoDeDecisaoErrorCodes.TipoDeDecisaoNaoDeclarado,
-        $"A fase '{fase.Codigo}' declara a regra de homologação das inscrições, mas não declara o tipo de decisão {TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes}."));
+        "A fase declara uma regra de homologação das inscrições, mas não declara esse tipo de decisão."));
 
-    private static FieldError ResultadoNaoDeclarado(FaseCronograma fase, string resultado) => new($"{CampoDaRegra}.resultadoAtoCodigo", new DomainError(
+    private static FieldError ResultadoNaoDeclarado() => new($"{FaseDeclarada.CampoDaRegraDeHomologacao}.resultadoAtoCodigo", new DomainError(
         HomologacaoInscricaoErrorCodes.ResultadoNaoDeclarado,
-        $"O resultado '{resultado}' que a regra aponta precisa ser produto da fase '{fase.Codigo}', com definitivo nela ou na fase que a conclui."));
+        "O resultado indicado pela regra deve ser publicado nesta fase, com resultado definitivo nela ou na fase que a conclui."));
 
-    private static FieldError ConfirmacaoDoInepAusente() => new($"{CampoDaRegra}.alternativas", new DomainError(
+    private static FieldError ConfirmacaoDoInepAusente() => new($"{FaseDeclarada.CampoDaRegraDeHomologacao}.alternativas", new DomainError(
         HomologacaoInscricaoErrorCodes.ConfirmacaoDoInepAusente,
         "O processo importa a nota de um exame, e toda alternativa da regra precisa da condição de resultado no retorno do INEP."));
 }

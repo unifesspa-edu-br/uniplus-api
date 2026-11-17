@@ -41,8 +41,8 @@ public sealed class DecisoesDoEsquemaDaConfiguracaoTests
     [Fact(DisplayName = "Os assinantes da fase são contas em ordem e a conta repetida é recusada")]
     public void Assinantes_ContasEmOrdem_RepetidaRecusa()
     {
-        JsonNode valida = Documento("""{ "chave": "resultado-final", "assinantes": ["0196b3c2-7d4e-7a51-9c2f-3e8b5a1d6f40", "conta-2"] }""");
-        JsonNode repetida = Documento("""{ "chave": "resultado-final", "assinantes": ["conta-1", "conta-1"] }""");
+        JsonNode valida = Documento("""{ "chave": "resultado-final", "faseCanonicaCodigo": "RESULTADO_FINAL", "assinantes": ["0196b3c2-7d4e-7a51-9c2f-3e8b5a1d6f40", "conta-2"] }""");
+        JsonNode repetida = Documento("""{ "chave": "resultado-final", "faseCanonicaCodigo": "RESULTADO_FINAL", "assinantes": ["conta-1", "conta-1"] }""");
 
         CaminhosComErro(valida, $"{Cronograma}#/$defs/fase").Should().BeEmpty();
         CaminhosComErro(repetida, $"{Cronograma}#/$defs/fase").Should().Contain("/assinantes");
@@ -51,9 +51,9 @@ public sealed class DecisoesDoEsquemaDaConfiguracaoTests
     [Fact(DisplayName = "Os tipos de decisão da fase e da etapa são do vocabulário e cada um aparece uma vez")]
     public void TiposDeDecisao_DoVocabulario_SemRepeticao()
     {
-        JsonNode valida = Documento("""{ "chave": "f", "tiposDeDecisao": ["HOMOLOGACAO_DAS_INSCRICOES", "ANALISE_DOCUMENTAL"] }""");
-        JsonNode repetida = Documento("""{ "chave": "f", "tiposDeDecisao": ["ANALISE_DOCUMENTAL", "ANALISE_DOCUMENTAL"] }""");
-        JsonNode desconhecida = Documento("""{ "chave": "f", "tiposDeDecisao": ["ANALISE_DOCUMENTAL", "SORTEIO"] }""");
+        JsonNode valida = Documento("""{ "chave": "f", "faseCanonicaCodigo": "INSCRICAO", "tiposDeDecisao": ["HOMOLOGACAO_DAS_INSCRICOES", "ANALISE_DOCUMENTAL"] }""");
+        JsonNode repetida = Documento("""{ "chave": "f", "faseCanonicaCodigo": "INSCRICAO", "tiposDeDecisao": ["ANALISE_DOCUMENTAL", "ANALISE_DOCUMENTAL"] }""");
+        JsonNode desconhecida = Documento("""{ "chave": "f", "faseCanonicaCodigo": "INSCRICAO", "tiposDeDecisao": ["ANALISE_DOCUMENTAL", "SORTEIO"] }""");
 
         CaminhosComErro(valida, $"{Cronograma}#/$defs/fase").Should().BeEmpty();
         CaminhosComErro(repetida, $"{Cronograma}#/$defs/fase").Should().Contain("/tiposDeDecisao");
@@ -128,7 +128,7 @@ public sealed class DecisoesDoEsquemaDaConfiguracaoTests
     {
         JsonNode documento = Documento("""
             { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
-              "cronograma": { "fases": [ { "chave": "homologacao", "tiposDeDecisao": ["HOMOLOGACAO_DAS_INSCRICOES"],
+              "cronograma": { "fases": [ { "chave": "homologacao", "faseCanonicaCodigo": "HOMOLOGACAO_INSCRICOES", "tiposDeDecisao": ["HOMOLOGACAO_DAS_INSCRICOES"],
                 "regraDeHomologacao": { "resultadoAtoCodigo": "RESULTADO_INSCRICOES_HOMOLOGADAS", "alternativas": [] }, "assinantes": ["conta-1"] } ] },
               "motivos": [ { "faseChave": "homologacao", "tipoCodigo": "HOMOLOGACAO_DAS_INSCRICOES", "codigo": "SEM_RESULTADO_NO_INEP" } ] }
             """);

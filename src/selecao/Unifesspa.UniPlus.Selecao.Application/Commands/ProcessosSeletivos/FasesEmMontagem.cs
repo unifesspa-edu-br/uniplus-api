@@ -8,6 +8,7 @@ using Domain.ValueObjects;
 using Kernel.Results;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
+using Unifesspa.UniPlus.Selecao.Application.Services.DocumentoDaConfiguracao;
 
 /// <summary>
 /// As fases de uma edição do cronograma enquanto são montadas a partir do payload, resolvendo no cadastro vivo a
@@ -125,7 +126,7 @@ internal sealed class FasesEmMontagem
             .ObterPorIdAsync(input.FaseCanonicaId, cancellationToken).ConfigureAwait(false);
         return canonica is null
             ? InterrupcaoDaFase.Com<InsumosDaFase>($"fases[{indice}].faseCanonicaId", new DomainError(
-                "FaseCronograma.FaseCanonicaNaoEncontrada",
+                FaseCronogramaErrorCodes.FaseCanonicaNaoEncontrada,
                 $"Fase canônica {input.FaseCanonicaId} não encontrada ou não está mais viva."))
             : await ResolverInsumosDaFaseAsync(input, indice, canonica, cancellationToken).ConfigureAwait(false);
     }
@@ -157,7 +158,7 @@ internal sealed class FasesEmMontagem
         UnidadeResponsavelSnapshot? unidade = await _cadastros.Unidades.ObterAsync(id, cancellationToken).ConfigureAwait(false);
         return unidade is null
             ? InterrupcaoDaFase.Com<UnidadeResponsavelSnapshot?>($"fases[{indice}].unidadeResponsavelId", new DomainError(
-                "FaseCronograma.UnidadeResponsavelNaoEncontrada",
+                FaseCronogramaErrorCodes.UnidadeResponsavelNaoEncontrada,
                 $"Unidade responsável {id} da fase '{canonica.Codigo}' não encontrada ou não está mais viva."))
             : Result<UnidadeResponsavelSnapshot?>.Success(unidade);
     }
@@ -166,21 +167,12 @@ internal sealed class FasesEmMontagem
         FaseCronogramaInput input, int indice, InsumosDaFase insumos, List<ProdutoDaFase> produtos, RegraRecursoFase? regraRecurso)
     {
         Result<FaseCronograma> fase = FaseCronograma.Criar(
-            OrigemCanonicaDe(insumos.Canonica),
+            OrigemCanonicaDaFaseDoCadastro.De(insumos.Canonica),
             new(input.Ordem, input.Inicio, input.Fim, input.FaseConcluinteCodigo, insumos.Unidade),
             new(produtos, input.EmiteParecerIndividual, regraRecurso, input.TiposDeDecisao),
             insumos.Bancas);
         Acumular(fase, indice);
     }
-
-    private static OrigemCanonicaDaFase OrigemCanonicaDe(FaseCanonicaView canonica) => new(
-        canonica.Id,
-        canonica.Codigo,
-        OrigemDataFaseCodigo.FromCodigo(canonica.OrigemData),
-        canonica.AgrupaEtapas,
-        canonica.PermiteComplementacao,
-        canonica.ColetaInscricao,
-        canonica.ColetaSolicitacaoIsencao);
 
     private void Acumular(Result<FaseCronograma> fase, int indice)
     {

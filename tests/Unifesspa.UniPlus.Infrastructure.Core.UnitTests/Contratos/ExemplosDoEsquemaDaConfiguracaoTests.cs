@@ -27,15 +27,37 @@ public sealed class ExemplosDoEsquemaDaConfiguracaoTests
         origens.Should().BeEquivalentTo(["inscricaoPropria", "importacaoExterna"]);
     }
 
-    [Fact(DisplayName = "O rascunho só com a identificação e uma fase sem datas valida")]
+    [Fact(DisplayName = "O rascunho só com a identificação e uma fase com a chave e a fase canônica, sem datas, valida")]
     public void RascunhoIncompleto_Valida()
     {
         JsonNode rascunho = Documento("""
             { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
               "identificacao": { "nome": "Processo seletivo em preparação" },
-              "cronograma": { "fases": [ { "chave": "inscricao" } ] } }
+              "cronograma": { "fases": [ { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO" } ] } }
             """);
 
         CaminhosComErro(rascunho).Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "A fase sem a fase canônica é recusada no ponteiro da fase")]
+    public void Fase_SemFaseCanonica_Recusa()
+    {
+        JsonNode rascunho = Documento("""
+            { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
+              "cronograma": { "fases": [ { "chave": "inscricao" } ] } }
+            """);
+
+        CaminhosComErro(rascunho).Should().Contain("/cronograma/fases/0");
+    }
+
+    [Fact(DisplayName = "A ordem na fase é recusada como propriedade desconhecida: a posição na lista é a ordem")]
+    public void Fase_ComOrdem_Recusa()
+    {
+        JsonNode rascunho = Documento("""
+            { "formato": "uniplus.selecao.configuracao", "versaoFormato": 1,
+              "cronograma": { "fases": [ { "chave": "inscricao", "faseCanonicaCodigo": "INSCRICAO", "ordem": 1 } ] } }
+            """);
+
+        CaminhosComErro(rascunho).Should().Contain("/cronograma/fases/0/ordem");
     }
 }

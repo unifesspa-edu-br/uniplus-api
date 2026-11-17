@@ -8,7 +8,7 @@
   "properties": {
     "fases": {
       "title": "Fases",
-      "description": "Fases do cronograma. A chave de cada fase é única no documento.",
+      "description": "Fases do cronograma, na ordem da linha do tempo do processo: a posição na lista é a ordem de cada fase. A chave de cada fase é única no documento.",
       "type": "array",
       "items": {
         "$ref": "#/$defs/fase"
@@ -18,11 +18,12 @@
   "$defs": {
     "fase": {
       "title": "Fase do cronograma",
-      "description": "Uma fase do processo. Só a chave local é obrigatória: as datas, a unidade e o resto podem faltar num rascunho.",
+      "description": "Uma fase do processo. A chave local e a fase canônica são obrigatórias: as datas, a unidade e o resto podem faltar num rascunho.",
       "type": "object",
       "additionalProperties": false,
       "required": [
-        "chave"
+        "chave",
+        "faseCanonicaCodigo"
       ],
       "properties": {
         "chave": {
@@ -34,12 +35,6 @@
           "title": "Fase canônica",
           "description": "Código da fase no catálogo de fases canônicas, por exemplo INSCRICAO ou RESULTADO_FINAL.",
           "$ref": "comuns.schema.json#/$defs/codigoDeCatalogo"
-        },
-        "ordem": {
-          "title": "Ordem",
-          "description": "Posição da fase na linha do tempo do processo, a partir de 1. Não se repete entre as fases.",
-          "type": "integer",
-          "minimum": 1
         },
         "inicio": {
           "title": "Início da fase",

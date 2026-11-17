@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
@@ -33,6 +34,23 @@ internal sealed class TipoBancaReader : ITipoBancaReader
     {
         List<TipoBanca> entidades = await _dbContext.TiposBanca
             .AsNoTracking()
+            .OrderBy(b => b.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. entidades.Select(ParaView)];
+    }
+
+    public async Task<IReadOnlyList<TipoBancaView>> ListarVivosPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        List<CodigoBanca> codigosDoLote = CodigosDoLote.Validos(codigos, CodigoBanca.Criar);
+        List<TipoBanca> entidades = await _dbContext.TiposBanca
+            .AsNoTracking()
+            .Where(b => codigosDoLote.Contains(b.Codigo))
             .OrderBy(b => b.Codigo)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);

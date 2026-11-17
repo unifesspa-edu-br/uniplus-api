@@ -57,13 +57,13 @@ public sealed class PendenciasDosProcedimentosDeRecursoTests
 
     private static DomainError? Pendencia(EtapaProcesso etapa) => Causas(etapa) is { Count: > 0 } causas ? causas[0].Error : null;
 
-    [Fact(DisplayName = "Janela da etapa que declara o tipo de decisão e não declara procedimento é recusada, citando a etapa e o tipo")]
+    [Fact(DisplayName = "Janela da etapa que declara o tipo de decisão e não declara procedimento é recusada, citando a etapa sem o código do tipo")]
     public void TipoSemProcedimento_Recusa()
     {
         DomainError? pendencia = Pendencia(EtapaComJanela(ProcedimentosDeRecurso.Nenhum, TipoMotivoDeDecisaoCodigo.Classificacao));
 
         pendencia!.Code.Should().Be(CodigosDoProcedimentoDeRecurso.DaEtapa.Ausente);
-        pendencia.Message.Should().Contain("Prova objetiva").And.Contain("CLASSIFICACAO");
+        pendencia.Message.Should().Contain("Prova objetiva").And.NotContain("CLASSIFICACAO");
     }
 
     [Fact(DisplayName = "Dois tipos de decisão sem procedimento na mesma janela dão duas causas, na ordem dos tipos")]
@@ -74,8 +74,8 @@ public sealed class PendenciasDosProcedimentosDeRecursoTests
 
         causas.Select(static causa => causa.Error.Code).Should().Equal(
             CodigosDoProcedimentoDeRecurso.DaEtapa.Ausente, CodigosDoProcedimentoDeRecurso.DaEtapa.Ausente);
-        causas[0].Error.Message.Should().Contain("ANALISE_DOCUMENTAL");
-        causas[1].Error.Message.Should().Contain("CLASSIFICACAO");
+        causas.Should().OnlyContain(causa => !causa.Error.Message.Contains("ANALISE_DOCUMENTAL", StringComparison.Ordinal)
+            && !causa.Error.Message.Contains("CLASSIFICACAO", StringComparison.Ordinal));
     }
 
     [Fact(DisplayName = "Janela da etapa com procedimento para o tipo declarado é aceita")]

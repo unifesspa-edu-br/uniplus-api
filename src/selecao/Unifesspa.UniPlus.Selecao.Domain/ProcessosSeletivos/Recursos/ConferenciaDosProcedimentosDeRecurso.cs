@@ -70,7 +70,7 @@ public static class ConferenciaDosProcedimentosDeRecurso
             ? null
             : new FieldError($"{campo}.regra", new DomainError(
                 codigos.Desconhecido,
-                $"A regra '{procedimento.Regra.Codigo}' não é um procedimento de recurso do catálogo. Procedimentos aceitos: {string.Join(", ", RegraProcedimentoRecursoCodigo.Rol)}."));
+                "A regra indicada não é um procedimento de recurso disponível no cadastro."));
 
     private static FieldError? FaltaDoTipo(
         ProcedimentoDeRecursoDeclarado procedimento, ContextoDosProcedimentosDeRecurso contexto, CodigosDoProcedimentoDeRecurso codigos, string campo) =>
@@ -78,15 +78,23 @@ public static class ConferenciaDosProcedimentosDeRecurso
             ? null
             : new FieldError($"{campo}.tipoDeDecisao", new DomainError(
                 codigos.ParaDecisaoNaoDeclarada,
-                $"O tipo de decisão '{procedimento.TipoDeDecisao.ToCodigo()}' não é declarado por quem produz a decisão recorrida; declare o tipo na fase ou na etapa antes do procedimento."));
+                "O tipo de decisão não é declarado por quem produz a decisão recorrida; declare o tipo na fase ou na etapa antes do procedimento."));
 
     private static FieldError? FaltaDoAlvo(
         ProcedimentoDeRecursoDeclarado procedimento, ContextoDosProcedimentosDeRecurso contexto, CodigosDoProcedimentoDeRecurso codigos, string campo) =>
         procedimento.Alvo is not { } alvo || AlvoExiste(alvo, contexto)
             ? null
-            : new FieldError($"{campo}.alvo", new DomainError(
-                codigos.AlvoInexistente,
-                "O alvo do procedimento não existe: o item de avaliação deve ser da etapa que produz a decisão e a área do ENEM deve ser de um processo que importa a nota do ENEM."));
+            : new FieldError($"{campo}.alvo", AlvoInexistente(codigos));
+
+    /// <summary>A recusa do alvo que não existe, a mesma para quem lê o documento e para quem confere a declaração; não repete o que foi escrito.</summary>
+    public static DomainError AlvoInexistente(CodigosDoProcedimentoDeRecurso codigos)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        return new(
+            codigos.AlvoInexistente,
+            "O alvo do procedimento não existe: o item de avaliação deve ser da etapa que produz a decisão e a área do ENEM deve ser de um processo que importa a nota do ENEM.");
+    }
 
     private static bool AlvoExiste(AlvoDoProcedimentoDeRecurso alvo, ContextoDosProcedimentosDeRecurso contexto) => alvo.Tipo switch
     {

@@ -188,7 +188,7 @@ public sealed class ProcessoSeletivo : SoftDeletableEntity
     /// A configuração como está agora, com cópias das coleções: uma mutação posterior da raiz não altera a declaração tirada.
     /// </summary>
     public ConfiguracaoDeclarada Declaracao() => new(
-        new IdentidadeDoProcessoDeclarada(OrigemCandidatos, IdentificadorLegivel, TipoProcesso, UnidadeAdministradora),
+        new IdentidadeDoProcessoDeclarada(Nome, OrigemCandidatos, IdentificadorLegivel, TipoProcesso, UnidadeAdministradora),
         new CronogramaDeclarado(Localidade, AlgoritmoContagemPrazo, [.. OrdemCanonicaDaConfiguracao.Fases(_cronogramaFases)]),
         new AvaliacaoDeclarada([.. OrdemCanonicaDaConfiguracao.Etapas(_etapas)], [.. _criteriosDesempate], Classificacao),
         new VagasDeclaradas([.. _distribuicaoVagas], NumeroDeOpcoesDeCurso, AplicaBonusRegional, BonusRegional, Cascata, AtendimentoEspecializado),

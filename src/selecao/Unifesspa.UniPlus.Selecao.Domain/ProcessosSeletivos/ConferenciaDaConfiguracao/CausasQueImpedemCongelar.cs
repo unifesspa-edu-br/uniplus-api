@@ -49,9 +49,10 @@ internal static class CausasQueImpedemCongelar
 
     private static IEnumerable<FieldError> Identificacao(ConfiguracaoDeclarada configuracao, ContextoDeContagemDePrazos contexto) =>
     [
-        .. CausasDaRecusa.Da(ContagemDePrazos.PendenciaDoIdentificadorLegivel(configuracao), "identificacao.identificadorLegivel"),
-        .. CausasDaRecusa.Da(ContagemDePrazos.PendenciaDaLocalidade(configuracao), "identificacao.localidadeCodigoIbge"),
-        .. CausasDaRecusa.Da(ContagemDePrazos.PendenciaDoAlgoritmoDeContagem(configuracao), "identificacao.algoritmoContagemPrazo"),
+        .. CompletudeDaIdentificacao.Recusas(configuracao),
+        .. CausasDaRecusa.Da(ContagemDePrazos.PendenciaDoIdentificadorLegivel(configuracao), IdentidadeDoProcessoDeclarada.CampoDoIdentificadorLegivel),
+        .. CausasDaRecusa.Da(ContagemDePrazos.PendenciaDaLocalidade(configuracao), IdentidadeDoProcessoDeclarada.CampoDaLocalidade),
+        .. CausasDaRecusa.Da(ContagemDePrazos.PendenciaDoAlgoritmoDeContagem(configuracao), IdentidadeDoProcessoDeclarada.CampoDaConvencaoDeContagem),
         .. CausasDaRecusa.Da(ContagemDePrazos.PendenciaDoCalendarioVigente(configuracao, contexto), "identificacao"),
     ];
 

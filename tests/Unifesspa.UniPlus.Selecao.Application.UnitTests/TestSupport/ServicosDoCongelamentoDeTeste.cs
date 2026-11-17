@@ -243,7 +243,7 @@ internal sealed class ServicosDoCongelamentoDeTeste
         return this;
     }
 
-    public LeituraDoInstanteDaPublicacao LeituraDoInstante() => new(Relogio, Fuso);
+    public LeituraDoInstanteDoComando LeituraDoInstante() => new(Relogio, Fuso);
 
     public ConferenciaDoAtoEDoDocumento AtoEDocumento() => new(Documentos, Repositorio, new ConferenciaDoTipoDeAto(TiposDeAto), LeituraDoInstante());
 

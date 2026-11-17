@@ -85,136 +85,61 @@ public readonly record struct RecusaDosParametrosDoRecurso(MotivoDaRecusaDosPara
 public static class ValidacaoDosParametrosDoRecurso
 {
     /// <summary>Valida o prazo de interposição e os dois pares de suspensividade.</summary>
-    public static RecusaDosParametrosDoRecurso? Validar(ParametrosRegraPrazoRecurso parametros)
+    public static IReadOnlyList<RecusaDosParametrosDoRecurso> Validar(ParametrosRegraPrazoRecurso parametros)
     {
         ArgumentNullException.ThrowIfNull(parametros);
-
-        // UNI-REQ-0081: o valor congelado é sempre estritamente positivo. Zero fecharia a
-        // janela no mesmo instante em que a abre, e negativo a fecharia antes do ato que a
-        // ancora — nos dois casos o prazo nasce inutilizável.
-        //
-        // Vem antes de QUALQUER checagem de unidade de propósito. Um valor negativo em dia
-        // corrido viola duas regras ao mesmo tempo, e só a magnitude tem remediação que
-        // resolve: mandar quem declarou -5 dias corridos reescrever em dias úteis o deixa com
-        // um prazo que continua fechando antes de abrir. A recusa que orienta é a primeira.
-        if (parametros.PrazoValor <= 0)
-        {
-            return new(
-                MotivoDaRecusaDosParametros.PrazoNaoPositivo,
-                $"O prazo de interposição deve ser estritamente positivo — recebido '{parametros.PrazoValor}'.");
-        }
-
-        // UNI-REQ-0113: o prazo de interposição corre exclusivamente em dia útil. É o prazo
-        // que fecha a porta do candidato, e tempo que passa quando ele não tem como agir não
-        // pode consumir a janela — dia corrido a encolheria sempre que calhasse de cair em
-        // feriado.
-        if (parametros.PrazoUnidade == UnidadePrazo.Dias)
-        {
-            return new(
-                MotivoDaRecusaDosParametros.PrazoEmDiasCorridos,
-                "O prazo de interposição deve ser informado em dias úteis ou horas; dias corridos não são aceitos.");
-        }
-
-        // O que sobra do enum não é prazo declarável. Nenhuma é o valor zero e, portanto, o
-        // default: um ParametrosRegraPrazoRecurso construído sem preencher a unidade chega aqui
-        // nesse estado. A recusa é por lista do que vale — uma unidade nova no enum nasce
-        // recusada até ser declarada aqui de propósito.
-        if (parametros.PrazoUnidade is not (UnidadePrazo.DiasUteis or UnidadePrazo.Horas))
-        {
-            return new(
-                MotivoDaRecusaDosParametros.PrazoSemUnidadeDeclaravel,
-                $"O prazo de interposição exige unidade declarável — dias úteis ou horas; recebido '{parametros.PrazoUnidade}'.");
-        }
-
-        // UNI-REQ-0113: fração de dia útil não tem leitura unívoca — meio expediente, doze
-        // horas dentro do dia, ou metade de um dia civil que numa transição de fuso nem sempre
-        // tem vinte e quatro horas. As três fecham a janela em instantes diferentes.
-        if (parametros.PrazoUnidade == UnidadePrazo.DiasUteis && decimal.Truncate(parametros.PrazoValor) != parametros.PrazoValor)
-        {
-            return new(
-                MotivoDaRecusaDosParametros.PrazoEmFracaoDeDiaUtil,
-                $"O prazo de interposição em dias úteis exige valor inteiro — recebido '{parametros.PrazoValor}'. Para prazo menor que um dia, declare em horas.");
-        }
-
-        RecusaDosParametrosDoRecurso? primeira = ValidarParDeSuspensividade(
-            parametros.SuspensividadePrimeiraInstanciaValor,
-            parametros.SuspensividadePrimeiraInstanciaUnidade,
-            "1ª instância");
-        if (primeira is not null)
-        {
-            return primeira;
-        }
-
-        // Janela sem instância superior não tem o que bloquear nela: um tempo de bloqueio
-        // declarado ali descreveria um recurso que o edital diz não existir. Vem antes da
-        // conferência do par superior porque tirar o par resolve também qualquer defeito dele.
-        // A ausência do par continua legítima quando a instância existe: lá ela quer dizer
-        // "existe, mas não bloqueia".
-        if (!parametros.AdmiteInstanciaSuperior
-            && (parametros.SuspensividadeSegundaInstanciaValor is not null || parametros.SuspensividadeSegundaInstanciaUnidade is not null))
-        {
-            return new(
-                MotivoDaRecusaDosParametros.SuspensividadeSuperiorSemInstanciaSuperior,
-                "A janela não admite recurso em instância superior, então não pode declarar tempo de bloqueio da instância superior. Remova o bloqueio ou declare que a janela admite instância superior.");
-        }
-
-        // A suspensividade admite as três unidades — dias corridos, que a interposição acabou
-        // de recusar, e também dias úteis: é outro relógio, com outra regra. O que a contagem
-        // em dia útil exige — a convenção de contagem declarada (UNI-REQ-0116) — é invariante
-        // do PROCESSO, não destes parâmetros, porque a declaração é uma por certame.
-        return ValidarParDeSuspensividade(
-            parametros.SuspensividadeSegundaInstanciaValor,
-            parametros.SuspensividadeSegundaInstanciaUnidade,
-            "2ª instância");
+        RecusaDosParametrosDoRecurso?[] recusas = [
+            ValidarPrazo(parametros),
+            ValidarParDeSuspensividade(parametros.SuspensividadePrimeiraInstanciaValor, parametros.SuspensividadePrimeiraInstanciaUnidade, "1ª instância"),
+            ValidarSuspensividadeSuperior(parametros)];
+        return [.. recusas.OfType<RecusaDosParametrosDoRecurso>()];
     }
 
-    /// <summary>
-    /// Valida um dos dois pares de suspensividade. UNI-REQ-0080 congela a suspensividade como
-    /// par valor-unidade, nunca um valor numérico sozinho: um lado sem o outro não descreve
-    /// janela alguma. A ausência dos dois é legítima e significa que aquela instância não
-    /// bloqueia — é assim que se desativa a suspensão da instância superior, sem <c>if</c> por módulo.
-    /// </summary>
-    private static RecusaDosParametrosDoRecurso? ValidarParDeSuspensividade(
-        decimal? valor,
-        UnidadePrazo? unidade,
-        string instancia)
+    // O valor é conferido antes da unidade: mudar a unidade não resolve um prazo negativo.
+    private static RecusaDosParametrosDoRecurso? ValidarPrazo(ParametrosRegraPrazoRecurso parametros) => parametros switch
     {
-        // A ausência dos dois é a desativação prevista da instância, e sai antes de tudo.
+        { PrazoValor: <= 0 } => new(MotivoDaRecusaDosParametros.PrazoNaoPositivo,
+            "O prazo de interposição deve ser estritamente positivo."),
+        { PrazoUnidade: UnidadePrazo.Dias } => new(MotivoDaRecusaDosParametros.PrazoEmDiasCorridos,
+            "O prazo de interposição deve ser informado em dias úteis ou horas; dias corridos não são aceitos."),
+        { PrazoUnidade: not (UnidadePrazo.DiasUteis or UnidadePrazo.Horas) } => new(MotivoDaRecusaDosParametros.PrazoSemUnidadeDeclaravel,
+            "O prazo de interposição exige unidade declarável — dias úteis ou horas."),
+        { PrazoUnidade: UnidadePrazo.DiasUteis } when decimal.Truncate(parametros.PrazoValor) != parametros.PrazoValor => new(MotivoDaRecusaDosParametros.PrazoEmFracaoDeDiaUtil,
+            "O prazo de interposição em dias úteis exige valor inteiro. Para prazo menor que um dia, declare em horas."),
+        _ => null,
+    };
+
+    // A existência da instância precede a validade do par: remover o par resolve também seus defeitos.
+    private static RecusaDosParametrosDoRecurso? ValidarSuspensividadeSuperior(ParametrosRegraPrazoRecurso parametros) =>
+        !parametros.AdmiteInstanciaSuperior
+            && (parametros.SuspensividadeSegundaInstanciaValor is not null || parametros.SuspensividadeSegundaInstanciaUnidade is not null)
+            ? new(MotivoDaRecusaDosParametros.SuspensividadeSuperiorSemInstanciaSuperior,
+                "Não há recurso em instância superior, então não é possível informar tempo de bloqueio para essa instância. Remova o bloqueio ou permita recurso em instância superior.")
+            : ValidarParDeSuspensividade(parametros.SuspensividadeSegundaInstanciaValor, parametros.SuspensividadeSegundaInstanciaUnidade, "2ª instância");
+
+    // UNI-REQ-0080: ausência dos dois valores desativa a suspensão; uma metade válida exige completar o par.
+    private static RecusaDosParametrosDoRecurso? ValidarParDeSuspensividade(decimal? valor, UnidadePrazo? unidade, string instancia)
+    {
         if (valor is null && unidade is null)
         {
             return null;
         }
 
-        // Cada metade presente é conferida ANTES de a incompletude ser reportada. Um par como
-        // (valor: -3, unidade: ausente) erra duas coisas, e mandar completá-lo devolveria a
-        // pessoa com uma janela negativa e uma segunda recusa — a orientação que resolve é a
-        // que trata o valor que já está errado.
-        if (valor is { } magnitude && magnitude <= 0)
-        {
-            return new(
-                MotivoDaRecusaDosParametros.SuspensividadeNaoPositiva,
-                $"O valor da suspensividade da {instancia} deve ser estritamente positivo — recebido '{magnitude}'.");
-        }
-
-        // Unidade presente e igual a Nenhuma é ausência disfarçada: passa por qualquer checagem
-        // de presença e continua não dizendo em que unidade a janela corre.
-        if (unidade is { } declarada
-            && declarada is not (UnidadePrazo.Horas or UnidadePrazo.Dias or UnidadePrazo.DiasUteis))
-        {
-            return new(
-                MotivoDaRecusaDosParametros.SuspensividadeUnidadeNaoDeclaravel,
-                $"A unidade da suspensividade da {instancia} não é declarável — recebido '{declarada}'.");
-        }
-
-        // Sobrou o par com uma metade só, e ela é válida: aqui completar o par é, de fato, a
-        // correção que resolve.
-        if (valor is null || unidade is null)
-        {
-            return new(
-                MotivoDaRecusaDosParametros.SuspensividadeIncompleta,
-                $"A suspensividade da {instancia} exige valor e unidade juntos, ou nenhum dos dois.");
-        }
-
-        return null;
+        return ValidarPartesDaSuspensividade(valor, unidade, instancia)
+            ?? (valor is null || unidade is null
+                ? new(MotivoDaRecusaDosParametros.SuspensividadeIncompleta,
+                    $"A suspensividade da {instancia} exige valor e unidade juntos, ou nenhum dos dois.")
+                : null);
     }
+
+    // Cada metade presente é conferida antes da incompletude: completar o par não resolve um valor inválido.
+    private static RecusaDosParametrosDoRecurso? ValidarPartesDaSuspensividade(decimal? valor, UnidadePrazo? unidade, string instancia) =>
+        (valor, unidade) switch
+        {
+            ( <= 0, _) => new(MotivoDaRecusaDosParametros.SuspensividadeNaoPositiva,
+                $"O valor da suspensividade da {instancia} deve ser estritamente positivo."),
+            (_, not null and not (UnidadePrazo.Horas or UnidadePrazo.Dias or UnidadePrazo.DiasUteis)) => new(MotivoDaRecusaDosParametros.SuspensividadeUnidadeNaoDeclaravel,
+                $"A unidade da suspensividade da {instancia} não é declarável."),
+            _ => null,
+        };
 }

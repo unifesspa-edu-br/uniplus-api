@@ -450,7 +450,7 @@ public sealed class PublicarAtoAvulsoDoProcessoCommandHandlerTests
             comando, _processos,
             new PreparacaoDaPublicacaoDoAtoAvulso(
                 new ConferenciaDoProcessoDivulgado(_processos, _divulgados),
-                new LeituraDoInstanteDaPublicacao(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()),
+                new LeituraDoInstanteDoComando(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()),
                 new ConferenciaDoTipoDoAtoAvulso(new ConferenciaDoTipoDeAto(_tipos)),
                 new ConferenciaDoAtoCorrigido(_atos, _processos), new ConferenciaDosDocumentosDoAto(_documentos, _atos)),
             new PublicacaoDoAtoDoProcesso(_atos, _registro, _unitOfWork), CancellationToken.None);

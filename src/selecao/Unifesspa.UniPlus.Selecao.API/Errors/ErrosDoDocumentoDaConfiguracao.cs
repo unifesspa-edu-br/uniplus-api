@@ -8,7 +8,8 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 /// <summary>
 /// Recusas da forma do documento da configuração do processo seletivo: o que o formato e os limites dele recusam, antes de
 /// qualquer regra de negócio. <c>forma_invalida</c> é o grupo da recusa; os demais apontam a causa de cada item no
-/// <c>errors[]</c>, pelo ponteiro do documento.
+/// <c>errors[]</c>, pelo ponteiro do documento. <c>chave_citada_inexistente</c> é a exceção: a leitura a emite como causa de
+/// configuração, que o rascunho salva e a publicação recusa.
 /// </summary>
 internal static class ErrosDoDocumentoDaConfiguracao
 {
@@ -39,6 +40,7 @@ internal static class ErrosDoDocumentoDaConfiguracao
     [
         new(DocumentoDaConfiguracaoErrorCodes.PropriedadeRepetida, new DomainErrorMapping(Invalido, "uniplus.selecao.documento_da_configuracao.propriedade_repetida", "Um objeto do documento repete uma propriedade")),
         new(DocumentoDaConfiguracaoErrorCodes.ChaveRepetida, new DomainErrorMapping(Invalido, "uniplus.selecao.documento_da_configuracao.chave_repetida", "Duas partes do mesmo tipo têm a mesma chave")),
+        new(DocumentoDaConfiguracaoErrorCodes.ChaveCitadaInexistente, new DomainErrorMapping(Invalido, "uniplus.selecao.documento_da_configuracao.chave_citada_inexistente", "Uma parte do documento cita uma chave que nenhuma parte do tipo citado tem")),
         new(DocumentoDaConfiguracaoErrorCodes.AcimaDoLimite, new DomainErrorMapping(StatusCodes.Status413PayloadTooLarge, "uniplus.selecao.documento_da_configuracao.acima_do_limite", "O documento passa de um limite do formato")),
     ];
 }

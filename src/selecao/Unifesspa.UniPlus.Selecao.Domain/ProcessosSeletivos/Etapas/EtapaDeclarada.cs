@@ -44,7 +44,7 @@ public sealed record EtapaDeclarada
 
     private readonly IdentificacaoDaEtapa _identificacao;
     private readonly AvaliacaoDeclaradaDaEtapa _avaliacao;
-    private readonly IReadOnlySet<string> _colecoesComParteRecusada;
+    private readonly IReadOnlySet<string> _caminhosComParteRecusada;
 
     private EtapaDeclarada(
         Guid id,
@@ -53,7 +53,7 @@ public sealed record EtapaDeclarada
         JanelaDeTempo janela,
         (AtosDaEtapa Atos, BancasDaEtapa Bancas) filhas,
         IReadOnlyList<FieldError> recusas,
-        IReadOnlySet<string> colecoesComParteRecusada)
+        IReadOnlySet<string> caminhosComParteRecusada)
     {
         Id = id;
         _identificacao = identificacao;
@@ -62,7 +62,7 @@ public sealed record EtapaDeclarada
         Atos = filhas.Atos;
         Bancas = filhas.Bancas;
         Recusas = recusas;
-        _colecoesComParteRecusada = colecoesComParteRecusada;
+        _caminhosComParteRecusada = caminhosComParteRecusada;
     }
 
     public Guid Id { get; }
@@ -121,15 +121,11 @@ public sealed record EtapaDeclarada
         JanelaDeTempo janela,
         PublicacoesDaEtapa publicacoes,
         IReadOnlyList<BancaDaEtapa> bancas,
-        IReadOnlySet<string>? colecoesComParteRecusada = null)
+        IReadOnlySet<string>? caminhosComParteRecusada = null)
     {
         ConferenciaDaDeclaracaoDaEtapa.ExigirIdCongelado(id);
-        ArgumentNullException.ThrowIfNull(identificacao);
-        ArgumentNullException.ThrowIfNull(avaliacao);
-        ArgumentNullException.ThrowIfNull(janela);
-        ArgumentNullException.ThrowIfNull(publicacoes);
-        ArgumentNullException.ThrowIfNull(bancas);
-        IReadOnlySet<string> suspensas = colecoesComParteRecusada ?? FrozenSet<string>.Empty;
+        ConferenciaDaDeclaracaoDaEtapa.ExigirDeclaracaoPresente(identificacao, avaliacao, janela, publicacoes, bancas);
+        IReadOnlySet<string> suspensas = caminhosComParteRecusada ?? FrozenSet<string>.Empty;
 
         return new EtapaDeclarada(
             id,
@@ -145,7 +141,7 @@ public sealed record EtapaDeclarada
     /// Se a leitura do documento recusou alguma parte da lista da etapa (<see cref="ListaDosProdutos"/>, <see cref="ListaDasBancas"/>,
     /// <see cref="ListaDosRecursos"/>): a lista declarada não é a que o autor escreveu, e a regra que a quantifica não a julga.
     /// </summary>
-    public bool ParteRecusadaEm(string colecao) => _colecoesComParteRecusada.Contains(colecao);
+    public bool ParteRecusadaEm(string caminho) => _caminhosComParteRecusada.Contains(caminho);
 
     /// <summary>Se a declaração recusou o dado: há recusa cujo campo raiz é o dele.</summary>
     public bool Recusado(DadoDaEtapa dado) =>

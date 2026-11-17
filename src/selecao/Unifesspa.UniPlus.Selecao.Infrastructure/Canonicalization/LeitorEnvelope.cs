@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// <summary>
 /// Leitura <b>fechada</b> de um envelope canônico: cada objeto declara o conjunto
 /// exato das suas chaves, cada valor é lido na forma exata em que foi escrito, e o
-/// primeiro desvio para a leitura inteira.
+/// primeiro desvio para a leitura inteira; uma factory pode devolver várias causas desse desvio.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -24,7 +24,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// menos é erro, e um objeto sem parâmetros tem de ser exatamente <c>{}</c>.
 /// </para>
 /// <para>
-/// <b>Acumula o primeiro erro em vez de propagar <c>Result</c> a cada leitura.</b> A
+/// <b>Registra a primeira falha em vez de propagar <c>Result</c> a cada leitura.</b> A
 /// alternativa — encadear dezenas de <c>Result</c> — produziria um decoder onde o
 /// caminho de erro é mais longo que o de sucesso, e é no caminho de erro que os
 /// buracos se escondem. O contrato é: o chamador verifica <see cref="Falhou"/> antes
@@ -34,12 +34,13 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 internal sealed class LeitorEnvelope
 {
     private DomainError? _erro;
+    private IReadOnlyList<FieldError>? _erros;
 
     public bool Falhou => _erro is not null;
 
     public DomainError Erro => _erro ?? throw new InvalidOperationException("Leitura sem erro registrado.");
 
-    public Result<T> Falha<T>() => Result<T>.Failure(Erro);
+    public Result<T> Falha<T>() => _erros is null ? Result<T>.Failure(Erro) : Result<T>.ValidationFailure(_erros);
 
     internal T Registrar<T>(string codigo, string mensagem)
     {
@@ -66,18 +67,21 @@ internal sealed class LeitorEnvelope
             return;
         }
 
-        HashSet<string> presentes = [.. objeto.Select(static p => p.Key)];
+        ConferirChaves(objeto, path, esperadas);
+    }
 
-        foreach (string ausente in esperadas.Where(esperada => !presentes.Contains(esperada)))
+    private void ConferirChaves(JsonObject objeto, string path, string[] esperadas)
+    {
+        HashSet<string> presentes = [.. objeto.Select(static p => p.Key)];
+        string? ausente = esperadas.FirstOrDefault(esperada => !presentes.Contains(esperada));
+        string? intrusa = presentes.FirstOrDefault(presente => !esperadas.Contains(presente, StringComparer.Ordinal));
+        if (ausente is not null)
         {
             Malformado<object>(path, $"a chave '{ausente}' está ausente.");
-            return;
         }
-
-        foreach (string intrusa in presentes.Where(presente => !esperadas.Contains(presente, StringComparer.Ordinal)))
+        else if (intrusa is not null)
         {
             Malformado<object>(path, $"a chave '{intrusa}' não pertence a esta versão do envelope.");
-            return;
         }
     }
 
@@ -105,6 +109,11 @@ internal sealed class LeitorEnvelope
             return null;
         }
 
+        return ObjetoPresente(bloco, chave);
+    }
+
+    private JsonObject? ObjetoPresente(JsonObject bloco, string chave)
+    {
         bool presente = this.Booleano(bloco, "presente", chave);
         if (Falhou)
         {
@@ -183,6 +192,17 @@ internal sealed class LeitorEnvelope
     public T Propagar<T>(DomainError erro)
     {
         _erro ??= erro;
+        return default!;
+    }
+
+    public T Propagar<T>(IReadOnlyList<FieldError> erros)
+    {
+        if (!Falhou)
+        {
+            _erros = erros;
+            _erro = erros[0].Error;
+        }
+
         return default!;
     }
 }

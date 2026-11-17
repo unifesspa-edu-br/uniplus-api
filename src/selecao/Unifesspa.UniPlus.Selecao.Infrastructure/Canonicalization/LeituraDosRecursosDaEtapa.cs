@@ -17,6 +17,11 @@ internal static class LeituraDosRecursosDaEtapa
     {
         JsonArray? array = leitor.Array(item, "recursos", path);
         string pathRecursos = $"{path}.recursos";
+        return LerLista(leitor, array, pathRecursos);
+    }
+
+    private static List<RecursoDaEtapa>? LerLista(LeitorEnvelope leitor, JsonArray? array, string pathRecursos)
+    {
         List<RecursoDaEtapa> recursos = [];
         for (int j = 0; array is not null && j < array.Count; j++)
         {
@@ -43,21 +48,20 @@ internal static class LeituraDosRecursosDaEtapa
         // A âncora por ciência não tem produto: o campo vem nulo.
         Guid? ancoraId = leitor.IdentificadorOpcional(itemRecurso, "produtoAncoraId", pathRecurso);
         JsonObject parametrosObjeto = leitor.Objeto(itemRecurso, "parametros", pathRecurso);
-        ProcedimentosDeRecurso? procedimentos = leitor.Falhou
-            ? null
-            : LeituraDosProcedimentosDeRecurso.Ler(leitor, itemRecurso, pathRecurso, CodigosDoProcedimentoDeRecurso.DaEtapa);
+        ProcedimentosDeRecurso? procedimentos = LerProcedimentos(leitor, itemRecurso, pathRecurso);
         return leitor.Falhou || procedimentos is null
             ? null
             : Reidratar(leitor, new(ancora, regra, ancoraId, procedimentos), parametrosObjeto, pathRecurso);
     }
 
+    private static ProcedimentosDeRecurso? LerProcedimentos(LeitorEnvelope leitor, JsonObject item, string path) =>
+        leitor.Falhou ? null : LeituraDosProcedimentosDeRecurso.Ler(leitor, item, path, CodigosDoProcedimentoDeRecurso.DaEtapa);
+
     private sealed record RecursoLido(AncoraDoRecurso Ancora, ReferenciaRegra Regra, Guid? AncoraId, ProcedimentosDeRecurso Procedimentos);
 
     private static RecursoDaEtapa? Reidratar(LeitorEnvelope leitor, RecursoLido lido, JsonObject parametrosObjeto, string pathRecurso)
     {
-        (AncoraDoRecurso ancora, ReferenciaRegra regra, Guid? ancoraId, ProcedimentosDeRecurso procedimentos) = lido;
-        // Nenhuma é o sentinela de ausência que RecursoDaEtapa.Criar recusa e que Reidratar não reconfere.
-        if (ancora == AncoraDoRecurso.Nenhuma)
+        if (lido.Ancora == AncoraDoRecurso.Nenhuma)
         {
             return leitor.Malformado<RecursoDaEtapa?>($"{pathRecurso}.ancora", "o recurso tem de declarar de que instante o prazo corre.");
         }
@@ -68,10 +72,12 @@ internal static class LeituraDosRecursosDaEtapa
             return null;
         }
 
-        // Identidade nova: o que a publicação promete é a janela, não a linha que a guarda.
-        Result<RecursoDaEtapa> recurso = RecursoDaEtapa.Reidratar(Guid.CreateVersion7(), ancora, regra, parametros, ancoraId ?? Guid.Empty, procedimentos);
-        return recurso.IsFailure
-            ? leitor.Propagar<RecursoDaEtapa?>(recurso.Error!)
-            : recurso.Value;
+        return Montar(leitor, lido, parametros);
+    }
+
+    private static RecursoDaEtapa? Montar(LeitorEnvelope leitor, RecursoLido lido, ParametrosRegraPrazoRecurso parametros)
+    {
+        Result<RecursoDaEtapa> recurso = RecursoDaEtapa.Reidratar(Guid.CreateVersion7(), lido.Ancora, lido.Regra, parametros, lido.AncoraId ?? Guid.Empty, lido.Procedimentos);
+        return recurso.IsFailure ? leitor.Propagar<RecursoDaEtapa?>(recurso.Errors) : recurso.Value;
     }
 }

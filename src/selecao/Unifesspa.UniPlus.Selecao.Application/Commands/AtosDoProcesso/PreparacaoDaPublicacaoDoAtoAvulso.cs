@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Publicacoes.Contracts;
 /// <summary>Prepara o ato avulso sem escrever, interrompendo na primeira recusa.</summary>
 public sealed class PreparacaoDaPublicacaoDoAtoAvulso(
     ConferenciaDoProcessoDivulgado processos,
-    LeituraDoInstanteDaPublicacao instantes,
+    LeituraDoInstanteDoComando instantes,
     ConferenciaDoTipoDoAtoAvulso tipos,
     ConferenciaDoAtoCorrigido correcoes,
     ConferenciaDosDocumentosDoAto documentos)
@@ -20,7 +20,7 @@ public sealed class PreparacaoDaPublicacaoDoAtoAvulso(
         {
             return Result<AtoAPublicar>.Failure(processo.Error!);
         }
-        Result<InstanteDaPublicacao> instante = instantes.Ler();
+        Result<InstanteDoComando> instante = instantes.Ler();
         return instante.IsFailure
             ? Result<AtoAPublicar>.Failure(instante.Error!)
             : await ConferirTipoAsync(command, processo.Value!, instante.Value, cancellationToken).ConfigureAwait(false);
@@ -28,7 +28,7 @@ public sealed class PreparacaoDaPublicacaoDoAtoAvulso(
 
     private async Task<Result<AtoAPublicar>> ConferirTipoAsync(
         PublicarAtoAvulsoDoProcessoCommand command, ProcessoDivulgadoConferido processo,
-        InstanteDaPublicacao instante, CancellationToken cancellationToken)
+        InstanteDoComando instante, CancellationToken cancellationToken)
     {
         Result<TipoAtoPublicadoView> tipo = await tipos.ConferirAsync(command.TipoAtoCodigo, instante.Dia, cancellationToken).ConfigureAwait(false);
         if (tipo.IsFailure)

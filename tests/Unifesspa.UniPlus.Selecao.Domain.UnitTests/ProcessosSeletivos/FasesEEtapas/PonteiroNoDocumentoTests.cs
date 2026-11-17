@@ -18,13 +18,15 @@ public sealed class PonteiroNoDocumentoTests
     [InlineData("fases[0].faseConcluinteCodigo", "/cronograma/fases/0/faseConcluinteChave")]
     [InlineData("fases[12].unidadeResponsavel", "/cronograma/fases/12/unidadeResponsavelCodigo")]
     [InlineData("fases[1].bancasRequeridas[4].categoriasDocumentoIds", "/cronograma/fases/1/bancasRequeridas/4/categoriasDocumentoCodigos")]
+    [InlineData("fases[0].regraRecurso.procedimentos", "/cronograma/fases/0/regraRecurso/procedimentosDeRecurso")]
+    [InlineData("fases[0].regraRecurso.procedimentos[3]", "/cronograma/fases/0/regraRecurso/procedimentosDeRecurso/3")]
+    [InlineData("fases[2].regraRecurso.procedimentos[1].alvo", "/cronograma/fases/2/regraRecurso/procedimentosDeRecurso/1/alvo")]
     [InlineData("etapas[2].faseCodigo", "/etapas/2/faseChave")]
     [InlineData("etapas[7].id", "/etapas/7/chave")]
     public void Converter_CampoComOutroNomeNoDocumento_UsaONomeDoDocumento(string campo, string esperado) =>
         PonteiroNoDocumento.Converter(campo, OrigemNoDocumento.Identidade).Should().Be(esperado);
 
     [Theory(DisplayName = "O campo que o documento nomeia igual só ganha o bloco do cronograma quando é de fase")]
-    [InlineData("fases[0].ordem", "/cronograma/fases/0/ordem")]
     [InlineData("fases[0].produtos[1].atoCodigo", "/cronograma/fases/0/produtos/1/atoCodigo")]
     [InlineData("etapas[0].produtos[1].atoCodigo", "/etapas/0/produtos/1/atoCodigo")]
     [InlineData("identificacao.nome", "/identificacao/nome")]
@@ -32,6 +34,12 @@ public sealed class PonteiroNoDocumentoTests
     [InlineData("formularios[1].itens[2].fatoCodigo", "/formularios/1/itens/2/fatoCodigo")]
     [InlineData("taxaDeInscricao", "/taxaDeInscricao")]
     public void Converter_CampoComONomeDoDocumento_FicaComoEstaOuGanhaOBloco(string campo, string esperado) =>
+        PonteiroNoDocumento.Converter(campo, OrigemNoDocumento.Identidade).Should().Be(esperado);
+
+    [Theory(DisplayName = "A ordem da fase, que o documento não tem, aponta a fase")]
+    [InlineData("fases[0].ordem", "/cronograma/fases/0")]
+    [InlineData("fases[5].ordem", "/cronograma/fases/5")]
+    public void Converter_OrdemDaFase_ApontaAFase(string campo, string esperado) =>
         PonteiroNoDocumento.Converter(campo, OrigemNoDocumento.Identidade).Should().Be(esperado);
 
     [Theory(DisplayName = "O conceito da etapa, que o documento não tem, fica no trecho da etapa que o declara")]
@@ -117,7 +125,7 @@ public sealed class PonteiroNoDocumentoTests
     [Theory(DisplayName = "O índice canônico do campo vira a posição de origem da lista em que o item está no documento recebido")]
     [InlineData("fases[0].unidadeResponsavel", "/cronograma/fases/2/unidadeResponsavelCodigo")]
     [InlineData("fases[1].faseCanonicaId", "/cronograma/fases/0/faseCanonicaCodigo")]
-    [InlineData("fases[2].ordem", "/cronograma/fases/1/ordem")]
+    [InlineData("fases[2].ordem", "/cronograma/fases/1")]
     [InlineData("etapas[0].id", "/etapas/1/chave")]
     [InlineData("etapas[1].faseCodigo", "/etapas/0/faseChave")]
     [InlineData("etapas[1].conceito.faixas[1].nome", "/etapas/0")]

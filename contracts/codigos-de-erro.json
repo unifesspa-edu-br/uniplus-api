@@ -5237,6 +5237,11 @@
       "titulo": "O documento não traz um campo que o formato exige"
     },
     {
+      "codigo": "uniplus.selecao.documento_da_configuracao.chave_citada_inexistente",
+      "status": 422,
+      "titulo": "Uma parte do documento cita uma chave que nenhuma parte do tipo citado tem"
+    },
+    {
       "codigo": "uniplus.selecao.documento_da_configuracao.chave_repetida",
       "status": 422,
       "titulo": "Duas partes do mesmo tipo têm a mesma chave"
@@ -5559,7 +5564,7 @@
     {
       "codigo": "uniplus.selecao.etapa_processo.janela_invertida",
       "status": 422,
-      "titulo": "O fim da janela da etapa é anterior ao início"
+      "titulo": "A data de término do período da etapa é anterior à data de início"
     },
     {
       "codigo": "uniplus.selecao.etapa_processo.nome_obrigatorio",
@@ -5684,12 +5689,12 @@
     {
       "codigo": "uniplus.selecao.fase_cronograma.janela_invertida",
       "status": 422,
-      "titulo": "O fim da janela da fase não pode anteceder o início"
+      "titulo": "A data de término do período da fase é anterior à data de início"
     },
     {
       "codigo": "uniplus.selecao.fase_cronograma.janela_obrigatoria_em_data_no_edital",
       "status": 422,
-      "titulo": "Fase com a data fixada no edital exige início e fim da janela"
+      "titulo": "Fase com data fixada no edital exige início e término do período"
     },
     {
       "codigo": "uniplus.selecao.fase_cronograma.parecer_individual_sem_resultado",
@@ -7462,6 +7467,11 @@
       "titulo": "Cada raiz da árvore de satisfação deve ter uma ordem única dentro do processo"
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.origem_candidatos_ausente",
+      "status": 422,
+      "titulo": "Origem dos candidatos não declarada"
+    },
+    {
       "codigo": "uniplus.selecao.processo_seletivo.periodo_inscricao_nao_informavel",
       "status": 422,
       "titulo": "O período de inscrição vem da janela da fase do cronograma que coleta inscrição e não pode ser informado na publicação"
@@ -7549,7 +7559,7 @@
     {
       "codigo": "uniplus.selecao.processo_seletivo.sobreposicao_de_janelas_nao_permitida",
       "status": 422,
-      "titulo": "As janelas de duas fases dependentes se sobrepõem, e o cadastro não permite sobreposição"
+      "titulo": "Os períodos de duas fases coincidem em parte, e o cadastro não permite essa coincidência"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.termo_exigido_sem_forma_de_aceite",
@@ -7582,6 +7592,11 @@
       "titulo": "Tipo de etapa não encontrado ou não está ativo"
     },
     {
+      "codigo": "uniplus.selecao.processo_seletivo.tipo_processo_ausente",
+      "status": 422,
+      "titulo": "Tipo de processo não declarado"
+    },
+    {
       "codigo": "uniplus.selecao.processo_seletivo.tipo_processo_nao_encontrado_ou_inativo",
       "status": 422,
       "titulo": "Tipo de processo seletivo não encontrado ou não está ativo"
@@ -7595,6 +7610,11 @@
       "codigo": "uniplus.selecao.processo_seletivo.transicao_invalida",
       "status": 422,
       "titulo": "Só é possível publicar um processo em rascunho"
+    },
+    {
+      "codigo": "uniplus.selecao.processo_seletivo.unidade_administradora_ausente",
+      "status": 422,
+      "titulo": "Unidade administradora não declarada"
     },
     {
       "codigo": "uniplus.selecao.processo_seletivo.unidade_administradora_nao_encontrada",
@@ -7709,7 +7729,7 @@
     {
       "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_de_recurso_ausente",
       "status": 422,
-      "titulo": "A janela de recurso não declara procedimento para toda matéria que a decisão recorrida cobre"
+      "titulo": "Há decisão sem procedimento de recurso para sua revisão"
     },
     {
       "codigo": "uniplus.selecao.recurso_da_etapa.procedimento_de_recurso_conflitante",
@@ -7749,7 +7769,7 @@
     {
       "codigo": "uniplus.selecao.recurso_da_etapa.suspensividade_superior_sem_instancia_superior",
       "status": 422,
-      "titulo": "A janela que não admite instância superior não declara tempo de bloqueio superior"
+      "titulo": "Sem recurso em instância superior, não há tempo de bloqueio para essa instância"
     },
     {
       "codigo": "uniplus.selecao.recurso_da_etapa.suspensividade_unidade_nao_declaravel",
@@ -7904,7 +7924,7 @@
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_de_recurso_ausente",
       "status": 422,
-      "titulo": "A janela de recurso não declara procedimento para toda matéria que a decisão recorrida cobre"
+      "titulo": "Há decisão sem procedimento de recurso para sua revisão"
     },
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.procedimento_de_recurso_conflitante",
@@ -7929,7 +7949,7 @@
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.regra_catalogo_invalida",
       "status": 422,
-      "titulo": "A regra referenciada não é RECURSO-PRAZO-ANCORADO-EM-ATO, ou diverge do catálogo de regras"
+      "titulo": "A regra indicada não permite contar o prazo de recurso a partir de uma publicação"
     },
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.suspensividade_incompleta",
@@ -7944,7 +7964,7 @@
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.suspensividade_superior_sem_instancia_superior",
       "status": 422,
-      "titulo": "A janela que não admite instância superior não declara tempo de bloqueio superior"
+      "titulo": "Sem recurso em instância superior, não há tempo de bloqueio para essa instância"
     },
     {
       "codigo": "uniplus.selecao.regra_recurso_fase.suspensividade_unidade_nao_declaravel",

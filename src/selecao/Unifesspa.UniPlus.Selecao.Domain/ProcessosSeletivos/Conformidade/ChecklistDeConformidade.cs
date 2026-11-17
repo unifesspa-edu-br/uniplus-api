@@ -53,6 +53,7 @@ public static class ChecklistDeConformidade
 
         return
         [
+            .. CompletudeDaIdentificacao.Itens(configuracao),
             .. ItensDaContagemDePrazos.Avaliar(configuracao, cadastros.ContagemDePrazos),
             .. ItensEstruturaisDeConformidade.Avaliar(configuracao),
             .. ItensDoCronograma.Avaliar(configuracao, cadastros),

@@ -33,7 +33,7 @@ public sealed record EtapasDoProcesso
         ArgumentNullException.ThrowIfNull(etapas);
         ArgumentNullException.ThrowIfNull(origem);
 
-        return new([.. etapas.Select((etapa, posicao) => etapa.Declaracao(origem.ColecoesRecusadasDe($"etapas[{posicao}]")))]);
+        return new([.. etapas.Select((etapa, posicao) => etapa.Declaracao(origem.PartesRecusadasDe($"etapas[{posicao}]")))]);
     }
 
     /// <summary>A etapa de nota do ENEM, quando o processo declara uma só; com duas, nenhuma é a designada.</summary>

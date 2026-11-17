@@ -75,7 +75,7 @@ public sealed class LugaresDaDecisao
     }
 
     private static bool TiposRecusadosEm(OrigemNoDocumento origem, string lista, int posicao) =>
-        origem.ColecoesRecusadasDe($"{lista}[{posicao}]").Contains(TiposDeDecisaoDeclarados.Campo);
+        origem.PartesRecusadasDe($"{lista}[{posicao}]").Contains(TiposDeDecisaoDeclarados.Campo);
 
     private static HashSet<TipoMotivoDeDecisao> TiposDeDecisaoDe(IEnumerable<string> declarados) =>
         [.. declarados.Select(TipoMotivoDeDecisaoCodigo.FromCodigo)];

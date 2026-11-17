@@ -93,29 +93,10 @@ public sealed class RegraRecursoFase : EntityBase
         ArgumentNullException.ThrowIfNull(regra);
         ArgumentNullException.ThrowIfNull(parametros);
 
-        // CA-01/CA-02: a regra referenciada só pode ser RECURSO-PRAZO-ANCORADO-EM-ATO —
-        // qualquer outra (inclusive de outro TipoRegra) é recusada. A checagem completa
-        // (regra existe, TipoRegra == RegraPrazoRecurso, hash bate) é do handler
-        // (IRegraCatalogoReader, D9); esta é a defesa de forma, com o MESMO código de
-        // erro, para que uma RegraRecursoFase nunca exista com uma referência incoerente
-        // mesmo se construída fora do caminho do handler (ex.: reidratação do envelope).
-        if (regra.Codigo != RegraPrazoRecursoCodigo.AncoradoEmAto)
-        {
-            return Result<RegraRecursoFase>.Failure(new DomainError(
-                "RegraRecursoFase.RegraCatalogoInvalida",
-                $"RegraRecursoFase só referencia a regra {RegraPrazoRecursoCodigo.AncoradoEmAto} — recebido '{regra.Codigo}'."));
-        }
-
-        // As invariantes puras sobre os parâmetros — prazo e os dois pares de suspensividade — são
-        // do próprio value object: ele é o mesmo que a janela recursal da etapa carrega, e
-        // enquanto elas viviam aqui a etapa aceitava prazo zero e par pela metade.
-        if (ValidacaoDosParametrosDoRecurso.Validar(parametros) is { } recusa)
-        {
-            return Result<RegraRecursoFase>.Failure(ErroDosParametros(recusa));
-        }
-
-        return Result<RegraRecursoFase>.Success(
-            new RegraRecursoFase
+        List<FieldError> erros = Validar(regra, parametros);
+        return erros.Count > 0
+            ? Result<RegraRecursoFase>.ValidationFailure(erros)
+            : Result<RegraRecursoFase>.Success(new RegraRecursoFase
             {
                 Regra = regra,
                 Parametros = parametros,
@@ -124,6 +105,26 @@ public sealed class RegraRecursoFase : EntityBase
             });
     }
 
+    private static List<FieldError> Validar(ReferenciaRegra regra, ParametrosRegraPrazoRecurso parametros)
+    {
+        DomainError? recusa = RecusaDaRegra(regra);
+        List<FieldError> erros = [];
+        if (recusa is not null)
+        {
+            erros.Add(new(null, recusa));
+        }
+
+        erros.AddRange(RecusasDosParametros(parametros).Select(static erro => new FieldError(null, erro)));
+        return erros;
+    }
+
+    private static DomainError? RecusaDaRegra(ReferenciaRegra regra) =>
+        regra.Codigo != RegraPrazoRecursoCodigo.AncoradoEmAto
+            ? new DomainError(
+                "RegraRecursoFase.RegraCatalogoInvalida",
+                "A regra indicada não permite contar o prazo de recurso a partir de uma publicação.")
+            : null;
+
     /// <summary>
     /// Traduz o motivo da recusa no código de erro desta entidade.
     ///
@@ -131,6 +132,9 @@ public sealed class RegraRecursoFase : EntityBase
     /// registro de erros consegue enxergá-los — um código interpolado nunca apareceria na
     /// varredura, e um erro sem registro vira 500 em vez de 422.
     /// </summary>
+    internal static IReadOnlyList<DomainError> RecusasDosParametros(ParametrosRegraPrazoRecurso parametros) =>
+        [.. ValidacaoDosParametrosDoRecurso.Validar(parametros).Select(ErroDosParametros)];
+
     private static DomainError ErroDosParametros(RecusaDosParametrosDoRecurso recusa) => recusa.Motivo switch
     {
         MotivoDaRecusaDosParametros.PrazoNaoPositivo => new("RegraRecursoFase.PrazoNaoPositivo", recusa.Mensagem),

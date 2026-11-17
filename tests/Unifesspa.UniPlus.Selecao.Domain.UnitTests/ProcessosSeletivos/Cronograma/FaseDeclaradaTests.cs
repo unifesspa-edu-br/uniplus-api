@@ -63,6 +63,7 @@ public sealed class FaseDeclaradaTests
         FaseDeclarada fase = new ModeloDeFase("INSCRICAO", 1).Janela(5, 1).Declarar();
 
         Recusas(fase).Should().Equal(("fim", "FaseCronograma.JanelaInvertida"));
+        fase.Recusas.Single().Error.Message.Should().Be("A data de término do período é anterior à data de início.");
         fase.Janela.Invertida.Should().BeTrue();
         fase.Ordem.Should().Be(1);
     }

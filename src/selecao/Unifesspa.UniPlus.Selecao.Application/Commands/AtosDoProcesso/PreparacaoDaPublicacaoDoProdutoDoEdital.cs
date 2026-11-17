@@ -9,7 +9,7 @@ using ProdutoConferido = (Unifesspa.UniPlus.Selecao.Domain.ValueObjects.Identida
 /// <summary>Prepara o item do edital sem escrever, interrompendo na primeira recusa.</summary>
 public sealed class PreparacaoDaPublicacaoDoProdutoDoEdital(
     ConferenciaDoProcessoDivulgado processos,
-    LeituraDoInstanteDaPublicacao instantes,
+    LeituraDoInstanteDoComando instantes,
     ConferenciaDoProdutoDoEdital produtos,
     ConferenciaDosDocumentosDoAto documentos)
 {
@@ -20,7 +20,7 @@ public sealed class PreparacaoDaPublicacaoDoProdutoDoEdital(
         {
             return Result<AtoAPublicar>.Failure(processo.Error!);
         }
-        Result<InstanteDaPublicacao> instante = instantes.Ler();
+        Result<InstanteDoComando> instante = instantes.Ler();
         return instante.IsFailure
             ? Result<AtoAPublicar>.Failure(instante.Error!)
             : await ConferirProdutoAsync(command, processo.Value!, instante.Value, cancellationToken).ConfigureAwait(false);
@@ -28,7 +28,7 @@ public sealed class PreparacaoDaPublicacaoDoProdutoDoEdital(
 
     private async Task<Result<AtoAPublicar>> ConferirProdutoAsync(
         PublicarProdutoDoEditalCommand command, ProcessoDivulgadoConferido processo,
-        InstanteDaPublicacao instante, CancellationToken cancellationToken)
+        InstanteDoComando instante, CancellationToken cancellationToken)
     {
         Result<ProdutoConferido> produto = await produtos.ConferirAsync(command, instante, cancellationToken).ConfigureAwait(false);
         return produto.IsFailure

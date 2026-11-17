@@ -124,8 +124,8 @@ public sealed class FaseCronogramaCriacaoTests
 
     // ── Criar e Reidratar com o código com espaços nas pontas ──
 
-    [Fact(DisplayName = "Criar guarda o código aparado, mas a recusa cita o código como veio")]
-    public void Criar_CodigoComEspacos_GuardaAparadoERecusaCitaComoVeio()
+    [Fact(DisplayName = "Criar guarda o código aparado, e a recusa não o repete")]
+    public void Criar_CodigoComEspacos_GuardaAparadoERecusaNaoRepete()
     {
         Result<FaseCronograma> recusada = Criar(new()
         {
@@ -135,7 +135,7 @@ public sealed class FaseCronogramaCriacaoTests
         });
         Result<FaseCronograma> aceita = Criar(new() { Codigo = "  FASE_TESTE  " });
 
-        recusada.Error!.Message.Should().Contain("'  FASE_TESTE  '");
+        recusada.Error!.Message.Should().Be("A data de término do período é anterior à data de início.");
         aceita.Value!.Codigo.Should().Be("FASE_TESTE");
     }
 

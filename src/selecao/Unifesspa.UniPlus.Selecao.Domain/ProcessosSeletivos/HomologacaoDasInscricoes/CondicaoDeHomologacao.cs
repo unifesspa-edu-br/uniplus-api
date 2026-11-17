@@ -47,15 +47,18 @@ public sealed record CondicaoDeHomologacao
     public static Result<CondicaoDeHomologacao> Criar(
         TipoDeCondicaoDeHomologacao tipo, int? edicaoDoExame, string? motivoDesfavoravelCodigo, PredicadoDnf? enquadramento)
     {
-        if (RecusaDoTipoOuDaEdicao(tipo, edicaoDoExame) is { } recusa)
+        DomainError? recusa = RecusaDoTipoOuDaEdicao(tipo, edicaoDoExame);
+        Result<CodigoMotivoDecisao> motivo = CodigoMotivoDecisao.Criar(motivoDesfavoravelCodigo);
+        List<FieldError> erros = [];
+        if (recusa is not null)
         {
-            return Result<CondicaoDeHomologacao>.Failure(recusa);
+            erros.Add(new(null, recusa));
         }
 
-        Result<CodigoMotivoDecisao> motivo = CodigoMotivoDecisao.Criar(motivoDesfavoravelCodigo);
+        erros.AddRange(motivo.Errors);
 
-        return motivo.IsFailure
-            ? Result<CondicaoDeHomologacao>.Failure(motivo.Error!)
+        return erros.Count > 0
+            ? Result<CondicaoDeHomologacao>.ValidationFailure(erros)
             : Result<CondicaoDeHomologacao>.Success(new CondicaoDeHomologacao(tipo, edicaoDoExame!.Value, motivo.Value!.Valor, enquadramento));
     }
 

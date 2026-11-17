@@ -19,7 +19,22 @@ public sealed record FaseDeclarada
     /// <summary>A lista das bancas que a fase requer, pelo nome que <see cref="ParteRecusadaEm"/> reconhece.</summary>
     public const string ListaDasBancasRequeridas = "bancasRequeridas";
 
-    private readonly IReadOnlySet<string> _colecoesComParteRecusada;
+    /// <summary>O campo da unidade responsável da fase, pelo nome que <see cref="ParteRecusadaEm"/> reconhece.</summary>
+    public const string CampoDaUnidadeResponsavel = "unidadeResponsavel";
+
+    /// <summary>O campo da regra de recurso da fase, pelo nome que <see cref="ParteRecusadaEm"/> reconhece.</summary>
+    public const string CampoDaRegraDeRecurso = "regraRecurso";
+
+    /// <summary>A lista dos procedimentos da regra de recurso da fase, pelo caminho que <see cref="ParteRecusadaEm"/> reconhece.</summary>
+    public const string ListaDosProcedimentosDeRecurso = "regraRecurso.procedimentos";
+
+    /// <summary>O campo da regra de homologação das inscrições da fase, pelo nome que <see cref="ParteRecusadaEm"/> reconhece.</summary>
+    public const string CampoDaRegraDeHomologacao = "regraDeHomologacao";
+
+    /// <summary>O campo da fase que conclui o ciclo recursal desta, pelo nome que <see cref="ParteRecusadaEm"/> reconhece.</summary>
+    public const string CampoDaFaseConcluinte = "faseConcluinte";
+
+    private readonly IReadOnlySet<string> _caminhosComParteRecusada;
 
     private FaseDeclarada(
         Guid id,
@@ -28,7 +43,7 @@ public sealed record FaseDeclarada
         AtosDaFase atos,
         BancasDaFase bancas,
         IReadOnlyList<FieldError> recusas,
-        IReadOnlySet<string> colecoesComParteRecusada)
+        IReadOnlySet<string> caminhosComParteRecusada)
     {
         Id = id;
         OrigemId = origem.OrigemId;
@@ -43,7 +58,7 @@ public sealed record FaseDeclarada
         Atos = atos;
         Bancas = bancas;
         Recusas = recusas;
-        _colecoesComParteRecusada = colecoesComParteRecusada;
+        _caminhosComParteRecusada = caminhosComParteRecusada;
     }
 
     public Guid Id { get; }
@@ -73,10 +88,11 @@ public sealed record FaseDeclarada
     public IReadOnlyList<FieldError> Recusas { get; }
 
     /// <summary>
-    /// Se a leitura do documento recusou alguma parte da lista da fase (<see cref="ListaDosProdutos"/>, <see cref="ListaDasBancasRequeridas"/>):
-    /// a lista declarada não é a que o autor escreveu, e a regra que a quantifica não a julga.
+    /// Se a leitura do documento recusou alguma parte da fase, pelo caminho dela relativo à fase: a lista (<see cref="ListaDosProdutos"/>,
+    /// <see cref="ListaDasBancasRequeridas"/>) ou o campo (<see cref="CampoDaUnidadeResponsavel"/>, <see cref="CampoDaRegraDeRecurso"/>, <see cref="ListaDosProcedimentosDeRecurso"/>, <see cref="CampoDaRegraDeHomologacao"/>, <see cref="CampoDaFaseConcluinte"/>). O que a declaração tem desse caminho
+    /// não é o que o autor escreveu, e a regra que o lê não o julga.
     /// </summary>
-    public bool ParteRecusadaEm(string colecao) => _colecoesComParteRecusada.Contains(colecao);
+    public bool ParteRecusadaEm(string caminho) => _caminhosComParteRecusada.Contains(caminho);
 
     public static FaseDeclarada Declarar(
         Guid id,
@@ -84,11 +100,11 @@ public sealed record FaseDeclarada
         DecisoesDeCronogramaDaFase decisoes,
         PublicacoesDaFase publicacoes,
         IReadOnlyList<BancaRequerida> bancas,
-        IReadOnlySet<string>? colecoesComParteRecusada = null)
+        IReadOnlySet<string>? caminhosComParteRecusada = null)
     {
         ConferenciaDaDeclaracaoDaFase.ExigirDeclaracaoPresente(origem, decisoes, publicacoes, bancas);
         ConferenciaDaDeclaracaoDaFase.ExigirIdCongelado(id);
-        IReadOnlySet<string> suspensas = colecoesComParteRecusada ?? FrozenSet<string>.Empty;
+        IReadOnlySet<string> suspensas = caminhosComParteRecusada ?? FrozenSet<string>.Empty;
 
         return new FaseDeclarada(
             id,

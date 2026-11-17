@@ -14,7 +14,6 @@
       {
         "chave": "resultado-final",
         "faseCanonicaCodigo": "RESULTADO_FINAL",
-        "ordem": 1,
         "inicio": "2027-03-01T03:00:00Z",
         "fim": "2027-03-01T14:00:00Z",
         "unidadeResponsavelCodigo": "CEPS",

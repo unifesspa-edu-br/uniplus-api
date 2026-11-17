@@ -25,7 +25,7 @@ internal static class CompletudeDoCronograma
         Item(
             "cronograma_fase_sem_unidade_responsavel",
             "Cronograma: toda fase tem a unidade responsável definida",
-            UnidadesResponsaveisAusentes(cronograma).Any()),
+            UnidadesResponsaveisAusentes(cronograma).Any() || cronograma.Fases.Any(UnidadeRecusada)),
         Item(
             "cronograma_janela_de_isencao",
             "Cronograma: a janela de solicitação de isenção abre com a inscrição, fecha antes dela e dura cinco dias",
@@ -48,13 +48,16 @@ internal static class CompletudeDoCronograma
     private static IEnumerable<FieldError> UnidadesResponsaveisAusentes(CronogramaDoProcesso cronograma) =>
         cronograma.Fases
             .Select((fase, posicao) => (fase, posicao))
-            .Where(static par => !par.fase.TemUnidadeResponsavel)
+            .Where(static par => !par.fase.TemUnidadeResponsavel && !UnidadeRecusada(par.fase))
             .Select(par => CronogramaDoProcesso.NaFase(
                 par.posicao,
-                "unidadeResponsavel",
+                FaseDeclarada.CampoDaUnidadeResponsavel,
                 new DomainError(
                     "ProcessoSeletivo.FaseSemUnidadeResponsavel",
                     $"A fase '{par.fase.Codigo}' não tem unidade responsável definida — toda fase publicada responde a uma unidade da Unifesspa.")));
+
+    // A unidade que a leitura recusou não está ausente: a causa é a da leitura, e o item do painel fica pendente em vez de aprovado.
+    private static bool UnidadeRecusada(FaseDeclarada fase) => fase.ParteRecusadaEm(FaseDeclarada.CampoDaUnidadeResponsavel);
 
     private static ItemConformidade Item(string codigo, string mensagem, bool reprovado) =>
         new(codigo, DimensaoConformidade.Cronograma, mensagem, !reprovado);

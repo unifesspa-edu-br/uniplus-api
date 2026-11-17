@@ -94,7 +94,7 @@ public sealed class CenarioDaPublicacaoDoProdutoDoEdital
             comando, Processos,
             new PreparacaoDaPublicacaoDoProdutoDoEdital(
                 new ConferenciaDoProcessoDivulgado(Processos, Divulgados),
-                new LeituraDoInstanteDaPublicacao(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()),
+                new LeituraDoInstanteDoComando(relogio ?? new RelogioFixo(Agora), new ResolvedorFusoDeTeste()),
                 new ConferenciaDoProdutoDoEdital(new GrafoVigenteDoProcesso(Processos, Codecs),
                     new ConferenciaDoTipoDeAto(Tipos), Atos, new ConferenciaDoAtoCorrigido(Atos, Processos), Usuario),
                 new ConferenciaDosDocumentosDoAto(Documentos, Atos)),

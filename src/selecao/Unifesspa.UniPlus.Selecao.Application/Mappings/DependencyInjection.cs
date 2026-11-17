@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Services;
 using Services.AcessoPelaBanca;
+using Services.DocumentoDaConfiguracao;
 using Services.InscricaoAdministrativa;
 using Services.Rascunhos;
 
@@ -89,9 +90,13 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<RespostaDoRascunho>();
     }
 
-    // A leitura do documento só guarda o esquema, que é singleton; os serviços que decidem acesso ou leem cadastro e repositório são do escopo.
+    // A leitura do documento só guarda o esquema, que é singleton; os serviços que decidem acesso ou leem cadastro e repositório são do escopo,
+    // e a leitura da identificação e do cronograma recebe as portas dos cadastros por construtor, sem service location.
     private static void AddRascunhoDoProcessoSeletivo(IServiceCollection services)
     {
+        services.AddScoped<LeituraDosCadastrosDaConfiguracaoCitados>();
+        services.AddScoped<LeituraDosCadastrosCitados>();
+        services.AddScoped<LeituraDaIdentificacaoEDoCronograma>();
         services.AddSingleton<LeituraDoDocumentoDaConfiguracao>();
         services.AddSingleton<PreparacaoDoDocumentoDoRascunho>();
         services.AddScoped<UnidadeDoDocumentoDoRascunho>();
@@ -100,10 +105,10 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<ExportacaoDoRascunho>();
     }
 
-    // Todo comando que publica (versão, ato avulso, item do edital) lê o relógio uma só vez por esta leitura.
+    // Todo comando que decide num instante (publicação da versão, do ato avulso e do item do edital, leitura do documento) lê o relógio uma só vez por LeituraDoInstanteDoComando.
     private static void AddPublicacao(IServiceCollection services)
     {
-        services.AddScoped<LeituraDoInstanteDaPublicacao>();
+        services.AddScoped<LeituraDoInstanteDoComando>();
         services.AddScoped<ConferenciaDoProcessoDivulgado>();
         services.AddScoped<PublicacaoDoAtoDoProcesso>();
         AddPreparacaoDosAtos(services);

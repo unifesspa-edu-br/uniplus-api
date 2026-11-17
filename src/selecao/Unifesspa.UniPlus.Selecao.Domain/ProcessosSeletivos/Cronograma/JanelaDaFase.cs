@@ -11,17 +11,15 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 internal static class JanelaDaFase
 {
-    // A janela é fixada em UTC antes de montar as mensagens, para que a violação e o valor gravado falem
-    // da mesma representação do instante.
     internal static List<FieldError> Violacoes(
-        string codigo, OrigemDataFase origemData, DecisoesDeCronogramaDaFase cronograma)
+        OrigemDataFase origemData, DecisoesDeCronogramaDaFase cronograma)
     {
         DateTimeOffset? inicio = JanelaDeTempo.EmUtc(cronograma.Inicio);
         DateTimeOffset? fim = JanelaDeTempo.EmUtc(cronograma.Fim);
         FieldError?[] violacoes =
         [
-            JanelaInvertida(codigo, inicio, fim),
-            JanelaObrigatoriaNoEdital(codigo, origemData, inicio, fim),
+            JanelaInvertida(inicio, fim),
+            JanelaObrigatoriaNoEdital(origemData, inicio, fim),
         ];
 
         return [.. violacoes.OfType<FieldError>()];
@@ -29,20 +27,20 @@ internal static class JanelaDaFase
 
     // Vale independentemente da origem da data: uma fase NA_EXECUCAO com janela declarada não escapa da
     // checagem de coerência interna.
-    private static FieldError? JanelaInvertida(string codigo, DateTimeOffset? inicio, DateTimeOffset? fim) =>
+    private static FieldError? JanelaInvertida(DateTimeOffset? inicio, DateTimeOffset? fim) =>
         inicio is { } inicioValor && fim is { } fimValor && fimValor < inicioValor
             ? new FieldError("fim", new DomainError(
                 "FaseCronograma.JanelaInvertida",
-                $"A fase '{codigo}' tem o fim da janela ({fimValor:O}) antes do início ({inicioValor:O})."))
+                "A data de término do período é anterior à data de início."))
             : null;
 
     // NO_EDITAL exige janela; NA_EXECUCAO aceita "sem data" como estado válido, porque a unidade
     // responsável a define na execução.
     private static FieldError? JanelaObrigatoriaNoEdital(
-        string codigo, OrigemDataFase origemData, DateTimeOffset? inicio, DateTimeOffset? fim) =>
+        OrigemDataFase origemData, DateTimeOffset? inicio, DateTimeOffset? fim) =>
         origemData == OrigemDataFase.NoEdital && (inicio is null || fim is null)
             ? new FieldError(null, new DomainError(
                 "FaseCronograma.JanelaObrigatoriaEmDataNoEdital",
-                $"A fase '{codigo}' tem a data fixada no edital e exige início e fim da janela."))
+                "A fase com data fixada no edital exige início e término do período."))
             : null;
 }

@@ -14,6 +14,9 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// </summary>
 public sealed record CronogramaDoProcesso
 {
+    /// <summary>O nome da lista das fases, o mesmo no documento da configuração, nas causas e na origem das partes recusadas.</summary>
+    public const string ListaDasFases = "fases";
+
     public CronogramaDoProcesso(IReadOnlyList<FaseDeclarada> fases)
     {
         ArgumentNullException.ThrowIfNull(fases);
@@ -23,19 +26,28 @@ public sealed record CronogramaDoProcesso
 
     public IReadOnlyList<FaseDeclarada> Fases { get; }
 
+    /// <summary>
+    /// Se a leitura do documento recusou alguma fase da lista: as fases declaradas não são todas as que o autor escreveu, e as regras
+    /// de existência e de quantificador (cronograma vazio, fase que coleta inscrição, fase que produz resultado) ficam sem julgar.
+    /// </summary>
+    public bool TemParteRecusadaNaListaDeFases { get; internal init; }
+
     /// <summary>O cronograma das fases vivas, cada uma lida como declarou: as recusas do estado carregado do banco ficam à vista.</summary>
     public static CronogramaDoProcesso Do(IEnumerable<FaseCronograma> fases) => Do(fases, OrigemNoDocumento.Identidade);
 
     /// <summary>
     /// O cronograma das fases, na ordem canônica, lido contra a origem do documento: a lista de uma fase com parte recusada pela
-    /// leitura fica sem julgar nas regras que a quantificam.
+    /// leitura fica sem julgar nas regras que a quantificam, e a lista de fases com parte recusada, nas regras de existência.
     /// </summary>
     public static CronogramaDoProcesso Do(IEnumerable<FaseCronograma> fases, OrigemNoDocumento origem)
     {
         ArgumentNullException.ThrowIfNull(fases);
         ArgumentNullException.ThrowIfNull(origem);
 
-        return new([.. fases.Select((fase, posicao) => fase.Declaracao(origem.ColecoesRecusadasDe($"fases[{posicao}]")))]);
+        return new([.. fases.Select((fase, posicao) => fase.Declaracao(origem.PartesRecusadasDe($"fases[{posicao}]")))])
+        {
+            TemParteRecusadaNaListaDeFases = origem.TemParteRecusadaEm(ListaDasFases),
+        };
     }
 
     /// <summary>Se alguma fase tem parte recusada na lista dos produtos: o que se conclui da publicação de resultado de todas fica sem julgar.</summary>
@@ -85,7 +97,7 @@ public sealed record CronogramaDoProcesso
         "Cronograma: cada fase declara janela, publicações e bancas coerentes",
         RecusasDasDeclaracoes().Count == RecusasDasDeclaracoes(CodigosComItemProprio).Count);
 
-    public IReadOnlyList<FieldError> ConferirEstrutura() => EstruturaDoCronograma.Recusas(Fases);
+    public IReadOnlyList<FieldError> ConferirEstrutura() => EstruturaDoCronograma.Recusas(this);
 
     /// <summary>
     /// O item de que as fases, em conjunto, não repetem ordem nem fase canônica: a mesma recusa da estrutura que a conferência
@@ -106,12 +118,12 @@ public sealed record CronogramaDoProcesso
         List<FieldError> causas = [];
         if (InscricaoPropriaSemFaseDeColeta(origem))
         {
-            causas.Add(new FieldError("fases", SemFaseDeColeta()));
+            causas.Add(new FieldError(ListaDasFases, SemFaseDeColeta()));
         }
 
         if (VagasSemFaseQueProduzResultado(haVagasOfertadas))
         {
-            causas.Add(new FieldError("fases", SemFaseQueProduzResultado()));
+            causas.Add(new FieldError(ListaDasFases, SemFaseQueProduzResultado()));
         }
 
         return causas;
@@ -125,24 +137,28 @@ public sealed record CronogramaDoProcesso
         "ProcessoSeletivo.VagasSemFaseQueProduzResultado",
         "Há vagas ofertadas, e nenhuma fase do cronograma produz resultado.");
 
+    // A origem ausente não diz se o processo coleta a própria inscrição: o item fica pendente, e a causa é a da identificação.
     public ItemConformidade ItemDaInscricaoPropria(OrigemCandidatos origem) => new(
         "cronograma_inscricao_propria_sem_fase_de_coleta",
         DimensaoConformidade.Cronograma,
         "Cronograma: inscrição própria tem fase que coleta inscrição",
-        !InscricaoPropriaSemFaseDeColeta(origem));
+        origem != OrigemCandidatos.Nenhuma && !InscricaoPropriaSemFaseDeColeta(origem) && !ColetaDeInscricaoIndeterminada(origem));
 
     public ItemConformidade ItemDasVagasOfertadas(bool haVagasOfertadas) => new(
         "cronograma_vagas_sem_fase_que_produz_resultado",
         DimensaoConformidade.Cronograma,
         "Cronograma: vagas ofertadas têm fase que produz resultado",
-        !VagasSemFaseQueProduzResultado(haVagasOfertadas) && !(haVagasOfertadas && ProdutosComParteRecusadaEmAlgumaFase));
+        !VagasSemFaseQueProduzResultado(haVagasOfertadas) && !(haVagasOfertadas && ResultadoDasFasesIndeterminado));
 
-    /// <summary>O item de que o cronograma tem ao menos uma fase, derivado da mesma recusa da estrutura.</summary>
+    /// <summary>
+    /// O item de que o cronograma tem ao menos uma fase. A recusa de cronograma vazio fica suspensa quando a leitura recusou fase, e
+    /// o item continua verificando a fase que há.
+    /// </summary>
     public ItemConformidade ItemDaExistenciaDeFases() => new(
         "cronograma_fases_ausente",
         DimensaoConformidade.Cronograma,
         "Cronograma de fases",
-        ConferirEstrutura().All(static recusa => recusa.Error.Code != EstruturaDoCronograma.CronogramaVazio));
+        Fases.Count > 0);
 
     public IReadOnlyList<FieldError> ConferirPrecedencia(IReadOnlyList<ArestaPrecedencia> precedencias)
     {
@@ -190,10 +206,16 @@ public sealed record CronogramaDoProcesso
 
     // O piso mínimo vem da origem dos candidatos, nunca do tipo do processo.
     private bool InscricaoPropriaSemFaseDeColeta(OrigemCandidatos origem) =>
-        origem == OrigemCandidatos.InscricaoPropria && !Fases.Any(static fase => fase.ColetaInscricao);
+        origem == OrigemCandidatos.InscricaoPropria && !TemParteRecusadaNaListaDeFases && !Fases.Any(static fase => fase.ColetaInscricao);
+
+    private bool ColetaDeInscricaoIndeterminada(OrigemCandidatos origem) =>
+        origem == OrigemCandidatos.InscricaoPropria && TemParteRecusadaNaListaDeFases;
 
     private bool VagasSemFaseQueProduzResultado(bool haVagasOfertadas) =>
-        haVagasOfertadas && !ProdutosComParteRecusadaEmAlgumaFase && !Fases.Any(static fase => fase.Atos.ProduzResultado);
+        haVagasOfertadas && !ResultadoDasFasesIndeterminado && !Fases.Any(static fase => fase.Atos.ProduzResultado);
+
+    // O resultado que as fases produzem depende das fases e dos produtos que a leitura aceitou.
+    private bool ResultadoDasFasesIndeterminado => TemParteRecusadaNaListaDeFases || ProdutosComParteRecusadaEmAlgumaFase;
 
     private static bool TemOCodigo(FaseDeclarada fase, string codigo) => string.Equals(fase.Codigo, codigo, StringComparison.Ordinal);
 

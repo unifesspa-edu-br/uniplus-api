@@ -4,18 +4,18 @@ using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// O cronograma como conjunto de fases: existência, ordem única, fase canônica única e a precedência que o
+/// O cronograma como conjunto de fases: existência (que a parte recusada na lista suspende), ordem única, fase canônica única e a precedência que o
 /// cadastro declara entre elas. Cada causa sai na posição da fase que a repete ou a viola.
 /// </summary>
 internal static class EstruturaDoCronograma
 {
     internal const string CronogramaVazio = "ProcessoSeletivo.CronogramaFasesVazio";
 
-    internal static IReadOnlyList<FieldError> Recusas(IReadOnlyList<FaseDeclarada> fases) =>
+    internal static IReadOnlyList<FieldError> Recusas(CronogramaDoProcesso cronograma) =>
     [
-        .. FasesAusentes(fases),
-        .. OrdensRepetidas(fases),
-        .. FasesCanonicasRepetidas(fases),
+        .. FasesAusentes(cronograma),
+        .. OrdensRepetidas(cronograma.Fases),
+        .. FasesCanonicasRepetidas(cronograma.Fases),
     ];
 
     /// <summary>
@@ -25,9 +25,10 @@ internal static class EstruturaDoCronograma
     internal static IReadOnlyList<FieldError> Precedencia(CronogramaDoProcesso cronograma, IReadOnlyList<ArestaPrecedencia> arestas) =>
         [.. arestas.Select(aresta => ViolacaoDaAresta(cronograma, aresta)).OfType<FieldError>()];
 
-    private static IEnumerable<FieldError> FasesAusentes(IReadOnlyList<FaseDeclarada> fases) =>
-        fases.Count == 0
-            ? [new FieldError("fases", new DomainError(CronogramaVazio, "O processo deve ter ao menos uma fase no cronograma."))]
+    // A leitura que recusou fase do documento deixa a lista sem as fases que o autor escreveu: a ausência não se afirma.
+    private static IEnumerable<FieldError> FasesAusentes(CronogramaDoProcesso cronograma) =>
+        cronograma.Fases.Count == 0 && !cronograma.TemParteRecusadaNaListaDeFases
+            ? [new FieldError(CronogramaDoProcesso.ListaDasFases, new DomainError(CronogramaVazio, "O processo deve ter ao menos uma fase no cronograma."))]
             : [];
 
     private static IEnumerable<FieldError> OrdensRepetidas(IReadOnlyList<FaseDeclarada> fases)
@@ -96,6 +97,6 @@ internal static class EstruturaDoCronograma
                 "inicio",
                 new DomainError(
                     "ProcessoSeletivo.SobreposicaoDeJanelasNaoPermitida",
-                    $"A janela da fase '{aresta.SucessoraCodigo}' ({sucessora.Janela.Inicio:O}–{sucessora.Janela.Fim:O}) se sobrepõe à da fase '{aresta.AntecessoraCodigo}' ({antecessora.Janela.Inicio:O}–{antecessora.Janela.Fim:O}), e o cadastro não permite sobreposição entre elas."))
+                    "O período desta fase coincide em parte com o da fase anterior, e o cadastro não permite essa coincidência."))
             : null;
 }

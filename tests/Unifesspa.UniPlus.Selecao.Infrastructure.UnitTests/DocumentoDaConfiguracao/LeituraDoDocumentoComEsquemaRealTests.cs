@@ -43,7 +43,7 @@ public sealed class LeituraDoDocumentoComEsquemaRealTests
     {
         Result<DocumentoLido> resultado = Ler("""
             "etapas": [
-              { "chave": "prova", "itensDeAvaliacao": [ { "chave": "questao" }, {} ], "bancas": [ {} ] },
+              { "chave": "prova", "itensDeAvaliacao": [ { "chave": "questao" }, {} ], "bancas": [ { "tipoBancaCodigo": "BANCA_CORRECAO_REDACOES" } ] },
               { "nome": "Segunda etapa" }
             ]
             """);
@@ -52,6 +52,17 @@ public sealed class LeituraDoDocumentoComEsquemaRealTests
             ("/etapas/0/itensDeAvaliacao/1/chave", DocumentoDaConfiguracaoErrorCodes.CampoObrigatorioAusente),
             ("/etapas/0/bancas/0/chave", DocumentoDaConfiguracaoErrorCodes.CampoObrigatorioAusente),
             ("/etapas/1/chave", DocumentoDaConfiguracaoErrorCodes.CampoObrigatorioAusente));
+    }
+
+    [Fact(DisplayName = "A banca sem o tipo é recusada como campo obrigatório ausente no ponteiro do tipo")]
+    public void BancaSemTipo_ERecusadaNoPonteiroDoTipo()
+    {
+        Result<DocumentoLido> resultado = Ler("""
+            "etapas": [ { "chave": "prova", "bancas": [ { "chave": "banca-da-prova" } ] } ]
+            """);
+
+        resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(
+            ("/etapas/0/bancas/0/tipoBancaCodigo", DocumentoDaConfiguracaoErrorCodes.CampoObrigatorioAusente));
     }
 
     [Fact(DisplayName = "Reordenar as partes com as suas chaves conserva a chave de cada parte, e o item repete a chave em etapas diferentes")]
@@ -117,6 +128,18 @@ public sealed class LeituraDoDocumentoComEsquemaRealTests
         resultado.Errors.Select(static causa => causa.Field).Should().Equal(
             "/formato", "/etapas/0/nome", "/etapas/0/invento", "/etapas/1/chave", "/opcoesDeCurso/numero");
         resultado.Errors.Select(static causa => causa.Error.Message).Should().NotContain(static mensagem => mensagem.Contains("SEGREDO", StringComparison.Ordinal));
+    }
+
+    [Fact(DisplayName = "A fase sem a fase canônica e a fase com ordem são recusadas no ponteiro da fase, com o código de cada causa")]
+    public void Fase_SemFaseCanonicaOuComOrdem_ERecusadaNoPonteiroDaFase()
+    {
+        Result<DocumentoLido> resultado = Ler("""
+            "cronograma": { "fases": [ { "chave": "inscricao" }, { "chave": "resultado", "faseCanonicaCodigo": "RESULTADO_FINAL", "ordem": 2 } ] }
+            """);
+
+        resultado.Errors.Select(static causa => (causa.Field, causa.Error.Code)).Should().Equal(
+            ("/cronograma/fases/0/faseCanonicaCodigo", DocumentoDaConfiguracaoErrorCodes.CampoObrigatorioAusente),
+            ("/cronograma/fases/1/ordem", DocumentoDaConfiguracaoErrorCodes.CampoDesconhecido));
     }
 
     private static string Etapa(string chave, string nome) =>

@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Unifesspa.UniPlus.Configuracao.Contracts;
 using Unifesspa.UniPlus.Configuracao.Domain.Entities;
 using Unifesspa.UniPlus.Configuracao.Domain.Enums;
+using Unifesspa.UniPlus.Configuracao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Configuracao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 
@@ -34,6 +35,23 @@ internal sealed class FaseCanonicaReader : IFaseCanonicaReader
     {
         List<FaseCanonica> entidades = await _dbContext.FasesCanonicas
             .AsNoTracking()
+            .OrderBy(f => f.Codigo)
+            .ToListAsync(cancellationToken)
+            .ConfigureAwait(false);
+
+        return [.. entidades.Select(ParaView)];
+    }
+
+    public async Task<IReadOnlyList<FaseCanonicaView>> ListarVivasPorCodigosAsync(
+        IReadOnlyCollection<string> codigos,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(codigos);
+
+        List<CodigoFase> codigosDoLote = CodigosDoLote.Validos(codigos, CodigoFase.Criar);
+        List<FaseCanonica> entidades = await _dbContext.FasesCanonicas
+            .AsNoTracking()
+            .Where(f => codigosDoLote.Contains(f.Codigo))
             .OrderBy(f => f.Codigo)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
