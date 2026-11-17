@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 
-/// <summary>Mapeamento <see cref="Perfil"/> para <see cref="PerfilDto"/> e para o retrato que o aprovador avalia.</summary>
+/// <summary>Mapeamento <see cref="Perfil"/> para <see cref="PerfilDto"/> e para o perfil como o aprovador o avalia.</summary>
 public static class PerfilMapping
 {
     /// <summary>O perfil como a API o expõe.</summary>

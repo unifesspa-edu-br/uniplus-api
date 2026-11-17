@@ -130,9 +130,9 @@ internal sealed record ComparacaoDeCatalogos(
     IReadOnlyDictionary<CodigoDePermissao, PermissaoDoCatalogo> Atualizado,
     DateTimeOffset Instante)
 {
-    /// <summary>O valor que a permissão tinha: o do catálogo anterior e, sem ele, o do retrato dado.</summary>
-    public BaseDaConcessao AnteriorDe(CodigoDePermissao codigo, BaseDaConcessao retrato) =>
+    /// <summary>O valor que a permissão tinha: o do catálogo anterior e, sem ele, o da base dada.</summary>
+    public BaseDaConcessao AnteriorDe(CodigoDePermissao codigo, BaseDaConcessao daVersao) =>
         Anterior is not null && Anterior.TryGetValue(codigo, out PermissaoDoCatalogo? linha)
             ? new BaseDaConcessao(linha.Classificacao, linha.DeUnidade)
-            : retrato;
+            : daVersao;
 }

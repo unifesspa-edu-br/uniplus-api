@@ -43,7 +43,7 @@ internal static class ComposicaoEmVigorNoBanco
     /// A listagem da decisão de acesso, em uma só instrução, junto da impressão do catálogo gravado no banco. A instrução
     /// parte de uma linha fixa e junta por fora o catálogo atual e as linhas da composição: sempre volta ao menos uma linha,
     /// com a impressão nula se o banco não tem catálogo, com ou sem concessões. A impressão, as bases, as reclassificações
-    /// e as suspensões saem do mesmo retrato.
+    /// e as suspensões saem da mesma leitura.
     /// </summary>
     public static IQueryable<LinhaDoAcesso> LinhasDeAcessoComImpressao(
         this UniPlusDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora)

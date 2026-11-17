@@ -74,7 +74,7 @@ public sealed class BasesDaReclassificacaoNoHostTests : ReclassificacaoNoHostTes
     public async Task ConcessaoNaVersaoAntiga_FicaSuspensa()
     {
         Cenario perfil = await CenarioAsync([Consultar, Sensivel], Leandro);
-        await RebaixarRetratoAsync(perfil.Perfil, 1, Sensivel, "interno");
+        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Sensivel, "interno");
 
         Guid nova = await ConcederDepoisAsync(perfil, Betina);
 
@@ -86,10 +86,10 @@ public sealed class BasesDaReclassificacaoNoHostTests : ReclassificacaoNoHostTes
     public async Task VersaoNova_NaoSuspendeEAMigracaoMantemABase()
     {
         Cenario perfil = await CenarioAsync([Consultar, Sensivel], Leandro);
-        await RebaixarRetratoAsync(perfil.Perfil, 1, Consultar, "publico");
+        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Consultar, "publico");
 
         await TrocarComposicaoAsync(perfil.Perfil, Consultar);
-        await RebaixarRetratoAsync(perfil.Perfil, 2, Consultar, "interno");
+        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 2, Consultar, "interno");
         await ConcederDepoisAsync(perfil, Betina);
 
         (await PermissoesAsync(Betina, perfil.Perfil)).Should().Equal(Consultar);
@@ -97,11 +97,11 @@ public sealed class BasesDaReclassificacaoNoHostTests : ReclassificacaoNoHostTes
         (await OrigemDaBaseAsync(perfil.De(Leandro), Consultar)).Should().Be("migracao");
     }
 
-    [Fact(DisplayName = "O código removido e reintroduzido usa o retrato da versão que o reintroduziu, e não a base antiga")]
-    public async Task CodigoReintroduzido_UsaORetratoNovo()
+    [Fact(DisplayName = "O código removido e reintroduzido usa a classificação da versão que o reintroduziu, e não a base antiga")]
+    public async Task CodigoReintroduzido_UsaAVersaoNova()
     {
         Cenario perfil = await CenarioAsync([Consultar, Sensivel], Leandro);
-        await RebaixarRetratoAsync(perfil.Perfil, 1, Consultar, "publico");
+        await RebaixarClassificacaoNaVersaoAsync(perfil.Perfil, 1, Consultar, "publico");
 
         await TrocarComposicaoAsync(perfil.Perfil, Sensivel);
         await TrocarComposicaoAsync(perfil.Perfil, Sensivel, Consultar);

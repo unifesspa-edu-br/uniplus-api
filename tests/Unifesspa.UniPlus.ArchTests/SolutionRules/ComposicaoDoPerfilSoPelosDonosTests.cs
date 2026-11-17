@@ -30,21 +30,21 @@ public sealed class ComposicaoDoPerfilSoPelosDonosTests
 
     private const string Autorizacao = @"Unifesspa\.UniPlus\.Autorizacao\.";
 
-    // Quem lê o retrato que a versão guarda da classe e do escopo de cada permissão, e a composição gravada da governança, para compará-los com o catálogo
+    // Quem lê a classe e o escopo que a versão guarda de cada permissão, e a composição gravada da governança, para compará-los com o catálogo
     // gravado: a conferência na entrada em vigor, a conciliação e o detalhe da reclassificação. Não decidem acesso.
-    private const string LeitoresDoRetrato =
+    private const string LeitoresDaClasseNaVersao =
         $@"{Autorizacao}Application\.Commands\.Perfis\.ConferenciaDoCatalogoNaVersao"
         + $@"|{Autorizacao}Application\.Queries\.Reclassificacoes\.DetalheDaReclassificacao"
         + $@"|{Autorizacao}Infrastructure\.Catalogo\.(PerfisAfetadosPeloCatalogo|PermissaoEmUso|ConciliacaoDoCatalogo)";
 
-    // Dono das linhas de permissão: o perfil, a versão, a concessão que grava a base dos códigos que a versão retrata, o
-    // mapeamento do EF, as leituras do banco que as juntam e quem lê o retrato.
+    // Dono das linhas de permissão: o perfil, a versão, a concessão que grava a base dos códigos que a versão guarda, o
+    // mapeamento do EF, as leituras do banco que as juntam e quem lê o que a versão guarda.
     private const string DonosDasPermissoes =
         $@"^({Dominio}(Perfil|VersaoDoPerfil|PermissaoDoPerfil|PermissaoDaVersao|Concessao)"
         + $@"|{Persistencia}(UniPlusDbContext|Configurations\.(PerfilConfiguration|VersaoDoPerfilConfiguration)"
         + $@"|Repositories\.(ComposicaoEmVigorNoBanco|ConsultasDePerfil))"
         + $@"|{Persistencia}Migrations\..+"
-        + $@"|{LeitoresDoRetrato})(\+|$)";
+        + $@"|{LeitoresDaClasseNaVersao})(\+|$)";
 
     // Dono da leitura da composição em vigor: o perfil, a proposição de versão que parte dela, quem presta a concessão e o pedido
     // à versão, e a projeção.
@@ -96,7 +96,6 @@ public sealed class ComposicaoDoPerfilSoPelosDonosTests
     {
         List<string> violacoes = [];
         string donos = semDono ? @"^$" : DonosDasPermissoes;
-        string donosDaVigente = semDono ? @"^$" : DonosDaVersaoVigente;
 
         Avaliar(
             Types().That().ResideInNamespaceMatching(escopo).And().DoNotHaveFullNameMatching(donos).Should()
@@ -104,6 +103,13 @@ public sealed class ComposicaoDoPerfilSoPelosDonosTests
                     .Or().HaveFullName(typeof(PermissaoDaVersao).FullName!)),
             violacoes);
 
+        AvaliarAcessosAVersaoVigente(escopo, semDono, violacoes);
+        return violacoes;
+    }
+
+    private static void AvaliarAcessosAVersaoVigente(string escopo, bool semDono, List<string> violacoes)
+    {
+        string donosDaVigente = semDono ? @"^$" : DonosDaVersaoVigente;
         foreach (string leitura in new[] { "get_VersaoVigente(", "get_ComposicaoEmVigor(" })
         {
             Avaliar(
@@ -111,8 +117,6 @@ public sealed class ComposicaoDoPerfilSoPelosDonosTests
                     .NotCallAny(MethodMembers().That().AreDeclaredIn(typeof(Perfil)).And().HaveNameStartingWith(leitura)),
                 violacoes);
         }
-
-        return violacoes;
     }
 
     private static void Avaliar(TypesShouldConjunction regra, List<string> violacoes) =>

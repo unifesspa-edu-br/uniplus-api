@@ -58,7 +58,7 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
         return _concessoesLidas;
     }
 
-    // Uma única instrução SQL: o retrato das concessões, dos códigos que elas dão e do catálogo gravado é consistente sob
+    // Uma única instrução SQL: a leitura das concessões, dos códigos que elas dão e do catálogo gravado é consistente sob
     // READ COMMITTED.
     private Task<List<LinhaDoAcesso>> LerLinhasAsync(UsuarioRef pessoa, CancellationToken cancellationToken)
     {

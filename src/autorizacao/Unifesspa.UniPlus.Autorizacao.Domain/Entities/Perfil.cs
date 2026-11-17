@@ -109,7 +109,7 @@ public sealed class Perfil : EntityBase
             ? [.. _permissoes.Select(static p => p.Codigo).Order(StringComparer.Ordinal)]
             : VersaoVigente?.Codigos() ?? [];
 
-    /// <summary>A regra de <see cref="AdmitePrazo"/> a partir do papel de governança, para o retrato avaliado do perfil.</summary>
+    /// <summary>A regra de <see cref="AdmitePrazo"/> a partir do papel de governança, para o perfil avaliado.</summary>
     public static bool AdmitePrazoCom(TipoDeGovernanca? governanca) =>
         governanca is not (TipoDeGovernanca.GestorDeAcessos or TipoDeGovernanca.RepresentanteDoControlador);
 

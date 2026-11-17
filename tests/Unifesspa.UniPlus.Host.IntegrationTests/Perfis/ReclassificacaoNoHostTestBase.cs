@@ -145,8 +145,8 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
             """,
             perfil);
 
-    /// <summary>Rebaixa o retrato da permissão na versão de número dado, como o de uma versão criada antes da troca de catálogo.</summary>
-    private protected Task RebaixarRetratoAsync(Guid perfil, int numero, string codigo, string classificacao) =>
+    /// <summary>Rebaixa a classificação da permissão na versão de número dado, como o de uma versão criada antes da troca de catálogo.</summary>
+    private protected Task RebaixarClassificacaoNaVersaoAsync(Guid perfil, int numero, string codigo, string classificacao) =>
         ExecutarSqlAsync(
             """
             UPDATE autorizacao.permissoes_da_versao_do_perfil SET classificacao = {0}

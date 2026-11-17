@@ -83,10 +83,10 @@ public sealed class ConferenciaDoCatalogoNaVersao
 
     private static MudancaDaPermissao? MudancaQueSuspende(ImplantacaoNoBanco atual, PermissaoDaVersao permissao)
     {
-        BaseDaConcessao retrato = new(permissao.Classificacao, permissao.DeUnidade);
+        BaseDaConcessao daVersao = new(permissao.Classificacao, permissao.DeUnidade);
 
-        return atual.Linhas.TryGetValue(CodigoDePermissao.De(permissao.Codigo), out PermissaoDoCatalogo? linha) && retrato.SuspendeFrenteA(linha.Classificacao, linha.DeUnidade)
-            ? ComparacaoComOCatalogo.MudancaDe(retrato, linha)
+        return atual.Linhas.TryGetValue(CodigoDePermissao.De(permissao.Codigo), out PermissaoDoCatalogo? linha) && daVersao.SuspendeFrenteA(linha.Classificacao, linha.DeUnidade)
+            ? ComparacaoComOCatalogo.MudancaDe(daVersao, linha)
             : null;
     }
 }

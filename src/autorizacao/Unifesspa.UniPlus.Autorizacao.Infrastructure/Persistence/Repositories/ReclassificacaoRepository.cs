@@ -221,24 +221,24 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
         string codigo, List<Guid> ids, DateTimeOffset agora, Guid perfilId, CancellationToken cancellationToken)
     {
         List<Concessao> concessoes = await ConcessoesDoPerfilAsync(ids, cancellationToken).ConfigureAwait(false);
-        Dictionary<Guid, CodigoDaConcessao> retratos = await RetratosDasConcessoesAsync(perfilId, codigo, agora, cancellationToken).ConfigureAwait(false);
+        Dictionary<Guid, CodigoDaConcessao> codigosDasConcessoes = await CodigosDasConcessoesAsync(perfilId, codigo, agora, cancellationToken).ConfigureAwait(false);
         Dictionary<Guid, BaseViva> vivas = await BasesVivasDasConcessoesAsync(codigo, ids, cancellationToken).ConfigureAwait(false);
 
         return
         [.. concessoes
-            .Where(c => retratos.ContainsKey(c.Id))
+            .Where(c => codigosDasConcessoes.ContainsKey(c.Id))
             .Select(c => new ConcessaoComAPermissao(
                 c,
                 vivas.TryGetValue(c.Id, out BaseViva? viva)
                     ? new BaseDaConcessao(viva.Classificacao, viva.DeUnidade)
-                    : new BaseDaConcessao(retratos[c.Id].ClassificacaoNaVersao!.Value, retratos[c.Id].DeUnidadeNaVersao)))];
+                    : new BaseDaConcessao(codigosDasConcessoes[c.Id].ClassificacaoNaVersao!.Value, codigosDasConcessoes[c.Id].DeUnidadeNaVersao)))];
     }
 
     private Task<List<Concessao>> ConcessoesDoPerfilAsync(List<Guid> ids, CancellationToken cancellationToken) =>
         _context.Concessoes.AsNoTracking()
             .Where(c => ids.Contains(c.Id)).OrderBy(c => c.Id).ToListAsync(cancellationToken);
 
-    private async Task<Dictionary<Guid, CodigoDaConcessao>> RetratosDasConcessoesAsync(
+    private async Task<Dictionary<Guid, CodigoDaConcessao>> CodigosDasConcessoesAsync(
         Guid perfilId, string codigo, DateTimeOffset agora, CancellationToken cancellationToken) =>
         (await _context.CodigosDasConcessoesDoPerfil(perfilId, agora)
             .Where(k => k.Codigo == codigo).ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(static k => k.ConcessaoId);

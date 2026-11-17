@@ -8,7 +8,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 /// <param name="Nome">Nome do token do beneficiário, gravado no aceite; nulo antes dele.</param>
 public sealed record BeneficiarioDoPedidoDto(string Email, IdentidadeDto? Identidade, string? Nome);
 
-/// <summary>Decisão de um aprovador, com o retrato do perfil que ele avaliou.</summary>
+/// <summary>Decisão de um aprovador, com o perfil como ele o avaliou.</summary>
 /// <param name="Dispensa">Motivo da dispensa da segunda aprovação, quando a decisão a dispensou.</param>
 public sealed record DecisaoDoPedidoDto(
     string Etapa,

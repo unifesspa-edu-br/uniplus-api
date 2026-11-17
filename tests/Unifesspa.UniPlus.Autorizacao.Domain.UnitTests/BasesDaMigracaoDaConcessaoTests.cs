@@ -20,7 +20,7 @@ public sealed class BasesDaMigracaoDaConcessaoTests
     private static readonly Identidade Diogo = new("https://idp.test/realms/unifesspa", "diogo.souza");
     private static readonly FakeCatalogo Catalogo = new();
 
-    [Fact(DisplayName = "Migrar grava a base do código mantido com o retrato da versão que sai")]
+    [Fact(DisplayName = "Migrar grava a base do código mantido com o que a versão que sai guardava")]
     public void Migrar_CodigoMantido_GravaABaseDaMigracao()
     {
         Concessao concessao = Migrada();

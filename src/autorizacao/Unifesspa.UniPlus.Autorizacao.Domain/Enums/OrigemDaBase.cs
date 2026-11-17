@@ -3,7 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 /// <summary>De onde vem a base de uma permissão na concessão: a classificação e o escopo contra os quais a reclassificação se mede.</summary>
 public enum OrigemDaBase
 {
-    /// <summary>A concessão trocou de versão e manteve a permissão: a base é o retrato da versão que saiu.</summary>
+    /// <summary>A concessão trocou de versão e manteve a permissão: a base é o que a versão que saiu guardava.</summary>
     Migracao = 1,
 
     /// <summary>A permissão saiu da composição da concessão: encerra a base dela.</summary>

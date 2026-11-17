@@ -96,7 +96,7 @@ public sealed class InstanciaAntigaTests : PerfilEndpointTestBase, IAsyncLifetim
         (await PermissoesAsync(pessoa)).Should().Contain(ConsultarCatalogo);
     }
 
-    [Fact(DisplayName = "A primeira conferência sobre a carga e os retratos atuais não grava nenhuma reclassificação")]
+    [Fact(DisplayName = "A primeira conferência sobre a carga e as versões atuais não grava nenhuma reclassificação")]
     public async Task PrimeiraConferencia_GravaZeroReclassificacoes()
     {
         await ConcessoesDeTeste.ConcederPermissoesAsync(Fixture.Factory.Services, $"leandro.viana.{Guid.NewGuid():N}", ConsultarCatalogo);
