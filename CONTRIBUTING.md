@@ -55,7 +55,9 @@ migration, do Keycloak, dos perfis e das portas do dia em que foram gerados. O P
 projeto limpo: API saudável, logins, perfis, processos e Geo):
 
 - **a migration:** regerá-la (o que o projeto faz quando o modelo muda). A migration nova tem outro nome, a API sobe sobre o banco restaurado,
-  enxerga a antiga, que não existe mais no código, tenta aplicar a nova sobre tabelas existentes e o `docker compose up` deixa de funcionar.
+  enxerga a antiga, que não existe mais no código, e a subida da API para com a mensagem de banco de outra versão da migration, que traz o
+  comando `docker compose down -v && docker compose up`. Após falha, a API faz no máximo três reinícios e depois para;
+  consulte seus logs para identificar a guarda. Com o volume já novo, a mensagem indica que os dumps estão defasados.
   Uma migration incremental criada sobre a atual se aplica sobre o dump sem esse problema, mas regere os dumps assim mesmo para a base
   refletir o modelo;
 - **o Keycloak:** realm, clients, `docker/keycloak/personas.json` ou as contas técnicas;
