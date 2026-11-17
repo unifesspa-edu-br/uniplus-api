@@ -426,12 +426,6 @@
     "titulo": "As opções formadas pelas respostas precisam citar fatos"
   },
   {
-    "chave": "RestricaoValor.FormaJsonInvalida",
-    "status": 422,
-    "codigo": "uniplus.restricao_valor.forma_json_invalida",
-    "titulo": "A restrição de valor não tem a forma esperada"
-  },
-  {
     "chave": "RestricaoValor.TipoRepetido",
     "status": 422,
     "codigo": "uniplus.restricao_valor.tipo_repetido",
@@ -442,12 +436,6 @@
     "status": 422,
     "codigo": "uniplus.restricao_valor.limite_de_data_invalido",
     "titulo": "O limite da faixa de data é uma data fixa ou o envio deslocado em anos e dias"
-  },
-  {
-    "chave": "PredicadoDnf.FormaJsonInvalida",
-    "status": 422,
-    "codigo": "uniplus.predicado_dnf.forma_json_invalida",
-    "titulo": "O predicado ou a obrigatoriedade não tem a forma esperada"
   },
   {
     "chave": "ClausulaDnf.ClausulaVazia",
@@ -510,40 +498,16 @@
     "titulo": "O fato da condição não é coletado por este processo"
   },
   {
-    "chave": "PredicadoDnf.DominioDinamicoNaoFornecido",
-    "status": 422,
-    "codigo": "uniplus.predicado_dnf.dominio_dinamico_nao_fornecido",
-    "titulo": "O domínio dinâmico do fato não foi fornecido pelo chamador"
-  },
-  {
-    "chave": "DescritorFatoCandidato.DominioIncoerente",
-    "status": 422,
-    "codigo": "uniplus.descritor_fato_candidato.dominio_incoerente",
-    "titulo": "A combinação de domínio e valores declarados do fato é incoerente"
-  },
-  {
     "chave": "RegraDerivacao.ContribuiObrigatorio",
     "status": 422,
     "codigo": "uniplus.regra_derivacao.contribui_obrigatorio",
     "titulo": "Uma regra de derivação precisa contribuir um código"
   },
   {
-    "chave": "RegrasDerivacaoFato.SemRegras",
-    "status": 422,
-    "codigo": "uniplus.regras_derivacao_fato.sem_regras",
-    "titulo": "A derivação de um fato precisa de ao menos uma regra"
-  },
-  {
     "chave": "RegrasDerivacaoFato.ContribuiForaDoDominio",
     "status": 422,
     "codigo": "uniplus.regras_derivacao_fato.contribui_fora_do_dominio",
     "titulo": "Uma regra contribui um código fora do domínio do fato"
-  },
-  {
-    "chave": "RegrasDerivacaoFato.DependenciasIncoerentes",
-    "status": 422,
-    "codigo": "uniplus.regras_derivacao_fato.dependencias_incoerentes",
-    "titulo": "As dependências declaradas não são exatamente os fatos citados"
   },
   {
     "chave": "FormularioPortavel.ObrigatoriedadeInvalida",

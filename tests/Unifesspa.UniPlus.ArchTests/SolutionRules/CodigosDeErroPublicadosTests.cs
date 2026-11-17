@@ -15,8 +15,8 @@ using static ArchUnitNET.Fluent.ArchRuleDefinition;
 
 /// <summary>
 /// O arquivo <c>contracts/codigos-de-erro.json</c> é a lista dos códigos de erro de fio que a API
-/// emite, e é gerado dos registros de erro dos módulos e das definições da fronteira HTTP. O
-/// lint do catálogo de erros do portal lê o arquivo para conferir que cada código tem página.
+/// emite, e é gerado dos registros de erro dos módulos e das definições da fronteira HTTP. A
+/// conferência de que cada código tem página é do portal, por outro caminho.
 /// Código novo, código removido, ou status e título alterados reprovam até o arquivo ser regerado.
 /// </summary>
 public sealed class CodigosDeErroPublicadosTests

@@ -3032,11 +3032,6 @@
       "titulo": "Tamanho de página inválido"
     },
     {
-      "codigo": "uniplus.descritor_fato_candidato.dominio_incoerente",
-      "status": 422,
-      "titulo": "A combinação de domínio e valores declarados do fato é incoerente"
-    },
-    {
       "codigo": "uniplus.email.invalido",
       "status": 422,
       "titulo": "E-mail inválido"
@@ -3717,11 +3712,6 @@
       "titulo": "O predicado contém uma condição nula"
     },
     {
-      "codigo": "uniplus.predicado_dnf.dominio_dinamico_nao_fornecido",
-      "status": 422,
-      "titulo": "O domínio dinâmico do fato não foi fornecido pelo chamador"
-    },
-    {
       "codigo": "uniplus.predicado_dnf.fato_desconhecido",
       "status": 422,
       "titulo": "O fato da condição não pertence ao vocabulário fechado"
@@ -3730,11 +3720,6 @@
       "codigo": "uniplus.predicado_dnf.fato_nao_coletado_pelo_processo",
       "status": 422,
       "titulo": "O fato da condição não é coletado por este processo"
-    },
-    {
-      "codigo": "uniplus.predicado_dnf.forma_json_invalida",
-      "status": 422,
-      "titulo": "O predicado ou a obrigatoriedade não tem a forma esperada"
     },
     {
       "codigo": "uniplus.predicado_dnf.operador_incompativel_com_dominio",
@@ -3892,19 +3877,9 @@
       "titulo": "Uma regra contribui um código fora do domínio do fato"
     },
     {
-      "codigo": "uniplus.regras_derivacao_fato.dependencias_incoerentes",
-      "status": 422,
-      "titulo": "As dependências declaradas não são exatamente os fatos citados"
-    },
-    {
       "codigo": "uniplus.regras_derivacao_fato.derivacao_autorreferente",
       "status": 422,
       "titulo": "Um fato derivado não pode depender de si mesmo"
-    },
-    {
-      "codigo": "uniplus.regras_derivacao_fato.sem_regras",
-      "status": 422,
-      "titulo": "A derivação de um fato precisa de ao menos uma regra"
     },
     {
       "codigo": "uniplus.requisicao.campo_obrigatorio_ausente",
@@ -3930,11 +3905,6 @@
       "codigo": "uniplus.restricao_valor.fatos_vazios",
       "status": 422,
       "titulo": "As opções formadas pelas respostas precisam citar fatos"
-    },
-    {
-      "codigo": "uniplus.restricao_valor.forma_json_invalida",
-      "status": 422,
-      "titulo": "A restrição de valor não tem a forma esperada"
     },
     {
       "codigo": "uniplus.restricao_valor.limite_de_data_invalido",
