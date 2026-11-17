@@ -5,215 +5,62 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
+/// <summary>
+/// A orquestração do handler: a conferência recusa sem gravar, e a gravação aplica a atualização à
+/// Instituição conferida. As regras estão nos testes da conferência e da gravação.
+/// </summary>
 public sealed class AtualizarInstituicaoCommandHandlerTests
 {
-    private static readonly DateTimeOffset CidadeCarimbadaEm = new(2026, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    private readonly IInstituicaoRepository _repo = Substitute.For<IInstituicaoRepository>();
+    private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
+    private readonly IInstituicaoCacheInvalidator _cache = Substitute.For<IInstituicaoCacheInvalidator>();
 
-    private static Instituicao InstituicaoExistente(
-        string? cidadeCodigoIbge = null,
-        string? cidadeNome = null,
-        string? cidadeUf = null,
-        string? cidadeOrigem = null,
-        DateTimeOffset? cidadeDisplayAtualizadoEm = null) =>
-        Instituicao.Criar(
-            "3990", "Universidade Federal do Sul e Sudeste do Pará", "Unifesspa", "Universidade", "Pública Federal",
-            cnpj: null, mantenedora: null, codigoMantenedoraEmec: null, situacao: null, atoCredenciamento: null,
-            atoRecredenciamento: null, conceitoInstitucional: null, igc: null, website: null, endereco: null,
-            cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm, unidadeRaizId: null).Value!;
+    private Task<Result> AtualizarAsync(AtualizarInstituicaoCommand command) =>
+        AtualizarInstituicaoCommandHandler.Handle(
+            command,
+            new ConferenciaDoCadastroDaInstituicao(_repo, Substitute.For<IUnidadeRepository>()),
+            new GravacaoDaInstituicao(_repo, _uow, _cache),
+            new RelogioFixo(new DateTimeOffset(2026, 6, 22, 17, 10, 0, TimeSpan.Zero)),
+            CancellationToken.None);
 
-    private static AtualizarInstituicaoCommand CommandValido(
-        Guid id,
-        Guid? unidadeRaizId = null,
-        string? cidadeCodigoIbge = null,
-        string? cidadeNome = null,
-        string? cidadeUf = null) => new(
-        id, "3990", "Universidade Federal do Sul e Sudeste do Pará", "Unifesspa", "Universidade", "Pública Federal",
-        Cnpj: null, Mantenedora: null, CodigoMantenedoraEmec: null, Situacao: null, AtoCredenciamento: null,
-        AtoRecredenciamento: null, ConceitoInstitucional: null, Igc: null, Website: null, Endereco: null,
-        CidadeCodigoIbge: cidadeCodigoIbge, CidadeNome: cidadeNome, CidadeUf: cidadeUf, unidadeRaizId);
-
-    private static Unidade NovaUnidade(TipoUnidade tipo) =>
-        Unidade.Criar(
-            "Reitoria",
-            new IdentificadoresDaUnidade("reitoria", "REIT", "REIT001", null),
-            CidadeDaUnidade.Nenhuma,
-            new VigenciaDaUnidade(new DateOnly(2026, 1, 1), null),
-            null,
-            tipo,
-            false).Value!;
-
-    [Fact(DisplayName = "Handle com Instituição inexistente retorna NaoEncontrada e NÃO persiste")]
-    public async Task Handle_ComInstituicaoInexistente_RetornaNaoEncontrada()
+    [Fact(DisplayName = "Handle com campos válidos atualiza a Instituição conferida, salva e invalida o cache")]
+    public async Task Handle_ComCamposValidos_AtualizaSalvaEInvalidaCache()
     {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        repo.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Instituicao?)null);
+        Instituicao existente = InstituicaoDeTeste.Criar(
+            InstituicaoDeTeste.IdentificacaoDaUnifesspa with { Sigla = "Antiga" }).Value!;
+        _repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
 
-        Result resultado = await AtualizarInstituicaoCommandHandler.Handle(
-            CommandValido(Guid.CreateVersion7()), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
+        Result resultado = await AtualizarAsync(ComandosDeInstituicaoDeTeste.Atualizacao(existente.Id));
 
-        resultado.IsFailure.Should().BeTrue();
+        resultado.IsSuccess.Should().BeTrue();
+        existente.Sigla.Should().Be("Unifesspa");
+        await _uow.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _cache.Received(1).InvalidarAsync(Arg.Any<CancellationToken>());
+    }
+
+    [Fact(DisplayName = "Handle com Instituição inexistente devolve NaoEncontrada sem gravar")]
+    public async Task Handle_ComInstituicaoInexistente_DevolveNaoEncontradaSemGravar()
+    {
+        Result resultado = await AtualizarAsync(ComandosDeInstituicaoDeTeste.Atualizacao(Guid.CreateVersion7()));
+
         resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.NaoEncontrada);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle com campo obrigatório vazio propaga o erro sem buscar a Instituição por Id — validação vence 404")]
-    public async Task Handle_ComCampoObrigatorioVazio_RetornaErroSemBuscarPorId()
+    [Fact(DisplayName = "Handle com payload inválido devolve o erro do payload sem gravar")]
+    public async Task Handle_ComPayloadInvalido_DevolveOErroSemGravar()
     {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        AtualizarInstituicaoCommand comando = CommandValido(Guid.CreateVersion7()) with { Nome = "" };
+        Result resultado = await AtualizarAsync(ComandosDeInstituicaoDeTeste.Atualizacao(Guid.CreateVersion7()) with { Nome = "" });
 
-        Result resultado = await AtualizarInstituicaoCommandHandler.Handle(
-            comando, repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.NomeObrigatorio);
-        await repo.DidNotReceive().ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>());
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com campos válidos atualiza e invalida cache")]
-    public async Task Handle_ComCamposValidos_AtualizaEInvalidaCache()
-    {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        Instituicao existente = InstituicaoExistente();
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-
-        Result resultado = await AtualizarInstituicaoCommandHandler.Handle(
-            CommandValido(existente.Id), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue();
-        await uow.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        await cache.Received(1).InvalidarAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com unidade raiz reitoria aceita o vínculo")]
-    public async Task Handle_ComUnidadeRaizReitoria_Aceita()
-    {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        Instituicao existente = InstituicaoExistente();
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        Unidade reitoria = NovaUnidade(TipoUnidade.Reitoria);
-        unidadeRepo.ObterPorIdParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(reitoria);
-
-        Result resultado = await AtualizarInstituicaoCommandHandler.Handle(
-            CommandValido(existente.Id, reitoria.Id), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue();
-        existente.UnidadeRaizId.Should().Be(reitoria.Id);
-    }
-
-    [Fact(DisplayName = "Handle com unidade raiz de outro tipo retorna UnidadeRaizNaoEhReitoria")]
-    public async Task Handle_ComUnidadeRaizNaoReitoria_RetornaErro()
-    {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        Instituicao existente = InstituicaoExistente();
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        Unidade centro = NovaUnidade(TipoUnidade.Centro);
-        unidadeRepo.ObterPorIdParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(centro);
-
-        Result resultado = await AtualizarInstituicaoCommandHandler.Handle(
-            CommandValido(existente.Id, Guid.CreateVersion7()), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.UnidadeRaizNaoEhReitoria);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "PUT sem mudar a cidade preserva cidade_display_atualizado_em (ADR-0090)")]
-    public async Task Handle_CidadeInalterada_PreservaCarimboDeCidade()
-    {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        Instituicao existente = InstituicaoExistente(
-            "1504208", "Marabá", "PA", ReferenciaCidadeGeo.OrigemGeoApi, CidadeCarimbadaEm);
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-
-        // Muda só o vínculo de raiz (deixado nulo aqui); o trio de cidade permanece igual.
-        AtualizarInstituicaoCommand comando = CommandValido(
-            existente.Id, cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA");
-
-        Result resultado = await AtualizarInstituicaoCommandHandler.Handle(
-            comando, repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue();
-        existente.CidadeDisplayAtualizadoEm.Should().Be(CidadeCarimbadaEm,
-            "a cidade não mudou, então o carimbo de frescura do display cache é preservado");
-        existente.CidadeOrigem.Should().Be(ReferenciaCidadeGeo.OrigemGeoApi);
-    }
-
-    [Fact(DisplayName = "PUT trocando a cidade recarimba cidade_display_atualizado_em (ADR-0090)")]
-    public async Task Handle_CidadeAlterada_RecarimbaCidade()
-    {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        Instituicao existente = InstituicaoExistente(
-            "1504208", "Marabá", "PA", ReferenciaCidadeGeo.OrigemGeoApi, CidadeCarimbadaEm);
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-
-        AtualizarInstituicaoCommand comando = CommandValido(
-            existente.Id, cidadeCodigoIbge: "1501402", cidadeNome: "Belém", cidadeUf: "PA");
-
-        Result resultado = await AtualizarInstituicaoCommandHandler.Handle(
-            comando, repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue();
-        existente.CidadeNome.Should().Be("Belém");
-        existente.CidadeDisplayAtualizadoEm.Should().NotBe(CidadeCarimbadaEm,
-            "a cidade mudou, então o carimbo é renovado a partir do TimeProvider");
-        existente.CidadeOrigem.Should().Be(ReferenciaCidadeGeo.OrigemGeoApi);
-    }
-
-    [Fact(DisplayName = "PUT removendo a cidade zera o trio e o display cache (all-or-nothing)")]
-    public async Task Handle_CidadeRemovida_ZeraTrioEDisplayCache()
-    {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        Instituicao existente = InstituicaoExistente(
-            "1504208", "Marabá", "PA", ReferenciaCidadeGeo.OrigemGeoApi, CidadeCarimbadaEm);
-        repo.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-
-        // Trio ausente no payload → remove a referência de cidade.
-        AtualizarInstituicaoCommand comando = CommandValido(existente.Id);
-
-        Result resultado = await AtualizarInstituicaoCommandHandler.Handle(
-            comando, repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue();
-        existente.CidadeCodigoIbge.Should().BeNull();
-        existente.CidadeNome.Should().BeNull();
-        existente.CidadeUf.Should().BeNull();
-        existente.CidadeOrigem.Should().BeNull();
-        existente.CidadeDisplayAtualizadoEm.Should().BeNull();
+        await _uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

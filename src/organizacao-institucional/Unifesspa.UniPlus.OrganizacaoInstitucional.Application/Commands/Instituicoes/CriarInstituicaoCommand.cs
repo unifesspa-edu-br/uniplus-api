@@ -37,4 +37,4 @@ public sealed record CriarInstituicaoCommand(
     string? CidadeCodigoIbge,
     string? CidadeNome,
     string? CidadeUf,
-    Guid? UnidadeRaizId) : ICommand<Result<Guid>>;
+    Guid? UnidadeRaizId) : ICommand<Result<Guid>>, IDadosDaInstituicaoDoComando;

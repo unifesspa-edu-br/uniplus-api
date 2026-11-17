@@ -14,4 +14,8 @@
     <ProjectReference Include="..\Unifesspa.UniPlus.OrganizacaoInstitucional.Domain\Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Unifesspa.UniPlus.OrganizacaoInstitucional.Application.UnitTests" />
+  </ItemGroup>
+
 </Project>

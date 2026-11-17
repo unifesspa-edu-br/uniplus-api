@@ -1,11 +1,10 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 
-using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
 
 /// <summary>
 /// Instituição de ensino superior dona da plataforma — a Unifesspa no
@@ -91,54 +90,33 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
     }
 
     /// <summary>
+    /// A referência de cidade da sede como o agregado a guarda, montada das colunas planas. Não é
+    /// persistida: serve para comparar com a cidade informada e decidir o carimbo.
+    /// </summary>
+    public CidadeDaSede CidadeDaSede =>
+        new(CidadeCodigoIbge, CidadeNome, CidadeUf, CidadeOrigem, CidadeDisplayAtualizadoEm);
+
+    /// <summary>
     /// Cria a Instituição. Valida apenas formato e domínio local (incluindo a
-    /// referência de cidade opcional via <see cref="ReferenciaCidadeGeo"/>) — o
-    /// invariante singleton (no máximo uma viva) e a conferência do tipo da
-    /// Unidade raiz são responsabilidade do handler chamador (dependem do
-    /// repositório). A proveniência/frescura do display cache
-    /// (<paramref name="cidadeOrigem"/>, <paramref name="cidadeDisplayAtualizadoEm"/>)
-    /// é carimbada server-side pelo handler (ADR-0090).
+    /// referência de cidade opcional) — o invariante singleton e a conferência do
+    /// tipo da Unidade raiz são responsabilidade do handler chamador (dependem do
+    /// repositório). A proveniência/frescura do display cache da cidade é carimbada
+    /// server-side pelo handler (<see cref="CidadeDaSede.Carimbada"/>, ADR-0090).
     /// </summary>
     public static Result<Instituicao> Criar(
-        string? codigoEmec,
-        string? nome,
-        string? sigla,
-        string? organizacaoAcademica,
-        string? categoriaAdministrativa,
-        string? cnpj,
-        string? mantenedora,
-        string? codigoMantenedoraEmec,
-        string? situacao,
-        string? atoCredenciamento,
-        string? atoRecredenciamento,
-        string? conceitoInstitucional,
-        string? igc,
-        string? website,
+        IdentificacaoRegulatoriaDaInstituicao identificacao,
+        CidadeDaSede cidade,
         ReferenciaEnderecoGeo? endereco,
-        string? cidadeCodigoIbge,
-        string? cidadeNome,
-        string? cidadeUf,
-        string? cidadeOrigem,
-        DateTimeOffset? cidadeDisplayAtualizadoEm,
         Guid? unidadeRaizId)
     {
-        Result validacao = ConferenciaDaInstituicao.Conferir(
-            codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
-            cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website, endereco,
-            cidadeCodigoIbge, cidadeNome, cidadeUf);
+        Result validacao = ValidarCampos(identificacao, cidade, endereco);
         if (validacao.IsFailure)
         {
             return Result<Instituicao>.ValidationFailure(validacao.Errors);
         }
 
         var instituicao = new Instituicao();
-        instituicao.AplicarCampos(
-            codigoEmec!, nome!, sigla!, organizacaoAcademica!, categoriaAdministrativa!,
-            cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website, endereco,
-            cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm,
-            unidadeRaizId);
+        instituicao.AplicarCampos(identificacao, cidade, endereco, unidadeRaizId);
 
         return Result<Instituicao>.Success(instituicao);
     }
@@ -149,120 +127,20 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
     /// como o carimbo da proveniência/frescura do display cache da cidade.
     /// </summary>
     public Result Atualizar(
-        string? codigoEmec,
-        string? nome,
-        string? sigla,
-        string? organizacaoAcademica,
-        string? categoriaAdministrativa,
-        string? cnpj,
-        string? mantenedora,
-        string? codigoMantenedoraEmec,
-        string? situacao,
-        string? atoCredenciamento,
-        string? atoRecredenciamento,
-        string? conceitoInstitucional,
-        string? igc,
-        string? website,
+        IdentificacaoRegulatoriaDaInstituicao identificacao,
+        CidadeDaSede cidade,
         ReferenciaEnderecoGeo? endereco,
-        string? cidadeCodigoIbge,
-        string? cidadeNome,
-        string? cidadeUf,
-        string? cidadeOrigem,
-        DateTimeOffset? cidadeDisplayAtualizadoEm,
         Guid? unidadeRaizId)
     {
-        Result validacao = ConferenciaDaInstituicao.Conferir(
-            codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
-            cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website, endereco,
-            cidadeCodigoIbge, cidadeNome, cidadeUf);
+        Result validacao = ValidarCampos(identificacao, cidade, endereco);
         if (validacao.IsFailure)
         {
-            return Result.ValidationFailure(validacao.Errors);
+            return validacao;
         }
 
-        AplicarCampos(
-            codigoEmec!, nome!, sigla!, organizacaoAcademica!, categoriaAdministrativa!,
-            cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website, endereco,
-            cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm,
-            unidadeRaizId);
+        AplicarCampos(identificacao, cidade, endereco, unidadeRaizId);
 
         return Result.Success();
-    }
-
-    private void AplicarCampos(
-        string codigoEmec,
-        string nome,
-        string sigla,
-        string organizacaoAcademica,
-        string categoriaAdministrativa,
-        string? cnpj,
-        string? mantenedora,
-        string? codigoMantenedoraEmec,
-        string? situacao,
-        string? atoCredenciamento,
-        string? atoRecredenciamento,
-        string? conceitoInstitucional,
-        string? igc,
-        string? website,
-        ReferenciaEnderecoGeo? endereco,
-        string? cidadeCodigoIbge,
-        string? cidadeNome,
-        string? cidadeUf,
-        string? cidadeOrigem,
-        DateTimeOffset? cidadeDisplayAtualizadoEm,
-        Guid? unidadeRaizId)
-    {
-        CodigoEmec = codigoEmec.Trim();
-        Nome = nome.Trim();
-        Sigla = sigla.Trim();
-        OrganizacaoAcademica = organizacaoAcademica.Trim();
-        CategoriaAdministrativa = categoriaAdministrativa.Trim();
-        Cnpj = NormalizarOpcional(cnpj);
-        Mantenedora = NormalizarOpcional(mantenedora);
-        CodigoMantenedoraEmec = NormalizarOpcional(codigoMantenedoraEmec);
-        Situacao = NormalizarOpcional(situacao);
-        AtoCredenciamento = NormalizarOpcional(atoCredenciamento);
-        AtoRecredenciamento = NormalizarOpcional(atoRecredenciamento);
-        ConceitoInstitucional = NormalizarOpcional(conceitoInstitucional);
-        Igc = NormalizarOpcional(igc);
-        Website = NormalizarOpcional(website);
-        Endereco = endereco;
-        AplicarReferenciaCidade(
-            cidadeCodigoIbge, cidadeNome, cidadeUf, cidadeOrigem, cidadeDisplayAtualizadoEm);
-        UnidadeRaizId = unidadeRaizId;
-    }
-
-    /// <summary>
-    /// Normaliza a referência de cidade já validada (all-or-nothing): com cidade
-    /// presente grava o trio normalizado (UF em caixa alta) + display cache; sem
-    /// cidade, zera os cinco campos. O gate canônico é o código IBGE — a validação
-    /// garante que, se qualquer fragmento veio, o trio completo veio.
-    /// </summary>
-    private void AplicarReferenciaCidade(
-        string? cidadeCodigoIbge,
-        string? cidadeNome,
-        string? cidadeUf,
-        string? cidadeOrigem,
-        DateTimeOffset? cidadeDisplayAtualizadoEm)
-    {
-        bool temCidade = !string.IsNullOrWhiteSpace(cidadeCodigoIbge);
-        CidadeCodigoIbge = temCidade ? cidadeCodigoIbge!.Trim() : null;
-        CidadeNome = temCidade ? cidadeNome!.Trim() : null;
-        CidadeUf = temCidade ? cidadeUf!.Trim().ToUpperInvariant() : null;
-        CidadeOrigem = temCidade ? NormalizarOpcional(cidadeOrigem) : null;
-        CidadeDisplayAtualizadoEm = temCidade ? cidadeDisplayAtualizadoEm : null;
-    }
-
-    private static string? NormalizarOpcional(string? valor)
-    {
-        if (string.IsNullOrWhiteSpace(valor))
-        {
-            return null;
-        }
-
-        return valor.Trim();
     }
 
     /// <summary>
@@ -275,27 +153,47 @@ public sealed class Instituicao : SoftDeletableEntity, IAuditableEntity
     /// de singleton e do vínculo com a Unidade raiz.
     /// </summary>
     public static Result ValidarCampos(
-        string? codigoEmec,
-        string? nome,
-        string? sigla,
-        string? organizacaoAcademica,
-        string? categoriaAdministrativa,
-        string? cnpj,
-        string? mantenedora,
-        string? codigoMantenedoraEmec,
-        string? situacao,
-        string? atoCredenciamento,
-        string? atoRecredenciamento,
-        string? conceitoInstitucional,
-        string? igc,
-        string? website,
+        IdentificacaoRegulatoriaDaInstituicao identificacao,
+        CidadeDaSede cidade,
+        ReferenciaEnderecoGeo? endereco)
+        => ConferenciaDaInstituicao.Conferir(identificacao, cidade, endereco);
+
+    private void AplicarCampos(
+        IdentificacaoRegulatoriaDaInstituicao identificacao,
+        CidadeDaSede cidade,
         ReferenciaEnderecoGeo? endereco,
-        string? cidadeCodigoIbge,
-        string? cidadeNome,
-        string? cidadeUf)
-        => ConferenciaDaInstituicao.Conferir(
-            codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa,
-            cnpj, mantenedora, codigoMantenedoraEmec, situacao, atoCredenciamento,
-            atoRecredenciamento, conceitoInstitucional, igc, website, endereco,
-            cidadeCodigoIbge, cidadeNome, cidadeUf);
+        Guid? unidadeRaizId)
+    {
+        AplicarIdentificacao(identificacao.Normalizar());
+        AplicarCidade(cidade.Normalizada());
+        Endereco = endereco;
+        UnidadeRaizId = unidadeRaizId;
+    }
+
+    private void AplicarIdentificacao(IdentificacaoRegulatoriaDaInstituicao identificacao)
+    {
+        CodigoEmec = identificacao.CodigoEmec!;
+        Nome = identificacao.Nome!;
+        Sigla = identificacao.Sigla!;
+        OrganizacaoAcademica = identificacao.OrganizacaoAcademica!;
+        CategoriaAdministrativa = identificacao.CategoriaAdministrativa!;
+        Cnpj = identificacao.Cnpj;
+        Mantenedora = identificacao.Mantenedora;
+        CodigoMantenedoraEmec = identificacao.CodigoMantenedoraEmec;
+        Situacao = identificacao.Situacao;
+        AtoCredenciamento = identificacao.AtoCredenciamento;
+        AtoRecredenciamento = identificacao.AtoRecredenciamento;
+        ConceitoInstitucional = identificacao.ConceitoInstitucional;
+        Igc = identificacao.Igc;
+        Website = identificacao.Website;
+    }
+
+    private void AplicarCidade(CidadeDaSede cidade)
+    {
+        CidadeCodigoIbge = cidade.CodigoIbge;
+        CidadeNome = cidade.Nome;
+        CidadeUf = cidade.Uf;
+        CidadeOrigem = cidade.Origem;
+        CidadeDisplayAtualizadoEm = cidade.DisplayAtualizadoEm;
+    }
 }

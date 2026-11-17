@@ -9,6 +9,7 @@ using Testcontainers.PostgreSql;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
 using Unifesspa.UniPlus.Monolito.Persistencia;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Unidades;
 
 /// <summary>
@@ -30,7 +31,7 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Unidades;
     "Reliability",
     "CA1001:Types that own disposable fields should be disposable",
     Justification = "Disposable resources released by IAsyncLifetime.DisposeAsync — xUnit invoca deterministicamente.")]
-public sealed class InstituicaoDbFixture : IAsyncLifetime
+public sealed class InstituicaoDbFixture : IAsyncLifetime, IFabricaDeContextoDeTeste
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18-alpine")
         .WithDatabase("uniplus_instituicao_tests")

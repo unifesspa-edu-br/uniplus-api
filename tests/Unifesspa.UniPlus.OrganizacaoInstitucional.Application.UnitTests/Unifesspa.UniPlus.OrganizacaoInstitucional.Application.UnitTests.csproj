@@ -11,10 +11,16 @@
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="AwesomeAssertions" />
     <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/organizacao-institucional/Unifesspa.UniPlus.OrganizacaoInstitucional.Application/Unifesspa.UniPlus.OrganizacaoInstitucional.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Shared/InstituicaoDeTeste.cs" Link="InstituicaoDeTeste.cs" />
+    <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
   </ItemGroup>
 
   <ItemGroup>

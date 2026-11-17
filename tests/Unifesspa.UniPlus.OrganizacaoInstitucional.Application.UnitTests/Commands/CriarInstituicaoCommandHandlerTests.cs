@@ -5,229 +5,62 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Enderecos;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Instituicoes;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
+/// <summary>
+/// A orquestração do handler: a conferência recusa sem gravar, e a gravação devolve o Id. As regras estão
+/// nos testes da conferência e da gravação.
+/// </summary>
 public sealed class CriarInstituicaoCommandHandlerTests
 {
-    private static CriarInstituicaoCommand CommandValido(Guid? unidadeRaizId = null) => new(
-        "3990",
-        "Universidade Federal do Sul e Sudeste do Pará",
-        "Unifesspa",
-        "Universidade",
-        "Pública Federal",
-        Cnpj: null,
-        Mantenedora: null,
-        CodigoMantenedoraEmec: null,
-        Situacao: null,
-        AtoCredenciamento: null,
-        AtoRecredenciamento: null,
-        ConceitoInstitucional: null,
-        Igc: null,
-        Website: null,
-        Endereco: null,
-        CidadeCodigoIbge: null,
-        CidadeNome: null,
-        CidadeUf: null,
-        unidadeRaizId);
+    private readonly IInstituicaoRepository _repo = Substitute.For<IInstituicaoRepository>();
+    private readonly IUnitOfWork _uow = Substitute.For<IUnitOfWork>();
+    private readonly IInstituicaoCacheInvalidator _cache = Substitute.For<IInstituicaoCacheInvalidator>();
 
-    private static EnderecoGeoInput EnderecoInput() =>
-        new("68507590", "Folha 31", "s/n", null, "Nova Marabá", null,
-            new CidadeReferenciaInput("1504208", "Marabá", "PA"),
-            -5.3m, -49.1m, NivelResolucaoEndereco.Logradouro, "logradouro");
+    private Task<Result<Guid>> CriarAsync(CriarInstituicaoCommand command) =>
+        CriarInstituicaoCommandHandler.Handle(
+            command,
+            new ConferenciaDoCadastroDaInstituicao(_repo, Substitute.For<IUnidadeRepository>()),
+            new GravacaoDaInstituicao(_repo, _uow, _cache),
+            new RelogioFixo(new DateTimeOffset(2026, 6, 22, 17, 10, 0, TimeSpan.Zero)),
+            CancellationToken.None);
 
-    private static Unidade NovaUnidade(TipoUnidade tipo) =>
-        Unidade.Criar(
-            "Reitoria",
-            new IdentificadoresDaUnidade("reitoria", "REIT", "REIT001", null),
-            CidadeDaUnidade.Nenhuma,
-            new VigenciaDaUnidade(new DateOnly(2026, 1, 1), null),
-            null,
-            tipo,
-            false).Value!;
-
-    [Fact(DisplayName = "Handle sem Instituição existente cria, persiste e invalida cache")]
-    public async Task Handle_SemInstituicaoExistente_CriaInstituicaoAtiva()
+    [Fact(DisplayName = "Handle sem Instituição existente cria, persiste e devolve o Id da Instituição")]
+    public async Task Handle_SemInstituicaoExistente_CriaEDevolveOId()
     {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
+        Instituicao? adicionada = null;
+        await _repo.AdicionarAsync(Arg.Do<Instituicao>(i => adicionada = i), Arg.Any<CancellationToken>());
 
-        Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            CommandValido(), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
+        Result<Guid> resultado = await CriarAsync(ComandosDeInstituicaoDeTeste.Criacao());
 
-        resultado.IsSuccess.Should().BeTrue();
-        resultado.Value.Should().NotBeEmpty();
-        await repo.Received(1).AdicionarAsync(Arg.Any<Instituicao>(), Arg.Any<CancellationToken>());
-        await uow.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        await cache.Received(1).InvalidarAsync(Arg.Any<CancellationToken>());
+        resultado.Value.Should().Be(adicionada!.Id);
+        await _uow.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle com Instituição viva existente retorna JaExiste e NÃO persiste")]
-    public async Task Handle_ComInstituicaoVivaExistente_RetornaJaExiste()
+    [Fact(DisplayName = "Handle com a conferência recusada devolve a recusa sem gravar")]
+    public async Task Handle_ComConferenciaRecusada_DevolveARecusaSemGravar()
     {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(true);
+        _repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(true);
 
-        Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            CommandValido(), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
+        Result<Guid> resultado = await CriarAsync(ComandosDeInstituicaoDeTeste.Criacao());
 
-        resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.JaExisteInstituicaoViva);
-        await repo.DidNotReceive().AdicionarAsync(Arg.Any<Instituicao>(), Arg.Any<CancellationToken>());
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _repo.DidNotReceive().AdicionarAsync(Arg.Any<Instituicao>(), Arg.Any<CancellationToken>());
+        await _uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Handle com unidade raiz inexistente retorna UnidadeRaizNaoEncontrada")]
-    public async Task Handle_ComUnidadeRaizInexistente_RetornaErro()
+    [Fact(DisplayName = "Handle com payload inválido devolve todos os erros do payload sem gravar")]
+    public async Task Handle_ComPayloadInvalido_DevolveOsErrosSemGravar()
     {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
-        Guid raizId = Guid.CreateVersion7();
-        unidadeRepo.ObterPorIdParaLeituraAsync(raizId, Arg.Any<CancellationToken>()).Returns((Unidade?)null);
+        Result<Guid> resultado = await CriarAsync(ComandosDeInstituicaoDeTeste.Criacao() with { CodigoEmec = "", Sigla = "" });
 
-        Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            CommandValido(raizId), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.UnidadeRaizNaoEncontrada);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com unidade raiz de outro tipo retorna UnidadeRaizNaoEhReitoria")]
-    public async Task Handle_ComUnidadeRaizNaoReitoria_RetornaErro()
-    {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
-        Unidade centro = NovaUnidade(TipoUnidade.Centro);
-        unidadeRepo.ObterPorIdParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(centro);
-
-        Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            CommandValido(Guid.CreateVersion7()), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.UnidadeRaizNaoEhReitoria);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com unidade raiz do tipo reitoria cria com sucesso")]
-    public async Task Handle_ComUnidadeRaizReitoria_Cria()
-    {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
-        Unidade reitoria = NovaUnidade(TipoUnidade.Reitoria);
-        unidadeRepo.ObterPorIdParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns(reitoria);
-
-        Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            CommandValido(reitoria.Id), repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue();
-        await repo.Received(1).AdicionarAsync(Arg.Any<Instituicao>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com campo obrigatório vazio retorna erro de domínio sem consultar o guard de singleton — validação vence I/O")]
-    public async Task Handle_ComCampoObrigatorioVazio_RetornaErroSemConsultarSingleton()
-    {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        CriarInstituicaoCommand command = CommandValido() with { CodigoEmec = "" };
-
-        Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            command, repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.CodigoEmecObrigatorio);
-        await repo.DidNotReceive().ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>());
-        await repo.DidNotReceive().AdicionarAsync(Arg.Any<Instituicao>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com dois campos obrigatórios ausentes acumula os dois erros no mesmo lote")]
-    public async Task Handle_ComDoisCamposAusentes_AcumulaOsDois()
-    {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        CriarInstituicaoCommand command = CommandValido() with { CodigoEmec = "", Sigla = "" };
-
-        Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            command, repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Errors.Should().HaveCount(2);
-        resultado.Errors.Should().Contain(e => e.Field == "codigoEmec");
-        resultado.Errors.Should().Contain(e => e.Field == "sigla");
-        await repo.DidNotReceive().ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com endereço + cidade coerente constrói e persiste o endereço")]
-    public async Task Handle_ComEndereco_PersisteEndereco()
-    {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-        repo.ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>()).Returns(false);
-
-        Instituicao? capturada = null;
-        await repo.AdicionarAsync(Arg.Do<Instituicao>(i => capturada = i), Arg.Any<CancellationToken>());
-
-        CriarInstituicaoCommand command = CommandValido() with
-        {
-            CidadeCodigoIbge = "1504208",
-            CidadeNome = "Marabá",
-            CidadeUf = "PA",
-            Endereco = EnderecoInput(),
-        };
-
-        Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            command, repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsSuccess.Should().BeTrue();
-        capturada!.Endereco.Should().NotBeNull();
-        capturada.Endereco!.Cep.Should().Be("68507590");
-    }
-
-    [Fact(DisplayName = "Handle com endereço mas sem cidade da sede retorna CidadeObrigatoriaComEndereco sem consultar o guard de singleton")]
-    public async Task Handle_ComEnderecoSemCidade_RetornaErro()
-    {
-        IInstituicaoRepository repo = Substitute.For<IInstituicaoRepository>();
-        IUnidadeRepository unidadeRepo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IInstituicaoCacheInvalidator cache = Substitute.For<IInstituicaoCacheInvalidator>();
-
-        CriarInstituicaoCommand command = CommandValido() with { Endereco = EnderecoInput() };
-
-        Result<Guid> resultado = await CriarInstituicaoCommandHandler.Handle(
-            command, repo, unidadeRepo, uow, cache, TimeProvider.System, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(EnderecoReferenciaErrorCodes.CidadeObrigatoriaComEndereco);
-        await repo.DidNotReceive().ExisteAlgumaVivaAsync(Arg.Any<CancellationToken>());
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        resultado.Errors.Select(erro => erro.Field).Should().Equal("codigoEmec", "sigla");
+        await _uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 }

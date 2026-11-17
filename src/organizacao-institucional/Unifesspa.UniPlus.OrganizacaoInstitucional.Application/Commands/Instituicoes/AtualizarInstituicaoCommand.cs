@@ -35,4 +35,4 @@ public sealed record AtualizarInstituicaoCommand(
     string? CidadeCodigoIbge,
     string? CidadeNome,
     string? CidadeUf,
-    Guid? UnidadeRaizId) : ICommand<Result>;
+    Guid? UnidadeRaizId) : ICommand<Result>, IDadosDaInstituicaoDoComando;

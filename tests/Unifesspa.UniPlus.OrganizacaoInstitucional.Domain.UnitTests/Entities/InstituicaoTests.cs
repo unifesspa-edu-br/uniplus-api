@@ -7,6 +7,8 @@ using Unifesspa.UniPlus.Kernel.Domain.Enderecos;
 using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Testes de unidade do agregado <see cref="Instituicao"/> (Story #585 · #686):
@@ -19,50 +21,25 @@ public sealed class InstituicaoTests
 {
     private static readonly DateTimeOffset Agora = new(2026, 6, 22, 17, 10, 0, TimeSpan.Zero);
 
+    /// <summary>A identificação regulatória de uma IES credenciada, com CNPJ, conceito, IGC e sítio.</summary>
+    private static readonly IdentificacaoRegulatoriaDaInstituicao UfrCredenciada = new(
+        "4000", "Universidade Federal Renomeada", "UFR", "Universidade", "Pública Federal",
+        Cnpj: "12.345.678/0001-99", Situacao: "Credenciada", AtoCredenciamento: "Portaria 123",
+        ConceitoInstitucional: "4", Igc: "4", Website: "https://unifesspa.edu.br");
+
+    private static readonly CidadeDaSede SedeEmMarabaPeloGeo =
+        InstituicaoDeTeste.SedeEmMaraba with { Origem = ReferenciaCidadeGeo.OrigemGeoApi };
+
     private static ReferenciaEnderecoGeo Endereco(string cidadeCodigoIbge = "1504208", string cidadeUf = "PA") =>
         ReferenciaEnderecoGeo.Criar(
             "68507590", "Folha 31", "s/n", null, "Nova Marabá", null,
             cidadeCodigoIbge, "Marabá", cidadeUf, -5.3m, -49.1m,
             NivelResolucaoEndereco.Logradouro, "logradouro", Agora).Value!;
 
-    private static Result<Instituicao> CriarValida(
-        string codigoEmec = "3990",
-        string nome = "Universidade Federal do Sul e Sudeste do Pará",
-        string sigla = "Unifesspa",
-        string organizacaoAcademica = "Universidade",
-        string categoriaAdministrativa = "Pública Federal",
-        string? cidadeCodigoIbge = null,
-        string? cidadeNome = null,
-        string? cidadeUf = null,
-        ReferenciaEnderecoGeo? endereco = null,
-        Guid? unidadeRaizId = null) =>
-        Instituicao.Criar(
-            codigoEmec,
-            nome,
-            sigla,
-            organizacaoAcademica,
-            categoriaAdministrativa,
-            cnpj: null,
-            mantenedora: null,
-            codigoMantenedoraEmec: null,
-            situacao: null,
-            atoCredenciamento: null,
-            atoRecredenciamento: null,
-            conceitoInstitucional: null,
-            igc: null,
-            website: null,
-            endereco,
-            cidadeCodigoIbge,
-            cidadeNome,
-            cidadeUf,
-            cidadeOrigem: null,
-            cidadeDisplayAtualizadoEm: null,
-            unidadeRaizId);
-
     [Fact(DisplayName = "Criar com campos válidos retorna sucesso com Id Guid v7 não vazio")]
     public void Criar_ComCamposValidos_RetornaSucessoComGuidV7()
     {
-        Result<Instituicao> resultado = CriarValida();
+        Result<Instituicao> resultado = InstituicaoDeTeste.Criar();
 
         resultado.IsSuccess.Should().BeTrue();
         Instituicao instituicao = resultado.Value!;
@@ -87,8 +64,8 @@ public sealed class InstituicaoTests
         string categoriaAdministrativa,
         string codigoEsperado)
     {
-        Result<Instituicao> resultado = CriarValida(
-            codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa);
+        Result<Instituicao> resultado = InstituicaoDeTeste.Criar(new IdentificacaoRegulatoriaDaInstituicao(
+            codigoEmec, nome, sigla, organizacaoAcademica, categoriaAdministrativa));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(codigoEsperado);
@@ -97,13 +74,10 @@ public sealed class InstituicaoTests
     [Fact(DisplayName = "Criar normaliza Trim dos campos e converte opcionais em branco para null")]
     public void Criar_NormalizaTrimEOpcionaisVazios()
     {
-        Result<Instituicao> resultado = Instituicao.Criar(
-            "  3990  ", "  Universidade  ", "  Unifesspa  ", "  Universidade  ", "  Pública Federal  ",
-            cnpj: "   ", mantenedora: "  Fundação  ", codigoMantenedoraEmec: null, situacao: null,
-            atoCredenciamento: null, atoRecredenciamento: null, conceitoInstitucional: null, igc: null,
-            website: null, endereco: null,
-            cidadeCodigoIbge: "1504208", cidadeNome: "  Marabá  ", cidadeUf: "pa",
-            cidadeOrigem: null, cidadeDisplayAtualizadoEm: null, unidadeRaizId: null);
+        Result<Instituicao> resultado = InstituicaoDeTeste.Criar(
+            new IdentificacaoRegulatoriaDaInstituicao("  3990  ", "  Universidade  ", "  Unifesspa  ", "  Universidade  ", "  Pública Federal  ",
+                Cnpj: "   ", Mantenedora: "  Fundação  "),
+            new CidadeDaSede("1504208", "  Marabá  ", "pa", null, null));
 
         resultado.IsSuccess.Should().BeTrue();
         Instituicao instituicao = resultado.Value!;
@@ -119,7 +93,7 @@ public sealed class InstituicaoTests
     [Fact(DisplayName = "Criar sem referência de cidade é válido e deixa o trio nulo (opcional)")]
     public void Criar_SemReferenciaDeCidade_DeixaTrioNulo()
     {
-        Instituicao instituicao = CriarValida().Value!;
+        Instituicao instituicao = InstituicaoDeTeste.Criar().Value!;
 
         instituicao.CidadeCodigoIbge.Should().BeNull();
         instituicao.CidadeNome.Should().BeNull();
@@ -135,8 +109,8 @@ public sealed class InstituicaoTests
     public void Criar_ComCidadeParcial_RetornaErro(
         string? cidadeCodigoIbge, string? cidadeNome, string? cidadeUf, string codigoEsperado)
     {
-        Result<Instituicao> resultado = CriarValida(
-            cidadeCodigoIbge: cidadeCodigoIbge, cidadeNome: cidadeNome, cidadeUf: cidadeUf);
+        Result<Instituicao> resultado = InstituicaoDeTeste.Criar(
+            cidade: new CidadeDaSede(cidadeCodigoIbge, cidadeNome, cidadeUf, null, null));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(codigoEsperado);
@@ -145,8 +119,8 @@ public sealed class InstituicaoTests
     [Fact(DisplayName = "Criar com UF incoerente com o prefixo do código IBGE é rejeitado (15=PA, não SP)")]
     public void Criar_ComCidadeIncoerente_RetornaUfIncoerente()
     {
-        Result<Instituicao> resultado = CriarValida(
-            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "SP");
+        Result<Instituicao> resultado = InstituicaoDeTeste.Criar(
+            cidade: new CidadeDaSede("1504208", "Marabá", "SP", null, null));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.UfIncoerente);
@@ -157,8 +131,8 @@ public sealed class InstituicaoTests
     {
         string nomeLongo = new('A', ReferenciaCidadeGeo.NomeMaxLength + 1);
 
-        Result<Instituicao> resultado = CriarValida(
-            cidadeCodigoIbge: "1504208", cidadeNome: nomeLongo, cidadeUf: "PA");
+        Result<Instituicao> resultado = InstituicaoDeTeste.Criar(
+            cidade: new CidadeDaSede("1504208", nomeLongo, "PA", null, null));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(CidadeReferenciaErrorCodes.NomeTamanho);
@@ -167,16 +141,11 @@ public sealed class InstituicaoTests
     [Fact(DisplayName = "Atualizar com campos válidos altera o estado regulatório e o vínculo")]
     public void Atualizar_ComCamposValidos_AlteraEstado()
     {
-        Instituicao instituicao = CriarValida().Value!;
+        Instituicao instituicao = InstituicaoDeTeste.Criar().Value!;
         Guid novaRaiz = Guid.CreateVersion7();
 
         Result resultado = instituicao.Atualizar(
-            "4000", "Universidade Federal Renomeada", "UFR", "Universidade", "Pública Federal",
-            cnpj: "12.345.678/0001-99", mantenedora: null, codigoMantenedoraEmec: null, situacao: "Credenciada",
-            atoCredenciamento: "Portaria 123", atoRecredenciamento: null, conceitoInstitucional: "4", igc: "4",
-            website: "https://unifesspa.edu.br", endereco: null,
-            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA",
-            cidadeOrigem: ReferenciaCidadeGeo.OrigemGeoApi, cidadeDisplayAtualizadoEm: null, unidadeRaizId: novaRaiz);
+            UfrCredenciada, SedeEmMarabaPeloGeo, endereco: null, unidadeRaizId: novaRaiz);
 
         resultado.IsSuccess.Should().BeTrue();
         instituicao.CodigoEmec.Should().Be("4000");
@@ -190,15 +159,11 @@ public sealed class InstituicaoTests
     [Fact(DisplayName = "Atualizar sem nome retorna NomeObrigatorio e preserva o estado anterior")]
     public void Atualizar_SemNome_RetornaErro()
     {
-        Instituicao instituicao = CriarValida().Value!;
+        Instituicao instituicao = InstituicaoDeTeste.Criar().Value!;
 
         Result resultado = instituicao.Atualizar(
-            "3990", "", "Unifesspa", "Universidade", "Pública Federal",
-            cnpj: null, mantenedora: null, codigoMantenedoraEmec: null, situacao: null,
-            atoCredenciamento: null, atoRecredenciamento: null, conceitoInstitucional: null, igc: null,
-            website: null, endereco: null,
-            cidadeCodigoIbge: null, cidadeNome: null, cidadeUf: null,
-            cidadeOrigem: null, cidadeDisplayAtualizadoEm: null, unidadeRaizId: null);
+            InstituicaoDeTeste.IdentificacaoDaUnifesspa with { Nome = "" },
+            cidade: default, endereco: null, unidadeRaizId: null);
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(InstituicaoErrorCodes.NomeObrigatorio);
@@ -208,8 +173,8 @@ public sealed class InstituicaoTests
     [Fact(DisplayName = "Criar com endereço estruturado + cidade coerente persiste o endereço")]
     public void Criar_ComEnderecoECidadeCoerente_PersisteEndereco()
     {
-        Result<Instituicao> resultado = CriarValida(
-            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA", endereco: Endereco());
+        Result<Instituicao> resultado = InstituicaoDeTeste.Criar(
+            cidade: InstituicaoDeTeste.SedeEmMaraba, endereco: Endereco());
 
         resultado.IsSuccess.Should().BeTrue();
         resultado.Value!.Endereco!.Cep.Should().Be("68507590");
@@ -218,7 +183,7 @@ public sealed class InstituicaoTests
     [Fact(DisplayName = "Criar com endereço mas sem cidade da sede falha (cidade obrigatória com endereço)")]
     public void Criar_ComEnderecoSemCidade_RetornaCidadeObrigatoria()
     {
-        Result<Instituicao> resultado = CriarValida(endereco: Endereco());
+        Result<Instituicao> resultado = InstituicaoDeTeste.Criar(endereco: Endereco());
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(EnderecoReferenciaErrorCodes.CidadeObrigatoriaComEndereco);
@@ -227,8 +192,8 @@ public sealed class InstituicaoTests
     [Fact(DisplayName = "Criar com endereço de cidade incoerente com a cidade da sede falha")]
     public void Criar_ComEnderecoCidadeIncoerente_RetornaCidadeIncoerente()
     {
-        Result<Instituicao> resultado = CriarValida(
-            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "PA",
+        Result<Instituicao> resultado = InstituicaoDeTeste.Criar(
+            cidade: InstituicaoDeTeste.SedeEmMaraba,
             endereco: Endereco(cidadeCodigoIbge: "1501402"));
 
         resultado.IsFailure.Should().BeTrue();
@@ -238,17 +203,9 @@ public sealed class InstituicaoTests
     [Fact(DisplayName = "Criar com três violações independentes acumula as três no mesmo lote")]
     public void Criar_TresViolacoesIndependentes_AcumulaAsTres()
     {
-        Result<Instituicao> resultado = Instituicao.Criar(
-            codigoEmec: null,
-            nome: null,
-            sigla: "Unifesspa",
-            organizacaoAcademica: "Universidade",
-            categoriaAdministrativa: "Pública Federal",
-            cnpj: null, mantenedora: null, codigoMantenedoraEmec: null, situacao: null,
-            atoCredenciamento: null, atoRecredenciamento: null, conceitoInstitucional: null, igc: null,
-            website: null, endereco: null,
-            cidadeCodigoIbge: "1504208", cidadeNome: "Marabá", cidadeUf: "SP",
-            cidadeOrigem: null, cidadeDisplayAtualizadoEm: null, unidadeRaizId: null);
+        Result<Instituicao> resultado = InstituicaoDeTeste.Criar(
+            new IdentificacaoRegulatoriaDaInstituicao(null, null, "Unifesspa", "Universidade", "Pública Federal"),
+            cidade: new CidadeDaSede("1504208", "Marabá", "SP", null, null));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(3);
@@ -262,13 +219,9 @@ public sealed class InstituicaoTests
     {
         string valorLongo = new('A', 600);
 
-        Result<Instituicao> resultado = Instituicao.Criar(
-            "3990", "Universidade", "Unifesspa", "Universidade", "Pública Federal",
-            cnpj: valorLongo, mantenedora: null, codigoMantenedoraEmec: null, situacao: null,
-            atoCredenciamento: valorLongo, atoRecredenciamento: null, conceitoInstitucional: null, igc: null,
-            website: null, endereco: null,
-            cidadeCodigoIbge: null, cidadeNome: null, cidadeUf: null,
-            cidadeOrigem: null, cidadeDisplayAtualizadoEm: null, unidadeRaizId: null);
+        Result<Instituicao> resultado = InstituicaoDeTeste.Criar(
+            new IdentificacaoRegulatoriaDaInstituicao("3990", "Universidade", "Unifesspa", "Universidade", "Pública Federal",
+                Cnpj: valorLongo, AtoCredenciamento: valorLongo));
 
         resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
@@ -280,15 +233,38 @@ public sealed class InstituicaoTests
     public void ValidarCampos_MesmoPayloadDeCriarComFalha_RetornaMesmosErros()
     {
         Result validacao = Instituicao.ValidarCampos(
-            codigoEmec: null, nome: null, sigla: "Unifesspa",
-            organizacaoAcademica: "Universidade", categoriaAdministrativa: "Pública Federal",
-            cnpj: null, mantenedora: null, codigoMantenedoraEmec: null, situacao: null,
-            atoCredenciamento: null, atoRecredenciamento: null, conceitoInstitucional: null, igc: null,
-            website: null, endereco: null,
-            cidadeCodigoIbge: null, cidadeNome: null, cidadeUf: null);
+            new IdentificacaoRegulatoriaDaInstituicao(null, null, "Unifesspa", "Universidade", "Pública Federal"),
+            cidade: default, endereco: null);
 
         validacao.IsFailure.Should().BeTrue();
         validacao.Errors.Should().ContainSingle(e => e.Field == "codigoEmec");
         validacao.Errors.Should().ContainSingle(e => e.Field == "nome");
+    }
+
+    [Fact(DisplayName = "CidadeDaSede devolve a cidade das colunas planas, com a proveniência e o carimbo gravados")]
+    public void CidadeDaSede_AposCriarComCidadeCarimbada_DevolveACidadeGravada()
+    {
+        CidadeDaSede carimbada = SedeEmMarabaPeloGeo with { DisplayAtualizadoEm = Agora };
+
+        Instituicao instituicao = InstituicaoDeTeste.Criar(cidade: carimbada).Value!;
+
+        instituicao.CidadeDaSede.Should().Be(carimbada);
+    }
+
+    [Fact(DisplayName = "CidadeDaSede sem cidade informada é a ausência de cidade")]
+    public void CidadeDaSede_SemCidadeInformada_EhNenhuma()
+    {
+        Instituicao instituicao = InstituicaoDeTeste.Criar().Value!;
+
+        instituicao.CidadeDaSede.Should().Be(CidadeDaSede.Nenhuma);
+    }
+
+    [Fact(DisplayName = "Criar com endereço e cidade inválida acusa só a cidade, sem mascará-la com a coerência do endereço")]
+    public void Criar_ComEnderecoECidadeInvalida_AcusaSoACidade()
+    {
+        Result<Instituicao> resultado = InstituicaoDeTeste.Criar(
+            cidade: new CidadeDaSede("1504208", "Marabá", "SP", null, null), endereco: Endereco());
+
+        resultado.Errors.Should().ContainSingle().Which.Field.Should().Be("cidadeUf");
     }
 }
