@@ -40,12 +40,17 @@ public sealed class EfeitosDaJanelaNaTroca
         ArgumentNullException.ThrowIfNull(perfil);
 
         JanelaDeMigracao? janela = await _janelas.ObterNaoEncerradaParaAlterarAsync(perfil.Id, cancellationToken).ConfigureAwait(false);
-        if (janela is null)
-        {
-            return new JanelaAposAMaterializacao(null, []);
-        }
 
+        return janela is null
+            ? new JanelaAposAMaterializacao(null, [])
+            : await MaterializarDaJanelaAsync(perfil, janela, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<JanelaAposAMaterializacao> MaterializarDaJanelaAsync(
+        Perfil perfil, JanelaDeMigracao janela, CancellationToken cancellationToken)
+    {
         ContextoDaMigracao contexto = await _leitor.LerAsync(perfil, janela, cancellationToken).ConfigureAwait(false);
+
         if (janela.EstaAberta(contexto.Agora, janela.Pendencias(contexto.Concessoes, contexto.Agora)))
         {
             return new JanelaAposAMaterializacao(janela, []);
@@ -74,19 +79,34 @@ public sealed class EfeitosDaJanelaNaTroca
         ArgumentNullException.ThrowIfNull(perfil);
         ArgumentNullException.ThrowIfNull(troca);
 
-        IReadOnlyList<Concessao> concessoes = await _janelas.ObterConcessoesDaJanelaAsync(perfil.Id, agora, cancellationToken).ConfigureAwait(false);
-        IReadOnlyList<Concessao> elegiveis = [.. concessoes.Where(c => c.EstaAtiva(agora) && c.VersaoId != troca.Nova.Id)];
+        IReadOnlyList<Concessao> elegiveis = await ElegiveisParaAAberturaAsync(perfil.Id, troca.Nova, agora, cancellationToken).ConfigureAwait(false);
         if (elegiveis.Count == 0)
         {
             return new AberturaDaJanela(false, []);
         }
 
-        JanelaDeMigracao janela = JanelaDeMigracao.Abrir(perfil.Id, troca.Nova, agora);
-        await _janelas.AdicionarAsync(janela, cancellationToken).ConfigureAwait(false);
+        JanelaDeMigracao janela = await AbrirJanelaAsync(perfil, troca, agora, cancellationToken).ConfigureAwait(false);
 
         return new AberturaDaJanela(
             true,
             await _avisos.DaAberturaAsync(perfil, janela, elegiveis, troca.Nova.AcrescimosSobre(troca.Anterior!), cancellationToken).ConfigureAwait(false));
+    }
+
+    private async Task<IReadOnlyList<Concessao>> ElegiveisParaAAberturaAsync(
+        Guid perfilId, VersaoDoPerfil nova, DateTimeOffset agora, CancellationToken cancellationToken)
+    {
+        IReadOnlyList<Concessao> concessoes = await _janelas.ObterConcessoesDaJanelaAsync(perfilId, agora, cancellationToken).ConfigureAwait(false);
+
+        return [.. concessoes.Where(concessao => concessao.PendenteDeMigrarPara(nova.Id, agora))];
+    }
+
+    private async Task<JanelaDeMigracao> AbrirJanelaAsync(
+        Perfil perfil, TrocaDeVigencia troca, DateTimeOffset agora, CancellationToken cancellationToken)
+    {
+        JanelaDeMigracao janela = JanelaDeMigracao.Abrir(perfil.Id, troca.Nova, agora);
+        await _janelas.AdicionarAsync(janela, cancellationToken).ConfigureAwait(false);
+
+        return janela;
     }
 }
 
