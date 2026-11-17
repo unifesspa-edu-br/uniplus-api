@@ -1,0 +1,94 @@
+namespace Unifesspa.UniPlus.Selecao.Application.Commands.Rascunhos;
+
+using DTOs;
+
+using Kernel.Results;
+
+using Services.Rascunhos;
+
+using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
+using Unifesspa.UniPlus.Governance.Contracts;
+using Unifesspa.UniPlus.Selecao.Domain.Entities;
+using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
+
+/// <summary>
+/// Handler do <see cref="SubstituirRascunhoDeProcessoSeletivoCommand"/>. A ordem das recusas é a do contrato: precondição
+/// ausente, forma, unidade ausente, e só então o bloqueio da linha, onde ficam a existência, a revisão e o acesso à unidade nova.
+/// Sem chave de idempotência e sob <c>FOR UPDATE</c>, a exceção de concorrência não é esperada e propaga ao tratamento central.
+/// </summary>
+public static class SubstituirRascunhoDeProcessoSeletivoCommandHandler
+{
+    public static async Task<Result<RascunhoSalvoDto>> Handle(
+        SubstituirRascunhoDeProcessoSeletivoCommand command,
+        PreparacaoDoDocumentoDoRascunho preparacao,
+        UnidadeDoDocumentoDoRascunho unidades,
+        BloqueioDoRascunhoDeProcessoSeletivo bloqueio,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(command);
+        ArgumentNullException.ThrowIfNull(preparacao);
+        ArgumentNullException.ThrowIfNull(unidades);
+        ArgumentNullException.ThrowIfNull(bloqueio);
+        ArgumentNullException.ThrowIfNull(unitOfWork);
+
+        Result<SubstituicaoPreparada> preparada = await PrepararAsync(command, preparacao, unidades, bloqueio, cancellationToken).ConfigureAwait(false);
+        if (preparada.IsFailure)
+        {
+            return Result<RascunhoSalvoDto>.ValidationFailure(preparada.Errors);
+        }
+
+        return await SubstituirAsync(preparada.Value!, command.Precondicao, unidades, unitOfWork, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task<Result<SubstituicaoPreparada>> PrepararAsync(
+        SubstituirRascunhoDeProcessoSeletivoCommand command,
+        PreparacaoDoDocumentoDoRascunho preparacao,
+        UnidadeDoDocumentoDoRascunho unidades,
+        BloqueioDoRascunhoDeProcessoSeletivo bloqueio,
+        CancellationToken cancellationToken)
+    {
+        Result<DocumentoPreparado> preparado = Preparar(command, preparacao);
+        if (preparado.IsFailure)
+        {
+            return Result<SubstituicaoPreparada>.ValidationFailure(preparado.Errors);
+        }
+
+        UnidadeView? nova = await unidades.ResolverAsync(preparado.Value!.CodigoDaUnidade, cancellationToken).ConfigureAwait(false);
+        Result<RascunhoDeProcessoSeletivo> rascunho = await bloqueio.BloquearEConferirAsync(command.Id, command.Precondicao, cancellationToken).ConfigureAwait(false);
+        return rascunho.IsFailure
+            ? Result<SubstituicaoPreparada>.ValidationFailure(rascunho.Errors)
+            : Result<SubstituicaoPreparada>.Success(new SubstituicaoPreparada(rascunho.Value!, preparado.Value.Documento, nova));
+    }
+
+    // A precondição ausente é a primeira recusa: nada do documento se lê antes dela.
+    private static Result<DocumentoPreparado> Preparar(SubstituirRascunhoDeProcessoSeletivoCommand command, PreparacaoDoDocumentoDoRascunho preparacao)
+    {
+        Result exigida = RascunhoDeProcessoSeletivo.ExigirPrecondicao(command.Precondicao);
+        return exigida.IsFailure
+            ? Result<DocumentoPreparado>.ValidationFailure(exigida.Errors)
+            : preparacao.Preparar(command.Documento);
+    }
+
+    private static async Task<Result<RascunhoSalvoDto>> SubstituirAsync(
+        SubstituicaoPreparada preparada,
+        PrecondicaoIfMatch precondicao,
+        UnidadeDoDocumentoDoRascunho unidades,
+        IUnitOfWork unitOfWork,
+        CancellationToken cancellationToken)
+    {
+        RascunhoDeProcessoSeletivo rascunho = preparada.Rascunho;
+        Result<Guid> unidade = await unidades.ExigirParaTrocaAsync(preparada.UnidadeNova, rascunho.UnidadeAdministradoraOrigemId, cancellationToken).ConfigureAwait(false);
+        Result substituicao = unidade.IsFailure ? Result.ValidationFailure(unidade.Errors) : rascunho.Substituir(preparada.Documento, unidade.Value, precondicao);
+        if (substituicao.IsFailure)
+        {
+            return Result<RascunhoSalvoDto>.ValidationFailure(substituicao.Errors);
+        }
+
+        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
+        return Result<RascunhoSalvoDto>.Success(new RascunhoSalvoDto(rascunho.Id, rascunho.Revisao, [], rascunho.ETag));
+    }
+
+    /// <summary>O que a substituição leva até a gravação: o rascunho bloqueado e conferido, o documento novo e a unidade que ele nomeia.</summary>
+    private sealed record SubstituicaoPreparada(RascunhoDeProcessoSeletivo Rascunho, DocumentoDoRascunho Documento, UnidadeView? UnidadeNova);
+}

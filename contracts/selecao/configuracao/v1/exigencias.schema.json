@@ -35,7 +35,7 @@
       "properties": {
         "chave": {
           "title": "Chave da exigência",
-          "description": "Chave local da exigência, única no documento. A árvore de satisfação a cita por ela.",
+          "description": "Chave local da exigência, única no documento. A árvore de satisfação a cita por ela. É obrigatória: é escolhida por quem cria a exigência, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
           "$ref": "comuns.schema.json#/$defs/chave"
         },
         "tipoDocumentoCodigo": {

@@ -27,7 +27,7 @@
       "properties": {
         "chave": {
           "title": "Chave da fase",
-          "description": "Chave local da fase, única no documento. Outras partes a usam para citar esta fase.",
+          "description": "Chave local da fase, única no documento. Outras partes a usam para citar esta fase. É obrigatória: é escolhida por quem cria a fase, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
           "$ref": "comuns.schema.json#/$defs/chave"
         },
         "faseCanonicaCodigo": {

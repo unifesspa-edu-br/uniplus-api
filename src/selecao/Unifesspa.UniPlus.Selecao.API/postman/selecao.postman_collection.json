@@ -2904,6 +2904,249 @@
       "description": "GETs de leitura — não alteram estado."
     },
     {
+      "name": "Rascunho do processo seletivo",
+      "description": "Ciclo do rascunho antes da primeira publicação: criar a partir do documento da configuração, exportar, substituir sob o If-Match da revisão lida e excluir. O documento nomeia a unidade criada no setup pelo código; a criação exige Idempotency-Key e a substituição e a exclusão, o If-Match.",
+      "item": [
+        {
+          "name": "Rascunho do processo: criar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/rascunhos-de-processos-seletivos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "rascunhos-de-processos-seletivos"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formato\": \"uniplus.selecao.configuracao\",\n  \"versaoFormato\": 1,\n  \"identificacao\": {\n    \"nome\": \"Processo Seletivo do rascunho {{run_suffix}}\",\n    \"unidadeAdministradoraCodigo\": \"CEPS-SMK-{{run_suffix}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('201 com id, revisão 1 e ETag da revisão', () => {",
+                  "  pm.response.to.have.status(201);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.revisao).to.eql(1);",
+                  "  pm.expect(j.diagnosticos).to.be.an('array');",
+                  "  pm.expect(pm.response.headers.get('ETag')).to.eql('\"1\"');",
+                  "  pm.expect(pm.response.headers.get('Location')).to.include(j.id);",
+                  "  pm.environment.set('rascunho_id', j.id);",
+                  "  pm.environment.set('rascunho_etag', pm.response.headers.get('ETag'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rascunho do processo: exportar",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/vnd.uniplus.rascunho-de-processo-seletivo.v1+json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/rascunhos-de-processos-seletivos/{{rascunho_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "rascunhos-de-processos-seletivos",
+                "{{rascunho_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 com o id do rascunho na raiz e os descritivos da unidade', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.id).to.eql(pm.environment.get('rascunho_id'));",
+                  "  pm.expect(j.identificacao.unidadeAdministradoraNome).to.be.a('string');",
+                  "  pm.expect(j.versao).to.be.undefined;",
+                  "  pm.expect(pm.response.headers.get('ETag')).to.eql(pm.environment.get('rascunho_etag'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rascunho do processo: substituir",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "If-Match",
+                "value": "{{rascunho_etag}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/rascunhos-de-processos-seletivos/{{rascunho_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "rascunhos-de-processos-seletivos",
+                "{{rascunho_id}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"formato\": \"uniplus.selecao.configuracao\",\n  \"versaoFormato\": 1,\n  \"identificacao\": {\n    \"nome\": \"Processo Seletivo do rascunho revisado {{run_suffix}}\",\n    \"unidadeAdministradoraCodigo\": \"CEPS-SMK-{{run_suffix}}\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 com a revisão 2 e o ETag novo', () => {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json().revisao).to.eql(2);",
+                  "  pm.expect(pm.response.headers.get('ETag')).to.eql('\"2\"');",
+                  "  pm.environment.set('rascunho_etag_anterior', pm.environment.get('rascunho_etag'));",
+                  "  pm.environment.set('rascunho_etag', pm.response.headers.get('ETag'));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rascunho do processo: excluir",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "If-Match",
+                "value": "{{rascunho_etag}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/selecao/rascunhos-de-processos-seletivos/{{rascunho_id}}",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "selecao",
+                "rascunhos-de-processos-seletivos",
+                "{{rascunho_id}}"
+              ]
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('204 — rascunho excluído na revisão lida', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "ProcessoSeletivo — Rascunho da publicação",
       "item": [
         {

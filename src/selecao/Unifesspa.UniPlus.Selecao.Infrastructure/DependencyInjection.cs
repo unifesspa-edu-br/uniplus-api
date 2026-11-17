@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Selecao.Infrastructure;
 
 using Canonicalization;
 
+using DocumentoDaConfiguracao;
+
 using Domain.Interfaces;
 
 using ExternalServices;
@@ -35,6 +37,7 @@ public static class SelecaoInfrastructureRegistration
     {
         services.AddScoped<IProcessoSeletivoRepository, ProcessoSeletivoRepository>();
         services.AddScoped<IUnidadeDaFaseNaVersaoVigente, UnidadeDaFaseNaVersaoVigente>();
+        services.AddScoped<IUnidadeDonaDoProcesso, UnidadeDonaDoProcesso>();
         services.AddScoped<IFasesIniciadasDoProcesso, FasesIniciadasDoProcesso>();
     }
 
@@ -61,6 +64,7 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IModeloDeDocumentoRepository, ModeloDeDocumentoRepository>();
         services.AddScoped<IDocumentoDaInscricaoRepository, DocumentoDaInscricaoRepository>();
         services.AddScoped<IRascunhoDePublicacaoRepository, RascunhoDePublicacaoRepository>();
+        services.AddScoped<IRascunhoDeProcessoSeletivoRepository, RascunhoDeProcessoSeletivoRepository>();
         services.AddScoped<IInscricaoRepository, InscricaoRepository>();
         services.AddScoped<ILoteDeNotasDoEnemRepository, LoteDeNotasDoEnemRepository>();
         services.AddScoped<IGeracaoDeEnvioAoInepRepository, GeracaoDeEnvioAoInepRepository>();
@@ -91,6 +95,9 @@ public static class SelecaoInfrastructureRegistration
         services.AddScoped<IAvaliacoesDaEtapaReader, AvaliacoesDaEtapaReader>();
         services.AddScoped<IRegraCatalogoReader, RegraCatalogoReader>();
         services.AddScoped<IRetificacaoEmCursoReader, RetificacaoEmCursoReader>();
+
+        // O esquema do documento é montado uma vez, dos arquivos embutidos no assembly, e é compartilhado por todas as requisições.
+        services.AddSingleton<IEsquemaDoDocumentoDaConfiguracao, EsquemaDoDocumentoDaConfiguracao>();
     }
 
     private static void AddArmazenamentoDosArquivos(this IServiceCollection services)

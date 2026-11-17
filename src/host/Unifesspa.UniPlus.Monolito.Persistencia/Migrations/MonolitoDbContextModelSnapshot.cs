@@ -14093,6 +14093,54 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.ToTable("produtos_da_fase", "selecao");
                 });
 
+            modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoDeProcessoSeletivo", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .HasColumnType("uuid")
+                        .HasColumnName("id");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at");
+
+                    b.Property<string>("Documento")
+                        .IsRequired()
+                        .HasColumnType("jsonb")
+                        .HasColumnName("documento")
+                        .HasComment("Documento da configuração. Traz o identificador da conta de quem assina (dado pessoal pseudonimizado); o formato não prevê nome, CPF nem e-mail, mas o texto livre de campos como o dos assinantes é guardado como veio.");
+
+                    b.Property<string>("Nome")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("nome");
+
+                    b.Property<int>("Revisao")
+                        .HasColumnType("integer")
+                        .HasColumnName("revisao");
+
+                    b.Property<Guid>("UnidadeAdministradoraOrigemId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("unidade_administradora_origem_id")
+                        .HasComment("Id da Unidade administradora em Organização Institucional (ADR-0061, sem FK cross-schema): decide quem lê, grava, exclui e publica o rascunho.");
+
+                    b.Property<DateTimeOffset?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at");
+
+                    b.HasKey("Id")
+                        .HasName("pk_rascunhos_processos_seletivos");
+
+                    b.HasIndex("UnidadeAdministradoraOrigemId", "Id")
+                        .HasDatabaseName("ix_rascunhos_processos_seletivos_unidade_id");
+
+                    b.ToTable("rascunhos_processos_seletivos", "selecao", t =>
+                        {
+                            t.HasCheckConstraint("ck_rascunhos_processos_seletivos_documento_objeto", "jsonb_typeof(documento) = 'object'");
+
+                            t.HasCheckConstraint("ck_rascunhos_processos_seletivos_revisao", "revisao >= 1");
+                        });
+                });
+
             modelBuilder.Entity("Unifesspa.UniPlus.Selecao.Domain.Entities.RascunhoDePublicacao", b =>
                 {
                     b.Property<Guid>("Id")

@@ -7,6 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Services;
 using Services.AcessoPelaBanca;
 using Services.InscricaoAdministrativa;
+using Services.Rascunhos;
 
 using Unifesspa.UniPlus.Authorization.Projecao;
 using Unifesspa.UniPlus.Selecao.Application.Commands.ObrigatoriedadesLegais;
@@ -37,6 +38,7 @@ public static class SelecaoApplicationServiceRegistration
         AddAcessoAoCampoEAoDocumentoDaInscricao(services);
         AddSalvamentoDoRascunho(services);
         AddRotinaPeriodicaEPortaDePermissao(services);
+        AddRascunhoDoProcessoSeletivo(services);
 
         return services;
     }
@@ -81,6 +83,16 @@ public static class SelecaoApplicationServiceRegistration
         services.AddScoped<RascunhoDoCandidato>();
         services.AddScoped<SalvamentoDoRascunho>();
         services.AddScoped<RespostaDoRascunho>();
+    }
+
+    // A leitura do documento só guarda o esquema, que é singleton; os serviços que decidem acesso ou leem cadastro e repositório são do escopo.
+    private static void AddRascunhoDoProcessoSeletivo(IServiceCollection services)
+    {
+        services.AddSingleton<LeituraDoDocumentoDaConfiguracao>();
+        services.AddSingleton<PreparacaoDoDocumentoDoRascunho>();
+        services.AddScoped<UnidadeDoDocumentoDoRascunho>();
+        services.AddScoped<BloqueioDoRascunhoDeProcessoSeletivo>();
+        services.AddScoped<ExportacaoDoRascunho>();
     }
 
     // Todo comando que publica (versão, ato avulso, item do edital) lê o relógio uma só vez por esta leitura.

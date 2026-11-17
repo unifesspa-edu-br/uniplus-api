@@ -5222,6 +5222,51 @@
       "titulo": "O tipo de mídia deve ser PDF, DOCX ou ODT"
     },
     {
+      "codigo": "uniplus.selecao.documento_da_configuracao.acima_do_limite",
+      "status": 413,
+      "titulo": "O documento passa de um limite do formato"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.campo_desconhecido",
+      "status": 422,
+      "titulo": "O documento tem um campo que o formato não define"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.campo_obrigatorio_ausente",
+      "status": 422,
+      "titulo": "O documento não traz um campo que o formato exige"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.chave_repetida",
+      "status": 422,
+      "titulo": "Duas partes do mesmo tipo têm a mesma chave"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.forma_invalida",
+      "status": 422,
+      "titulo": "O documento não respeita o formato da configuração do processo seletivo"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.propriedade_repetida",
+      "status": 422,
+      "titulo": "Um objeto do documento repete uma propriedade"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.tipo_invalido",
+      "status": 422,
+      "titulo": "O valor de um campo do documento tem o tipo errado"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.valor_invalido",
+      "status": 422,
+      "titulo": "O valor de um campo do documento não respeita o formato"
+    },
+    {
+      "codigo": "uniplus.selecao.documento_da_configuracao.versao_do_formato_nao_suportada",
+      "status": 422,
+      "titulo": "O formato ou a versão do formato do documento não é suportado"
+    },
+    {
       "codigo": "uniplus.selecao.documento_da_inscricao.apresentacao_nao_encontrada",
       "status": 404,
       "titulo": "Apresentação não encontrada para a exigência"
@@ -7655,6 +7700,31 @@
       "codigo": "uniplus.selecao.produto_da_fase.papel_em_ato_que_nao_eh_resultado",
       "status": 422,
       "titulo": "Só ato que é resultado no catálogo recebe papel preliminar ou definitivo"
+    },
+    {
+      "codigo": "uniplus.selecao.rascunho_de_processo_seletivo.conteudo_do_documento_ausente",
+      "status": 422,
+      "titulo": "O documento do rascunho veio sem conteúdo"
+    },
+    {
+      "codigo": "uniplus.selecao.rascunho_de_processo_seletivo.ja_publicado",
+      "status": 409,
+      "titulo": "O rascunho já virou processo seletivo"
+    },
+    {
+      "codigo": "uniplus.selecao.rascunho_de_processo_seletivo.nome_acima_do_limite",
+      "status": 422,
+      "titulo": "O nome do processo passa do tamanho que a listagem comporta"
+    },
+    {
+      "codigo": "uniplus.selecao.rascunho_de_processo_seletivo.unidade_administradora_ausente",
+      "status": 422,
+      "titulo": "O documento não informa a unidade administradora"
+    },
+    {
+      "codigo": "uniplus.selecao.rascunho_de_processo_seletivo.unidade_fora_da_permissao",
+      "status": 403,
+      "titulo": "Sem permissão para configurar processos na unidade informada"
     },
     {
       "codigo": "uniplus.selecao.rascunho_publicacao.conteudo_muito_grande",

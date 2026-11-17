@@ -16,16 +16,16 @@ public sealed partial class ProcessoSeletivoRepository : IProcessoSeletivoReposi
 {
     private readonly UniPlusDbContext _context;
     private readonly TimeProvider _timeProvider;
-    private readonly TravaDaLinhaDoProcesso _trava;
+    private readonly BloqueioDeLinhaComEsperaLimitada _bloqueio;
 
-    public ProcessoSeletivoRepository(UniPlusDbContext context, TimeProvider timeProvider, IOptions<TravaDoProcessoOptions> trava)
+    public ProcessoSeletivoRepository(UniPlusDbContext context, TimeProvider timeProvider, IOptions<TravaDoProcessoOptions> opcoes)
     {
         ArgumentNullException.ThrowIfNull(context);
-        ArgumentNullException.ThrowIfNull(trava);
+        ArgumentNullException.ThrowIfNull(opcoes);
 
         _context = context;
         _timeProvider = timeProvider;
-        _trava = new TravaDaLinhaDoProcesso(context, trava.Value);
+        _bloqueio = new BloqueioDeLinhaComEsperaLimitada(context, opcoes.Value);
     }
 
     public async Task<ProcessoSeletivo?> ObterPorIdAsync(Guid id, CancellationToken cancellationToken = default)
@@ -95,7 +95,7 @@ public sealed partial class ProcessoSeletivoRepository : IProcessoSeletivoReposi
     }
 
     public Task TravarAsync(Guid id, CancellationToken cancellationToken = default) =>
-        _trava.AdquirirAsync(id, cancellationToken);
+        _bloqueio.AdquirirAsync(InstrucaoDeBloqueio.ProcessoExclusivo, id, cancellationToken);
 
     private static IQueryable<ProcessoSeletivo> ComConfiguracao(IQueryable<ProcessoSeletivo> query) =>
         query
@@ -314,13 +314,6 @@ public sealed partial class ProcessoSeletivoRepository : IProcessoSeletivoReposi
             .AsNoTracking()
             .Where(p => p.Id == processoSeletivoId)
             .Select(p => p.UnidadeAdministradora.Nome)
-            .FirstOrDefaultAsync(cancellationToken);
-
-    public Task<Guid?> ObterUnidadeAdministradoraAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default) =>
-        _context.ProcessosSeletivos
-            .AsNoTracking()
-            .Where(p => p.Id == processoSeletivoId)
-            .Select(p => (Guid?)p.UnidadeAdministradoraOrigemId)
             .FirstOrDefaultAsync(cancellationToken);
 
     public Task<UnidadeENomeDoProcesso?> ObterUnidadeENomeAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default) =>

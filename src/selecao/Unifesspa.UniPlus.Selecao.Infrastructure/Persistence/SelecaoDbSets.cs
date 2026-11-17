@@ -82,6 +82,9 @@ public static class SelecaoDbSets
         /// <summary>Conteúdo opaco: nada aqui alimenta a publicação.</summary>
         public DbSet<RascunhoDePublicacao> RascunhosDePublicacao => contexto.Set<RascunhoDePublicacao>();
 
+        /// <summary>O processo antes da primeira publicação; a publicação o consome e a exclusão apaga a linha.</summary>
+        public DbSet<RascunhoDeProcessoSeletivo> RascunhosDeProcessosSeletivos => contexto.Set<RascunhoDeProcessoSeletivo>();
+
         public DbSet<InscricaoRecord> Inscricoes => contexto.Set<InscricaoRecord>();
 
         public DbSet<RespostaDaInscricaoRecord> RespostasDaInscricao => contexto.Set<RespostaDaInscricaoRecord>();

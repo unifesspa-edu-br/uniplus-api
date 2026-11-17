@@ -86,6 +86,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         services.TryAddSingleton<EsperaEsgotadaPelaTravaOperationTransformer>();
         services.TryAddSingleton<AuthorizationOperationTransformer>();
         services.TryAddSingleton<CorpoMultipartOperationTransformer>();
+        services.TryAddSingleton<CorpoJsonOperationTransformer>();
         services.TryAddSingleton<VendorMediaTypeOperationTransformer>();
         return services;
     }
@@ -114,6 +115,7 @@ public static class UniPlusOpenApiServiceCollectionExtensions
         options.AddOperationTransformer<EsperaEsgotadaPelaTravaOperationTransformer>();
         options.AddOperationTransformer<AuthorizationOperationTransformer>();
         options.AddOperationTransformer<CorpoMultipartOperationTransformer>();
+        options.AddOperationTransformer<CorpoJsonOperationTransformer>();
 
         // Depois do UniPlusOperationTransformer, que coage os 4xx/5xx para
         // application/problem+json: este reescreve só as respostas de sucesso, e a ordem

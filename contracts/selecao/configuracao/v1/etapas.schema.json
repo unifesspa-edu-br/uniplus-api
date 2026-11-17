@@ -11,7 +11,7 @@
   "properties": {
     "chave": {
       "title": "Chave da etapa",
-      "description": "Chave local da etapa, única no documento. Desempate, eliminação e exigências a usam para citar esta etapa.",
+      "description": "Chave local da etapa, única no documento. Desempate, eliminação e exigências a usam para citar esta etapa. É obrigatória: é escolhida por quem cria a etapa, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
       "$ref": "comuns.schema.json#/$defs/chave"
     },
     "nome": {
@@ -177,7 +177,7 @@
       "properties": {
         "chave": {
           "title": "Chave do item",
-          "description": "Chave local do item, única na etapa.",
+          "description": "Chave local do item, única na etapa. É obrigatória: é escolhida por quem cria o item, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
           "$ref": "comuns.schema.json#/$defs/chave"
         },
         "rotulo": {
@@ -206,7 +206,7 @@
       "properties": {
         "chave": {
           "title": "Chave do nível",
-          "description": "Chave local do nível, única na escala. É a identidade do nível entre versões e nas referências internas: o rótulo é texto editável, e corrigir a grafia não pode virar retirada e inclusão.",
+          "description": "Chave local do nível, única na escala. É a identidade do nível entre versões e nas referências internas: o rótulo é texto editável, e corrigir a grafia não pode virar retirada e inclusão. É obrigatória: é escolhida por quem cria o nível, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
           "$ref": "comuns.schema.json#/$defs/chave"
         },
         "rotulo": {

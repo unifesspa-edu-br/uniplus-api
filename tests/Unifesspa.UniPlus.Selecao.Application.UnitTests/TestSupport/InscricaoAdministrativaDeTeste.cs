@@ -154,7 +154,6 @@ internal sealed class InscricaoAdministrativaDeTeste
         VersaoId = versao.Id;
 
         IProcessoSeletivoRepository processos = Substitute.For<IProcessoSeletivoRepository>();
-        processos.ObterUnidadeAdministradoraAsync(ProcessoId, Arg.Any<CancellationToken>()).Returns(DecisoesDeAcessoDeTeste.UnidadeDona);
         processos.ObterUnidadeENomeAsync(ProcessoId, Arg.Any<CancellationToken>())
             .Returns(new UnidadeENomeDoProcesso(DecisoesDeAcessoDeTeste.UnidadeDona, NomeDoProcesso));
         IReadOnlyList<VersaoConfiguracao> versoes = [versao];

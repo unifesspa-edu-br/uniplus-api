@@ -23,6 +23,7 @@
   <ItemGroup>
     <!-- O esquema da configuração do processo seletivo, lido para conferir que os limites dele são os do codec. -->
     <None Include="..\..\contracts\selecao\configuracao\v1\*.json" Link="Contratos\selecao-configuracao\v1\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\..\contracts\selecao\configuracao\exemplos\*.json" Link="Contratos\selecao-configuracao\exemplos\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

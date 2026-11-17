@@ -909,6 +909,26 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "rascunhos_processos_seletivos",
+                schema: "selecao",
+                columns: table => new
+                {
+                    id = table.Column<Guid>(type: "uuid", nullable: false),
+                    revisao = table.Column<int>(type: "integer", nullable: false),
+                    unidade_administradora_origem_id = table.Column<Guid>(type: "uuid", nullable: false, comment: "Id da Unidade administradora em Organização Institucional (ADR-0061, sem FK cross-schema): decide quem lê, grava, exclui e publica o rascunho."),
+                    documento = table.Column<string>(type: "jsonb", nullable: false, comment: "Documento da configuração. Traz o identificador da conta de quem assina (dado pessoal pseudonimizado); o formato não prevê nome, CPF nem e-mail, mas o texto livre de campos como o dos assinantes é guardado como veio."),
+                    nome = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: true),
+                    created_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    updated_at = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("pk_rascunhos_processos_seletivos", x => x.id);
+                    table.CheckConstraint("ck_rascunhos_processos_seletivos_documento_objeto", "jsonb_typeof(documento) = 'object'");
+                    table.CheckConstraint("ck_rascunhos_processos_seletivos_revisao", "revisao >= 1");
+                });
+
+            migrationBuilder.CreateTable(
                 name: "recursos_de_acessibilidade",
                 schema: "configuracao",
                 columns: table => new
@@ -6989,6 +7009,12 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 filter: "estado = 'aberta'");
 
             migrationBuilder.CreateIndex(
+                name: "ix_rascunhos_processos_seletivos_unidade_id",
+                schema: "selecao",
+                table: "rascunhos_processos_seletivos",
+                columns: new[] { "unidade_administradora_origem_id", "id" });
+
+            migrationBuilder.CreateIndex(
                 name: "ix_rascunhos_publicacao_expira_em",
                 schema: "selecao",
                 table: "rascunhos_publicacao",
@@ -7892,6 +7918,10 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
             migrationBuilder.DropTable(
                 name: "providencias",
                 schema: "autorizacao");
+
+            migrationBuilder.DropTable(
+                name: "rascunhos_processos_seletivos",
+                schema: "selecao");
 
             migrationBuilder.DropTable(
                 name: "rascunhos_publicacao",

@@ -137,24 +137,20 @@ public sealed class ResultExtensionsTests
 
     // ─── ValidationFailure multi-erro — errors[] (ADR-0023, ADR-0125) ────
 
+    // ADR-0023: errors[] é condicional a ter Field associado (ValidationFailure),
+    // não a ter mais de uma violação — uma única Sigla vazia ainda é erro de
+    // validação e o cliente precisa achar o field sem tratar "erro único" como
+    // caso especial.
     [Fact]
     public void ToActionResult_ComValidationFailureDeUmErro_DeveConterExtensionErrorsComUmElemento()
     {
-        // ADR-0023: errors[] é condicional a ter Field associado (ValidationFailure),
-        // não a ter mais de uma violação — uma única Sigla vazia ainda é erro de
-        // validação e o cliente precisa achar o field sem tratar "erro único" como
-        // caso especial.
         IDomainErrorMapper mapper = CriarMapper(("Campus.SiglaObrigatoria", MappingValidacao));
         Result resultado = Result.ValidationFailure(
             [new FieldError("Sigla", new DomainError("Campus.SiglaObrigatoria", "Sigla obrigatória."))]);
 
         ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
 
-        object? errosObj = problem.Extensions["errors"];
-        errosObj.Should().NotBeNull();
-        dynamic[] erros = ((System.Collections.IEnumerable)errosObj!).Cast<dynamic>().ToArray();
-        ((int)erros.Length).Should().Be(1);
-        ((string)erros[0].field).Should().Be("Sigla");
+        ErrosDoCorpo(problem).Select(static erro => erro.Field).Should().Equal("Sigla");
     }
 
     [Fact]
@@ -174,22 +170,20 @@ public sealed class ResultExtensionsTests
 
     // ─── Conflito retentável (ADR-0134) ────────────────────────────────────
 
+    // O nome do campo e a posição dele (raiz do corpo) são contrato: o filtro de
+    // idempotência lê exatamente "retryable" na raiz da resposta para decidir se a
+    // reserva da chave é liberada. Uma renomeação silenciosa faria o conflito de
+    // corrida voltar a ocupar a chave por 24 h sem quebrar nenhum outro teste.
     [Fact]
     public void ToActionResult_ComConflitoDeclaradoRetentavel_DeveTrazerRetryableNaRaizDoEnvelope()
     {
-        // O nome do campo e a posição dele (raiz do corpo) são contrato: o filtro de
-        // idempotência lê exatamente "retryable" na raiz da resposta para decidir se a
-        // reserva da chave é liberada. Uma renomeação silenciosa faria o conflito de
-        // corrida voltar a ocupar a chave por 24 h sem quebrar nenhum outro teste.
-        IDomainErrorMapper mapper = CriarMapper((
-            "TermoConsentimento.ConflitoDeConcorrencia",
-            new DomainErrorMapping(
-                StatusCodes.Status409Conflict,
-                "uniplus.configuracao.termo_consentimento.conflito_de_concorrencia",
-                "O rascunho foi modificado concorrentemente",
-                RetryableConflict: true)));
-        Result resultado = Result.Failure(new DomainError(
-            "TermoConsentimento.ConflitoDeConcorrencia", "O rascunho foi modificado concorrentemente."));
+        DomainErrorMapping conflito = new(
+            StatusCodes.Status409Conflict,
+            "uniplus.configuracao.termo_consentimento.conflito_de_concorrencia",
+            "O rascunho foi modificado concorrentemente",
+            RetryableConflict: true);
+        IDomainErrorMapper mapper = CriarMapper(("TermoConsentimento.ConflitoDeConcorrencia", conflito));
+        Result resultado = Result.Failure(new DomainError("TermoConsentimento.ConflitoDeConcorrencia", "O rascunho foi modificado."));
 
         ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
 
@@ -247,6 +241,7 @@ public sealed class ResultExtensionsTests
         problem.Extensions.Should().NotContainKey("errors");
     }
 
+    // Raiz usa o primeiro erro — fail-fast, mesma semântica que o domínio já tinha.
     [Fact]
     public void ToActionResult_ComValidationFailureDeVariosErros_DeveConterErrorsPorCampoComCodeTraduzido()
     {
@@ -254,24 +249,14 @@ public sealed class ResultExtensionsTests
             ("Campus.SiglaObrigatoria", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.configuracao.campus.sigla_obrigatoria", "Sigla obrigatória")),
             ("Campus.NomeObrigatorio", new DomainErrorMapping(StatusCodes.Status422UnprocessableEntity, "uniplus.configuracao.campus.nome_obrigatorio", "Nome obrigatório")));
         Result resultado = Result.ValidationFailure(
-        [
-            new FieldError("Sigla", new DomainError("Campus.SiglaObrigatoria", "Sigla do Campus é obrigatória.")),
-            new FieldError("Nome", new DomainError("Campus.NomeObrigatorio", "Nome do Campus é obrigatório.")),
-        ]);
+            [new("Sigla", new("Campus.SiglaObrigatoria", "Sigla obrigatória.")), new("Nome", new("Campus.NomeObrigatorio", "Nome obrigatório."))]);
 
         ProblemDetails problem = ExtrairProblemDetails(resultado.ToActionResult(mapper));
 
-        // Raiz usa o primeiro erro — fail-fast, mesma semântica que o domínio já tinha.
         problem.Extensions["code"].Should().Be("uniplus.configuracao.campus.sigla_obrigatoria");
-
-        object? errosObj = problem.Extensions["errors"];
-        errosObj.Should().NotBeNull();
-        dynamic[] erros = ((System.Collections.IEnumerable)errosObj!).Cast<dynamic>().ToArray();
-        ((int)erros.Length).Should().Be(2);
-        ((string)erros[0].field).Should().Be("Sigla");
-        ((string)erros[0].code).Should().Be("uniplus.configuracao.campus.sigla_obrigatoria");
-        ((string)erros[1].field).Should().Be("Nome");
-        ((string)erros[1].code).Should().Be("uniplus.configuracao.campus.nome_obrigatorio");
+        ErrosDoCorpo(problem).Select(static erro => (erro.Field, erro.Code)).Should().Equal(
+            ("Sigla", "uniplus.configuracao.campus.sigla_obrigatoria"),
+            ("Nome", "uniplus.configuracao.campus.nome_obrigatorio"));
     }
 
     // ─── Overload genérico Result<T> ──────────────────────────────────────
@@ -312,6 +297,9 @@ public sealed class ResultExtensionsTests
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────
+
+    private static ItemDeErroDeCampo[] ErrosDoCorpo(ProblemDetails problem) =>
+        [.. ((System.Collections.IEnumerable)problem.Extensions["errors"]!).Cast<ItemDeErroDeCampo>()];
 
     private static StubDomainErrorMapper CriarMapper(params (string Code, DomainErrorMapping Mapping)[] entradas)
     {

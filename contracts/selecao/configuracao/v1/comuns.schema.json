@@ -6,7 +6,7 @@
   "$defs": {
     "chave": {
       "title": "Chave local",
-      "description": "Identificador legível de uma parte do documento, escolhido por quem escreve. É único no documento e é o que as outras partes usam para se referir a ela. Letras minúsculas, números e hífens, começando por letra.",
+      "description": "Identificador local de uma parte do documento, que as outras partes usam para se referir a ela; as referências a uma parte (por exemplo a chave da fase ou da etapa) têm este mesmo formato. É único entre as partes do mesmo tipo no documento ou, quando a parte pertence a outra (os itens de uma etapa), dentro da parte que a contém. Letras minúsculas, números e hífens, começando por letra.",
       "type": "string",
       "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
       "minLength": 1,

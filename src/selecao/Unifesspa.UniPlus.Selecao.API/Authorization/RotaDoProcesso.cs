@@ -25,7 +25,7 @@ internal static class RotaDoProcesso
 
     /// <summary>A mesma resposta de processo inexistente: quem não pode alcançar o processo não descobre que ele existe.</summary>
     public static IActionResult NaoEncontrado(IServiceProvider servicos, Guid processoId) =>
-        Result.Failure(new DomainError("ProcessoSeletivo.NaoEncontrado", $"Processo Seletivo {processoId} não encontrado."))
+        Result.Failure(AcessoAoProcesso.NaoEncontrado(processoId))
             .ToActionResult(servicos.GetRequiredService<IDomainErrorMapper>());
 
     /// <summary>O <c>403</c> de quem tem a permissão mas está inscrito no processo.</summary>

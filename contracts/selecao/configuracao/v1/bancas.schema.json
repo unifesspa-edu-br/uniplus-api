@@ -11,7 +11,7 @@
   "properties": {
     "chave": {
       "title": "Chave da banca",
-      "description": "Chave local da banca, única no documento.",
+      "description": "Chave local da banca, única no documento. É obrigatória: é escolhida por quem cria a banca, o sistema não a atribui, e ela não muda ao renomear nem ao reordenar.",
       "$ref": "comuns.schema.json#/$defs/chave"
     },
     "tipoBancaCodigo": {

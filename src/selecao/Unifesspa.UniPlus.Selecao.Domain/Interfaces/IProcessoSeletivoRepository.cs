@@ -194,13 +194,6 @@ public interface IProcessoSeletivoRepository : IRepository<ProcessoSeletivo>
     Task<string?> ObterNomeDaUnidadeAdministradoraAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Unidade que responde pelo processo, o escopo em que as permissões do processo são concedidas.
-    /// <see langword="null"/> quando o processo não existe.
-    /// </summary>
-    /// <remarks>Projeção estreita, pelo mesmo motivo de <see cref="ObterNomeAsync"/>.</remarks>
-    Task<Guid?> ObterUnidadeAdministradoraAsync(Guid processoSeletivoId, CancellationToken cancellationToken = default);
-
-    /// <summary>
     /// A unidade dona e o nome do processo, o que o acesso às inscrições precisa saber, numa consulta só.
     /// <see langword="null"/> quando o processo não existe.
     /// </summary>

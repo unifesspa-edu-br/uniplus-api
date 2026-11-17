@@ -1867,6 +1867,13 @@ selecao.produtos_da_fase.fase_cronograma_id: Interno
 selecao.produtos_da_fase.id: Interno
 selecao.produtos_da_fase.papel: Interno
 selecao.produtos_da_fase.updated_at: Interno
+selecao.rascunhos_processos_seletivos.created_at: Interno
+selecao.rascunhos_processos_seletivos.documento: Pessoal
+selecao.rascunhos_processos_seletivos.id: Interno
+selecao.rascunhos_processos_seletivos.nome: Interno
+selecao.rascunhos_processos_seletivos.revisao: Interno
+selecao.rascunhos_processos_seletivos.unidade_administradora_origem_id: Interno
+selecao.rascunhos_processos_seletivos.updated_at: Interno
 selecao.rascunhos_publicacao.conteudo: Interno
 selecao.rascunhos_publicacao.created_at: Interno
 selecao.rascunhos_publicacao.expira_em: Interno
