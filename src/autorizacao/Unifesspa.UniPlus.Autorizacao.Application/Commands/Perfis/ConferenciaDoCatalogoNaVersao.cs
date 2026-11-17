@@ -52,24 +52,39 @@ public sealed class ConferenciaDoCatalogoNaVersao
             return;
         }
 
+        IReadOnlyList<PermissaoDaVersao> semRegistro = await PermissoesSemRegistroAsync(atual, perfil, entrante, cancellationToken).ConfigureAwait(false);
+        RegistrarAsQueSuspendem(perfil, atual, semRegistro);
+    }
+
+    // As permissões da versão que a implantação atual ainda não reclassificou para este perfil.
+    private async Task<IReadOnlyList<PermissaoDaVersao>> PermissoesSemRegistroAsync(
+        ImplantacaoNoBanco atual, Perfil perfil, VersaoDoPerfil entrante, CancellationToken cancellationToken)
+    {
         IReadOnlySet<string> jaReclassificados = await _reclassificacoes
             .ObterCodigosReclassificadosAsync(atual.Id, perfil.Id, cancellationToken).ConfigureAwait(false);
+
+        return [.. entrante.Permissoes.Where(p => !jaReclassificados.Contains(p.Codigo))];
+    }
+
+    private void RegistrarAsQueSuspendem(Perfil perfil, ImplantacaoNoBanco atual, IReadOnlyList<PermissaoDaVersao> permissoes)
+    {
         DateTimeOffset agora = _clock.GetUtcNow();
 
-        foreach (PermissaoDaVersao permissao in entrante.Permissoes.Where(p => !jaReclassificados.Contains(p.Codigo)))
+        foreach (PermissaoDaVersao permissao in permissoes)
         {
-            RegistrarSeSuspende(perfil, atual, permissao, agora);
+            if (MudancaQueSuspende(atual, permissao) is { } mudanca)
+            {
+                _reclassificacoes.Adicionar(ReclassificacaoDaPermissao.Registrar(atual.Id, perfil.Id, permissao.Codigo, mudanca, agora, 0));
+            }
         }
     }
 
-    private void RegistrarSeSuspende(Perfil perfil, ImplantacaoNoBanco atual, PermissaoDaVersao permissao, DateTimeOffset agora)
+    private static MudancaDaPermissao? MudancaQueSuspende(ImplantacaoNoBanco atual, PermissaoDaVersao permissao)
     {
         BaseDaConcessao retrato = new(permissao.Classificacao, permissao.DeUnidade);
-        if (atual.Linhas.TryGetValue(permissao.Codigo, out LinhaDoRetratoDoCatalogo? linha)
-            && retrato.SuspendeFrenteA(linha.Classificacao, linha.DeUnidade)
-            && ComparacaoComOCatalogo.MudancaDe(retrato, linha) is { } mudanca)
-        {
-            _reclassificacoes.Adicionar(ReclassificacaoDaPermissao.Registrar(atual.Id, perfil.Id, permissao.Codigo, mudanca, agora, 0));
-        }
+
+        return atual.Linhas.TryGetValue(permissao.Codigo, out LinhaDoRetratoDoCatalogo? linha) && retrato.SuspendeFrenteA(linha.Classificacao, linha.DeUnidade)
+            ? ComparacaoComOCatalogo.MudancaDe(retrato, linha)
+            : null;
     }
 }
