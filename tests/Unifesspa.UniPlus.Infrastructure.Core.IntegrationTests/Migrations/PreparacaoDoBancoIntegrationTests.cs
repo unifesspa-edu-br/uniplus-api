@@ -9,6 +9,7 @@ using Npgsql;
 using Testcontainers.PostgreSql;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
@@ -89,7 +90,7 @@ public sealed class PreparacaoDoBancoIntegrationTests : IAsyncLifetime
 
         string? doBanco = await TextoAsync(conexao, texto);
 
-        doBanco.Should().Be(NormalizacaoTextual.Normalizar(texto));
+        doBanco.Should().Be(FormaParaComparacao.De(texto));
     }
 
     internal static async Task SubirAsync(string conexao)
