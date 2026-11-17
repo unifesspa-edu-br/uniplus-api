@@ -121,12 +121,39 @@ public abstract class PerfilEndpointTestBase
 
     internal static async Task<JsonElement[]> ListarTudoAsync(HttpClient client)
     {
-        using HttpResponseMessage resposta = await client.GetAsync(new Uri($"{Rota}?limit=100", UriKind.Relative));
-        resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+        List<JsonElement> itens = [];
+        string? endereco = $"{Rota}?limit=100";
+
+        while (endereco is not null)
+        {
+            using HttpResponseMessage resposta = await client.GetAsync(new Uri(endereco, UriKind.RelativeOrAbsolute));
+            resposta.StatusCode.Should().Be(HttpStatusCode.OK);
+            itens.AddRange(await LerItensDaPaginaAsync(resposta));
+            endereco = EnderecoDaProximaPagina(resposta);
+        }
+
+        return [.. itens];
+    }
+
+    private static async Task<JsonElement[]> LerItensDaPaginaAsync(HttpResponseMessage resposta)
+    {
         using JsonDocument pagina = JsonDocument.Parse(await resposta.Content.ReadAsStringAsync());
         JsonElement itens = pagina.RootElement.ValueKind == JsonValueKind.Array ? pagina.RootElement : pagina.RootElement.GetProperty("items");
 
-        return [.. itens.EnumerateArray().Select(i => i.Clone())];
+        return [.. itens.EnumerateArray().Select(static item => item.Clone())];
+    }
+
+    private static string? EnderecoDaProximaPagina(HttpResponseMessage resposta)
+    {
+        if (!resposta.Headers.TryGetValues("Link", out IEnumerable<string>? valores))
+        {
+            return null;
+        }
+
+        string? proxima = string.Join(',', valores).Split(',')
+            .FirstOrDefault(static ligacao => ligacao.Contains("rel=\"next\"", StringComparison.Ordinal));
+
+        return proxima is null ? null : proxima[(proxima.IndexOf('<', StringComparison.Ordinal) + 1)..proxima.IndexOf('>', StringComparison.Ordinal)];
     }
 
     internal async Task SemearConcessaoAsync(Guid perfilId, EscopoDaConcessao escopo)
