@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>Microsoft.EntityFrameworkCore.Sintetico</AssemblyName>
+    <RootNamespace>Microsoft.EntityFrameworkCore.Sintetico</RootNamespace>
+  </PropertyGroup>
+
+</Project>

@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <AssemblyName>Npgsql.Sintetico</AssemblyName>
+    <RootNamespace>Npgsql.Sintetico</RootNamespace>
+  </PropertyGroup>
+
+</Project>

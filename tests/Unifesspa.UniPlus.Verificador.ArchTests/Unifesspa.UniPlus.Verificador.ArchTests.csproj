@@ -10,11 +10,26 @@
     <PackageReference Include="xunit" />
     <PackageReference Include="xunit.runner.visualstudio" />
     <PackageReference Include="AwesomeAssertions" />
+    <PackageReference Include="TngTech.ArchUnitNET" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="../../src/verificador/Unifesspa.UniPlus.Verificador/Unifesspa.UniPlus.Verificador.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <!-- Os fixtures são projetos próprios: só as DLLs da raiz, do intermediário e do alvo carregado chegam ao diretório de
+         saída. O alvo ausente é construído, mas nunca copiado. -->
+    <Compile Remove="Fixtures/**" />
+    <ProjectReference Include="Fixtures/Raiz/Raiz.csproj" ReferenceOutputAssembly="false" OutputItemType="AssemblyDeFixture" />
+    <ProjectReference Include="Fixtures/Intermediario/Intermediario.csproj" ReferenceOutputAssembly="false" OutputItemType="AssemblyDeFixture" />
+    <ProjectReference Include="Fixtures/AlvoCarregado/AlvoCarregado.csproj" ReferenceOutputAssembly="false" OutputItemType="AssemblyDeFixture" />
+    <ProjectReference Include="Fixtures/AlvoAusente/AlvoAusente.csproj" ReferenceOutputAssembly="false" Private="false" />
+  </ItemGroup>
+
+  <Target Name="CopiarOsAssembliesDosFixtures" AfterTargets="CopyFilesToOutputDirectory">
+    <Copy SourceFiles="@(AssemblyDeFixture)" DestinationFolder="$(OutDir)" SkipUnchangedFiles="true" />
+  </Target>
 
   <ItemGroup>
     <Using Include="Xunit" />
