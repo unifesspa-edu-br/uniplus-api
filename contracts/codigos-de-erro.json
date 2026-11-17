@@ -3602,6 +3602,11 @@
       "titulo": "Tamanho do código da unidade inválido"
     },
     {
+      "codigo": "uniplus.organizacao.unidade.filtro_de_tipo_invalido",
+      "status": 400,
+      "titulo": "Tipo do filtro de unidades inválido"
+    },
+    {
       "codigo": "uniplus.organizacao.unidade.motivo_mudanca_tamanho",
       "status": 422,
       "titulo": "Tamanho do motivo da mudança de identificador inválido"

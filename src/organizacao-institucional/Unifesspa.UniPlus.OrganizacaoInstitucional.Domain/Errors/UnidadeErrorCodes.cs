@@ -21,6 +21,7 @@ public static class UnidadeErrorCodes
     public const string SuperiorNaoEncontrado = "Unidade.SuperiorNaoEncontrado";
     public const string SuperiorFormaCiclo = "Unidade.SuperiorFormaCiclo";
     public const string NaoEncontrada = "Unidade.NaoEncontrada";
+    public const string FiltroDeTipoInvalido = "Unidade.FiltroDeTipoInvalido";
     public const string RemocaoBloqueadaPorSubordinadas = "Unidade.RemocaoBloqueadaPorSubordinadas";
     public const string RemocaoBloqueadaPorInstituicao = "Unidade.RemocaoBloqueadaPorInstituicao";
 }

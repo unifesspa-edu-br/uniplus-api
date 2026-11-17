@@ -79,7 +79,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "Nenhuma Institui\u00E7\u00E3o foi cadastrada (uniplus.organizacao.instituicao.nao_encontrada).",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -505,7 +505,7 @@
             }
           },
           "400": {
-            "description": "Bad Request",
+            "description": "Valor de tipo que n\u00E3o \u00E9 um tipo de unidade filtr\u00E1vel (uniplus.organizacao.unidade.filtro_de_tipo_invalido).",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -535,7 +535,7 @@
             }
           },
           "422": {
-            "description": "Unprocessable Entity",
+            "description": "O texto pesquisado excede 200 caracteres (uniplus.consulta.busca_muito_longa).",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {
@@ -576,7 +576,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "A Unidade n\u00E3o existe ou foi removida (uniplus.organizacao.unidade.nao_encontrada).",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

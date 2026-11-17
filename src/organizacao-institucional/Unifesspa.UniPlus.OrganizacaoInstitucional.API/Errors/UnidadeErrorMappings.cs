@@ -123,6 +123,12 @@ internal static class UnidadeErrorMappings
                 "uniplus.organizacao.unidade.nao_encontrada",
                 "Unidade não encontrada")),
 
+        new(UnidadeErrorCodes.FiltroDeTipoInvalido,
+            new DomainErrorMapping(
+                StatusCodes.Status400BadRequest,
+                "uniplus.organizacao.unidade.filtro_de_tipo_invalido",
+                "Tipo do filtro de unidades inválido")),
+
         new(UnidadeErrorCodes.RemocaoBloqueadaPorSubordinadas,
             new DomainErrorMapping(
                 StatusCodes.Status409Conflict,

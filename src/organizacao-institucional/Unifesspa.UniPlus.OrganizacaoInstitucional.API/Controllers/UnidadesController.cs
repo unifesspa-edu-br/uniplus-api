@@ -39,9 +39,6 @@ public sealed class UnidadesController : ControllerBase
 {
     private const string ResourceTag = "unidades";
 
-    /// <summary>Limite defensivo de comprimento do termo de busca (cobre o Nome máximo + margem).</summary>
-    private const int BuscaMaxLength = 256;
-
     private readonly ICommandBus _commandBus;
     private readonly IQueryBus _queryBus;
     private readonly IDomainErrorMapper _mapper;
@@ -73,10 +70,10 @@ public sealed class UnidadesController : ControllerBase
     [AllowAnonymous]
     [VendorMediaType(Resource = "unidade", Versions = [1])]
     [ProducesResponseType(typeof(IEnumerable<UnidadeDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest, Description = "Valor de tipo que não é um tipo de unidade filtrável (uniplus.organizacao.unidade.filtro_de_tipo_invalido).")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status410Gone)]
-    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status422UnprocessableEntity, Description = "O texto pesquisado excede 200 caracteres (uniplus.consulta.busca_muito_longa).")]
     public async Task<IActionResult> Listar(
         [FromCursor(ResourceTag)] PageRequest page,
         [FromQuery(Name = "q")] string? q,
@@ -85,76 +82,27 @@ public sealed class UnidadesController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(page);
 
-        if (q is { Length: > BuscaMaxLength })
-        {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Termo de busca muito longo",
-                Detail = $"O parâmetro 'q' não pode exceder {BuscaMaxLength} caracteres.",
-                Status = StatusCodes.Status400BadRequest,
-            });
-        }
-
-        if (!TentarMapearTipos(tipo, out IReadOnlyList<TipoUnidade> tipos, out IActionResult? erroTipo))
-        {
-            return erroTipo!;
-        }
-
-        ListarUnidadesAtivasResult resultado = await _queryBus
-            .Send(new ListarUnidadesAtivasQuery(page.AfterId, page.Limit, page.Direction, q, tipos), cancellationToken)
+        Result<ListarUnidadesAtivasResult> resultado = await _queryBus
+            .Send(new ListarUnidadesAtivasQuery(page.AfterId, page.Limit, page.Direction, q, tipo), cancellationToken)
             .ConfigureAwait(false);
 
-        // HATEOAS Level 1 (ADR-0029 §"Coleção"): cada item carrega seu _links.self.
-        UnidadeDto[] comLinks = [.. resultado.Items.Select(u => u with { Links = _linksBuilder.Build(u) })];
+        return resultado.IsSuccess
+            ? await RespostaPaginadaAsync(resultado.Value!, page, cancellationToken).ConfigureAwait(false)
+            : resultado.ToActionResult(_mapper);
+    }
+
+    /// <summary>
+    /// A página de Unidades: cada item carrega seu <c>_links.self</c> (HATEOAS Level 1, ADR-0029
+    /// §"Coleção") e a navegação segue por cursor no header <c>Link</c>.
+    /// </summary>
+    private async Task<IActionResult> RespostaPaginadaAsync(
+        ListarUnidadesAtivasResult resultado, PageRequest page, CancellationToken cancellationToken)
+    {
+        UnidadeDto[] comLinks = [.. resultado.Items.Select(unidade => unidade with { Links = _linksBuilder.Build(unidade) })];
 
         return await this.OkPaginatedAsync(
             comLinks, resultado.AnteriorAfterId, resultado.ProximoAfterId, page, ResourceTag,
             cancellationToken: cancellationToken).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Converte os valores numéricos do query param <c>tipo</c> em
-    /// <see cref="TipoUnidade"/>, rejeitando (400) qualquer valor que não
-    /// corresponda a um tipo definido. Deduplica e preserva a ordem. Ausência
-    /// de <c>tipo</c> resulta em lista vazia (sem filtro).
-    /// </summary>
-    private bool TentarMapearTipos(
-        int[]? valores,
-        out IReadOnlyList<TipoUnidade> tipos,
-        out IActionResult? erro)
-    {
-        if (valores is null || valores.Length == 0)
-        {
-            tipos = [];
-            erro = null;
-            return true;
-        }
-
-        List<TipoUnidade> mapeados = new(valores.Length);
-        foreach (int valor in valores)
-        {
-            var candidato = (TipoUnidade)valor;
-            if (!Enum.IsDefined(candidato) || candidato == TipoUnidade.Nenhum)
-            {
-                tipos = [];
-                erro = BadRequest(new ProblemDetails
-                {
-                    Title = "Filtro de tipo inválido",
-                    Detail = $"O valor de tipo '{valor}' não corresponde a um TipoUnidade válido.",
-                    Status = StatusCodes.Status400BadRequest,
-                });
-                return false;
-            }
-
-            if (!mapeados.Contains(candidato))
-            {
-                mapeados.Add(candidato);
-            }
-        }
-
-        tipos = mapeados;
-        erro = null;
-        return true;
     }
 
     /// <summary>
@@ -164,21 +112,21 @@ public sealed class UnidadesController : ControllerBase
     [AllowAnonymous]
     [VendorMediaType(Resource = "unidade", Versions = [1])]
     [ProducesResponseType(typeof(UnidadeDto), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound, Description = "A Unidade não existe ou foi removida (uniplus.organizacao.unidade.nao_encontrada).")]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status406NotAcceptable)]
     public async Task<IActionResult> ObterPorId(Guid id, CancellationToken cancellationToken)
     {
-        UnidadeDto? unidade = await _queryBus
+        Result<UnidadeDto> consulta = await _queryBus
             .Send(new ObterUnidadePorIdQuery(id), cancellationToken)
             .ConfigureAwait(false);
 
-        if (unidade is null)
+        if (consulta.IsFailure)
         {
-            return NotFound();
+            return consulta.ToActionResult(_mapper);
         }
 
-        UnidadeDto comLinks = unidade with { Links = _linksBuilder.Build(unidade) };
-        return Ok(comLinks);
+        UnidadeDto unidade = consulta.Value!;
+        return Ok(unidade with { Links = _linksBuilder.Build(unidade) });
     }
 
     /// <summary>
@@ -204,16 +152,16 @@ public sealed class UnidadesController : ControllerBase
             .Send(command, cancellationToken)
             .ConfigureAwait(false);
 
-        if (resultado.IsSuccess)
-        {
-            return CreatedAtAction(
+        return RespostaDaCriacao(resultado);
+    }
+
+    private IActionResult RespostaDaCriacao(Result<Guid> resultado) =>
+        resultado.IsSuccess
+            ? CreatedAtAction(
                 nameof(ObterPorId),
                 new { id = resultado.Value },
-                resultado.Value);
-        }
-
-        return resultado.ToActionResult(_mapper);
-    }
+                resultado.Value)
+            : resultado.ToActionResult(_mapper);
 
     /// <summary>
     /// Atualiza uma unidade organizacional existente. Exige a permissão de
@@ -236,14 +184,9 @@ public sealed class UnidadesController : ControllerBase
     {
         ArgumentNullException.ThrowIfNull(command);
 
-        if (id != command.Id)
+        if (this.ConferirIdDaRota(id, command.Id, _mapper) is { } divergente)
         {
-            return BadRequest(new ProblemDetails
-            {
-                Title = "Id divergente",
-                Detail = "O Id na URL não corresponde ao Id no corpo da requisição.",
-                Status = StatusCodes.Status400BadRequest,
-            });
+            return divergente;
         }
 
         Result resultado = await _commandBus
