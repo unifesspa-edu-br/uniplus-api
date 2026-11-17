@@ -35,11 +35,20 @@ public static class EnviarAvisoDaReclassificacaoCommandHandler
         IReadOnlyList<EnviarEmail>? emails = await avisos
             .MontarAsync(new FatoSemAviso(command.Origem, command.FatoId), cancellationToken)
             .ConfigureAwait(false);
-        if (emails is null)
-        {
-            return (Result<bool>.Success(false), []);
-        }
+        return emails is null
+            ? (Result<bool>.Success(false), [])
+            : await GravarOAvisoAsync(command, emails, reclassificacoes, unitOfWork, clock, cancellationToken).ConfigureAwait(false);
+    }
 
+    /// <summary>O fato passa a ter aviso: a linha de <c>avisos_da_reclassificacao</c> e os e-mails entram na mesma gravação.</summary>
+    private static async Task<(Result<bool> Resposta, IEnumerable<object> Mensagens)> GravarOAvisoAsync(
+        EnviarAvisoDaReclassificacaoCommand command,
+        IReadOnlyList<EnviarEmail> emails,
+        IReclassificacaoRepository reclassificacoes,
+        IUnitOfWork unitOfWork,
+        TimeProvider clock,
+        CancellationToken cancellationToken)
+    {
         reclassificacoes.Adicionar(AvisoDaReclassificacao.Registrar(command.Origem, command.FatoId, clock.GetUtcNow()));
         await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
 
