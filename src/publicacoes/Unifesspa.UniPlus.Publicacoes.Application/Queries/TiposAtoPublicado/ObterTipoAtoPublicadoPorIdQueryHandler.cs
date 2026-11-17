@@ -1,13 +1,13 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.Queries.TiposAtoPublicado;
 
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
-using Unifesspa.UniPlus.Publicacoes.Application.Mappings;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 
 public static class ObterTipoAtoPublicadoPorIdQueryHandler
 {
-    public static async Task<TipoAtoPublicadoDto?> Handle(
+    public static async Task<Result<TipoAtoPublicadoDto>> Handle(
         ObterTipoAtoPublicadoPorIdQuery query,
         ITipoAtoPublicadoRepository repository,
         CancellationToken cancellationToken)
@@ -19,6 +19,6 @@ public static class ObterTipoAtoPublicadoPorIdQueryHandler
             .ObterPorIdParaLeituraAsync(query.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        return tipo?.ToDto();
+        return LeituraDoTipoAtoPublicado.DtoOuNaoEncontrado(tipo);
     }
 }

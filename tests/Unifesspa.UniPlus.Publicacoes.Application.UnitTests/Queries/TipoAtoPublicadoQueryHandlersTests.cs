@@ -1,21 +1,17 @@
 namespace Unifesspa.UniPlus.Publicacoes.Application.UnitTests.Queries;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 using Unifesspa.UniPlus.Publicacoes.Application.Queries.TiposAtoPublicado;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit exige tipo de teste público.")]
 public sealed class TipoAtoPublicadoQueryHandlersTests
 {
     private static readonly DateOnly Inicio = new(2026, 1, 1);
@@ -28,9 +24,11 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
         TipoAtoPublicado tipo = Novo("CONVOCACAO", congela: false, irreversivel: true, ehResultado: false);
         _repository.ObterPorIdParaLeituraAsync(tipo.Id, Arg.Any<CancellationToken>()).Returns(tipo);
 
-        TipoAtoPublicadoDto? dto = await ObterTipoAtoPublicadoPorIdQueryHandler.Handle(
+        Result<TipoAtoPublicadoDto> resultado = await ObterTipoAtoPublicadoPorIdQueryHandler.Handle(
             new ObterTipoAtoPublicadoPorIdQuery(tipo.Id), _repository, CancellationToken.None);
 
+        resultado.IsSuccess.Should().BeTrue();
+        TipoAtoPublicadoDto? dto = resultado.Value;
         dto.Should().NotBeNull();
         dto!.Codigo.Should().Be("CONVOCACAO");
         dto.CongelaConfiguracao.Should().BeFalse();
@@ -39,16 +37,17 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
         dto.VigenciaFim.Should().BeNull();
     }
 
-    [Fact(DisplayName = "ObterPorId devolve nulo quando não existe")]
-    public async Task ObterPorId_Inexistente_Nulo()
+    [Fact(DisplayName = "ObterPorId falha com tipo não encontrado quando não existe")]
+    public async Task ObterPorId_Inexistente_FalhaComNaoEncontrado()
     {
         _repository.ObterPorIdParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((TipoAtoPublicado?)null);
 
-        TipoAtoPublicadoDto? dto = await ObterTipoAtoPublicadoPorIdQueryHandler.Handle(
+        Result<TipoAtoPublicadoDto> resultado = await ObterTipoAtoPublicadoPorIdQueryHandler.Handle(
             new ObterTipoAtoPublicadoPorIdQuery(Guid.NewGuid()), _repository, CancellationToken.None);
 
-        dto.Should().BeNull();
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.NaoEncontrado);
     }
 
     [Fact(DisplayName = "Listar repassa cursor, limite e direção, e devolve as âncoras")]
@@ -120,25 +119,26 @@ public sealed class TipoAtoPublicadoQueryHandlersTests
         var data = new DateOnly(2026, 3, 15);
         _repository.ObterVigenteAsync("AVISO", data, Arg.Any<CancellationToken>()).Returns(Novo("AVISO"));
 
-        TipoAtoPublicadoDto? dto = await ObterTipoAtoPublicadoVigenteQueryHandler.Handle(
+        Result<TipoAtoPublicadoDto> resultado = await ObterTipoAtoPublicadoVigenteQueryHandler.Handle(
             new ObterTipoAtoPublicadoVigenteQuery("AVISO", data),
             _repository, new RelogioFixo(DateTimeOffset.UnixEpoch), CancellationToken.None);
 
-        dto.Should().NotBeNull();
+        resultado.Value.Should().NotBeNull();
         await _repository.Received(1).ObterVigenteAsync("AVISO", data, Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "ObterVigente devolve nulo quando nenhuma versão vale na data")]
-    public async Task ObterVigente_SemVersao_Nulo()
+    [Fact(DisplayName = "ObterVigente falha com tipo não encontrado quando nenhuma versão vale na data")]
+    public async Task ObterVigente_SemVersao_FalhaComNaoEncontrado()
     {
         _repository.ObterVigenteAsync(Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<CancellationToken>())
             .Returns((TipoAtoPublicado?)null);
 
-        TipoAtoPublicadoDto? dto = await ObterTipoAtoPublicadoVigenteQueryHandler.Handle(
+        Result<TipoAtoPublicadoDto> resultado = await ObterTipoAtoPublicadoVigenteQueryHandler.Handle(
             new ObterTipoAtoPublicadoVigenteQuery("AVISO", new DateOnly(2020, 1, 1)),
             _repository, new RelogioFixo(DateTimeOffset.UnixEpoch), CancellationToken.None);
 
-        dto.Should().BeNull();
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(TipoAtoPublicadoErrorCodes.NaoEncontrado);
     }
 
     private static TipoAtoPublicado Novo(
