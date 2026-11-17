@@ -65,7 +65,7 @@ public abstract class ConcessoesEmVigenciaTestBase : ConcessaoEndpointTestBase
         return (institucional, ids);
     }
 
-    private async Task<Guid> ConcederComoAsync(Guid perfil, string caso, EscopoDaConcessao escopo, TimeSpan? validade, bool revogada)
+    private protected async Task<Guid> ConcederComoAsync(Guid perfil, string caso, EscopoDaConcessao escopo, TimeSpan? validade, bool revogada)
     {
         Guid id = await ConcederAsync(perfil, Pessoa(Titular(caso)), escopo);
         if (validade is { } prazo)
