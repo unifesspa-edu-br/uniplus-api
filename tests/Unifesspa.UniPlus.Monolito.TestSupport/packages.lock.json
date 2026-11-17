@@ -1546,6 +1546,7 @@
       "unifesspa.uniplus.integrationtests.fixtures": {
         "type": "Project",
         "dependencies": {
+          "AwesomeAssertions": "[9.6.0, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.12, )",
           "Microsoft.AspNetCore.Mvc.Testing": "[10.0.14, )",
           "SSH.NET": "[2026.0.0, )",
@@ -1734,6 +1735,12 @@
           "Newtonsoft.Json": "13.0.4",
           "System.CodeDom": "10.0.10"
         }
+      },
+      "AwesomeAssertions": {
+        "type": "CentralTransitive",
+        "requested": "[9.6.0, )",
+        "resolved": "9.6.0",
+        "contentHash": "8kdtgI+tZIgP46ncnk650/dU4JSrn+n2Dkic8FvjIFn72P6Nv1Afyr5F8F3PsokHg1GBSBVo1/Z+eZOrU5esSA=="
       },
       "Confluent.Kafka": {
         "type": "CentralTransitive",

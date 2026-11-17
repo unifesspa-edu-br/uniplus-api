@@ -1600,6 +1600,7 @@
       "unifesspa.uniplus.integrationtests.fixtures": {
         "type": "Project",
         "dependencies": {
+          "AwesomeAssertions": "[9.6.0, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.12, )",
           "Microsoft.AspNetCore.Mvc.Testing": "[10.0.14, )",
           "SSH.NET": "[2026.0.0, )",
