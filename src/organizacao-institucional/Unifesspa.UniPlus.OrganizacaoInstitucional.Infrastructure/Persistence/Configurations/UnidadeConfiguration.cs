@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
+using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Protecao;
 using Unifesspa.UniPlus.Kernel.Domain.Cidades;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
@@ -16,6 +17,12 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Conv
     Justification = "Instanciada via EF Core ModelBuilder.ApplyConfigurationsFromAssembly por reflection.")]
 internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
 {
+    internal const string NomeParaBusca = "NomeParaBusca";
+    internal const string SiglaParaBusca = "SiglaParaBusca";
+    internal const string CodigoParaBusca = "CodigoParaBusca";
+    internal const string SlugParaBusca = "SlugParaBusca";
+    internal const string AliasParaBusca = "AliasParaBusca";
+
     public void Configure(EntityTypeBuilder<Unidade> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
@@ -113,5 +120,40 @@ internal sealed class UnidadeConfiguration : IEntityTypeConfiguration<Unidade>
         // Hierarquia: índice para busca de subordinadas
         builder.HasIndex(u => u.UnidadeSuperiorId)
             .HasDatabaseName("ix_unidades_superior_id");
+
+        ConfigurarBuscaTextual(builder);
+    }
+
+    /// <summary>
+    /// As formas normalizadas (sem acento e em minúsculas, pela função da plataforma) dos campos que a busca
+    /// textual compara, geradas pelo banco, cada uma com o seu índice trigrama.
+    /// </summary>
+    private static void ConfigurarBuscaTextual(EntityTypeBuilder<Unidade> builder)
+    {
+        ColunaParaBusca(builder, NomeParaBusca, "nome", 250).IsRequired();
+        ColunaParaBusca(builder, SiglaParaBusca, "sigla", 50).IsRequired();
+        ColunaParaBusca(builder, CodigoParaBusca, "codigo", 50).IsRequired();
+        ColunaParaBusca(builder, SlugParaBusca, "slug", 64).IsRequired();
+
+        // Sem alias a coluna é nula: a função da plataforma devolve nulo para entrada nula.
+        ColunaParaBusca(builder, AliasParaBusca, "alias", 100);
+    }
+
+    private static PropertyBuilder<string?> ColunaParaBusca(
+        EntityTypeBuilder<Unidade> builder, string propriedade, string colunaDeOrigem, int tamanho)
+    {
+        PropertyBuilder<string?> coluna = builder.Property<string?>(propriedade)
+            .HasMaxLength(tamanho)
+            .UseCollation("C")
+            .HasComputedColumnSql(NormalizacaoTextual.ExpressaoSql(colunaDeOrigem), stored: true)
+            .HasComment($"Forma normalizada de {colunaDeOrigem} (sem acento e em minúsculas, pela função da plataforma), "
+                + "gerada pelo banco; a busca textual da Unidade compara contra ela.");
+
+        builder.HasIndex(propriedade)
+            .HasMethod("gin")
+            .HasOperators("gin_trgm_ops")
+            .HasDatabaseName($"ix_unidades_{colunaDeOrigem}_para_busca_trgm");
+
+        return coluna;
     }
 }
