@@ -123,7 +123,7 @@ public sealed class InstalacaoHandlersTests
         IniciarInstalacaoCommandHandler.Handle(
             new IniciarInstalacaoCommand(gestores, "456", 2048),
             new ConferenciaDaNovaInstalacao(new ConcessoesDaInstalacao(gestoresAtivos: 0, travas: []), new DominiosDeTeste()),
-            new GravacaoDaNovaInstalacao(instalacoes, new UrlFixa(), unidade),
+            new GravacaoDaNovaInstalacao(instalacoes, new EnvioDoPdf(new UrlFixa()), unidade),
             new Usuario(Executor),
             TimeProvider.System,
             CancellationToken.None);

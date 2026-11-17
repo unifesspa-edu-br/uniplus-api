@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Messaging;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -174,7 +175,7 @@ public sealed class PrazoDaVersaoTests
             Armazenamento = new Armazenamento();
             _operacao = new OperacaoSobreOPerfil(_perfis, Unidade, _relogio);
             AutoriaDaOperacao autoria = new(new Usuario(PerfisDeTeste.Autor), _relogio, new ConcessoesNaMemoria());
-            EnvioDoDocumento envio = new(Armazenamento, _relogio);
+            EnvioDoDocumento envio = new(new EnvioDoPdf(Armazenamento), _relogio);
             Documentos = new DocumentosDasVersoes(_operacao, envio, new LeitorDoDocumentoDaVersao(autoria, _perfis, Armazenamento, Unidade));
         }
 

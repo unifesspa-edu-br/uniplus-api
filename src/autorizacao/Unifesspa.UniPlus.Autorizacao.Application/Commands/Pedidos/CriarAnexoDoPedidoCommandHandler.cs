@@ -15,15 +15,10 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public static class CriarAnexoDoPedidoCommandHandler
 {
-    public const string TipoDeMidiaDoPdf = "application/pdf";
-
-    /// <summary>Validade da URL de PUT; o PDF de até 10 MB sobe dentro dela.</summary>
-    public static readonly TimeSpan PrazoDoEnvio = TimeSpan.FromMinutes(15);
-
     public static async Task<Result<AnexoParaEnvioDto>> Handle(
         CriarAnexoDoPedidoCommand command,
         IPedidoDeConcessaoRepository repository,
-        IArmazenamentoDosDocumentosDaAutorizacao armazenamento,
+        EnvioDoPdf envio,
         IUnitOfWork unitOfWork,
         IUserContext userContext,
         TimeProvider timeProvider,
@@ -31,7 +26,7 @@ public static class CriarAnexoDoPedidoCommandHandler
     {
         ArgumentNullException.ThrowIfNull(command);
         ArgumentNullException.ThrowIfNull(repository);
-        ArgumentNullException.ThrowIfNull(armazenamento);
+        ArgumentNullException.ThrowIfNull(envio);
         ArgumentNullException.ThrowIfNull(unitOfWork);
         ArgumentNullException.ThrowIfNull(userContext);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -55,8 +50,8 @@ public static class CriarAnexoDoPedidoCommandHandler
         }
 
         AnexoDoPedido anexo = criado.Value!;
-        string url = await armazenamento
-            .GerarUrlDeEnvioAsync(anexo.ChaveDeEnvio, TipoDeMidiaDoPdf, PrazoDoEnvio, cancellationToken)
+        UrlDeEnvioDoPdf url = await envio
+            .EmitirAsync(anexo.ChaveDeEnvio, timeProvider.GetUtcNow(), cancellationToken)
             .ConfigureAwait(false);
 
         // Marca a linha do pedido: criar o anexo e decidir o pedido não correm juntos.
@@ -76,8 +71,8 @@ public static class CriarAnexoDoPedidoCommandHandler
         return Result<AnexoParaEnvioDto>.Success(new AnexoParaEnvioDto(
             anexo.Id,
             SituacaoDoAnexoCodigo.AguardandoEnvio,
-            new Uri(url, UriKind.Absolute),
-            TipoDeMidiaDoPdf,
-            timeProvider.GetUtcNow() + PrazoDoEnvio));
+            url.Endereco,
+            EnvioDoPdf.TipoDeMidia,
+            url.ExpiraEm));
     }
 }
