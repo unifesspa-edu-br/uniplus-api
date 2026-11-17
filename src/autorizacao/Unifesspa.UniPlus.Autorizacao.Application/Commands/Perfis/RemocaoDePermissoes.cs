@@ -45,7 +45,7 @@ public sealed class RemocaoDePermissoes
 
         return CategoriaInvalida(dados)
             ? Recusada(PerfilErros.RemocaoInvalida())
-            : await RemoverSobATravaAsync(perfilId, dados, autoria, cancellationToken).ConfigureAwait(false);
+            : await RemoverComPerfilExclusivoAsync(perfilId, dados, autoria, cancellationToken).ConfigureAwait(false);
     }
 
     private static bool CategoriaInvalida(RemoverPermissoesRequest dados) =>
@@ -54,7 +54,7 @@ public sealed class RemocaoDePermissoes
     private static GravacaoDaOperacao<PerfilDto> Recusada(DomainError erro) =>
         GravacaoDaOperacao<PerfilDto>.Sem(Result<PerfilDto>.Failure(erro));
 
-    private Task<GravacaoDaOperacao<PerfilDto>> RemoverSobATravaAsync(
+    private Task<GravacaoDaOperacao<PerfilDto>> RemoverComPerfilExclusivoAsync(
         Guid perfilId, RemoverPermissoesRequest dados, AutoriaDaVersao autoria, CancellationToken cancellationToken) =>
         _operacao.ExecutarComAvisosAsync(
             perfilId,
