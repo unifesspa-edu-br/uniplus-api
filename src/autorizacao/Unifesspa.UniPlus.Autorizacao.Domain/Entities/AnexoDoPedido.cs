@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -11,8 +12,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed class AnexoDoPedido : EntityBase
 {
-    public const long TamanhoMaximoBytes = 10L * 1024 * 1024;
-
     private const int ETagMaxLength = 200;
     private const string PrefixoDasChaves = "autorizacao/pedido";
 
@@ -48,11 +47,11 @@ public sealed class AnexoDoPedido : EntityBase
 
     internal static Result<AnexoDoPedido> Criar(Guid pedidoId, long tamanhoDeclarado)
     {
-        if (tamanhoDeclarado is < 1 or > TamanhoMaximoBytes)
+        if (!PdfDeclarado.TamanhoAdmitido(tamanhoDeclarado))
         {
             return Result<AnexoDoPedido>.ValidationFailure([new FieldError("tamanhoDoPdf", new DomainError(
                 PedidoErrorCodes.AnexoInvalido,
-                "O PDF do anexo deve ter de 1 byte a 10 MB."))]);
+                $"O PDF do anexo deve ter de 1 byte a {PdfDeclarado.TamanhoMaximoEmMegabytes} MB."))]);
         }
 
         return Result<AnexoDoPedido>.Success(new AnexoDoPedido

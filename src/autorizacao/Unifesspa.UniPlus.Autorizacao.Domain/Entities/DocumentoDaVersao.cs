@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
+using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Results;
 
@@ -11,8 +12,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed class DocumentoDaVersao : EntityBase
 {
-    public const long TamanhoMaximoBytes = 10L * 1024 * 1024;
-
     private const int ETagMaxLength = 200;
     private const string PrefixoDasChaves = "autorizacao/perfil";
 
@@ -52,11 +51,11 @@ public sealed class DocumentoDaVersao : EntityBase
     /// <summary>As violações do tamanho declarado do PDF; vazio quando de 1 byte a 10 MB.</summary>
     public static IEnumerable<FieldError> ValidarTamanho(long tamanhoDeclarado)
     {
-        if (tamanhoDeclarado is < 1 or > TamanhoMaximoBytes)
+        if (!PdfDeclarado.TamanhoAdmitido(tamanhoDeclarado))
         {
             yield return new FieldError("tamanhoDoDocumento", new DomainError(
                 PerfilErrorCodes.DocumentoInvalido,
-                "O documento da versão deve ter de 1 byte a 10 MB."));
+                $"O documento da versão deve ter de 1 byte a {PdfDeclarado.TamanhoMaximoEmMegabytes} MB."));
         }
     }
 

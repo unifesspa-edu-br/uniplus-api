@@ -48,7 +48,7 @@ public sealed class Instalacao : EntityBase
 
     public string NumeroDoDocumento { get; private set; } = string.Empty;
 
-    /// <summary>Tamanho declarado do PDF, em bytes; é o limite do pedido ao verificador, no máximo <see cref="DocumentoDeDesignacao.TamanhoMaximoDoPdfBytes"/>.</summary>
+    /// <summary>Tamanho declarado do PDF, em bytes; é o limite do pedido ao verificador, no máximo <see cref="PdfDeclarado.TamanhoMaximoBytes"/>.</summary>
     public long TamanhoDoPdf { get; private set; }
 
     public SituacaoDaInstalacao Situacao { get; private set; }
