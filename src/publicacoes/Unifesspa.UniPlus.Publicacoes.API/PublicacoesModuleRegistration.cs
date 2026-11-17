@@ -38,15 +38,7 @@ public static class PublicacoesModuleRegistration
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(configuration);
 
-        // OpenAPI 3.1 (ADR-0030) — spec em /openapi/publicacoes.json.
-        services.AddUniPlusOpenApi(PublicacoesApiAssemblyMarker.ModuleName, configuration);
-
-        // Erros de domínio do módulo (consumidos por AddDomainErrorMapper, registrado
-        // uma vez no host via IEnumerable<IDomainErrorRegistration>).
-        services.AddSingleton<IDomainErrorRegistration, PublicacoesDomainErrorRegistration>();
-
-        services.AddSingleton<IResourceLinksBuilder<TipoAtoPublicadoDto>, TipoAtoPublicadoLinksBuilder>();
-        services.AddSingleton<IResourceLinksBuilder<AtoNormativoDto>, AtoNormativoLinksBuilder>();
+        AddFronteiraHttp(services, configuration);
 
         // Permissões do módulo (ADR-0151): o enum entra no catálogo da aplicação e é
         // conferido na subida.
@@ -56,5 +48,21 @@ public static class PublicacoesModuleRegistration
         services.AddPublicacoesInfrastructure();
 
         return services;
+    }
+
+    /// <summary>
+    /// A fronteira HTTP do módulo: o documento OpenAPI 3.1 (ADR-0030), publicado em
+    /// <c>/openapi/publicacoes.json</c>; os erros de domínio, consumidos por <c>AddDomainErrorMapper</c>,
+    /// que o host registra uma vez via <c>IEnumerable&lt;IDomainErrorRegistration&gt;</c>; e os builders
+    /// HATEOAS.
+    /// </summary>
+    private static void AddFronteiraHttp(IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddUniPlusOpenApi(PublicacoesApiAssemblyMarker.ModuleName, configuration);
+
+        services.AddSingleton<IDomainErrorRegistration, PublicacoesDomainErrorRegistration>();
+
+        services.AddSingleton<IResourceLinksBuilder<TipoAtoPublicadoDto>, TipoAtoPublicadoLinksBuilder>();
+        services.AddSingleton<IResourceLinksBuilder<AtoNormativoDto>, AtoNormativoLinksBuilder>();
     }
 }

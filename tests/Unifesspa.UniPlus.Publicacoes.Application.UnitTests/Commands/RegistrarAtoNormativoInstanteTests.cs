@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Publicacoes.Application.Commands.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
@@ -78,8 +79,7 @@ public sealed class RegistrarAtoNormativoInstanteTests
         TipoAtoPublicado tipo = new TipoAtoPublicadoDeTeste().Criar().Value!;
         _tipos.ObterVigenteAsync("EDITAL_ABERTURA", DiaDaPublicacao, Arg.Any<CancellationToken>()).Returns(tipo);
         _atos.ListarIdsComMesmaNumeracaoAsync(
-            Arg.Any<string>(), Arg.Any<string>(), Arg.Any<int>(), Arg.Any<string>(),
-            Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            Arg.Any<NumeracaoDoAto>(), Arg.Any<CancellationToken>())
             .Returns([]);
     }
 

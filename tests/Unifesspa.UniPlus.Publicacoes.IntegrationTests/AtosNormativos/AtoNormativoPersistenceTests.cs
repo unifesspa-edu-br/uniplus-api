@@ -212,7 +212,7 @@ public sealed class AtoNormativoPersistenceTests
         var repo = new AtoNormativoRepository(ctx);
 
         IReadOnlyList<Guid> conflitantes = await repo.ListarIdsComMesmaNumeracaoAsync(
-            "CEPS", "EDITAL", 2026, numero, null, default);
+            new NumeracaoDoAto("CEPS", "EDITAL", 2026, numero), default);
 
         conflitantes.Should().BeEquivalentTo([a1.Id, a2.Id]);
     }
@@ -233,7 +233,7 @@ public sealed class AtoNormativoPersistenceTests
         var repo = new AtoNormativoRepository(ctx);
 
         IReadOnlyList<Guid> conflitantes = await repo.ListarIdsComMesmaNumeracaoAsync(
-            "CEPS", "EDITAL", 2026, numero, null, default);
+            new NumeracaoDoAto("CEPS", "EDITAL", 2026, numero), default);
 
         conflitantes.Should().Equal(ato.Id);
     }

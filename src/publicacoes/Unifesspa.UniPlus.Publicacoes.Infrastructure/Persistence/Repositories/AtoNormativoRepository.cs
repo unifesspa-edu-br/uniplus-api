@@ -20,6 +20,51 @@ using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
     Justification = "Instanciada via DI em PublicacoesInfrastructureRegistration.")]
 public sealed class AtoNormativoRepository : IAtoNormativoRepository
 {
+    /// <summary>
+    /// Sobe de <c>{0}</c> até a raiz da cadeia de retificação. O passo é fixo, mas a profundidade não —
+    /// daí SQL recursivo, e não JOIN. A cadeia é linear (índice único parcial em <c>ato_retificado_id</c>)
+    /// e acíclica (gatilho <c>fn_atos_normativos_cadeia_aciclica</c>); o <c>CYCLE</c> existe para que um
+    /// ciclo que escape da escrita seja cortado na leitura, em vez de pendurar a conexão. É passada a
+    /// <c>SqlQueryRaw</c> com o id como parâmetro: interpolada numa <c>FormattableString</c>, a própria
+    /// constante viraria parâmetro.
+    /// </summary>
+    private const string AncestraisDoAto = """
+        WITH RECURSIVE ancestrais AS (
+            SELECT id, ato_retificado_id
+            FROM publicacoes.atos_normativos
+            WHERE id = {0}
+            UNION ALL
+            SELECT a.id, a.ato_retificado_id
+            FROM publicacoes.atos_normativos a
+            JOIN ancestrais an ON a.id = an.ato_retificado_id
+        ) CYCLE id SET ciclo_acima USING caminho_acima
+        """;
+
+    private const string SqlDaRaizDaCadeia = AncestraisDoAto + """
+
+        SELECT id AS "Value" FROM ancestrais WHERE ato_retificado_id IS NULL AND NOT ciclo_acima
+        """;
+
+    /// <summary>
+    /// A raiz que <see cref="AncestraisDoAto"/> encontra, e dela a descida até a cabeça: a linhagem
+    /// inteira, com o <c>CYCLE</c> também no sentido da descida.
+    /// </summary>
+    private const string SqlDaCadeiaInteira = AncestraisDoAto + """
+        ,
+        cadeia AS (
+            SELECT id, ato_retificado_id
+            FROM publicacoes.atos_normativos
+            WHERE id IN (
+                SELECT id FROM ancestrais WHERE ato_retificado_id IS NULL AND NOT ciclo_acima
+            )
+            UNION ALL
+            SELECT a.id, a.ato_retificado_id
+            FROM publicacoes.atos_normativos a
+            JOIN cadeia c ON a.ato_retificado_id = c.id
+        ) CYCLE id SET ciclo_abaixo USING caminho_abaixo
+        SELECT id AS "Value" FROM cadeia WHERE NOT ciclo_abaixo
+        """;
+
     private readonly UniPlusDbContext _dbContext;
 
     public AtoNormativoRepository(UniPlusDbContext dbContext)
@@ -53,66 +98,26 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
 
     public async Task<IReadOnlyList<Guid>> ListarIdsDaCadeiaAsync(Guid atoId, CancellationToken cancellationToken)
     {
-        // A cadeia de retificação é linear (garantida pelo índice único parcial em
-        // ato_retificado_id) e acíclica (trigger fn_atos_normativos_cadeia_aciclica).
-        // Sobe de atoId até a raiz e desce dela até a cabeça, devolvendo a linhagem
-        // inteira. A recursão em SQL é necessária: a profundidade é arbitrária e um
-        // JOIN fixo não a cobre. O parâmetro é interpolado com segurança pelo EF.
-        // CYCLE nos dois sentidos: se um ciclo escapasse da escrita, a leitura o cortaria
-        // em vez de pendurar a conexão.
-        FormattableString sql = $"""
-            WITH RECURSIVE ancestrais AS (
-                SELECT id, ato_retificado_id
-                FROM publicacoes.atos_normativos
-                WHERE id = {atoId}
-                UNION ALL
-                SELECT a.id, a.ato_retificado_id
-                FROM publicacoes.atos_normativos a
-                JOIN ancestrais an ON a.id = an.ato_retificado_id
-            ) CYCLE id SET ciclo_acima USING caminho_acima,
-            cadeia AS (
-                SELECT id, ato_retificado_id
-                FROM publicacoes.atos_normativos
-                WHERE id IN (
-                    SELECT id FROM ancestrais WHERE ato_retificado_id IS NULL AND NOT ciclo_acima
-                )
-                UNION ALL
-                SELECT a.id, a.ato_retificado_id
-                FROM publicacoes.atos_normativos a
-                JOIN cadeia c ON a.ato_retificado_id = c.id
-            ) CYCLE id SET ciclo_abaixo USING caminho_abaixo
-            SELECT id AS "Value" FROM cadeia WHERE NOT ciclo_abaixo
-            """;
-
         return await _dbContext.Database
-            .SqlQuery<Guid>(sql)
+            .SqlQueryRaw<Guid>(SqlDaCadeiaInteira, atoId)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<Guid>> ListarIdsComMesmaNumeracaoAsync(
-        string orgao,
-        string serie,
-        int ano,
-        string numero,
-        Guid? excluirId,
+        NumeracaoDoAto numeracao,
         CancellationToken cancellationToken)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(orgao);
-        ArgumentException.ThrowIfNullOrWhiteSpace(serie);
-        ArgumentException.ThrowIfNullOrWhiteSpace(numero);
-
-        string orgaoNorm = orgao.Trim();
-        string serieNorm = serie.Trim();
-        string numeroNorm = numero.Trim();
+        ArgumentException.ThrowIfNullOrWhiteSpace(numeracao.Orgao, nameof(numeracao));
+        ArgumentException.ThrowIfNullOrWhiteSpace(numeracao.Serie, nameof(numeracao));
+        ArgumentException.ThrowIfNullOrWhiteSpace(numeracao.Numero, nameof(numeracao));
 
         return await _dbContext.AtosNormativos
             .AsNoTracking()
-            .Where(a => a.Orgao == orgaoNorm
-                && a.Serie == serieNorm
-                && a.Ano == ano
-                && a.Numero == numeroNorm
-                && (excluirId == null || a.Id != excluirId))
+            .Where(a => a.Orgao == numeracao.Orgao
+                && a.Serie == numeracao.Serie
+                && a.Ano == numeracao.Ano
+                && a.Numero == numeracao.Numero)
             .Select(a => a.Id)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
@@ -137,26 +142,8 @@ public sealed class AtoNormativoRepository : IAtoNormativoRepository
 
     public async Task<Guid> ObterRaizDaCadeiaAsync(Guid atoId, CancellationToken cancellationToken)
     {
-        // Sobe a cadeia até quem não retifica ninguém. O passo é fixo mas a profundidade
-        // não — daí SQL recursivo, não JOIN. CYCLE: a aciclicidade é imposta na escrita
-        // (trigger fn_atos_normativos_cadeia_aciclica), mas uma leitura que gira para
-        // sempre é pior do que uma que devolve erro — a cláusula corta o laço em vez de
-        // pendurar a conexão, se algum ciclo escapar.
-        FormattableString sql = $"""
-            WITH RECURSIVE ancestrais AS (
-                SELECT id, ato_retificado_id
-                FROM publicacoes.atos_normativos
-                WHERE id = {atoId}
-                UNION ALL
-                SELECT a.id, a.ato_retificado_id
-                FROM publicacoes.atos_normativos a
-                JOIN ancestrais an ON a.id = an.ato_retificado_id
-            ) CYCLE id SET ciclo USING caminho
-            SELECT id AS "Value" FROM ancestrais WHERE ato_retificado_id IS NULL AND NOT ciclo
-            """;
-
         List<Guid> raizes = await _dbContext.Database
-            .SqlQuery<Guid>(sql)
+            .SqlQueryRaw<Guid>(SqlDaRaizDaCadeia, atoId)
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 

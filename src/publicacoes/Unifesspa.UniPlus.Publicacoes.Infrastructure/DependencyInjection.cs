@@ -29,15 +29,23 @@ public static class PublicacoesInfrastructureRegistration
         services.AddScoped<ITipoAtoPublicadoReader, TipoAtoPublicadoReader>();
         services.AddScoped<IAtoNormativoRepository, AtoNormativoRepository>();
 
-        // O que mantém o pod no Service é degradado responder 200, e não a ausência da tag: a
-        // readinessProbe do chart aponta para /health, que não filtra por tag. A tag fica de fora
-        // de `ready` porque dado de cadastro não é critério de prontidão, e o /health/ready
-        // continua respondendo só sobre dependência de infraestrutura.
-        //
-        // O timeout existe porque esta conferência consulta uma tabela, ao contrário do SELECT 1
-        // do check de Postgres: sem ele a registration nasce com espera infinita, e uma consulta
-        // presa por lock seguraria o /health além dos 3s da sonda até o kubelet tirar todas as
-        // réplicas — o oposto do que "degradado, nunca indisponível" promete.
+        AddConferenciaDoCatalogoDeTiposAto(services);
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registra a conferência do catálogo de tipos de ato no <c>/health</c>. O que mantém o pod no
+    /// Service é degradado responder 200, e não a ausência da tag: a readinessProbe do chart aponta
+    /// para <c>/health</c>, que não filtra por tag. A tag fica de fora de <c>ready</c> porque dado de
+    /// cadastro não é critério de prontidão, e o <c>/health/ready</c> continua respondendo só sobre
+    /// dependência de infraestrutura. O timeout existe porque esta conferência consulta uma tabela,
+    /// ao contrário do <c>SELECT 1</c> do check de Postgres: sem ele a registration nasce com espera
+    /// infinita, e uma consulta presa por lock seguraria o <c>/health</c> além dos 3s da sonda até o
+    /// kubelet tirar todas as réplicas — o oposto do que "degradado, nunca indisponível" promete.
+    /// </summary>
+    private static void AddConferenciaDoCatalogoDeTiposAto(IServiceCollection services)
+    {
         services.AddOptions<CatalogoDeTiposAtoOptions>()
             .BindConfiguration(CatalogoDeTiposAtoOptions.SectionName);
 
@@ -46,7 +54,5 @@ public static class PublicacoesInfrastructureRegistration
             failureStatus: HealthStatus.Degraded,
             tags: ["catalogo", "publicacoes"],
             timeout: TimeSpan.FromSeconds(2));
-
-        return services;
     }
 }

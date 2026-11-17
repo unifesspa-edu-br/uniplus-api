@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Publicacoes.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 [SuppressMessage(
@@ -99,7 +100,7 @@ public sealed class AtoNormativoQueryHandlersTests
     {
         _atos.ObterPorIdParaLeituraAsync(ato.Id, Arg.Any<CancellationToken>()).Returns(ato);
         _atos.ListarIdsDaCadeiaAsync(ato.Id, Arg.Any<CancellationToken>()).Returns(cadeia);
-        _atos.ListarIdsComMesmaNumeracaoAsync("CEPS", "EDITAL", 2026, "13", null, Arg.Any<CancellationToken>())
+        _atos.ListarIdsComMesmaNumeracaoAsync(new NumeracaoDoAto("CEPS", "EDITAL", 2026, "13"), Arg.Any<CancellationToken>())
             .Returns(mesmaNumeracao);
     }
 

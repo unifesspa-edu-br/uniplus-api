@@ -43,7 +43,7 @@ public static class ObterAtoNormativoPorIdQueryHandler
             .ListarIdsDaCadeiaAsync(ato.Id, cancellationToken)
             .ConfigureAwait(false);
 
-        return await AvisoNumeracaoCalculator
+        return await AvisosDaNumeracao
             .CalcularAsync(repository, ato, cadeia, cancellationToken)
             .ConfigureAwait(false);
     }

@@ -48,8 +48,7 @@ internal sealed class TipoAtoPublicadoReader(UniPlusDbContext db) : ITipoAtoPubl
     private IQueryable<TipoAtoPublicado> Vigentes(DateOnly diaDaPublicacao) =>
         _db.Set<TipoAtoPublicado>()
             .AsNoTracking()
-            .Where(t => t.VigenciaInicio <= diaDaPublicacao
-                && (t.VigenciaFim == null || t.VigenciaFim > diaDaPublicacao));
+            .Where(TipoAtoPublicado.VigenteEm(diaDaPublicacao));
 
     public async Task<TipoAtoPublicadoView?> ObterVigenteAsync(
         string codigo,
