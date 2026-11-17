@@ -42,7 +42,19 @@ internal sealed class SigaaAuthenticationHandler : DelegatingHandler
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(request);
+        ExigirRequisicaoSemCorpo(request);
 
+        string token = await _tokens.ObterAsync(cancellationToken).ConfigureAwait(false);
+        HttpResponseMessage resposta = await EnviarComAsync(request, token, cancellationToken)
+            .ConfigureAwait(false);
+
+        return resposta.StatusCode is HttpStatusCode.Unauthorized
+            ? await RenovarEReenviarAsync(request, resposta, token, cancellationToken).ConfigureAwait(false)
+            : resposta;
+    }
+
+    private static void ExigirRequisicaoSemCorpo(HttpRequestMessage request)
+    {
         if (request.Content is not null)
         {
             throw new InvalidOperationException(
@@ -50,31 +62,35 @@ internal sealed class SigaaAuthenticationHandler : DelegatingHandler
                 + "não pode ser reenviada após a renovação do token, porque o conteúdo já foi "
                 + "consumido no primeiro envio.");
         }
+    }
 
-        string token = await _tokens.ObterAsync(cancellationToken).ConfigureAwait(false);
+    private Task<HttpResponseMessage> EnviarComAsync(
+        HttpRequestMessage request,
+        string token,
+        CancellationToken cancellationToken)
+    {
         request.Headers.Authorization = new AuthenticationHeaderValue(EsquemaBearer, token);
 
-        HttpResponseMessage resposta = await base
-            .SendAsync(request, cancellationToken)
-            .ConfigureAwait(false);
+        return base.SendAsync(request, cancellationToken);
+    }
 
-        if (resposta.StatusCode is not HttpStatusCode.Unauthorized)
-        {
-            return resposta;
-        }
-
+    private async Task<HttpResponseMessage> RenovarEReenviarAsync(
+        HttpRequestMessage request,
+        HttpResponseMessage recusada,
+        string tokenRecusado,
+        CancellationToken cancellationToken)
+    {
         // A recusa é descartada explicitamente: sem isso a conexão fica presa até a
         // coleta de lixo, e uma sincronização inteira de páginas recusadas esgotaria o
         // conjunto de conexões.
-        resposta.Dispose();
+        recusada.Dispose();
 
-        _tokens.Descartar(token);
+        _tokens.Descartar(tokenRecusado);
 
         string renovado = await _tokens.ObterAsync(cancellationToken).ConfigureAwait(false);
-        request.Headers.Authorization = new AuthenticationHeaderValue(EsquemaBearer, renovado);
 
         // Uma única repetição. Se a origem recusar de novo, o problema não é o token
         // vencido — é a credencial ou a permissão, e insistir vira laço.
-        return await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        return await EnviarComAsync(request, renovado, cancellationToken).ConfigureAwait(false);
     }
 }
