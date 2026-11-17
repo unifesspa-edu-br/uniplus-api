@@ -501,6 +501,33 @@ public sealed class DecodificadorDeVinculosTests
         comVazio.Should().NotBe(comAusente, "ausência e vazio são estados diferentes na origem");
     }
 
+    /// <summary>
+    /// O resumo vai para o banco: mudar a forma de calculá-lo faria a sincronização
+    /// reescrever todos os vínculos de uma vez. O valor abaixo é o que a implementação
+    /// produz hoje para o vínculo completo da origem.
+    /// </summary>
+    [Fact]
+    public void Resumo_do_vinculo_completo_tem_o_valor_que_ja_esta_guardado()
+    {
+        string resumo = DecodificarUm(Completo()).ResumoDoConteudo;
+
+        resumo.Should().Be("d85ee9e32e72d3827a3c238042f5deadcef88a28a2e3bed6c950ba1b7a19a2aa");
+    }
+
+    /// <summary>
+    /// Quando o CPF e um texto estão ambos fora do combinado, o que se acusa é o CPF: a ordem
+    /// das conferências é campos obrigatórios, CPF, textos, unidade e período.
+    /// </summary>
+    [Fact]
+    public void Cpf_malformado_vem_antes_do_texto_longo_demais()
+    {
+        VinculoDiscentePayload quebrado = Completo() with { Cpf = "00000000000", Nome = Texto(LimitesDaReplica.Nome + 1) };
+
+        ResultadoDaDecodificacao resultado = DecodificarPagina(quebrado);
+
+        resultado.Descartados.Should().ContainSingle().Which.Detalhe.Should().Be("cpf");
+    }
+
     [Fact]
     public void Pagina_vazia_e_resposta_legitima()
     {
