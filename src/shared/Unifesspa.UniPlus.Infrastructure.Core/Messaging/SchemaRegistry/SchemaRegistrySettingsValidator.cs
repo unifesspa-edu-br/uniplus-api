@@ -16,6 +16,10 @@ using Microsoft.Extensions.Options;
 /// </remarks>
 public sealed class SchemaRegistrySettingsValidator : IValidateOptions<SchemaRegistrySettings>
 {
+    private const string TipoNenhum = "None";
+    private const string TipoBasic = "Basic";
+    private const string TipoOAuthBearer = "OAuthBearer";
+
     public ValidateOptionsResult Validate(string? name, SchemaRegistrySettings options)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -26,102 +30,127 @@ public sealed class SchemaRegistrySettingsValidator : IValidateOptions<SchemaReg
             return ValidateOptionsResult.Success;
         }
 
-        List<string> failures = [];
+        List<string> falhas = FalhasDaConfiguracao(options);
 
-        if (!Uri.TryCreate(options.Url, UriKind.Absolute, out Uri? uri)
-            || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
-        {
-            failures.Add($"SchemaRegistry:Url '{options.Url}' inválida. Use HTTP/HTTPS absolutas.");
-            return ValidateOptionsResult.Fail(failures);
-        }
-
-        string authType = (options.AuthType ?? string.Empty).Trim();
-        bool authIsNone = authType.Length == 0
-            || authType.Equals("None", StringComparison.OrdinalIgnoreCase);
-        bool authIsBasic = authType.Equals("Basic", StringComparison.OrdinalIgnoreCase);
-        bool authIsOAuthBearer = authType.Equals("OAuthBearer", StringComparison.OrdinalIgnoreCase);
-
-        if (!(authIsNone || authIsBasic || authIsOAuthBearer))
-        {
-            failures.Add($"SchemaRegistry:AuthType '{options.AuthType}' inválido. Use None, Basic ou OAuthBearer.");
-            return ValidateOptionsResult.Fail(failures);
-        }
-
-        bool hasBasicField = !string.IsNullOrWhiteSpace(options.BasicAuthUserInfo);
-        bool hasOAuthField =
-            !string.IsNullOrWhiteSpace(options.OAuth.TokenEndpoint)
-            || !string.IsNullOrWhiteSpace(options.OAuth.ClientId)
-            || !string.IsNullOrWhiteSpace(options.OAuth.ClientSecret);
-
-        // Coerência: campos preenchidos exigem AuthType correspondente — evita
-        // BasicAuthUserInfo="user:pwd" ficar inerte porque AuthType=None foi default.
-        if (hasBasicField && !authIsBasic)
-        {
-            failures.Add("SchemaRegistry:BasicAuthUserInfo só faz sentido com AuthType=Basic.");
-        }
-
-        if (hasOAuthField && !authIsOAuthBearer)
-        {
-            failures.Add("SchemaRegistry:OAuth:* só faz sentido com AuthType=OAuthBearer.");
-        }
-
-        if (authIsBasic)
-        {
-            if (string.IsNullOrWhiteSpace(options.BasicAuthUserInfo))
-            {
-                failures.Add("SchemaRegistry:BasicAuthUserInfo é obrigatório com AuthType=Basic.");
-            }
-            else if (!options.BasicAuthUserInfo.Contains(':', StringComparison.Ordinal))
-            {
-                failures.Add("SchemaRegistry:BasicAuthUserInfo deve estar no formato 'user:password'.");
-            }
-        }
-
-        if (authIsOAuthBearer)
-        {
-            if (string.IsNullOrWhiteSpace(options.OAuth.TokenEndpoint))
-            {
-                failures.Add("SchemaRegistry:OAuth:TokenEndpoint é obrigatório com AuthType=OAuthBearer.");
-            }
-            else if (!Uri.TryCreate(options.OAuth.TokenEndpoint, UriKind.Absolute, out Uri? tokenUri)
-                     || (tokenUri.Scheme != Uri.UriSchemeHttp && tokenUri.Scheme != Uri.UriSchemeHttps))
-            {
-                failures.Add($"SchemaRegistry:OAuth:TokenEndpoint '{options.OAuth.TokenEndpoint}' inválido. Use HTTP/HTTPS absoluta.");
-            }
-
-            if (string.IsNullOrWhiteSpace(options.OAuth.ClientId))
-            {
-                failures.Add("SchemaRegistry:OAuth:ClientId é obrigatório com AuthType=OAuthBearer.");
-            }
-
-            if (string.IsNullOrWhiteSpace(options.OAuth.ClientSecret))
-            {
-                failures.Add("SchemaRegistry:OAuth:ClientSecret é obrigatório com AuthType=OAuthBearer (sempre via Vault/env var).");
-            }
-
-            if (options.OAuth.RefreshSkewSeconds < 0)
-            {
-                failures.Add("SchemaRegistry:OAuth:RefreshSkewSeconds não pode ser negativo.");
-            }
-
-            if (options.OAuth.RequestTimeoutMs <= 0)
-            {
-                failures.Add("SchemaRegistry:OAuth:RequestTimeoutMs deve ser positivo.");
-            }
-        }
-
-        if (options.RequestTimeoutMs <= 0)
-        {
-            failures.Add("SchemaRegistry:RequestTimeoutMs deve ser positivo.");
-        }
-
-        if (options.MaxCachedSchemas <= 0)
-        {
-            failures.Add("SchemaRegistry:MaxCachedSchemas deve ser positivo.");
-        }
-
-        return failures.Count == 0
-            ? ValidateOptionsResult.Success
-            : ValidateOptionsResult.Fail(failures);
+        return falhas.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(falhas);
     }
+
+    /// <remarks>URL e tipo de autenticação inválidos encerram a validação: as demais regras dependem deles.</remarks>
+    private static List<string> FalhasDaConfiguracao(SchemaRegistrySettings options)
+    {
+        string? recusa = FalhaDaUrl(options.Url) ?? FalhaDoTipoDeAutenticacao(options.AuthType);
+        if (recusa is not null)
+        {
+            return [recusa];
+        }
+
+        return
+        [
+            .. FalhasDaAutenticacao(options),
+            .. FalhasDosLimites(options),
+        ];
+    }
+
+    private static IEnumerable<string> FalhasDaAutenticacao(SchemaRegistrySettings options)
+    {
+        string tipo = TipoDeAutenticacao(options.AuthType);
+        return
+        [
+            .. new[]
+            {
+                CoerenciaDoBasic(options, tipo),
+                CoerenciaDoOAuth(options, tipo),
+                FalhaDoBasic(options, tipo),
+            }.OfType<string>(),
+            .. FalhasDoOAuth(options, tipo),
+        ];
+    }
+
+    private static string TipoDeAutenticacao(string? authType) => (authType ?? string.Empty).Trim();
+
+    private static bool EhTipo(string tipo, string esperado) => tipo.Equals(esperado, StringComparison.OrdinalIgnoreCase);
+
+    private static bool UrlHttpAbsoluta(string valor) =>
+        Uri.TryCreate(valor, UriKind.Absolute, out Uri? uri)
+        && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps);
+
+    private static string? FalhaDaUrl(string url) =>
+        UrlHttpAbsoluta(url) ? null : $"SchemaRegistry:Url '{url}' inválida. Use HTTP/HTTPS absolutas.";
+
+    private static string? FalhaDoTipoDeAutenticacao(string? authType)
+    {
+        string tipo = TipoDeAutenticacao(authType);
+        bool reconhecido = tipo.Length == 0 || EhTipo(tipo, TipoNenhum) || EhTipo(tipo, TipoBasic) || EhTipo(tipo, TipoOAuthBearer);
+
+        return reconhecido ? null : $"SchemaRegistry:AuthType '{authType}' inválido. Use None, Basic ou OAuthBearer.";
+    }
+
+    // Campos preenchidos exigem o AuthType correspondente: evita BasicAuthUserInfo="user:pwd" ficar inerte porque
+    // AuthType=None foi o padrão.
+    private static string? CoerenciaDoBasic(SchemaRegistrySettings options, string tipo) =>
+        !string.IsNullOrWhiteSpace(options.BasicAuthUserInfo) && !EhTipo(tipo, TipoBasic)
+            ? "SchemaRegistry:BasicAuthUserInfo só faz sentido com AuthType=Basic."
+            : null;
+
+    private static string? CoerenciaDoOAuth(SchemaRegistrySettings options, string tipo) =>
+        TemCampoOAuth(options.OAuth) && !EhTipo(tipo, TipoOAuthBearer)
+            ? "SchemaRegistry:OAuth:* só faz sentido com AuthType=OAuthBearer."
+            : null;
+
+    private static bool TemCampoOAuth(OAuthBearerSettings oauth) =>
+        !string.IsNullOrWhiteSpace(oauth.TokenEndpoint)
+        || !string.IsNullOrWhiteSpace(oauth.ClientId)
+        || !string.IsNullOrWhiteSpace(oauth.ClientSecret);
+
+    private static string? FalhaDoBasic(SchemaRegistrySettings options, string tipo)
+    {
+        if (!EhTipo(tipo, TipoBasic))
+        {
+            return null;
+        }
+
+        if (string.IsNullOrWhiteSpace(options.BasicAuthUserInfo))
+        {
+            return "SchemaRegistry:BasicAuthUserInfo é obrigatório com AuthType=Basic.";
+        }
+
+        return options.BasicAuthUserInfo.Contains(':', StringComparison.Ordinal)
+            ? null
+            : "SchemaRegistry:BasicAuthUserInfo deve estar no formato 'user:password'.";
+    }
+
+    private static IEnumerable<string> FalhasDoOAuth(SchemaRegistrySettings options, string tipo)
+    {
+        OAuthBearerSettings oauth = options.OAuth;
+
+        return !EhTipo(tipo, TipoOAuthBearer)
+            ? []
+            : new[]
+            {
+                FalhaDoEnderecoDoToken(oauth.TokenEndpoint),
+                string.IsNullOrWhiteSpace(oauth.ClientId) ? "SchemaRegistry:OAuth:ClientId é obrigatório com AuthType=OAuthBearer." : null,
+                string.IsNullOrWhiteSpace(oauth.ClientSecret) ? "SchemaRegistry:OAuth:ClientSecret é obrigatório com AuthType=OAuthBearer (sempre via Vault/env var)." : null,
+                oauth.RefreshSkewSeconds < 0 ? "SchemaRegistry:OAuth:RefreshSkewSeconds não pode ser negativo." : null,
+                oauth.RequestTimeoutMs <= 0 ? "SchemaRegistry:OAuth:RequestTimeoutMs deve ser positivo." : null,
+            }.OfType<string>();
+    }
+
+    private static string? FalhaDoEnderecoDoToken(string endereco)
+    {
+        if (string.IsNullOrWhiteSpace(endereco))
+        {
+            return "SchemaRegistry:OAuth:TokenEndpoint é obrigatório com AuthType=OAuthBearer.";
+        }
+
+        return UrlHttpAbsoluta(endereco)
+            ? null
+            : $"SchemaRegistry:OAuth:TokenEndpoint '{endereco}' inválido. Use HTTP/HTTPS absoluta.";
+    }
+
+    private static IEnumerable<string> FalhasDosLimites(SchemaRegistrySettings options) =>
+        new[]
+        {
+            options.RequestTimeoutMs <= 0 ? "SchemaRegistry:RequestTimeoutMs deve ser positivo." : null,
+            options.MaxCachedSchemas <= 0 ? "SchemaRegistry:MaxCachedSchemas deve ser positivo." : null,
+        }.OfType<string>();
 }
