@@ -3,7 +3,6 @@ namespace Unifesspa.UniPlus.Discentes.UnitTests.Domain;
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Discentes.Domain.ValueObjects;
-using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -41,26 +40,27 @@ public sealed class RegrasDoVinculoTests
 
     [Theory]
     [MemberData(nameof(RecusasDaIdentificacao))]
-    public void Snapshot_recusa_a_primeira_regra_violada_da_identificacao(string codigo, long id, string matricula, string nome)
+    public void Identificacao_recusa_a_primeira_regra_violada(string codigo, long id, string matricula, string nome)
     {
-        Result<VinculoDiscenteSnapshot> resultado = Criar(id, matricula, nome);
+        Result<IdentificacaoDoDiscente> resultado = IdentificacaoDoDiscente.Criar(
+            id, matricula, VinculoDeTeste.CpfDeTeste(), nome);
 
         resultado.Error!.Code.Should().Be(codigo);
     }
 
     [Fact]
-    public void Snapshot_aceita_matricula_e_nome_no_limite()
+    public void Identificacao_aceita_matricula_e_nome_no_limite()
     {
-        Result<VinculoDiscenteSnapshot> resultado = Criar(1, new string('9', LimitesDaReplica.Matricula), Texto(LimitesDaReplica.Nome));
+        Result<IdentificacaoDoDiscente> resultado = IdentificacaoDoDiscente.Criar(
+            1, new string('9', LimitesDaReplica.Matricula), VinculoDeTeste.CpfDeTeste(), Texto(LimitesDaReplica.Nome));
 
         resultado.IsSuccess.Should().BeTrue();
     }
 
     [Fact]
-    public void Snapshot_exige_o_cpf()
+    public void Identificacao_exige_o_cpf()
     {
-        Action semCpf = () => VinculoDiscenteSnapshot.Criar(
-            1, "123", cpf: null!, "ANA", "G", Curso(), Situacao(), Ingresso());
+        Action semCpf = () => IdentificacaoDoDiscente.Criar(1, "123", cpf: null!, "ANA");
 
         semCpf.Should().Throw<ArgumentNullException>();
     }
@@ -72,7 +72,7 @@ public sealed class RegrasDoVinculoTests
     [InlineData("12 3", false)]
     public void Matricula_so_aceita_digitos(string valor, bool esperado)
     {
-        VinculoDiscenteSnapshot.ApenasDigitos(valor).Should().Be(esperado);
+        IdentificacaoDoDiscente.ApenasDigitos(valor).Should().Be(esperado);
     }
 
     [Theory]
@@ -81,7 +81,11 @@ public sealed class RegrasDoVinculoTests
     public void Snapshot_recusa_o_nivel_invalido(string codigo, string nivel)
     {
         Result<VinculoDiscenteSnapshot> resultado = VinculoDiscenteSnapshot.Criar(
-            1, "123", Cpf.Criar("33287151002").Value!, "ANA", nivel, Curso(), Situacao(), Ingresso());
+            VinculoDeTeste.Identificacao(),
+            nivel,
+            VinculoDeTeste.Curso(),
+            VinculoDeTeste.Situacao(),
+            VinculoDeTeste.Ingresso());
 
         resultado.Error!.Code.Should().Be(codigo);
     }
@@ -96,7 +100,8 @@ public sealed class RegrasDoVinculoTests
         int unidadeId,
         string unidadeNome)
     {
-        Result<CursoSigaaSnapshot> resultado = CursoSigaaSnapshot.Criar(id, nome, codigoEmec, unidadeId, unidadeNome);
+        Result<CursoSigaaSnapshot> resultado = CursoSigaaSnapshot.Criar(
+            id, nome, codigoEmec, unidadeId, unidadeNome);
 
         resultado.Error!.Code.Should().Be(codigo);
     }
@@ -135,15 +140,6 @@ public sealed class RegrasDoVinculoTests
             Texto(LimitesDaReplica.DescricaoDaSituacao),
             Texto(LimitesDaReplica.VinculoDaSituacao)).IsSuccess.Should().BeTrue();
     }
-
-    private static Result<VinculoDiscenteSnapshot> Criar(long id, string matricula, string nome) =>
-        VinculoDiscenteSnapshot.Criar(id, matricula, Cpf.Criar("33287151002").Value!, nome, "G", Curso(), Situacao(), Ingresso());
-
-    private static CursoSigaaSnapshot Curso() => CursoSigaaSnapshot.Criar(20, "DIREITO", "12078", 64, "INSTITUTO DE DIREITO").Value!;
-
-    private static SituacaoAcademicaSnapshot Situacao() => SituacaoAcademicaSnapshot.Criar(3, "CONCLUÍDO", null).Value!;
-
-    private static PeriodoIngresso Ingresso() => PeriodoIngresso.Criar(2014, 2).Value!;
 
     private static string Texto(int tamanho) => new('A', tamanho);
 }

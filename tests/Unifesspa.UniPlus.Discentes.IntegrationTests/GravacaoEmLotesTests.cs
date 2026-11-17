@@ -187,8 +187,12 @@ public sealed class GravacaoEmLotesTests : IClassFixture<VinculoDiscenteDbFixtur
 
         Cpf cpf = Cpf.Criar("52998224725").Match(c => c, erro => throw new InvalidOperationException(erro.Code));
 
+        IdentificacaoDoDiscente identificacao = IdentificacaoDoDiscente
+            .Criar(idDeOrigem, $"2020{idDeOrigem:D8}", cpf, nome)
+            .Match(i => i, erro => throw new InvalidOperationException(erro.Code));
+
         VinculoDiscenteSnapshot snapshot = VinculoDiscenteSnapshot
-            .Criar(idDeOrigem, $"2020{idDeOrigem:D8}", cpf, nome, "G", curso, situacao, ingresso)
+            .Criar(identificacao, "G", curso, situacao, ingresso)
             .Match(s => s, erro => throw new InvalidOperationException(erro.Code));
 
         return new VinculoSincronizavel(

@@ -57,46 +57,30 @@ public sealed partial class OrquestradorDeSincronizacao
     /// Executa uma reconciliação completa e devolve o que aconteceu.
     /// </summary>
     /// <param name="dataDeReferencia">
-    /// A data que esta execução representa. O corte de ingresso sai dela, e não do relógio:
+    /// A data que esta execução representa. O limite de ingresso sai dela, e não do relógio:
     /// uma execução do dia 31 de dezembro que só for processada no dia 1º de janeiro — fila
-    /// atrasada, nova tentativa — avançaria o corte em um ano e deixaria de fora os vínculos
+    /// atrasada, nova tentativa — avançaria o limite em um ano e deixaria de fora os vínculos
     /// do ano da virada, enquanto o registro da execução continuaria afirmando representar o
-    /// dia 31. O conjunto consultado e a data registrada precisam ser o mesmo recorte.
+    /// dia 31. O conjunto consultado e a data registrada precisam ser o mesmo filtro.
     /// </param>
+    /// <remarks>
+    /// Uma falha na leitura não descarta as contagens, e vale para cancelamento também: o
+    /// que já foi gravado continua gravado, e precisa aparecer no registro da execução.
+    /// Descartá-las deixaria a réplica com escritas que o registro diz não terem acontecido.
+    /// </remarks>
     public async Task<ResumoDaSincronizacao> ExecutarAsync(
         DateOnly dataDeReferencia,
         CancellationToken cancellationToken)
     {
-        int anoDeCorte = dataDeReferencia.Year - _opcoes.AnosDeIngressoConsiderados;
-
-        FiltroDeVinculos porIngressoRecente = new(
-            _opcoes.NivelDeEnsino,
-            AnoIngressoMinimo: anoDeCorte);
-
-        FiltroDeVinculos porVinculoEmAndamento = new(
-            _opcoes.NivelDeEnsino,
-            Situacoes: _opcoes.SituacoesEmAndamento);
-
         ContagemDaSincronizacao contagem = new();
-
-        // A união acontece aqui, na memória do processo, e não no banco: guardar para
-        // depois descobrir que o vínculo já tinha vindo na outra varredura custaria uma
-        // escrita a mais por vínculo repetido — e a sobreposição entre as duas é grande.
-        HashSet<long> jaProcessados = [];
 
         try
         {
-            await ReconciliarAsync(porIngressoRecente, jaProcessados, contagem, cancellationToken)
-                .ConfigureAwait(false);
-
-            await ReconciliarAsync(porVinculoEmAndamento, jaProcessados, contagem, cancellationToken)
+            await ReconciliarOsFiltrosAsync(dataDeReferencia, contagem, cancellationToken)
                 .ConfigureAwait(false);
         }
         catch (Exception excecao)
         {
-            // Vale para cancelamento também: o que já foi gravado continua gravado, e
-            // precisa aparecer no registro da execução. Descartar as contagens aqui
-            // deixaria a réplica com escritas que o registro diz não terem acontecido.
             contagem.RegistrarInterrupcao(excecao);
             LogLeituraInterrompida(_logger, excecao);
         }
@@ -104,6 +88,48 @@ public sealed partial class OrquestradorDeSincronizacao
         return contagem.Fechar();
     }
 
+    /// <summary>
+    /// Reconcilia os dois filtros, um depois do outro.
+    /// </summary>
+    /// <remarks>
+    /// A união acontece aqui, na memória do processo, e não no banco: guardar para depois
+    /// descobrir que o vínculo já tinha vindo na outra varredura custaria uma escrita a mais
+    /// por vínculo repetido — e a sobreposição entre as duas é grande.
+    /// </remarks>
+    private async Task ReconciliarOsFiltrosAsync(
+        DateOnly dataDeReferencia,
+        ContagemDaSincronizacao contagem,
+        CancellationToken cancellationToken)
+    {
+        HashSet<long> jaProcessados = [];
+
+        foreach (FiltroDeVinculos filtro in FiltrosDaExecucao(dataDeReferencia))
+        {
+            await ReconciliarAsync(filtro, jaProcessados, contagem, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>
+    /// Os dois filtros da execução: os vínculos de ingresso recente e os vínculos em
+    /// andamento, sem limite de idade.
+    /// </summary>
+    private IEnumerable<FiltroDeVinculos> FiltrosDaExecucao(DateOnly dataDeReferencia)
+    {
+        int anoLimiteDeIngresso = dataDeReferencia.Year - _opcoes.AnosDeIngressoConsiderados;
+
+        yield return new FiltroDeVinculos(_opcoes.NivelDeEnsino, AnoIngressoMinimo: anoLimiteDeIngresso);
+        yield return new FiltroDeVinculos(_opcoes.NivelDeEnsino, Situacoes: _opcoes.SituacoesEmAndamento);
+    }
+
+    /// <summary>
+    /// Reconcilia um filtro.
+    /// </summary>
+    /// <remarks>
+    /// Se a leitura parar no meio, o que já foi decodificado continua válido. Uma página é
+    /// menor que um lote, então uma falha no meio da varredura deixaria pendentes os
+    /// vínculos de várias páginas já lidas — descartá-los faria a execução relê-los amanhã
+    /// sem necessidade, e contá-los como lidos e não aproveitados.
+    /// </remarks>
     private async Task ReconciliarAsync(
         FiltroDeVinculos filtro,
         HashSet<long> jaProcessados,
@@ -119,22 +145,11 @@ public sealed partial class OrquestradorDeSincronizacao
         }
         catch (Exception excecao) when (excecao is not OperationCanceledException)
         {
-            // A leitura parou, mas o que já foi decodificado continua válido. Uma página é
-            // menor que um lote, então uma falha no meio da varredura deixaria pendentes os
-            // vínculos de várias páginas já lidas — descartá-los faria a execução relê-los
-            // amanhã sem necessidade, e contá-los como lidos e não aproveitados.
-            if (lote.Count > 0)
-            {
-                await GravarAsync(lote, contagem, cancellationToken).ConfigureAwait(false);
-            }
-
+            await GravarPendentesAsync(lote, contagem, cancellationToken).ConfigureAwait(false);
             throw;
         }
 
-        if (lote.Count > 0)
-        {
-            await GravarAsync(lote, contagem, cancellationToken).ConfigureAwait(false);
-        }
+        await GravarPendentesAsync(lote, contagem, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task PercorrerEGravarAsync(
@@ -154,21 +169,45 @@ public sealed partial class OrquestradorDeSincronizacao
 
             foreach (VinculoDecodificado item in decodificada.Aceitos)
             {
-                if (!jaProcessados.Add(item.Vinculo.Snapshot.IdDiscenteSigaa))
-                {
-                    // Já veio na outra varredura. As duas se sobrepõem por construção.
-                    contagem.RegistrarRepetido();
-                    continue;
-                }
-
-                lote.Add(new VinculoSincronizavel(item.Vinculo, item.ResumoDoConteudo));
-
-                if (lote.Count >= _opcoes.TamanhoDoLote)
-                {
-                    await GravarAsync(lote, contagem, cancellationToken).ConfigureAwait(false);
-                    lote.Clear();
-                }
+                await AcumularAsync(item, jaProcessados, contagem, lote, cancellationToken).ConfigureAwait(false);
             }
+        }
+    }
+
+    /// <summary>
+    /// Põe o vínculo no lote, a menos que ele já tenha vindo na outra varredura — as duas
+    /// se sobrepõem por construção — e grava o lote quando ele enche.
+    /// </summary>
+    private async Task AcumularAsync(
+        VinculoDecodificado item,
+        HashSet<long> jaProcessados,
+        ContagemDaSincronizacao contagem,
+        List<VinculoSincronizavel> lote,
+        CancellationToken cancellationToken)
+    {
+        if (!jaProcessados.Add(item.Vinculo.Snapshot.Identificacao.IdDiscenteSigaa))
+        {
+            contagem.RegistrarRepetido();
+            return;
+        }
+
+        lote.Add(new VinculoSincronizavel(item.Vinculo, item.ResumoDoConteudo));
+
+        if (lote.Count >= _opcoes.TamanhoDoLote)
+        {
+            await GravarAsync(lote, contagem, cancellationToken).ConfigureAwait(false);
+            lote.Clear();
+        }
+    }
+
+    private async Task GravarPendentesAsync(
+        List<VinculoSincronizavel> lote,
+        ContagemDaSincronizacao contagem,
+        CancellationToken cancellationToken)
+    {
+        if (lote.Count > 0)
+        {
+            await GravarAsync(lote, contagem, cancellationToken).ConfigureAwait(false);
         }
     }
 

@@ -17,9 +17,9 @@ public sealed class DecodificadorDeVinculosTests
         resultado.Descartados.Should().BeEmpty();
 
         VinculoDiscenteSnapshot snapshot = resultado.Aceitos[0].Vinculo.Snapshot;
-        snapshot.IdDiscenteSigaa.Should().Be(24786);
-        snapshot.Matricula.Should().Be("201446010001");
-        snapshot.Cpf.Valor.Should().Be("52998224725");
+        snapshot.Identificacao.IdDiscenteSigaa.Should().Be(24786);
+        snapshot.Identificacao.Matricula.Should().Be("201446010001");
+        snapshot.Identificacao.Cpf.Valor.Should().Be("52998224725");
         snapshot.Nivel.Should().Be("G");
         snapshot.Curso.Nome.Should().Be("CIÊNCIA DA COMPUTAÇÃO");
         snapshot.Curso.CodigoEmec.Should().Be("1269997");

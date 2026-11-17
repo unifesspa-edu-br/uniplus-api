@@ -201,7 +201,7 @@ public static class DecodificadorDeVinculos
 
         // A origem promete matrícula composta só por dígitos. Letra ou pontuação aqui é
         // entrega fora do combinado, não valor que a réplica não comporta.
-        if (!VinculoDiscenteSnapshot.ApenasDigitos(item.Matricula))
+        if (!IdentificacaoDoDiscente.ApenasDigitos(item.Matricula))
         {
             return "matricula";
         }
@@ -281,9 +281,15 @@ public static class DecodificadorDeVinculos
             return null;
         }
 
-        VinculoDiscenteSnapshot? snapshot = VinculoDiscenteSnapshot
-            .Criar(item.IdDiscente, item.Matricula, cpf, item.Nome, item.Nivel, curso, situacao, ingresso)
-            .Match<VinculoDiscenteSnapshot?>(s => s, _ => null);
+        IdentificacaoDoDiscente? identificacao = IdentificacaoDoDiscente
+            .Criar(item.IdDiscente, item.Matricula, cpf, item.Nome)
+            .Match<IdentificacaoDoDiscente?>(i => i, _ => null);
+
+        VinculoDiscenteSnapshot? snapshot = identificacao is null
+            ? null
+            : VinculoDiscenteSnapshot
+                .Criar(identificacao, item.Nivel, curso, situacao, ingresso)
+                .Match<VinculoDiscenteSnapshot?>(s => s, _ => null);
 
         if (snapshot is null)
         {
@@ -336,9 +342,9 @@ public static class DecodificadorDeVinculos
     {
         StringBuilder canonico = new();
 
-        Acrescentar(canonico, snapshot.IdDiscenteSigaa.ToString(CultureInfo.InvariantCulture));
-        Acrescentar(canonico, snapshot.Matricula);
-        Acrescentar(canonico, snapshot.Nome);
+        Acrescentar(canonico, snapshot.Identificacao.IdDiscenteSigaa.ToString(CultureInfo.InvariantCulture));
+        Acrescentar(canonico, snapshot.Identificacao.Matricula);
+        Acrescentar(canonico, snapshot.Identificacao.Nome);
         Acrescentar(canonico, snapshot.Nivel);
         Acrescentar(canonico, snapshot.Curso.Id.ToString(CultureInfo.InvariantCulture));
         Acrescentar(canonico, snapshot.Curso.Nome);
