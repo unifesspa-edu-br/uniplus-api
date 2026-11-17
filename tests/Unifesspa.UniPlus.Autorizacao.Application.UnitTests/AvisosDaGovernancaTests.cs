@@ -5,6 +5,7 @@ using AwesomeAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 
 using Unifesspa.UniPlus.Application.Abstractions.Email;
+using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -21,6 +22,12 @@ public sealed class AvisosDaGovernancaTests
     private static ModeloDeAviso Modelo(TipoDeAviso tipo, int? versao = 2, params string[] permissoes) =>
         new(tipo, "Análise <de> atendimento", versao, permissoes, "https://uniplus.test/perfis/1?a=1&b=2");
 
+    private static EmissorDeAvisos NovoEmissor(IRegistroDeAvisos registro) =>
+        new(registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance);
+
+    private static PedidoDeAviso Pedido(Guid fato, IReadOnlyList<DestinatarioDoAviso> destinatarios, IReadOnlyCollection<Identidade> excluidos) =>
+        new(Modelo(TipoDeAviso.PermissoesRemovidas), fato, string.Empty, destinatarios, excluidos);
+
     [Fact(DisplayName = "O identificador do aviso é estável e muda com qualquer componente da chave")]
     public void IdDoAviso_EstavelEDistinto()
     {
@@ -32,6 +39,14 @@ public sealed class AvisosDaGovernancaTests
         IdDoAviso.De(new ChaveDoAviso(TipoDeAviso.PermissoesRemovidas, fato, string.Empty, Pedro)).Should().NotBe(base1);
         IdDoAviso.De(new ChaveDoAviso(TipoDeAviso.PermissoesRemovidas, fato, "marco", Rebeca)).Should().NotBe(base1);
         IdDoAviso.De(new ChaveDoAviso(TipoDeAviso.PermissoesRemovidas, Guid.NewGuid(), string.Empty, Rebeca)).Should().NotBe(base1);
+    }
+
+    [Fact(DisplayName = "O identificador de uma chave conhecida tem sempre o mesmo valor")]
+    public void IdDoAviso_ChaveConhecida_TemValorFixo()
+    {
+        ChaveDoAviso chave = new(TipoDeAviso.PermissoesRemovidas, Guid.Parse("0190a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b"), string.Empty, Rebeca);
+
+        IdDoAviso.De(chave).Should().Be(Guid.Parse("c5b1005e-07f5-824a-a021-dd66c99adcfa"));
     }
 
     [Fact(DisplayName = "Os componentes da chave não se confundem quando o texto contém o separador")]
@@ -89,73 +104,104 @@ public sealed class AvisosDaGovernancaTests
         RedacaoDoAviso.CorpoEmTexto(Modelo(TipoDeAviso.PermissoesRemovidas, null)).Should().NotContain("Versão:");
     }
 
-    [Fact(DisplayName = "O emissor não emite sem destinatário válido, sem quem praticou o ato e sem repetir identidade")]
+    [Fact(DisplayName = "O emissor não emite para o endereço inválido")]
+    public async Task Emissor_EnderecoInvalido_NaoEmite()
+    {
+        IReadOnlyList<EnviarEmail> emitidos = await NovoEmissor(new RegistroDeAvisosNaMemoria())
+            .EmitirAsync(Pedido(Guid.NewGuid(), [new DestinatarioDoAviso(Pedro, "endereco-invalido")], []), CancellationToken.None);
+
+        emitidos.Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "O emissor não emite para quem praticou o ato nem repete a identidade")]
     public async Task Emissor_AplicaExclusoesEDeduplica()
     {
-        RegistroDeAvisosNaMemoria registro = new();
-        EmissorDeAvisos emissor = new(registro, DoublesDeAvisos.MetricasDeTeste, NullLogger<EmissorDeAvisos>.Instance);
-        Guid fato = Guid.NewGuid();
-        ModeloDeAviso modelo = Modelo(TipoDeAviso.PermissoesRemovidas);
+        DestinatarioDoAviso rebeca = new(Rebeca, "rebeca-lima12@uniplus-test.local");
+        PedidoDeAviso pedido = Pedido(Guid.NewGuid(), [rebeca, rebeca, new DestinatarioDoAviso(Pedro, "pedro-vitor@uniplus-test.local")], [Pedro]);
 
-        IReadOnlyList<EnviarEmail> vazio = await emissor.EmitirAsync(
-            new PedidoDeAviso(modelo, fato, string.Empty, [new DestinatarioDoAviso(Pedro, "endereco-invalido")], []), CancellationToken.None);
-        IReadOnlyList<EnviarEmail> emitidos = await emissor.EmitirAsync(
-            new PedidoDeAviso(
-                modelo,
-                fato,
-                string.Empty,
-                [
-                    new DestinatarioDoAviso(Rebeca, "rebeca-lima12@uniplus-test.local"),
-                    new DestinatarioDoAviso(Rebeca, "rebeca-lima12@uniplus-test.local"),
-                    new DestinatarioDoAviso(Pedro, "pedro-vitor@uniplus-test.local"),
-                ],
-                [Pedro]),
-            CancellationToken.None);
-        IReadOnlyList<EnviarEmail> repetidos = await emissor.EmitirAsync(
-            new PedidoDeAviso(modelo, fato, string.Empty, [new DestinatarioDoAviso(Rebeca, "rebeca-lima12@uniplus-test.local")], []),
-            CancellationToken.None);
+        IReadOnlyList<EnviarEmail> emitidos = await NovoEmissor(new RegistroDeAvisosNaMemoria()).EmitirAsync(pedido, CancellationToken.None);
 
-        vazio.Should().BeEmpty();
         emitidos.Should().ContainSingle();
+    }
+
+    [Fact(DisplayName = "O emissor não repete o aviso que o registro já tem")]
+    public async Task Emissor_AvisoJaRegistrado_NaoRepete()
+    {
+        EmissorDeAvisos emissor = NovoEmissor(new RegistroDeAvisosNaMemoria());
+        PedidoDeAviso pedido = Pedido(Guid.NewGuid(), [new DestinatarioDoAviso(Rebeca, "rebeca-lima12@uniplus-test.local")], []);
+
+        await emissor.EmitirAsync(pedido, CancellationToken.None);
+        IReadOnlyList<EnviarEmail> repetidos = await emissor.EmitirAsync(pedido, CancellationToken.None);
+
         repetidos.Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Os códigos das enumerações da versão ida e volta, e o desconhecido é recusado")]
-    public void Codigos_IdaEVolta()
+    [Fact(DisplayName = "O código da categoria da remoção vai e volta")]
+    public void CategoriaDaRemocao_CodigoIdaEVolta()
     {
-        foreach (CategoriaDaRemocao c in Enum.GetValues<CategoriaDaRemocao>())
+        foreach (CategoriaDaRemocao categoria in Enum.GetValues<CategoriaDaRemocao>())
         {
-            CategoriaDaRemocaoCodigo.FromCodigo(c.ToCodigo()).Should().Be(c);
-            CategoriaDaRemocaoCodigo.TentarLer(c.ToCodigo()).Should().Be(c);
+            CategoriaDaRemocaoCodigo.FromCodigo(categoria.ToCodigo()).Should().Be(categoria);
+            CategoriaDaRemocaoCodigo.TentarLer(categoria.ToCodigo()).Should().Be(categoria);
         }
+    }
 
-        foreach (EtapaDaVersao e in Enum.GetValues<EtapaDaVersao>())
+    [Fact(DisplayName = "O código da etapa da versão vai e volta")]
+    public void EtapaDaVersao_CodigoIdaEVolta()
+    {
+        foreach (EtapaDaVersao etapa in Enum.GetValues<EtapaDaVersao>())
         {
-            EtapaDaVersaoCodigo.FromCodigo(e.ToCodigo()).Should().Be(e);
+            EtapaDaVersaoCodigo.FromCodigo(etapa.ToCodigo()).Should().Be(etapa);
         }
+    }
 
-        foreach (FormaDoCancelamento f in Enum.GetValues<FormaDoCancelamento>())
+    [Fact(DisplayName = "O código da forma do cancelamento vai e volta")]
+    public void FormaDoCancelamento_CodigoIdaEVolta()
+    {
+        foreach (FormaDoCancelamento forma in Enum.GetValues<FormaDoCancelamento>())
         {
-            FormaDoCancelamentoCodigo.FromCodigo(f.ToCodigo()).Should().Be(f);
+            FormaDoCancelamentoCodigo.FromCodigo(forma.ToCodigo()).Should().Be(forma);
         }
+    }
 
-        foreach (OrigemDaVersao o in Enum.GetValues<OrigemDaVersao>())
+    [Fact(DisplayName = "O código da origem da versão vai e volta")]
+    public void OrigemDaVersao_CodigoIdaEVolta()
+    {
+        foreach (OrigemDaVersao origem in Enum.GetValues<OrigemDaVersao>())
         {
-            OrigemDaVersaoCodigo.FromCodigo(o.ToCodigo()).Should().Be(o);
+            OrigemDaVersaoCodigo.FromCodigo(origem.ToCodigo()).Should().Be(origem);
         }
+    }
 
+    [Fact(DisplayName = "O código desconhecido das enumerações da versão é recusado")]
+    public void Codigo_Desconhecido_Recusa()
+    {
         CategoriaDaRemocaoCodigo.TentarLer("inventada").Should().BeNull();
         Action[] recusas =
         [
             () => CategoriaDaRemocaoCodigo.FromCodigo("x"),
-            () => ((CategoriaDaRemocao)99).ToCodigo(),
             () => EtapaDaVersaoCodigo.FromCodigo("x"),
-            () => ((EtapaDaVersao)99).ToCodigo(),
             () => FormaDoCancelamentoCodigo.FromCodigo("x"),
-            () => ((FormaDoCancelamento)99).ToCodigo(),
             () => OrigemDaVersaoCodigo.FromCodigo("x"),
+        ];
+
+        foreach (Action recusa in recusas)
+        {
+            recusa.Should().Throw<ArgumentOutOfRangeException>();
+        }
+    }
+
+    [Fact(DisplayName = "O valor fora das enumerações da versão não tem código")]
+    public void Valor_ForaDaEnumeracao_Recusa()
+    {
+        Action[] recusas =
+        [
+            () => ((CategoriaDaRemocao)99).ToCodigo(),
+            () => ((EtapaDaVersao)99).ToCodigo(),
+            () => ((FormaDoCancelamento)99).ToCodigo(),
             () => ((OrigemDaVersao)99).ToCodigo(),
         ];
+
         foreach (Action recusa in recusas)
         {
             recusa.Should().Throw<ArgumentOutOfRangeException>();
