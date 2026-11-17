@@ -47,7 +47,7 @@ public sealed class AvisosDosEfeitosDaJanela
 
         List<EnviarEmail> avisos = [];
         avisos.AddRange(await MigradasAsync(janela, mudancas, cancellationToken).ConfigureAwait(false));
-        avisos.AddRange(await AosBeneficiariosAsync(janela, mudancas.Recusadas, FormaDoAviso.Recusa, cancellationToken).ConfigureAwait(false));
+        avisos.AddRange(await AosBeneficiariosAsync(janela, mudancas.Linhas.Recusadas, FormaDoAviso.Recusa, cancellationToken).ConfigureAwait(false));
         avisos.AddRange(await AguardandoAsync(janela, mudancas, ator, cancellationToken).ConfigureAwait(false));
         avisos.AddRange(await RecusasAsync(janela, mudancas, operacao, ator, cancellationToken).ConfigureAwait(false));
 
@@ -70,7 +70,7 @@ public sealed class AvisosDosEfeitosDaJanela
         }
 
         FormaDoAviso forma = FormaDoFim(encerramento);
-        IReadOnlyList<EnviarEmail> revogadas = await AosBeneficiariosAsync(janela, mudancas.RevogadasPeloFim, forma, cancellationToken).ConfigureAwait(false);
+        IReadOnlyList<EnviarEmail> revogadas = await AosBeneficiariosAsync(janela, mudancas.Linhas.RevogadasPeloFim, forma, cancellationToken).ConfigureAwait(false);
         IReadOnlyList<EnviarEmail> encerrada = await AosGruposAsync(
             DoEncerramento(janela, mudancas, forma), janela.Janela.Id, GestaoERepresentantes, Excluir(ator), cancellationToken).ConfigureAwait(false);
 
@@ -115,7 +115,7 @@ public sealed class AvisosDosEfeitosDaJanela
     {
         int numeroDoAlvo = janela.Contexto.Versao(janela.Janela.VersaoAlvoId).Numero;
         List<EnviarEmail> avisos = [];
-        foreach (MudancaNaLinha linha in mudancas.Migradas)
+        foreach (MudancaNaLinha linha in mudancas.Linhas.Migradas)
         {
             ModeloDeAviso modelo = new(
                 TipoDeAviso.ConcessaoMigrada, janela.Perfil.Nome, numeroDoAlvo, Nomes(linha.Acrescimo), _link.DosPedidos());
@@ -150,31 +150,31 @@ public sealed class AvisosDosEfeitosDaJanela
     private Task<IReadOnlyList<EnviarEmail>> AguardandoAsync(
         JanelaDaOperacao janela, MudancasDaJanela mudancas, Identidade ator, CancellationToken cancellationToken)
     {
-        if (mudancas.Aguardando.Count == 0)
+        if (mudancas.Linhas.Aguardando.Count == 0)
         {
             return Task.FromResult<IReadOnlyList<EnviarEmail>>([]);
         }
 
-        ModeloDeAviso modelo = ModeloDaJanela(TipoDeAviso.MigracoesAguardandoProtecaoDeDados, janela, new ContagensDoAviso(Aguardando: mudancas.Aguardando.Count));
+        ModeloDeAviso modelo = ModeloDaJanela(TipoDeAviso.MigracoesAguardandoProtecaoDeDados, janela, new ContagensDoAviso(Aguardando: mudancas.Linhas.Aguardando.Count));
 
-        return AosGruposAsync(modelo, mudancas.NovoLoteId ?? mudancas.Aguardando[0].LinhaId, GestaoERepresentantes, [ator], cancellationToken);
+        return AosGruposAsync(modelo, mudancas.NovoLoteId ?? mudancas.Linhas.Aguardando[0].LinhaId, GestaoERepresentantes, [ator], cancellationToken);
     }
 
     // O lote avisa os gestores de acessos e os Representantes do controlador; a retida e a etapa protegida, só os gestores.
     private Task<IReadOnlyList<EnviarEmail>> RecusasAsync(
         JanelaDaOperacao janela, MudancasDaJanela mudancas, OperacaoNaJanela operacao, Identidade ator, CancellationToken cancellationToken)
     {
-        if (mudancas.Recusadas.Count == 0 || operacao == OperacaoNaJanela.Encerramento)
+        if (mudancas.Linhas.Recusadas.Count == 0 || operacao == OperacaoNaJanela.Encerramento)
         {
             return Task.FromResult<IReadOnlyList<EnviarEmail>>([]);
         }
 
         bool lote = operacao == OperacaoNaJanela.Lote;
         ModeloDeAviso modelo = ModeloDaJanela(
-            lote ? TipoDeAviso.LoteEnviadoComRecusas : TipoDeAviso.RevogacoesNaMigracao, janela, new ContagensDoAviso(Revogadas: mudancas.Recusadas.Count));
+            lote ? TipoDeAviso.LoteEnviadoComRecusas : TipoDeAviso.RevogacoesNaMigracao, janela, new ContagensDoAviso(Revogadas: mudancas.Linhas.Recusadas.Count));
 
         return AosGruposAsync(
-            modelo, mudancas.NovoLoteId ?? mudancas.Recusadas[0].LinhaId, lote ? GestaoERepresentantes : [GrupoDaGovernanca.Gestao], [ator], cancellationToken);
+            modelo, mudancas.NovoLoteId ?? mudancas.Linhas.Recusadas[0].LinhaId, lote ? GestaoERepresentantes : [GrupoDaGovernanca.Gestao], [ator], cancellationToken);
     }
 
     private async Task<IReadOnlyList<EnviarEmail>> AosGruposAsync(
