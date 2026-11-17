@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// Permissão do catálogo reunida por uma versão do perfil. Além do código, guarda a classificação e o alcance que o
@@ -8,13 +9,13 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 /// </summary>
 public sealed class PermissaoDaVersao
 {
-    public string Codigo { get; private set; }
+    public CodigoDePermissao Codigo { get; private set; }
 
     public ClassificacaoDeProtecao Classificacao { get; private set; }
 
     public bool DeUnidade { get; private set; }
 
-    internal PermissaoDaVersao(string codigo, ClassificacaoDeProtecao classificacao, bool deUnidade)
+    internal PermissaoDaVersao(CodigoDePermissao codigo, ClassificacaoDeProtecao classificacao, bool deUnidade)
     {
         Codigo = codigo;
         Classificacao = classificacao;

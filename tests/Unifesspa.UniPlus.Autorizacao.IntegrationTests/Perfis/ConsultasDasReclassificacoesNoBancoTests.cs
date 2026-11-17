@@ -13,6 +13,7 @@ using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 using static Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis.CenarioDaReclassificacao;
 
@@ -103,7 +104,7 @@ public sealed class ConsultasDasReclassificacoesNoBancoTests : PerfilEndpointTes
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
 
         return await scope.ServiceProvider.GetRequiredService<IReclassificacaoRepository>()
-            .ListarConcessoesComAPermissaoAsync(perfil, PermissaoReclassificada, DateTimeOffset.UtcNow, false);
+            .ListarConcessoesComAPermissaoAsync(perfil, CodigoDePermissao.De(PermissaoReclassificada), DateTimeOffset.UtcNow, false);
     }
 
     private async Task AvisarAsync(Guid reclassificacaoId)
@@ -120,7 +121,7 @@ public sealed class ConsultasDasReclassificacoesNoBancoTests : PerfilEndpointTes
         UniPlusDbContext db = scope.ServiceProvider.GetRequiredService<UniPlusDbContext>();
         Guid implantacao = await db.ImplantacoesDasPermissoes.OrderByDescending(c => c.Sequencia).Select(c => c.Id).FirstAsync();
         db.BasesDasPermissoes.Add(BaseDaPermissaoNaConcessao.Registrar(
-            perfil, concessao, PermissaoReclassificada, new BaseDaConcessao(classificacao, false), OrigemDaBase.Conciliacao, implantacao, 0));
+            perfil, concessao, CodigoDePermissao.De(PermissaoReclassificada), new BaseDaConcessao(classificacao, false), OrigemDaBase.Conciliacao, implantacao, 0));
         await db.SaveChangesAsync();
     }
 

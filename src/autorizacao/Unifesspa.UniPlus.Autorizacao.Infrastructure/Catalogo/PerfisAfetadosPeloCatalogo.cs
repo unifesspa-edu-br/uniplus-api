@@ -53,17 +53,17 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
         RetomarSeAClasseMudou(perfil, registradas, comparacao.Instante);
     }
 
-    private static IEnumerable<string> CodigosEmUso(IReadOnlyList<VersaoDoPerfil> emUso) =>
-        emUso.SelectMany(static v => v.Permissoes).Select(static p => p.Codigo).Distinct(StringComparer.Ordinal).Order(StringComparer.Ordinal);
+    private static IEnumerable<CodigoDePermissao> CodigosEmUso(IReadOnlyList<VersaoDoPerfil> emUso) =>
+        emUso.SelectMany(static v => v.Permissoes).Select(static p => p.Codigo).Distinct().OrderBy(static c => c.Valor, StringComparer.Ordinal);
 
     private ReclassificacaoDaPermissao? ReclassificarSeMudou(Perfil perfil, PermissaoEmUso permissao, ComparacaoDeCatalogos comparacao)
     {
-        if (comparacao.Atualizado.TryGetValue(CodigoDePermissao.De(permissao.Codigo), out PermissaoDoCatalogo? nova))
+        if (comparacao.Atualizado.TryGetValue(permissao.Codigo, out PermissaoDoCatalogo? nova))
         {
             return Reclassificar(perfil, permissao, nova, comparacao);
         }
 
-        LogCodigoForaDoCatalogo(_logger, perfil.Id, permissao.Codigo);
+        LogCodigoForaDoCatalogo(_logger, perfil.Id, permissao.Codigo.Valor);
 
         return null;
     }
@@ -76,7 +76,7 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
         Perfil perfil, PermissaoEmUso permissao, PermissaoDoCatalogo nova, ComparacaoDeCatalogos comparacao)
     {
         MudancaDaPermissao? candidata = permissao.Anteriores
-            .Select(r => ComparacaoComOCatalogo.MudancaDe(comparacao.AnteriorDe(CodigoDePermissao.De(permissao.Codigo), r), nova))
+            .Select(r => ComparacaoComOCatalogo.MudancaDe(comparacao.AnteriorDe(permissao.Codigo, r), nova))
             .FirstOrDefault(static m => m is not null);
         if (candidata is not { } mudanca)
         {
@@ -93,7 +93,7 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
     private void AcompanharAsBases(
         Perfil perfil, List<ReclassificacaoDaPermissao> registradas, IReadOnlyList<BaseEmVigor> bases, ComparacaoDeCatalogos comparacao)
     {
-        HashSet<string> alterados = [.. registradas.Select(static r => r.Codigo)];
+        HashSet<CodigoDePermissao> alterados = [.. registradas.Select(static r => r.Codigo)];
 
         _db.BasesDasPermissoes.AddRange(bases
             .Where(b => alterados.Contains(b.Codigo))
@@ -104,7 +104,7 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
     private static BaseDaPermissaoNaConcessao? BaseAcompanhada(Guid perfilId, BaseEmVigor emVigor, ComparacaoDeCatalogos comparacao)
     {
         MudancaDaPermissao? mudanca = ComparacaoComOCatalogo.MudancaDe(
-            comparacao.AnteriorDe(CodigoDePermissao.De(emVigor.Codigo), emVigor.Base), comparacao.Atualizado[CodigoDePermissao.De(emVigor.Codigo)]);
+            comparacao.AnteriorDe(emVigor.Codigo, emVigor.Base), comparacao.Atualizado[emVigor.Codigo]);
 
         return mudanca is { } mudou
             ? BaseDaPermissaoNaConcessao.Registrar(
@@ -118,7 +118,7 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
     {
         List<CodigoDaConcessao> codigos = await _db.CodigosDasConcessoesDoPerfil(perfil.Id, instante)
             .ToListAsync(cancellationToken).ConfigureAwait(false);
-        Dictionary<(Guid, string), BaseViva> vivas = (await _db.BasesVivas()
+        Dictionary<(Guid, CodigoDePermissao), BaseViva> vivas = (await _db.BasesVivas()
             .Where(b => _db.Set<Concessao>().Any(c => c.Id == b.ConcessaoId && c.PerfilId == perfil.Id))
             .ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(static b => (b.ConcessaoId, b.Codigo));
 
@@ -131,7 +131,7 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
     {
         foreach (ReclassificacaoDaPermissao reclassificacao in registradas.Where(static r => r.Subiu || r.Desceu))
         {
-            perfil.ReavaliarRetomada(new OrigemDaReavaliacao.PelaReclassificacao(reclassificacao.Codigo), _consultavel, instante);
+            perfil.ReavaliarRetomada(new OrigemDaReavaliacao.PelaReclassificacao(reclassificacao.Codigo.Valor), _consultavel, instante);
         }
     }
 
@@ -150,10 +150,10 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
 }
 
 /// <summary>A base de uma permissão numa concessão ativa, no momento da conciliação.</summary>
-internal sealed record BaseEmVigor(Guid ConcessaoId, string Codigo, BaseDaConcessao Base);
+internal sealed record BaseEmVigor(Guid ConcessaoId, CodigoDePermissao Codigo, BaseDaConcessao Base);
 
 /// <summary>Uma permissão em uso por um perfil: o código, as versões em uso que a reúnem e as bases das concessões.</summary>
-internal sealed record PermissaoEmUso(string Codigo, IReadOnlyList<VersaoDoPerfil> Versoes, IReadOnlyList<BaseEmVigor> Bases)
+internal sealed record PermissaoEmUso(CodigoDePermissao Codigo, IReadOnlyList<VersaoDoPerfil> Versoes, IReadOnlyList<BaseEmVigor> Bases)
 {
     /// <summary>Os valores que a permissão tinha para o perfil: a composição de cada versão em uso e a base de cada concessão.</summary>
     public IEnumerable<BaseDaConcessao> Anteriores => Versoes

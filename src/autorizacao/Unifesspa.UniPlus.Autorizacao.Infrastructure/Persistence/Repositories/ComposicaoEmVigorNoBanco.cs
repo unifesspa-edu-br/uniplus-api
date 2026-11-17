@@ -79,7 +79,7 @@ internal static class ComposicaoEmVigorNoBanco
 
     /// <summary>As concessões, entre todas, que dão o código.</summary>
     public static IQueryable<Guid> ConcessoesComPermissaoEmVigor(
-        this UniPlusDbContext context, string codigo, DateTimeOffset agora) =>
+        this UniPlusDbContext context, CodigoDePermissao codigo, DateTimeOffset agora) =>
         context.CodigosDeAcesso(context.Concessoes, agora)
             .Where(k => k.Codigo == codigo)
             .Select(k => k.ConcessaoId);
@@ -106,7 +106,7 @@ internal static class ComposicaoEmVigorNoBanco
     }
 
     /// <summary>Os códigos que a concessão dá no instante pela composição, sem olhar a suspensão do perfil.</summary>
-    public static IQueryable<string> CodigosEmVigorDaConcessao(
+    public static IQueryable<CodigoDePermissao> CodigosEmVigorDaConcessao(
         this UniPlusDbContext context, Guid concessaoId, DateTimeOffset agora) =>
         context.CodigosDasConcessoes(context.Concessoes.Where(c => c.Id == concessaoId), agora).Select(k => k.Codigo);
 
@@ -172,7 +172,7 @@ internal sealed record ConcessaoLida(
     Guid Id, Guid PerfilId, NomeDoPerfil PerfilNome, Guid? UnidadeId, TipoDeEscopo EscopoTipo, DateTimeOffset? ValidaAte, Guid? VersaoId);
 
 /// <summary>Uma linha da consulta da decisão: a concessão e um dos códigos que ela dá, ou nenhum.</summary>
-internal sealed record LinhaDaConcessao(ConcessaoLida Concessao, string? Codigo);
+internal sealed record LinhaDaConcessao(ConcessaoLida Concessao, CodigoDePermissao? Codigo);
 
 /// <summary>A linha da decisão de acesso e a impressão do catálogo que a mesma instrução leu; a linha é nula se não há concessão.</summary>
 internal sealed class LinhaDoAcesso
@@ -189,5 +189,5 @@ internal sealed class LinhaPlana
 
     public string PerfilNome { get; init; } = string.Empty;
 
-    public string? Codigo { get; init; }
+    public CodigoDePermissao? Codigo { get; init; }
 }

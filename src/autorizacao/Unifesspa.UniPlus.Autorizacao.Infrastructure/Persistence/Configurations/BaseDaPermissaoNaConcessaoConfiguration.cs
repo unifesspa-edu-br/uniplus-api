@@ -40,7 +40,7 @@ internal sealed class BaseDaPermissaoNaConcessaoConfiguration : IEntityTypeConfi
         builder.HasKey(b => b.Id);
         builder.Property(b => b.Id).ValueGeneratedNever();
 
-        builder.Property(b => b.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(b => b.Codigo).HasConversion(ConversoresDoCatalogo.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(b => b.Classificacao).HasConversion(ConversoresDoCatalogo.ClassificacaoOpcional).HasMaxLength(ClassificacaoMaxLength);
         builder.Property(b => b.DeUnidade);
         builder.Property(b => b.Origem).HasConversion(OrigemConverter).HasMaxLength(OrigemMaxLength).IsRequired();

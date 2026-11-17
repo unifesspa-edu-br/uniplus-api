@@ -37,7 +37,7 @@ internal sealed class ReclassificacaoDaPermissaoConfiguration : IEntityTypeConfi
         builder.HasKey(r => r.Id);
         builder.Property(r => r.Id).ValueGeneratedNever();
 
-        builder.Property(r => r.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
+        builder.Property(r => r.Codigo).HasConversion(ConversoresDoCatalogo.Codigo).HasMaxLength(CodigoMaxLength).IsRequired();
         builder.Property(r => r.ClassificacaoAnterior).HasConversion(ConversoresDoCatalogo.Classificacao).HasMaxLength(ClassificacaoMaxLength).IsRequired();
         builder.Property(r => r.ClassificacaoNova).HasConversion(ConversoresDoCatalogo.Classificacao).HasMaxLength(ClassificacaoMaxLength).IsRequired();
         builder.Property(r => r.DeUnidadeAnterior).IsRequired();

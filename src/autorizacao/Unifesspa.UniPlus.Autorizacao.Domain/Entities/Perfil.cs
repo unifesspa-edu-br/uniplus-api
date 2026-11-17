@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -106,7 +107,7 @@ public sealed class Perfil : EntityBase
     /// </summary>
     public IReadOnlyList<string> ComposicaoEmVigor =>
         Governanca is not null
-            ? [.. _permissoes.Select(static p => p.Codigo).Order(StringComparer.Ordinal)]
+            ? [.. _permissoes.Select(static p => p.Codigo.Valor).Order(StringComparer.Ordinal)]
             : VersaoVigente?.Codigos() ?? [];
 
     /// <summary>A regra de <see cref="AdmitePrazo"/> a partir do papel de governança, para o perfil avaliado.</summary>

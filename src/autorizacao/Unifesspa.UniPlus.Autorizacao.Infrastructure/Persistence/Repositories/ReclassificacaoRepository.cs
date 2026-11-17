@@ -45,24 +45,24 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
     private async Task<Dictionary<CodigoDePermissao, PermissaoDoCatalogo>> LinhasAsync(
         Guid implantacaoId, IReadOnlyCollection<CodigoDePermissao> codigos, CancellationToken cancellationToken)
     {
-        string[] textos = [.. codigos.Select(static c => c.Valor)];
+        CodigoDePermissao[] consultados = [.. codigos];
         List<PermissaoImplantada> linhas = await _context.PermissoesImplantadas.AsNoTracking()
-            .Where(p => p.ImplantacaoId == implantacaoId && textos.Contains(p.Codigo))
+            .Where(p => p.ImplantacaoId == implantacaoId && consultados.Contains(p.Codigo))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
         return linhas.ToDictionary(
-            static p => CodigoDePermissao.De(p.Codigo),
-            static p => new PermissaoDoCatalogo(CodigoDePermissao.De(p.Codigo), p.Classificacao, p.DeUnidade, p.Reservada));
+            static p => p.Codigo,
+            static p => new PermissaoDoCatalogo(p.Codigo, p.Classificacao, p.DeUnidade, p.Reservada));
     }
 
-    public async Task<IReadOnlySet<string>> ObterCodigosReclassificadosAsync(
+    public async Task<IReadOnlySet<CodigoDePermissao>> ObterCodigosReclassificadosAsync(
         Guid implantacaoId, Guid perfilId, CancellationToken cancellationToken = default) =>
         (await _context.Reclassificacoes.AsNoTracking()
             .Where(r => r.ImplantacaoId == implantacaoId && r.PerfilId == perfilId)
             .Select(r => r.Codigo)
             .ToListAsync(cancellationToken)
-            .ConfigureAwait(false)).ToHashSet(StringComparer.Ordinal);
+            .ConfigureAwait(false)).ToHashSet();
 
     public void Adicionar(ReclassificacaoDaPermissao reclassificacao)
     {
@@ -107,21 +107,21 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
             .ConfigureAwait(false);
 
     public async Task<IReadOnlyList<ConcessaoComAPermissao>> ListarConcessoesComAPermissaoAsync(
-        Guid perfilId, string codigo, DateTimeOffset agora, bool travar, CancellationToken cancellationToken = default)
+        Guid perfilId, CodigoDePermissao codigo, DateTimeOffset agora, bool bloquearParaLeituraCompartilhada, CancellationToken cancellationToken = default)
     {
         List<Guid> ids = await IdsDasConcessoesAsync(perfilId, codigo, agora, cancellationToken).ConfigureAwait(false);
-        if (travar && ids.Count > 0)
+        if (bloquearParaLeituraCompartilhada && ids.Count > 0)
         {
-            await TravarParaLeituraAsync(ids, cancellationToken).ConfigureAwait(false);
+            await BloquearParaLeituraCompartilhadaAsync(ids, cancellationToken).ConfigureAwait(false);
 
-            // Quem revogou enquanto a trava esperava já confirmou: o conjunto vale o de depois das travas.
+            // Após aguardar o bloqueio, consulta novamente para excluir concessões já revogadas.
             ids = await IdsDasConcessoesAsync(perfilId, codigo, agora, cancellationToken).ConfigureAwait(false);
         }
 
         return await ComAsBasesAsync(codigo, ids, agora, perfilId, cancellationToken).ConfigureAwait(false);
     }
 
-    private Task<List<Guid>> IdsDasConcessoesAsync(Guid perfilId, string codigo, DateTimeOffset agora, CancellationToken cancellationToken) =>
+    private Task<List<Guid>> IdsDasConcessoesAsync(Guid perfilId, CodigoDePermissao codigo, DateTimeOffset agora, CancellationToken cancellationToken) =>
         _context.CodigosDasConcessoesDoPerfil(perfilId, agora)
             .Where(k => k.Codigo == codigo).Select(k => k.ConcessaoId).OrderBy(id => id)
             .ToListAsync(cancellationToken);
@@ -211,14 +211,14 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
         _context.BasesDasPermissoes.Add(baseNova);
     }
 
-    private Task<int> TravarParaLeituraAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken) =>
+    private Task<int> BloquearParaLeituraCompartilhadaAsync(IReadOnlyList<Guid> ids, CancellationToken cancellationToken) =>
         _context.Database.ExecuteSqlRawAsync(
             $"SELECT 1 FROM {AutorizacaoContribuicao.NomeDoEsquema}.concessoes WHERE id = ANY({{0}}) ORDER BY id FOR SHARE",
             [ids.ToArray()],
             cancellationToken);
 
     private async Task<IReadOnlyList<ConcessaoComAPermissao>> ComAsBasesAsync(
-        string codigo, List<Guid> ids, DateTimeOffset agora, Guid perfilId, CancellationToken cancellationToken)
+        CodigoDePermissao codigo, List<Guid> ids, DateTimeOffset agora, Guid perfilId, CancellationToken cancellationToken)
     {
         List<Concessao> concessoes = await ConcessoesDoPerfilAsync(ids, cancellationToken).ConfigureAwait(false);
         Dictionary<Guid, CodigoDaConcessao> codigosDasConcessoes = await CodigosDasConcessoesAsync(perfilId, codigo, agora, cancellationToken).ConfigureAwait(false);
@@ -239,11 +239,11 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
             .Where(c => ids.Contains(c.Id)).OrderBy(c => c.Id).ToListAsync(cancellationToken);
 
     private async Task<Dictionary<Guid, CodigoDaConcessao>> CodigosDasConcessoesAsync(
-        Guid perfilId, string codigo, DateTimeOffset agora, CancellationToken cancellationToken) =>
+        Guid perfilId, CodigoDePermissao codigo, DateTimeOffset agora, CancellationToken cancellationToken) =>
         (await _context.CodigosDasConcessoesDoPerfil(perfilId, agora)
             .Where(k => k.Codigo == codigo).ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(static k => k.ConcessaoId);
 
-    private async Task<Dictionary<Guid, BaseViva>> BasesVivasDasConcessoesAsync(string codigo, List<Guid> ids, CancellationToken cancellationToken) =>
+    private async Task<Dictionary<Guid, BaseViva>> BasesVivasDasConcessoesAsync(CodigoDePermissao codigo, List<Guid> ids, CancellationToken cancellationToken) =>
         (await _context.BasesVivas().Where(b => b.Codigo == codigo && ids.Contains(b.ConcessaoId))
             .ToListAsync(cancellationToken).ConfigureAwait(false)).ToDictionary(static b => b.ConcessaoId);
 }

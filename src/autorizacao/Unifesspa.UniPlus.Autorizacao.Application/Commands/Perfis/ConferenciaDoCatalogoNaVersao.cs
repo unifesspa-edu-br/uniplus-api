@@ -62,7 +62,7 @@ public sealed class ConferenciaDoCatalogoNaVersao
     private async Task<IReadOnlyList<PermissaoDaVersao>> PermissoesSemRegistroAsync(
         ImplantacaoNoBanco atual, Perfil perfil, VersaoDoPerfil entrante, CancellationToken cancellationToken)
     {
-        IReadOnlySet<string> jaReclassificados = await _reclassificacoes
+        IReadOnlySet<CodigoDePermissao> jaReclassificados = await _reclassificacoes
             .ObterCodigosReclassificadosAsync(atual.Id, perfil.Id, cancellationToken).ConfigureAwait(false);
 
         return [.. entrante.Permissoes.Where(p => !jaReclassificados.Contains(p.Codigo))];
@@ -85,7 +85,7 @@ public sealed class ConferenciaDoCatalogoNaVersao
     {
         BaseDaConcessao daVersao = new(permissao.Classificacao, permissao.DeUnidade);
 
-        return atual.Linhas.TryGetValue(CodigoDePermissao.De(permissao.Codigo), out PermissaoDoCatalogo? linha) && daVersao.SuspendeFrenteA(linha.Classificacao, linha.DeUnidade)
+        return atual.Linhas.TryGetValue(permissao.Codigo, out PermissaoDoCatalogo? linha) && daVersao.SuspendeFrenteA(linha.Classificacao, linha.DeUnidade)
             ? ComparacaoComOCatalogo.MudancaDe(daVersao, linha)
             : null;
     }

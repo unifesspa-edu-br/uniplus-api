@@ -33,12 +33,12 @@ public sealed class ConcessoesDaReclassificacao
 
     /// <summary>Todas as concessões com a permissão, suspensas ou não, com as decisões da reclassificação sobre cada uma.</summary>
     public async Task<IReadOnlyList<ConcessaoSuspensa>> LerComAPermissaoAsync(
-        ReclassificacaoDaPermissao reclassificacao, DateTimeOffset agora, bool travar, CancellationToken cancellationToken)
+        ReclassificacaoDaPermissao reclassificacao, DateTimeOffset agora, bool bloquearParaLeituraCompartilhada, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(reclassificacao);
 
         IReadOnlyList<ConcessaoComAPermissao> concessoes = await _reclassificacoes
-            .ListarConcessoesComAPermissaoAsync(reclassificacao.PerfilId, reclassificacao.Codigo, agora, travar, cancellationToken)
+            .ListarConcessoesComAPermissaoAsync(reclassificacao.PerfilId, reclassificacao.Codigo, agora, bloquearParaLeituraCompartilhada, cancellationToken)
             .ConfigureAwait(false);
         IReadOnlyList<LiberacaoDaReclassificacao> liberacoes = await _reclassificacoes
             .ListarLiberacoesAsync(reclassificacao.Id, cancellationToken).ConfigureAwait(false);

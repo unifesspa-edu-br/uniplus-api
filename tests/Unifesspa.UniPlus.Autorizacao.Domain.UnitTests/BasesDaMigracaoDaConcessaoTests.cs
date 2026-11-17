@@ -25,7 +25,7 @@ public sealed class BasesDaMigracaoDaConcessaoTests
     {
         Concessao concessao = Migrada();
 
-        BaseDaPermissaoNaConcessao baseDoMantido = concessao.Bases.Last(b => b.Codigo == Mantido);
+        BaseDaPermissaoNaConcessao baseDoMantido = concessao.Bases.Last(b => b.Codigo.Valor == Mantido);
 
         baseDoMantido.Origem.Should().Be(OrigemDaBase.Migracao);
         baseDoMantido.Classificacao.Should().Be(ClassificacaoDeProtecao.Interno);
@@ -38,7 +38,7 @@ public sealed class BasesDaMigracaoDaConcessaoTests
     {
         Concessao concessao = Migrada();
 
-        BaseDaPermissaoNaConcessao baseDaSaida = concessao.Bases.Single(b => b.Codigo == Removido);
+        BaseDaPermissaoNaConcessao baseDaSaida = concessao.Bases.Single(b => b.Codigo.Valor == Removido);
 
         baseDaSaida.Origem.Should().Be(OrigemDaBase.Saida);
         baseDaSaida.Classificacao.Should().BeNull();
@@ -50,7 +50,7 @@ public sealed class BasesDaMigracaoDaConcessaoTests
     {
         Concessao concessao = Migrada();
 
-        concessao.Bases.Should().NotContain(b => b.Codigo == Novo);
+        concessao.Bases.Should().NotContain(b => b.Codigo.Valor == Novo);
     }
 
     private static Concessao Migrada()

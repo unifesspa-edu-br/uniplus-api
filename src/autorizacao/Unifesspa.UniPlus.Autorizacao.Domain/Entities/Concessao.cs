@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -161,7 +162,7 @@ public sealed class Concessao : EntityBase
         HashSet<string> mantidos = [.. entra.Codigos()];
         List<BaseDaPermissaoNaConcessao> bases = [];
 
-        foreach (PermissaoDaVersao permissao in sai.Permissoes.OrderBy(static p => p.Codigo, StringComparer.Ordinal))
+        foreach (PermissaoDaVersao permissao in sai.Permissoes.OrderBy(static p => p.Codigo.Valor, StringComparer.Ordinal))
         {
             if (BaseDaPermissaoNaTroca(permissao, mantidos, entra.Id, bases.Count) is { } nova)
             {
@@ -174,7 +175,7 @@ public sealed class Concessao : EntityBase
 
     private BaseDaPermissaoNaConcessao? BaseDaPermissaoNaTroca(
         PermissaoDaVersao permissao, HashSet<string> mantidos, Guid versaoAlvoId, int ordinal) =>
-        mantidos.Contains(permissao.Codigo)
+        mantidos.Contains(permissao.Codigo.Valor)
             ? BaseDoCodigoMantido(permissao, versaoAlvoId, ordinal)
             : BaseDaPermissaoNaConcessao.DaSaida(PerfilId, Id, permissao.Codigo, versaoAlvoId, ordinal);
 
@@ -185,7 +186,7 @@ public sealed class Concessao : EntityBase
                 PerfilId, Id, permissao.Codigo, new BaseDaConcessao(permissao.Classificacao, permissao.DeUnidade),
                 OrigemDaBase.Migracao, versaoAlvoId, ordinal);
 
-    private bool TemBaseAtiva(string codigo) =>
+    private bool TemBaseAtiva(CodigoDePermissao codigo) =>
         _bases.Where(b => b.Codigo == codigo).MaxBy(static b => b.OrdemNaTrilha) is { Origem: not OrigemDaBase.Saida };
 
     /// <summary>

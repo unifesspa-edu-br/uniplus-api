@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -23,7 +24,7 @@ public sealed class ReclassificacaoDaPermissao : IForensicEntity, IRegistroDaTri
 
     public Guid PerfilId { get; private init; }
 
-    public string Codigo { get; private init; } = string.Empty;
+    public CodigoDePermissao Codigo { get; private init; } = null!;
 
     public ClassificacaoDeProtecao ClassificacaoAnterior { get; private init; }
 
@@ -54,9 +55,9 @@ public sealed class ReclassificacaoDaPermissao : IForensicEntity, IRegistroDaTri
     }
 
     public static ReclassificacaoDaPermissao Registrar(
-        Guid implantacaoId, Guid perfilId, string codigo, MudancaDaPermissao mudanca, DateTimeOffset instante, int ordinal)
+        Guid implantacaoId, Guid perfilId, CodigoDePermissao codigo, MudancaDaPermissao mudanca, DateTimeOffset instante, int ordinal)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(codigo);
+        ArgumentNullException.ThrowIfNull(codigo);
 
         return new ReclassificacaoDaPermissao
         {

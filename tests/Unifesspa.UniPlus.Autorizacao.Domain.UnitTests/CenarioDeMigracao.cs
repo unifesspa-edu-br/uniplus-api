@@ -67,7 +67,7 @@ internal sealed class CenarioDeMigracao
 
     public ContextoDaMigracao Contexto(DateTimeOffset agora)
     {
-        string[] alvo = [.. VersaoNova!.Permissoes.Select(static p => p.Codigo).Order(StringComparer.Ordinal)];
+        string[] alvo = [.. VersaoNova!.Permissoes.Select(static p => p.Codigo.Valor).Order(StringComparer.Ordinal)];
         Dictionary<Guid, IReadOnlyList<string>> composicoes = _concessoes.ToDictionary(
             static c => c.Id, c => (IReadOnlyList<string>)(c.VersaoId == VersaoNova.Id ? alvo : [Consultar]));
 

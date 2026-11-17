@@ -177,7 +177,7 @@ public sealed class VersaoDoPerfilConfiguration : IEntityTypeConfiguration<Versa
             permissao.ToTable("permissoes_da_versao_do_perfil");
             permissao.WithOwner().HasForeignKey("VersaoId");
             permissao.Property<Guid>("VersaoId");
-            permissao.Property(x => x.Codigo).HasMaxLength(CodigoDaPermissaoMaxLength).IsRequired();
+            permissao.Property(x => x.Codigo).HasConversion(ConversoresDoCatalogo.Codigo).HasMaxLength(CodigoDaPermissaoMaxLength).IsRequired();
             permissao.Property(x => x.Classificacao).HasConversion(ClassificacaoConverter).HasMaxLength(ClassificacaoMaxLength).IsRequired();
             permissao.Property(x => x.DeUnidade).IsRequired();
             permissao.HasKey("VersaoId", nameof(PermissaoDaVersao.Codigo));

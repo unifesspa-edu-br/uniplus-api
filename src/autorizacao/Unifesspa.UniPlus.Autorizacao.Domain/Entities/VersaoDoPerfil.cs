@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Entities;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -127,7 +128,7 @@ public sealed class VersaoDoPerfil : EntityBase
 
     /// <summary>Códigos das permissões que a versão reúne, ordenados.</summary>
     public IReadOnlyList<string> Codigos() =>
-        [.. _permissoes.Select(static p => p.Codigo).Order(StringComparer.Ordinal)];
+        [.. _permissoes.Select(static p => p.Codigo.Valor).Order(StringComparer.Ordinal)];
 
     /// <summary>Códigos que a versão reúne e <paramref name="anterior"/> não reunia, ordenados.</summary>
     public IReadOnlyList<string> AcrescimosSobre(VersaoDoPerfil anterior)
@@ -162,7 +163,7 @@ public sealed class VersaoDoPerfil : EntityBase
 
     private IEnumerable<PermissaoDaVersao> PermissoesSem(IReadOnlyCollection<string> codigos) =>
         _permissoes
-            .Where(p => !codigos.Contains(p.Codigo, StringComparer.Ordinal))
+            .Where(p => !codigos.Contains(p.Codigo.Valor, StringComparer.Ordinal))
             .Select(static p => new PermissaoDaVersao(p.Codigo, p.Classificacao, p.DeUnidade));
 
     private static VersaoDoPerfil Nova(Guid perfilId, int numero, ConteudoDaVersao conteudo, ClasseDaVersao classe)
@@ -178,7 +179,7 @@ public sealed class VersaoDoPerfil : EntityBase
             Alcance = classe.Alcance,
             ExigeProtecaoDeDados = classe.ExigeProtecaoDeDados,
         };
-        versao._permissoes.AddRange(conteudo.Permissoes.Select(static p => new PermissaoDaVersao(p.Codigo.Valor, p.Classificacao, p.DeUnidade)));
+        versao._permissoes.AddRange(conteudo.Permissoes.Select(static p => new PermissaoDaVersao(p.Codigo, p.Classificacao, p.DeUnidade)));
 
         return versao;
     }

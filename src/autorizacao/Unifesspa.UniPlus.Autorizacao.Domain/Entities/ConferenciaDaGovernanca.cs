@@ -39,9 +39,8 @@ public static class ConferenciaDaGovernanca
         ArgumentNullException.ThrowIfNull(novo);
 
         return [.. ComposicaoDaGovernanca.Esperada
-            .Select(static p => (Permissao: p, Codigo: CodigoDePermissao.De(p.Codigo)))
-            .Where(x => anterior.ContainsKey(x.Codigo) && novo.ContainsKey(x.Codigo))
-            .SelectMany(x => MudancasDe(implantacaoId, x.Permissao, (anterior[x.Codigo], novo[x.Codigo]), instante))];
+            .Where(p => anterior.ContainsKey(p.Codigo) && novo.ContainsKey(p.Codigo))
+            .SelectMany(p => MudancasDe(implantacaoId, p, (anterior[p.Codigo], novo[p.Codigo]), instante))];
     }
 
     private static IEnumerable<DivergenciaDaGovernanca> MudancasDe(
@@ -50,14 +49,14 @@ public static class ConferenciaDaGovernanca
         if (linhas.Antes.Classificacao != linhas.Depois.Classificacao)
         {
             yield return DivergenciaDaGovernanca.DaMudanca(
-                implantacaoId, permissao.PerfilId, permissao.Codigo, TipoDeDivergencia.Classificacao,
+                implantacaoId, permissao.PerfilId, permissao.Codigo.Valor, TipoDeDivergencia.Classificacao,
                 new ValorDivergente(Texto(linhas.Antes.Classificacao), Texto(linhas.Depois.Classificacao)), instante, 0);
         }
 
         if (linhas.Antes.DeUnidade != linhas.Depois.DeUnidade)
         {
             yield return DivergenciaDaGovernanca.DaMudanca(
-                implantacaoId, permissao.PerfilId, permissao.Codigo, TipoDeDivergencia.Escopo,
+                implantacaoId, permissao.PerfilId, permissao.Codigo.Valor, TipoDeDivergencia.Escopo,
                 new ValorDivergente(linhas.Antes.DeUnidade.ToString(), linhas.Depois.DeUnidade.ToString()), instante, 0);
         }
     }
@@ -66,5 +65,5 @@ public static class ConferenciaDaGovernanca
         classificacao.ToString().ToLowerInvariant();
 
     private static DivergenciaDaGovernanca Registrar(Guid implantacaoId, PermissaoDeGovernanca permissao, TipoDeDivergencia tipo, DateTimeOffset instante) =>
-        DivergenciaDaGovernanca.DaComposicao(implantacaoId, permissao.PerfilId, permissao.Codigo, tipo, instante, 0);
+        DivergenciaDaGovernanca.DaComposicao(implantacaoId, permissao.PerfilId, permissao.Codigo.Valor, tipo, instante, 0);
 }

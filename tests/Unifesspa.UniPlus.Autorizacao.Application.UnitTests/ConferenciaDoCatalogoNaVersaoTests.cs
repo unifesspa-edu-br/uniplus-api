@@ -27,7 +27,7 @@ public sealed class ConferenciaDoCatalogoNaVersaoTests
         await Conferencia(reclassificacoes).RegistrarNaEntradaAsync(perfil, perfil.VersaoPendente!, CancellationToken.None);
 
         ReclassificacaoDaPermissao registrada = reclassificacoes.Reclassificacoes.Should().ContainSingle().Subject;
-        (registrada.PerfilId, registrada.Codigo).Should().Be((perfil.Id, Consultar));
+        (registrada.PerfilId, registrada.Codigo.Valor).Should().Be((perfil.Id, Consultar));
     }
 
     [Fact(DisplayName = "A permissão que o catálogo gravado muda de escopo também registra a reclassificação")]

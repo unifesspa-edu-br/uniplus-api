@@ -16,6 +16,7 @@ using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>O que o modelo e o banco garantem sozinhos sobre o catálogo gravado e os fatos da reclassificação.</summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
@@ -55,7 +56,7 @@ public sealed class ModeloDoCatalogoNoBancoTests : PerfilEndpointTestBase
             .FindNavigation(nameof(Perfil.Permissoes))!.TargetEntityType;
 
         HashSet<PermissaoDeGovernanca> semente = [.. permissoes.GetSeedData()
-            .Select(static d => new PermissaoDeGovernanca((Guid)d["PerfilId"]!, (string)d["Codigo"]!))];
+            .Select(static d => new PermissaoDeGovernanca((Guid)d["PerfilId"]!, (CodigoDePermissao)d["Codigo"]!))];
         HashSet<PermissaoDeGovernanca> gravada = [.. await db.Perfis.AsNoTracking()
             .Where(p => p.Governanca != null)
             .SelectMany(p => p.Permissoes.Select(x => new PermissaoDeGovernanca(p.Id, x.Codigo)))
@@ -87,7 +88,7 @@ public sealed class ModeloDoCatalogoNoBancoTests : PerfilEndpointTestBase
         ImplantacaoDasPermissoes atual = await db.ImplantacoesDasPermissoes.AsNoTracking().Include(c => c.Permissoes)
             .Where(c => c.Impressao == catalogo.Impressao).OrderByDescending(c => c.Sequencia).FirstAsync();
 
-        atual.Permissoes!.Select(p => (p.Codigo, p.Classificacao, p.DeUnidade, p.Reservada))
+        atual.Permissoes!.Select(p => (p.Codigo.Valor, p.Classificacao, p.DeUnidade, p.Reservada))
             .Should().BeEquivalentTo(catalogo.Linhas.Select(l => (l.Codigo.Valor, l.Classificacao, l.DeUnidade, l.Reservada)));
     }
 }

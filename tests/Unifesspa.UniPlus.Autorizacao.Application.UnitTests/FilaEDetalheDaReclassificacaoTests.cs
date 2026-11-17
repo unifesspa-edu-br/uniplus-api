@@ -14,6 +14,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.UnitTests;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.CenarioDaGovernancaDaVersao;
@@ -121,7 +122,7 @@ public sealed class FilaEDetalheDaReclassificacaoTests
         public ReclassificacaoDaPermissao Reclassificar(ClassificacaoDeProtecao anterior, ClassificacaoDeProtecao nova)
         {
             ReclassificacaoDaPermissao reclassificacao = ReclassificacaoDaPermissao.Registrar(
-                Guid.NewGuid(), _perfil.Id, Codigo, new MudancaDaPermissao(anterior, nova, false, false), Tempo.GetUtcNow(), _reclassificacoes.Reclassificacoes.Count);
+                Guid.NewGuid(), _perfil.Id, CodigoDePermissao.De(Codigo), new MudancaDaPermissao(anterior, nova, false, false), Tempo.GetUtcNow(), _reclassificacoes.Reclassificacoes.Count);
             _reclassificacoes.Reclassificacoes.Add(reclassificacao);
 
             return reclassificacao;

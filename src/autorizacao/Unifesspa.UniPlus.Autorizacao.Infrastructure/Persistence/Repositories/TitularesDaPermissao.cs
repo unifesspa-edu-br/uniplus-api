@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// Os titulares de uma permissão, lidos das concessões para quem precisa avisá-los. O perfil desativado
@@ -33,12 +34,19 @@ internal sealed class TitularesDaPermissao : ITitularesDaPermissao
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(codigoDaPermissao);
 
+        return CodigoDePermissao.TentarCriar(codigoDaPermissao, out CodigoDePermissao? codigo)
+            ? await TitularesDoCodigoAsync(codigo, cancellationToken).ConfigureAwait(false)
+            : [];
+    }
+
+    private async Task<IReadOnlyList<TitularDaPermissao>> TitularesDoCodigoAsync(CodigoDePermissao codigo, CancellationToken cancellationToken)
+    {
         DateTimeOffset agora = _timeProvider.GetUtcNow();
 
         return await (
             from c in _context.Concessoes.AsNoTracking().VigentesDaInstituicao(agora)
             where c.BeneficiarioEmail != null
-                && _context.ConcessoesComPermissaoEmVigor(codigoDaPermissao, agora).Contains(c.Id)
+                && _context.ConcessoesComPermissaoEmVigor(codigo, agora).Contains(c.Id)
             select new TitularDaPermissao(c.BeneficiarioEmissor, c.BeneficiarioContaId, c.BeneficiarioEmail!))
             .Distinct()
             .ToListAsync(cancellationToken)

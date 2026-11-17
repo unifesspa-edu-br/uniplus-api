@@ -32,10 +32,10 @@ public sealed class ConferenciaDoCatalogoTests
         PermissaoAutorizacao.RevisoesConduzir,
     ];
 
-    private static string[] CodigosDasDecisoesProtegidas =>
-        [.. DecisoesProtegidas.Select(static p => CatalogoDePermissoes<PermissaoAutorizacao>.Obter(p).Codigo), AprovacaoDaProtecaoDoCatalogo];
+    private static CodigoDePermissao[] CodigosDasDecisoesProtegidas =>
+        [.. DecisoesProtegidas.Select(static p => CodigoDePermissao.De(CatalogoDePermissoes<PermissaoAutorizacao>.Obter(p).Codigo)), CodigoDePermissao.De(AprovacaoDaProtecaoDoCatalogo)];
 
-    private static string PublicacaoDoTermo => CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.TermosPublicar).Codigo;
+    private static CodigoDePermissao PublicacaoDoTermo => CodigoDePermissao.De(CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.TermosPublicar).Codigo);
 
     private static PermissaoDoCatalogo Linha(string codigo, ClassificacaoDeProtecao classificacao, bool deUnidade = false) =>
         new(CodigoDePermissao.De(codigo), classificacao, deUnidade, false);
@@ -92,22 +92,22 @@ public sealed class ConferenciaDoCatalogoTests
     public void Governanca_ComposicaoDivergente_GeraDivergencias()
     {
         PermissaoDeGovernanca faltante = ComposicaoDaGovernanca.Esperada[0];
-        PermissaoDeGovernanca excedente = new(PerfisDeSistema.GestorDeAcessosId, "selecao:processos:configurar");
+        PermissaoDeGovernanca excedente = new(PerfisDeSistema.GestorDeAcessosId, CodigoDePermissao.De("selecao:processos:configurar"));
 
         IReadOnlyList<DivergenciaDaGovernanca> divergencias = ConferenciaDaGovernanca.DaComposicao(
             Catalogo, [.. ComposicaoDaGovernanca.Esperada.Skip(1), excedente], Agora);
 
         divergencias.Should().HaveCount(2);
-        divergencias.Should().ContainSingle(d => d.Tipo == TipoDeDivergencia.ComposicaoFaltante && d.Codigo == faltante.Codigo);
-        divergencias.Should().ContainSingle(d => d.Tipo == TipoDeDivergencia.ComposicaoExcedente && d.Codigo == excedente.Codigo);
+        divergencias.Should().ContainSingle(d => d.Tipo == TipoDeDivergencia.ComposicaoFaltante && d.Codigo == faltante.Codigo.Valor);
+        divergencias.Should().ContainSingle(d => d.Tipo == TipoDeDivergencia.ComposicaoExcedente && d.Codigo == excedente.Codigo.Valor);
     }
 
     [Fact(DisplayName = "A permissão de governança reclassificada ou de escopo mudado vira divergência com o valor antes e depois")]
     public void Governanca_PermissaoReclassificada_GeraDivergencia()
     {
-        string codigo = ComposicaoDaGovernanca.Esperada[0].Codigo;
-        Dictionary<CodigoDePermissao, PermissaoDoCatalogo> anterior = new() { [CodigoDePermissao.De(codigo)] = Linha(codigo, ClassificacaoDeProtecao.Interno) };
-        Dictionary<CodigoDePermissao, PermissaoDoCatalogo> novo = new() { [CodigoDePermissao.De(codigo)] = Linha(codigo, ClassificacaoDeProtecao.Sensivel, deUnidade: true) };
+        CodigoDePermissao codigo = ComposicaoDaGovernanca.Esperada[0].Codigo;
+        Dictionary<CodigoDePermissao, PermissaoDoCatalogo> anterior = new() { [codigo] = Linha(codigo.Valor, ClassificacaoDeProtecao.Interno) };
+        Dictionary<CodigoDePermissao, PermissaoDoCatalogo> novo = new() { [codigo] = Linha(codigo.Valor, ClassificacaoDeProtecao.Sensivel, deUnidade: true) };
 
         IReadOnlyList<DivergenciaDaGovernanca> divergencias = ConferenciaDaGovernanca.DoCatalogo(Catalogo, anterior, novo, Agora);
 
@@ -118,8 +118,8 @@ public sealed class ConferenciaDoCatalogoTests
     [Fact(DisplayName = "A permissão de governança sem mudança no catálogo não gera divergência")]
     public void Governanca_PermissaoIgual_SemDivergencia()
     {
-        string codigo = ComposicaoDaGovernanca.Esperada[0].Codigo;
-        Dictionary<CodigoDePermissao, PermissaoDoCatalogo> catalogo = new() { [CodigoDePermissao.De(codigo)] = Linha(codigo, ClassificacaoDeProtecao.Interno) };
+        CodigoDePermissao codigo = ComposicaoDaGovernanca.Esperada[0].Codigo;
+        Dictionary<CodigoDePermissao, PermissaoDoCatalogo> catalogo = new() { [codigo] = Linha(codigo.Valor, ClassificacaoDeProtecao.Interno) };
 
         ConferenciaDaGovernanca.DoCatalogo(Catalogo, catalogo, catalogo, Agora).Should().BeEmpty();
     }
@@ -144,11 +144,11 @@ public sealed class ConferenciaDoCatalogoTests
     [Fact(DisplayName = "O Encarregado de dados não reúne decisão, revogação nem administração de concessões")]
     public void Composicao_Encarregado_SoConsultaManifestaESolicita()
     {
-        IReadOnlyList<string> codigos = ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.EncarregadoDeDadosId);
+        IReadOnlyList<CodigoDePermissao> codigos = ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.EncarregadoDeDadosId);
 
-        codigos.Should().NotContain(c => c.Contains(":aprovar", StringComparison.Ordinal) || c.EndsWith(":conduzir", StringComparison.Ordinal));
-        codigos.Should().NotContain(["autorizacao:concessoes:administrar", "autorizacao:perfis:manter", "autorizacao:revisoes:rever-protecao-de-dados"]);
-        codigos.Should().Contain(["autorizacao:permissoes:consultar-catalogo", "configuracao:protecao-do-catalogo:manifestar", "autorizacao:providencias:solicitar"]);
+        codigos.Should().NotContain(c => c.Acao.StartsWith("aprovar", StringComparison.Ordinal) || c.Acao == "conduzir");
+        codigos.Select(static c => c.Valor).Should().NotContain(["autorizacao:concessoes:administrar", "autorizacao:perfis:manter", "autorizacao:revisoes:rever-protecao-de-dados"]);
+        codigos.Select(static c => c.Valor).Should().Contain(["autorizacao:permissoes:consultar-catalogo", "configuracao:protecao-do-catalogo:manifestar", "autorizacao:providencias:solicitar"]);
     }
 
     [Theory(DisplayName = "A governança admite qualquer permissão da autorização e, de outro módulo, só a reservada")]
@@ -174,7 +174,7 @@ public sealed class ConferenciaDoCatalogoTests
     {
         string sufixo = CatalogoDePermissoes<PermissaoAutorizacao>.Obter(PermissaoAutorizacao.PerfisAprovarProtecaoDeDados).Codigo.Split(':')[^1];
 
-        ComposicaoDaGovernanca.Esperada.Where(p => p.Codigo.EndsWith(':' + sufixo, StringComparison.Ordinal))
+        ComposicaoDaGovernanca.Esperada.Where(p => p.Codigo.Acao == sufixo)
             .Select(static p => p.Codigo).Should().OnlyContain(c => CodigosDasDecisoesProtegidas.Contains(c));
         ComposicaoDaGovernanca.Esperada.Where(p => CodigosDasDecisoesProtegidas.Contains(p.Codigo))
             .Should().OnlyContain(static p => p.PerfilId == PerfisDeSistema.RepresentanteDoControladorId);

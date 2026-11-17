@@ -19,6 +19,7 @@ using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// Montagens das suítes da reclassificação pelo host real: o perfil com as concessões, a implantação de outro catálogo
@@ -87,10 +88,11 @@ public abstract class ReclassificacaoNoHostTestBase : AprovacaoDaVersaoNoHostTes
 
     private protected async Task<Guid> ReclassificacaoAsync(Guid perfil, string codigo)
     {
+        CodigoDePermissao procurado = CodigoDePermissao.De(codigo);
         await using AsyncServiceScope escopo = Fixture.Factory.Services.CreateAsyncScope();
 
         return await escopo.ServiceProvider.GetRequiredService<UniPlusDbContext>().Reclassificacoes.AsNoTracking()
-            .Where(r => r.PerfilId == perfil && r.Codigo == codigo).OrderByDescending(r => r.OrdemNaTrilha).Select(r => r.Id).FirstAsync();
+            .Where(r => r.PerfilId == perfil && r.Codigo == procurado).OrderByDescending(r => r.OrdemNaTrilha).Select(r => r.Id).FirstAsync();
     }
 
     private protected async Task<long> ContarAsync(string sql, params object[] parametros)

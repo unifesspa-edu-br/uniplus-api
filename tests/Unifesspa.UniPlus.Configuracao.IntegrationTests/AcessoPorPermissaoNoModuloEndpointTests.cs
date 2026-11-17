@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Configuracao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Authentication;
 using Unifesspa.UniPlus.IntegrationTests.Fixtures.Hosting;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// Cada cadastro do módulo decide o acesso pela permissão concedida, e não pelo papel do token: quem tem a concessão
@@ -85,7 +86,7 @@ public sealed class AcessoPorPermissaoNoModuloEndpointTests : IAsyncLifetime
         IServiceProvider servicos = _fixture.Factory.Services;
         if (CatalogoDePermissoes<PermissaoConfiguracao>.Obter(permissao).ReservadaAGovernanca)
         {
-            bool doEncarregado = ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.EncarregadoDeDadosId).Contains(permissao.Codigo);
+            bool doEncarregado = ComposicaoDaGovernanca.CodigosDe(PerfisDeSistema.EncarregadoDeDadosId).Contains(CodigoDePermissao.De(permissao.Codigo));
             await ConcessoesDeTeste.ConcederGovernancaAsync(servicos, Leandro, doEncarregado ? TipoDeGovernanca.EncarregadoDeDados : TipoDeGovernanca.RepresentanteDoControlador);
             return doEncarregado ? PerfisDeSistema.EncarregadoDeDadosId : PerfisDeSistema.RepresentanteDoControladorId;
         }

@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -15,7 +16,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed class ReclassificacaoDaPermissaoTests
 {
-    private const string Codigo = "selecao:processos:consultar";
+    private static readonly CodigoDePermissao Codigo = CodigoDePermissao.De("selecao:processos:consultar");
 
     private static readonly DateTimeOffset Agora = PerfisDeTeste.Instante;
     private static readonly Identidade Paulo = new("https://idp.test/realms/unifesspa", "paulo.ramos", "Paulo Ramos");
@@ -230,15 +231,13 @@ public sealed class ReclassificacaoDaPermissaoTests
         (registrada.Instante, registrada.OrdinalLocal).Should().Be((Agora, 3));
     }
 
-    [Theory(DisplayName = "Registrar recusa o código em branco")]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Registrar_CodigoEmBranco_Recusa(string codigo)
+    [Fact(DisplayName = "Registrar recusa o código ausente")]
+    public void Registrar_CodigoAusente_Recusa()
     {
         Action registrar = () => ReclassificacaoDaPermissao.Registrar(
-            Guid.CreateVersion7(), Guid.CreateVersion7(), codigo, new MudancaDaPermissao(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Pessoal, false, false), Agora, 0);
+            Guid.CreateVersion7(), Guid.CreateVersion7(), null!, new MudancaDaPermissao(ClassificacaoDeProtecao.Interno, ClassificacaoDeProtecao.Pessoal, false, false), Agora, 0);
 
-        registrar.Should().Throw<ArgumentException>();
+        registrar.Should().Throw<ArgumentNullException>();
     }
 
     private static ReclassificacaoDaPermissao Subida(bool deUnidade) =>
