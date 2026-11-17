@@ -20,38 +20,12 @@ public sealed class CatalogoDaAplicacao
     {
         ArgumentNullException.ThrowIfNull(fontes);
 
-        List<string> problemas = [];
-        List<(string Quem, DefinicaoDePermissao Definicao)> todas = [];
-        Dictionary<string, DefinicaoDePermissao> porCodigo = new(StringComparer.Ordinal);
-        Dictionary<string, DefinicaoDePermissao> porNome = new(StringComparer.OrdinalIgnoreCase);
+        ReuniaoDasFontes reuniao = ReuniaoDasFontes.De(fontes);
+        reuniao.ExigirCoerente();
 
-        foreach (IFonteDeCatalogo fonte in fontes)
-        {
-            foreach (DefinicaoDePermissao definicao in fonte.Definicoes())
-            {
-                todas.Add((definicao.Codigo, definicao));
-                if (!porCodigo.TryAdd(definicao.Codigo, definicao))
-                {
-                    problemas.Add($"{fonte.TipoDoEnum.Name}: o código '{definicao.Codigo}' já está declarado em outro enum.");
-                }
-
-                if (!porNome.TryAdd(definicao.Nome.Trim(), definicao))
-                {
-                    problemas.Add($"{fonte.TipoDoEnum.Name}: o nome '{definicao.Nome}' já está declarado em outro enum.");
-                }
-            }
-        }
-
-        problemas.AddRange(UnicidadeDoPar.Problemas(todas));
-
-        if (problemas.Count > 0)
-        {
-            throw new CatalogoDePermissoesInvalidoException(problemas);
-        }
-
-        _porCodigo = porCodigo.ToFrozenDictionary(StringComparer.Ordinal);
-        Definicoes = EmOrdemDeModuloResourceEAcao(porCodigo.Values);
-        Linhas = LinhasEmOrdemDeCodigo(porCodigo.Values);
+        _porCodigo = reuniao.PorCodigo.ToFrozenDictionary(StringComparer.Ordinal);
+        Definicoes = EmOrdemDeModuloResourceEAcao(reuniao.PorCodigo.Values);
+        Linhas = LinhasEmOrdemDeCodigo(reuniao.PorCodigo.Values);
         Impressao = LinhaDoCatalogo.ImpressaoDe(Linhas);
     }
 
