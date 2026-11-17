@@ -43,6 +43,12 @@ A [ADR-0051](0051-apicurio-schema-registry-avro-wolverine.md) define o registro 
 - **Congelamento:** a versão congela na primeira tag que a publica, e a cópia dos arquivos passa a `publicadas/vN/`. Dali em diante um teste compara o esquema atual com cada cópia publicada e recusa a mudança incompatível que o comparador reconhece; o que ele não examina fica para a revisão.
 - **Registro:** o esquema é registrado no registro de esquemas com regra de compatibilidade desligada, porque a versão atual do registro recusa a segunda versão de um esquema 2020-12 sob regra de compatibilidade; a garantia vive no teste acima.
 
+> **Emenda (2026-11-17) — a ordem de uma lista é a posição do item.**
+>
+> A ordem de várias listas do documento era um número declarado ao lado da posição do item: duas fontes para a mesma informação, e recusas de ordem repetida que só existiam por causa disso. Quando a ordem de uma lista é a sequência dos itens, **ela é a posição do item na lista enviada, e o documento não traz número de ordem**. Quem lê atribui a ordem pela posição de origem, começando em 1, sem renumerar quando alguma parte é recusada; a recusa que depende da ordem aponta o item.
+>
+> Reordenar é mover o item, e a chave dele não muda. Deixam de existir as recusas de ordem repetida vindas do documento. Cada lista adota o critério na entrega que a lê; a das fases do cronograma já o adota.
+>
 > **Emenda (2026-11-17) — a publicação do esquema no contrato REST.**
 >
 > A OpenAPI do módulo publica o esquema como componentes, derivados na geração dos mesmos arquivos, sem cópia. A raiz é `DocumentoDaConfiguracao`; cada arquivo e cada definição alcançados viram um componente, com nome fixado por regra (prefixo, arquivo, definição). As referências relativas passam a apontar o componente, e `$id` e `$schema` saem. Os arquivos continuam sendo a fonte e o que a API usa para validar; os clientes geram tipos a partir da OpenAPI.

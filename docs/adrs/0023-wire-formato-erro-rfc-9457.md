@@ -68,6 +68,16 @@ Extensions condicionais:
 > A causa que não corresponde a trecho do documento (o catálogo, a aprovação de proteção, o pedido da retificação) segue a regra do item sem `field`. A causa que aponta uma coleção da qual o item foi retirado aponta a coleção.
 >
 > **Decisão registrada, a implementar depois:** cada item de `errors[]` **pode** carregar `type`, a URI do catálogo montada por `problemTypeUriFactory.Build(code)` a partir do `code` do próprio item, para que o cliente chegue à página do erro sem montar a URI. Esta emenda só registra a decisão; a implementação e o contrato ficam para a entrega própria (uniplus-api#2523).
+>
+> **Emenda (2026-11-17) — o código de catálogo e a chave que o documento da configuração cita sem existir.**
+>
+> A emenda anterior trata a causa de catálogo como causa sem `field`. Isso vale para a causa que não nasce de um campo do documento. A [ADR-0172](0172-esquema-json-versionado-do-documento-de-configuracao.md) manda o documento citar o catálogo por código e as partes por chave local, e por isso o código de catálogo ou a chave citados que não existem **são causas da configuração e apontam o campo que os cita**.
+>
+> - Cada causa traz, em `errors[].field`, o ponteiro JSON (RFC 6901) do campo que cita o código ou a chave, na **posição em que o item veio no documento enviado**.
+> - A `message` descreve a regra violada e não repete o valor digitado.
+> - A chave inexistente tem um código geral, que serve a todas as partes do documento; o que distingue a parte é o campo apontado.
+> - Não bloqueiam o salvamento do rascunho: aparecem no diagnóstico e recusam a publicação.
+> - A falta de `field` continua só para a causa que não nasce de um campo do documento.
 
 Extensions adicionais não definidas aqui são proibidas em V1 sem ADR de extensão. Extensions que carregam dado pessoal são proibidas por princípio (umbrella, princípio 3).
 
