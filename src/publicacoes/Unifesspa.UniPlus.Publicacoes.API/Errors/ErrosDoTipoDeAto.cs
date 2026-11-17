@@ -23,12 +23,6 @@ internal static class ErrosDoTipoDeAto
                 "uniplus.publicacoes.tipo_ato.vigencia_sobreposta",
                 "Já existe uma versão viva deste tipo de ato vigente em parte do período informado")),
 
-        new(TipoAtoPublicadoErrorCodes.IdDivergente,
-            new DomainErrorMapping(
-                StatusCodes.Status400BadRequest,
-                "uniplus.publicacoes.tipo_ato.id_divergente",
-                "O identificador da URL não corresponde ao do corpo da requisição")),
-
         new(TipoAtoPublicadoErrorCodes.NaoEncontrado,
             new DomainErrorMapping(
                 StatusCodes.Status404NotFound,

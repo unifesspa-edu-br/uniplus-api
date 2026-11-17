@@ -19,6 +19,9 @@ using static TipoAtoPublicadoApoio;
 [Collection(PublicacoesEndpointCollection.Name)]
 public sealed class TipoAtoPublicadoEscritaEndpointTests
 {
+    private const string DetalheDoIdDivergente =
+        "O Id informado na rota é diferente do Id do corpo da requisição; os dois precisam identificar o mesmo recurso.";
+
     private readonly PublicacoesEndpointFixture _fixture;
     private readonly TipoAtoPublicadoApoio _apoio;
 
@@ -251,8 +254,8 @@ public sealed class TipoAtoPublicadoEscritaEndpointTests
         doc.RootElement.GetProperty("nome").GetString().Should().Be("Nome atualizado");
     }
 
-    [Fact(DisplayName = "PUT com Id divergente retorna 400 com o ProblemDetails canônico")]
-    public async Task Atualizar_IdDivergente_Retorna400()
+    [Fact(DisplayName = "PUT com Id divergente retorna 400 com o código da fronteira")]
+    public async Task Atualizar_IdDivergente_Retorna400ComOCodigoDaFronteira()
     {
         string codigo = CodigoUnico();
         Guid id = await _apoio.CriarAsync(codigo);
@@ -261,12 +264,8 @@ public sealed class TipoAtoPublicadoEscritaEndpointTests
         HttpResponseMessage response = await AtualizarAsync(
             client, Guid.NewGuid(), new CorpoDoTipoDeAto(codigo) { Id = id });
 
-        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
-
-        // Sem `type`, o cliente não classifica o erro — só lê a mensagem.
-        using JsonDocument doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-        doc.RootElement.GetProperty("type").GetString()
-            .Should().EndWith("uniplus.publicacoes.tipo_ato.id_divergente");
+        await ProblemaRegistrado.ConferirAsync(
+            response, HttpStatusCode.BadRequest, "uniplus.contract.id_path_body_divergente", "Id da rota diferente do Id do corpo", DetalheDoIdDivergente);
     }
 
     [Fact(DisplayName = "PUT de tipo inexistente retorna 404")]
