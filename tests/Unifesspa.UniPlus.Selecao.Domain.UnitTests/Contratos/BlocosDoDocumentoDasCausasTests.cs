@@ -63,13 +63,13 @@ public sealed class BlocosDoDocumentoDasCausasTests
         CaminhosAusentes(causas).Should().BeEmpty();
     }
 
-    [Theory(DisplayName = "O campo de toda causa de um processo com defeito em todas as famílias existe no esquema publicado, o caminho inteiro")]
+    [Theory(DisplayName = "O campo de toda causa de um processo com defeito em todos os assuntos existe no esquema publicado, o caminho inteiro")]
     [MemberData(nameof(Transicoes))]
-    public void CampoDeTodaCausa_DeTodasAsFamilias_ExisteNoEsquema(string transicao)
+    public void CampoDeTodaCausa_DeTodosOsAssuntos_ExisteNoEsquema(string transicao)
     {
-        CenarioDeCongelamentoPorFamilia cenario = CenarioDeCongelamentoPorFamilia.Para(transicao);
+        CenarioDeCongelamentoPorAssunto cenario = CenarioDeCongelamentoPorAssunto.Para(transicao);
 
-        IReadOnlyList<FieldError> causas = cenario.CausasDaConferencia(CenarioDeCongelamentoPorFamilia.FamiliasQueSabeQuebrar.ToHashSet(StringComparer.Ordinal));
+        IReadOnlyList<FieldError> causas = cenario.CausasDaConferencia(CenarioDeCongelamentoPorAssunto.AssuntosQueSabeQuebrar.ToHashSet(StringComparer.Ordinal));
 
         causas.Should().NotBeEmpty();
         CaminhosAusentes(causas).Should().BeEmpty();

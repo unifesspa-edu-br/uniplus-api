@@ -95,7 +95,7 @@ public sealed class DefinirAlgoritmoContagemPrazoCommandHandlerTests
         await mocks.UnitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Fact(DisplayName = "Entrada de OUTRO tipo de regra é recusada — o rol tem muitas famílias, e só uma conta prazo")]
+    [Fact(DisplayName = "Entrada de OUTRO tipo de regra é recusada — o rol tem muitos assuntos, e só uma conta prazo")]
     public async Task Handle_TipoErrado_Recusa()
     {
         ProcessoSeletivo processo = NovoProcesso();

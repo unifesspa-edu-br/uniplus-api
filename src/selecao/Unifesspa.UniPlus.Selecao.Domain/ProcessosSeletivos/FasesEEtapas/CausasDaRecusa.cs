@@ -2,7 +2,7 @@ namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.FasesEEtapas;
 
 using Unifesspa.UniPlus.Kernel.Results;
 
-/// <summary>As recusas de uma regra, uma ou várias, como a lista de causas que as famílias acumulam.</summary>
+/// <summary>As recusas de uma regra, uma ou várias, como a lista de causas que os assuntos acumulam.</summary>
 internal static class CausasDaRecusa
 {
     internal static IReadOnlyList<FieldError> Da(DomainError? recusa, string? campo = null) =>

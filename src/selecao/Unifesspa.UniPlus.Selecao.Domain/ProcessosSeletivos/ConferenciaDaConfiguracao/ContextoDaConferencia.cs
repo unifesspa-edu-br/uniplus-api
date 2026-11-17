@@ -4,7 +4,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Cronograma;
 using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Etapas;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
-/// <summary>O que toda família lê para julgar: a configuração declarada, os cadastros e as declarações do cronograma e das etapas.</summary>
+/// <summary>O que todo assunto lê para julgar: a configuração declarada, os cadastros e as declarações do cronograma e das etapas.</summary>
 internal sealed record ContextoDaConferencia(
     ConfiguracaoDeclarada Configuracao, CadastrosDaConfiguracao Cadastros, CronogramaDoProcesso Cronograma, EtapasDoProcesso Etapas)
 {

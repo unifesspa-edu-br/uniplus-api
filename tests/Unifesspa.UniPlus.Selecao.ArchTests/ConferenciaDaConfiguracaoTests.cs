@@ -42,7 +42,7 @@ public sealed class ConferenciaDaConfiguracaoTests
         IArchRule regra = MethodMembers()
             .That().AreConstructors().And().AreDeclaredIn(typeof(ConfiguracaoAptaACongelar))
             .Should().NotBePublic()
-            .Because("a configuração apta só nasce de Conferir, que julga todas as famílias de regra");
+            .Because("a configuração apta só nasce de Conferir, que julga todos os assuntos de regra");
 
         regra.Check(Arquitetura);
     }

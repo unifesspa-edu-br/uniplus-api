@@ -31,7 +31,7 @@ public sealed class RecusasAcumuladasNoCongelamentoTests
     private static readonly DateTimeOffset FimInformado = new(2026, 2, 28, 23, 59, 59, TimeSpan.FromHours(-3));
 
     [Fact(DisplayName = "A configuração, os motivos e o edital recusam numa resposta só, na ordem da conferência")]
-    public async Task ConfiguracaoEditalEMotivos_SaemJuntosNaOrdemDasFamilias()
+    public async Task ConfiguracaoEditalEMotivos_SaemJuntosNaOrdemDosAssuntos()
     {
         CenarioDeRecusaNoCongelamento cenario = Para(OperacaoQueCongela.Publicar)
             .Com(DefeitoDoCongelamento.Motivos)

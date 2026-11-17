@@ -274,7 +274,7 @@ public sealed class FronteiraDeBlocosDoCertameTests
     [Fact(DisplayName = "Todo arranjo do contrato recusa elemento nulo, em qualquer profundidade")]
     public void TentarLerProjecao_QuandoQualquerArranjoTemElementoNulo_DeveRecusar()
     {
-        // A família é enumerada do PRÓPRIO contrato, por reflexão, e não escrita à mão: uma lista
+        // O conjunto é enumerado do PRÓPRIO contrato, por reflexão, e não escrita à mão: uma lista
         // repetida aqui envelheceria junto com a que ela deveria cobrir, e o arranjo novo passaria
         // nos dois lugares por ausência. Arranjo de tipo de valor fica fora — nele o nulo já não
         // desserializa.

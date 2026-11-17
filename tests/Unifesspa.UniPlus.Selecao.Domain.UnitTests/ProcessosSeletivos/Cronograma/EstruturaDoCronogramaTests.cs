@@ -56,8 +56,8 @@ public sealed class EstruturaDoCronogramaTests
             .Should().Equal(("fases[1].faseCanonicaId", "ProcessoSeletivo.FaseCanonicaDuplicada"));
     }
 
-    [Fact(DisplayName = "As causas saem por família e, dentro dela, pela posição de entrada")]
-    public void ConferirEstrutura_VariasFamilias_SaemNaOrdemDasFamilias()
+    [Fact(DisplayName = "As causas saem por assunto e, dentro dela, pela posição de entrada")]
+    public void ConferirEstrutura_VariosAssuntos_SaemNaOrdemDosAssuntos()
     {
         Estrutura(
             new ModeloDeFase("A", 1).Declarar(),

@@ -27,7 +27,7 @@ internal abstract record OrigemDoCongelamento
 
     /// <summary>
     /// O que impede a operação pelo estado do processo, antes de qualquer leitura e de qualquer conferência da configuração:
-    /// é conflito de estado, e a recusa impede o congelamento. Fica fora da ordem das famílias de regra da configuração.
+    /// é conflito de estado, e a recusa impede o congelamento. Fica fora da ordem dos assuntos de regra da configuração.
     /// </summary>
     public abstract Result ConferirEstado(ProcessoSeletivo processo);
 

@@ -1,7 +1,7 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.ConferenciaDaConfiguracao;
 
-/// <summary>Os nomes das famílias de regra da conferência: a chave que a conferência e quem a descreve compartilham.</summary>
-internal static class NomeDaFamilia
+/// <summary>Os nomes dos assuntos de regra da conferência: a chave que a conferência e quem a descreve compartilham.</summary>
+internal static class NomeDoAssunto
 {
     internal const string Identificacao = "Identificacao";
     internal const string Conformidade = "Conformidade";

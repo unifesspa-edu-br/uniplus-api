@@ -24,7 +24,7 @@ A conferência de que um processo pode ser congelado era uma cadeia de verifica�
 
 ## Opções consideradas
 
-- Manter as cadeias de primeira causa e acrescentar as famílias novas ao lado.
+- Manter as cadeias de primeira causa e acrescentar os assuntos novos ao lado.
 - Conferir a configuração por acumulação, com uma configuração apta a congelar que só existe sem causas.
 
 ## Resultado da decisão
@@ -33,9 +33,9 @@ A conferência de que um processo pode ser congelado era uma cadeia de verifica�
 
 1. A configuração apta a congelar só existe quando a conferência não tem causa. A conferência devolve a configuração apta ou o conjunto de causas, nunca os dois, e a configuração apta carrega apenas o identificador do processo.
 2. Os cadastros que a conferência lê (catálogos, referências, tipos de documento e fatos protegidos) entram como um único valor, lidos uma vez, num instante único, pela camada de aplicação. O domínio não lê porta. Os motivos de decisão escolhidos entram nesse valor com a situação do motivo de origem no cadastro e o número da versão que nasce: o processo congela a cópia feita na escolha, e a conferência só lê do cadastro se o motivo continua ativo, sem refazer a cópia.
-3. A ordem das famílias de regra é única: identificação, conformidade por item, declarações, conjunto, completude, procedimentos de recurso, bancas, correção independente, tipos de ato, cascata, as condições que a canonicalização exige e os motivos de decisão escolhidos. Na família dos motivos, a ordem é o motivo desativado no cadastro, o motivo de um tipo que a fase ou a etapa não declara e a cobertura por lugar; o motivo recusado por uma das duas primeiras não conta para a cobertura. Quando a leitura recusou uma fase ou etapa inteira, ou a lista dos tipos de decisão de uma delas, não se sabe quais lugares declaram um tipo: a família não recusa o motivo desse lugar nem aponta que nenhum lugar declara o tipo, e os itens do painel que dependem disso ficam pendentes. Cada família é uma função que devolve todas as suas causas, e a ordem é a da concatenação delas em `CausasQueImpedemCongelar`; uma regra que lê o dado que outra recusou deixa de avaliar dentro do próprio predicado. A conferência do estado (status, motivo, versão anterior) é conflito, e não causa da configuração: fica fora dessa ordem, em `OrigemDoCongelamento`, e impede todo o resto quando recusa.
+3. A ordem dos assuntos de regra é única: identificação, conformidade por item, declarações, conjunto, completude, procedimentos de recurso, bancas, correção independente, tipos de ato, cascata, as condições que a canonicalização exige e os motivos de decisão escolhidos. No assunto dos motivos, a ordem é o motivo desativado no cadastro, o motivo de um tipo que a fase ou a etapa não declara e a cobertura por lugar; o motivo recusado por uma das duas primeiras não conta para a cobertura. Quando a leitura recusou uma fase ou etapa inteira, ou a lista dos tipos de decisão de uma delas, não se sabe quais lugares declaram um tipo: o assunto não recusa o motivo desse lugar nem aponta que nenhum lugar declara o tipo, e os itens do painel que dependem disso ficam pendentes. Cada assunto é uma função que devolve todas as suas causas, e a ordem é a da concatenação delas em `CausasQueImpedemCongelar`; uma regra que lê o dado que outra recusou deixa de avaliar dentro do próprio predicado. A conferência do estado (status, motivo, versão anterior) é conflito, e não causa da configuração: fica fora dessa ordem, em `OrigemDoCongelamento`, e impede todo o resto quando recusa.
 4. O congelamento confere nesta ordem: o estado, o ato e o documento no mesmo instante, a configuração, a montagem, a transição e a gravação. As recusas das etapas da aplicação se acumulam às da configuração, e só deixa de rodar a etapa que lê um dado que outra recusou. A aprovação da proteção é regra sobre uma leitura que nunca falha, e não falha da leitura: a recusa dela sai na frente, antes da configuração e da operação, e a recópia e a conferência da configuração rodam sempre. O corte é por exigência: a exigência que a aprovação recusa (tipo pendente, tipo excluído ou fato comprovado pendente) fica fora das pendências que leem a proteção, e as demais exigências seguem conferidas.
-5. A recusa é um lote: resposta 422 com `errors[]`, em que o erro raiz é a primeira causa, e cada causa traz o campo do documento da configuração quando aponta o documento. O painel de conformidade tem um item por família de declaração e de conjunto (`cronograma_fases_declaradas`, `cronograma_fases_em_conjunto`, `etapas_declaradas`, `etapas_em_conjunto`), cada um derivado da mesma conferência que a configuração chama, de modo que o painel e a conferência concordam em tudo. O painel tem também um item por regra dos motivos de decisão escolhidos.
+5. A recusa é um lote: resposta 422 com `errors[]`, em que o erro raiz é a primeira causa, e cada causa traz o campo do documento da configuração quando aponta o documento. O painel de conformidade tem um item por assunto de declaração e de conjunto (`cronograma_fases_declaradas`, `cronograma_fases_em_conjunto`, `etapas_declaradas`, `etapas_em_conjunto`), cada um derivado da mesma conferência que a configuração chama, de modo que o painel e a conferência concordam em tudo. O painel tem também um item por regra dos motivos de decisão escolhidos.
 
 ## Consequências
 
@@ -47,7 +47,7 @@ A conferência de que um processo pode ser congelado era uma cadeia de verifica�
 ### Negativas
 
 - Algumas primeiras causas mudam de ordem, e cada mudança tem teste que a registra.
-- O painel ganha os itens de cada família nova, entre eles os três dos motivos de decisão escolhidos, e as mensagens de erro do congelamento ganham ponto final.
+- O painel ganha os itens de cada assunto novo, entre eles os três dos motivos de decisão escolhidos, e as mensagens de erro do congelamento ganham ponto final.
 
 ### Neutras
 
@@ -55,7 +55,7 @@ A conferência de que um processo pode ser congelado era uma cadeia de verifica�
 
 ## Confirmação
 
-Testes de unidade fixam a ordem das famílias, a paridade do painel com a conferência e o bloco de cada causa no documento. Testes de arquitetura garantem que a configuração apta a congelar não tem construtor público.
+Testes de unidade fixam a ordem dos assuntos, a paridade do painel com a conferência e o bloco de cada causa no documento. Testes de arquitetura garantem que a configuração apta a congelar não tem construtor público.
 
 ## Prós e contras das opções
 

@@ -106,8 +106,8 @@ public sealed class EtapasDoProcessoTests
         Conferir(eliminatoria, comCaraterRecusado).Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "As famílias do conjunto saem na ordem: identificador, ordem, ENEM e nenhuma compõe")]
-    public void Conferir_VariasFamilias_SaemNaOrdemDasFamilias()
+    [Fact(DisplayName = "Os assuntos do conjunto saem na ordem: identificador, ordem, ENEM e nenhuma compõe")]
+    public void Conferir_VariosAssuntos_SaemNaOrdemDosAssuntos()
     {
         Guid id = Guid.CreateVersion7();
 

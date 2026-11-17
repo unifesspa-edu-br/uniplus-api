@@ -14,7 +14,7 @@ public sealed record ConfiguracaoAptaACongelar
     public Guid ProcessoId { get; }
 
     /// <summary>
-    /// Julga a configuração por todas as famílias de regra, numa ordem única, contra os cadastros lidos. Só há configuração
+    /// Julga a configuração por todos os assuntos de regra, numa ordem única, contra os cadastros lidos. Só há configuração
     /// apta quando nenhuma causa se acumula; senão a falha traz todas, e a primeira é a que orienta.
     /// </summary>
     public static Result<ConfiguracaoAptaACongelar> Conferir(Guid processoId, ConfiguracaoDeclarada configuracao, CadastrosDaConfiguracao cadastros)

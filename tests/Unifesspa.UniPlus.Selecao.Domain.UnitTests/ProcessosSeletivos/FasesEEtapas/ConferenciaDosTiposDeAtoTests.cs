@@ -108,7 +108,7 @@ public sealed class ConferenciaDosTiposDeAtoTests
     }
 
     [Fact(DisplayName = "Os três itens saem nesta ordem, verdes quando conformes e vermelhos cada um com a sua causa")]
-    public void Itens_TresFamilias_NaOrdemEComACausaDeCada()
+    public void Itens_TresAssuntos_NaOrdemEComACausaDeCada()
     {
         CronogramaDoProcesso conforme = Fases(FaseCom(ProdutoDaFase.Criar("COMUNICADO", null)));
         CronogramaDoProcesso comCausas = Fases(FaseCom(ProdutoDaFase.Criar("RESULTADO_FINAL", null), ProdutoDaFase.Criar("EDITAL", PapelProdutoFase.Preliminar), ProdutoDaFase.Criar("EDITAL", null)));

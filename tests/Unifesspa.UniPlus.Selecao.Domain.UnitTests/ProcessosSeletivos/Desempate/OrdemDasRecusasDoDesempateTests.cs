@@ -11,11 +11,11 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 using Xunit;
 
-/// <summary>As recusas do desempate saem por família, e dentro de cada família na posição do critério na lista.</summary>
+/// <summary>As recusas do desempate saem por assunto, e dentro de cada assunto na posição do critério na lista.</summary>
 public sealed class OrdemDasRecusasDoDesempateTests
 {
-    [Fact(DisplayName = "A ordem repetida do critério 1 vem antes da etapa inexistente do critério 0: a família vem antes da posição")]
-    public void ConferirCriteriosDesempate_OrdemRepetidaEEtapaInexistente_SaiPorFamilia()
+    [Fact(DisplayName = "A ordem repetida do critério 1 vem antes da etapa inexistente do critério 0: o assunto vem antes da posição")]
+    public void ConferirCriteriosDesempate_OrdemRepetidaEEtapaInexistente_SaiPorAssunto()
     {
         ConfiguracaoDeclarada configuracao = ProcessoConformeFactory.Criar().Declaracao();
         Guid etapaInexistente = Guid.CreateVersion7();

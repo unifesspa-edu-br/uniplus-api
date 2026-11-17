@@ -45,7 +45,7 @@ public sealed class ConfiguracaoDistribuicaoVagasResolver(
     /// <summary>
     /// Resolve todas as distribuições do payload, cada uma contra os cadastros, e acumula (ADR-0125) as recusas
     /// de todas: primeiro as de forma, depois as de cadastro, depois as da declaração e por fim as do quadro, e
-    /// dentro de cada família na ordem das ofertas. Só as ofertas sem recusa alguma têm o quadro montado.
+    /// dentro de cada assunto na ordem das ofertas. Só as ofertas sem recusa alguma têm o quadro montado.
     /// </summary>
     internal async Task<Result<IReadOnlyList<ConfiguracaoDistribuicaoVagas>>> ResolverTodasAsync(
         IReadOnlyList<ConfiguracaoDistribuicaoVagasInput> pedidos, CancellationToken cancellationToken)
@@ -77,16 +77,16 @@ public sealed class ConfiguracaoDistribuicaoVagasResolver(
 
     private static List<FieldError> RecusasDeTodasAsOfertas(List<ResolucaoDaDistribuicao> resolucoes) =>
     [
-        .. DaFamilia(resolucoes, static resolucao => resolucao.RecusasDaForma),
-        .. DaFamilia(resolucoes, static resolucao => resolucao.RecusasDoCadastro),
-        .. DaFamilia(resolucoes, static resolucao => resolucao.RecusasDaDeclaracao),
+        .. DoAssunto(resolucoes, static resolucao => resolucao.RecusasDaForma),
+        .. DoAssunto(resolucoes, static resolucao => resolucao.RecusasDoCadastro),
+        .. DoAssunto(resolucoes, static resolucao => resolucao.RecusasDaDeclaracao),
     ];
 
-    private static IEnumerable<FieldError> DaFamilia(
-        List<ResolucaoDaDistribuicao> resolucoes, Func<ResolucaoDaDistribuicao, IReadOnlyList<FieldError>> recusasDaFamilia) =>
-        resolucoes.SelectMany((resolucao, indice) => recusasDaFamilia(resolucao).Select(erro => ComIndice(erro, indice)));
+    private static IEnumerable<FieldError> DoAssunto(
+        List<ResolucaoDaDistribuicao> resolucoes, Func<ResolucaoDaDistribuicao, IReadOnlyList<FieldError>> recusasDoAssunto) =>
+        resolucoes.SelectMany((resolucao, indice) => recusasDoAssunto(resolucao).Select(erro => ComIndice(erro, indice)));
 
-    // O quadro só se monta quando nenhuma das famílias anteriores recusou a oferta.
+    // O quadro só se monta quando nenhum dos assuntos anteriores recusou a oferta.
     private static void MontarDaOferta(
         ResolucaoDaDistribuicao resolucao, int indice, List<ConfiguracaoDistribuicaoVagas> distribuicoes, List<FieldError> recusas)
     {

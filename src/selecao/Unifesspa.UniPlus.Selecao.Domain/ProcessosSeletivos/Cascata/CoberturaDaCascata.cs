@@ -15,7 +15,7 @@ public static class CoberturaDaCascata
 {
     /// <summary>
     /// Todas as causas de cobertura da cascata de remanejamento, com erro nomeado. Pública porque a conferência da configuração
-    /// a avalia depois das famílias do cronograma. Cada oferta e cada destino deixam de ser avaliados só no que lê o dado
+    /// a avalia depois dos assuntos do cronograma. Cada oferta e cada destino deixam de ser avaliados só no que lê o dado
     /// que a própria regra recusou: sem cascata não se avaliam o fallback nem as origens, e a origem sem destino declarado
     /// não tem destino a resolver na oferta.
     /// </summary>

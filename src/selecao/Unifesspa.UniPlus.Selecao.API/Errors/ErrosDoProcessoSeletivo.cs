@@ -8,7 +8,7 @@ using Unifesspa.UniPlus.Selecao.Domain.Errors;
 
 /// <summary>
 /// Recusas do acesso ao processo, dos catálogos de apoio e da configuração base do processo seletivo. As da
-/// etapa e as dos formulários vêm das famílias próprias; a ordem vale, porque o registro global guarda o último
+/// etapa e as dos formulários vêm dos assuntos próprios; a ordem vale, porque o registro global guarda o último
 /// mapeamento de um código repetido.
 /// </summary>
 internal static class ErrosDoProcessoSeletivo

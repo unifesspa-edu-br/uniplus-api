@@ -12,7 +12,7 @@ using Xunit;
 using static Unifesspa.UniPlus.Selecao.Domain.UnitTests.Entities.ApoioProcessoSeletivoCronograma;
 
 /// <summary>
-/// A gravação das etapas acumula as causas de todas as famílias (ADR-0125): o conjunto, a fase que a etapa declara, a janela
+/// A gravação das etapas acumula as causas de todos os assuntos (ADR-0125): o conjunto, a fase que a etapa declara, a janela
 /// dentro da fase e o fechamento do ciclo. A janela de uma etapa só se confere quando a fase dela existe, e a fase inexistente de uma
 /// etapa não impede avaliar a das outras.
 /// </summary>

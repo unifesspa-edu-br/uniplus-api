@@ -44,8 +44,8 @@ public sealed class CompletudeDoCronogramaTests
                 ("fases[1].unidadeResponsavel", "ProcessoSeletivo.FaseSemUnidadeResponsavel"));
     }
 
-    [Fact(DisplayName = "As famílias saem na ordem: janela da inscrição, unidade e isenção")]
-    public void ConferirCompletude_VariasFamilias_SaemNaOrdemDasFamilias()
+    [Fact(DisplayName = "Os assuntos saem na ordem: janela da inscrição, unidade e isenção")]
+    public void ConferirCompletude_VariosAssuntos_SaemNaOrdemDosAssuntos()
     {
         Completude(
             new ModeloDeFase("ISENCAO", 2) { ColetaSolicitacaoIsencao = true, ComUnidade = false }.Janela(0, 1).Declarar(),

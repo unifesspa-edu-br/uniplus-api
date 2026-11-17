@@ -11,7 +11,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
-/// As fases e as etapas declaradas com defeito em cada campo que a conferência localiza, para as famílias lerem o conjunto como
+/// As fases e as etapas declaradas com defeito em cada campo que a conferência localiza, para os assuntos lerem o conjunto como
 /// ele chegou: cada declaração recusada leva a causa ao campo dela, e o conjunto recusa a repetição, a ausência e o vínculo.
 /// </summary>
 internal static class DeclaracoesComDefeitoParaOEsquema

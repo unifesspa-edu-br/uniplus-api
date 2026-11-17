@@ -15,37 +15,37 @@ using Unifesspa.UniPlus.Selecao.Domain.ProcessosSeletivos.Recursos;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
 /// <summary>
-/// Todas as causas que impedem congelar a configuração, na ordem única das famílias de regra e, dentro de cada uma, na posição
-/// de entrada (ADR-0125). Cada família devolve todas as suas causas: só deixa de avaliar a regra que lê o dado que outra
+/// Todas as causas que impedem congelar a configuração, na ordem única dos assuntos de regra e, dentro de cada um, na posição
+/// de entrada (ADR-0125). Cada assunto devolve todas as suas causas: só deixa de avaliar a regra que lê o dado que outra
 /// recusou, e isso vive dentro da regra que o lê. As regras falam o nome do corpo do pedido, e a conversão do campo no ponteiro do
-/// documento da configuração (<see cref="PonteiroNoDocumento"/>) é de quem entrega as causas ao cliente. A família das
+/// documento da configuração (<see cref="PonteiroNoDocumento"/>) é de quem entrega as causas ao cliente. O assunto das
 /// declarações traz também as partes que a leitura recusou (<see cref="OrigemNoDocumento.PartesRecusadas"/>), na ordem em que o
 /// documento as traz.
 /// </summary>
 internal static class CausasQueImpedemCongelar
 {
-    /// <summary>As famílias de regra na ordem única da conferência: cada uma devolve todas as suas causas.</summary>
-    internal static IReadOnlyList<FamiliaDeCausas> Familias { get; } =
+    /// <summary>Os assuntos de regra na ordem única da conferência: cada um devolve todas as suas causas.</summary>
+    internal static IReadOnlyList<AssuntoDaConferencia> Assuntos { get; } =
     [
-        new(NomeDaFamilia.Identificacao, static c => Identificacao(c.Configuracao, c.Cadastros.ContagemDePrazos)),
-        new(NomeDaFamilia.Conformidade, static c => ChecklistDeConformidade.CausasDeConformidade(c.Configuracao)),
-        new(NomeDaFamilia.Declaracoes, static c => Declaracoes(c.Configuracao.Origem, c.Cronograma, c.Etapas)),
-        new(NomeDaFamilia.Conjunto, static c => Conjunto(c.Cronograma, c.Etapas)),
-        new(NomeDaFamilia.Completude, static c => Completude(c.Configuracao, c.Cronograma, c.Etapas, c.Cadastros.ContagemDePrazos)),
-        new(NomeDaFamilia.Recursos, static c => Recursos(c.Configuracao)),
-        new(NomeDaFamilia.Bancas, static c => Bancas(c.Cronograma, c.Etapas, c.Cadastros.Corretores)),
-        new(NomeDaFamilia.CorrecaoIndependente, static c => CorrecaoIndependente(c.Configuracao, c.Cadastros.Corretores)),
-        new(NomeDaFamilia.TiposDeAto, static c => TiposDeAto(c.Cronograma, c.Etapas, c.Cadastros.TiposDeAtoUnicos)),
-        new(NomeDaFamilia.Cascata, static c => CausasDaRecusa.NoCampo(CoberturaDaCascata.CausasDaCascata(c.Configuracao), "cascataRemanejamento")),
-        new(NomeDaFamilia.CondicoesDaCanonicalizacao, static c => CondicoesDaCanonicalizacao.Causas(c.Configuracao, c.Cadastros)),
-        new(NomeDaFamilia.MotivosDeDecisao, static c => MotivosDasDecisoes(c.Configuracao, c.Cadastros.MotivosEscolhidos)),
+        new(NomeDoAssunto.Identificacao, static c => Identificacao(c.Configuracao, c.Cadastros.ContagemDePrazos)),
+        new(NomeDoAssunto.Conformidade, static c => ChecklistDeConformidade.CausasDeConformidade(c.Configuracao)),
+        new(NomeDoAssunto.Declaracoes, static c => Declaracoes(c.Configuracao.Origem, c.Cronograma, c.Etapas)),
+        new(NomeDoAssunto.Conjunto, static c => Conjunto(c.Cronograma, c.Etapas)),
+        new(NomeDoAssunto.Completude, static c => Completude(c.Configuracao, c.Cronograma, c.Etapas, c.Cadastros.ContagemDePrazos)),
+        new(NomeDoAssunto.Recursos, static c => Recursos(c.Configuracao)),
+        new(NomeDoAssunto.Bancas, static c => Bancas(c.Cronograma, c.Etapas, c.Cadastros.Corretores)),
+        new(NomeDoAssunto.CorrecaoIndependente, static c => CorrecaoIndependente(c.Configuracao, c.Cadastros.Corretores)),
+        new(NomeDoAssunto.TiposDeAto, static c => TiposDeAto(c.Cronograma, c.Etapas, c.Cadastros.TiposDeAtoUnicos)),
+        new(NomeDoAssunto.Cascata, static c => CausasDaRecusa.NoCampo(CoberturaDaCascata.CausasDaCascata(c.Configuracao), "cascataRemanejamento")),
+        new(NomeDoAssunto.CondicoesDaCanonicalizacao, static c => CondicoesDaCanonicalizacao.Causas(c.Configuracao, c.Cadastros)),
+        new(NomeDoAssunto.MotivosDeDecisao, static c => MotivosDasDecisoes(c.Configuracao, c.Cadastros.MotivosEscolhidos)),
     ];
 
     internal static IReadOnlyList<FieldError> De(ConfiguracaoDeclarada configuracao, CadastrosDaConfiguracao cadastros) =>
         De(ContextoDaConferencia.De(configuracao, cadastros));
 
     internal static IReadOnlyList<FieldError> De(ContextoDaConferencia contexto) =>
-        [.. Familias.SelectMany(familia => familia.Causas(contexto))];
+        [.. Assuntos.SelectMany(assunto => assunto.Causas(contexto))];
 
     private static IEnumerable<FieldError> Identificacao(ConfiguracaoDeclarada configuracao, ContextoDeContagemDePrazos contexto) =>
     [

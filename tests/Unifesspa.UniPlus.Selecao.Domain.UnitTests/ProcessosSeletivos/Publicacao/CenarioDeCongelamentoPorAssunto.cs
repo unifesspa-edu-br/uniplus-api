@@ -28,9 +28,9 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 
 /// <summary>
 /// Um processo conforme, em qualquer das duas transições que congelam, ao qual se aplica o defeito característico de cada
-/// família da conferência, pelo nome da família. O defeito de uma família não toca o das outras.
+/// assunto da conferência, pelo nome do assunto. O defeito de um assunto não toca o dos outros.
 /// </summary>
-internal sealed class CenarioDeCongelamentoPorFamilia
+internal sealed class CenarioDeCongelamentoPorAssunto
 {
     private const string Algoritmo = "canonical-json/sha256@v1";
     private const string ResultadoClassificacao = "RESULTADO_CLASSIFICACAO";
@@ -55,7 +55,7 @@ internal sealed class CenarioDeCongelamentoPorFamilia
     private CorretoresDasEtapas? _corretores;
     private MotivosEscolhidos? _motivos;
 
-    private CenarioDeCongelamentoPorFamilia(
+    private CenarioDeCongelamentoPorAssunto(
         ProcessoSeletivo processo,
         Func<ContextoDeContagemDePrazos, TiposDeAtoUnicosPorObjeto, CorretoresDasEtapas?, MotivosEscolhidos?, Result<VersaoConfiguracao>> transicao,
         int versaoQueNasce)
@@ -65,10 +65,10 @@ internal sealed class CenarioDeCongelamentoPorFamilia
         _transicao = transicao;
     }
 
-    /// <summary>O nome de cada família que o cenário sabe quebrar: tem de ser as mesmas da conferência.</summary>
-    internal static IEnumerable<string> FamiliasQueSabeQuebrar => Defeitos.Keys;
+    /// <summary>O nome de cada assunto que o cenário sabe quebrar: tem de ser os mesmos da conferência.</summary>
+    internal static IEnumerable<string> AssuntosQueSabeQuebrar => Defeitos.Keys;
 
-    internal static CenarioDeCongelamentoPorFamilia Para(string transicao)
+    internal static CenarioDeCongelamentoPorAssunto Para(string transicao)
     {
         ProcessoSeletivo processo = ProcessoBase();
 
@@ -79,20 +79,20 @@ internal sealed class CenarioDeCongelamentoPorFamilia
         };
     }
 
-    /// <summary>Quebra as famílias e congela: o resultado é o que a transição devolve.</summary>
-    internal Result<VersaoConfiguracao> Congelar(IReadOnlySet<string> familiasComDefeito)
+    /// <summary>Quebra os assuntos e congela: o resultado é o que a transição devolve.</summary>
+    internal Result<VersaoConfiguracao> Congelar(IReadOnlySet<string> assuntosComDefeito)
     {
-        Quebrar(familiasComDefeito);
+        Quebrar(assuntosComDefeito);
 
         return _transicao(_contagem, _tipos, _corretores, _motivos);
     }
 
-    /// <summary>Aplica o defeito característico de cada família informada, sem congelar.</summary>
-    internal void Quebrar(IReadOnlySet<string> familias)
+    /// <summary>Aplica o defeito característico de cada assunto informado, sem congelar.</summary>
+    internal void Quebrar(IReadOnlySet<string> assuntos)
     {
-        foreach (string familia in familias)
+        foreach (string assunto in assuntos)
         {
-            Defeitos[familia].Aplicar(this);
+            Defeitos[assunto].Aplicar(this);
         }
     }
 
@@ -100,18 +100,18 @@ internal sealed class CenarioDeCongelamentoPorFamilia
     internal IReadOnlyList<ItemConformidade> Painel() =>
         ChecklistDeConformidade.AvaliarConformidade(_processo.Declaracao(), Cadastros());
 
-    /// <summary>As causas de cada família, na ordem da conferência e com o campo como a regra o emite, sobre o processo como ele está.</summary>
-    internal IReadOnlyList<(string Familia, IReadOnlyList<FieldError> Causas)> CausasPorFamilia()
+    /// <summary>As causas de cada assunto, na ordem da conferência e com o campo como a regra o emite, sobre o processo como ele está.</summary>
+    internal IReadOnlyList<(string Assunto, IReadOnlyList<FieldError> Causas)> CausasPorAssunto()
     {
         ContextoDaConferencia contexto = ContextoDaConferencia.De(_processo.Declaracao(), Cadastros());
 
-        return [.. CausasQueImpedemCongelar.Familias.Select(familia => (familia.Nome, (IReadOnlyList<FieldError>)[.. familia.Causas(contexto)]))];
+        return [.. CausasQueImpedemCongelar.Assuntos.Select(assunto => (assunto.Nome, (IReadOnlyList<FieldError>)[.. assunto.Causas(contexto)]))];
     }
 
-    /// <summary>As causas que a conferência devolve ao cliente, com o campo no ponteiro do documento, sobre o processo como ele está, depois de aplicar os defeitos das famílias.</summary>
-    internal IReadOnlyList<FieldError> CausasDaConferencia(IReadOnlySet<string> familiasComDefeito)
+    /// <summary>As causas que a conferência devolve ao cliente, com o campo no ponteiro do documento, sobre o processo como ele está, depois de aplicar os defeitos dos assuntos.</summary>
+    internal IReadOnlyList<FieldError> CausasDaConferencia(IReadOnlySet<string> assuntosComDefeito)
     {
-        Quebrar(familiasComDefeito);
+        Quebrar(assuntosComDefeito);
 
         return PonteiroNoDocumento.Converter(ConfiguracaoAptaACongelar.Conferir(_processo.Id, _processo.Declaracao(), Cadastros()).Errors, OrigemNoDocumento.Identidade);
     }
@@ -119,29 +119,29 @@ internal sealed class CenarioDeCongelamentoPorFamilia
     private CadastrosDaConfiguracao Cadastros() =>
         CadastrosDeTeste.Com(contagemDePrazos: _contagem, tiposDeAtoUnicos: _tipos, corretores: _corretores ?? CorretoresDeTeste.DoProcesso(_processo), motivosEscolhidos: _motivos);
 
-    private sealed record Defeito(Action<CenarioDeCongelamentoPorFamilia> Aplicar);
+    private sealed record Defeito(Action<CenarioDeCongelamentoPorAssunto> Aplicar);
 
     private static readonly Dictionary<string, Defeito> Defeitos = new(StringComparer.Ordinal)
     {
-        [NomeDaFamilia.Identificacao] = new(static c =>
+        [NomeDoAssunto.Identificacao] = new(static c =>
         {
             Definir(c._processo, nameof(ProcessoSeletivo.IdentificadorLegivel), null);
             Definir(c._processo, nameof(ProcessoSeletivo.Localidade), null);
             Definir(c._processo, nameof(ProcessoSeletivo.AlgoritmoContagemPrazo), null);
             c._contagem = ContextoDeContagemDePrazos.SemCalendario;
         }),
-        [NomeDaFamilia.Conformidade] = new(static c => Definir(c._processo, nameof(ProcessoSeletivo.ConfiguracaoTaxaInscricao), null)),
-        [NomeDaFamilia.Declaracoes] = new(static c => ProcessoCarregadoDoBanco.Fase(c._processo, FaseComJanelaInvertida())),
-        [NomeDaFamilia.Conjunto] = new(static c => ProcessoCarregadoDoBanco.Etapa(
+        [NomeDoAssunto.Conformidade] = new(static c => Definir(c._processo, nameof(ProcessoSeletivo.ConfiguracaoTaxaInscricao), null)),
+        [NomeDoAssunto.Declaracoes] = new(static c => ProcessoCarregadoDoBanco.Fase(c._processo, FaseComJanelaInvertida())),
+        [NomeDoAssunto.Conjunto] = new(static c => ProcessoCarregadoDoBanco.Etapa(
             c._processo, EtapaDeProva("Outra prova", c._processo.Etapas.First().Ordem ?? 1, c._processo.Etapas.First().FaseCodigo))),
-        [NomeDaFamilia.Completude] = new(static c => ProcessoCarregadoDoBanco.Etapa(c._processo, EtapaDeProva("Prova sem fase", 60, null))),
-        [NomeDaFamilia.Recursos] = new(static c => ProcessoCarregadoDoBanco.ComTipoDeDecisao(c.FaseDoRecurso(), TipoMotivoDeDecisaoCodigo.Classificacao)),
-        [NomeDaFamilia.Bancas] = new(static c => ProcessoCarregadoDoBanco.SemBancasRequeridas(c.FaseDoRecurso())),
-        [NomeDaFamilia.CorrecaoIndependente] = new(static c => c.ComEtapaDeUmSoCorretor()),
-        [NomeDaFamilia.TiposDeAto] = new(static c => c._tipos = Tipos(unico: true, resultadoSemPapel: true, congelaComPapel: true)),
-        [NomeDaFamilia.Cascata] = new(static c => c.ComModalidadeQueSegueACascataSemCascata()),
-        [NomeDaFamilia.CondicoesDaCanonicalizacao] = new(static c => Definir(c._processo.DocumentosExigidos.Single(), nameof(DocumentoExigido.Aplicabilidade), Aplicabilidade.Condicional)),
-        [NomeDaFamilia.MotivosDeDecisao] = new(static c => c.ComMotivoDesativadoNaInscricao()),
+        [NomeDoAssunto.Completude] = new(static c => ProcessoCarregadoDoBanco.Etapa(c._processo, EtapaDeProva("Prova sem fase", 60, null))),
+        [NomeDoAssunto.Recursos] = new(static c => ProcessoCarregadoDoBanco.ComTipoDeDecisao(c.FaseDoRecurso(), TipoMotivoDeDecisaoCodigo.Classificacao)),
+        [NomeDoAssunto.Bancas] = new(static c => ProcessoCarregadoDoBanco.SemBancasRequeridas(c.FaseDoRecurso())),
+        [NomeDoAssunto.CorrecaoIndependente] = new(static c => c.ComEtapaDeUmSoCorretor()),
+        [NomeDoAssunto.TiposDeAto] = new(static c => c._tipos = Tipos(unico: true, resultadoSemPapel: true, congelaComPapel: true)),
+        [NomeDoAssunto.Cascata] = new(static c => c.ComModalidadeQueSegueACascataSemCascata()),
+        [NomeDoAssunto.CondicoesDaCanonicalizacao] = new(static c => Definir(c._processo.DocumentosExigidos.Single(), nameof(DocumentoExigido.Aplicabilidade), Aplicabilidade.Condicional)),
+        [NomeDoAssunto.MotivosDeDecisao] = new(static c => c.ComMotivoDesativadoNaInscricao()),
     };
 
     // Sem natureza legal declarada, o remanejamento que segue a cascata não destoa dela: só a cobertura da cascata recusa.
@@ -293,7 +293,7 @@ internal sealed class CenarioDeCongelamentoPorFamilia
         return processo;
     }
 
-    private static CenarioDeCongelamentoPorFamilia Retificando(ProcessoSeletivo processo)
+    private static CenarioDeCongelamentoPorAssunto Retificando(ProcessoSeletivo processo)
     {
         VersaoConfiguracao versao = Publicada(processo);
 

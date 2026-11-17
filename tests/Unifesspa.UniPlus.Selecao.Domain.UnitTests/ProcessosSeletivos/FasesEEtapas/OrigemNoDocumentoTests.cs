@@ -14,7 +14,7 @@ using Xunit;
 
 /// <summary>
 /// A origem liga a posição canônica de cada item da declaração à posição dele no documento recebido e guarda as partes que a
-/// leitura recusou; a declaração que vem da raiz tem a identidade, e a família das declarações entrega as partes recusadas.
+/// leitura recusou; a declaração que vem da raiz tem a identidade, e o assunto das declarações entrega as partes recusadas.
 /// </summary>
 public sealed class OrigemNoDocumentoTests
 {
@@ -97,8 +97,8 @@ public sealed class OrigemNoDocumentoTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new ParteRecusada("etapas", null, -1, causa));
     }
 
-    [Fact(DisplayName = "A família das declarações entrega as partes recusadas na ordem em que o documento as traz, com a causa como ponteiro")]
-    public void FamiliaDasDeclaracoes_EntregaAsPartesRecusadasNaOrdemDeEntrada()
+    [Fact(DisplayName = "O assunto das declarações entrega as partes recusadas na ordem em que o documento as traz, com a causa como ponteiro")]
+    public void AssuntoDasDeclaracoes_EntregaAsPartesRecusadasNaOrdemDeEntrada()
     {
         FieldError[] daLeitura =
         [
@@ -122,10 +122,10 @@ public sealed class OrigemNoDocumentoTests
         };
 
     private static IReadOnlyList<FieldError> DeclaracoesDe(ContextoDaConferencia contexto) =>
-        [.. CausasQueImpedemCongelar.Familias.Single(static familia => familia.Nome == NomeDaFamilia.Declaracoes).Causas(contexto)];
+        [.. CausasQueImpedemCongelar.Assuntos.Single(static assunto => assunto.Nome == NomeDoAssunto.Declaracoes).Causas(contexto)];
 
-    [Fact(DisplayName = "A família das declarações sem parte recusada entrega só as recusas das declarações que ficaram")]
-    public void FamiliaDasDeclaracoes_SemParteRecusada_EntregaSoAsRecusasDasDeclaracoes()
+    [Fact(DisplayName = "O assunto das declarações sem parte recusada entrega só as recusas das declarações que ficaram")]
+    public void AssuntoDasDeclaracoes_SemParteRecusada_EntregaSoAsRecusasDasDeclaracoes()
     {
         ContextoDaConferencia contexto = DeclaracoesComDefeitoParaOEsquema.ContextoComTodosOsDefeitos();
 

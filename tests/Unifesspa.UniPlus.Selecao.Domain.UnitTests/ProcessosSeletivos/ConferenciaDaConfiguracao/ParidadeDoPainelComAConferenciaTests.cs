@@ -52,40 +52,40 @@ public sealed class ParidadeDoPainelComAConferenciaTests
         causas.Should().Equal(pendentes.Select(static pendente => ((string?)pendente.Codigo, pendente.Bloco)));
     }
 
-    [Theory(DisplayName = "Com defeito só numa família, os itens do painel pendentes são exatamente os dessa família, e os das demais ficam conformes")]
-    [MemberData(nameof(FamiliasDoPainel))]
-    public void FamiliaComDefeito_PendeSoOsItensDaFamiliaNoPainel(string familia)
+    [Theory(DisplayName = "Com defeito só num assunto, os itens do painel pendentes são exatamente os desse assunto, e os dos demais ficam conformes")]
+    [MemberData(nameof(AssuntosDoPainel))]
+    public void AssuntoComDefeito_PendeSoOsItensDoAssuntoNoPainel(string assunto)
     {
-        CenarioDeCongelamentoPorFamilia comDefeito = CenarioDeCongelamentoPorFamilia.Para("Publicar");
-        comDefeito.Quebrar(new HashSet<string> { familia });
+        CenarioDeCongelamentoPorAssunto comDefeito = CenarioDeCongelamentoPorAssunto.Para("Publicar");
+        comDefeito.Quebrar(new HashSet<string> { assunto });
 
-        comDefeito.CausasPorFamilia().Single(daFamilia => daFamilia.Familia == familia).Causas.Should().NotBeEmpty();
-        comDefeito.CausasPorFamilia().Where(daFamilia => daFamilia.Familia != familia).Should().OnlyContain(static daFamilia => daFamilia.Causas.Count == 0);
-        comDefeito.Painel().Where(static item => !item.Ok).Select(static item => item.Codigo).Should().BeEquivalentTo(ItensPendentesPorFamilia[familia]);
-        CenarioDeCongelamentoPorFamilia.Para("Publicar").Painel().Should().OnlyContain(static item => item.Ok);
+        comDefeito.CausasPorAssunto().Single(doAssunto => doAssunto.Assunto == assunto).Causas.Should().NotBeEmpty();
+        comDefeito.CausasPorAssunto().Where(doAssunto => doAssunto.Assunto != assunto).Should().OnlyContain(static doAssunto => doAssunto.Causas.Count == 0);
+        comDefeito.Painel().Where(static item => !item.Ok).Select(static item => item.Codigo).Should().BeEquivalentTo(ItensPendentesPorAssunto[assunto]);
+        CenarioDeCongelamentoPorAssunto.Para("Publicar").Painel().Should().OnlyContain(static item => item.Ok);
     }
 
-    [Fact(DisplayName = "A família de conformidade por item tem uma causa para cada item pendente do painel, com o mesmo código e o bloco da dimensão dele")]
-    public void FamiliaDeConformidade_TemUmaCausaPorItemPendenteNoMesmoBloco()
+    [Fact(DisplayName = "O assunto de conformidade por item tem uma causa para cada item pendente do painel, com o mesmo código e o bloco da dimensão dele")]
+    public void AssuntoDeConformidade_TemUmaCausaPorItemPendenteNoMesmoBloco()
     {
-        CenarioDeCongelamentoPorFamilia comDefeito = CenarioDeCongelamentoPorFamilia.Para("Publicar");
+        CenarioDeCongelamentoPorAssunto comDefeito = CenarioDeCongelamentoPorAssunto.Para("Publicar");
         comDefeito.Quebrar(new HashSet<string> { "Conformidade" });
 
         (string Codigo, string Bloco)[] doPainel =
             [.. comDefeito.Painel().Where(static item => !item.Ok).Select(static item => (item.Codigo, DimensaoConformidade.BlocoDoDocumento(item.Dimensao)))];
         (string? Origem, string? Campo)[] dasCausas =
-            [.. comDefeito.CausasPorFamilia().Single(static daFamilia => daFamilia.Familia == "Conformidade").Causas.Select(static causa => (causa.Origem, causa.Field))];
+            [.. comDefeito.CausasPorAssunto().Single(static doAssunto => doAssunto.Assunto == "Conformidade").Causas.Select(static causa => (causa.Origem, causa.Field))];
 
         dasCausas.Should().Equal(doPainel.Select(static item => ((string?)item.Codigo, (string?)item.Bloco)));
     }
 
-    [Fact(DisplayName = "O catálogo de itens pendentes por família cobre exatamente as famílias da conferência")]
-    public void ItensPendentesPorFamilia_CobremAsFamiliasDaConferencia() =>
-        ItensPendentesPorFamilia.Keys.Should().BeEquivalentTo(CausasQueImpedemCongelar.Familias.Select(static familia => familia.Nome));
+    [Fact(DisplayName = "O catálogo de itens pendentes por assunto cobre exatamente os assuntos da conferência")]
+    public void ItensPendentesPorAssunto_CobremOsAssuntosDaConferencia() =>
+        ItensPendentesPorAssunto.Keys.Should().BeEquivalentTo(CausasQueImpedemCongelar.Assuntos.Select(static assunto => assunto.Nome));
 
-    public static TheoryData<string> FamiliasDoPainel => [.. ItensPendentesPorFamilia.Keys];
+    public static TheoryData<string> AssuntosDoPainel => [.. ItensPendentesPorAssunto.Keys];
 
-    private static readonly Dictionary<string, string[]> ItensPendentesPorFamilia = new(StringComparer.Ordinal)
+    private static readonly Dictionary<string, string[]> ItensPendentesPorAssunto = new(StringComparer.Ordinal)
     {
         ["Identificacao"] = ["identificador_legivel_nao_declarado", "localidade_nao_declarada", "algoritmo_contagem_prazo_nao_declarado", "calendario_vigente_ausente"],
         ["Conformidade"] = ["taxa_inscricao_nao_declarada"],
