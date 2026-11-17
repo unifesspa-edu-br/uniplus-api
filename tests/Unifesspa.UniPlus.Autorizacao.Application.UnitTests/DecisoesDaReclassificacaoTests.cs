@@ -133,7 +133,7 @@ public sealed class DecisoesDaReclassificacaoTests
                 new OperacaoSobreOPerfil(new PerfisNaMemoria([perfil]), Unidade, tempo),
                 Reclassificacoes,
                 new ConcessoesDaReclassificacao(Reclassificacoes),
-                new AutorizacaoDaReclassificacao(new AutoriaDaOperacao(new Usuario(ator), tempo, new ConcessoesNaMemoria())));
+                new AutoriaDaOperacao(new Usuario(ator), tempo, new ConcessoesNaMemoria()));
         }
 
         public Concessao Concessao { get; }
