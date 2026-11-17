@@ -1,11 +1,7 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 
 /// <summary>
 /// Handler do <see cref="RemoverUnidadeCommand"/>. Executa soft-delete via
@@ -14,64 +10,29 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 /// </summary>
 /// <remarks>
 /// O bloqueio por <c>instituicao.unidade_raiz_id</c> preserva a integridade do
-/// vínculo da Instituição com a reitoria (issue #585): uma Unidade referenciada
+/// vínculo da Instituição com a reitoria: uma Unidade referenciada
 /// como raiz não pode ser removida enquanto a Instituição viva apontar para ela.
+/// A conferência é de <see cref="ConferenciaDoCadastroDaUnidade"/> e a gravação, de <see cref="GravacaoDaUnidade"/>.
 /// </remarks>
 public static class RemoverUnidadeCommandHandler
 {
     public static async Task<Result> Handle(
         RemoverUnidadeCommand command,
-        IUnidadeRepository repository,
-        IInstituicaoRepository instituicaoRepository,
-        IUnitOfWork unitOfWork,
-        IUnidadeCacheInvalidator cacheInvalidator,
+        ConferenciaDoCadastroDaUnidade conferencia,
+        GravacaoDaUnidade gravacao,
         CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(command);
-        ArgumentNullException.ThrowIfNull(repository);
-        ArgumentNullException.ThrowIfNull(instituicaoRepository);
-        ArgumentNullException.ThrowIfNull(unitOfWork);
-        ArgumentNullException.ThrowIfNull(cacheInvalidator);
+        ArgumentNullException.ThrowIfNull(conferencia);
+        ArgumentNullException.ThrowIfNull(gravacao);
 
-        Unidade? unidade = await repository.ObterPorIdAsync(command.Id, cancellationToken).ConfigureAwait(false);
-        if (unidade is null)
+        Result<Unidade> conferida = await conferencia.ConferirRemocaoAsync(command.Id, cancellationToken).ConfigureAwait(false);
+        if (conferida.IsFailure)
         {
-            return Result.Failure(new DomainError(
-                UnidadeErrorCodes.NaoEncontrada,
-                "Unidade não encontrada."));
+            return Result.ValidationFailure(conferida.Errors);
         }
 
-        if (await repository.PossuiSubordinadasVivasAsync(command.Id, cancellationToken).ConfigureAwait(false))
-        {
-            return Result.Failure(new DomainError(
-                UnidadeErrorCodes.RemocaoBloqueadaPorSubordinadas,
-                "Não é possível remover uma Unidade que possui unidades subordinadas ativas."));
-        }
-
-        // NOTA: checagem check-then-act, simétrica à de PossuiSubordinadasVivasAsync
-        // acima. Sob concorrência (remoção desta Unidade × criação/edição de uma
-        // Instituição que a escolhe como raiz) a checagem pode ver `false` antes do
-        // commit da Instituição, e como a remoção é soft-delete a FK Restrict não
-        // barra o estado final (Instituição viva → Unidade removida). A serialização
-        // estrita (lock/isolamento serializável) é controle de concorrência
-        // cross-cutting comum a todos os cadastros — front separado, não desta Story.
-        if (await instituicaoRepository.ExisteComUnidadeRaizAsync(command.Id, cancellationToken).ConfigureAwait(false))
-        {
-            return Result.Failure(new DomainError(
-                UnidadeErrorCodes.RemocaoBloqueadaPorInstituicao,
-                "Não é possível remover uma Unidade que é raiz de uma Instituição."));
-        }
-
-        // SoftDeleteInterceptor converte EntityState.Deleted em soft-delete
-        // (Unidade é ISoftDeletable), preenchendo DeletedBy/DeletedAt a partir de
-        // IUserContext + TimeProvider. O Historico carregado por ObterPorIdAsync
-        // NÃO é cascateado (FK Restrict, issue #629): a trilha append-only de
-        // identificadores é preservada mesmo no soft-delete da Unidade.
-        repository.Remover(unidade);
-
-        await unitOfWork.SalvarAlteracoesAsync(cancellationToken).ConfigureAwait(false);
-        await cacheInvalidator.InvalidarAsync(cancellationToken).ConfigureAwait(false);
-
+        await gravacao.GravarRemocaoAsync(conferida.Value!, cancellationToken).ConfigureAwait(false);
         return Result.Success();
     }
 }

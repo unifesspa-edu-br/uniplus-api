@@ -4,109 +4,42 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class RemoverUnidadeCommandHandlerTests
 {
-    private static Unidade CriarUnidade() =>
-        Unidade.Criar(
-            "Centro de Processos Seletivos",
-            new IdentificadoresDaUnidade("ceps", "CEPS", "0001", null),
-            CidadeDaUnidade.Nenhuma,
-            new VigenciaDaUnidade(new DateOnly(2026, 1, 1), null),
-            null,
-            TipoUnidade.Centro,
-            false).Value!;
+    private readonly CadastroDeUnidadeSimulado _cadastro = new();
 
-    [Fact(DisplayName = "Handle com unidade válida e sem subordinadas remove e invalida cache")]
-    public async Task Handle_ComUnidadeValida_RemoveEInvalidaCache()
+    private Task<Result> RemoverAsync(Guid id) =>
+        RemoverUnidadeCommandHandler.Handle(
+            new RemoverUnidadeCommand(id), _cadastro.Conferencia, _cadastro.Gravacao, CancellationToken.None);
+
+    [Fact(DisplayName = "Conferência recusada devolve a recusa sem remover nem tocar a unidade de trabalho")]
+    public async Task ConferenciaRecusada_NaoRemove()
     {
-        IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IInstituicaoRepository instituicaoRepo = Substitute.For<IInstituicaoRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
+        Result resultado = await RemoverAsync(Guid.NewGuid());
 
-        Unidade unidade = CriarUnidade();
-        repo.ObterPorIdAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(unidade);
-        repo.PossuiSubordinadasVivasAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(false);
-        instituicaoRepo.ExisteComUnidadeRaizAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(false);
+        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.NaoEncontrada);
+        _cadastro.Unidades.DidNotReceive().Remover(Arg.Any<Unidade>());
+        _cadastro.UnitOfWork.ReceivedCalls().Should().BeEmpty();
+        _cadastro.Cache.ReceivedCalls().Should().BeEmpty();
+    }
 
-        Result resultado = await RemoverUnidadeCommandHandler.Handle(
-            new RemoverUnidadeCommand(unidade.Id), repo, instituicaoRepo, uow, cache, CancellationToken.None);
+    [Fact(DisplayName = "Conferência aceita remove, salva, invalida o cache e devolve sucesso")]
+    public async Task ConferenciaAceita_RemoveEInvalida()
+    {
+        Unidade unidade = _cadastro.UnidadeCadastrada();
+
+        Result resultado = await RemoverAsync(unidade.Id);
 
         resultado.IsSuccess.Should().BeTrue();
-        repo.Received(1).Remover(unidade);
-        await uow.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        await cache.Received(1).InvalidarAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com unidade inexistente retorna NaoEncontrada e NÃO persiste")]
-    public async Task Handle_ComUnidadeInexistente_RetornaNaoEncontrada()
-    {
-        IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IInstituicaoRepository instituicaoRepo = Substitute.For<IInstituicaoRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
-        repo.ObterPorIdAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>()).Returns((Unidade?)null);
-
-        Result resultado = await RemoverUnidadeCommandHandler.Handle(
-            new RemoverUnidadeCommand(Guid.NewGuid()), repo, instituicaoRepo, uow, cache, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.NaoEncontrada);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        await cache.DidNotReceive().InvalidarAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com subordinadas vivas retorna RemocaoBloqueadaPorSubordinadas e NÃO persiste")]
-    public async Task Handle_ComSubordinadasVivas_RetornaBloqueio()
-    {
-        IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IInstituicaoRepository instituicaoRepo = Substitute.For<IInstituicaoRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
-
-        Unidade unidade = CriarUnidade();
-        repo.ObterPorIdAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(unidade);
-        repo.PossuiSubordinadasVivasAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(true);
-
-        Result resultado = await RemoverUnidadeCommandHandler.Handle(
-            new RemoverUnidadeCommand(unidade.Id), repo, instituicaoRepo, uow, cache, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.RemocaoBloqueadaPorSubordinadas);
-        repo.DidNotReceive().Remover(Arg.Any<Unidade>());
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com unidade que é raiz de Instituição viva retorna RemocaoBloqueadaPorInstituicao e NÃO persiste")]
-    public async Task Handle_ComUnidadeRaizDeInstituicao_RetornaBloqueio()
-    {
-        IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IInstituicaoRepository instituicaoRepo = Substitute.For<IInstituicaoRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
-
-        Unidade unidade = CriarUnidade();
-        repo.ObterPorIdAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(unidade);
-        repo.PossuiSubordinadasVivasAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(false);
-        instituicaoRepo.ExisteComUnidadeRaizAsync(unidade.Id, Arg.Any<CancellationToken>()).Returns(true);
-
-        Result resultado = await RemoverUnidadeCommandHandler.Handle(
-            new RemoverUnidadeCommand(unidade.Id), repo, instituicaoRepo, uow, cache, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.RemocaoBloqueadaPorInstituicao);
-        repo.DidNotReceive().Remover(Arg.Any<Unidade>());
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        await cache.DidNotReceive().InvalidarAsync(Arg.Any<CancellationToken>());
+        _cadastro.Unidades.Received(1).Remover(unidade);
+        await _cadastro.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _cadastro.Cache.Received(1).InvalidarAsync(Arg.Any<CancellationToken>());
     }
 }

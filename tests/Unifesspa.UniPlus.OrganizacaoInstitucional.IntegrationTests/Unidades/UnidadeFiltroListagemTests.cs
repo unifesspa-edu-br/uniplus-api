@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Unidades;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
@@ -10,11 +8,11 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Repositories;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Infrastructure;
 
 /// <summary>
-/// Integração da filtragem server-side da listagem de unidades (issue #640)
+/// Integração da filtragem server-side da listagem de unidades
 /// contra Postgres real: busca textual (acento/caixa-insensível sobre sigla,
 /// nome, código, slug e alias), filtro por tipo (um ou mais valores) e a
 /// coerência do cursor keyset sobre o conjunto filtrado.
@@ -24,10 +22,6 @@ using Unifesspa.UniPlus.OrganizacaoInstitucional.Infrastructure.Persistence.Repo
 /// usa um token único (<c>iso</c>) embutido nos campos pesquisáveis e filtra
 /// por ele, isolando seus dados das demais linhas que possam coexistir.
 /// </remarks>
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit IClassFixture<T> exige tipo de teste público.")]
 public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
 {
     private const int TakeAlto = 100;
@@ -40,31 +34,90 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
         _fixture = fixture;
     }
 
-    [Fact(DisplayName = "Busca casa contra sigla, nome, código, slug e alias e é case-insensitive")]
-    public async Task Busca_CobreTodosOsCampos_EhCaseInsensitive()
+    [Fact(DisplayName = "Busca casa contra a sigla")]
+    public async Task Busca_CasaContraASigla()
     {
         string iso = NovoToken();
+        Guid emSigla = await SemearAsync("Centro Alpha", sigla: $"{iso}SG");
 
-        Guid emSigla = await SeedAsync(nome: "Centro Alpha", sigla: $"{iso}SG", codigo: NovoToken(), slug: NovoSlug());
-        Guid emNome = await SeedAsync(nome: $"Faculdade {iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug());
-        Guid emCodigo = await SeedAsync(nome: "Instituto Beta", sigla: NovoToken(), codigo: $"{iso}CD", slug: NovoSlug());
-        Guid emSlug = await SeedAsync(nome: "Diretoria Gama", sigla: NovoToken(), codigo: NovoToken(), slug: $"s{iso}-sl");
-        Guid emAlias = await SeedAsync(nome: "Núcleo Delta", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug(), alias: $"{iso} regional");
-        Guid semToken = await SeedAsync(nome: "Coordenação Sem Marca", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug());
+        IReadOnlyList<Guid> ids = await ListarIdsAsync(FiltroDeBusca(iso));
 
-        // Termo em minúsculas (Guid "N") → prova a case-insensibilidade via ILIKE + immutable_unaccent.
-        IReadOnlyList<Unidade> resultado = await ListarAsync(FiltroDeBusca(iso));
+        ids.Should().Contain(emSigla);
+    }
 
-        IReadOnlyList<Guid> ids = [.. resultado.Select(u => u.Id)];
-        ids.Should().Contain([emSigla, emNome, emCodigo, emSlug, emAlias]);
-        ids.Should().NotContain(semToken);
+    [Fact(DisplayName = "Busca casa contra o nome")]
+    public async Task Busca_CasaContraONome()
+    {
+        string iso = NovoToken();
+        Guid emNome = await SemearAsync($"Faculdade {iso}");
+
+        IReadOnlyList<Guid> ids = await ListarIdsAsync(FiltroDeBusca(iso));
+
+        ids.Should().Contain(emNome);
+    }
+
+    [Fact(DisplayName = "Busca casa contra o código")]
+    public async Task Busca_CasaContraOCodigo()
+    {
+        string iso = NovoToken();
+        Guid emCodigo = await SemearAsync("Instituto Beta", codigo: $"{iso}CD");
+
+        IReadOnlyList<Guid> ids = await ListarIdsAsync(FiltroDeBusca(iso));
+
+        ids.Should().Contain(emCodigo);
+    }
+
+    [Fact(DisplayName = "Busca casa contra o slug")]
+    public async Task Busca_CasaContraOSlug()
+    {
+        string iso = NovoToken();
+        Guid emSlug = await SemearAsync("Diretoria Gama", slug: $"s{iso}-sl");
+
+        IReadOnlyList<Guid> ids = await ListarIdsAsync(FiltroDeBusca(iso));
+
+        ids.Should().Contain(emSlug);
+    }
+
+    [Fact(DisplayName = "Busca casa contra o alias")]
+    public async Task Busca_CasaContraOAlias()
+    {
+        string iso = NovoToken();
+        Guid emAlias = await SemearAsync("Núcleo Delta", alias: $"{iso} regional");
+
+        IReadOnlyList<Guid> ids = await ListarIdsAsync(FiltroDeBusca(iso));
+
+        ids.Should().Contain(emAlias);
+    }
+
+    [Fact(DisplayName = "Busca não devolve a unidade que não contém o termo")]
+    public async Task Busca_NaoDevolveUnidadeSemOTermo()
+    {
+        string iso = NovoToken();
+        Guid comTermo = await SemearAsync($"Faculdade {iso}");
+        Guid semTermo = await SemearAsync("Coordenação Sem Marca");
+
+        IReadOnlyList<Guid> ids = await ListarIdsAsync(FiltroDeBusca(iso));
+
+        ids.Should().Contain(comTermo);
+        ids.Should().NotContain(semTermo);
+    }
+
+    [Fact(DisplayName = "Busca é case-insensitive: termo em minúsculas casa o campo em maiúsculas")]
+    public async Task Busca_EhCaseInsensitive()
+    {
+        string iso = NovoToken();
+        Guid id = await SemearAsync($"Faculdade {iso.ToUpperInvariant()}");
+
+        IReadOnlyList<Guid> ids = await ListarIdsAsync(FiltroDeBusca(iso));
+
+        ids.Should().Contain(id);
     }
 
     [Fact(DisplayName = "Busca é insensível a acento (termo acentuado e sem acento casam o mesmo registro)")]
     public async Task Busca_EhAcentoInsensivel()
     {
         string iso = NovoToken();
-        Guid id = await SeedAsync(nome: $"Promoção{iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug());
+        Guid id = await SemearAsync($"Promoção{iso}");
 
         IReadOnlyList<Unidade> semAcento = await ListarAsync(FiltroDeBusca($"promocao{iso}"));
         IReadOnlyList<Unidade> comAcento = await ListarAsync(FiltroDeBusca($"promoção{iso}"));
@@ -73,201 +126,284 @@ public sealed class UnidadeFiltroListagemTests : IClassFixture<UnidadeDbFixture>
         comAcento.Select(u => u.Id).Should().Contain(id);
     }
 
-    [Fact(DisplayName = "Curingas do LIKE (_ e %) no termo são tratados como literais, não wildcards")]
-    public async Task Busca_EscapaCuringasLike()
+    // Pares com o MESMO comprimento: sem escape, o curinga no termo casaria
+    // o caractere/sequência divergente do par, devolvendo o registro errado.
+    [Fact(DisplayName = "O curinga _ do LIKE no termo é tratado como literal, não como um caractere qualquer")]
+    public async Task Busca_EscapaOUnderscoreDoLike()
     {
         string iso = NovoToken();
-        // Pares com o MESMO comprimento: sem escape, o curinga no termo casaria
-        // o caractere/sequência divergente do par, devolvendo o registro errado.
-        Guid comUnderscore = await SeedAsync(nome: $"Alfa_{iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug());
-        Guid soLetra = await SeedAsync(nome: $"AlfaX{iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug());
-        Guid comPercent = await SeedAsync(nome: $"Beta%{iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug());
-        Guid soSequencia = await SeedAsync(nome: $"BetaZZ{iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug());
+        Guid comUnderscore = await SemearAsync($"Alfa_{iso}");
+        Guid soLetra = await SemearAsync($"AlfaX{iso}");
 
-        // "_" deve ser literal — sem escape casaria o "X" de AlfaX.
-        IReadOnlyList<Guid> porUnderscore = await ListarIdsAsync(FiltroDeBusca($"Alfa_{iso}"));
-        porUnderscore.Should().Contain(comUnderscore);
-        porUnderscore.Should().NotContain(soLetra, "'_' deve ser literal, não curinga de 1 caractere");
+        IReadOnlyList<Guid> ids = await ListarIdsAsync(FiltroDeBusca($"Alfa_{iso}"));
 
-        // "%" deve ser literal — sem escape casaria o "ZZ" de BetaZZ.
-        IReadOnlyList<Guid> porPercent = await ListarIdsAsync(FiltroDeBusca($"Beta%{iso}"));
-        porPercent.Should().Contain(comPercent);
-        porPercent.Should().NotContain(soSequencia, "'%' deve ser literal, não curinga de sequência");
+        ids.Should().Contain(comUnderscore);
+        ids.Should().NotContain(soLetra, "'_' deve ser literal, não curinga de 1 caractere");
     }
 
-    [Fact(DisplayName = "Filtro por tipo aceita um ou mais valores e combina com a busca")]
-    public async Task Filtra_PorTipo_UmOuMais_ECombinaComBusca()
+    [Fact(DisplayName = "O curinga % do LIKE no termo é tratado como literal, não como uma sequência qualquer")]
+    public async Task Busca_EscapaOPercentDoLike()
     {
         string iso = NovoToken();
-        Guid centro = await SeedAsync(nome: $"Centro {iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug(), tipo: TipoUnidade.Centro);
-        Guid faculdade = await SeedAsync(nome: $"Faculdade {iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug(), tipo: TipoUnidade.Faculdade);
-        Guid instituto = await SeedAsync(nome: $"Instituto {iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug(), tipo: TipoUnidade.Instituto);
+        Guid comPercent = await SemearAsync($"Beta%{iso}");
+        Guid soSequencia = await SemearAsync($"BetaZZ{iso}");
 
-        // Um valor (q + tipo): só o Centro.
-        IReadOnlyList<Guid> umTipo = await ListarIdsAsync(
-            new FiltroListagemUnidades(iso, [TipoUnidade.Centro]));
-        umTipo.Should().Contain(centro);
-        umTipo.Should().NotContain([faculdade, instituto]);
+        IReadOnlyList<Guid> ids = await ListarIdsAsync(FiltroDeBusca($"Beta%{iso}"));
 
-        // Dois valores (q + tipos): Centro e Faculdade, não Instituto.
-        IReadOnlyList<Guid> doisTipos = await ListarIdsAsync(
+        ids.Should().Contain(comPercent);
+        ids.Should().NotContain(soSequencia, "'%' deve ser literal, não curinga de sequência");
+    }
+
+    [Fact(DisplayName = "Filtro por um tipo com a busca devolve só as unidades daquele tipo")]
+    public async Task Filtra_PorUmTipoComBusca_DevolveSoOTipo()
+    {
+        string iso = NovoToken();
+        (Guid centro, Guid faculdade, Guid instituto) = await SemearUmDeCadaTipoAsync(iso);
+
+        IReadOnlyList<Guid> ids = await ListarIdsAsync(new FiltroListagemUnidades(iso, [TipoUnidade.Centro]));
+
+        ids.Should().Contain(centro);
+        ids.Should().NotContain([faculdade, instituto]);
+    }
+
+    [Fact(DisplayName = "Filtro por dois tipos com a busca devolve as unidades de qualquer um dos dois")]
+    public async Task Filtra_PorDoisTiposComBusca_DevolveOsDoisTipos()
+    {
+        string iso = NovoToken();
+        (Guid centro, Guid faculdade, Guid instituto) = await SemearUmDeCadaTipoAsync(iso);
+
+        IReadOnlyList<Guid> ids = await ListarIdsAsync(
             new FiltroListagemUnidades(iso, [TipoUnidade.Centro, TipoUnidade.Faculdade]));
-        doisTipos.Should().Contain([centro, faculdade]);
-        doisTipos.Should().NotContain(instituto);
 
-        // Tipo isolado (sem q): tolerante a poluição — meu Centro presente, meus outros ausentes.
-        IReadOnlyList<Guid> soTipo = await ListarIdsAsync(
-            new FiltroListagemUnidades(null, [TipoUnidade.Centro]));
-        soTipo.Should().Contain(centro);
-        soTipo.Should().NotContain([faculdade, instituto]);
+        ids.Should().Contain([centro, faculdade]);
+        ids.Should().NotContain(instituto);
     }
 
-    [Fact(DisplayName = "Cursor avança sobre o conjunto filtrado sem incluir registros de fora do filtro")]
-    public async Task Paginacao_AvancaSobreConjuntoFiltrado()
+    // Tolerante a poluição: a fixture é compartilhada, então só se afirma o que é deste teste.
+    [Fact(DisplayName = "Filtro só por tipo, sem busca, devolve as unidades daquele tipo")]
+    public async Task Filtra_SoPorTipo_DevolveSoOTipo()
+    {
+        (Guid centro, Guid faculdade, Guid instituto) = await SemearUmDeCadaTipoAsync(NovoToken());
+
+        IReadOnlyList<Guid> ids = await ListarIdsAsync(new FiltroListagemUnidades(null, [TipoUnidade.Centro]));
+
+        ids.Should().Contain(centro);
+        ids.Should().NotContain([faculdade, instituto]);
+    }
+
+    [Fact(DisplayName = "Filtro de busca e tipo devolve exatamente as unidades do tipo que contêm o termo")]
+    public async Task Paginacao_ConjuntoFiltradoTemSoOsDoTipoComOTermo()
     {
         string iso = NovoToken();
-        // 3 Centro + 2 de outros tipos, todos com o token — o filtro tipo=Centro
-        // deve produzir exatamente os 3, paginados em ordem de Id.
-        Guid c1 = await SeedAsync(nome: $"Centro Um {iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug(), tipo: TipoUnidade.Centro);
-        await SeedAsync(nome: $"Faculdade {iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug(), tipo: TipoUnidade.Faculdade);
-        Guid c2 = await SeedAsync(nome: $"Centro Dois {iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug(), tipo: TipoUnidade.Centro);
-        await SeedAsync(nome: $"Nucleo {iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug(), tipo: TipoUnidade.Nucleo);
-        Guid c3 = await SeedAsync(nome: $"Centro Tres {iso}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug(), tipo: TipoUnidade.Centro);
+        Guid[] centros = await SemearTresCentrosEDoisOutrosTiposAsync(iso);
 
+        IReadOnlyList<Unidade> filtradas = await ListarAsync(new FiltroListagemUnidades(iso, [TipoUnidade.Centro]));
+
+        filtradas.Select(u => u.Id).Should().BeEquivalentTo(centros);
+    }
+
+    [Fact(DisplayName = "Cursor percorre em páginas o conjunto filtrado, em ordem de Id, sem registros de fora do filtro")]
+    public async Task Paginacao_CursorPercorreSoOConjuntoFiltrado()
+    {
+        string iso = NovoToken();
+        await SemearTresCentrosEDoisOutrosTiposAsync(iso);
         FiltroListagemUnidades filtro = new(iso, [TipoUnidade.Centro]);
+        List<Guid> esperados = [.. (await ListarAsync(filtro)).Select(u => u.Id)];
 
-        // Conjunto filtrado completo, ordenado por Id (referência).
-        List<Guid> esperados = [.. (await ListarAsync(filtro, TakeAlto)).Select(u => u.Id)];
-        esperados.Should().BeEquivalentTo([c1, c2, c3]);
-
-        // Drena em páginas de 2 seguindo o keyset.
-        List<Guid> acumulado = [];
-        Guid? cursor = null;
-        do
-        {
-            IReadOnlyList<Unidade> pagina = await ListarAsync(filtro, take: 2, afterId: cursor);
-            acumulado.AddRange(pagina.Select(u => u.Id));
-            cursor = pagina.Count == 2 ? pagina[^1].Id : null;
-        }
-        while (cursor is not null && acumulado.Count < esperados.Count);
+        List<Guid> acumulado = await PercorrerEmPaginasDeDoisAsync(filtro, esperados.Count);
 
         acumulado.Should().Equal(esperados, "o cursor deve percorrer só o conjunto filtrado, em ordem de Id");
     }
 
-    [Fact(DisplayName = "Filtro vazio (Nenhum) não restringe a listagem")]
-    public async Task FiltroNenhum_NaoRestringe()
+    [Fact(DisplayName = "Filtro vazio (Nenhum) devolve as unidades de todos os tipos")]
+    public async Task FiltroNenhum_DevolveTodosOsTipos()
     {
-        Guid id = await SeedAsync(nome: $"Reitoria {NovoToken()}", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug(), tipo: TipoUnidade.Reitoria);
+        string iso = NovoToken();
+        (Guid centro, Guid faculdade, Guid instituto) = await SemearUmDeCadaTipoAsync(iso);
+        Guid reitoria = await SemearAsync($"Reitoria {iso}", TipoUnidade.Reitoria);
 
-        IReadOnlyList<Unidade> resultado = await ListarAsync(FiltroListagemUnidades.Nenhum, TakeAlto);
+        IReadOnlyList<Guid> ids = await ListarTodasAsync(FiltroListagemUnidades.Nenhum);
 
-        resultado.Select(u => u.Id).Should().Contain(id);
+        ids.Should().Contain([centro, faculdade, instituto, reitoria]);
     }
 
-    // ── Helpers ─────────────────────────────────────────────────────────
+    [Fact(DisplayName = "A referência das páginas sai em ordem ascendente de Id")]
+    public async Task Navegacao_ReferenciaDasPaginasEstaEmOrdemAscendente()
+    {
+        (_, IReadOnlyList<Guid> ordenados) = await SemearCincoNaOrdemDaPaginacaoAsync();
+
+        ordenados.Should().BeInAscendingOrder(
+            "sem esta asserção uma listagem que devolvesse o conjunto fora de ordem casaria com páginas " +
+            "igualmente fora de ordem");
+    }
+
+    [Fact(DisplayName = "Primeira página para frente não tem anterior e aponta o próximo")]
+    public async Task Navegacao_PrimeiraPagina_SemAnteriorComProximo()
+    {
+        (FiltroListagemUnidades filtro, IReadOnlyList<Guid> ordenados) = await SemearCincoNaOrdemDaPaginacaoAsync();
+
+        (IReadOnlyList<Unidade> pagina, Guid? anterior, Guid? proximo) =
+            await PaginarAsync(filtro, afterId: null, PaginationDirection.Next);
+
+        pagina.Select(u => u.Id).Should().Equal(ordenados[0], ordenados[1]);
+        anterior.Should().BeNull();
+        proximo.Should().Be(ordenados[1]);
+    }
+
+    [Fact(DisplayName = "Segunda página para frente tem anterior e próximo")]
+    public async Task Navegacao_SegundaPagina_ComAnteriorEProximo()
+    {
+        (FiltroListagemUnidades filtro, IReadOnlyList<Guid> ordenados) = await SemearCincoNaOrdemDaPaginacaoAsync();
+
+        (IReadOnlyList<Unidade> pagina, Guid? anterior, Guid? proximo) =
+            await PaginarAsync(filtro, afterId: ordenados[1], PaginationDirection.Next);
+
+        pagina.Select(u => u.Id).Should().Equal(ordenados[2], ordenados[3]);
+        anterior.Should().Be(ordenados[2]);
+        proximo.Should().Be(ordenados[3]);
+    }
+
+    [Fact(DisplayName = "Para trás a partir da segunda página volta à primeira, em ordem ascendente, sem anterior e com próximo")]
+    public async Task Navegacao_ParaTras_VoltaAPaginaAnterior()
+    {
+        (FiltroListagemUnidades filtro, IReadOnlyList<Guid> ordenados) = await SemearCincoNaOrdemDaPaginacaoAsync();
+
+        (IReadOnlyList<Unidade> pagina, Guid? anterior, Guid? proximo) =
+            await PaginarAsync(filtro, afterId: ordenados[2], PaginationDirection.Prev);
+
+        pagina.Select(u => u.Id).Should().Equal(ordenados[0], ordenados[1]);
+        anterior.Should().BeNull();
+        proximo.Should().Be(ordenados[1]);
+    }
+
+    [Fact(DisplayName = "Última página para frente tem anterior e não tem próximo")]
+    public async Task Navegacao_UltimaPagina_ComAnteriorSemProximo()
+    {
+        (FiltroListagemUnidades filtro, IReadOnlyList<Guid> ordenados) = await SemearCincoNaOrdemDaPaginacaoAsync();
+
+        (IReadOnlyList<Unidade> pagina, Guid? anterior, Guid? proximo) =
+            await PaginarAsync(filtro, afterId: ordenados[3], PaginationDirection.Next);
+
+        pagina.Select(u => u.Id).Should().Equal(ordenados[4]);
+        anterior.Should().Be(ordenados[4]);
+        proximo.Should().BeNull();
+    }
 
     private static FiltroListagemUnidades FiltroDeBusca(string termo) => new(termo, []);
 
-    private async Task<Guid> SeedAsync(
+    /// <summary>
+    /// Grava uma Unidade com a sigla, o código e o slug que o cenário não informar gerados únicos, e devolve o
+    /// Id.
+    /// </summary>
+    private async Task<Guid> SemearAsync(
         string nome,
-        string sigla,
-        string codigo,
-        string slug,
-        string? alias = null,
-        TipoUnidade tipo = TipoUnidade.Centro)
+        TipoUnidade tipo = TipoUnidade.Centro,
+        string? sigla = null,
+        string? codigo = null,
+        string? slug = null,
+        string? alias = null)
     {
         Unidade unidade = Unidade.Criar(
             nome,
-            new IdentificadoresDaUnidade(slug, sigla, codigo, alias),
+            new IdentificadoresDaUnidade(slug ?? NovoSlug(), sigla ?? NovoToken(), codigo ?? NovoToken(), alias),
             CidadeDaUnidade.Nenhuma,
             new VigenciaDaUnidade(DataInicio, null),
             null,
             tipo,
             false).Value!;
 
-        await using UniPlusDbContext ctx = _fixture.CreateDbContext("admin-640");
-        ctx.Unidades.Add(unidade);
-        await ctx.SaveChangesAsync();
+        await _fixture.GravarAsync("admin-640", unidade);
         return unidade.Id;
     }
 
-    [Fact(DisplayName = "Navegação bidirecional: prev volta à página anterior em ordem ascendente, com flags exatas")]
-    public async Task Navegacao_Bidirecional_PrevVoltaPaginaAnterior_ComFlagsExatas()
+    private async Task<(Guid Centro, Guid Faculdade, Guid Instituto)> SemearUmDeCadaTipoAsync(string iso) =>
+        (await SemearAsync($"Centro {iso}"),
+         await SemearAsync($"Faculdade {iso}", TipoUnidade.Faculdade),
+         await SemearAsync($"Instituto {iso}", TipoUnidade.Instituto));
+
+    /// <summary>Três Centros entre uma Faculdade e um Núcleo, todos com o token no nome; devolve os Centros.</summary>
+    private async Task<Guid[]> SemearTresCentrosEDoisOutrosTiposAsync(string iso)
+    {
+        Guid c1 = await SemearAsync($"Centro Um {iso}");
+        await SemearAsync($"Faculdade {iso}", TipoUnidade.Faculdade);
+        Guid c2 = await SemearAsync($"Centro Dois {iso}");
+        await SemearAsync($"Nucleo {iso}", TipoUnidade.Nucleo);
+        Guid c3 = await SemearAsync($"Centro Tres {iso}");
+        return [c1, c2, c3];
+    }
+
+    /// <summary>
+    /// Semeia cinco Unidades e devolve o filtro que as seleciona com o Id delas na ordem em que a paginação as
+    /// percorre. A ordem de criação NÃO é a ordem da página: o Id é um Guid v7, e v7 só ordena por tempo quando o
+    /// carimbo difere — semeadas no mesmo milissegundo, elas ficam na ordem dos bits aleatórios, diferente a cada
+    /// execução. A referência vem do banco, depois de provar que o filtro traz exatamente as cinco.
+    /// </summary>
+    private async Task<(FiltroListagemUnidades Filtro, IReadOnlyList<Guid> Ordenados)> SemearCincoNaOrdemDaPaginacaoAsync()
     {
         string iso = NovoToken();
-        // Cinco unidades. A ordem de criação NÃO é a ordem da página: o Id é um Guid v7, e v7 só
-        // ordena por tempo quando o carimbo difere — semeadas no mesmo milissegundo, elas ficam na
-        // ordem dos bits aleatórios, diferente a cada execução. A referência vem do banco, como no
-        // teste de travessia logo acima.
-        Guid[] ids =
-        [
-            await SeedAsync(nome: $"BiDir {iso} 0", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug()),
-            await SeedAsync(nome: $"BiDir {iso} 1", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug()),
-            await SeedAsync(nome: $"BiDir {iso} 2", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug()),
-            await SeedAsync(nome: $"BiDir {iso} 3", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug()),
-            await SeedAsync(nome: $"BiDir {iso} 4", sigla: NovoToken(), codigo: NovoToken(), slug: NovoSlug()),
-        ];
+        List<Guid> semeadas = [];
+        for (int i = 0; i < 5; i++)
+        {
+            semeadas.Add(await SemearAsync($"BiDir {iso} {i}"));
+        }
+
         FiltroListagemUnidades filtro = FiltroDeBusca(iso);
+        IReadOnlyList<Guid> ordenados = await ListarIdsAsync(filtro);
+        ordenados.Should().BeEquivalentTo(semeadas);
+        return (filtro, ordenados);
+    }
 
-        // O conjunto filtrado na ordem em que a paginação o percorre. A pertinência é afirmada à
-        // parte: o filtro tem de trazer exatamente as cinco semeadas, e só depois disso a ordem
-        // delas serve de referência.
-        List<Guid> ordenados = [.. (await ListarAsync(filtro, TakeAlto)).Select(u => u.Id)];
-        ordenados.Should().BeEquivalentTo(ids);
-        ordenados.Should().BeInAscendingOrder(
-            "a referência sai do mesmo método que as páginas, e sem esta asserção uma listagem que " +
-            "devolvesse o conjunto fora de ordem casaria com páginas igualmente fora de ordem");
+    /// <summary>Drena o filtro em páginas de dois, seguindo o cursor, até reunir o total esperado.</summary>
+    private async Task<List<Guid>> PercorrerEmPaginasDeDoisAsync(FiltroListagemUnidades filtro, int total)
+    {
+        List<Guid> acumulado = [];
+        Guid? cursor = null;
+        do
+        {
+            (IReadOnlyList<Unidade> pagina, _, _) = await PaginarAsync(filtro, cursor, PaginationDirection.Next);
+            acumulado.AddRange(pagina.Select(u => u.Id));
+            cursor = pagina.Count == 2 ? pagina[^1].Id : null;
+        }
+        while (cursor is not null && acumulado.Count < total);
 
-        // Página 1 (forward, limit 2): [0,1]; sem anterior; com próximo.
-        (IReadOnlyList<Unidade> p1, Guid? p1Ant, Guid? p1Prox) =
-            await PaginarAsync(filtro, limit: 2, afterId: null, PaginationDirection.Next);
-        p1.Select(u => u.Id).Should().Equal(ordenados[0], ordenados[1]);
-        p1Ant.Should().BeNull();
-        p1Prox.Should().Be(ordenados[1]);
-
-        // Página 2 (forward a partir do próximo da p1): [2,3]; com anterior e próximo.
-        (IReadOnlyList<Unidade> p2, Guid? p2Ant, Guid? p2Prox) =
-            await PaginarAsync(filtro, limit: 2, afterId: p1Prox, PaginationDirection.Next);
-        p2.Select(u => u.Id).Should().Equal(ordenados[2], ordenados[3]);
-        p2Ant.Should().Be(ordenados[2]);
-        p2Prox.Should().Be(ordenados[3]);
-
-        // Backward a partir do anterior da p2 (ordenados[2]): volta à página 1 [0,1] em ASC.
-        (IReadOnlyList<Unidade> volta, Guid? voltaAnt, Guid? voltaProx) =
-            await PaginarAsync(filtro, limit: 2, afterId: p2Ant, PaginationDirection.Prev);
-        volta.Select(u => u.Id).Should().Equal(ordenados[0], ordenados[1]);
-        voltaAnt.Should().BeNull();   // ordenados[0] é o início → sem anterior
-        voltaProx.Should().Be(ordenados[1]); // há próximo (ordenados[2..])
-
-        // Última página (forward a partir de ordenados[3]): [4]; sem próximo, com anterior.
-        (IReadOnlyList<Unidade> ultima, Guid? ultAnt, Guid? ultProx) =
-            await PaginarAsync(filtro, limit: 2, afterId: p2Prox, PaginationDirection.Next);
-        ultima.Select(u => u.Id).Should().Equal(ordenados[4]);
-        ultProx.Should().BeNull();
-        ultAnt.Should().Be(ordenados[4]);
+        return acumulado;
     }
 
     private async Task<(IReadOnlyList<Unidade> Itens, Guid? Anterior, Guid? Proximo)> PaginarAsync(
         FiltroListagemUnidades filtro,
-        int limit,
         Guid? afterId,
         PaginationDirection direction)
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repository = new UnidadeRepository(ctx);
-        return await repository.ListarPaginadoAsync(afterId, limit, direction, filtro, CancellationToken.None);
+        return await repository.ListarPaginadoAsync(afterId, limit: 2, direction, filtro, CancellationToken.None);
     }
 
-    private async Task<IReadOnlyList<Unidade>> ListarAsync(
-        FiltroListagemUnidades filtro,
-        int take = TakeAlto,
-        Guid? afterId = null)
+    private async Task<IReadOnlyList<Unidade>> ListarAsync(FiltroListagemUnidades filtro)
     {
         await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
         var repository = new UnidadeRepository(ctx);
         (IReadOnlyList<Unidade> itens, _, _) = await repository
-            .ListarPaginadoAsync(afterId, take, PaginationDirection.Next, filtro, CancellationToken.None);
+            .ListarPaginadoAsync(null, TakeAlto, PaginationDirection.Next, filtro, CancellationToken.None);
         return itens;
+    }
+
+    /// <summary>Percorre todas as páginas do filtro, porque a fixture compartilhada acumula unidades de outros testes.</summary>
+    private async Task<IReadOnlyList<Guid>> ListarTodasAsync(FiltroListagemUnidades filtro)
+    {
+        List<Guid> ids = [];
+        Guid? cursor = null;
+        do
+        {
+            await using UniPlusDbContext ctx = _fixture.CreateDbContext(userId: null);
+            var repository = new UnidadeRepository(ctx);
+            (IReadOnlyList<Unidade> pagina, _, cursor) = await repository
+                .ListarPaginadoAsync(cursor, TakeAlto, PaginationDirection.Next, filtro, CancellationToken.None);
+            ids.AddRange(pagina.Select(u => u.Id));
+        }
+        while (cursor is not null);
+
+        return ids;
     }
 
     private async Task<IReadOnlyList<Guid>> ListarIdsAsync(FiltroListagemUnidades filtro)

@@ -9,6 +9,7 @@ using Testcontainers.PostgreSql;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence.Interceptors;
 using Unifesspa.UniPlus.Monolito.Persistencia;
+using Unifesspa.UniPlus.OrganizacaoInstitucional.IntegrationTests.Infrastructure;
 
 /// <summary>
 /// Fixture xUnit que provisiona um Postgres efêmero (Testcontainers) com o
@@ -16,7 +17,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 /// interceptors da produção (SoftDelete + Auditable).
 /// </summary>
 /// <remarks>
-/// Story #586 — valida ponta-a-ponta:
+/// Valida ponta-a-ponta:
 /// <list type="bullet">
 ///   <item>UNIQUE parcial sobre slug/sigla/codigo (WHERE is_deleted = false).</item>
 ///   <item>Soft-delete via SoftDeleteInterceptor liberta o slot único.</item>
@@ -33,7 +34,7 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
     "Reliability",
     "CA1001:Types that own disposable fields should be disposable",
     Justification = "Disposable resources released by IAsyncLifetime.DisposeAsync — xUnit invoca deterministicamente.")]
-public sealed class UnidadeDbFixture : IAsyncLifetime
+public sealed class UnidadeDbFixture : IAsyncLifetime, IFabricaDeContextoDeTeste
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:18-alpine")
         .WithDatabase("uniplus_unidade_tests")

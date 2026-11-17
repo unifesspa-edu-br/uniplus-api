@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <Compile Include="../Shared/InstituicaoDeTeste.cs" Link="InstituicaoDeTeste.cs" />
+    <Compile Include="../Shared/UnidadeDeTeste.cs" Link="UnidadeDeTeste.cs" />
     <Compile Include="../Shared/RelogioFixo.cs" Link="RelogioFixo.cs" />
   </ItemGroup>
 

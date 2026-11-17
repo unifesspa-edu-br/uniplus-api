@@ -54,13 +54,13 @@ public interface IUnidadeRepository
     void Remover(Unidade unidade);
 
     /// <summary>Verifica se existe unidade viva com o slug informado, excluindo opcionalmente um Id.</summary>
-    Task<bool> SlugExisteEntreLivosAsync(Slug slug, Guid? excluirId, CancellationToken cancellationToken);
+    Task<bool> SlugExisteEntreVivosAsync(Slug slug, Guid? excluirId, CancellationToken cancellationToken);
 
     /// <summary>Verifica se existe unidade viva com a sigla informada (case-insensitive), excluindo opcionalmente um Id.</summary>
-    Task<bool> SiglaExisteEntreLivosAsync(string sigla, Guid? excluirId, CancellationToken cancellationToken);
+    Task<bool> SiglaExisteEntreVivosAsync(string sigla, Guid? excluirId, CancellationToken cancellationToken);
 
     /// <summary>Verifica se existe unidade viva com o código informado, excluindo opcionalmente um Id.</summary>
-    Task<bool> CodigoExisteEntreLivosAsync(string codigo, Guid? excluirId, CancellationToken cancellationToken);
+    Task<bool> CodigoExisteEntreVivosAsync(string codigo, Guid? excluirId, CancellationToken cancellationToken);
 
     /// <summary>Verifica se a unidade tem subordinadas vivas (impede remoção).</summary>
     Task<bool> PossuiSubordinadasVivasAsync(Guid id, CancellationToken cancellationToken);

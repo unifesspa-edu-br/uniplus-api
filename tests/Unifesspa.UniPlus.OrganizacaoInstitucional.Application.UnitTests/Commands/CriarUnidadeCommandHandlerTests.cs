@@ -4,152 +4,51 @@ using AwesomeAssertions;
 
 using NSubstitute;
 
-using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
 using Unifesspa.UniPlus.Kernel.Results;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Abstractions;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Application.Commands.Unidades;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Entities;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Enums;
 using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Errors;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.Interfaces;
-using Unifesspa.UniPlus.OrganizacaoInstitucional.Domain.ValueObjects;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 public sealed class CriarUnidadeCommandHandlerTests
 {
-    private static readonly DateOnly DataInicio = new(2026, 1, 1);
+    private readonly CadastroDeUnidadeSimulado _cadastro = new();
 
-    private static CriarUnidadeCommand CommandValido() => new(
-        "Centro de Processos Seletivos",
-        null,
-        "ceps",
-        "CEPS",
-        "0001",
-        null,
-        TipoUnidade.Centro,
-        false,
-        DataInicio,
-        null);
+    private Task<Result<Guid>> CriarAsync(CriarUnidadeCommand command) =>
+        CriarUnidadeCommandHandler.Handle(command, _cadastro.Conferencia, _cadastro.Gravacao, CancellationToken.None);
 
-    [Fact(DisplayName = "Handle com command válido persiste e invalida cache")]
-    public async Task Handle_ComCommandValido_PersisteEInvalidaCache()
+    [Fact(DisplayName = "Conferência recusada devolve a recusa sem tocar a unidade de trabalho nem o cache")]
+    public async Task ConferenciaRecusada_NaoGrava()
     {
-        IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
-        repo.SlugExisteEntreLivosAsync(Arg.Any<Slug>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(false);
-        repo.SiglaExisteEntreLivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(false);
-        repo.CodigoExisteEntreLivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(false);
+        _cadastro.SlugEmUso();
 
-        Result<Guid> resultado = await CriarUnidadeCommandHandler.Handle(
-            CommandValido(), repo, uow, cache, CancellationToken.None);
+        Result<Guid> resultado = await CriarAsync(CadastroDeUnidadeSimulado.Criacao());
 
-        resultado.IsSuccess.Should().BeTrue();
-        resultado.Value.Should().NotBeEmpty();
-        await repo.Received(1).AdicionarAsync(Arg.Any<Unidade>(), Arg.Any<CancellationToken>());
-        await uow.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        await cache.Received(1).InvalidarAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com slug duplicado retorna SlugJaExiste e NÃO persiste")]
-    public async Task Handle_ComSlugDuplicado_RetornaSlugJaExiste()
-    {
-        IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
-        repo.SlugExisteEntreLivosAsync(Arg.Any<Slug>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(true);
-
-        Result<Guid> resultado = await CriarUnidadeCommandHandler.Handle(
-            CommandValido(), repo, uow, cache, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
         resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SlugJaExiste);
-        await repo.DidNotReceive().AdicionarAsync(Arg.Any<Unidade>(), Arg.Any<CancellationToken>());
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-        await cache.DidNotReceive().InvalidarAsync(Arg.Any<CancellationToken>());
+        _cadastro.UnitOfWork.ReceivedCalls().Should().BeEmpty();
+        _cadastro.Cache.ReceivedCalls().Should().BeEmpty();
     }
 
-    [Fact(DisplayName = "Handle com sigla duplicada retorna SiglaJaExiste e NÃO persiste")]
-    public async Task Handle_ComSiglaDuplicada_RetornaSiglaJaExiste()
+    [Fact(DisplayName = "Payload inválido devolve todos os erros acumulados")]
+    public async Task PayloadInvalido_DevolveOsErrosAcumulados()
     {
-        IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
-        repo.SlugExisteEntreLivosAsync(Arg.Any<Slug>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(false);
-        repo.SiglaExisteEntreLivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+        Result<Guid> resultado = await CriarAsync(
+            CadastroDeUnidadeSimulado.Criacao() with { Nome = "", Slug = "SLUG-COM-MAIUSCULAS" });
 
-        Result<Guid> resultado = await CriarUnidadeCommandHandler.Handle(
-            CommandValido(), repo, uow, cache, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SiglaJaExiste);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com slug inválido retorna SlugFormatoInvalido (Slug.From falha)")]
-    public async Task Handle_ComSlugInvalido_RetornaSlugFormatoInvalido()
-    {
-        IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
-        CriarUnidadeCommand command = CommandValido() with { Slug = "SLUG-COM-MAIUSCULAS" };
-
-        Result<Guid> resultado = await CriarUnidadeCommandHandler.Handle(
-            command, repo, uow, cache, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SlugFormatoInvalido);
-        await repo.DidNotReceive().SlugExisteEntreLivosAsync(
-            Arg.Any<Slug>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com superior inexistente retorna SuperiorNaoEncontrado")]
-    public async Task Handle_ComSuperiorInexistente_RetornaSuperiorNaoEncontrado()
-    {
-        IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
-        repo.SlugExisteEntreLivosAsync(Arg.Any<Slug>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(false);
-        repo.SiglaExisteEntreLivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(false);
-        repo.CodigoExisteEntreLivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(false);
-        Guid superiorId = Guid.NewGuid();
-        repo.ObterPorIdAsync(superiorId, Arg.Any<CancellationToken>())
-            .Returns((Unidade?)null);
-
-        CriarUnidadeCommand command = CommandValido() with { UnidadeSuperiorId = superiorId };
-
-        Result<Guid> resultado = await CriarUnidadeCommandHandler.Handle(
-            command, repo, uow, cache, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
-        resultado.Error!.Code.Should().Be(UnidadeErrorCodes.SuperiorNaoEncontrado);
-        await uow.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
-    }
-
-    [Fact(DisplayName = "Handle com nome ausente e slug inválido acumula os dois erros sem consultar unicidade — validação vence I/O")]
-    public async Task Handle_ComDoisCamposInvalidos_AcumulaOsDoisSemConsultarUnicidade()
-    {
-        IUnidadeRepository repo = Substitute.For<IUnidadeRepository>();
-        IUnitOfWork uow = Substitute.For<IUnitOfWork>();
-        IUnidadeCacheInvalidator cache = Substitute.For<IUnidadeCacheInvalidator>();
-        CriarUnidadeCommand command = CommandValido() with { Nome = "", Slug = "SLUG-COM-MAIUSCULAS" };
-
-        Result<Guid> resultado = await CriarUnidadeCommandHandler.Handle(
-            command, repo, uow, cache, CancellationToken.None);
-
-        resultado.IsFailure.Should().BeTrue();
         resultado.Errors.Should().HaveCount(2);
-        resultado.Errors.Should().Contain(e => e.Field == "nome" && e.Error.Code == UnidadeErrorCodes.NomeObrigatorio);
-        resultado.Errors.Should().Contain(e => e.Field == "slug" && e.Error.Code == UnidadeErrorCodes.SlugFormatoInvalido);
-        await repo.DidNotReceive().SlugExisteEntreLivosAsync(Arg.Any<Slug>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
-        await repo.DidNotReceive().SiglaExisteEntreLivosAsync(Arg.Any<string>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
+        _cadastro.UnitOfWork.ReceivedCalls().Should().BeEmpty();
+    }
+
+    [Fact(DisplayName = "Conferência aceita grava a Unidade e devolve o Id dela")]
+    public async Task ConferenciaAceita_GravaEDevolveOId()
+    {
+        Result<Guid> resultado = await CriarAsync(CadastroDeUnidadeSimulado.Criacao());
+
+        resultado.Value.Should().NotBeEmpty();
+        await _cadastro.Unidades.Received(1).AdicionarAsync(
+            Arg.Is<Unidade>(u => u.Id == resultado.Value), Arg.Any<CancellationToken>());
+        await _cadastro.UnitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
+        await _cadastro.Cache.Received(1).InvalidarAsync(Arg.Any<CancellationToken>());
     }
 }
