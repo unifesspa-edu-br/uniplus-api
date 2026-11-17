@@ -3,6 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
@@ -33,7 +34,7 @@ public sealed record ConteudoDaVersao
     }
 
     /// <summary>Códigos das permissões da versão, ordenados.</summary>
-    public IReadOnlyList<string> Codigos() => [.. Permissoes.Select(static p => p.Codigo).Order(StringComparer.Ordinal)];
+    public IReadOnlyList<string> Codigos() => [.. Permissoes.Select(static p => p.Codigo.Valor).Order(StringComparer.Ordinal)];
 
     public static Result<ConteudoDaVersao> Validar(
         string? nome,
@@ -71,7 +72,7 @@ public sealed record ConteudoDaVersao
         [.. (permissoes ?? []).Select(static c => c?.Trim() ?? string.Empty).Distinct(StringComparer.Ordinal)];
 
     private static PermissaoCatalogada[] Catalogar(string[] codigos, ICatalogoDePermissoesConsultavel catalogo) =>
-        [.. codigos.Select(c => new PermissaoCatalogada(c, catalogo.Sensibilidade(c), catalogo.Existe(c) && catalogo.DeUnidade(c)))];
+        [.. codigos.Select(c => new PermissaoCatalogada(CodigoDePermissao.De(c), catalogo.Sensibilidade(c), catalogo.Existe(c) && catalogo.DeUnidade(c)))];
 
     private static IEnumerable<FieldError> ValidarPermissoes(string[] codigos, ICatalogoDePermissoesConsultavel catalogo) =>
         codigos.Length == 0

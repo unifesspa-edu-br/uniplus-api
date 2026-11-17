@@ -10,6 +10,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence.Repositories;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// A parte da conciliação que cabe aos perfis comuns, já travados: para cada permissão em uso cujo valor no catálogo novo
@@ -57,7 +58,7 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
 
     private ReclassificacaoDaPermissao? ReclassificarSeMudou(Perfil perfil, PermissaoEmUso permissao, ComparacaoDeCatalogos comparacao)
     {
-        if (comparacao.Atualizado.TryGetValue(permissao.Codigo, out LinhaDoRetratoDoCatalogo? nova))
+        if (comparacao.Atualizado.TryGetValue(CodigoDePermissao.De(permissao.Codigo), out PermissaoDoCatalogo? nova))
         {
             return Reclassificar(perfil, permissao, nova, comparacao);
         }
@@ -72,10 +73,10 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
     /// volta ao catálogo acima de uma base rebaixada suspende essa concessão, e a suspensão precisa de reclassificação vigente.
     /// </summary>
     private ReclassificacaoDaPermissao? Reclassificar(
-        Perfil perfil, PermissaoEmUso permissao, LinhaDoRetratoDoCatalogo nova, ComparacaoDeCatalogos comparacao)
+        Perfil perfil, PermissaoEmUso permissao, PermissaoDoCatalogo nova, ComparacaoDeCatalogos comparacao)
     {
         MudancaDaPermissao? candidata = permissao.Anteriores
-            .Select(r => ComparacaoComOCatalogo.MudancaDe(comparacao.AnteriorDe(permissao.Codigo, r), nova))
+            .Select(r => ComparacaoComOCatalogo.MudancaDe(comparacao.AnteriorDe(CodigoDePermissao.De(permissao.Codigo), r), nova))
             .FirstOrDefault(static m => m is not null);
         if (candidata is not { } mudanca)
         {
@@ -103,7 +104,7 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
     private static BaseDaPermissaoNaConcessao? BaseAcompanhada(Guid perfilId, BaseEmVigor emVigor, ComparacaoDeCatalogos comparacao)
     {
         MudancaDaPermissao? mudanca = ComparacaoComOCatalogo.MudancaDe(
-            comparacao.AnteriorDe(emVigor.Codigo, emVigor.Base), comparacao.Atualizado[emVigor.Codigo]);
+            comparacao.AnteriorDe(CodigoDePermissao.De(emVigor.Codigo), emVigor.Base), comparacao.Atualizado[CodigoDePermissao.De(emVigor.Codigo)]);
 
         return mudanca is { } mudou
             ? BaseDaPermissaoNaConcessao.Registrar(
@@ -112,7 +113,7 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
             : null;
     }
 
-    /// <summary>A base de cada código das concessões ativas do perfil: a gravada em vigor e, sem ela, o retrato da versão.</summary>
+    /// <summary>A base de cada código das concessões ativas do perfil: a gravada em vigor e, sem ela, a composição da versão.</summary>
     private async Task<IReadOnlyList<BaseEmVigor>> BasesEmVigorAsync(Perfil perfil, DateTimeOffset instante, CancellationToken cancellationToken)
     {
         List<CodigoDaConcessao> codigos = await _db.CodigosDasConcessoesDoPerfil(perfil.Id, instante)
@@ -154,7 +155,7 @@ internal sealed record BaseEmVigor(Guid ConcessaoId, string Codigo, BaseDaConces
 /// <summary>Uma permissão em uso por um perfil: o código, as versões em uso que a reúnem e as bases das concessões.</summary>
 internal sealed record PermissaoEmUso(string Codigo, IReadOnlyList<VersaoDoPerfil> Versoes, IReadOnlyList<BaseEmVigor> Bases)
 {
-    /// <summary>Os valores que a permissão tinha para o perfil: o retrato de cada versão em uso e a base de cada concessão.</summary>
+    /// <summary>Os valores que a permissão tinha para o perfil: a composição de cada versão em uso e a base de cada concessão.</summary>
     public IEnumerable<BaseDaConcessao> Anteriores => Versoes
         .SelectMany(v => v.Permissoes.Where(p => p.Codigo == Codigo))
         .Select(static p => new BaseDaConcessao(p.Classificacao, p.DeUnidade))

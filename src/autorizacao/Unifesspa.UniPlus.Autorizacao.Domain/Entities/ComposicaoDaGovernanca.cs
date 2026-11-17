@@ -45,11 +45,11 @@ public static class ComposicaoDaGovernanca
     /// a reservada à governança. Uma permissão comum de outro módulo chegaria a todos os titulares do papel sem passar pela
     /// aprovação que os perfis comuns exigem.
     /// </summary>
-    public static bool Admite(LinhaDoRetratoDoCatalogo permissao)
+    public static bool Admite(PermissaoDoCatalogo permissao)
     {
         ArgumentNullException.ThrowIfNull(permissao);
 
-        return permissao.Modulo == ModuloDaAutorizacao || permissao.Reservada;
+        return permissao.Codigo.Modulo == ModuloDaAutorizacao || permissao.Reservada;
     }
 
     /// <summary>Os códigos que o perfil de governança deve reunir.</summary>

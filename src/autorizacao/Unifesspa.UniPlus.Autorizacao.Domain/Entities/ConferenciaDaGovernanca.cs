@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// A conferência, sem acesso a dados, da governança com o catálogo que entra: a composição gravada de cada perfil de
@@ -30,20 +31,21 @@ public static class ConferenciaDaGovernanca
     /// </summary>
     public static IReadOnlyList<DivergenciaDaGovernanca> DoCatalogo(
         Guid implantacaoId,
-        IReadOnlyDictionary<string, LinhaDoRetratoDoCatalogo> anterior,
-        IReadOnlyDictionary<string, LinhaDoRetratoDoCatalogo> novo,
+        IReadOnlyDictionary<CodigoDePermissao, PermissaoDoCatalogo> anterior,
+        IReadOnlyDictionary<CodigoDePermissao, PermissaoDoCatalogo> novo,
         DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(anterior);
         ArgumentNullException.ThrowIfNull(novo);
 
         return [.. ComposicaoDaGovernanca.Esperada
-            .Where(p => anterior.ContainsKey(p.Codigo) && novo.ContainsKey(p.Codigo))
-            .SelectMany(p => MudancasDe(implantacaoId, p, (anterior[p.Codigo], novo[p.Codigo]), instante))];
+            .Select(static p => (Permissao: p, Codigo: CodigoDePermissao.De(p.Codigo)))
+            .Where(x => anterior.ContainsKey(x.Codigo) && novo.ContainsKey(x.Codigo))
+            .SelectMany(x => MudancasDe(implantacaoId, x.Permissao, (anterior[x.Codigo], novo[x.Codigo]), instante))];
     }
 
     private static IEnumerable<DivergenciaDaGovernanca> MudancasDe(
-        Guid implantacaoId, PermissaoDeGovernanca permissao, (LinhaDoRetratoDoCatalogo Antes, LinhaDoRetratoDoCatalogo Depois) linhas, DateTimeOffset instante)
+        Guid implantacaoId, PermissaoDeGovernanca permissao, (PermissaoDoCatalogo Antes, PermissaoDoCatalogo Depois) linhas, DateTimeOffset instante)
     {
         if (linhas.Antes.Classificacao != linhas.Depois.Classificacao)
         {

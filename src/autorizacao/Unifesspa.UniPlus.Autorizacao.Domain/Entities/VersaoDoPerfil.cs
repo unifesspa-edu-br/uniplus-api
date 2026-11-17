@@ -178,7 +178,7 @@ public sealed class VersaoDoPerfil : EntityBase
             Alcance = classe.Alcance,
             ExigeProtecaoDeDados = classe.ExigeProtecaoDeDados,
         };
-        versao._permissoes.AddRange(conteudo.Permissoes.Select(static p => new PermissaoDaVersao(p.Codigo, p.Classificacao, p.DeUnidade)));
+        versao._permissoes.AddRange(conteudo.Permissoes.Select(static p => new PermissaoDaVersao(p.Codigo.Valor, p.Classificacao, p.DeUnidade)));
 
         return versao;
     }

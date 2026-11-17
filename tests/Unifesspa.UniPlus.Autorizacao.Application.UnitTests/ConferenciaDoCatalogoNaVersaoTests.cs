@@ -82,11 +82,12 @@ public sealed class ConferenciaDoCatalogoNaVersaoTests
         Perfil perfil = PerfisDeTeste.Pendente("Analista", "Descrição válida.", [Consultar], Catalogo);
         PermissaoDaVersao permissao = perfil.VersaoPendente!.Permissoes.Single();
         ClassificacaoDeProtecao classificacao = subir ? (ClassificacaoDeProtecao)((int)permissao.Classificacao + 1) : permissao.Classificacao;
-        LinhaDoRetratoDoCatalogo linha = new(Consultar, "selecao", classificacao, deUnidadeNoCatalogo, false);
+        CodigoDePermissao codigo = CodigoDePermissao.De(Consultar);
+        PermissaoDoCatalogo linha = new(codigo, classificacao, deUnidadeNoCatalogo, false);
 
         return (perfil, new ReclassificacoesNaMemoria
         {
-            ImplantacaoAtual = new ImplantacaoNoBanco(Guid.NewGuid(), ResumoSha256.DoConteudo("impressao"u8), new Dictionary<string, LinhaDoRetratoDoCatalogo> { [Consultar] = linha }),
+            ImplantacaoAtual = new ImplantacaoNoBanco(Guid.NewGuid(), ResumoSha256.DoConteudo("impressao"u8), new Dictionary<CodigoDePermissao, PermissaoDoCatalogo> { [codigo] = linha }),
         });
     }
 }

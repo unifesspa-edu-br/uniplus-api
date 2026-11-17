@@ -29,14 +29,14 @@ public sealed class ImplantacaoDasPermissoes
     {
     }
 
-    public static ImplantacaoDasPermissoes Implantar(ResumoSha256 impressao, IEnumerable<LinhaDoRetratoDoCatalogo> linhas, DateTimeOffset instante)
+    public static ImplantacaoDasPermissoes Implantar(ResumoSha256 impressao, IEnumerable<PermissaoDoCatalogo> linhas, DateTimeOffset instante)
     {
         ArgumentNullException.ThrowIfNull(impressao);
         ArgumentNullException.ThrowIfNull(linhas);
 
         ImplantacaoDasPermissoes catalogo = new() { Impressao = impressao, ImplantadaEm = instante };
         catalogo._permissoes.AddRange(linhas.Select(l =>
-            new PermissaoImplantada(catalogo.Id, l.Codigo, l.Modulo, l.Classificacao, l.DeUnidade, l.Reservada)));
+            new PermissaoImplantada(catalogo.Id, l.Codigo.Valor, l.Codigo.Modulo, l.Classificacao, l.DeUnidade, l.Reservada)));
 
         return catalogo;
     }

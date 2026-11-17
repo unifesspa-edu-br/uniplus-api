@@ -28,7 +28,7 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
             .ConfigureAwait(false);
 
     public async Task<ImplantacaoNoBanco?> ObterImplantacaoAtualAsync(
-        IReadOnlyCollection<string> codigos, CancellationToken cancellationToken = default)
+        IReadOnlyCollection<CodigoDePermissao> codigos, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(codigos);
 
@@ -42,18 +42,18 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
             : new ImplantacaoNoBanco(atual.Id, atual.Impressao, await LinhasAsync(atual.Id, codigos, cancellationToken).ConfigureAwait(false));
     }
 
-    private async Task<Dictionary<string, LinhaDoRetratoDoCatalogo>> LinhasAsync(
-        Guid implantacaoId, IReadOnlyCollection<string> codigos, CancellationToken cancellationToken)
+    private async Task<Dictionary<CodigoDePermissao, PermissaoDoCatalogo>> LinhasAsync(
+        Guid implantacaoId, IReadOnlyCollection<CodigoDePermissao> codigos, CancellationToken cancellationToken)
     {
+        string[] textos = [.. codigos.Select(static c => c.Valor)];
         List<PermissaoImplantada> linhas = await _context.PermissoesImplantadas.AsNoTracking()
-            .Where(p => p.ImplantacaoId == implantacaoId && codigos.Contains(p.Codigo))
+            .Where(p => p.ImplantacaoId == implantacaoId && textos.Contains(p.Codigo))
             .ToListAsync(cancellationToken)
             .ConfigureAwait(false);
 
         return linhas.ToDictionary(
-            static p => p.Codigo,
-            static p => new LinhaDoRetratoDoCatalogo(p.Codigo, p.Modulo, p.Classificacao, p.DeUnidade, p.Reservada),
-            StringComparer.Ordinal);
+            static p => CodigoDePermissao.De(p.Codigo),
+            static p => new PermissaoDoCatalogo(CodigoDePermissao.De(p.Codigo), p.Classificacao, p.DeUnidade, p.Reservada));
     }
 
     public async Task<IReadOnlySet<string>> ObterCodigosReclassificadosAsync(
