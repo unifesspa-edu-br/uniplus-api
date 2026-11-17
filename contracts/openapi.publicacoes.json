@@ -327,7 +327,7 @@
             }
           },
           "404": {
-            "description": "Not Found",
+            "description": "O ato n\u00E3o existe (uniplus.publicacoes.ato_normativo.nao_encontrado).",
             "content": {
               "application/problem\u002Bjson": {
                 "schema": {

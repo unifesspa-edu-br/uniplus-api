@@ -2,202 +2,20 @@ namespace Unifesspa.UniPlus.Publicacoes.API.Errors;
 
 using System.Diagnostics.CodeAnalysis;
 
-using Microsoft.AspNetCore.Http;
-
 using Unifesspa.UniPlus.Infrastructure.Core.Errors;
-using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 
 /// <summary>
 /// Mapeia os erros de domínio do módulo Publicações para <c>ProblemDetails</c>
-/// (ADR-0023 / ADR-0024).
+/// (ADR-0023 / ADR-0024), reunindo os mapeamentos de cada assunto numa ordem só.
 /// </summary>
-/// <remarks>
-/// A distinção entre 409 e 422 segue o critério do projeto: <b>422</b> é invariante
-/// do próprio payload (formato, tamanho, coerência interna da janela); <b>409</b> é
-/// conflito com o estado já gravado. Duas versões vivas do mesmo código valendo no
-/// mesmo dia é a segunda coisa — o payload está internamente coerente, o que ele não
-/// pode é coexistir com o que já existe.
-/// </remarks>
 [SuppressMessage("Performance", "CA1812:Avoid uninstantiated internal classes",
     Justification = "Instanciada via IServiceProvider.AddSingleton<IDomainErrorRegistration, PublicacoesDomainErrorRegistration>().")]
 internal sealed class PublicacoesDomainErrorRegistration : IDomainErrorRegistration
 {
     public IEnumerable<KeyValuePair<string, DomainErrorMapping>> GetMappings() =>
     [
-        new(ReferenciaVersaoDoObjetoErrorCodes.IdObrigatorio,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.referencia_versao_do_objeto.id_obrigatorio",
-                "Identificador da versão do objeto é obrigatório")),
-
-        new(ReferenciaVersaoDoObjetoErrorCodes.HashInvalido,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.referencia_versao_do_objeto.hash_invalido",
-                "Hash da versão do objeto deve ser um SHA-256 em hexadecimal minúsculo")),
-
-        new(TipoAtoPublicadoErrorCodes.VigenciaSobreposta,
-            new DomainErrorMapping(
-                StatusCodes.Status409Conflict,
-                "uniplus.publicacoes.tipo_ato.vigencia_sobreposta",
-                "Já existe uma versão viva deste tipo de ato vigente em parte do período informado")),
-
-        new(TipoAtoPublicadoErrorCodes.IdDivergente,
-            new DomainErrorMapping(
-                StatusCodes.Status400BadRequest,
-                "uniplus.publicacoes.tipo_ato.id_divergente",
-                "O identificador da URL não corresponde ao do corpo da requisição")),
-
-        new(TipoAtoPublicadoErrorCodes.NaoEncontrado,
-            new DomainErrorMapping(
-                StatusCodes.Status404NotFound,
-                "uniplus.publicacoes.tipo_ato.nao_encontrado",
-                "Tipo de ato não encontrado")),
-
-        new(TipoAtoPublicadoErrorCodes.CodigoObrigatorio,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.tipo_ato.codigo_obrigatorio",
-                "Código do tipo de ato é obrigatório")),
-
-        new(TipoAtoPublicadoErrorCodes.CodigoTamanho,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.tipo_ato.codigo_tamanho",
-                "Tamanho do código do tipo de ato inválido")),
-
-        new(TipoAtoPublicadoErrorCodes.CodigoFormato,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.tipo_ato.codigo_formato",
-                "Formato do código do tipo de ato inválido")),
-
-        new(TipoAtoPublicadoErrorCodes.CodigoImutavel,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.tipo_ato.codigo_imutavel",
-                "O código do tipo de ato é a sua identidade e não pode ser alterado")),
-
-        new(TipoAtoPublicadoErrorCodes.NomeObrigatorio,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.tipo_ato.nome_obrigatorio",
-                "Nome do tipo de ato é obrigatório")),
-
-        new(TipoAtoPublicadoErrorCodes.NomeTamanho,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.tipo_ato.nome_tamanho",
-                "Tamanho do nome do tipo de ato inválido")),
-
-        new(TipoAtoPublicadoErrorCodes.BaseLegalTamanho,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.tipo_ato.base_legal_tamanho",
-                "Tamanho da base legal inválido")),
-
-        new(TipoAtoPublicadoErrorCodes.VigenciaFimAnteriorAoInicio,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.tipo_ato.vigencia_fim_anterior_ao_inicio",
-                "Fim da vigência deve ser posterior ao início")),
-
-        new(TipoAtoPublicadoErrorCodes.ResultadoComEfeitoIrreversivel,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.tipo_ato.resultado_com_efeito_irreversivel",
-                "Tipo de resultado não pode ter efeito irreversível")),
-
-        new(AtoNormativoErrorCodes.TipoSemVersaoVigente,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.ato_normativo.tipo_sem_versao_vigente",
-                "Não há versão vigente do tipo de ato na data da publicação")),
-
-        new(AtoNormativoErrorCodes.VersaoDoObjetoIncompleta,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.ato_normativo.versao_do_objeto_incompleta",
-                "A versão do objeto deve trazer o par (id, hash) completo ou nenhum dos dois")),
-
-        new(AtoNormativoErrorCodes.NaoEncontrado,
-            new DomainErrorMapping(
-                StatusCodes.Status404NotFound,
-                "uniplus.publicacoes.ato_normativo.nao_encontrado",
-                "Ato normativo não encontrado")),
-
-        new(AtoNormativoErrorCodes.AtoRetificadoNaoEncontrado,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.ato_normativo.ato_retificado_nao_encontrado",
-                "O ato retificado não corresponde a nenhum ato registrado")),
-
-        new(AtoNormativoErrorCodes.ClasseDeCongelamentoDivergente,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.ato_normativo.classe_congelamento_divergente",
-                "A classe de congelamento do ato que retifica deve coincidir com a do ato retificado")),
-
-        // 409 e não 422: é conflito com o estado já gravado — o ato-alvo já tem um
-        // retificador —, o mesmo critério que classifica a vigência sobreposta como 409.
-        new(AtoNormativoErrorCodes.AtoJaRetificado,
-            new DomainErrorMapping(
-                StatusCodes.Status409Conflict,
-                "uniplus.publicacoes.ato_normativo.ato_ja_retificado",
-                "O ato que se tentou retificar já foi retificado por outro (a cadeia é linear)")),
-
-        // 409 pelo mesmo critério: o payload está coerente, mas o objeto vinculado já é
-        // tratado por outra linhagem de atos deste tipo (ADR-0107).
-        new(AtoNormativoErrorCodes.ObjetoJaTemAtoVivoDoTipo,
-            new DomainErrorMapping(
-                StatusCodes.Status409Conflict,
-                "uniplus.publicacoes.ato_normativo.objeto_ja_tem_ato_vivo_do_tipo",
-                "O tipo admite um único ato vivo por objeto, e a entidade vinculada já é tratada por outra linhagem")),
-
-        // 422: o pedido quer registrar por aqui um ato que só o domínio dono do objeto
-        // registra — pelo vínculo declarado ou pelo herdado do ato retificado. Não é
-        // conflito de vaga nem de versão: nenhuma repetição do pedido o tornaria aceito.
-        new(AtoNormativoErrorCodes.VinculoExigeRegistroPeloDominio,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.ato_normativo.vinculo_exige_registro_pelo_dominio",
-                "Ato vinculado a esta entidade só pode ser registrado pelo módulo dono do objeto")),
-
-        // Anexos: 422, é o próprio payload que não permite identificar ou provar o anexo.
-        new(AnexoDoAtoErrorCodes.HashInvalido,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.anexo_do_ato.hash_invalido",
-                "O hash do anexo deve ser um SHA-256 em hexadecimal minúsculo")),
-
-        new(AnexoDoAtoErrorCodes.NomeInvalido,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.anexo_do_ato.nome_invalido",
-                "O nome do anexo é obrigatório e tem tamanho máximo")),
-
-        new(AnexoDoAtoErrorCodes.NomeDuplicado,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.anexo_do_ato.nome_duplicado",
-                "Há mais de um anexo com o mesmo nome no ato")),
-
-        new(AnexoDoAtoErrorCodes.QuantidadeExcedida,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.anexo_do_ato.quantidade_excedida",
-                "O ato excede o número máximo de anexos")),
-
-        new(AnexoDoAtoErrorCodes.Nulo,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.anexo_do_ato.nulo",
-                "A lista de anexos não admite elemento nulo")),
-
-        new(AnexoDoAtoErrorCodes.TipoMidiaInvalido,
-            new DomainErrorMapping(
-                StatusCodes.Status422UnprocessableEntity,
-                "uniplus.publicacoes.anexo_do_ato.tipo_midia_invalido",
-                "O tipo de mídia do anexo deve ter a forma tipo/subtipo")),
+        .. ErrosDoTipoDeAto.Mapeamentos,
+        .. ErrosDoAtoNormativo.Mapeamentos,
+        .. ErrosDoAnexoDoAto.Mapeamentos,
     ];
 }

@@ -7,9 +7,11 @@ using AwesomeAssertions;
 using NSubstitute;
 
 using Unifesspa.UniPlus.Kernel.Pagination;
+using Unifesspa.UniPlus.Kernel.Results;
 using Unifesspa.UniPlus.Publicacoes.Application.DTOs;
 using Unifesspa.UniPlus.Publicacoes.Application.Queries.AtosNormativos;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
+using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
 
 [SuppressMessage(
@@ -22,80 +24,58 @@ public sealed class AtoNormativoQueryHandlersTests
 
     private readonly IAtoNormativoRepository _atos = Substitute.For<IAtoNormativoRepository>();
 
-    [Fact(DisplayName = "ObterPorId devolve null quando o ato não existe")]
-    public async Task ObterPorId_Inexistente_Null()
+    [Fact(DisplayName = "ObterPorId falha com ato_normativo.nao_encontrado quando o ato não existe")]
+    public async Task ObterPorId_Inexistente_FalhaNaoEncontrado()
     {
         _atos.ObterPorIdParaLeituraAsync(Arg.Any<Guid>(), Arg.Any<CancellationToken>())
             .Returns((AtoNormativo?)null);
 
-        AtoNormativoDto? dto = await ObterAtoNormativoPorIdQueryHandler.Handle(
+        Result<AtoNormativoDto> resultado = await ObterAtoNormativoPorIdQueryHandler.Handle(
             new ObterAtoNormativoPorIdQuery(Guid.CreateVersion7()), _atos, CancellationToken.None);
 
-        dto.Should().BeNull();
+        resultado.IsFailure.Should().BeTrue();
+        resultado.Error!.Code.Should().Be(AtoNormativoErrorCodes.NaoEncontrado);
     }
 
     [Fact(DisplayName = "ObterPorId recomputa o aviso excluindo o próprio ato")]
-    public async Task ObterPorId_RecomputaAvisoExcluindoProprio()
+    public async Task ObterPorId_AtoSemRetificacaoComOutroNumeroIgual_AvisaNumeroDuplicado()
     {
         AtoNormativo ato = NovoAto();
-        _atos.ObterPorIdParaLeituraAsync(ato.Id, Arg.Any<CancellationToken>()).Returns(ato);
-        // Ato sem retificação: a cadeia é só ele mesmo.
-        _atos.ListarIdsDaCadeiaAsync(ato.Id, Arg.Any<CancellationToken>()).Returns([ato.Id]);
         Guid outro = Guid.CreateVersion7();
-        // O calculator consulta todos os conflitantes (excluirId nulo) e exclui a
-        // cadeia (aqui, só o próprio ato) em memória; `outro` sobrevive, o aviso aparece.
-        _atos.ListarIdsComMesmaNumeracaoAsync(
-            "CEPS", "EDITAL", 2026, "13", null, Arg.Any<CancellationToken>())
-            .Returns([outro]);
+        PrepararDetalhe(ato, cadeia: [ato.Id], mesmaNumeracao: [outro]);
 
-        AtoNormativoDto? dto = await ObterAtoNormativoPorIdQueryHandler.Handle(
-            new ObterAtoNormativoPorIdQuery(ato.Id), _atos, CancellationToken.None);
+        AtoNormativoDto dto = await ObterDetalheAsync(ato.Id);
 
-        dto.Should().NotBeNull();
-        dto!.Avisos.Should().ContainSingle();
+        dto.Avisos.Should().ContainSingle();
         dto.Avisos![0].Codigo.Should().Be("NumeroDuplicado");
     }
 
     [Fact(DisplayName = "Detalhe de retificação exclui o ato retificado dos avisos, mantendo a colisão externa")]
-    public async Task ObterPorId_Retificacao_ExcluiRetificadoMantemColisaoExterna()
+    public async Task ObterPorId_Retificacao_AvisaSomenteColisaoExterna()
     {
         Guid raizId = Guid.CreateVersion7();
         Guid externo = Guid.CreateVersion7();
         AtoNormativo retificador = NovoRetificador(raizId);
-        _atos.ObterPorIdParaLeituraAsync(retificador.Id, Arg.Any<CancellationToken>()).Returns(retificador);
-        // A cadeia: raiz → retificador.
-        _atos.ListarIdsDaCadeiaAsync(retificador.Id, Arg.Any<CancellationToken>())
-            .Returns([raizId, retificador.Id]);
-        // Conflitantes pela numeração: a raiz (mesma linhagem — deve sair) e um ato externo.
-        _atos.ListarIdsComMesmaNumeracaoAsync("CEPS", "EDITAL", 2026, "13", null, Arg.Any<CancellationToken>())
-            .Returns([raizId, externo]);
+        PrepararDetalhe(retificador, cadeia: [raizId, retificador.Id], mesmaNumeracao: [raizId, externo]);
 
-        AtoNormativoDto? dto = await ObterAtoNormativoPorIdQueryHandler.Handle(
-            new ObterAtoNormativoPorIdQuery(retificador.Id), _atos, CancellationToken.None);
+        AtoNormativoDto dto = await ObterDetalheAsync(retificador.Id);
 
-        dto!.Avisos.Should().ContainSingle();
+        dto.Avisos.Should().ContainSingle();
         dto.Avisos![0].AtosConflitantes.Should().Contain(externo).And.NotContain(raizId);
     }
 
     [Fact(DisplayName = "Detalhe da cabeça de uma cadeia profunda exclui a linhagem inteira dos avisos")]
-    public async Task ObterPorId_CadeiaProfunda_ExcluiLinhagemInteira()
+    public async Task ObterPorId_CadeiaProfunda_AvisaSomenteColisaoExterna()
     {
         Guid raizId = Guid.CreateVersion7();
         Guid meioId = Guid.CreateVersion7();
         Guid externo = Guid.CreateVersion7();
-        AtoNormativo cabeca = NovoRetificador(meioId); // a cabeça retifica o meio
-        _atos.ObterPorIdParaLeituraAsync(cabeca.Id, Arg.Any<CancellationToken>()).Returns(cabeca);
-        // A cadeia inteira: raiz → meio → cabeça.
-        _atos.ListarIdsDaCadeiaAsync(cabeca.Id, Arg.Any<CancellationToken>())
-            .Returns([raizId, meioId, cabeca.Id]);
-        // Mesma numeração: raiz e meio (mesma linhagem, republicação) e um ato externo.
-        _atos.ListarIdsComMesmaNumeracaoAsync("CEPS", "EDITAL", 2026, "13", null, Arg.Any<CancellationToken>())
-            .Returns([raizId, meioId, externo]);
+        AtoNormativo cabeca = NovoRetificador(meioId);
+        PrepararDetalhe(cabeca, cadeia: [raizId, meioId, cabeca.Id], mesmaNumeracao: [raizId, meioId, externo]);
 
-        AtoNormativoDto? dto = await ObterAtoNormativoPorIdQueryHandler.Handle(
-            new ObterAtoNormativoPorIdQuery(cabeca.Id), _atos, CancellationToken.None);
+        AtoNormativoDto dto = await ObterDetalheAsync(cabeca.Id);
 
-        dto!.Avisos.Should().ContainSingle();
+        dto.Avisos.Should().ContainSingle();
         dto.Avisos![0].AtosConflitantes.Should().Contain(externo)
             .And.NotContain(raizId).And.NotContain(meioId);
     }
@@ -112,6 +92,23 @@ public sealed class AtoNormativoQueryHandlersTests
 
         resultado.Items.Should().ContainSingle();
         resultado.Items[0].Avisos.Should().BeNull();
+    }
+
+    private void PrepararDetalhe(AtoNormativo ato, Guid[] cadeia, Guid[] mesmaNumeracao)
+    {
+        _atos.ObterPorIdParaLeituraAsync(ato.Id, Arg.Any<CancellationToken>()).Returns(ato);
+        _atos.ListarIdsDaCadeiaAsync(ato.Id, Arg.Any<CancellationToken>()).Returns(cadeia);
+        _atos.ListarIdsComMesmaNumeracaoAsync("CEPS", "EDITAL", 2026, "13", null, Arg.Any<CancellationToken>())
+            .Returns(mesmaNumeracao);
+    }
+
+    private async Task<AtoNormativoDto> ObterDetalheAsync(Guid atoId)
+    {
+        Result<AtoNormativoDto> resultado = await ObterAtoNormativoPorIdQueryHandler.Handle(
+            new ObterAtoNormativoPorIdQuery(atoId), _atos, CancellationToken.None);
+
+        resultado.IsSuccess.Should().BeTrue();
+        return resultado.Value!;
     }
 
     private static AtoNormativo NovoAto() =>

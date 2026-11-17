@@ -3822,16 +3822,6 @@
       "titulo": "Ato vinculado a esta entidade só pode ser registrado pelo módulo dono do objeto"
     },
     {
-      "codigo": "uniplus.publicacoes.referencia_versao_do_objeto.hash_invalido",
-      "status": 422,
-      "titulo": "Hash da versão do objeto deve ser um SHA-256 em hexadecimal minúsculo"
-    },
-    {
-      "codigo": "uniplus.publicacoes.referencia_versao_do_objeto.id_obrigatorio",
-      "status": 422,
-      "titulo": "Identificador da versão do objeto é obrigatório"
-    },
-    {
       "codigo": "uniplus.publicacoes.tipo_ato.base_legal_tamanho",
       "status": 422,
       "titulo": "Tamanho da base legal inválido"
