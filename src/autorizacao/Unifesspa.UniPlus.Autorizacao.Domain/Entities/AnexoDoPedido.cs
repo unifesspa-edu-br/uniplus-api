@@ -12,7 +12,6 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed class AnexoDoPedido : EntityBase
 {
-    private const int ETagMaxLength = 200;
     private const string PrefixoDasChaves = "autorizacao/pedido";
 
     public Guid PedidoId { get; private set; }
@@ -67,19 +66,15 @@ public sealed class AnexoDoPedido : EntityBase
     {
         if (Situacao != SituacaoDoAnexo.AguardandoEnvio)
         {
-            return Result.Failure(new DomainError(
-                PedidoErrorCodes.SituacaoInvalida,
-                "O anexo não está aguardando o envio do PDF."));
+            return Result.Failure(NaoAguardaEnvio());
         }
 
-        if (string.IsNullOrWhiteSpace(etag) || etag.Length > ETagMaxLength || etag.Contains('\0', StringComparison.Ordinal))
+        if (ETagDoArmazenamento.Normalizar(etag) is not { } normalizado)
         {
-            return Result.ValidationFailure([new FieldError("etag", new DomainError(
-                PedidoErrorCodes.AnexoInvalido,
-                "O ETag que o armazenamento devolveu ao enviar o PDF é obrigatório."))]);
+            return ETagAusente();
         }
 
-        ETag = etag.Trim();
+        ETag = normalizado;
         EnviadoEm = instante;
         Situacao = SituacaoDoAnexo.EmVerificacao;
         return Result.Success();
@@ -116,4 +111,12 @@ public sealed class AnexoDoPedido : EntityBase
         Situacao = SituacaoDoAnexo.Recusado;
         return true;
     }
+
+    private static DomainError NaoAguardaEnvio() => new(
+        PedidoErrorCodes.SituacaoInvalida,
+        "O anexo não está aguardando o envio do PDF.");
+
+    private static Result ETagAusente() => Result.ValidationFailure([new FieldError("etag", new DomainError(
+        PedidoErrorCodes.AnexoInvalido,
+        "O ETag que o armazenamento devolveu ao enviar o PDF é obrigatório."))]);
 }

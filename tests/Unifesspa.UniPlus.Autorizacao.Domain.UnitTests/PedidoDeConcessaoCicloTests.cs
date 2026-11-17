@@ -159,6 +159,28 @@ public sealed class PedidoDeConcessaoCicloTests
         Codigos(pedido.ConfirmarAnexo(anexo.Id, "\"etag\"", Agora)).Should().Equal(PedidoErrorCodes.SituacaoInvalida);
     }
 
+    [Theory(DisplayName = "O ETag ausente ou com caractere nulo não confirma o anexo")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("\"etag\0\"")]
+    public void Anexo_Confirmar_ETagInvalido_Recusa(string? etag) =>
+        ConfirmacaoRecusada(etag).Should().Equal(PedidoErrorCodes.AnexoInvalido);
+
+    [Fact(DisplayName = "O ETag acima do tamanho máximo não confirma o anexo")]
+    public void Anexo_Confirmar_ETagLongoDemais_Recusa() =>
+        ConfirmacaoRecusada(new string('a', ETagDoArmazenamento.MaxLength + 1)).Should().Equal(PedidoErrorCodes.AnexoInvalido);
+
+    [Fact(DisplayName = "O ETag do tamanho máximo confirma o anexo")]
+    public void Anexo_Confirmar_ETagNoLimite_Aceita()
+    {
+        PedidoDeConcessao pedido = Pedido().AguardandoGestor();
+        AnexoDoPedido anexo = pedido.NovoAnexo(2048).Value!;
+
+        pedido.ConfirmarAnexo(anexo.Id, new string('a', ETagDoArmazenamento.MaxLength), Agora).IsSuccess.Should().BeTrue();
+
+        anexo.ETag.Should().HaveLength(ETagDoArmazenamento.MaxLength);
+    }
+
     [Fact(DisplayName = "O veredicto repetido do anexo não muda nada")]
     public void Anexo_VeredictoRepetido_NaoMuda()
     {
@@ -200,4 +222,16 @@ public sealed class PedidoDeConcessaoCicloTests
     }
 
     private static PerfilAvaliado Ampliado => new([.. Sensivel.Permissoes, "selecao:inscricoes:exportar"], "sensivel", true, null);
+
+    private static IEnumerable<string> ConfirmacaoRecusada(string? etag)
+    {
+        PedidoDeConcessao pedido = Pedido().AguardandoGestor();
+        AnexoDoPedido anexo = pedido.NovoAnexo(2048).Value!;
+
+        IEnumerable<string> codigos = Codigos(pedido.ConfirmarAnexo(anexo.Id, etag, Agora));
+
+        anexo.Situacao.Should().Be(SituacaoDoAnexo.AguardandoEnvio);
+        anexo.ETag.Should().BeNull();
+        return codigos;
+    }
 }
