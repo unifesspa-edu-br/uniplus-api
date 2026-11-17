@@ -140,33 +140,7 @@ public sealed class ConcessaoRepository : IConcessaoRepository
     {
         ArgumentNullException.ThrowIfNull(filtro);
 
-        IQueryable<Concessao> consulta = _context.Concessoes.AsNoTracking();
-
-        if (filtro.PessoaEmissor is not null && filtro.PessoaContaId is not null)
-        {
-            string emissor = filtro.PessoaEmissor;
-            string contaId = filtro.PessoaContaId;
-            consulta = consulta.Where(c => c.BeneficiarioEmissor == emissor && c.BeneficiarioContaId == contaId);
-        }
-
-        if (filtro.UnidadeId is { } unidadeId)
-        {
-            consulta = consulta.Where(c => c.UnidadeId == unidadeId);
-        }
-
-        if (filtro.PerfilId is { } perfilId)
-        {
-            consulta = consulta.Where(c => c.PerfilId == perfilId);
-        }
-
-        DateTimeOffset agora = filtro.Agora;
-        consulta = filtro.Situacao switch
-        {
-            SituacaoDaConcessao.Ativa => consulta.Where(c => c.RevogadaEm == null && (c.ValidaAte == null || c.ValidaAte > agora)),
-            SituacaoDaConcessao.Revogada => consulta.Where(c => c.RevogadaEm != null),
-            SituacaoDaConcessao.Vencida => consulta.Where(c => c.RevogadaEm == null && c.ValidaAte != null && c.ValidaAte <= agora),
-            _ => consulta,
-        };
+        IQueryable<Concessao> consulta = _context.Concessoes.AsNoTracking().Filtradas(filtro);
 
         // Sem OrderBy aqui: o helper keyset (ADR-0089) ordena e fatia.
         CursorKeysetPage<ConcessaoComPerfil> page = await CursorKeyset
