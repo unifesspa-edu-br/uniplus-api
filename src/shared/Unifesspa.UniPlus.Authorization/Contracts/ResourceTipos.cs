@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Authorization.Contracts;
 
 using System.Text.RegularExpressions;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+
 /// <summary>
 /// Vocabulário do tipo de resource que a decisão de acesso enxerga: o formato que todo tipo segue e o tipo fixo das
 /// decisões sem alvo próprio. Os tipos de cada módulo ficam numa classe do próprio módulo.
