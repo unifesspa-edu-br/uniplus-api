@@ -1579,7 +1579,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 {
                     implantacao_id = table.Column<Guid>(type: "uuid", nullable: false),
                     codigo = table.Column<string>(type: "character varying(120)", maxLength: 120, nullable: false),
-                    modulo = table.Column<string>(type: "character varying(60)", maxLength: 60, nullable: false),
                     classificacao = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: false),
                     de_unidade = table.Column<bool>(type: "boolean", nullable: false),
                     reservada = table.Column<bool>(type: "boolean", nullable: false)
@@ -4969,13 +4968,13 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     perfil_id = table.Column<Guid>(type: "uuid", nullable: false),
                     unidade_id = table.Column<Guid>(type: "uuid", nullable: true),
                     justificativa = table.Column<string>(type: "character varying(2000)", maxLength: 2000, nullable: false),
-                    situacao = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
                     valida_ate_sugerida = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    valida_ate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    criado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    encerrado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    concessao_id = table.Column<Guid>(type: "uuid", nullable: true),
                     anexara_documento = table.Column<bool>(type: "boolean", nullable: false),
+                    situacao = table.Column<string>(type: "character varying(40)", maxLength: 40, nullable: false),
+                    valida_ate = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    encerrado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    criado_em = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    concessao_id = table.Column<Guid>(type: "uuid", nullable: true),
                     termo_versao_id = table.Column<Guid>(type: "uuid", nullable: true),
                     termo_numero = table.Column<int>(type: "integer", nullable: true),
                     termo_resumo = table.Column<string>(type: "character(64)", fixedLength: true, maxLength: 64, nullable: true),
@@ -5797,7 +5796,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "fase_cronograma_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_bases_da_permissao_concedida_perfil_id_concessao_id",
+                name: "ix_bases_da_permissao_concedida_perfil_concessao",
                 schema: "autorizacao",
                 table: "bases_da_permissao_concedida",
                 columns: new[] { "perfil_id", "concessao_id" });
@@ -6592,7 +6591,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                 column: "pedido_id");
 
             migrationBuilder.CreateIndex(
-                name: "ix_liberacoes_da_reclassificacao_perfil_id_concessao_id",
+                name: "ix_liberacoes_da_reclassificacao_concessao",
                 schema: "autorizacao",
                 table: "liberacoes_da_reclassificacao",
                 columns: new[] { "perfil_id", "concessao_id" });

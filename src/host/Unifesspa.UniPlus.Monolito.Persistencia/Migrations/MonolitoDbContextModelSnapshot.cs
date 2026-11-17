@@ -232,7 +232,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ux_bases_da_permissao_ordem");
 
                     b.HasIndex("PerfilId", "ConcessaoId")
-                        .HasDatabaseName("ix_bases_da_permissao_concedida_perfil_id_concessao_id");
+                        .HasDatabaseName("ix_bases_da_permissao_concedida_perfil_concessao");
 
                     b.HasIndex("ConcessaoId", "Codigo", "OrdemNaTrilha")
                         .IsDescending(false, false, true)
@@ -1652,7 +1652,7 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasDatabaseName("ux_liberacoes_da_reclassificacao_ordem");
 
                     b.HasIndex("PerfilId", "ConcessaoId")
-                        .HasDatabaseName("ix_liberacoes_da_reclassificacao_perfil_id_concessao_id");
+                        .HasDatabaseName("ix_liberacoes_da_reclassificacao_concessao");
 
                     b.HasIndex("ReclassificacaoId", "ConcessaoId", "Etapa")
                         .IsUnique()
@@ -1810,34 +1810,11 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("id");
 
-                    b.Property<bool>("AnexaraDocumento")
-                        .HasColumnType("boolean")
-                        .HasColumnName("anexara_documento");
-
-                    b.Property<DateTimeOffset?>("BeneficiarioAceitouEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("beneficiario_aceitou_em");
-
-                    b.Property<string>("BeneficiarioContaId")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("beneficiario_conta_id");
-
                     b.Property<string>("BeneficiarioEmail")
                         .IsRequired()
                         .HasMaxLength(254)
                         .HasColumnType("character varying(254)")
                         .HasColumnName("beneficiario_email");
-
-                    b.Property<string>("BeneficiarioEmissor")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("beneficiario_emissor");
-
-                    b.Property<string>("BeneficiarioNome")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("beneficiario_nome");
 
                     b.Property<Guid?>("ConcessaoId")
                         .HasColumnType("uuid")
@@ -1851,61 +1828,9 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("criado_em");
 
-                    b.Property<DateTimeOffset?>("EncerradoEm")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("encerrado_em");
-
-                    b.Property<string>("Justificativa")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("character varying(2000)")
-                        .HasColumnName("justificativa");
-
                     b.Property<Guid>("PerfilId")
                         .HasColumnType("uuid")
                         .HasColumnName("perfil_id");
-
-                    b.Property<string>("Situacao")
-                        .IsRequired()
-                        .HasMaxLength(40)
-                        .HasColumnType("character varying(40)")
-                        .HasColumnName("situacao");
-
-                    b.Property<string>("SolicitanteContaId")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("solicitante_conta_id");
-
-                    b.Property<string>("SolicitanteEmail")
-                        .HasMaxLength(254)
-                        .HasColumnType("character varying(254)")
-                        .HasColumnName("solicitante_email");
-
-                    b.Property<string>("SolicitanteEmissor")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("solicitante_emissor");
-
-                    b.Property<string>("SolicitanteNome")
-                        .HasMaxLength(255)
-                        .HasColumnType("character varying(255)")
-                        .HasColumnName("solicitante_nome");
-
-                    b.Property<int?>("TermoNumero")
-                        .HasColumnType("integer")
-                        .HasColumnName("termo_numero");
-
-                    b.Property<string>("TermoResumo")
-                        .HasMaxLength(64)
-                        .HasColumnType("character(64)")
-                        .HasColumnName("termo_resumo")
-                        .IsFixedLength();
-
-                    b.Property<Guid?>("TermoVersaoId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("termo_versao_id");
 
                     b.Property<Guid?>("UnidadeId")
                         .HasColumnType("uuid")
@@ -1914,14 +1839,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<DateTimeOffset?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
-
-                    b.Property<DateTimeOffset?>("ValidaAte")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("valida_ate");
-
-                    b.Property<DateTimeOffset?>("ValidaAteSugerida")
-                        .HasColumnType("timestamp with time zone")
-                        .HasColumnName("valida_ate_sugerida");
 
                     b.Property<Guid?>("VersaoId")
                         .HasColumnType("uuid")
@@ -1936,17 +1853,8 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.HasKey("Id")
                         .HasName("pk_pedidos_de_concessao");
 
-                    b.HasIndex("Situacao")
-                        .HasDatabaseName("ix_pedidos_situacao");
-
-                    b.HasIndex("TermoVersaoId")
-                        .HasDatabaseName("ix_pedidos_de_concessao_termo_versao_id");
-
                     b.HasIndex("PerfilId", "VersaoId")
                         .HasDatabaseName("ix_pedidos_de_concessao_perfil_id_versao_id");
-
-                    b.HasIndex("SolicitanteEmissor", "SolicitanteContaId")
-                        .HasDatabaseName("ix_pedidos_solicitante");
 
                     b.HasIndex("BeneficiarioEmail", "PerfilId", "UnidadeId")
                         .IsUnique()
@@ -2081,12 +1989,6 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                     b.Property<bool>("DeUnidade")
                         .HasColumnType("boolean")
                         .HasColumnName("de_unidade");
-
-                    b.Property<string>("Modulo")
-                        .IsRequired()
-                        .HasMaxLength(60)
-                        .HasColumnType("character varying(60)")
-                        .HasColumnName("modulo");
 
                     b.Property<bool>("Reservada")
                         .HasColumnType("boolean")
@@ -15835,18 +15737,201 @@ namespace Unifesspa.UniPlus.Monolito.Persistencia.Migrations
                         .IsRequired()
                         .HasConstraintName("fk_pedidos_de_concessao_perfil_perfil_id");
 
-                    b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.VersaoDoTermo", null)
-                        .WithMany()
-                        .HasForeignKey("TermoVersaoId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .HasConstraintName("fk_pedidos_de_concessao_versao_do_termo_termo_versao_id");
-
                     b.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.VersaoDoPerfil", null)
                         .WithMany()
                         .HasForeignKey("PerfilId", "VersaoId")
                         .HasPrincipalKey("PerfilId", "Id")
                         .OnDelete(DeleteBehavior.Restrict)
                         .HasConstraintName("fk_pedidos_de_concessao_versao_do_perfil_perfil_id_versao_id");
+
+                    b.OwnsOne("Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects.AndamentoDoPedido", "Andamento", b1 =>
+                        {
+                            b1.Property<Guid>("PedidoDeConcessaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<DateTimeOffset?>("EncerradoEm")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("encerrado_em");
+
+                            b1.Property<string>("Situacao")
+                                .IsRequired()
+                                .HasMaxLength(40)
+                                .HasColumnType("character varying(40)")
+                                .HasColumnName("situacao");
+
+                            b1.Property<DateTimeOffset?>("ValidaAte")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("valida_ate");
+
+                            b1.HasKey("PedidoDeConcessaoId");
+
+                            b1.HasIndex("Situacao")
+                                .HasDatabaseName("ix_pedidos_situacao");
+
+                            b1.ToTable("pedidos_de_concessao", "autorizacao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PedidoDeConcessaoId")
+                                .HasConstraintName("fk_pedidos_de_concessao_pedidos_de_concessao_id");
+                        });
+
+                    b.OwnsOne("Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects.BeneficiarioDoPedido", "Beneficiario", b1 =>
+                        {
+                            b1.Property<Guid>("PedidoDeConcessaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<DateTimeOffset?>("AceitouEm")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("beneficiario_aceitou_em");
+
+                            b1.Property<string>("ContaId")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("beneficiario_conta_id");
+
+                            b1.Property<string>("Emissor")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("beneficiario_emissor");
+
+                            b1.Property<string>("Nome")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("beneficiario_nome");
+
+                            b1.HasKey("PedidoDeConcessaoId");
+
+                            b1.ToTable("pedidos_de_concessao", "autorizacao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PedidoDeConcessaoId")
+                                .HasConstraintName("fk_pedidos_de_concessao_pedidos_de_concessao_id");
+                        });
+
+                    b.OwnsOne("Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects.DeclaracaoDoPedido", "Declaracao", b1 =>
+                        {
+                            b1.Property<Guid>("PedidoDeConcessaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<bool>("AnexaraDocumento")
+                                .HasColumnType("boolean")
+                                .HasColumnName("anexara_documento");
+
+                            b1.Property<string>("Justificativa")
+                                .IsRequired()
+                                .HasMaxLength(2000)
+                                .HasColumnType("character varying(2000)")
+                                .HasColumnName("justificativa");
+
+                            b1.Property<DateTimeOffset?>("ValidaAteSugerida")
+                                .HasColumnType("timestamp with time zone")
+                                .HasColumnName("valida_ate_sugerida");
+
+                            b1.HasKey("PedidoDeConcessaoId");
+
+                            b1.ToTable("pedidos_de_concessao", "autorizacao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PedidoDeConcessaoId")
+                                .HasConstraintName("fk_pedidos_de_concessao_pedidos_de_concessao_id");
+                        });
+
+                    b.OwnsOne("Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects.SolicitanteDoPedido", "Solicitante", b1 =>
+                        {
+                            b1.Property<Guid>("PedidoDeConcessaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<string>("ContaId")
+                                .IsRequired()
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("solicitante_conta_id");
+
+                            b1.Property<string>("Email")
+                                .HasMaxLength(254)
+                                .HasColumnType("character varying(254)")
+                                .HasColumnName("solicitante_email");
+
+                            b1.Property<string>("Emissor")
+                                .IsRequired()
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("solicitante_emissor");
+
+                            b1.Property<string>("Nome")
+                                .HasMaxLength(255)
+                                .HasColumnType("character varying(255)")
+                                .HasColumnName("solicitante_nome");
+
+                            b1.HasKey("PedidoDeConcessaoId");
+
+                            b1.HasIndex("Emissor", "ContaId")
+                                .HasDatabaseName("ix_pedidos_solicitante");
+
+                            b1.ToTable("pedidos_de_concessao", "autorizacao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PedidoDeConcessaoId")
+                                .HasConstraintName("fk_pedidos_de_concessao_pedidos_de_concessao_id");
+                        });
+
+                    b.OwnsOne("Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects.TermoFixado", "Termo", b1 =>
+                        {
+                            b1.Property<Guid>("PedidoDeConcessaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("id");
+
+                            b1.Property<int>("Numero")
+                                .HasColumnType("integer")
+                                .HasColumnName("termo_numero");
+
+                            b1.Property<string>("Resumo")
+                                .IsRequired()
+                                .HasMaxLength(64)
+                                .HasColumnType("character(64)")
+                                .HasColumnName("termo_resumo")
+                                .IsFixedLength();
+
+                            b1.Property<Guid>("VersaoId")
+                                .HasColumnType("uuid")
+                                .HasColumnName("termo_versao_id");
+
+                            b1.HasKey("PedidoDeConcessaoId");
+
+                            b1.HasIndex("VersaoId")
+                                .HasDatabaseName("ix_pedidos_de_concessao_termo_versao_id");
+
+                            b1.ToTable("pedidos_de_concessao", "autorizacao");
+
+                            b1.WithOwner()
+                                .HasForeignKey("PedidoDeConcessaoId")
+                                .HasConstraintName("fk_pedidos_de_concessao_pedidos_de_concessao_id");
+
+                            b1.HasOne("Unifesspa.UniPlus.Autorizacao.Domain.Entities.VersaoDoTermo", null)
+                                .WithMany()
+                                .HasForeignKey("VersaoId")
+                                .OnDelete(DeleteBehavior.Restrict)
+                                .IsRequired()
+                                .HasConstraintName("fk_pedidos_de_concessao_versao_do_termo_termo_versao_id");
+                        });
+
+                    b.Navigation("Andamento")
+                        .IsRequired();
+
+                    b.Navigation("Beneficiario")
+                        .IsRequired();
+
+                    b.Navigation("Declaracao")
+                        .IsRequired();
+
+                    b.Navigation("Solicitante")
+                        .IsRequired();
+
+                    b.Navigation("Termo");
                 });
 
             modelBuilder.Entity("Unifesspa.UniPlus.Autorizacao.Domain.Entities.Perfil", b =>

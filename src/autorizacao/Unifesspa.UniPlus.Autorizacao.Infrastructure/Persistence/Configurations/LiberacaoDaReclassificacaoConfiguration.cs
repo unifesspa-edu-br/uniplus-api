@@ -64,6 +64,8 @@ internal sealed class LiberacaoDaReclassificacaoConfiguration : IEntityTypeConfi
             .HasPrincipalKey(c => new { c.PerfilId, c.Id })
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder.HasIndex(l => new { l.PerfilId, l.ConcessaoId }).HasDatabaseName("ix_liberacoes_da_reclassificacao_concessao");
+
         // Uma decisão por etapa em cada concessão: a segunda, simultânea, é barrada aqui se escapar da trava do perfil.
         builder.HasIndex(l => new { l.ReclassificacaoId, l.ConcessaoId, l.Etapa }).IsUnique().HasDatabaseName("ux_liberacoes_da_reclassificacao_etapa");
         builder.HasIndex(l => l.OrdemNaTrilha).IsUnique().HasDatabaseName("ux_liberacoes_da_reclassificacao_ordem");

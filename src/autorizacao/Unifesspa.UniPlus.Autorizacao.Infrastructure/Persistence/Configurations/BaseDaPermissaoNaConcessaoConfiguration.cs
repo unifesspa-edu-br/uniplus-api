@@ -59,6 +59,7 @@ internal sealed class BaseDaPermissaoNaConcessaoConfiguration : IEntityTypeConfi
         builder.HasIndex(b => new { b.ConcessaoId, b.Codigo, b.OrdemNaTrilha })
             .IsDescending(false, false, true)
             .HasDatabaseName("ix_bases_da_permissao_concessao_codigo");
+        builder.HasIndex(b => new { b.PerfilId, b.ConcessaoId }).HasDatabaseName("ix_bases_da_permissao_concedida_perfil_concessao");
         builder.HasIndex(b => b.OrdemNaTrilha).IsUnique().HasDatabaseName("ux_bases_da_permissao_ordem");
     }
 

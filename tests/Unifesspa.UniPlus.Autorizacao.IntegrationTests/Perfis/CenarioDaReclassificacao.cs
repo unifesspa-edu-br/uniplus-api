@@ -31,8 +31,8 @@ internal sealed class CenarioDaReclassificacao(AutorizacaoEndpointFixture fixtur
         """
         WITH atual AS (SELECT id FROM autorizacao.implantacoes_das_permissoes ORDER BY sequencia DESC LIMIT 1),
         novo AS (INSERT INTO autorizacao.implantacoes_das_permissoes (id, impressao, implantada_em) VALUES ({0}, {1}, now()) RETURNING id)
-        INSERT INTO autorizacao.permissoes_implantadas (implantacao_id, codigo, modulo, classificacao, de_unidade, reservada)
-        SELECT novo.id, p.codigo, p.modulo,
+        INSERT INTO autorizacao.permissoes_implantadas (implantacao_id, codigo, classificacao, de_unidade, reservada)
+        SELECT novo.id, p.codigo,
                CASE WHEN p.codigo = {2} THEN {3} ELSE p.classificacao END,
                CASE WHEN p.codigo = {2} THEN {4} ELSE p.de_unidade END,
                p.reservada
@@ -44,8 +44,8 @@ internal sealed class CenarioDaReclassificacao(AutorizacaoEndpointFixture fixtur
         """
         WITH atual AS (SELECT id FROM autorizacao.implantacoes_das_permissoes ORDER BY sequencia DESC LIMIT 1),
         novo AS (INSERT INTO autorizacao.implantacoes_das_permissoes (id, impressao, implantada_em) VALUES ({0}, {1}, now()) RETURNING id)
-        INSERT INTO autorizacao.permissoes_implantadas (implantacao_id, codigo, modulo, classificacao, de_unidade, reservada)
-        SELECT novo.id, p.codigo, p.modulo, p.classificacao, p.de_unidade, p.reservada
+        INSERT INTO autorizacao.permissoes_implantadas (implantacao_id, codigo, classificacao, de_unidade, reservada)
+        SELECT novo.id, p.codigo, p.classificacao, p.de_unidade, p.reservada
         FROM autorizacao.permissoes_implantadas p, atual, novo
         WHERE p.implantacao_id = atual.id AND p.codigo <> {2}
         """;

@@ -12,8 +12,6 @@ public sealed class PermissaoImplantada
 
     public string Codigo { get; private init; } = string.Empty;
 
-    public string Modulo { get; private init; } = string.Empty;
-
     public ClassificacaoDeProtecao Classificacao { get; private init; }
 
     public bool DeUnidade { get; private init; }
@@ -25,11 +23,10 @@ public sealed class PermissaoImplantada
     {
     }
 
-    internal PermissaoImplantada(Guid implantacaoId, string codigo, string modulo, ClassificacaoDeProtecao classificacao, bool deUnidade, bool reservada)
+    internal PermissaoImplantada(Guid implantacaoId, string codigo, ClassificacaoDeProtecao classificacao, bool deUnidade, bool reservada)
     {
         ImplantacaoId = implantacaoId;
         Codigo = codigo;
-        Modulo = modulo;
         Classificacao = classificacao;
         DeUnidade = deUnidade;
         Reservada = reservada;

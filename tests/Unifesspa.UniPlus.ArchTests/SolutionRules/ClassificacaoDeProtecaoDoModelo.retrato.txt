@@ -332,7 +332,6 @@ autorizacao.permissoes_implantadas.classificacao: Interno
 autorizacao.permissoes_implantadas.codigo: Interno
 autorizacao.permissoes_implantadas.de_unidade: Interno
 autorizacao.permissoes_implantadas.implantacao_id: Interno
-autorizacao.permissoes_implantadas.modulo: Interno
 autorizacao.permissoes_implantadas.reservada: Interno
 autorizacao.providencias.aberta_em: Pessoal
 autorizacao.providencias.concessao_id: Pessoal
