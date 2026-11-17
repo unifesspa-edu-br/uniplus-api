@@ -12,33 +12,33 @@ using Unifesspa.UniPlus.Kernel.Domain.Enums;
 using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
-/// A decisão de uma etapa da liberação da permissão reclassificada. A permissão da etapa é conferida antes da trava; a
-/// regra vive no agregado <see cref="ReclassificacaoDaPermissao"/>, e aqui se traduz o pedido, se roda sob a ordem de
-/// travas de <see cref="OperacaoSobreOPerfil"/> (o perfil e, em ordem de id, as concessões) e se grava de forma atômica o
-/// que a decisão produziu. O conflito de concorrência segue a ADR-0119: o endpoint tem chave de idempotência e o captura.
+/// A decisão de uma etapa da liberação da permissão reclassificada. A permissão da etapa é conferida antes de a operação tomar o
+/// perfil só para si; a regra vive no agregado <see cref="ReclassificacaoDaPermissao"/>, e aqui se traduz o pedido, se roda
+/// na ordem de acesso de <see cref="OperacaoSobreOPerfil"/> (o perfil e, em ordem de id, as concessões) e se grava de forma
+/// atômica o que a decisão produziu. O conflito de concorrência segue a ADR-0119: o endpoint tem chave de idempotência e o captura.
 /// </summary>
 public sealed class DecisoesDaReclassificacao
 {
     private readonly OperacaoSobreOPerfil _operacao;
     private readonly IReclassificacaoRepository _reclassificacoes;
     private readonly ConcessoesDaReclassificacao _concessoes;
-    private readonly AutorizacaoDaReclassificacao _autorizacao;
+    private readonly AutoriaDaOperacao _autoria;
 
     public DecisoesDaReclassificacao(
         OperacaoSobreOPerfil operacao,
         IReclassificacaoRepository reclassificacoes,
         ConcessoesDaReclassificacao concessoes,
-        AutorizacaoDaReclassificacao autorizacao)
+        AutoriaDaOperacao autoria)
     {
         ArgumentNullException.ThrowIfNull(operacao);
         ArgumentNullException.ThrowIfNull(reclassificacoes);
         ArgumentNullException.ThrowIfNull(concessoes);
-        ArgumentNullException.ThrowIfNull(autorizacao);
+        ArgumentNullException.ThrowIfNull(autoria);
 
         _operacao = operacao;
         _reclassificacoes = reclassificacoes;
         _concessoes = concessoes;
-        _autorizacao = autorizacao;
+        _autoria = autoria;
     }
 
     public async Task<GravacaoDaOperacao<DecisaoDaReclassificacaoDto>> DecidirAsync(
@@ -52,12 +52,10 @@ public sealed class DecisoesDaReclassificacao
             return Recusa(autorizada.Error!);
         }
 
-        Autorizada decisor = autorizada.Value!;
-
         return await _operacao
             .ExecutarComAvisosAsync(
-                decisor.PerfilId,
-                (perfil, contexto) => NaTravaAsync(reclassificacaoId, perfil, new Decisao(decisor.Pedido, decisor.Autoria, contexto.Agora), cancellationToken),
+                autorizada.Value!.PerfilId,
+                (perfil, contexto) => NoPerfilExclusivoAsync(reclassificacaoId, perfil, new Decisao(autorizada.Value!.Pedido, autorizada.Value!.Autoria, contexto.Agora), cancellationToken),
                 cancellationToken)
             .ConfigureAwait(false);
     }
@@ -83,7 +81,7 @@ public sealed class DecisoesDaReclassificacao
             return Result<Autorizada>.Failure(ReclassificacaoErros.NaoEncontrada());
         }
 
-        Result<AutoriaDaVersao> autoria = await _autorizacao.AutoriaAsync(perfilId.Value, cancellationToken).ConfigureAwait(false);
+        Result<AutoriaDaVersao> autoria = await _autoria.ExigirDaVersaoAsync(perfilId.Value, cancellationToken).ConfigureAwait(false);
 
         return autoria.IsFailure
             ? Result<Autorizada>.Failure(autoria.Error!)
@@ -108,7 +106,7 @@ public sealed class DecisoesDaReclassificacao
             : Result<PedidoLido>.Success(new PedidoLido(etapa!.Value, resultado!.Value, dados.Todas, dados.Concessoes ?? [], dados.Motivo));
     }
 
-    private async Task<DesfechoDaOperacao<DecisaoDaReclassificacaoDto>> NaTravaAsync(
+    private async Task<DesfechoDaOperacao<DecisaoDaReclassificacaoDto>> NoPerfilExclusivoAsync(
         Guid reclassificacaoId, Perfil perfil, Decisao decisao, CancellationToken cancellationToken)
     {
         ReclassificacaoDaPermissao? reclassificacao = await _reclassificacoes.ObterAsync(reclassificacaoId, cancellationToken).ConfigureAwait(false);
@@ -130,6 +128,19 @@ public sealed class DecisoesDaReclassificacao
 
     private DesfechoDaOperacao<DecisaoDaReclassificacaoDto> Gravar(DesfechoDaDecisaoDaReclassificacao desfecho, Guid loteId)
     {
+        Registrar(desfecho);
+
+        return new DesfechoDaOperacao<DecisaoDaReclassificacaoDto>(Result<DecisaoDaReclassificacaoDto>.Success(new DecisaoDaReclassificacaoDto(
+            loteId,
+            [.. desfecho.Liberacoes.Select(static l => l.ConcessaoId)],
+            [.. desfecho.Bases.Select(static b => b.ConcessaoId)],
+            desfecho.ParaOutraPessoa,
+            desfecho.PuladasPorEscopo)));
+    }
+
+    /// <summary>Acrescenta à gravação da operação o que a decisão produziu: as liberações e, depois, as bases novas.</summary>
+    private void Registrar(DesfechoDaDecisaoDaReclassificacao desfecho)
+    {
         foreach (LiberacaoDaReclassificacao liberacao in desfecho.Liberacoes)
         {
             _reclassificacoes.Adicionar(liberacao);
@@ -139,13 +150,6 @@ public sealed class DecisoesDaReclassificacao
         {
             _reclassificacoes.Adicionar(baseNova);
         }
-
-        return new DesfechoDaOperacao<DecisaoDaReclassificacaoDto>(Result<DecisaoDaReclassificacaoDto>.Success(new DecisaoDaReclassificacaoDto(
-            loteId,
-            [.. desfecho.Liberacoes.Select(static l => l.ConcessaoId)],
-            [.. desfecho.Bases.Select(static b => b.ConcessaoId)],
-            desfecho.ParaOutraPessoa,
-            desfecho.PuladasPorEscopo)));
     }
 
     private async Task<PedidoDeDecisaoDaReclassificacao> MontarPedidoAsync(

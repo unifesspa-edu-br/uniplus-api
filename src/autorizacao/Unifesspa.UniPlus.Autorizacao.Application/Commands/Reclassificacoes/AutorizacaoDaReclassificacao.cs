@@ -32,22 +32,12 @@ public sealed class AutorizacaoDaReclassificacao
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        AcessoDasEtapas? acesso = await AcessoDaVersao.ConsultarAsync(verificador, reclassificacaoId, cancellationToken, ResourceTiposAutorizacao.Reclassificacao).ConfigureAwait(false);
-        if (acesso is null)
-        {
-            return Result.Failure(PerfilHandlerErros.AutorNaoIdentificado());
-        }
+        DomainError? recusa = await AcessoDaVersao
+            .ConferirEtapaAsync(verificador, reclassificacaoId, ResourceTiposAutorizacao.Reclassificacao, etapa, ReclassificacaoErros.SemPermissaoNaEtapa(), cancellationToken)
+            .ConfigureAwait(false);
 
-        await AcessoDaVersao.RegistrarAsync(verificador, acesso.DecisaoDa(etapa), cancellationToken).ConfigureAwait(false);
-
-        return acesso.Decide(etapa) ? Result.Success() : Result.Failure(ReclassificacaoErros.SemPermissaoNaEtapa());
+        return recusa is null ? Result.Success() : Result.Failure(recusa);
     }
-
-    /// <summary>Quem decide a etapa, com o e-mail verificado do token, ou a recusa de identificação.</summary>
-    public async Task<Result<AutoriaDaVersao>> AutoriaAsync(Guid perfilId, CancellationToken cancellationToken) =>
-        await _autoria.DaVersaoAsync(perfilId, cancellationToken).ConfigureAwait(false) is { } autoria
-            ? Result<AutoriaDaVersao>.Success(autoria)
-            : Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
 
     /// <summary>
     /// Quem lê o detalhe: quem decide alguma das duas etapas ou quem consulta as versões, sem decidir. Devolve a
