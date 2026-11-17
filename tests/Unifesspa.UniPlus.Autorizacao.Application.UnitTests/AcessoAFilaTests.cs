@@ -55,6 +55,45 @@ public sealed class AcessoAFilaTests
         await verificador.DidNotReceiveWithAnyArgs().RegistrarDesfechoAsync(default!, default, default);
     }
 
+    [Theory(DisplayName = "A etapa ausente ou desconhecida é recusada como etapa inválida, antes de qualquer registro")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("outra")]
+    public async Task Autorizar_EtapaInvalida_RecusaSemRegistrar(string? etapa)
+    {
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.ContaId, [Gestao, Protecao]);
+
+        Result<EtapaDaVersao> resultado = await AcessoAFila.AutorizarAsync(etapa, verificador, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(PerfilErrorCodes.EtapaInvalida);
+        verificador.Gravados.Should().BeEmpty();
+    }
+
+    [Theory(DisplayName = "Quem tem a permissão da etapa pedida recebe a etapa e a decisão permitida vai para a trilha")]
+    [InlineData(EtapaDaVersao.GestaoDeAcessos, Gestao)]
+    [InlineData(EtapaDaVersao.ProtecaoDeDados, Protecao)]
+    public async Task Autorizar_ComPermissao_DevolveAEtapa(EtapaDaVersao esperada, string permissao)
+    {
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.ContaId, [permissao]);
+
+        Result<EtapaDaVersao> resultado = await AcessoAFila.AutorizarAsync(esperada.ToCodigo(), verificador, CancellationToken.None);
+
+        resultado.Value.Should().Be(esperada);
+        TrilhaDeAcesso.Do(verificador).Should().Equal(NaOperacao(permissao, ResultadoDoAcesso.Permitido));
+    }
+
+    [Fact(DisplayName = "Quem não tem a permissão da etapa pedida recebe a recusa dela, com a negativa na trilha")]
+    public async Task Autorizar_SemPermissao_RecusaERegistraANegativa()
+    {
+        VerificadorDeTeste verificador = new(PerfisDeTeste.Gestor.ContaId, [Protecao]);
+
+        Result<EtapaDaVersao> resultado = await AcessoAFila.AutorizarAsync(
+            EtapaDaVersao.GestaoDeAcessos.ToCodigo(), verificador, CancellationToken.None);
+
+        resultado.Error!.Code.Should().Be(PerfilErrorCodes.SemPermissaoNaEtapa);
+        TrilhaDeAcesso.Do(verificador).Should().Equal(NaOperacao(Gestao, ResultadoDoAcesso.Negado));
+    }
+
     private static TrilhaDeAcesso NaOperacao(string permissao, ResultadoDoAcesso resultado) =>
         new(PerfisDeTeste.Gestor.ContaId, permissao, ResourceTipos.Operacao, null, resultado);
 }

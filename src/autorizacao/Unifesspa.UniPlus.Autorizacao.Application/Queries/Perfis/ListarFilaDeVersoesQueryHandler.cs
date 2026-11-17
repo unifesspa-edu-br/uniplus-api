@@ -23,17 +23,12 @@ public static class ListarFilaDeVersoesQueryHandler
         ArgumentNullException.ThrowIfNull(fila);
         ArgumentNullException.ThrowIfNull(userContext);
 
-        if (EtapaDaVersaoCodigo.TentarLer(query.Fila) is not { } etapa)
-        {
-            return Recusa(PerfilErros.EtapaInvalida());
-        }
+        Result<EtapaDaVersao> etapa = await AcessoAFila.AutorizarAsync(query.Fila, verificador, cancellationToken).ConfigureAwait(false);
 
-        DomainError? negado = await AcessoAFila.NegadoAsync(verificador, etapa, cancellationToken).ConfigureAwait(false);
-
-        return negado is not null
-            ? Recusa(negado)
+        return etapa.IsFailure
+            ? Recusa(etapa.Error!)
             : Result<IReadOnlyList<ItemDaFilaDeVersoesDto>>.Success(
-                await fila.MontarAsync(etapa, IdentidadeDoToken.De(userContext), cancellationToken).ConfigureAwait(false));
+                await fila.MontarAsync(etapa.Value, IdentidadeDoToken.De(userContext), cancellationToken).ConfigureAwait(false));
     }
 
     private static Result<IReadOnlyList<ItemDaFilaDeVersoesDto>> Recusa(DomainError erro) =>
