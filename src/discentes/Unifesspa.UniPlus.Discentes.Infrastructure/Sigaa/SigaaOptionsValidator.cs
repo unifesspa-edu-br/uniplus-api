@@ -30,7 +30,7 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
 
     private static readonly string PaginaForaDoLimiteDaOrigem =
         $"Sigaa:ItensPorPagina precisa estar entre 1 e {SigaaOptions.MaximoItensPorPagina}, "
-        + "que é o teto imposto pela origem.";
+        + "que é o limite imposto pela origem.";
 
     /// <summary>
     /// A biblioteca de resiliência também recusa espera negativa, mas só ao montar a
@@ -45,7 +45,7 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
         + "isolada — a operação inteira precisa comportar ao menos a primeira delas.";
 
     /// <summary>
-    /// A margem precisa caber nas duas validades, não só no teto. Se ela alcançar a
+    /// A margem precisa caber nas duas validades, não só no limite. Se ela alcançar a
     /// validade assumida, todo token obtido quando a expiração não é legível já nasce
     /// vencido, e cada chamada ao SIGAA passa a esperar por uma autenticação nova — uma
     /// por chamada, em fila.
@@ -66,9 +66,9 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
     /// e diz o que ajustar.
     /// </summary>
     private const string JanelaMenorQueODobroDaTentativa =
-        "Sigaa:JanelaDeAmostragemDoCorteEmSegundos precisa ser pelo menos o dobro de "
+        "Sigaa:JanelaDeAmostragemDaInterrupcaoEmSegundos precisa ser pelo menos o dobro de "
         + "Sigaa:TimeoutPorTentativaEmSegundos — numa janela que mal comporta uma "
-        + "tentativa não se forma amostra, e o corte de circuito nunca reagiria.";
+        + "tentativa não se forma amostra, e a interrupção por falhas nunca reagiria.";
 
     /// <summary>
     /// As conferências, na ordem em que as falhas aparecem na mensagem.
@@ -196,16 +196,16 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
 
     private static IEnumerable<string> FalhasDaAmostragemDaInterrupcao(SigaaOptions options)
     {
-        if (options.ChamadasMinimasParaAvaliarCorte < 1)
+        if (options.ChamadasMinimasParaAvaliarInterrupcao < 1)
         {
-            yield return "Sigaa:ChamadasMinimasParaAvaliarCorte precisa ser pelo menos 1.";
+            yield return "Sigaa:ChamadasMinimasParaAvaliarInterrupcao precisa ser pelo menos 1.";
         }
 
-        if (options.JanelaDeAmostragemDoCorteEmSegundos < 1)
+        if (options.JanelaDeAmostragemDaInterrupcaoEmSegundos < 1)
         {
-            yield return "Sigaa:JanelaDeAmostragemDoCorteEmSegundos precisa ser pelo menos 1.";
+            yield return "Sigaa:JanelaDeAmostragemDaInterrupcaoEmSegundos precisa ser pelo menos 1.";
         }
-        else if (options.JanelaDeAmostragemDoCorteEmSegundos < options.TimeoutPorTentativaEmSegundos * 2)
+        else if (options.JanelaDeAmostragemDaInterrupcaoEmSegundos < options.TimeoutPorTentativaEmSegundos * 2)
         {
             yield return JanelaMenorQueODobroDaTentativa;
         }
@@ -213,14 +213,14 @@ internal sealed class SigaaOptionsValidator : IValidateOptions<SigaaOptions>
 
     private static IEnumerable<string> FalhasDoDisparoDaInterrupcao(SigaaOptions options)
     {
-        if (options.ProporcaoDeFalhaParaAbrirCorte is <= 0 or > 1)
+        if (options.ProporcaoDeFalhaParaInterromper is <= 0 or > 1)
         {
-            yield return "Sigaa:ProporcaoDeFalhaParaAbrirCorte precisa estar entre 0 (exclusivo) e 1.";
+            yield return "Sigaa:ProporcaoDeFalhaParaInterromper precisa estar entre 0 (exclusivo) e 1.";
         }
 
-        if (options.DuracaoDoCorteEmSegundos < 1)
+        if (options.DuracaoDaInterrupcaoEmSegundos < 1)
         {
-            yield return "Sigaa:DuracaoDoCorteEmSegundos precisa ser pelo menos 1.";
+            yield return "Sigaa:DuracaoDaInterrupcaoEmSegundos precisa ser pelo menos 1.";
         }
     }
 }

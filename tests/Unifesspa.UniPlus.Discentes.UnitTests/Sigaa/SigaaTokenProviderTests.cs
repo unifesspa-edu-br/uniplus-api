@@ -71,10 +71,10 @@ public sealed class SigaaTokenProviderTests : IDisposable
     }
 
     /// <summary>
-    /// Expiração absurda: sem teto, o cliente fixaria este token por um século.
+    /// Expiração absurda: sem limite, o cliente fixaria este token por um século.
     /// </summary>
     [Fact]
-    public async Task Limita_a_validade_ao_teto_configurado()
+    public async Task Limita_a_validade_ao_limite_configurado()
     {
         RedeSimulada rede = RedeComTokenQueExpiraEm(Agora.AddYears(100));
         SigaaTokenProvider provedor = Montar(rede, out RelogioControlado relogio, OpcoesDoSigaa.Com(
@@ -84,7 +84,7 @@ public sealed class SigaaTokenProviderTests : IDisposable
         await provedor.ObterAsync(CancellationToken.None);
         await ObterDepoisDeAsync(provedor, relogio, TimeSpan.FromMinutes(5));
 
-        rede.AutenticacoesRealizadas.Should().Be(2, "o teto de cinco minutos prevalece sobre a expiração declarada");
+        rede.AutenticacoesRealizadas.Should().Be(2, "o limite de cinco minutos prevalece sobre a expiração declarada");
     }
 
     /// <summary>

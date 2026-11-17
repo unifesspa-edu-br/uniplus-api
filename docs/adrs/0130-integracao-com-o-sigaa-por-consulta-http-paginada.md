@@ -51,8 +51,8 @@ conhecido uma vez por dia, e não reagir a acontecimentos.
 A recuperação usa um cliente tipado gerado em tempo de compilação, sobre a fábrica de
 clientes HTTP da plataforma, com uma política de resiliência declarada. A cadeia de envio
 tem a resiliência por fora e a autenticação por dentro, de modo que cada nova tentativa
-releia o token vigente em vez de repetir um cabeçalho carimbado uma única vez. O corte de
-circuito fica dentro da política de repetição: assim, quando abre, encerra o laço em vez
+releia o token vigente em vez de repetir um cabeçalho carimbado uma única vez. A interrupção
+por falhas fica dentro da política de repetição: assim, quando é acionada, encerra o laço em vez
 de deixá-lo insistir contra uma origem que já se declarou indisponível.
 
 A autenticação é por usuário e senha de serviço, trocados por um token de acesso. A origem
@@ -121,7 +121,7 @@ de detalhe mais alto justamente porque é só nele que o vazamento apareceria.
 
 - Bom, porque é simples e não exige disponibilidade simultânea dos dois lados.
 - Ruim, porque acrescenta um intermediário a operar e vigiar.
-- Ruim, porque desloca para fora do código a definição de formato e de recorte, que hoje
+- Ruim, porque desloca para fora do código a definição de formato e de filtro, que hoje
   está num contrato versionado.
 
 ## Mais informações
@@ -129,7 +129,7 @@ de detalhe mais alto justamente porque é só nele que o vazamento apareceria.
 - O contrato de resposta publicado pela origem está copiado em
   `tests/Unifesspa.UniPlus.Discentes.UnitTests/Recursos/`, e é usado como corpo real nos
   testes de decodificação.
-- O recorte de requisição não tem contrato publicado. Três características da origem
+- O filtro de requisição não tem contrato publicado. Três características da origem
   governam o cliente e estão registradas aqui porque não estão em lugar nenhum além do
   código dela: parâmetro desconhecido é recusado com erro de requisição em vez de
   ignorado; o filtro de situação aceita vários valores de uma vez, o que permite pedir
