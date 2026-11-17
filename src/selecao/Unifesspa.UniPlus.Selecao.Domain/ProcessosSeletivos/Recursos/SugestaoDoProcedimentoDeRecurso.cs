@@ -22,6 +22,7 @@ public static class SugestaoDoProcedimentoDeRecurso
     public static string? Para(TipoMotivoDeDecisao tipoDeDecisao, AlvoDoProcedimentoDeRecurso? alvo, OrigemDaNotaDaJanela origem) =>
         (tipoDeDecisao, alvo?.Tipo) switch
         {
+            (TipoMotivoDeDecisao.GabaritoDaProva or TipoMotivoDeDecisao.NotaDaEtapa, _) => null,
             (_, TipoDeAlvoDoProcedimentoDeRecurso.AreaDoEnem) => RegraProcedimentoRecursoCodigo.Recalculo,
             (TipoMotivoDeDecisao.Classificacao, _) => RegraProcedimentoRecursoCodigo.Recalculo,
             (_, TipoDeAlvoDoProcedimentoDeRecurso.ItemDeAvaliacao) => DaForma(origem),

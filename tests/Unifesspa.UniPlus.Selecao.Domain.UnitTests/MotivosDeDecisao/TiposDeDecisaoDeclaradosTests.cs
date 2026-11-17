@@ -61,9 +61,11 @@ public sealed class TiposDeDecisaoDeclaradosTests
             TipoMotivoDeDecisaoCodigo.AnaliseDocumental,
             TipoMotivoDeDecisaoCodigo.AvaliacaoBiopsicossocial,
             TipoMotivoDeDecisaoCodigo.Classificacao,
+            TipoMotivoDeDecisaoCodigo.GabaritoDaProva,
             TipoMotivoDeDecisaoCodigo.Heteroidentificacao,
             TipoMotivoDeDecisaoCodigo.HomologacaoDasInscricoes,
-            TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa);
+            TipoMotivoDeDecisaoCodigo.IsencaoDaTaxa,
+            TipoMotivoDeDecisaoCodigo.NotaDaEtapa);
     }
 
     [Fact(DisplayName = "Os códigos canônicos saem sem repetição")]

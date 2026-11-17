@@ -37,3 +37,9 @@ public sealed class PoliticaDaAvaliacaoBiopsicossocial() : PoliticaSemSubclassif
 
 /// <summary>Motivos da classificação.</summary>
 public sealed class PoliticaDaClassificacao() : PoliticaSemSubclassificacao(TipoMotivoDeDecisao.Classificacao);
+
+/// <summary>Motivos do gabarito da prova.</summary>
+public sealed class PoliticaDoGabaritoDaProva() : PoliticaSemSubclassificacao(TipoMotivoDeDecisao.GabaritoDaProva);
+
+/// <summary>Motivos da nota da etapa.</summary>
+public sealed class PoliticaDaNotaDaEtapa() : PoliticaSemSubclassificacao(TipoMotivoDeDecisao.NotaDaEtapa);

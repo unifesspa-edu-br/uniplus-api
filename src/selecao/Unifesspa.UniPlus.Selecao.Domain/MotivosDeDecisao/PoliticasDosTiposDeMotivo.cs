@@ -14,6 +14,8 @@ public static class PoliticasDosTiposDeMotivo
             new PoliticaDaHeteroidentificacao(),
             new PoliticaDaAvaliacaoBiopsicossocial(),
             new PoliticaDaClassificacao(),
+            new PoliticaDoGabaritoDaProva(),
+            new PoliticaDaNotaDaEtapa(),
         }.ToDictionary(static p => p.Tipo);
 
     /// <summary>A política do tipo, ou nula para a sentinela <see cref="TipoMotivoDeDecisao.Nenhum"/>.</summary>

@@ -56,4 +56,12 @@ public sealed class SugestaoDoProcedimentoDeRecursoTests
     [Fact(DisplayName = "Item numa janela de fase não tem base para sugerir")]
     public void ItemNaFase_NaoSugere() =>
         Sugerir(TipoMotivoDeDecisao.AnaliseDocumental, Item, OrigemDaNotaDaJanela.DaFase).Should().BeNull();
+
+    [Theory(DisplayName = "Gabarito da prova e nota da etapa não têm sugestão: quem publica declara o procedimento")]
+    [InlineData(TipoMotivoDeDecisao.GabaritoDaProva, false)]
+    [InlineData(TipoMotivoDeDecisao.GabaritoDaProva, true)]
+    [InlineData(TipoMotivoDeDecisao.NotaDaEtapa, false)]
+    [InlineData(TipoMotivoDeDecisao.NotaDaEtapa, true)]
+    public void GabaritoENota_NaoSugerem(TipoMotivoDeDecisao tipo, bool alvoDeArea) =>
+        Sugerir(tipo, alvoDeArea ? Area : Item, new(FormaDeAvaliacao.Humana, false)).Should().BeNull();
 }

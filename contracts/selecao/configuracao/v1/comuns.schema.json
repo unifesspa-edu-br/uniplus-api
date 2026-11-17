@@ -255,7 +255,9 @@
         "ANALISE_DOCUMENTAL",
         "HETEROIDENTIFICACAO",
         "AVALIACAO_BIOPSICOSSOCIAL",
-        "CLASSIFICACAO"
+        "CLASSIFICACAO",
+        "GABARITO_DA_PROVA",
+        "NOTA_DA_ETAPA"
       ]
     },
     "tiposDeDecisao": {
