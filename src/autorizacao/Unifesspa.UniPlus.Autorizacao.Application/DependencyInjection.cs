@@ -6,6 +6,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Avisos;
+using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Concessoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
@@ -42,7 +43,7 @@ public static class AutorizacaoApplicationServiceRegistration
         AdicionarMetricasDaGovernanca(services);
 
         AdicionarVersoesDoPerfil(services);
-        AdicionarReceptoresDoResultado(services);
+        AdicionarVerificacaoDosPdfs(services);
 
         return services;
     }
@@ -187,8 +188,10 @@ public static class AutorizacaoApplicationServiceRegistration
         services.AddScoped<ProcessamentoDosAvisosDaReclassificacao>();
     }
 
-    private static void AdicionarReceptoresDoResultado(IServiceCollection services)
+    private static void AdicionarVerificacaoDosPdfs(IServiceCollection services)
     {
+        services.AddScoped<EnvioDoPdf>();
+
         // A ordem é a da consulta do resultado: instalação, anexo de pedido e documento de versão.
         services.AddScoped<IReceptorDoResultadoDaVerificacao, ReceptorDoDocumentoDaInstalacao>();
         services.AddScoped<IReceptorDoResultadoDaVerificacao, ReceptorDoAnexoDoPedido>();

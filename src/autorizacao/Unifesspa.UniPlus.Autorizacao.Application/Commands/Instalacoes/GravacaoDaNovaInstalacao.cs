@@ -1,7 +1,6 @@
 namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Instalacoes;
 
 using Unifesspa.UniPlus.Application.Abstractions.Interfaces;
-using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
@@ -16,40 +15,35 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// </summary>
 public sealed class GravacaoDaNovaInstalacao
 {
-    private const string TipoDeMidiaDoPdf = "application/pdf";
-
-    // Validade da URL de PUT; o PDF de até 10 MB sobe dentro dela.
-    private static readonly TimeSpan PrazoDoEnvio = TimeSpan.FromMinutes(15);
-
     private readonly IInstalacaoRepository _instalacoes;
-    private readonly IArmazenamentoDosDocumentosDaAutorizacao _armazenamento;
+    private readonly EnvioDoPdf _envio;
     private readonly IUnitOfWork _unitOfWork;
 
     public GravacaoDaNovaInstalacao(
-        IInstalacaoRepository instalacoes, IArmazenamentoDosDocumentosDaAutorizacao armazenamento, IUnitOfWork unitOfWork)
+        IInstalacaoRepository instalacoes, EnvioDoPdf envio, IUnitOfWork unitOfWork)
     {
         ArgumentNullException.ThrowIfNull(instalacoes);
-        ArgumentNullException.ThrowIfNull(armazenamento);
+        ArgumentNullException.ThrowIfNull(envio);
         ArgumentNullException.ThrowIfNull(unitOfWork);
 
         _instalacoes = instalacoes;
-        _armazenamento = armazenamento;
+        _envio = envio;
         _unitOfWork = unitOfWork;
     }
 
     internal async Task<Result<InstalacaoIniciadaDto>> GravarAsync(
         Instalacao nova, Identidade executor, DateTimeOffset agora, CancellationToken cancellationToken)
     {
-        string url = await _armazenamento.GerarUrlDeEnvioAsync(nova.ChaveDeEnvio, TipoDeMidiaDoPdf, PrazoDoEnvio, cancellationToken).ConfigureAwait(false);
+        UrlDeEnvioDoPdf envio = await _envio.EmitirAsync(nova.ChaveDeEnvio, agora, cancellationToken).ConfigureAwait(false);
         Instalacao? anterior = await _instalacoes.ObterPendenteDoExecutorAsync(executor, cancellationToken).ConfigureAwait(false);
         anterior?.Cancelar(agora);
         await _instalacoes.AdicionarAsync(nova, cancellationToken).ConfigureAwait(false);
 
         return await GravacaoDaInstalacao.GravarAsync(_unitOfWork, cancellationToken).ConfigureAwait(false) is { } falha
             ? Result<InstalacaoIniciadaDto>.Failure(falha)
-            : Result<InstalacaoIniciadaDto>.Success(Iniciada(nova, url, agora));
+            : Result<InstalacaoIniciadaDto>.Success(Iniciada(nova, envio));
     }
 
-    private static InstalacaoIniciadaDto Iniciada(Instalacao instalacao, string url, DateTimeOffset agora) =>
-        new(instalacao.Id, SituacaoDaInstalacaoCodigo.AguardandoDocumento, new Uri(url, UriKind.Absolute), TipoDeMidiaDoPdf, agora + PrazoDoEnvio);
+    private static InstalacaoIniciadaDto Iniciada(Instalacao instalacao, UrlDeEnvioDoPdf envio) =>
+        new(instalacao.Id, SituacaoDaInstalacaoCodigo.AguardandoDocumento, envio.Endereco, EnvioDoPdf.TipoDeMidia, envio.ExpiraEm);
 }

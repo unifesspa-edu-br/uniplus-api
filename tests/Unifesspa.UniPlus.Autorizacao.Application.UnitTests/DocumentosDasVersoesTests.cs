@@ -7,6 +7,7 @@ using NSubstitute;
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Authorization.Contracts;
 
+using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
@@ -228,7 +229,7 @@ public sealed class DocumentosDasVersoesTests
             Verificador = new VerificadorDeTeste(PerfisDeTeste.Autor.ContaId, permitidas.Length == 0 ? [Manter] : permitidas);
             Documentos = new DocumentosDasVersoes(
                 new OperacaoSobreOPerfil(Perfis, Unidade, new CenarioDaGovernancaDaVersao.RelogioFixo(PerfisDeTeste.Instante.AddHours(1))),
-                new EnvioDoDocumento(Armazenamento, TimeProvider.System),
+                new EnvioDoDocumento(new EnvioDoPdf(Armazenamento), TimeProvider.System),
                 new LeitorDoDocumentoDaVersao(
                     new AutoriaDaOperacao(new Usuario(autorIdentificado ? PerfisDeTeste.Autor : null), TimeProvider.System, new ConcessoesNaMemoria()),
                     Perfis,

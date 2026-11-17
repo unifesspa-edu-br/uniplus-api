@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.UnitTests;
 
 using AwesomeAssertions;
 
+using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
 using Unifesspa.UniPlus.Autorizacao.Application.DTOs;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
@@ -122,7 +123,7 @@ public sealed class VersoesDoPerfilTests
             Versoes = new VersoesDoPerfil(
                 new OperacaoSobreOPerfil(Perfis, Unidade, new CenarioDaGovernancaDaVersao.RelogioFixo(PerfisDeTeste.Instante.AddHours(1))),
                 new LeitorDoContextoDaVersao(Perfis, new JanelasNaMemoria(janelaAberta), TimeProvider.System),
-                new EnvioDoDocumento(Armazenamento, TimeProvider.System),
+                new EnvioDoDocumento(new EnvioDoPdf(Armazenamento), TimeProvider.System),
                 new AutoriaDaOperacao(new Usuario(autor), TimeProvider.System, new ConcessoesNaMemoria()),
                 Catalogo);
         }
