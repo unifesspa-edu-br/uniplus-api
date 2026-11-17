@@ -9,6 +9,8 @@ informed: []
 
 # ADR-0135: As regras sobre fatos do candidato vivem num projeto compartilhado fora do Kernel
 
+> **Emenda (2026-11-17):** a Decisão e a Confirmação valem para os códigos de `Unifesspa.UniPlus.Regras` que alcançam a fronteira HTTP (ADR-0024, emenda de 2026-11-16). A leitura do JSON gravado e as recusas que nenhum chamador deixa chegar à resposta mantêm o código de domínio, sem registro. A Confirmação é o teste de catálogo de códigos de erro e a tabela esperada do registro; não há teste de arquitetura para esta propriedade.
+
 ## Contexto e enunciado do problema
 
 Hoje só o módulo Seleção avalia regras sobre fatos do candidato. O predicado em forma normal disjuntiva, com operadores, cláusulas, validador e códigos de erro, sustenta a pré-condição de campo, o gatilho de exigência documental, a regra de derivação e o desempate por predicado. A avaliação ternária e o motor de derivação também moram em `Selecao.Domain`.
