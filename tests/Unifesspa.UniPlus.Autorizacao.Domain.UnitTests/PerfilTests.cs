@@ -88,6 +88,35 @@ public sealed class PerfilTests
                 PerfilErrorCodes.SemPermissao,
                 PerfilErrorCodes.DocumentoInvalido);
 
+    [Fact(DisplayName = "As violações vêm na ordem dos textos, das permissões e do tamanho do documento")]
+    public void Validar_VariasViolacoes_NaOrdemDoLote() =>
+        CodigosDaRecusa(ConteudoDaVersao.Validar(" ", "ab", [], " ", 0, Catalogo))
+            .Should().Equal(
+                PerfilErrorCodes.NomeInvalido,
+                PerfilErrorCodes.DescricaoInvalida,
+                PerfilErrorCodes.ProtocoloInvalido,
+                PerfilErrorCodes.SemPermissao,
+                PerfilErrorCodes.DocumentoInvalido);
+
+    [Fact(DisplayName = "As violações das permissões vêm na ordem de inexistente, alcance misto e reservada")]
+    public void Validar_VariasViolacoesDePermissao_NaOrdemDoLote() =>
+        CodigosDaRecusa(Validar("Analista", Descricao, [Consultar, "x:y:z", "unidade:inscricoes:operar", Manter]))
+            .Should().Equal(PerfilErrorCodes.PermissaoInexistente, PerfilErrorCodes.AlcanceMisto, PerfilErrorCodes.PermissaoReservada);
+
+    [Fact(DisplayName = "Os códigos repetidos ou com espaços nas pontas se consolidam sem recusa")]
+    public void Validar_CodigosRepetidosComEspacos_Consolida()
+    {
+        Result<ConteudoDaVersao> resultado = Validar("Analista", Descricao, [$" {Consultar}", $"{Consultar} ", Consultar]);
+
+        resultado.IsSuccess.Should().BeTrue();
+        resultado.Value!.Codigos().Should().Equal(Consultar);
+    }
+
+    [Fact(DisplayName = "O código em branco na lista vira código vazio e é recusado como permissão inexistente")]
+    public void Validar_CodigoEmBranco_RecusaComoInexistente() =>
+        CodigosDaRecusa(Validar("Analista", Descricao, [Consultar, "  "]))
+            .Should().Equal(PerfilErrorCodes.PermissaoInexistente);
+
     [Fact(DisplayName = "Nome com caractere nulo é recusado pelo domínio")]
     public void Validar_NomeComCaractereNulo_Recusa() =>
         CodigosDaRecusa(Validar("Ana\0lista", Descricao, [Consultar]))

@@ -32,6 +32,30 @@ public sealed class PropostasDeVersaoTests
         cenario.Unidade.Gravacoes.Should().Be(0);
     }
 
+    [Fact(DisplayName = "Sem autor identificado a recusa é do autor, mesmo com dados inválidos e categoria da remoção inexistente")]
+    public async Task Propor_SemAutorEDadosInvalidos_RecusaPeloAutor()
+    {
+        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, null, []);
+
+        GravacaoDaOperacao<ResultadoDaPropostaDto> gravacao = await cenario.Propostas.ProporAsync(
+            perfil.Id, new ProporVersaoRequest(" ", Descricao, [Consultar], PerfisDeTeste.Protocolo, PerfisDeTeste.TamanhoDoDocumento, null, "inexistente"), CancellationToken.None);
+
+        gravacao.Resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.AutorNaoIdentificado);
+    }
+
+    [Fact(DisplayName = "Dados inválidos e categoria da remoção inexistente: a recusa é a dos dados")]
+    public async Task Propor_DadosInvalidosECategoriaInvalida_RecusaPelosDados()
+    {
+        Perfil perfil = PerfisDeTeste.Vigente("Analista", Descricao, [Consultar], Catalogo);
+        CenarioDaGovernancaDaVersao cenario = new(perfil, PerfisDeTeste.Autor, []);
+
+        GravacaoDaOperacao<ResultadoDaPropostaDto> gravacao = await cenario.Propostas.ProporAsync(
+            perfil.Id, new ProporVersaoRequest(" ", Descricao, [Consultar], PerfisDeTeste.Protocolo, PerfisDeTeste.TamanhoDoDocumento, null, "inexistente"), CancellationToken.None);
+
+        gravacao.Resultado.Errors.Single().Error.Code.Should().Be(PerfilErrorCodes.NomeInvalido);
+    }
+
     [Fact(DisplayName = "Dados inválidos são recusados por inteiro, sem gravar")]
     public async Task Propor_DadosInvalidos_Recusa()
     {
