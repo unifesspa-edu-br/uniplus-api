@@ -8,18 +8,20 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Hosting.Internal;
 using Microsoft.Extensions.Options;
 
+using StackExchange.Redis;
+
 using Unifesspa.UniPlus.Infrastructure.Core.Caching;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 
 public sealed class CacheServiceCollectionExtensionsTests
 {
-    private static IConfiguration BuildConfig(Dictionary<string, string?> values) =>
-        new ConfigurationBuilder().AddInMemoryCollection(values).Build();
+    private static IConfiguration CriarConfiguracao(Dictionary<string, string?> valores) =>
+        new ConfigurationBuilder().AddInMemoryCollection(valores).Build();
 
-    private static HostingEnvironment Env(string name) =>
-        new() { EnvironmentName = name };
+    private static HostingEnvironment CriarAmbiente(string nome) =>
+        new() { EnvironmentName = nome };
 
-    private static Dictionary<string, string?> CompleteConfig() => new()
+    private static Dictionary<string, string?> ConfiguracaoCompleta() => new()
     {
         ["Redis:ConnectionString"] = "redis:6379",
     };
@@ -29,7 +31,7 @@ public sealed class CacheServiceCollectionExtensionsTests
     {
         IServiceCollection? services = null;
 
-        Action acao = () => services!.AddUniPlusCache(BuildConfig(CompleteConfig()), Env(Environments.Production));
+        Action acao = () => services!.AddUniPlusCache(CriarConfiguracao(ConfiguracaoCompleta()), CriarAmbiente(Environments.Production));
 
         acao.Should().Throw<ArgumentNullException>();
     }
@@ -39,7 +41,7 @@ public sealed class CacheServiceCollectionExtensionsTests
     {
         ServiceCollection services = new();
 
-        Action acao = () => services.AddUniPlusCache(null!, Env(Environments.Production));
+        Action acao = () => services.AddUniPlusCache(null!, CriarAmbiente(Environments.Production));
 
         acao.Should().Throw<ArgumentNullException>();
     }
@@ -49,7 +51,7 @@ public sealed class CacheServiceCollectionExtensionsTests
     {
         ServiceCollection services = new();
 
-        Action acao = () => services.AddUniPlusCache(BuildConfig(CompleteConfig()), null!);
+        Action acao = () => services.AddUniPlusCache(CriarConfiguracao(ConfiguracaoCompleta()), null!);
 
         acao.Should().Throw<ArgumentNullException>();
     }
@@ -58,11 +60,11 @@ public sealed class CacheServiceCollectionExtensionsTests
     public void AddUniPlusCache_ProductionSemConnectionString_OptionsValueLancaOptionsValidationException()
     {
         ServiceCollection services = new();
-        services.AddUniPlusCache(BuildConfig(new Dictionary<string, string?>()), Env(Environments.Production));
+        services.AddUniPlusCache(CriarConfiguracao(new Dictionary<string, string?>()), CriarAmbiente(Environments.Production));
 
-        using ServiceProvider sp = services.BuildServiceProvider();
+        using ServiceProvider provedor = services.BuildServiceProvider();
 
-        Action acao = () => { _ = sp.GetRequiredService<IOptions<RedisOptions>>().Value; };
+        Action acao = () => { _ = provedor.GetRequiredService<IOptions<RedisOptions>>().Value; };
 
         acao.Should().Throw<OptionsValidationException>()
             .WithMessage("*Redis:ConnectionString*");
@@ -72,11 +74,11 @@ public sealed class CacheServiceCollectionExtensionsTests
     public void AddUniPlusCache_DevelopmentSemConfig_NaoLancaValidacao()
     {
         ServiceCollection services = new();
-        services.AddUniPlusCache(BuildConfig(new Dictionary<string, string?>()), Env(Environments.Development));
+        services.AddUniPlusCache(CriarConfiguracao(new Dictionary<string, string?>()), CriarAmbiente(Environments.Development));
 
-        using ServiceProvider sp = services.BuildServiceProvider();
+        using ServiceProvider provedor = services.BuildServiceProvider();
 
-        Action acao = () => { _ = sp.GetRequiredService<IOptions<RedisOptions>>().Value; };
+        Action acao = () => { _ = provedor.GetRequiredService<IOptions<RedisOptions>>().Value; };
 
         acao.Should().NotThrow();
     }
@@ -84,17 +86,48 @@ public sealed class CacheServiceCollectionExtensionsTests
     [Fact]
     public void AddUniPlusCache_BindingMapeiaConnectionString()
     {
-        Dictionary<string, string?> values = new()
+        Dictionary<string, string?> valores = new()
         {
             ["Redis:ConnectionString"] = "redis.example:6379,user=u,password=p",
         };
 
         ServiceCollection services = new();
-        services.AddUniPlusCache(BuildConfig(values), Env(Environments.Production));
+        services.AddUniPlusCache(CriarConfiguracao(valores), CriarAmbiente(Environments.Production));
 
-        using ServiceProvider sp = services.BuildServiceProvider();
-        RedisOptions opts = sp.GetRequiredService<IOptions<RedisOptions>>().Value;
+        using ServiceProvider provedor = services.BuildServiceProvider();
+        RedisOptions opcoes = provedor.GetRequiredService<IOptions<RedisOptions>>().Value;
 
-        opts.ConnectionString.Should().Be("redis.example:6379,user=u,password=p");
+        opcoes.ConnectionString.Should().Be("redis.example:6379,user=u,password=p");
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void AddUniPlusCache_ProductionComConnectionStringEmBranco_OptionsValueLancaOptionsValidationException(string valor)
+    {
+        ServiceCollection services = new();
+        services.AddUniPlusCache(
+            CriarConfiguracao(new Dictionary<string, string?> { ["Redis:ConnectionString"] = valor }),
+            CriarAmbiente(Environments.Production));
+
+        using ServiceProvider provedor = services.BuildServiceProvider();
+
+        Action acao = () => { _ = provedor.GetRequiredService<IOptions<RedisOptions>>().Value; };
+
+        acao.Should().Throw<OptionsValidationException>()
+            .WithMessage("*Redis:ConnectionString must be configured outside Development.*");
+    }
+
+    [Fact]
+    public void AddUniPlusCache_RegistraConexaoComoSingletonECacheComoScoped()
+    {
+        ServiceCollection services = new();
+        services.AddUniPlusCache(CriarConfiguracao(ConfiguracaoCompleta()), CriarAmbiente(Environments.Production));
+
+        services.Single(descritor => descritor.ServiceType == typeof(IConnectionMultiplexer))
+            .Lifetime.Should().Be(ServiceLifetime.Singleton);
+        ServiceDescriptor cache = services.Single(descritor => descritor.ServiceType == typeof(ICacheService));
+        cache.Lifetime.Should().Be(ServiceLifetime.Scoped);
+        cache.ImplementationType.Should().Be<RedisCacheService>();
     }
 }
