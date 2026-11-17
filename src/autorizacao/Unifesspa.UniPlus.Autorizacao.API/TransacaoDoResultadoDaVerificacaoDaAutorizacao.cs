@@ -3,9 +3,7 @@ namespace Unifesspa.UniPlus.Autorizacao.API;
 using JasperFx;
 using JasperFx.CodeGeneration;
 
-using Unifesspa.UniPlus.Autorizacao.Application.Commands;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
-using Unifesspa.UniPlus.Verificador.Contratos;
 
 using Wolverine.Configuration;
 using Wolverine.Persistence;
@@ -25,7 +23,7 @@ internal sealed class TransacaoDoResultadoDaVerificacaoDaAutorizacao : IHandlerP
         ArgumentNullException.ThrowIfNull(rules);
         ArgumentNullException.ThrowIfNull(container);
 
-        foreach (HandlerChain chain in chains.Where(EhDoHandlerDaAutorizacao))
+        foreach (HandlerChain chain in chains.Where(CadeiaDoResultadoDaVerificacaoDaAutorizacao.Eh))
         {
             if (!rules.TryFindPersistenceFrameProvider(container, typeof(DocumentoDaVersao), out IPersistenceFrameProvider? provider))
             {
@@ -35,8 +33,4 @@ internal sealed class TransacaoDoResultadoDaVerificacaoDaAutorizacao : IHandlerP
             provider!.ApplyTransactionSupport(chain, container, typeof(DocumentoDaVersao));
         }
     }
-
-    private static bool EhDoHandlerDaAutorizacao(HandlerChain chain) =>
-        chain.MessageType == typeof(ResultadoDaVerificacaoDeArquivo)
-        && chain.Handlers.Any(h => h.HandlerType == typeof(RegistrarResultadoDaVerificacaoDoDocumentoDaAutorizacaoHandler));
 }
