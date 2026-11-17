@@ -1,6 +1,7 @@
 namespace Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// Uma implantação do catálogo de permissões do código no banco: a impressão do conteúdo, o instante e as permissões como
@@ -17,7 +18,7 @@ public sealed class ImplantacaoDasPermissoes
     public long Sequencia { get; private set; }
 
     /// <summary>SHA-256 em hexadecimal do conteúdo, com 64 caracteres.</summary>
-    public string Impressao { get; private init; } = string.Empty;
+    public ResumoSha256 Impressao { get; private init; } = null!;
 
     public DateTimeOffset ImplantadaEm { get; private init; }
 
@@ -28,9 +29,9 @@ public sealed class ImplantacaoDasPermissoes
     {
     }
 
-    public static ImplantacaoDasPermissoes Implantar(string impressao, IEnumerable<LinhaDoRetratoDoCatalogo> linhas, DateTimeOffset instante)
+    public static ImplantacaoDasPermissoes Implantar(ResumoSha256 impressao, IEnumerable<LinhaDoRetratoDoCatalogo> linhas, DateTimeOffset instante)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(impressao);
+        ArgumentNullException.ThrowIfNull(impressao);
         ArgumentNullException.ThrowIfNull(linhas);
 
         ImplantacaoDasPermissoes catalogo = new() { Impressao = impressao, ImplantadaEm = instante };

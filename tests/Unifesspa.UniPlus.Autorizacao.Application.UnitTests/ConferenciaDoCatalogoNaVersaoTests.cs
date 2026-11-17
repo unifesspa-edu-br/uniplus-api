@@ -8,6 +8,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 using static Unifesspa.UniPlus.Autorizacao.Application.UnitTests.DoublesDePerfis;
 
@@ -85,7 +86,7 @@ public sealed class ConferenciaDoCatalogoNaVersaoTests
 
         return (perfil, new ReclassificacoesNaMemoria
         {
-            ImplantacaoAtual = new ImplantacaoNoBanco(Guid.NewGuid(), "impressao", new Dictionary<string, LinhaDoRetratoDoCatalogo> { [Consultar] = linha }),
+            ImplantacaoAtual = new ImplantacaoNoBanco(Guid.NewGuid(), ResumoSha256.DoConteudo("impressao"u8), new Dictionary<string, LinhaDoRetratoDoCatalogo> { [Consultar] = linha }),
         });
     }
 }

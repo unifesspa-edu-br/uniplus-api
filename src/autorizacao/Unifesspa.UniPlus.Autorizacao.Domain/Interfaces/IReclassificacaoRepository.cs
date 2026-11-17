@@ -3,9 +3,10 @@ namespace Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>O catálogo atual gravado no banco: o id, a impressão e as linhas dos códigos pedidos.</summary>
-public sealed record ImplantacaoNoBanco(Guid Id, string Impressao, IReadOnlyDictionary<string, LinhaDoRetratoDoCatalogo> Linhas);
+public sealed record ImplantacaoNoBanco(Guid Id, ResumoSha256 Impressao, IReadOnlyDictionary<string, LinhaDoRetratoDoCatalogo> Linhas);
 
 /// <summary>Uma concessão não revogada que reúne a permissão reclassificada pela composição, com a base dela.</summary>
 public sealed record ConcessaoComAPermissao(Concessao Concessao, BaseDaConcessao Base);
@@ -17,7 +18,7 @@ public sealed record FatoSemAviso(OrigemDoAviso Origem, Guid Id);
 public interface IReclassificacaoRepository
 {
     /// <summary>A impressão do catálogo de maior sequência; nula quando nenhum catálogo foi gravado.</summary>
-    Task<string?> ObterImpressaoAtualAsync(CancellationToken cancellationToken = default);
+    Task<ResumoSha256?> ObterImpressaoAtualAsync(CancellationToken cancellationToken = default);
 
     /// <summary>O catálogo atual com as linhas dos <paramref name="codigos"/>; nulo quando nenhum catálogo foi gravado.</summary>
     Task<ImplantacaoNoBanco?> ObterImplantacaoAtualAsync(IReadOnlyCollection<string> codigos, CancellationToken cancellationToken = default);

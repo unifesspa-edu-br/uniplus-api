@@ -1,7 +1,5 @@
 namespace Unifesspa.UniPlus.Autorizacao.IntegrationTests.Perfis;
 
-using System.Diagnostics.CodeAnalysis;
-
 using AwesomeAssertions;
 
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +11,7 @@ using Unifesspa.UniPlus.Autorizacao.Infrastructure.Persistence;
 using Unifesspa.UniPlus.Autorizacao.IntegrationTests.Infrastructure;
 using Unifesspa.UniPlus.Infrastructure.Core.DependencyInjection;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 using Unifesspa.UniPlus.Monolito.Persistencia;
 
 /// <summary>
@@ -20,10 +19,6 @@ using Unifesspa.UniPlus.Monolito.Persistencia;
 /// sem migration pendente, e a falha dela é a falha da migration.
 /// </summary>
 [Collection(AutorizacaoEndpointCollection.Name)]
-[SuppressMessage(
-    "Performance",
-    "CA1515:Consider making public types internal",
-    Justification = "xUnit collection fixture exige tipo de teste público.")]
 public sealed class EtapaDaMigrationDoCatalogoTests : PerfilEndpointTestBase, IDisposable
 {
     private readonly List<IServiceScope> _escopos = [];
@@ -80,14 +75,8 @@ public sealed class EtapaDaMigrationDoCatalogoTests : PerfilEndpointTestBase, ID
     [Fact(DisplayName = "O Job grava o catálogo da aplicação quando o do banco é outro, e não grava de novo ao repetir")]
     public async Task Job_ConciliaOCatalogoDiferente()
     {
-        await ExecutarAsync(
-            "INSERT INTO autorizacao.implantacoes_das_permissoes (id, impressao, implantada_em) VALUES ({0}, {1}, now())",
-            Guid.CreateVersion7(), new string('c', 64));
-        using IHost host = Montar(async (_, token) =>
-        {
-            await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
-            await scope.ServiceProvider.GetRequiredService<ConciliacaoDoCatalogo>().ExecutarAsync(token);
-        });
+        await ImplantarCatalogoDeOutraImpressaoAsync();
+        using IHost host = Montar(ConciliarCatalogoAsync);
 
         int primeiro = await host.AplicarMigrationsEEncerrarAsync(CancellationToken.None);
         long depoisDoPrimeiro = await ContarCatalogosAsync();
@@ -105,6 +94,17 @@ public sealed class EtapaDaMigrationDoCatalogoTests : PerfilEndpointTestBase, ID
         {
             escopo.Dispose();
         }
+    }
+
+    private Task ImplantarCatalogoDeOutraImpressaoAsync() =>
+        ExecutarAsync(
+            "INSERT INTO autorizacao.implantacoes_das_permissoes (id, impressao, implantada_em) VALUES ({0}, {1}, now())",
+            Guid.CreateVersion7(), new string('c', 64));
+
+    private async Task ConciliarCatalogoAsync(IServiceProvider servicos, CancellationToken token)
+    {
+        await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
+        await scope.ServiceProvider.GetRequiredService<ConciliacaoDoCatalogo>().ExecutarAsync(token);
     }
 
     private IHost Montar(Func<IServiceProvider, CancellationToken, Task> etapa)
@@ -131,11 +131,11 @@ public sealed class EtapaDaMigrationDoCatalogoTests : PerfilEndpointTestBase, ID
         return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().ImplantacoesDasPermissoes.LongCountAsync();
     }
 
-    private async Task<string> ImpressaoAtualAsync()
+    private async Task<ResumoSha256> ImpressaoAtualAsync()
     {
         await using AsyncServiceScope scope = Fixture.Factory.Services.CreateAsyncScope();
 
-        return (await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().ImplantacoesDasPermissoes
-            .OrderByDescending(c => c.Sequencia).Select(c => c.Impressao).FirstAsync()).Trim();
+        return await scope.ServiceProvider.GetRequiredService<UniPlusDbContext>().ImplantacoesDasPermissoes
+            .OrderByDescending(c => c.Sequencia).Select(c => c.Impressao).FirstAsync();
     }
 }

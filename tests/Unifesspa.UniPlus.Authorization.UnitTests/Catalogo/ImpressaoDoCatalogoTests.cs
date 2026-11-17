@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Authorization.Decisao;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// A impressão resume o que o catálogo registra de cada permissão e só muda quando esse conteúdo muda: a ordem de
@@ -22,12 +23,12 @@ public sealed class ImpressaoDoCatalogoTests
 
     [Fact(DisplayName = "A impressão é um SHA-256 em hexadecimal minúsculo")]
     public void Impressao_Formato_EHexadecimalDe64Caracteres() =>
-        LinhaDoCatalogo.ImpressaoDe([Primeira]).Should().MatchRegex("^[0-9a-f]{64}$");
+        LinhaDoCatalogo.ImpressaoDe([Primeira]).Valor.Should().MatchRegex("^[0-9a-f]{64}$");
 
     [Fact(DisplayName = "A impressão muda com a classificação, o escopo, a reserva e o módulo de uma permissão")]
     public void Impressao_ConteudoDiferente_Muda()
     {
-        string base0 = LinhaDoCatalogo.ImpressaoDe([Primeira, Segunda]);
+        ResumoSha256 base0 = LinhaDoCatalogo.ImpressaoDe([Primeira, Segunda]);
 
         LinhaDoCatalogo[] variacoes =
         [

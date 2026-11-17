@@ -7,6 +7,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>Repositório do catálogo gravado e das reclassificações das permissões.</summary>
 public sealed class ReclassificacaoRepository : IReclassificacaoRepository
@@ -19,7 +20,7 @@ public sealed class ReclassificacaoRepository : IReclassificacaoRepository
         _context = context;
     }
 
-    public async Task<string?> ObterImpressaoAtualAsync(CancellationToken cancellationToken = default) =>
+    public async Task<ResumoSha256?> ObterImpressaoAtualAsync(CancellationToken cancellationToken = default) =>
         await _context.ImplantacoesDasPermissoes.AsNoTracking()
             .OrderByDescending(c => c.Sequencia)
             .Select(c => c.Impressao)

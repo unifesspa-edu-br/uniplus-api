@@ -6,6 +6,7 @@ using Unifesspa.UniPlus.Autorizacao.Domain.Entities;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
 using Unifesspa.UniPlus.Kernel.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
 
 /// <summary>
 /// O que cada concessão dá hoje, lido no banco: o ponto único das consultas que decidem acesso. No perfil de governança
@@ -47,7 +48,7 @@ internal static class ComposicaoEmVigorNoBanco
         this UniPlusDbContext context, IQueryable<Concessao> concessoes, DateTimeOffset agora)
     {
         IQueryable<LinhaPlana> linhas = context.LinhasPlanas(concessoes, context.CodigosDeAcesso(concessoes, agora));
-        IQueryable<string> impressao = context.ImplantacoesDasPermissoes.OrderByDescending(c => c.Sequencia).Select(c => c.Impressao);
+        IQueryable<ResumoSha256> impressao = context.ImplantacoesDasPermissoes.OrderByDescending(c => c.Sequencia).Select(c => c.Impressao);
 
         return from s in context.Database.SqlQuery<int>($"SELECT 1 AS \"Value\"")
                from l in linhas.DefaultIfEmpty()
@@ -175,7 +176,7 @@ internal sealed record LinhaDaConcessao(ConcessaoLida Concessao, string? Codigo)
 /// <summary>A linha da decisão de acesso e a impressão do catálogo que a mesma instrução leu; a linha é nula se não há concessão.</summary>
 internal sealed class LinhaDoAcesso
 {
-    public string? Impressao { get; init; }
+    public ResumoSha256? Impressao { get; init; }
 
     public LinhaDaConcessao? Linha { get; init; }
 }

@@ -2,6 +2,8 @@ namespace Unifesspa.UniPlus.Authorization.Catalogo;
 
 using System.Collections.Frozen;
 
+using Unifesspa.UniPlus.Kernel.Domain.ValueObjects;
+
 /// <summary>
 /// Catálogo de permissões da aplicação inteira: a reunião dos enums que cada módulo
 /// registrou com <c>AddCatalogoDePermissoes</c>. A construção confere o que só se vê
@@ -78,7 +80,7 @@ public sealed class CatalogoDaAplicacao
     /// A impressão do catálogo desta instância, calculada uma vez na construção: duas instâncias com o mesmo conteúdo têm
     /// a mesma impressão, qualquer que seja a ordem em que registraram os módulos.
     /// </summary>
-    public string Impressao { get; }
+    public ResumoSha256 Impressao { get; }
 
     /// <summary>Busca a definição pelo código.</summary>
     public bool TentarObter(string codigo, out DefinicaoDePermissao? definicao)

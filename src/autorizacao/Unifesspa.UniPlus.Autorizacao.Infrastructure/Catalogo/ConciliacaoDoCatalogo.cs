@@ -58,7 +58,7 @@ public sealed class ConciliacaoDoCatalogo
                 "SELECT pg_advisory_xact_lock(hashtext({0}))", [NomeDaTrava], cancellationToken).ConfigureAwait(false);
 
             ImplantacaoDasPermissoes? atual = await ImplantacaoAtualAsync(cancellationToken).ConfigureAwait(false);
-            if (atual is null || !string.Equals(atual.Impressao, _catalogo.Impressao, StringComparison.Ordinal))
+            if (atual is null || atual.Impressao != _catalogo.Impressao)
             {
                 await ConciliarAsync(atual, cancellationToken).ConfigureAwait(false);
             }

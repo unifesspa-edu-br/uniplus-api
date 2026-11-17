@@ -75,7 +75,7 @@ public sealed class ConcessoesAtivasDoSujeito : IConcessoesAtivasDoSujeito
     // que o trocou, e a suspensão que ela não conhece não pode ser contornada.
     private void ConferirOCatalogo(List<LinhaDoAcesso> lidas)
     {
-        if (lidas.Exists(l => !string.Equals(l.Impressao, _catalogo.Impressao, StringComparison.Ordinal)))
+        if (lidas.Exists(l => l.Impressao != _catalogo.Impressao))
         {
             throw new CatalogoDesatualizadoException();
         }
