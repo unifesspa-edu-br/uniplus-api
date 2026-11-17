@@ -58,36 +58,36 @@ public sealed class EventoDaContencao : IForensicEntity, IRegistroDaTrilhaDeCont
     {
     }
 
-    private EventoDaContencao(Guid perfilId, TipoDoEventoDaContencao tipo, DateTimeOffset instante, RetratoDoPerfil retrato, int ordinal)
+    private EventoDaContencao(Guid perfilId, TipoDoEventoDaContencao tipo, DateTimeOffset instante, PerfilNoEventoDaContencao perfil, int ordinal)
     {
         PerfilId = perfilId;
         Tipo = tipo;
         Instante = instante;
-        VersaoVigenteId = retrato.VersaoVigenteId;
-        PerfilProtegido = retrato.Protegido;
+        VersaoVigenteId = perfil.VersaoVigenteId;
+        PerfilProtegido = perfil.Protegido;
         OrdinalLocal = ordinal;
     }
 
-    internal static EventoDaContencao DaSuspensao(SuspensaoDoPerfil suspensao, RetratoDoPerfil retrato, int ordinal) =>
-        new EventoDaContencao(suspensao.PerfilId, TipoDoEventoDaContencao.Suspensao, suspensao.SuspensaEm, retrato, ordinal)
+    internal static EventoDaContencao DaSuspensao(SuspensaoDoPerfil suspensao, PerfilNoEventoDaContencao perfil, int ordinal) =>
+        new EventoDaContencao(suspensao.PerfilId, TipoDoEventoDaContencao.Suspensao, suspensao.SuspensaEm, perfil, ordinal)
             .DeUmaPessoa(suspensao.SuspensaPor, suspensao.Motivo)
             .Referindo(suspensao.Id, null, suspensao.Papel);
 
-    internal static EventoDaContencao DaDesativacao(DesativacaoDoPerfil desativacao, RetratoDoPerfil retrato, int ordinal) =>
-        new EventoDaContencao(desativacao.PerfilId, TipoDoEventoDaContencao.Desativacao, desativacao.DesativadaEm, retrato, ordinal)
+    internal static EventoDaContencao DaDesativacao(DesativacaoDoPerfil desativacao, PerfilNoEventoDaContencao perfil, int ordinal) =>
+        new EventoDaContencao(desativacao.PerfilId, TipoDoEventoDaContencao.Desativacao, desativacao.DesativadaEm, perfil, ordinal)
             .DeUmaPessoa(desativacao.DesativadaPor, desativacao.Motivo)
             .Referindo(null, desativacao.Id, null);
 
     internal static EventoDaContencao DaReativacao(
-        DesativacaoDoPerfil desativacao, Identidade autor, string motivo, RetratoDoPerfil retrato, DateTimeOffset instante, int ordinal) =>
-        new EventoDaContencao(desativacao.PerfilId, TipoDoEventoDaContencao.Reativacao, instante, retrato, ordinal)
+        DesativacaoDoPerfil desativacao, Identidade autor, string motivo, PerfilNoEventoDaContencao perfil, DateTimeOffset instante, int ordinal) =>
+        new EventoDaContencao(desativacao.PerfilId, TipoDoEventoDaContencao.Reativacao, instante, perfil, ordinal)
             .DeUmaPessoa(autor, motivo)
             .Referindo(null, desativacao.Id, null);
 
     internal static EventoDaContencao DaRetomada(
-        SuspensaoDoPerfil suspensao, OrigemDaReavaliacao origem, RetratoDoPerfil retrato, DateTimeOffset instante, int ordinal)
+        SuspensaoDoPerfil suspensao, OrigemDaReavaliacao origem, PerfilNoEventoDaContencao perfil, DateTimeOffset instante, int ordinal)
     {
-        EventoDaContencao evento = new EventoDaContencao(suspensao.PerfilId, TipoDoEventoDaContencao.Retomada, instante, retrato, ordinal)
+        EventoDaContencao evento = new EventoDaContencao(suspensao.PerfilId, TipoDoEventoDaContencao.Retomada, instante, perfil, ordinal)
             .Referindo(suspensao.Id, null, null);
         evento.Ator = AtorDoEventoDaContencao.Sistema;
         evento.ReferirOrigem(origem);

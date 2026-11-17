@@ -124,7 +124,7 @@ internal sealed partial class PerfisAfetadosPeloCatalogo
 
         return [.. codigos.Select(k => new BaseEmVigor(k.ConcessaoId, k.Codigo, vivas.GetValueOrDefault((k.ConcessaoId, k.Codigo)) is { } viva
             ? new BaseDaConcessao(viva.Classificacao, viva.DeUnidade)
-            : new BaseDaConcessao(k.RetratoDaClassificacao!.Value, k.RetratoDeUnidade)))];
+            : new BaseDaConcessao(k.ClassificacaoNaVersao!.Value, k.DeUnidadeNaVersao)))];
     }
 
     private void RetomarSeAClasseMudou(Perfil perfil, List<ReclassificacaoDaPermissao> registradas, DateTimeOffset instante)

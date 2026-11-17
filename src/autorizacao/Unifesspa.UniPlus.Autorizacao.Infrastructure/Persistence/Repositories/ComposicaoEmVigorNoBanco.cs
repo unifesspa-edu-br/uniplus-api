@@ -132,8 +132,8 @@ internal static class ComposicaoEmVigorNoBanco
             ConcessaoId = c.Id,
             Codigo = x.Codigo,
             DeVersao = false,
-            RetratoDaClassificacao = null,
-            RetratoDeUnidade = false,
+            ClassificacaoNaVersao = null,
+            DeUnidadeNaVersao = false,
         };
 
     // O código vale enquanto nenhuma vigência já aberta, de versão mais nova que a da concessão, deixou de reuni-lo:
@@ -154,8 +154,8 @@ internal static class ComposicaoEmVigorNoBanco
             ConcessaoId = c.Id,
             Codigo = x.Codigo,
             DeVersao = true,
-            RetratoDaClassificacao = (ClassificacaoDeProtecao?)x.Classificacao,
-            RetratoDeUnidade = x.DeUnidade,
+            ClassificacaoNaVersao = (ClassificacaoDeProtecao?)x.Classificacao,
+            DeUnidadeNaVersao = x.DeUnidade,
         };
 
     // A concessão cujo perfil tem vigência aberta e que a janela de migração do perfil não deixou para trás, por prazo

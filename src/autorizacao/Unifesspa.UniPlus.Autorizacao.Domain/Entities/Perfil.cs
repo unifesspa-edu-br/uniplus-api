@@ -355,7 +355,7 @@ public sealed class Perfil : EntityBase
         }
 
         suspensao.Retomar(instante);
-        _eventos.Add(EventoDaContencao.DaRetomada(suspensao, origem, Retrato(catalogo), instante, ProximaPosicao()));
+        _eventos.Add(EventoDaContencao.DaRetomada(suspensao, origem, PerfilNoEvento(catalogo), instante, ProximaPosicao()));
 
         return true;
     }
@@ -369,14 +369,14 @@ public sealed class Perfil : EntityBase
     {
         SuspensaoDoPerfil suspensao = SuspensaoDoPerfil.Abrir(Id, autor, papel, motivo, instante, ProximaPosicao());
         _suspensoes.Add(suspensao);
-        _eventos.Add(EventoDaContencao.DaSuspensao(suspensao, Retrato(catalogo), ProximaPosicao()));
+        _eventos.Add(EventoDaContencao.DaSuspensao(suspensao, PerfilNoEvento(catalogo), ProximaPosicao()));
     }
 
     private void AbrirDesativacao(Identidade autor, string motivo, DateTimeOffset instante, ICatalogoDePermissoesConsultavel catalogo)
     {
         DesativacaoDoPerfil desativacao = DesativacaoDoPerfil.Abrir(Id, autor, motivo, instante, ProximaPosicao());
         _desativacoes.Add(desativacao);
-        _eventos.Add(EventoDaContencao.DaDesativacao(desativacao, Retrato(catalogo), ProximaPosicao()));
+        _eventos.Add(EventoDaContencao.DaDesativacao(desativacao, PerfilNoEvento(catalogo), ProximaPosicao()));
         Ativo = false;
     }
 
@@ -384,11 +384,11 @@ public sealed class Perfil : EntityBase
         DesativacaoDoPerfil desativacao, Identidade autor, string motivo, DateTimeOffset instante, ICatalogoDePermissoesConsultavel catalogo)
     {
         desativacao.Reativar(autor, motivo, instante);
-        _eventos.Add(EventoDaContencao.DaReativacao(desativacao, autor, motivo, Retrato(catalogo), instante, ProximaPosicao()));
+        _eventos.Add(EventoDaContencao.DaReativacao(desativacao, autor, motivo, PerfilNoEvento(catalogo), instante, ProximaPosicao()));
         Ativo = true;
     }
 
-    private RetratoDoPerfil Retrato(ICatalogoDePermissoesConsultavel catalogo) => new(VersaoVigente?.Id, Protegido(catalogo));
+    private PerfilNoEventoDaContencao PerfilNoEvento(ICatalogoDePermissoesConsultavel catalogo) => new(VersaoVigente?.Id, Protegido(catalogo));
 
     private int ProximaPosicao() => ++_posicoesDaTrilha;
 }

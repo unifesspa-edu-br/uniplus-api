@@ -22,8 +22,8 @@ internal static class SuspensaoPorReclassificacao
         from b in daBase.DefaultIfEmpty()
         where !k.DeVersao || !context.ImplantacaoAtual().Any(p => p.Codigo == k.Codigo
             && (FuncoesDoBanco.OrdemDaClassificacao(p.Classificacao)
-                    > FuncoesDoBanco.OrdemDaClassificacao(((ClassificacaoDeProtecao?)b.Classificacao ?? k.RetratoDaClassificacao)!.Value)
-                || p.DeUnidade != ((bool?)b.DeUnidade ?? k.RetratoDeUnidade)))
+                    > FuncoesDoBanco.OrdemDaClassificacao(((ClassificacaoDeProtecao?)b.Classificacao ?? k.ClassificacaoNaVersao)!.Value)
+                || p.DeUnidade != ((bool?)b.DeUnidade ?? k.DeUnidadeNaVersao)))
         select k;
 
     /// <summary>As permissões do catálogo de maior sequência.</summary>

@@ -21,4 +21,4 @@ public sealed record ContextoDaRetomada(
 /// <summary>O que o perfil era no instante de um evento da contenção: a versão em vigor e se era protegido.</summary>
 /// <param name="VersaoVigenteId">A versão em vigor; nula quando o perfil ainda não tem nenhuma.</param>
 /// <param name="Protegido">A composição em vigor tem permissão pessoal ou acima, pelo catálogo atual.</param>
-public sealed record RetratoDoPerfil(Guid? VersaoVigenteId, bool Protegido);
+public sealed record PerfilNoEventoDaContencao(Guid? VersaoVigenteId, bool Protegido);
