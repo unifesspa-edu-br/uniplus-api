@@ -17,6 +17,7 @@ using Unifesspa.UniPlus.Publicacoes.Application.UnitTests.TestSupport;
 using Unifesspa.UniPlus.Publicacoes.Domain.Entities;
 using Unifesspa.UniPlus.Publicacoes.Domain.Errors;
 using Unifesspa.UniPlus.Publicacoes.Domain.Interfaces;
+using Unifesspa.UniPlus.Testes.Compartilhado;
 
 [SuppressMessage(
     "Performance",
@@ -43,55 +44,47 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
         await _unitOfWork.DidNotReceive().SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
+    /// <remarks>A janela não mudou, logo nenhuma sobreposição pode ter surgido: a consulta seria um acesso ao banco inútil a cada atualização.</remarks>
     [Fact(DisplayName = "Não consulta sobreposição quando código e janela não mudam")]
     public async Task Handle_SoMudaNome_NaoConsultaSobreposicao()
     {
-        TipoAtoPublicado existente = Existente();
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        TipoAtoPublicado existente = ExistenteNoRepositorio();
 
         Result resultado = await AtualizarTipoAtoPublicadoCommandHandler.Handle(
             Comando(existente.Id) with { Nome = "Outro nome" }, _repository, _unitOfWork, CancellationToken.None);
 
         resultado.IsSuccess.Should().BeTrue();
-
-        // A janela não mudou, logo nenhuma sobreposição pode ter surgido: a consulta
-        // seria um round-trip inútil por update.
         await _repository.DidNotReceive().ExisteSobreposicaoDeVigenciaAsync(
             Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<DateOnly?>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>());
         await _unitOfWork.Received(1).SalvarAlteracoesAsync(Arg.Any<CancellationToken>());
     }
 
-    [Theory(DisplayName = "Consulta sobreposição quando a janela muda")]
-    [InlineData(2026, 3, 1, null)]
-    [InlineData(2026, 1, 1, 2027)]
-    public async Task Handle_MudaJanela_ConsultaSobreposicao(int ano, int mes, int dia, int? anoFim)
+    public static TheoryData<DateOnly, DateOnly?> JanelasQueMudam => new()
     {
-        TipoAtoPublicado existente = Existente();
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        _repository.ExisteSobreposicaoDeVigenciaAsync(
-            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<DateOnly?>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(false);
+        { new DateOnly(2026, 3, 1), null },
+        { new DateOnly(2026, 1, 1), new DateOnly(2027, 1, 1) },
+    };
 
-        DateOnly? fim = anoFim is { } a ? new DateOnly(a, 1, 1) : null;
-        AtualizarTipoAtoPublicadoCommand comando = Comando(existente.Id) with
-        {
-            VigenciaInicio = new DateOnly(ano, mes, dia),
-            VigenciaFim = fim,
-        };
+    /// <remarks>A própria versão é excluída da checagem: senão ela colidiria consigo mesma.</remarks>
+    [Theory(DisplayName = "Consulta sobreposição quando a janela muda")]
+    [MemberData(nameof(JanelasQueMudam))]
+    public async Task Handle_MudaJanela_ConsultaSobreposicao(DateOnly inicio, DateOnly? fim)
+    {
+        TipoAtoPublicado existente = ExistenteNoRepositorio();
+        ResponderSobreposicaoDeVigencia(false);
+        AtualizarTipoAtoPublicadoCommand comando = Comando(existente.Id) with { VigenciaInicio = inicio, VigenciaFim = fim };
 
         await AtualizarTipoAtoPublicadoCommandHandler.Handle(
             comando, _repository, _unitOfWork, CancellationToken.None);
 
-        // A própria versão é excluída da checagem — senão ela colidiria consigo mesma.
         await _repository.Received(1).ExisteSobreposicaoDeVigenciaAsync(
-            "EDITAL_ABERTURA", comando.VigenciaInicio, fim, existente.Id, Arg.Any<CancellationToken>());
+            "EDITAL_ABERTURA", inicio, fim, existente.Id, Arg.Any<CancellationToken>());
     }
 
     [Fact(DisplayName = "Recusa código alterado sem consultar sobreposição — o código é a identidade do tipo")]
     public async Task Handle_ComCodigoAlterado_RecusaSemConsultarSobreposicao()
     {
-        TipoAtoPublicado existente = Existente();
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        TipoAtoPublicado existente = ExistenteNoRepositorio();
 
         Result resultado = await AtualizarTipoAtoPublicadoCommandHandler.Handle(
             Comando(existente.Id) with { Codigo = "EDITAL_RETIFICACAO" },
@@ -107,11 +100,8 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
     [Fact(DisplayName = "Recusa quando a nova janela intercepta outra versão viva")]
     public async Task Handle_ComSobreposicao_Falha()
     {
-        TipoAtoPublicado existente = Existente();
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        _repository.ExisteSobreposicaoDeVigenciaAsync(
-            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<DateOnly?>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(true);
+        TipoAtoPublicado existente = ExistenteNoRepositorio();
+        ResponderSobreposicaoDeVigencia(true);
 
         Result resultado = await AtualizarTipoAtoPublicadoCommandHandler.Handle(
             Comando(existente.Id) with { VigenciaInicio = Inicio.AddMonths(2) },
@@ -137,11 +127,8 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
     [Fact(DisplayName = "Violação da exclusion constraint de vigência descarta o rastreamento antes de devolver o conflito")]
     public async Task Handle_ColisaoNaExclusionConstraint_DescartaRastreamentoERetornaConflito()
     {
-        TipoAtoPublicado existente = Existente();
-        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
-        _repository.ExisteSobreposicaoDeVigenciaAsync(
-            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<DateOnly?>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
-            .Returns(false);
+        TipoAtoPublicado existente = ExistenteNoRepositorio();
+        ResponderSobreposicaoDeVigencia(false);
         _unitOfWork.SalvarAlteracoesAsync(Arg.Any<CancellationToken>())
             .ThrowsAsync(new DbUpdateException(
                 "conflito sintético de teste",
@@ -157,11 +144,19 @@ public sealed class AtualizarTipoAtoPublicadoCommandHandlerTests
     }
 
     private static TipoAtoPublicado Existente() =>
-        TipoAtoPublicado.Criar(
-            "EDITAL_ABERTURA", "Edital de abertura",
-            congelaConfiguracao: true, unicoPorObjeto: true, efeitoIrreversivel: false,
-            ehResultado: false,
-            vigenciaInicio: Inicio, vigenciaFim: null, baseLegal: null).Value!;
+        new TipoAtoPublicadoDeTeste { CongelaConfiguracao = true, UnicoPorObjeto = true }.Criar().Value!;
+
+    private TipoAtoPublicado ExistenteNoRepositorio()
+    {
+        TipoAtoPublicado existente = Existente();
+        _repository.ObterPorIdAsync(existente.Id, Arg.Any<CancellationToken>()).Returns(existente);
+        return existente;
+    }
+
+    private void ResponderSobreposicaoDeVigencia(bool existe) =>
+        _repository.ExisteSobreposicaoDeVigenciaAsync(
+            Arg.Any<string>(), Arg.Any<DateOnly>(), Arg.Any<DateOnly?>(), Arg.Any<Guid?>(), Arg.Any<CancellationToken>())
+            .Returns(existe);
 
     private static AtualizarTipoAtoPublicadoCommand Comando(Guid id) =>
         new(
