@@ -286,6 +286,7 @@ git checkout -b feature/{issue-number}-{slug}
 | `refactor/` | Refatoração sem mudança de comportamento |
 | `test/` | Adição ou correção de testes |
 | `chore/` | Configuração, CI/CD, dependências |
+| `docs/` | Documentação |
 
 ### 2. Implementar
 
@@ -932,7 +933,7 @@ Editar `.github/dependabot.yml` adicionando entrada em `updates[0].groups`. Padr
 
 Complementa os Quality gates acima (verificações de CI automáticas) com higiene de commits e branch — essas são verificações humanas:
 
-- [ ] Branch no padrão (`feature/{issue}-{slug}`, `fix/{issue}-{slug}`, `chore/{slug}` ou `docs/{slug}`)
+- [ ] Branch no padrão da tabela de prefixos (`feature/`, `fix/`, `refactor/`, `test/`, `chore/` ou `docs/`, seguido de `{issue}-{slug}`)
 - [ ] Issue vinculada no GitHub (regra de ouro: sem issue, sem código)
 - [ ] Todos os commits seguem Conventional Commits em pt-BR
 - [ ] Verbo no **imperativo presente** (`adiciona`, `corrige`, `remove`, `atualiza`) — nunca infinitivo (`adicionar`) nem gerúndio (`Adicionando`)
