@@ -13,6 +13,8 @@ using Unifesspa.UniPlus.Verificador.Configuracao;
 
 public sealed class ClamdClientTests
 {
+    private const int ConteudoGrandeEmBytes = 64 * 1024 * 1024;
+
     [Fact(DisplayName = "Resposta do clamd que não é OK nem FOUND é erro permanente, e não indisponibilidade")]
     public async Task RespostaDeErro_LancaErroPermanente()
     {
@@ -63,6 +65,115 @@ public sealed class ClamdClientTests
         ClamdClient.InterpretarVersao("ClamAV 1.4.3/27800/Fri Oct  2 07:25:35 2026")
             .Should().Be(new DateTimeOffset(2026, 10, 2, 7, 25, 35, TimeSpan.Zero));
 
+    [Theory(DisplayName = "OK devolve limpo e FOUND devolve a assinatura, pela conversa real com o servidor")]
+    [InlineData("stream: OK", false, null)]
+    [InlineData("stream: Eicar-Test-Signature FOUND", true, "Eicar-Test-Signature")]
+    public async Task VerificarAsync_RespostaOkOuFound_DevolveOResultadoDoClamd(string resposta, bool infectado, string? assinatura)
+    {
+        using TcpListener servidor = Iniciar();
+        Task atendimento = AtenderAsync(servidor, resposta);
+        using MemoryStream conteudo = new([1, 2, 3]);
+
+        ResultadoDoClamd resultado = await Criar(((IPEndPoint)servidor.LocalEndpoint).Port).VerificarAsync(conteudo, CancellationToken.None);
+
+        resultado.Should().Be(new ResultadoDoClamd(infectado, assinatura));
+        await atendimento;
+    }
+
+    [Fact(DisplayName = "Conexão que fecha sem resposta é indisponibilidade")]
+    public async Task VerificarAsync_ConexaoFechadaSemResposta_LancaIndisponivel()
+    {
+        using TcpListener servidor = Iniciar();
+        Task atendimento = AtenderAsync(servidor, string.Empty);
+        using MemoryStream conteudo = new([1, 2, 3]);
+
+        Func<Task> acao = () => Criar(((IPEndPoint)servidor.LocalEndpoint).Port).VerificarAsync(conteudo, CancellationToken.None);
+
+        (await acao.Should().ThrowAsync<ClamdIndisponivelException>()).WithMessage("*fechou a conexão sem responder*");
+        await atendimento;
+    }
+
+    [Fact(DisplayName = "Prazo esgotado sem resposta do clamd é indisponibilidade")]
+    public async Task VerificarAsync_PrazoEsgotado_LancaIndisponivel()
+    {
+        using TcpListener servidor = Iniciar();
+        using CancellationTokenSource fimDoTeste = new();
+        Task atendimento = SegurarSemResponderAsync(servidor, fimDoTeste.Token);
+        using MemoryStream conteudo = new([1, 2, 3]);
+
+        Func<Task> acao = () => Criar(((IPEndPoint)servidor.LocalEndpoint).Port, prazoEmSegundos: 1).VerificarAsync(conteudo, CancellationToken.None);
+
+        await acao.Should().ThrowAsync<ClamdIndisponivelException>();
+        await fimDoTeste.CancelAsync();
+        await Record.ExceptionAsync(() => atendimento);
+    }
+
+    [Fact(DisplayName = "Cancelamento pedido pelo chamador segue como cancelamento, e não como indisponibilidade")]
+    public async Task VerificarAsync_CancelamentoDoChamador_LancaOperationCanceled()
+    {
+        using TcpListener servidor = Iniciar();
+        using CancellationTokenSource cancelado = new();
+        await cancelado.CancelAsync();
+        using MemoryStream conteudo = new([1, 2, 3]);
+
+        Func<Task> acao = () => Criar(((IPEndPoint)servidor.LocalEndpoint).Port).VerificarAsync(conteudo, cancelado.Token);
+
+        await acao.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    [Fact(DisplayName = "A resposta que não é OK nem FOUND carrega a resposta na mensagem do erro permanente")]
+    public void InterpretarResposta_RespostaDesconhecida_LancaErroPermanenteComARespostaNaMensagem()
+    {
+        Action acao = () => ClamdClient.InterpretarResposta("INSTREAM size limit exceeded. ERROR");
+
+        acao.Should().Throw<ClamdErroPermanenteException>().WithMessage("*INSTREAM size limit exceeded. ERROR*");
+    }
+
+    [Fact(DisplayName = "Recusa que o clamd escreve antes de resetar a conexão é lida e vira erro permanente com a mensagem preservada")]
+    public async Task VerificarAsync_RecusaEscritaAntesDoReset_LancaErroPermanenteComAMensagem()
+    {
+        using TcpListener servidor = Iniciar();
+        Task atendimento = ResponderEResetarAsync(servidor, "INSTREAM size limit exceeded. ERROR");
+        using MemoryStream conteudo = new(new byte[ConteudoGrandeEmBytes]);
+
+        Func<Task> acao = () => Criar(((IPEndPoint)servidor.LocalEndpoint).Port).VerificarAsync(conteudo, CancellationToken.None);
+
+        (await acao.Should().ThrowAsync<ClamdErroPermanenteException>()).WithMessage("*INSTREAM size limit exceeded. ERROR*");
+        await atendimento;
+    }
+
+    [Fact(DisplayName = "Reset da conexão sem recusa legível relança a falha do envio como indisponibilidade")]
+    public async Task VerificarAsync_ResetSemRecusaLegivel_LancaIndisponivelComAIOException()
+    {
+        using TcpListener servidor = Iniciar();
+        Task atendimento = ResponderEResetarAsync(servidor, string.Empty);
+        using MemoryStream conteudo = new(new byte[ConteudoGrandeEmBytes]);
+
+        Func<Task> acao = () => Criar(((IPEndPoint)servidor.LocalEndpoint).Port).VerificarAsync(conteudo, CancellationToken.None);
+
+        (await acao.Should().ThrowAsync<ClamdIndisponivelException>()).WithInnerException<IOException>();
+        await atendimento;
+    }
+
+    // Lê pouco, escreve a resposta (se houver) e fecha com RST: a escrita do cliente falha antes de terminar o envio.
+    private static async Task ResponderEResetarAsync(TcpListener servidor, string resposta)
+    {
+        using TcpClient conexao = await servidor.AcceptTcpClientAsync();
+        conexao.LingerState = new LingerOption(true, 0);
+        NetworkStream rede = conexao.GetStream();
+        _ = await rede.ReadAtLeastAsync(new byte[100], 100, throwOnEndOfStream: false);
+        if (!string.IsNullOrEmpty(resposta))
+        {
+            await rede.WriteAsync(Encoding.UTF8.GetBytes(resposta + "\0"));
+        }
+    }
+
+    private static async Task SegurarSemResponderAsync(TcpListener servidor, CancellationToken fim)
+    {
+        using TcpClient conexao = await servidor.AcceptTcpClientAsync(fim);
+        await Task.Delay(Timeout.Infinite, fim);
+    }
+
     private static TcpListener Iniciar()
     {
         TcpListener servidor = new(IPAddress.Loopback, 0);
@@ -82,9 +193,12 @@ public sealed class ClamdClientTests
             total += await rede.ReadAsync(descarte);
         }
 
-        await rede.WriteAsync(Encoding.UTF8.GetBytes(resposta + "\0"));
+        if (!string.IsNullOrEmpty(resposta))
+        {
+            await rede.WriteAsync(Encoding.UTF8.GetBytes(resposta + "\0"));
+        }
     }
 
-    private static ClamdClient Criar(int porta) =>
-        new(Options.Create(new VerificadorOptions { Clamd = { Host = "127.0.0.1", Port = porta, TimeoutSegundos = 5 } }));
+    private static ClamdClient Criar(int porta, int prazoEmSegundos = 5) =>
+        new(Options.Create(new VerificadorOptions { Clamd = { Host = "127.0.0.1", Port = porta, TimeoutSegundos = prazoEmSegundos } }));
 }
