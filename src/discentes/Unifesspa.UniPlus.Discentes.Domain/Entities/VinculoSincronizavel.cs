@@ -24,4 +24,15 @@ public sealed record ResultadoDaGravacao(int Inseridos, int Atualizados, int Ina
 {
     /// <summary>Quantos vínculos do lote foram efetivamente escritos.</summary>
     public int Escritos => Inseridos + Atualizados;
+
+    /// <summary>Junta o resultado de outro trecho do lote a este.</summary>
+    public ResultadoDaGravacao Somar(ResultadoDaGravacao outro)
+    {
+        ArgumentNullException.ThrowIfNull(outro);
+
+        return new ResultadoDaGravacao(
+            Inseridos + outro.Inseridos,
+            Atualizados + outro.Atualizados,
+            Inalterados + outro.Inalterados);
+    }
 }
