@@ -4,6 +4,7 @@ using Unifesspa.UniPlus.Application.Abstractions.Authentication;
 using Unifesspa.UniPlus.Autorizacao.Application.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Domain.Interfaces;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>Quem executa a operação, pelo token, e o instante em que a executa, pelo relógio injetado.</summary>
 public sealed class AutoriaDaOperacao
@@ -44,6 +45,14 @@ public sealed class AutoriaDaOperacao
 
         return new AutoriaDaVersao(pessoa, EmailVerificado(), temConcessao);
     }
+
+    /// <summary>
+    /// A autoria sobre uma versão, ou a recusa de autor não identificado quando o token não identifica a pessoa.
+    /// </summary>
+    public async Task<Result<AutoriaDaVersao>> ExigirDaVersaoAsync(Guid? perfilId, CancellationToken cancellationToken) =>
+        await DaVersaoAsync(perfilId, cancellationToken).ConfigureAwait(false) is { } autoria
+            ? Result<AutoriaDaVersao>.Success(autoria)
+            : Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
 
     private string? EmailVerificado() =>
         _userContext.EmailVerificado && !string.IsNullOrWhiteSpace(_userContext.Email)

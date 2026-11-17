@@ -5,6 +5,7 @@ using Unifesspa.UniPlus.Authorization.Catalogo;
 using Unifesspa.UniPlus.Authorization.Contracts;
 using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
+using Unifesspa.UniPlus.Kernel.Results;
 
 /// <summary>
 /// O que o solicitante pode fazer na governança das versões de um perfil: decidir cada etapa da aprovação, manter perfis
@@ -132,6 +133,32 @@ internal sealed record AcessoDaVersao(DecisaoDeAcesso DecisaoDaGestao, DecisaoDe
     public static Task<AcessoAvaliado> AvaliarVisaoDaGovernancaAsync(IVerificadorDeAcesso verificador, CancellationToken cancellationToken) =>
         AvaliarLeituraAsync(
             verificador, null, ResourceTiposAutorizacao.Perfil, [PermissaoDeManter, PermissaoDaProtecaoDeDados, PermissaoDeConsultar], cancellationToken);
+
+    /// <summary>
+    /// Confere se a pessoa decide a etapa: consulta o acesso, registra a decisão que governou e devolve a recusa, ou
+    /// nulo quando pode. O token que não identifica a pessoa responde antes de qualquer registro.
+    /// </summary>
+    public static async Task<DomainError?> ConferirEtapaAsync(
+        IVerificadorDeAcesso verificador,
+        Guid recursoId,
+        string tipoDoRecurso,
+        EtapaDaVersao etapa,
+        DomainError semPermissao,
+        CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(verificador);
+        ArgumentNullException.ThrowIfNull(semPermissao);
+
+        AcessoDaVersao? acesso = await ConsultarAsync(verificador, recursoId, cancellationToken, tipoDoRecurso).ConfigureAwait(false);
+        if (acesso is null)
+        {
+            return PerfilHandlerErros.AutorNaoIdentificado();
+        }
+
+        await RegistrarAsync(verificador, acesso.DecisaoDa(etapa), cancellationToken).ConfigureAwait(false);
+
+        return acesso.Decide(etapa) ? null : semPermissao;
+    }
 
     /// <summary>Registra a decisão que governou o desfecho, permitida ou negada.</summary>
     public static Task RegistrarAsync(IVerificadorDeAcesso verificador, DecisaoDeAcesso decisao, CancellationToken cancellationToken)

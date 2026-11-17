@@ -2,6 +2,7 @@ namespace Unifesspa.UniPlus.Autorizacao.Application.Commands.Janelas;
 
 using Unifesspa.UniPlus.Authorization.Abstractions;
 using Unifesspa.UniPlus.Autorizacao.Application.Commands.Perfis;
+using Unifesspa.UniPlus.Autorizacao.Application.Permissoes;
 using Unifesspa.UniPlus.Autorizacao.Domain.Enums;
 using Unifesspa.UniPlus.Autorizacao.Domain.Errors;
 using Unifesspa.UniPlus.Autorizacao.Domain.ValueObjects;
@@ -28,20 +29,12 @@ public sealed class AutorizacaoDaMigracao
     {
         ArgumentNullException.ThrowIfNull(verificador);
 
-        AcessoDaVersao? acesso = await AcessoDaVersao.ConsultarAsync(verificador, perfilId, cancellationToken).ConfigureAwait(false);
-        if (acesso is null)
-        {
-            return Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
-        }
+        DomainError? recusa = await AcessoDaVersao
+            .ConferirEtapaAsync(verificador, perfilId, ResourceTiposAutorizacao.Perfil, etapa, MigracaoErros.SemPermissaoNaEtapa(), cancellationToken)
+            .ConfigureAwait(false);
 
-        await AcessoDaVersao.RegistrarAsync(verificador, acesso.DecisaoDa(etapa), cancellationToken).ConfigureAwait(false);
-        if (!acesso.Decide(etapa))
-        {
-            return Result<AutoriaDaVersao>.Failure(MigracaoErros.SemPermissaoNaEtapa());
-        }
-
-        return await _autoria.DaVersaoAsync(perfilId, cancellationToken).ConfigureAwait(false) is { } autoria
-            ? Result<AutoriaDaVersao>.Success(autoria)
-            : Result<AutoriaDaVersao>.Failure(PerfilHandlerErros.AutorNaoIdentificado());
+        return recusa is null
+            ? await _autoria.ExigirDaVersaoAsync(perfilId, cancellationToken).ConfigureAwait(false)
+            : Result<AutoriaDaVersao>.Failure(recusa);
     }
 }
