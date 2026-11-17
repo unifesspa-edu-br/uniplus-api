@@ -43,7 +43,7 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
         [nameof(FaseCronograma.RegraRecurso)] = Entra("A regra de prazo e os procedimentos do recurso mudam o que o candidato pode contestar e como o recurso é revisado."),
         [nameof(FaseCronograma.Produtos)] = NaoEntra(PublicacoesDeclaradas),
         [nameof(FaseCronograma.BancasRequeridas)] = Entra("Quem julga e como delibera define a decisão do preliminar."),
-        [nameof(FaseCronograma.TiposDeDecisao)] = NaoEntra("Ainda fora do envelope congelado; passa a entrar no preliminar quando entrar no envelope."),
+        [nameof(FaseCronograma.TiposDeDecisao)] = Entra("Os tipos de decisão dizem o que o preliminar decide e o que dele se pode contestar."),
         [nameof(FaseCronograma.RegraDeHomologacao)] = NaoEntra("Ainda fora do envelope congelado; passa a entrar no preliminar quando entrar no envelope."),
     };
 
@@ -73,7 +73,7 @@ public sealed class ClassificacaoDasPropriedadesDoPreliminarTests
         [nameof(EtapaProcesso.ItensDeAvaliacao)] = Entra("Os itens e a pontuação máxima de cada um compõem a nota."),
         [nameof(EtapaProcesso.Bancas)] = Entra("Quem julga e como delibera define a decisão do preliminar."),
         [nameof(EtapaProcesso.Recursos)] = Entra("As janelas recursais, com o prazo e os procedimentos de revisão, mudam o que o candidato pode contestar e como o recurso é revisado."),
-        [nameof(EtapaProcesso.TiposDeDecisao)] = NaoEntra("Ainda fora do envelope congelado; passa a entrar no preliminar quando entrar no envelope."),
+        [nameof(EtapaProcesso.TiposDeDecisao)] = Entra("Os tipos de decisão dizem o que o preliminar decide e o que dele se pode contestar."),
         [nameof(EtapaProcesso.Produtos)] = NaoEntra(PublicacoesDeclaradas),
         [nameof(EtapaProcesso.ProduzResultado)] = NaoEntra("Derivada de Produtos."),
         [nameof(EtapaProcesso.ComponeNota)] = NaoEntra("Derivada do caráter e do peso, que entram."),

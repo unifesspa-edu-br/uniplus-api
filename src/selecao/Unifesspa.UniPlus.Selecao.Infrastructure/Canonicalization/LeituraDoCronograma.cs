@@ -22,7 +22,7 @@ internal static class LeituraDoCronograma
     [
         "ordem", "faseCanonicaOrigemId", "codigo", "origemData", "agrupaEtapas", "permiteComplementacao",
         "coletaInscricao", "coletaSolicitacaoIsencao", "inicio", "fim", "produtos", "faseConcluinteCodigo",
-        "emiteParecerIndividual", "bancasRequeridas", "regraRecurso", "unidadeResponsavel",
+        "emiteParecerIndividual", "bancasRequeridas", "regraRecurso", "unidadeResponsavel", "tiposDeDecisao",
     ];
 
     /// <summary>
@@ -111,10 +111,11 @@ internal static class LeituraDoCronograma
         IReadOnlyList<BancaRequerida> bancas = leitor.Falhou ? [] : LerBancasRequeridas(leitor, item, path);
         RegraRecursoFase? regraRecurso = leitor.Falhou ? null : LeituraDosPrazosDeRecurso.LerRegraRecursoFase(leitor, item, path);
         UnidadeResponsavelSnapshot? unidade = leitor.Falhou ? null : LerUnidadeResponsavel(leitor, item, path);
+        IReadOnlyList<string> tipos = leitor.Falhou ? [] : TiposDeDecisaoNoEnvelope.Ler(leitor, item, path);
 
         return leitor.Falhou
             ? null
-            : Montar(leitor, id, origem, decisoes with { UnidadeResponsavel = unidade }, new(produtos, emiteParecerIndividual, regraRecurso), bancas);
+            : Montar(leitor, id, origem, decisoes with { UnidadeResponsavel = unidade }, new(produtos, emiteParecerIndividual, regraRecurso, tipos), bancas);
     }
 
     private static FaseCronograma? Montar(

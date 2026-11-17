@@ -41,6 +41,14 @@ internal static class FaseDaRetificacaoDeTeste
             new PublicacoesDaFase(Produtos: [.. fase.Produtos], EmiteParecerIndividual: false, RegraRecurso: null),
             bancasRequeridas: []).Value!;
 
+    /// <summary>A mesma fase, com a mesma origem canônica e a mesma janela, declarando os tipos de decisão dados.</summary>
+    internal static FaseCronograma ComTiposDeDecisao(FaseCronograma fase, params string[] tipos) =>
+        FaseCronograma.Criar(
+            new OrigemCanonicaDaFase(fase.FaseCanonicaOrigemId, fase.Codigo, fase.OrigemData, fase.AgrupaEtapas, fase.PermiteComplementacao, fase.ColetaInscricao, fase.ColetaSolicitacaoIsencao),
+            new DecisoesDeCronogramaDaFase(fase.Ordem, Inicio: fase.Inicio, Fim: fase.Fim, FaseConcluinteCodigo: fase.FaseConcluinteCodigo, UnidadeResponsavel: UnidadesDeTeste.Ceps),
+            new PublicacoesDaFase(Produtos: [.. fase.Produtos], EmiteParecerIndividual: false, RegraRecurso: null, TiposDeDecisao: tipos),
+            bancasRequeridas: []).Value!;
+
     /// <summary>A mesma fase, com a mesma origem canônica, com outro código, outra ordem e outros produtos: o que não entra no preliminar.</summary>
     internal static FaseCronograma Renomeada(FaseCronograma fase, string codigo, int ordem, params ProdutoDaFase[] produtos) =>
         FaseCronograma.Criar(

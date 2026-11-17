@@ -7,7 +7,7 @@ using static LinhasDaEntradaDoPreliminar;
 /// <summary>
 /// O que da etapa entra no resultado preliminar que ela publica: a fase onde acontece, o caráter, a origem do
 /// tipo, o peso, a escala e o passo da nota, a forma de avaliação, a regra de consolidação, a janela, o parecer,
-/// os itens de avaliação, as bancas e as janelas recursais. Fica de fora o que identifica a etapa ou a descreve
+/// os itens de avaliação, os tipos de decisão que declara, as bancas e as janelas recursais. Fica de fora o que identifica a etapa ou a descreve
 /// (<c>Id</c>, nome, ordem, cópia do tipo) e o que ela publica, cuja mudança é conferida à parte.
 /// </summary>
 internal static class EntradaDoPreliminarDaEtapa
@@ -21,6 +21,7 @@ internal static class EntradaDoPreliminarDaEtapa
             .. Escalares(etapa),
             .. DaReferencia("regraConsolidacao", etapa.RegraConsolidacao),
             .. DaAvaliacao(etapa),
+            .. DosTiposDeDecisao(etapa.TiposDeDecisao),
             .. etapa.Bancas.SelectMany(DaBanca),
             .. etapa.Recursos.SelectMany(recurso => DoRecurso(etapa, recurso)),
         ]);

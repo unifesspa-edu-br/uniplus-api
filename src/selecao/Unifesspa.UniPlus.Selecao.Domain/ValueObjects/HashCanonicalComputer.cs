@@ -1,5 +1,6 @@
 namespace Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
@@ -272,12 +273,31 @@ public static class HashCanonicalComputer
     }
 
     /// <summary>
-    /// Serializa um instante em UTC, RFC 3339, granularidade de segundo, sem
-    /// fração (ADR-0100 item 3) — elimina variação por precisão de relógio ou
-    /// serializador entre runtimes.
+    /// A forma única do instante no envelope do congelamento e no hash do comprovante de inscrição: UTC,
+    /// RFC 3339, seis casas fixas de fração de segundo e sufixo <c>Z</c>.
+    /// </summary>
+    public const string CanonicalInstantFormat = "yyyy-MM-ddTHH:mm:ss.ffffffZ";
+
+    /// <summary>
+    /// Serializa um instante na forma <see cref="CanonicalInstantFormat"/> (ADR-0100 item 3). A sétima casa
+    /// da fração é truncada, não arredondada: é a precisão que o relógio do sistema e o banco guardam
+    /// (ADR-0165), e a fração não varia entre runtimes porque o relógio já a fixa.
     /// </summary>
     public static string SerializeInstantCanonical(DateTimeOffset instante) =>
-        instante.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
+        instante.ToUniversalTime().ToString(CanonicalInstantFormat, CultureInfo.InvariantCulture);
+
+    /// <summary>
+    /// Lê um instante escrito por <see cref="SerializeInstantCanonical"/>. Recusa qualquer outra forma: sem
+    /// fração, com outro número de casas, com deslocamento no lugar do <c>Z</c>, em minúsculas ou com
+    /// espaço no lugar do <c>T</c>. Aceitar variação que o emissor nunca produz tornaria um leitor mais
+    /// leniente que o decodificador do envelope e esconderia adulteração; e o texto sem designador de
+    /// fuso, numa leitura permissiva, receberia o fuso local de quem lê.
+    /// </summary>
+    public static bool TryParseInstantCanonical([NotNullWhen(true)] string? texto, out DateTimeOffset instante) =>
+        DateTimeOffset.TryParseExact(
+            texto, CanonicalInstantFormat, CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out instante)
+        && string.Equals(SerializeInstantCanonical(instante), texto, StringComparison.Ordinal);
 
     /// <summary>
     /// Canonicaliza <paramref name="payload"/> (reordenação recursiva de

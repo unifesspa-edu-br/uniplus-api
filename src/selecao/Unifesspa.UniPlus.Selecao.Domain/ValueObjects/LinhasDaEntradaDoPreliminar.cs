@@ -9,7 +9,7 @@ using Enums;
 /// <summary>
 /// A forma canônica das linhas de <see cref="EntradaDoPreliminar"/> que a fase e a etapa escrevem do mesmo
 /// jeito: o par campo e valor, a referência de regra, os argumentos do prazo de recurso, a regra de
-/// deliberação da banca e o produto em que o recurso ancora.
+/// deliberação da banca, os tipos de decisão declarados e o produto em que o recurso ancora.
 /// </summary>
 internal static class LinhasDaEntradaDoPreliminar
 {
@@ -65,6 +65,10 @@ internal static class LinhasDaEntradaDoPreliminar
                 Linha($"{campo}.encerramento", regra.Encerramento),
                 Linha($"{campo}.semUnanimidade", regra.SemUnanimidade),
             ];
+
+    /// <summary>Uma linha por tipo de decisão declarado: a mesma declaração em outra ordem dá as mesmas linhas.</summary>
+    internal static IEnumerable<string> DosTiposDeDecisao(IEnumerable<string> tipos) =>
+        tipos.Select(static tipo => Linha($"tiposDeDecisao[{Valor(tipo)}]", true));
 
     /// <summary>O produto em que o prazo ancora, pelo tipo de ato e pelo papel e nunca pelo <c>Id</c>.</summary>
     internal static IEnumerable<string> DaAncora(string campo, IEnumerable<IProdutoPublicado> produtos, Guid produtoAncoraId)

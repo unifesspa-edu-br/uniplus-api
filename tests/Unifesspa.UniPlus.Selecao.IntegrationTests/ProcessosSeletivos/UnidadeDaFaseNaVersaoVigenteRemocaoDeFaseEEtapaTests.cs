@@ -92,7 +92,7 @@ public sealed class UnidadeDaFaseNaVersaoVigenteRemocaoDeFaseEEtapaTests : IClas
     {
         (Guid processoId, FaseCronograma fase, _) = await _cenario.PublicadoAsync("PS janela da etapa", Abertura);
         await _apoio.SucederNoEnvelopeAsync(
-            processoId, DateTimeOffset.UtcNow, envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = "2020-01-01T00:00:00+00:00");
+            processoId, DateTimeOffset.UtcNow, envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = InstanteCanonico(2020, 1, 1));
 
         FasesIniciadas iniciadas = await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow);
 
@@ -145,7 +145,7 @@ public sealed class UnidadeDaFaseNaVersaoVigenteRemocaoDeFaseEEtapaTests : IClas
     public async Task Etapas_EncerradaEComAto_Iniciadas()
     {
         (Guid encerradaId, _, EtapaProcesso encerrada) = await _cenario.PublicadoAsync("PS etapa encerrada", Abertura);
-        await _apoio.SucederNoEnvelopeAsync(encerradaId, DateTimeOffset.UtcNow, envelope => envelope["etapas"]!.AsArray()[0]!["fim"] = "2020-01-31T00:00:00+00:00");
+        await _apoio.SucederNoEnvelopeAsync(encerradaId, DateTimeOffset.UtcNow, envelope => envelope["etapas"]!.AsArray()[0]!["fim"] = InstanteCanonico(2020, 1, 31));
         (Guid comAtoId, _, EtapaProcesso comAto) = await _cenario.PublicadoAsync("PS etapa com ato", Abertura);
         await _cenario.SemearAtoAsync(comAtoId, IdentidadeDoItemDoEdital.DaEtapa(comAto, ProdutoDaEtapa.Criar("RESULTADO_CLASSIFICACAO", PapelProdutoFase.Definitivo)));
 
@@ -169,7 +169,7 @@ public sealed class UnidadeDaFaseNaVersaoVigenteRemocaoDeFaseEEtapaTests : IClas
     {
         (Guid processoId, _, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS etapa de versao futura", Abertura);
         await _apoio.SucederNoEnvelopeAsync(
-            processoId, DateTimeOffset.UtcNow.AddDays(30), envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = "2020-01-01T00:00:00+00:00");
+            processoId, DateTimeOffset.UtcNow.AddDays(30), envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = InstanteCanonico(2020, 1, 1));
 
         (await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow)).ContemEtapa(etapa.Id).Should().BeFalse();
     }
@@ -179,7 +179,7 @@ public sealed class UnidadeDaFaseNaVersaoVigenteRemocaoDeFaseEEtapaTests : IClas
     {
         (Guid processoId, _, EtapaProcesso etapa) = await _cenario.PublicadoAsync("PS versao que nunca vigorou", Abertura);
         DateTimeOffset vigencia = DateTimeOffset.UtcNow.AddMinutes(-5);
-        await _apoio.SucederNoEnvelopeAsync(processoId, vigencia, envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = "2020-01-01T00:00:00+00:00");
+        await _apoio.SucederNoEnvelopeAsync(processoId, vigencia, envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = InstanteCanonico(2020, 1, 1));
         await _apoio.SucederNoEnvelopeAsync(processoId, vigencia, envelope => envelope["etapas"]!.AsArray()[0]!["inicio"] = null);
 
         (await _cenario.IniciadasAsync(processoId, DateTimeOffset.UtcNow)).ContemEtapa(etapa.Id).Should().BeFalse();

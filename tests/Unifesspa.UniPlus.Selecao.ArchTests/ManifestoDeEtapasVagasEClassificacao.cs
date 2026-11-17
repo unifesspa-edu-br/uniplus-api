@@ -39,14 +39,13 @@ internal static class ManifestoDeEtapasVagasEClassificacao
 
         [typeof(EtapaProcesso)] = (
             ["Nome", "Carater", "TipoEtapa", "Peso", "NotaMinima", "NotaMaxima", "PassoDoLancamento", "FormaDeAvaliacao", "RegraConsolidacao", "ItensDeAvaliacao", "EscalaDeAtendimento", "Ordem", "FaseCodigo", "Produtos",
-             "Inicio", "Fim", "EmiteParecerIndividual", "Bancas", "Recursos"],
+             "Inicio", "Fim", "EmiteParecerIndividual", "Bancas", "Recursos", "TiposDeDecisao"],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
                 ("ProduzResultado", "Derivada de Produtos — congelá-la duplicaria a fonte de verdade."),
                 ("ComponeNota", "Derivada de Carater + Peso — congelá-la duplicaria a fonte de verdade."),
                 ("DeclaraNotaDoEnem", "Derivada de TipoEtapa.NotaDeOrigemNoEnem — o atributo congelado já é a declaração."),
                 ("TipoEtapaOrigemId", "Derivada de TipoEtapa.OrigemId (issue #1071) — congelá-la duplicaria a fonte de verdade."),
-                ("TiposDeDecisao", "Ainda não entra no envelope congelado nem no hash."),
             ]),
 
         // O id do item ENTRA no envelope, como o da etapa: o lançamento e o recurso apontam para ele.

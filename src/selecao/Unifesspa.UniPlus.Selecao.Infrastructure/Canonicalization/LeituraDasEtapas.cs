@@ -21,7 +21,7 @@ internal static class LeituraDasEtapas
     [
         "id", "nome", "carater", "tipoEtapa", "peso", "notaMinima", "notaMaxima", "passoDoLancamento", "formaDeAvaliacao",
         "regraConsolidacao", "itensDeAvaliacao", "escalaDeAtendimento", "ordem", "faseCodigo", "produtos",
-        "inicio", "fim", "emiteParecerIndividual", "bancas", "recursos",
+        "inicio", "fim", "emiteParecerIndividual", "bancas", "recursos", "tiposDeDecisao",
     ];
 
     /// <summary>
@@ -141,29 +141,49 @@ internal static class LeituraDasEtapas
         }
 
         List<ProdutoDaEtapa> produtos = LerProdutosDaEtapa(leitor, item, path);
-        if (DefinirJanelaEParecer(leitor, etapa, item, path) is null)
+
+        bool propria = DefinirJanelaEParecer(leitor, etapa, item, path) is not null
+            && DeclararTiposDeDecisao(leitor, etapa, item, path) is not null;
+
+        return propria ? DeclararFilhas(leitor, etapa, produtos, item, path) : null;
+    }
+
+    private static EtapaProcesso? DeclararTiposDeDecisao(LeitorEnvelope leitor, EtapaProcesso etapa, JsonObject item, string path)
+    {
+        IReadOnlyList<string> tipos = TiposDeDecisaoNoEnvelope.Ler(leitor, item, path);
+        if (leitor.Falhou)
         {
             return null;
         }
 
+        Result declaracao = etapa.DefinirTiposDeDecisao(tipos);
+
+        return declaracao.IsFailure ? leitor.Propagar<EtapaProcesso?>(declaracao.Error!) : etapa;
+    }
+
+    private static EtapaProcesso? DeclararFilhas(
+        LeitorEnvelope leitor, EtapaProcesso etapa, List<ProdutoDaEtapa> produtos, JsonObject item, string path)
+    {
         List<BancaDaEtapa> bancas = LerBancasDaEtapa(leitor, item, path);
         if (leitor.Falhou)
         {
             return null;
         }
 
-        if (etapa.DefinirBancas(bancas).IsFailure)
-        {
-            return RecusarEtapa(leitor, $"{path}.bancas", "o mesmo tipo aparece duas vezes.");
-        }
-
-        if (etapa.DefinirProdutos(produtos).IsFailure)
-        {
-            return RecusarEtapa(leitor, $"{path}.produtos", "o mesmo ato aparece duas vezes na etapa.");
-        }
-
-        return DefinirRecursos(leitor, etapa, item, path);
+        return DefinirBancas(leitor, etapa, bancas, path) is not null && DefinirProdutos(leitor, etapa, produtos, path) is not null
+            ? DefinirRecursos(leitor, etapa, item, path)
+            : null;
     }
+
+    private static EtapaProcesso? DefinirBancas(LeitorEnvelope leitor, EtapaProcesso etapa, List<BancaDaEtapa> bancas, string path) =>
+        etapa.DefinirBancas(bancas).IsFailure
+            ? RecusarEtapa(leitor, $"{path}.bancas", "o mesmo tipo aparece duas vezes.")
+            : etapa;
+
+    private static EtapaProcesso? DefinirProdutos(LeitorEnvelope leitor, EtapaProcesso etapa, List<ProdutoDaEtapa> produtos, string path) =>
+        etapa.DefinirProdutos(produtos).IsFailure
+            ? RecusarEtapa(leitor, $"{path}.produtos", "o mesmo ato aparece duas vezes na etapa.")
+            : etapa;
 
     private static EtapaProcesso? DefinirJanelaEParecer(LeitorEnvelope leitor, EtapaProcesso etapa, JsonObject item, string path)
     {

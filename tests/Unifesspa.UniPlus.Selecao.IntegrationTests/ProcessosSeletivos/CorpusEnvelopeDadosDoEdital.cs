@@ -38,7 +38,7 @@ internal static class CorpusEnvelopeDadosDoEdital
     internal static DadosEdital DadosRicos() => DadosEdital.Criar(
         numero: "042/2026",
         periodoInscricaoInicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero),
-        periodoInscricaoFim: new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero),
+        periodoInscricaoFim: FimDasInscricoes,
         documentoEditalId: Documento,
         anexos: AnexosRicos).Value!;
 

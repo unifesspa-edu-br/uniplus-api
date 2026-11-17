@@ -31,7 +31,7 @@ using Xunit;
 
 internal static class ApoioDoEnvelopeCodec
 {
-    internal const string SchemaCorrente = "0.0.49";
+    internal const string SchemaCorrente = "0.0.50";
 
     internal static (ProcessoSeletivo Processo, FaseCronograma Fase) ProcessoDeInscricao(string titulo)
     {
@@ -138,42 +138,32 @@ internal static class ApoioDoEnvelopeCodec
     {
         ArgumentNullException.ThrowIfNull(caminho);
 
+        // A mesma modalidade é ofertada pelos dois cursos do processo rico, e o processo não aceita
+        // duas cópias diferentes dela: o caminho pode nomear as duas ocorrências, separadas por '|'.
+        return MutarEReidratar(mutado =>
+        {
+            foreach (string ocorrencia in caminho.Split('|'))
+            {
+                Mutar(mutado, ocorrencia, valorNovo);
+            }
+        });
+    }
+
+    internal static (byte[] Originais, byte[] Mutados, byte[] Recodificados) MutarEReidratar(Action<JsonObject> mutar)
+    {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         SnapshotCanonico congelado = CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo));
         CorpusEnvelopeEntrada.Publicar(processo);
-
-        // A mesma modalidade é ofertada pelos dois cursos do processo rico, e o processo não aceita
-        // duas cópias diferentes dela: o caminho pode nomear as duas ocorrências, separadas por '|'.
         JsonObject mutado = Envelope(congelado);
-        foreach (string ocorrencia in caminho.Split('|'))
-        {
-            Mutar(mutado, ocorrencia, valorNovo);
-        }
-
+        mutar(mutado);
         byte[] bytesMutados = PerfilCanonicoV1.Instancia.Serializar(mutado);
-        bytesMutados.Should().NotEqual(congelado.Bytes, $"pré-condição: mutar '{caminho}' tem de mudar os bytes");
-
+        bytesMutados.Should().NotEqual(congelado.Bytes, "pré-condição: a mutação tem de mudar os bytes");
         VersaoConfiguracao versao = CorpusEnvelopeEntrada.VersaoDeAbertura(processo, bytesMutados);
-        Result<EnvelopeReidratado> reidratado = CorpusEnvelope.Registro.Reidratar(versao);
-        reidratado.IsSuccess.Should().BeTrue(reidratado.Error?.Message);
-
-        Result reposicao = processo.RestaurarConfiguracaoCongelada(versao, reidratado.Value!.Grafo);
+        EnvelopeReidratado reidratado = Reidratado(versao);
+        Result reposicao = processo.RestaurarConfiguracaoCongelada(versao, reidratado.Grafo);
         reposicao.IsSuccess.Should().BeTrue(reposicao.Error?.Message);
 
-        byte[] recodificados = CorpusEnvelope.Registro.Recodificar(
-            versao.SchemaVersion,
-            new EntradaCanonicalizacao(
-                processo,
-                reidratado.Value.Dados,
-                reidratado.Value.HashDocumento, FusoInstitucional.ZoneId,
-                reidratado.Value.Retificacao,
-                reidratado.Value.Conformidade,
-                reidratado.Value.MetadadosFatosCongelados,
-                reidratado.Value.ValoresSelecionaveisCongelados,
-                reidratado.Value.CalendarioDiasUteis, reidratado.Value.AgregadosDosGrupos, reidratado.Value.ApresentacaoDosPressupostos,
-                TiposDeAtoCongelados: reidratado.Value.TiposDeAtoCongelados, FatosDerivadosCongelados: reidratado.Value.FatosDerivadosCongelados)).Value!.Bytes;
-
-        return (congelado.Bytes, bytesMutados, recodificados);
+        return (congelado.Bytes, bytesMutados, Recodificado(processo, versao, reidratado));
     }
 
     /// <summary>

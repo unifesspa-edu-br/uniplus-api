@@ -50,7 +50,6 @@ A [ADR-0068](0068-relogio-via-timeprovider-injetado.md) tornou o relógio injeta
 ### Esta ADR não decide
 
 - **Instantes de token OAuth em memória** (Schema Registry, SIGAA e Geo): nunca são gravados nem publicados, e continuam com a fonte injetada sem truncamento próprio.
-- **Janelas do envelope congelado**, que têm granularidade canônica de segundos ([ADR-0100](0100-canonicalizacao-hash-snapshot-publicacao.md)).
 
 ## Consequências
 
@@ -107,4 +106,5 @@ A [ADR-0068](0068-relogio-via-timeprovider-injetado.md) tornou o relógio injeta
 - **Emenda** a [ADR-0032](0032-guid-v7-para-identidade-de-entidades.md): o `Id` não ordena fatos do mesmo microssegundo; a ordem de registro vive em coluna própria.
 - [ADR-0089](0089-navegacao-bidirecional-cursor-keyset-reverso.md) e [ADR-0164](0164-tramitacao-da-providencia-sobre-concessao.md): a fila de providências mantém o `Id` no desempate do cursor.
 - [ADR-0160](0160-supressao-de-aviso-do-analisador-proibida.md): as supressões do registro Avro foram removidas no mesmo trabalho.
+- **Emenda (2026-11-16):** as janelas do cronograma, da etapa e o período de inscrição do envelope congelado passam ao microssegundo, com seis casas fixas e leitura estrita, pela emenda ao item 3 da [ADR-0100](0100-canonicalizacao-hash-snapshot-publicacao.md) (UNI-REQ-0402). O limite de janela publicado é comparado na mesma precisão dos instantes gravados. A forma anterior não é lida, porque o codec único do envelope vale até a primeira publicação em produção ([ADR-0171](0171-formularios-do-processo-ligados-as-fases.md)).
 - Issue unifesspa-edu-br/uniplus-api#2380.

@@ -35,28 +35,43 @@ internal static class SerializacaoDoCronograma
             .ThenBy(static f => f.Id)
             .Select(static fase => (JsonNode)SerializarFase(fase))]);
 
-    private static JsonObject SerializarFase(FaseCronograma fase) => new()
+    private static JsonObject SerializarFase(FaseCronograma fase)
     {
-        ["id"] = fase.Id,
-        ["ordem"] = fase.Ordem,
-        ["faseCanonicaOrigemId"] = fase.FaseCanonicaOrigemId,
-        ["codigo"] = HashCanonicalComputer.NormalizeNfc(fase.Codigo),
-        ["origemData"] = fase.OrigemData.ToString(),
-        ["agrupaEtapas"] = fase.AgrupaEtapas,
-        ["permiteComplementacao"] = fase.PermiteComplementacao,
-        ["coletaInscricao"] = fase.ColetaInscricao,
-        ["coletaSolicitacaoIsencao"] = fase.ColetaSolicitacaoIsencao,
-        ["inicio"] = fase.Inicio is { } inicio ? HashCanonicalComputer.SerializeInstantCanonical(inicio) : null,
-        ["fim"] = fase.Fim is { } fim ? HashCanonicalComputer.SerializeInstantCanonical(fim) : null,
-        ["produtos"] = SerializarProdutosDaFase(fase),
-        ["faseConcluinteCodigo"] = fase.FaseConcluinteCodigo is { } concluinte
-            ? HashCanonicalComputer.NormalizeNfc(concluinte)
-            : null,
-        ["emiteParecerIndividual"] = fase.EmiteParecerIndividual,
-        ["bancasRequeridas"] = SerializarBancasRequeridas(fase),
-        ["regraRecurso"] = fase.RegraRecurso is { } regraRecurso ? SerializarRegraRecursoFase(regraRecurso) : null,
-        ["unidadeResponsavel"] = fase.UnidadeResponsavel is { } unidade ? SerializarUnidadeResponsavel(unidade) : null,
-    };
+        JsonObject item = new() { ["id"] = fase.Id, ["bancasRequeridas"] = SerializarBancasRequeridas(fase) };
+        AcrescentarOrigemCanonica(item, fase);
+        AcrescentarDecisoesDeCronograma(item, fase);
+        AcrescentarPublicacoes(item, fase);
+
+        return item;
+    }
+
+    private static void AcrescentarOrigemCanonica(JsonObject item, FaseCronograma fase)
+    {
+        item["faseCanonicaOrigemId"] = fase.FaseCanonicaOrigemId;
+        item["codigo"] = HashCanonicalComputer.NormalizeNfc(fase.Codigo);
+        item["origemData"] = fase.OrigemData.ToString();
+        item["agrupaEtapas"] = fase.AgrupaEtapas;
+        item["permiteComplementacao"] = fase.PermiteComplementacao;
+        item["coletaInscricao"] = fase.ColetaInscricao;
+        item["coletaSolicitacaoIsencao"] = fase.ColetaSolicitacaoIsencao;
+    }
+
+    private static void AcrescentarDecisoesDeCronograma(JsonObject item, FaseCronograma fase)
+    {
+        item["ordem"] = fase.Ordem;
+        item["inicio"] = fase.Inicio is { } inicio ? HashCanonicalComputer.SerializeInstantCanonical(inicio) : null;
+        item["fim"] = fase.Fim is { } fim ? HashCanonicalComputer.SerializeInstantCanonical(fim) : null;
+        item["faseConcluinteCodigo"] = fase.FaseConcluinteCodigo is { } concluinte ? HashCanonicalComputer.NormalizeNfc(concluinte) : null;
+        item["unidadeResponsavel"] = fase.UnidadeResponsavel is { } unidade ? SerializarUnidadeResponsavel(unidade) : null;
+    }
+
+    private static void AcrescentarPublicacoes(JsonObject item, FaseCronograma fase)
+    {
+        item["produtos"] = SerializarProdutosDaFase(fase);
+        item["emiteParecerIndividual"] = fase.EmiteParecerIndividual;
+        item["regraRecurso"] = fase.RegraRecurso is { } regraRecurso ? SerializarRegraRecursoFase(regraRecurso) : null;
+        item["tiposDeDecisao"] = TiposDeDecisaoNoEnvelope.Serializar(fase.TiposDeDecisao);
+    }
 
     private static JsonObject SerializarUnidadeResponsavel(UnidadeResponsavelSnapshot unidade) => new()
     {

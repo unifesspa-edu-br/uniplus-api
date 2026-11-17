@@ -60,7 +60,7 @@ internal static class EnvelopeDeReferencia
     internal static DadosEdital DadosDeReferencia() => DadosEdital.Criar(
         numero: "001/2026",
         periodoInscricaoInicio: new DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.FromHours(-3)),
-        periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)),
+        periodoInscricaoFim: new DateTimeOffset(2026, 1, 31, 23, 59, 59, TimeSpan.FromHours(-3)).AddTicks(9_999_990),
         documentoEditalId: DocumentoFixo).Value!;
 
     /// <summary>

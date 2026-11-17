@@ -67,10 +67,13 @@ internal sealed class ApoioDaUnidadeDaFaseNaVersaoVigente
         };
     }
 
+    internal static string InstanteCanonico(int ano, int mes, int dia) =>
+        HashCanonicalComputer.SerializeInstantCanonical(new DateTimeOffset(ano, mes, dia, 0, 0, 0, TimeSpan.Zero));
+
     internal static void JanelaNoPassado(JsonObject fase)
     {
-        fase["inicio"] = "2020-01-01T00:00:00+00:00";
-        fase["fim"] = "2020-01-31T00:00:00+00:00";
+        fase["inicio"] = InstanteCanonico(2020, 1, 1);
+        fase["fim"] = InstanteCanonico(2020, 1, 31);
     }
 
     // A fase nova nasce com a janela no futuro, para só a inscrição ou a importação poderem iniciá-la.
@@ -97,8 +100,8 @@ internal sealed class ApoioDaUnidadeDaFaseNaVersaoVigente
 
     internal static void AdiaAJanela(JsonObject fase)
     {
-        fase["inicio"] = "2045-01-01T00:00:00+00:00";
-        fase["fim"] = "2045-01-31T00:00:00+00:00";
+        fase["inicio"] = InstanteCanonico(2045, 1, 1);
+        fase["fim"] = InstanteCanonico(2045, 1, 31);
     }
 
     internal Task SucederAsync(Guid processoId, DateTimeOffset vigenteAPartirDe, Action<JsonObject> alteraAFase) =>
@@ -131,7 +134,7 @@ internal sealed class ApoioDaUnidadeDaFaseNaVersaoVigente
     internal static void AbreAJanelaDaEtapaEAcrescentaAIrma(JsonObject envelope, Guid irma)
     {
         AcrescentaEtapaIrma(envelope, irma);
-        envelope["etapas"]!.AsArray()[0]!["inicio"] = "2020-01-01T00:00:00+00:00";
+        envelope["etapas"]!.AsArray()[0]!["inicio"] = InstanteCanonico(2020, 1, 1);
     }
 
     internal async Task SemearEnvioAoInepAsync(Guid processoId, Guid etapaId)

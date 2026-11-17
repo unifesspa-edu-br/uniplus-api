@@ -174,6 +174,7 @@ internal static class CorpusEnvelopeEtapas
                 ItemDeAvaliacao.Reidratar(ItemDeAvaliacaoId(6, variante), "Domínio do conteúdo", 79.5000m),
             ], permutar));
         etapa.DefinirBancas([BancaDaEtapa.Criar(TipoBancaExaminadora, "BANCA_EXAMINADORA", "Banca de teste", BancasDeTeste.Regra())]).IsSuccess.Should().BeTrue();
+        etapa.DefinirTiposDeDecisao([TipoMotivoDeDecisaoCodigo.NotaDaEtapa, TipoMotivoDeDecisaoCodigo.Heteroidentificacao]).IsSuccess.Should().BeTrue();
         return etapa;
     }
 

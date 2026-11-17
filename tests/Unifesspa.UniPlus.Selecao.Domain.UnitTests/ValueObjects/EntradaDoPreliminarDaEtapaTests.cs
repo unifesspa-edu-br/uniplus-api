@@ -36,6 +36,7 @@ public sealed class EntradaDoPreliminarDaEtapaTests
         [nameof(EtapaProcesso.ItensDeAvaliacao)] = () => Etapa(itens: [new(null, "Clareza", 6m)]),
         [nameof(EtapaProcesso.Bancas)] = () => Etapa(completar: e => e.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa()])),
         [nameof(EtapaProcesso.Recursos)] = () => Etapa(completar: e => AbrirRecurso(e, prazo: 2m, ancora: 0, Materia)),
+        [nameof(EtapaProcesso.TiposDeDecisao)] = () => ComTipos(TipoMotivoDeDecisaoCodigo.Classificacao),
     };
 
     private static readonly Dictionary<string, Func<EtapaProcesso>> QueNaoEntram = new()
@@ -124,6 +125,16 @@ public sealed class EntradaDoPreliminarDaEtapaTests
         Etapa(completar: e => e.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa(BancasDeTeste.Regra(integrantes: 5, quorum: 3))])).EntradaDoPreliminar()
             .Should().NotBe(Etapa(completar: e => e.DefinirBancas([BancasDeTeste.DeRecursosDaEtapa()])).EntradaDoPreliminar());
 
+    [Fact(DisplayName = "Trocar um tipo de decisão declarado pela etapa muda a entrada")]
+    public void TrocarTipoDeDecisao_MudaAEntrada() =>
+        ComTipos(TipoMotivoDeDecisaoCodigo.Classificacao).EntradaDoPreliminar()
+            .Should().NotBe(ComTipos(TipoMotivoDeDecisaoCodigo.AnaliseDocumental).EntradaDoPreliminar());
+
+    [Fact(DisplayName = "A ordem em que os tipos de decisão são declarados não muda a entrada")]
+    public void OrdemDosTiposDeDecisao_NaoMudaAEntrada() =>
+        ComTipos(TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.AnaliseDocumental).EntradaDoPreliminar()
+            .Should().Be(ComTipos(TipoMotivoDeDecisaoCodigo.AnaliseDocumental, TipoMotivoDeDecisaoCodigo.Classificacao).EntradaDoPreliminar());
+
     private static EntradaDoPreliminar ComProcedimentos(string regra, TipoMotivoDeDecisao tipo) =>
         Etapa(completar: e => AbrirRecursoComProcedimentos(e, 2m, 0, ProcedimentosDeRecurso.De([Procedimento(tipo, regra)]), Materia)).EntradaDoPreliminar();
 
@@ -150,6 +161,9 @@ public sealed class EntradaDoPreliminarDaEtapaTests
 
         return etapa;
     }
+
+    private static EtapaProcesso ComTipos(params string[] tipos) =>
+        Etapa(completar: e => e.DefinirTiposDeDecisao(tipos).IsSuccess.Should().BeTrue());
 
     private static T Alterar<T>(Func<T, T>? alteracao, T valor) => alteracao is null ? valor : alteracao(valor);
 

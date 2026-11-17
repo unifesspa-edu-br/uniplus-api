@@ -55,7 +55,7 @@ public sealed class RestauradorDeConfiguracaoParametrosCongeladosTests
         DefinirLaudoCondicionalAoTea(processo);
         DadosEdital dados = CorpusEnvelopeDadosDoEdital.DadosRicos();
         SnapshotCanonico congelado = new EnvelopeCodec().Codificar(EntradaComMetadadoCongelado(processo, dados, somenteOsValoresDoCorpus: true));
-        congelado.SchemaVersion.Should().Be("0.0.49", "pré-condição: o codec corrente emite a forma única");
+        congelado.SchemaVersion.Should().Be("0.0.50", "pré-condição: o codec corrente emite a forma única");
         VersaoConfiguracao versao = PublicadaPeloAtorDoCorpus(processo, dados, congelado);
 
         ReporORestauradoNaRaizViva(processo, versao);

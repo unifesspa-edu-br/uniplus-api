@@ -10,9 +10,9 @@ using Xunit;
 using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.ApoioDoRestauradorDeConfiguracao;
 
 /// <summary>
-/// Os tipos de decisão declarados por fase e etapa ainda não entram no envelope congelado nem no hash da
-/// publicação. Estas provas caracterizam essa limitação pelo caminho real da restauração, em que a prova em
-/// sombra aprova e o grafo devolvido é aplicado à raiz viva, e não pela reposição direta da entidade.
+/// Os tipos de decisão declarados por fase e etapa entram no envelope congelado e no hash da publicação. Estas
+/// provas conferem isso pelo caminho real da restauração, em que a prova em sombra aprova e o grafo devolvido é
+/// aplicado à raiz viva, e não pela reposição direta da entidade.
 /// </summary>
 public sealed class RestauradorDeConfiguracaoTiposDeDecisaoTests
 {
@@ -38,49 +38,45 @@ public sealed class RestauradorDeConfiguracaoTiposDeDecisaoTests
         CorpusEnvelopeEntrada.VersaoDeAbertura(processo, CorpusEnvelope.Codec.Codificar(CorpusEnvelopeEntrada.Entrada(processo)).Bytes)
             .HashConfiguracao;
 
-    [Fact(DisplayName = "Restaurar pelo caminho real ainda não preserva os tipos de decisão que a fase declarava na raiz viva")]
-    public void Restaurar_AindaNaoPreservaOsTiposDeDecisaoDaFaseNaRaizViva()
+    [Fact(DisplayName = "Restaurar pelo caminho real preserva os tipos de decisão que a fase declarava na raiz viva")]
+    public void Restaurar_PreservaOsTiposDeDecisaoDaFaseNaRaizViva()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [TipoDeClassificacao, TipoDeIsencaoDaTaxa]);
         VersaoConfiguracao versao = PublicadoCongelandoTudo(processo);
-        FaseFinalDe(processo).TiposDeDecisao.Should().Equal(
-            [TipoDeClassificacao, TipoDeIsencaoDaTaxa], "pré-condição: a fase publicada declarava os tipos");
 
         ReporORestauradoNaRaizViva(processo, versao);
 
-        FaseFinalDe(processo).TiposDeDecisao.Should().BeEmpty(
-            "o envelope ainda não congela os tipos da fase: a prova em sombra aprova e a reposição troca a declaração viva pela do grafo");
+        FaseFinalDe(processo).TiposDeDecisao.Should().Equal(
+            [TipoDeClassificacao, TipoDeIsencaoDaTaxa], "o envelope congela os tipos da fase e o grafo os repõe na raiz viva");
     }
 
-    [Fact(DisplayName = "Restaurar pelo caminho real ainda não preserva os tipos de decisão que a etapa declarava na raiz viva")]
-    public void Restaurar_AindaNaoPreservaOsTiposDeDecisaoDaEtapaNaRaizViva()
+    [Fact(DisplayName = "Restaurar pelo caminho real preserva os tipos de decisão que a etapa declarava na raiz viva")]
+    public void Restaurar_PreservaOsTiposDeDecisaoDaEtapaNaRaizViva()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         EtapaDeProvaObjetivaDe(processo).DefinirTiposDeDecisao([TipoDeClassificacao]).IsSuccess.Should().BeTrue();
         VersaoConfiguracao versao = PublicadoCongelandoTudo(processo);
-        EtapaDeProvaObjetivaDe(processo).TiposDeDecisao.Should().Equal(
-            [TipoDeClassificacao], "pré-condição: a etapa publicada declarava os tipos");
 
         ReporORestauradoNaRaizViva(processo, versao);
 
-        EtapaDeProvaObjetivaDe(processo).TiposDeDecisao.Should().BeEmpty(
-            "o envelope ainda não congela os tipos da etapa: a prova em sombra aprova e a reposição troca a declaração viva pela do grafo");
+        EtapaDeProvaObjetivaDe(processo).TiposDeDecisao.Should().Equal(
+            [TipoDeClassificacao], "o envelope congela os tipos da etapa e o grafo os repõe na raiz viva");
     }
 
-    [Fact(DisplayName = "Alterar só os tipos de decisão da fase ainda não muda o hash da configuração congelada")]
-    public void AlterarSoOsTiposDeDecisaoDaFase_AindaNaoMudaOHash()
+    [Fact(DisplayName = "Alterar só os tipos de decisão da fase muda o hash da configuração congelada")]
+    public void AlterarSoOsTiposDeDecisaoDaFase_MudaOHash()
     {
         string semTipos = HashCongeladoDe(CorpusEnvelopeProcessoRico.ProcessoRico());
         string comTipos = HashCongeladoDe(CorpusEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [TipoDeClassificacao]));
         string comOutrosTipos = HashCongeladoDe(
             CorpusEnvelopeProcessoRico.ProcessoRico(tiposDeDecisaoDaFaseFinal: [TipoDeIsencaoDaTaxa, TipoDeAnaliseDocumental]));
 
-        comTipos.Should().Be(semTipos, "a declaração da fase ainda não entra no envelope");
-        comOutrosTipos.Should().Be(semTipos, "trocar a declaração da fase ainda não altera o hash");
+        comTipos.Should().NotBe(semTipos, "a declaração da fase entra no envelope");
+        comOutrosTipos.Should().NotBe(semTipos).And.NotBe(comTipos, "trocar a declaração da fase altera o hash");
     }
 
-    [Fact(DisplayName = "Alterar só os tipos de decisão da etapa ainda não muda o hash da configuração congelada")]
-    public void AlterarSoOsTiposDeDecisaoDaEtapa_AindaNaoMudaOHash()
+    [Fact(DisplayName = "Alterar só os tipos de decisão da etapa muda o hash da configuração congelada")]
+    public void AlterarSoOsTiposDeDecisaoDaEtapa_MudaOHash()
     {
         ProcessoSeletivo processo = CorpusEnvelopeProcessoRico.ProcessoRico();
         string semTipos = HashCongeladoDe(processo);
@@ -90,7 +86,7 @@ public sealed class RestauradorDeConfiguracaoTiposDeDecisaoTests
         EtapaDeProvaObjetivaDe(processo).DefinirTiposDeDecisao([TipoDeIsencaoDaTaxa, TipoDeAnaliseDocumental]).IsSuccess.Should().BeTrue();
         string comOutrosTipos = HashCongeladoDe(processo);
 
-        comTipos.Should().Be(semTipos, "a declaração da etapa ainda não entra no envelope");
-        comOutrosTipos.Should().Be(semTipos, "trocar a declaração da etapa ainda não altera o hash");
+        comTipos.Should().NotBe(semTipos, "a declaração da etapa entra no envelope");
+        comOutrosTipos.Should().NotBe(semTipos).And.NotBe(comTipos, "trocar a declaração da etapa altera o hash");
     }
 }

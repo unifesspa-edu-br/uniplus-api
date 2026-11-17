@@ -26,6 +26,12 @@ using static Unifesspa.UniPlus.Selecao.IntegrationTests.ProcessosSeletivos.Corpu
 
 internal static class CorpusEnvelopeCronograma
 {
+    /// <summary>
+    /// O último instante das inscrições: o limite exclusivo de seis casas, que a escrita do envelope tem de
+    /// preservar sem arredondar para o segundo seguinte.
+    /// </summary>
+    internal static readonly DateTimeOffset FimDasInscricoes = new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero).AddTicks(9_999_990);
+
     internal static Guid ProdutoId(int fase, int posicao, int variante) =>
         new($"7777bbbb-000{variante:x}-4000-8000-0000000{fase:x}000{posicao:x}");
 
@@ -39,7 +45,7 @@ internal static class CorpusEnvelopeCronograma
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000001"), Codigo: "INSCRICAO", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: true,
             ColetaInscricao: true, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            Ordem: 1, Inicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 20, 23, 59, 59, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            Ordem: 1, Inicio: new DateTimeOffset(2026, 3, 2, 0, 0, 0, TimeSpan.Zero), Fim: FimDasInscricoes, FaseConcluinteCodigo: null,
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(Produtos: [ProdutoDaFase.Reidratar(ProdutoId(1, 1, variante), "COMUNICADO_INSCRICOES", null)], EmiteParecerIndividual: false, RegraRecurso: null),
         bancasRequeridas: []);
@@ -63,7 +69,9 @@ internal static class CorpusEnvelopeCronograma
         new DecisoesDeCronogramaDaFase(
             Ordem: 2, Inicio: new DateTimeOffset(2026, 3, 25, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 3, 25, 18, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: "RESULTADO_FINAL",
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
-        new PublicacoesDaFase(Produtos: ProdutosDaFaseDeRecurso(variante, permutar), EmiteParecerIndividual: true, RegraRecurso: RegraDeRecursoDaFase(variante)),
+        new PublicacoesDaFase(
+                Produtos: ProdutosDaFaseDeRecurso(variante, permutar), EmiteParecerIndividual: true, RegraRecurso: RegraDeRecursoDaFase(variante),
+                TiposDeDecisao: [TipoMotivoDeDecisaoCodigo.Classificacao]),
         bancasRequeridas: BancasRequeridasDaFaseDeRecurso(permutar));
 
     internal static IReadOnlyList<ProdutoDaFase> ProdutosDaFaseDeRecurso(int variante, bool permutar) =>
@@ -153,14 +161,18 @@ internal static class CorpusEnvelopeCronograma
             OrigemId: new Guid("4444dddd-0000-4000-8000-000000000003"), Codigo: "RESULTADO_FINAL", OrigemData: OrigemDataFase.NoEdital, AgrupaEtapas: false, PermiteComplementacao: false,
             ColetaInscricao: false, ColetaSolicitacaoIsencao: false),
         new DecisoesDeCronogramaDaFase(
-            Ordem: 3, Inicio: new DateTimeOffset(2026, 4, 10, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 4, 10, 18, 0, 0, TimeSpan.Zero), FaseConcluinteCodigo: null,
+            Ordem: 3, Inicio: new DateTimeOffset(2026, 4, 10, 0, 0, 0, TimeSpan.Zero), Fim: new DateTimeOffset(2026, 4, 10, 18, 0, 0, TimeSpan.Zero).AddTicks(1_234_560), FaseConcluinteCodigo: null,
             UnidadeResponsavel: UnidadesDeTeste.Ceps),
         new PublicacoesDaFase(
             Produtos: ProdutosDaFaseResultadoFinal(variante),
             EmiteParecerIndividual: false,
             RegraRecurso: null,
-            TiposDeDecisao: tiposDeDecisao),
+            TiposDeDecisao: tiposDeDecisao ?? TiposDaFaseFinalDoCorpus),
         bancasRequeridas: []);
+
+    /// <summary>Fase sem recurso, com os tipos declarados fora de ordem: o envelope os escreve em ordem alfabética.</summary>
+    private static readonly string[] TiposDaFaseFinalDoCorpus =
+        [TipoMotivoDeDecisaoCodigo.NotaDaEtapa, TipoMotivoDeDecisaoCodigo.GabaritoDaProva, TipoMotivoDeDecisaoCodigo.AnaliseDocumental];
 
     internal static List<ProdutoDaFase> ProdutosDaFaseResultadoFinal(int variante) =>
     [

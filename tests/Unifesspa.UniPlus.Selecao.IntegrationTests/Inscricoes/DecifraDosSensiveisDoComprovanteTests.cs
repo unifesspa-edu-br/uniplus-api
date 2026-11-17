@@ -8,6 +8,7 @@ using NSubstitute;
 
 using Unifesspa.UniPlus.Infrastructure.Core.Cryptography;
 using Unifesspa.UniPlus.Infrastructure.Core.Persistence;
+using Unifesspa.UniPlus.Kernel.Tempo;
 using Unifesspa.UniPlus.Selecao.Domain.Entities;
 using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 using Unifesspa.UniPlus.Selecao.Infrastructure.Persistence.Cryptography;
@@ -21,7 +22,7 @@ using Unifesspa.UniPlus.Testes.Compartilhado;
 [Trait("Category", "Integration")]
 public sealed class DecifraDosSensiveisDoComprovanteTests : IClassFixture<InscricaoDbFixture>
 {
-    private static readonly DateTimeOffset Primeiro = new(2026, 10, 10, 12, 0, 0, TimeSpan.Zero);
+    private static readonly DateTimeOffset Primeiro = InstanteDoRelogioComMicrossegundos();
 
     private readonly InscricaoDbFixture _fixture;
 
@@ -30,12 +31,7 @@ public sealed class DecifraDosSensiveisDoComprovanteTests : IClassFixture<Inscri
     [Fact(DisplayName = "Ler o comprovante pedido decifra só os sensíveis dele, e listar as emissões da inscrição não decifra nenhum")]
     public async Task DecifraSoOComprovantePedido()
     {
-        Inscricao inscricao = Inscricao.Iniciar(
-            Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!;
-        ComprovanteInscricao envio = Emitir(inscricao, Primeiro, "CIS", "HETEROSSEXUAL");
-        ComprovanteInscricao correcao = Emitir(inscricao, Primeiro.AddMinutes(5), "TRANSGENERO", "BISSEXUAL");
-        await GravarAsync(inscricao, envio, correcao);
-
+        (Inscricao inscricao, ComprovanteInscricao envio, ComprovanteInscricao correcao) = await GravarEnvioECorrecaoAsync();
         IUniPlusEncryptionService espiao = EspiaoDaCifra();
         await using UniPlusDbContext leitura = _fixture.CreateDbContext();
         InscricaoRepository repositorio = new(leitura, espiao, _fixture.BlindIndex, TimeProvider.System);
@@ -45,11 +41,36 @@ public sealed class DecifraDosSensiveisDoComprovanteTests : IClassFixture<Inscri
 
         ComprovanteNaPosicao? segundo = await repositorio.ObterComprovanteAsync(inscricao.Id, 2);
 
+        await ConferirQueSoACorrecaoFoiDecifradaAsync(espiao, envio, correcao);
+        segundo!.Comprovante.TodasAsRespostas()["IDENTIDADE_GENERO"].GetString().Should().Be("TRANSGENERO");
+        segundo.Comprovante.IntegridadeConfere().Should().BeTrue("o instante com microssegundos volta do banco com o que o hash cobriu");
+    }
+
+    private async Task<(Inscricao Inscricao, ComprovanteInscricao Envio, ComprovanteInscricao Correcao)> GravarEnvioECorrecaoAsync()
+    {
+        Inscricao inscricao = Inscricao.Iniciar(
+            Guid.CreateVersion7(), PersonasDeTeste.FernandaDrumond, "conta-1", "https://issuer", Guid.CreateVersion7()).Value!;
+        ComprovanteInscricao envio = Emitir(inscricao, Primeiro, "CIS", "HETEROSSEXUAL");
+        ComprovanteInscricao correcao = Emitir(inscricao, Primeiro.AddMinutes(5), "TRANSGENERO", "BISSEXUAL");
+        await GravarAsync(inscricao, envio, correcao);
+
+        return (inscricao, envio, correcao);
+    }
+
+    private static async Task ConferirQueSoACorrecaoFoiDecifradaAsync(
+        IUniPlusEncryptionService espiao, ComprovanteInscricao envio, ComprovanteInscricao correcao)
+    {
         await espiao.Received(1).DecryptAsync(
             SelecaoEncryptionKeys.SensiveisAesGcm, Arg.Is<byte[]>(b => b.SequenceEqual(correcao.SensiveisCifrados!)), Arg.Any<CancellationToken>());
         await espiao.DidNotReceive().DecryptAsync(
             Arg.Any<string>(), Arg.Is<byte[]>(b => b.SequenceEqual(envio.SensiveisCifrados!)), Arg.Any<CancellationToken>());
-        segundo!.Comprovante.TodasAsRespostas()["IDENTIDADE_GENERO"].GetString().Should().Be("TRANSGENERO");
+    }
+
+    private static DateTimeOffset InstanteDoRelogioComMicrossegundos()
+    {
+        DateTimeOffset agora = RelogioEmMicrossegundos.DoSistema.GetUtcNow();
+
+        return agora.Microsecond == 0 ? agora.AddMicroseconds(1) : agora;
     }
 
     private static ComprovanteInscricao Emitir(Inscricao inscricao, DateTimeOffset instante, string identidadeDeGenero, string orientacaoSexual) =>

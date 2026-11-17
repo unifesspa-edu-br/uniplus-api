@@ -10,7 +10,7 @@ using Unifesspa.UniPlus.Selecao.Domain.ValueObjects;
 /// O comprovante de uma submissão da <see cref="Inscricao"/> (issue #1858, §4.1 do plano da
 /// #1855): cópia do que foi enviado, SEM nenhum número de documento, com o hash de integridade
 /// que prova que o comprovante não mudou. O hash é o SHA-256 do JSON canônico do conteúdo
-/// (número, instante em segundos UTC, oferta, respostas, derivados, grupos, aceites, documentos e, quando a
+/// (número, instante em microssegundos UTC, oferta, respostas, derivados, grupos, aceites, documentos e, quando a
 /// versão deriva a modalidade, as modalidades em que o candidato concorre; e, quando a inscrição
 /// declara a 2ª opção de curso, a oferta dela e as modalidades dela); qualquer um o
 /// recalcula, e não é um código de autenticação.

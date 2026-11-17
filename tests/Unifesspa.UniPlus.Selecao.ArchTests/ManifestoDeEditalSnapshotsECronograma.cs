@@ -78,7 +78,7 @@ internal static class ManifestoDeEditalSnapshotsECronograma
                 "AgrupaEtapas", "PermiteComplementacao",
                 "ColetaInscricao", "ColetaSolicitacaoIsencao", "Inicio", "Fim",
                 "Produtos", "FaseConcluinteCodigo", "EmiteParecerIndividual",
-                "BancasRequeridas", "RegraRecurso", "UnidadeResponsavel",
+                "BancasRequeridas", "RegraRecurso", "UnidadeResponsavel", "TiposDeDecisao",
             ],
             [
                 ("ProcessoSeletivoId", "FK interna — reconstruída junto com o grafo, nunca congelada (ADR-0110 D2)."),
@@ -86,7 +86,6 @@ internal static class ManifestoDeEditalSnapshotsECronograma
                 ("UnidadeResponsavelSigla", "Coluna que materializa UnidadeResponsavel, congelada pelo value object."),
                 ("UnidadeResponsavelNome", "Coluna que materializa UnidadeResponsavel, congelada pelo value object."),
                 ("ProduzResultado", "Derivada de Produtos — a fase produz resultado quando declara ao menos um produto com papel; congelá-la duplicaria a fonte de verdade."),
-                ("TiposDeDecisao", "Ainda não entra no envelope congelado nem no hash."),
                 ("RegraDeHomologacao", "Ainda não entra no envelope congelado nem no hash."),
             ]),
 

@@ -41,28 +41,54 @@ internal static class SerializacaoDasEtapas
         })]);
     }
 
-    private static JsonObject SerializarEtapaSemIdentidade(EtapaProcesso etapa) => new()
+    private static JsonObject SerializarEtapaSemIdentidade(EtapaProcesso etapa)
     {
-        ["nome"] = HashCanonicalComputer.NormalizeNfc(etapa.Nome),
-        ["carater"] = etapa.Carater.ToString(),
-        ["tipoEtapa"] = SerializarTipoEtapa(etapa),
-        ["peso"] = etapa.Peso is { } peso ? HashCanonicalComputer.SerializeDecimalCanonical(peso, EscritaCanonica.EscalaPadrao) : null,
-        ["notaMinima"] = etapa.NotaMinima is { } notaMinima ? HashCanonicalComputer.SerializeDecimalCanonical(notaMinima, EscritaCanonica.EscalaPadrao) : null,
-        ["notaMaxima"] = etapa.NotaMaxima is { } notaMaxima ? HashCanonicalComputer.SerializeDecimalCanonical(notaMaxima, EscritaCanonica.EscalaPadrao) : null,
-        ["passoDoLancamento"] = etapa.PassoDoLancamento is { } passo ? HashCanonicalComputer.SerializeDecimalCanonical(passo, EscritaCanonica.EscalaPadrao) : null,
-        ["formaDeAvaliacao"] = etapa.FormaDeAvaliacao?.ToString(),
-        ["regraConsolidacao"] = etapa.RegraConsolidacao is { } consolidacao ? EscritaCanonica.SerializarReferenciaRegra(consolidacao) : null,
-        ["itensDeAvaliacao"] = SerializarItensDeAvaliacao(etapa),
-        ["escalaDeAtendimento"] = SerializarEscalaDeAtendimento(etapa),
-        ["ordem"] = etapa.Ordem,
-        ["faseCodigo"] = etapa.FaseCodigo,
-        ["inicio"] = etapa.Inicio is { } ini ? HashCanonicalComputer.SerializeInstantCanonical(ini) : null,
-        ["fim"] = etapa.Fim is { } fim ? HashCanonicalComputer.SerializeInstantCanonical(fim) : null,
-        ["emiteParecerIndividual"] = etapa.EmiteParecerIndividual,
-        ["bancas"] = SerializarBancas(etapa),
-        ["recursos"] = SerializarRecursos(etapa),
-        ["produtos"] = SerializarProdutos(etapa),
-    };
+        JsonObject item = new() { ["bancas"] = SerializarBancas(etapa) };
+        AcrescentarIdentificacao(item, etapa);
+        AcrescentarAvaliacao(item, etapa);
+        AcrescentarJanela(item, etapa);
+        AcrescentarPublicacoes(item, etapa);
+
+        return item;
+    }
+
+    private static void AcrescentarIdentificacao(JsonObject item, EtapaProcesso etapa)
+    {
+        item["nome"] = HashCanonicalComputer.NormalizeNfc(etapa.Nome);
+        item["carater"] = etapa.Carater.ToString();
+        item["tipoEtapa"] = SerializarTipoEtapa(etapa);
+        item["ordem"] = etapa.Ordem;
+        item["faseCodigo"] = etapa.FaseCodigo;
+    }
+
+    private static void AcrescentarAvaliacao(JsonObject item, EtapaProcesso etapa)
+    {
+        item["peso"] = SerializarDecimalOpcional(etapa.Peso);
+        item["notaMinima"] = SerializarDecimalOpcional(etapa.NotaMinima);
+        item["notaMaxima"] = SerializarDecimalOpcional(etapa.NotaMaxima);
+        item["passoDoLancamento"] = SerializarDecimalOpcional(etapa.PassoDoLancamento);
+        item["formaDeAvaliacao"] = etapa.FormaDeAvaliacao?.ToString();
+        item["regraConsolidacao"] = etapa.RegraConsolidacao is { } consolidacao ? EscritaCanonica.SerializarReferenciaRegra(consolidacao) : null;
+        item["itensDeAvaliacao"] = SerializarItensDeAvaliacao(etapa);
+        item["escalaDeAtendimento"] = SerializarEscalaDeAtendimento(etapa);
+    }
+
+    private static void AcrescentarJanela(JsonObject item, EtapaProcesso etapa)
+    {
+        item["inicio"] = etapa.Inicio is { } inicio ? HashCanonicalComputer.SerializeInstantCanonical(inicio) : null;
+        item["fim"] = etapa.Fim is { } fim ? HashCanonicalComputer.SerializeInstantCanonical(fim) : null;
+    }
+
+    private static void AcrescentarPublicacoes(JsonObject item, EtapaProcesso etapa)
+    {
+        item["emiteParecerIndividual"] = etapa.EmiteParecerIndividual;
+        item["recursos"] = SerializarRecursos(etapa);
+        item["produtos"] = SerializarProdutos(etapa);
+        item["tiposDeDecisao"] = TiposDeDecisaoNoEnvelope.Serializar(etapa.TiposDeDecisao);
+    }
+
+    private static string? SerializarDecimalOpcional(decimal? valor) =>
+        valor is { } v ? HashCanonicalComputer.SerializeDecimalCanonical(v, EscritaCanonica.EscalaPadrao) : null;
 
     private static JsonArray SerializarItensDeAvaliacao(EtapaProcesso etapa) =>
         new([.. etapa.ItensDeAvaliacao.Select(static i => (JsonNode)new JsonObject

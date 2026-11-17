@@ -35,6 +35,7 @@ public sealed class EntradaDoPreliminarDaFaseTests
         [nameof(FaseCronograma.ColetaSolicitacaoIsencao)] = () => Fase(origem: o => o with { ColetaSolicitacaoIsencao = true }),
         [nameof(FaseCronograma.RegraRecurso)] = () => ComRecurso(prazo: 2m, ancora: 0, Materia),
         [nameof(FaseCronograma.BancasRequeridas)] = () => Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A")]),
+        [nameof(FaseCronograma.TiposDeDecisao)] = () => ComTipos(TipoMotivoDeDecisaoCodigo.Classificacao),
     };
 
     private static readonly Dictionary<string, Func<FaseCronograma>> QueNaoEntram = new()
@@ -118,6 +119,16 @@ public sealed class EntradaDoPreliminarDaFaseTests
         Fase(bancas: [Banca(TipoDeBancaA, "BANCA_A"), Banca(TipoDeBancaB, "BANCA_B")]).EntradaDoPreliminar()
             .Should().Be(Fase(bancas: [Banca(TipoDeBancaB, "BANCA_B"), Banca(TipoDeBancaA, "BANCA_A")]).EntradaDoPreliminar());
 
+    [Fact(DisplayName = "Trocar um tipo de decisão declarado pela fase muda a entrada")]
+    public void TrocarTipoDeDecisao_MudaAEntrada() =>
+        ComTipos(TipoMotivoDeDecisaoCodigo.Classificacao).EntradaDoPreliminar()
+            .Should().NotBe(ComTipos(TipoMotivoDeDecisaoCodigo.AnaliseDocumental).EntradaDoPreliminar());
+
+    [Fact(DisplayName = "A ordem em que os tipos de decisão são declarados não muda a entrada")]
+    public void OrdemDosTiposDeDecisao_NaoMudaAEntrada() =>
+        ComTipos(TipoMotivoDeDecisaoCodigo.Classificacao, TipoMotivoDeDecisaoCodigo.AnaliseDocumental).EntradaDoPreliminar()
+            .Should().Be(ComTipos(TipoMotivoDeDecisaoCodigo.AnaliseDocumental, TipoMotivoDeDecisaoCodigo.Classificacao).EntradaDoPreliminar());
+
     [Fact(DisplayName = "O instante da janela entra em UTC: o mesmo instante com outro deslocamento não muda a entrada")]
     public void InstanteComOutroDeslocamento_NaoMudaAEntrada() =>
         Fase(decisoes: d => d with { Inicio = Inicio.ToOffset(TimeSpan.FromHours(-3)) }).EntradaDoPreliminar().Should().Be(Fase().EntradaDoPreliminar());
@@ -132,6 +143,8 @@ public sealed class EntradaDoPreliminarDaFaseTests
             Alterar(decisoes, new DecisoesDeCronogramaDaFase(1, Inicio, Inicio.AddDays(5), null, UnidadesDeTeste.Ceps)),
             Alterar(publicacoes, new PublicacoesDaFase([ProdutoDaFase.Criar(Materia, PapelProdutoFase.Preliminar)], false, null)),
             bancas ?? []).Value!;
+
+    private static FaseCronograma ComTipos(params string[] tipos) => Fase(publicacoes: p => p with { TiposDeDecisao = tipos });
 
     private static T Alterar<T>(Func<T, T>? alteracao, T valor) => alteracao is null ? valor : alteracao(valor);
 
