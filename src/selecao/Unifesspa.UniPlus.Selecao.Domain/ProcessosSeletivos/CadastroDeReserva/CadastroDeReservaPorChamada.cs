@@ -9,7 +9,7 @@ using Unifesspa.UniPlus.Kernel.Results;
 /// chamada, e não faz parte do quadro de vagas. Sem nenhuma chamada declarada, o processo não tem cadastro
 /// de reserva, e a declaração é vazia, nunca nula.
 /// </summary>
-public sealed partial record CadastroDeReservaPorChamada
+public sealed record CadastroDeReservaPorChamada
 {
     private const string CampoDasChamadas = "cadastroDeReserva";
 
@@ -24,6 +24,22 @@ public sealed partial record CadastroDeReservaPorChamada
     /// <summary>As declarações são iguais quando declaram as mesmas chamadas com as mesmas quantidades, qualquer que seja a ordem informada.</summary>
     public bool Equals(CadastroDeReservaPorChamada? outra) =>
         outra is not null && Chamadas.SequenceEqual(outra.Chamadas);
+
+    /// <summary>
+    /// O máximo de pessoas do cadastro de reserva que a chamada convoca: as vagas da chamada vezes as pessoas da
+    /// reserva por vaga declaradas para ela, ou zero na chamada sem declaração. As vagas vêm de quem convoca, e
+    /// a declaração nunca lê o quadro. Reduzir o máximo às pessoas elegíveis é de quem convoca.
+    /// </summary>
+    /// <param name="chamada">A chamada que convoca.</param>
+    /// <param name="vagasDaChamada">As vagas que a chamada tem, não negativas.</param>
+    public long PessoasDaReservaConvocadas(NumeroDaChamada chamada, int vagasDaChamada)
+    {
+        ArgumentNullException.ThrowIfNull(chamada);
+        ArgumentOutOfRangeException.ThrowIfNegative(vagasDaChamada);
+
+        CadastroDeReservaDaChamada? declarada = Chamadas.FirstOrDefault(cadastro => cadastro.Chamada == chamada);
+        return declarada is null ? 0 : (long)vagasDaChamada * declarada.PessoasDaReservaPorVaga;
+    }
 
     public override int GetHashCode()
     {
